@@ -8,7 +8,7 @@
 
 * **TypeScript everywhere**
 
-* **PostgreSQL \+ Prisma**
+* **Sqlite \+ Prisma**
 
 * **Auth**: Nuxt Auth (or Lucia) with cookie-based sessions
 
@@ -148,7 +148,7 @@
 
 ### **`.env` (baseline)**
 
-* `DATABASE_URL=postgres://...`
+* `DATABASE_URL=...`
 
 * `AUTH_SECRET=...`
 

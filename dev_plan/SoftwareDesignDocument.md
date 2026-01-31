@@ -34,7 +34,7 @@ A web app for managing a Dungeons & Dragons campaign with:
 
 * **Backend**: Nuxt server routes (Nitro) under `/api/*`
 
-* **DB**: PostgreSQL (recommended) via Prisma ORM
+* **DB**: SQLite via Prisma ORM
 
 * **Background jobs**: Optional but strongly recommended (BullMQ \+ Redis) for transcription fetch, large uploads, webhook fanout
 
@@ -208,7 +208,7 @@ Use Nuxt UI components heavily, but avoid “class soup” by:
 
 ---
 
-## **7\) Database schema (PostgreSQL \+ Prisma recommended)**
+## **7\) Database schema (Sqlite \+ Prisma recommended)**
 
 Below is a concrete schema outline (field-level descriptions included). Types are conceptual.
 
