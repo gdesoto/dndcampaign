@@ -71,14 +71,14 @@ const createSession = async () => {
   <div class="space-y-8">
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <p class="text-xs uppercase tracking-[0.3em] text-slate-500">Sessions</p>
+        <p class="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-500">Sessions</p>
         <h1 class="mt-2 text-2xl font-semibold">Session log</h1>
       </div>
       <UButton size="lg" @click="openCreate">New session</UButton>
     </div>
 
     <div v-if="pending" class="grid gap-4 sm:grid-cols-2">
-      <UCard v-for="i in 3" :key="i" class="h-28 animate-pulse bg-slate-900/40" />
+      <UCard v-for="i in 3" :key="i" class="h-28 animate-pulse bg-white/80 dark:bg-slate-900/40" />
     </div>
 
     <div v-else-if="error" class="rounded-xl border border-dashed border-red-900/60 p-10 text-center">
@@ -86,8 +86,8 @@ const createSession = async () => {
       <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
     </div>
 
-    <div v-else-if="!sessions?.length" class="rounded-xl border border-dashed border-slate-800 p-10 text-center">
-      <p class="text-sm text-slate-400">No sessions yet.</p>
+    <div v-else-if="!sessions?.length" class="rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-10 text-center">
+      <p class="text-sm text-slate-600 dark:text-slate-400">No sessions yet.</p>
       <UButton class="mt-4" variant="outline" @click="openCreate">Create your first session</UButton>
     </div>
 
@@ -97,21 +97,21 @@ const createSession = async () => {
         :key="session.id"
         :to="`/campaigns/${campaignId}/sessions/${session.id}`"
       >
-        <UCard class="border border-slate-800 bg-slate-900/40 transition hover:border-slate-600">
+        <UCard class="border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/40 transition hover:border-slate-600">
           <template #header>
             <div class="flex items-center justify-between gap-3">
               <div>
-                <p class="text-xs uppercase tracking-[0.2em] text-slate-500">
+                <p class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-500">
                   Session {{ session.sessionNumber ?? '—' }}
                 </p>
                 <h3 class="text-lg font-semibold">{{ session.title }}</h3>
               </div>
-              <span class="text-xs text-slate-400">
+              <span class="text-xs text-slate-600 dark:text-slate-400">
                 {{ session.playedAt ? new Date(session.playedAt).toLocaleDateString() : 'Unscheduled' }}
               </span>
             </div>
           </template>
-          <p class="text-sm text-slate-300 line-clamp-2">
+          <p class="text-sm text-slate-700 dark:text-slate-300 line-clamp-2">
             {{ session.notes || 'Add notes to capture what happened.' }}
           </p>
         </UCard>
@@ -120,27 +120,27 @@ const createSession = async () => {
 
     <UModal v-model:open="isCreateOpen">
       <template #content>
-        <UCard class="border border-slate-800 bg-slate-950">
+        <UCard class="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
           <template #header>
             <h2 class="text-lg font-semibold">Create session</h2>
           </template>
           <div class="space-y-4">
             <div>
-              <label class="mb-2 block text-sm text-slate-300">Title</label>
+              <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">Title</label>
               <UInput v-model="createForm.title" placeholder="Session 12: The Glass Crypt" />
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
               <div>
-                <label class="mb-2 block text-sm text-slate-300">Session number</label>
+                <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">Session number</label>
                 <UInput v-model="createForm.sessionNumber" type="number" placeholder="12" />
               </div>
               <div>
-                <label class="mb-2 block text-sm text-slate-300">Played at</label>
+                <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">Played at</label>
                 <UInput v-model="createForm.playedAt" type="date" />
               </div>
             </div>
             <div>
-              <label class="mb-2 block text-sm text-slate-300">Notes</label>
+              <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">Notes</label>
               <UTextarea v-model="createForm.notes" :rows="4" placeholder="Quick recap..." />
             </div>
             <p v-if="createError" class="text-sm text-red-300">{{ createError }}</p>

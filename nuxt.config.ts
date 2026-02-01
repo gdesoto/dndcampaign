@@ -10,5 +10,10 @@ export default defineNuxtConfig({
     '@nuxt/ui',
     '@pinia/nuxt',
     'nuxt-auth-utils'
-  ]
+  ],
+  colorMode: {
+    preference: 'system',
+    fallback: 'dark',
+    classSuffix: ''
+  }
 })

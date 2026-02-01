@@ -59,17 +59,18 @@ const createCampaign = async () => {
 </script>
 
 <template>
-  <div class="space-y-8">
+  <UPage>
+    <div class="space-y-8">
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <p class="text-xs uppercase tracking-[0.3em] text-slate-500">Your world</p>
+        <p class="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-500">Your world</p>
         <h1 class="mt-2 text-2xl font-semibold">Campaigns</h1>
       </div>
       <UButton size="lg" @click="openCreate">New campaign</UButton>
     </div>
 
     <div v-if="pending" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      <UCard v-for="i in 3" :key="i" class="h-36 animate-pulse bg-slate-900/40" />
+      <UCard v-for="i in 3" :key="i" class="h-36 animate-pulse bg-white/80 dark:bg-slate-900/40" />
     </div>
 
     <div v-else-if="error" class="rounded-xl border border-dashed border-red-900/60 p-10 text-center">
@@ -77,8 +78,8 @@ const createCampaign = async () => {
       <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
     </div>
 
-    <div v-else-if="!campaigns?.length" class="rounded-xl border border-dashed border-slate-800 p-10 text-center">
-      <p class="text-sm text-slate-400">No campaigns yet.</p>
+    <div v-else-if="!campaigns?.length" class="rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-10 text-center">
+      <p class="text-sm text-slate-600 dark:text-slate-400">No campaigns yet.</p>
       <UButton class="mt-4" variant="outline" @click="openCreate">Create your first campaign</UButton>
     </div>
 
@@ -89,14 +90,14 @@ const createCampaign = async () => {
         :to="`/campaigns/${campaign.id}`"
         class="group"
       >
-        <UCard class="border border-slate-800 bg-slate-900/40 transition group-hover:border-slate-600">
+        <UCard class="border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/40 transition group-hover:border-slate-600">
           <template #header>
             <div class="space-y-1">
-              <p class="text-xs uppercase tracking-[0.2em] text-slate-500">{{ campaign.system }}</p>
+              <p class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-500">{{ campaign.system }}</p>
               <h3 class="text-lg font-semibold">{{ campaign.name }}</h3>
             </div>
           </template>
-          <p class="text-sm text-slate-300">
+          <p class="text-sm text-slate-700 dark:text-slate-300">
             {{ campaign.description || 'No description yet.' }}
           </p>
         </UCard>
@@ -105,21 +106,21 @@ const createCampaign = async () => {
 
     <UModal v-model:open="isCreateOpen">
       <template #content>
-        <UCard class="border border-slate-800 bg-slate-950">
+        <UCard class="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
           <template #header>
             <h2 class="text-lg font-semibold">Create campaign</h2>
           </template>
           <div class="space-y-4">
             <div>
-              <label class="mb-2 block text-sm text-slate-300">Name</label>
+              <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">Name</label>
               <UInput v-model="createForm.name" placeholder="The Ashen Vale" />
             </div>
             <div>
-              <label class="mb-2 block text-sm text-slate-300">System</label>
+              <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">System</label>
               <UInput v-model="createForm.system" placeholder="D&D 5e" />
             </div>
             <div>
-              <label class="mb-2 block text-sm text-slate-300">Description</label>
+              <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">Description</label>
               <UTextarea v-model="createForm.description" :rows="4" placeholder="Short campaign pitch..." />
             </div>
             <p v-if="createError" class="text-sm text-red-300">{{ createError }}</p>
@@ -133,5 +134,7 @@ const createCampaign = async () => {
         </UCard>
       </template>
     </UModal>
-  </div>
+    </div>
+  </UPage>
 </template>
+
