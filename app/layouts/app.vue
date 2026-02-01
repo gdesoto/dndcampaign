@@ -1,14 +1,20 @@
 <script setup lang="ts">
 const { user, logout } = useAuth()
+const route = useRoute()
+const campaignId = computed(() => route.params.campaignId as string | undefined)
 
-const navLinks = [
-  { label: 'Overview', to: '/campaigns' },
-  { label: 'Glossary', to: '/campaigns' },
-  { label: 'Quests', to: '/campaigns' },
-  { label: 'Milestones', to: '/campaigns' },
-  { label: 'Sessions', to: '/campaigns' },
-  { label: 'Settings', to: '/settings' },
-]
+const navLinks = computed(() => {
+  const base = campaignId.value ? `/campaigns/${campaignId.value}` : '/campaigns'
+  return [
+    { label: 'All Campaigns', to: '/campaigns' },
+    { label: 'Overview', to: base },
+    { label: 'Glossary', to: `${base}/glossary` },
+    { label: 'Quests', to: `${base}/quests` },
+    { label: 'Milestones', to: `${base}/milestones` },
+    { label: 'Sessions', to: `${base}/sessions` },
+    { label: 'Settings', to: campaignId.value ? `${base}/settings` : '/settings' },
+  ]
+})
 </script>
 
 <template>

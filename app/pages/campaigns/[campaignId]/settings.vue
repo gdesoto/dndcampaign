@@ -1,0 +1,12 @@
+<script setup lang="ts">
+definePageMeta({ layout: 'app' })
+</script>
+
+<template>
+  <UCard class="border border-slate-800 bg-slate-900/40">
+    <template #header>
+      <h1 class="text-xl font-semibold">Campaign settings</h1>
+    </template>
+    <p class="text-sm text-slate-300">Campaign settings will be available in a later milestone.</p>
+  </UCard>
+</template>

@@ -35,6 +35,95 @@ model Campaign {
   currentStatus String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  sessions      Session[]
+  glossary      GlossaryEntry[]
+  quests        Quest[]
+  milestones    Milestone[]
 
   @@index([ownerId])
+}
+
+model Session {
+  id            String   @id @default(uuid())
+  campaignId    String
+  campaign      Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  title         String
+  sessionNumber Int?
+  playedAt      DateTime?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  glossaryLinks GlossarySessionLink[]
+
+  @@index([campaignId])
+}
+
+enum GlossaryType {
+  PC
+  NPC
+  ITEM
+  LOCATION
+}
+
+model GlossaryEntry {
+  id          String   @id @default(uuid())
+  campaignId  String
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  type        GlossaryType
+  name        String
+  aliases     String?
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  sessions    GlossarySessionLink[]
+
+  @@index([campaignId, type])
+}
+
+model GlossarySessionLink {
+  id             String        @id @default(uuid())
+  glossaryEntryId String
+  sessionId      String
+  glossaryEntry  GlossaryEntry @relation(fields: [glossaryEntryId], references: [id], onDelete: Cascade)
+  session        Session       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdAt      DateTime      @default(now())
+
+  @@unique([glossaryEntryId, sessionId])
+  @@index([sessionId])
+}
+
+enum QuestStatus {
+  ACTIVE
+  COMPLETED
+  FAILED
+  ON_HOLD
+}
+
+model Quest {
+  id            String      @id @default(uuid())
+  campaignId    String
+  campaign      Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  status        QuestStatus @default(ACTIVE)
+  progressNotes String?
+  sortOrder     Int         @default(0)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([campaignId])
+}
+
+model Milestone {
+  id          String   @id @default(uuid())
+  campaignId  String
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  isComplete  Boolean  @default(false)
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([campaignId])
 }

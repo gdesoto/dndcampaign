@@ -125,6 +125,28 @@ const saveCampaign = async () => {
         <UButton variant="outline" @click="openEdit">Edit campaign</UButton>
       </div>
 
+      <div class="grid gap-4 md:grid-cols-2">
+        <UCard class="border border-slate-800 bg-slate-900/40">
+          <template #header>
+            <h3 class="text-sm font-semibold text-slate-200">Campaign workbench</h3>
+          </template>
+          <div class="flex flex-wrap gap-3">
+            <UButton size="sm" variant="outline" :to="`/campaigns/${campaignId}/glossary`">Glossary</UButton>
+            <UButton size="sm" variant="outline" :to="`/campaigns/${campaignId}/quests`">Quests</UButton>
+            <UButton size="sm" variant="outline" :to="`/campaigns/${campaignId}/milestones`">Milestones</UButton>
+            <UButton size="sm" variant="outline" :to="`/campaigns/${campaignId}/sessions`">Sessions</UButton>
+          </div>
+        </UCard>
+        <UCard class="border border-slate-800 bg-slate-900/40">
+          <template #header>
+            <h3 class="text-sm font-semibold text-slate-200">Next steps</h3>
+          </template>
+          <p class="text-sm text-slate-300">
+            Create a new session, log quest progress, and keep your glossary fresh.
+          </p>
+        </UCard>
+      </div>
+
       <UCard class="border border-slate-800 bg-slate-900/40">
         <template #header>
           <div>
