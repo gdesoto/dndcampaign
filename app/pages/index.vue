@@ -7,9 +7,9 @@ const { loggedIn, ready } = useUserSession()
 <template>
   <div class="space-y-6">
     <div>
-      <p class="text-xs uppercase tracking-[0.3em] text-slate-600 dark:text-slate-400">Dungeon Master Vault</p>
+      <p class="text-xs uppercase tracking-[0.3em] text-muted">Dungeon Master Vault</p>
       <h1 class="mt-3 text-4xl font-semibold">Run smarter campaigns with one home base</h1>
-      <p class="mt-4 max-w-2xl text-base text-slate-700 dark:text-slate-300">
+      <p class="mt-4 max-w-2xl text-base text-default">
         Track sessions, manage your world, and keep transcripts and summaries tidy.
         This app is built to keep your D&amp;D campaign organized and searchable.
       </p>

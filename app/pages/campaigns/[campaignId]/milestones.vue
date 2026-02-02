@@ -94,44 +94,44 @@ const toggleComplete = async (milestone: MilestoneItem) => {
   <div class="space-y-8">
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <p class="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-500">Milestones</p>
+        <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Milestones</p>
         <h1 class="mt-2 text-2xl font-semibold">Milestone board</h1>
       </div>
       <UButton size="lg" @click="openCreate">New milestone</UButton>
     </div>
 
     <div v-if="pending" class="grid gap-4 sm:grid-cols-2">
-      <UCard v-for="i in 3" :key="i" class="h-28 animate-pulse bg-white/80 dark:bg-slate-900/40" />
+      <UCard v-for="i in 3" :key="i"  class="h-28 animate-pulse" />
     </div>
 
-    <div v-else-if="error" class="rounded-xl border border-dashed border-red-900/60 p-10 text-center">
-      <p class="text-sm text-red-300">Unable to load milestones.</p>
+    <UCard v-else-if="error" class="text-center">
+      <p class="text-sm text-error">Unable to load milestones.</p>
       <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
-    </div>
+    </UCard>
 
-    <div v-else-if="!milestones?.length" class="rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-10 text-center">
-      <p class="text-sm text-slate-600 dark:text-slate-400">No milestones yet.</p>
+    <UCard v-else-if="!milestones?.length" class="text-center">
+      <p class="text-sm text-muted">No milestones yet.</p>
       <UButton class="mt-4" variant="outline" @click="openCreate">Create your first milestone</UButton>
-    </div>
+    </UCard>
 
     <div v-else class="grid gap-4 sm:grid-cols-2">
       <UCard
         v-for="milestone in milestones"
         :key="milestone.id"
-        class="border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/40"
+        
       >
         <template #header>
           <div class="flex items-start justify-between gap-3">
             <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-500">Milestone</p>
+              <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Milestone</p>
               <h3 class="text-lg font-semibold">{{ milestone.title }}</h3>
             </div>
             <UButton size="xs" variant="outline" @click="openEdit(milestone)">Edit</UButton>
           </div>
         </template>
-        <p class="text-sm text-slate-700 dark:text-slate-300">{{ milestone.description || 'Add details about this milestone.' }}</p>
+        <p class="text-sm text-default">{{ milestone.description || 'Add details about this milestone.' }}</p>
         <div class="mt-4 flex items-center justify-between gap-3">
-          <span class="text-xs text-slate-600 dark:text-slate-400">
+          <span class="text-xs text-muted">
             {{ milestone.isComplete ? 'Completed' : 'In progress' }}
           </span>
           <UButton size="xs" variant="outline" @click="toggleComplete(milestone)">
@@ -143,7 +143,7 @@ const toggleComplete = async (milestone: MilestoneItem) => {
 
     <UModal v-model:open="isEditOpen">
       <template #content>
-        <UCard class="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+        <UCard >
           <template #header>
             <h2 class="text-lg font-semibold">
               {{ editMode === 'create' ? 'Create milestone' : 'Edit milestone' }}
@@ -151,14 +151,14 @@ const toggleComplete = async (milestone: MilestoneItem) => {
           </template>
           <div class="space-y-4">
             <div>
-              <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">Title</label>
+              <label class="mb-2 block text-sm text-muted">Title</label>
               <UInput v-model="editForm.title" />
             </div>
             <div>
-              <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">Description</label>
+              <label class="mb-2 block text-sm text-muted">Description</label>
               <UTextarea v-model="editForm.description" :rows="4" />
             </div>
-            <p v-if="editError" class="text-sm text-red-300">{{ editError }}</p>
+            <p v-if="editError" class="text-sm text-error">{{ editError }}</p>
           </div>
           <template #footer>
             <div class="flex justify-end gap-3">

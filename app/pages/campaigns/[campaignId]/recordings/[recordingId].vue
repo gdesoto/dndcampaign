@@ -172,7 +172,7 @@ const formatBytes = (value: number) => {
     <div class="space-y-8">
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p class="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-500">
+          <p class="text-xs uppercase tracking-[0.3em] text-dimmed">
             Recording
           </p>
           <h1 class="mt-2 text-2xl font-semibold">{{ recording?.filename || 'Recording detail' }}</h1>
@@ -192,27 +192,27 @@ const formatBytes = (value: number) => {
       </div>
 
       <div v-if="pending" class="grid gap-4">
-        <UCard class="h-32 animate-pulse bg-white/80 dark:bg-slate-900/40" />
-        <UCard class="h-52 animate-pulse bg-white/80 dark:bg-slate-900/40" />
+        <UCard  class="h-32 animate-pulse" />
+        <UCard  class="h-52 animate-pulse" />
       </div>
 
-      <div v-else-if="error" class="rounded-xl border border-dashed border-red-900/60 p-10 text-center">
-        <p class="text-sm text-red-300">Unable to load this recording.</p>
+      <UCard v-else-if="error" class="text-center">
+        <p class="text-sm text-error">Unable to load this recording.</p>
         <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
-      </div>
+      </UCard>
 
       <div v-else-if="recording" class="space-y-6">
-        <UCard class="border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/40">
+        <UCard >
           <template #header>
             <div>
               <h2 class="text-lg font-semibold">Playback</h2>
-              <p class="text-sm text-slate-600 dark:text-slate-400">
+              <p class="text-sm text-muted">
                 Streamed directly from storage.
               </p>
             </div>
           </template>
           <div class="space-y-4">
-            <div v-if="playbackPending" class="text-sm text-slate-500 dark:text-slate-400">
+            <div v-if="playbackPending" class="text-sm text-muted">
               Preparing playback...
             </div>
             <audio
@@ -238,7 +238,7 @@ const formatBytes = (value: number) => {
                 default
               />
             </video>
-            <p v-else class="text-sm text-slate-500 dark:text-slate-400">
+            <p v-else class="text-sm text-muted">
               Playback is not available right now.
             </p>
           </div>
@@ -246,19 +246,18 @@ const formatBytes = (value: number) => {
 
         <UCard
           v-if="recording.kind === 'VIDEO'"
-          class="border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/40"
+          
         >
           <template #header>
             <div>
               <h2 class="text-lg font-semibold">Subtitles (VTT)</h2>
-              <p class="text-sm text-slate-600 dark:text-slate-400">
+              <p class="text-sm text-muted">
                 Upload a WebVTT file to display subtitles during playback.
               </p>
             </div>
           </template>
           <div class="space-y-3">
-            <input
-              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-100"
+            <UInput
               type="file"
               accept=".vtt,.srt,text/vtt"
               @change="vttFile = ($event.target as HTMLInputElement).files?.[0] || null"
@@ -284,16 +283,16 @@ const formatBytes = (value: number) => {
               >
                 Detach subtitles
               </UButton>
-              <span v-if="vttUrl" class="text-xs text-emerald-400">Attached</span>
+              <span v-if="vttUrl" class="text-xs text-success">Attached</span>
             </div>
             <div
               v-if="vttArtifact"
-              class="rounded-md border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-200"
+              class="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-xs text-success"
             >
               Current subtitles: {{ vttFileName }}
             </div>
-            <div v-if="vttHistory?.length" class="space-y-2 rounded-md border border-slate-800/60 bg-slate-950/40 px-3 py-2 text-xs text-slate-200">
-              <p class="text-[11px] uppercase tracking-[0.2em] text-slate-500">Subtitle history</p>
+            <div v-if="vttHistory?.length" class="space-y-2 rounded-md border border-default bg-elevated/30 px-3 py-2 text-xs text-default">
+              <p class="text-[11px] uppercase tracking-[0.2em] text-dimmed">Subtitle history</p>
               <div
                 v-for="item in vttHistory"
                 :key="item.id"
@@ -303,50 +302,50 @@ const formatBytes = (value: number) => {
                   <p class="font-semibold">
                     {{ item.storageKey.split('/').pop() }}
                   </p>
-                  <p class="text-[11px] text-slate-500">
+                  <p class="text-[11px] text-dimmed">
                     {{ new Date(item.createdAt).toLocaleString() }}
                   </p>
                 </div>
                 <span
                   v-if="item.id === recording?.vttArtifactId"
-                  class="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] text-emerald-200"
+                  class="rounded-full bg-success/20 px-2 py-0.5 text-[11px] text-success"
                 >
                   In use
                 </span>
               </div>
             </div>
-            <p v-if="vttError" class="text-sm text-red-300">{{ vttError }}</p>
-            <p v-if="transcriptAttachError" class="text-sm text-red-300">
+            <p v-if="vttError" class="text-sm text-error">{{ vttError }}</p>
+            <p v-if="transcriptAttachError" class="text-sm text-error">
               {{ transcriptAttachError }}
             </p>
-            <p v-if="detachError" class="text-sm text-red-300">
+            <p v-if="detachError" class="text-sm text-error">
               {{ detachError }}
             </p>
           </div>
         </UCard>
 
-        <UCard class="border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/40">
+        <UCard >
           <template #header>
             <div>
               <h2 class="text-lg font-semibold">Details</h2>
-              <p class="text-sm text-slate-600 dark:text-slate-400">Recording metadata.</p>
+              <p class="text-sm text-muted">Recording metadata.</p>
             </div>
           </template>
-          <div class="grid gap-4 text-sm text-slate-700 dark:text-slate-200 sm:grid-cols-2">
+          <div class="grid gap-4 text-sm text-default sm:grid-cols-2">
             <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Kind</p>
+              <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Kind</p>
               <p class="mt-1 font-semibold">{{ recording.kind }}</p>
             </div>
             <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Size</p>
+              <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Size</p>
               <p class="mt-1 font-semibold">{{ formatBytes(recording.byteSize) }}</p>
             </div>
             <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Mime type</p>
+              <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Mime type</p>
               <p class="mt-1 font-semibold">{{ recording.mimeType }}</p>
             </div>
             <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Uploaded</p>
+              <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Uploaded</p>
               <p class="mt-1 font-semibold">{{ new Date(recording.createdAt).toLocaleString() }}</p>
             </div>
           </div>

@@ -96,8 +96,8 @@
   --theme-font-display: "Cinzel", serif;
 
   --ui-radius: 0.7rem;
-  --ui-primary: var(--ui-color-forest-700);
-  --ui-secondary: var(--ui-color-ember-500);
+  --ui-primary: var(--color-forest-700);
+  --ui-secondary: var(--color-ember-500);
   --ui-bg: #f9f1dd;
   --ui-bg-muted: #f0e5c7;
   --ui-bg-elevated: #fffaf0;
@@ -140,8 +140,8 @@
   --theme-overlay-pattern-opacity: 0.4;
   --theme-font-display: "Unbounded", sans-serif;
 
-  --ui-primary: var(--ui-color-ember-400);
-  --ui-secondary: var(--ui-color-sage-400);
+  --ui-primary: var(--color-ember-400);
+  --ui-secondary: var(--color-sage-400);
   --ui-bg: #0b1e15;
   --ui-bg-muted: #0f2b1e;
   --ui-bg-elevated: #102a1f;

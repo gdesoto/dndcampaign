@@ -7,7 +7,7 @@ export default defineAppConfig({
     },
     button: {
       slots: {
-        base: 'rounded-full font-medium inline-flex items-center transition-colors',
+        base: 'rounded-full font-medium inline-flex items-center transition-colors cursor-pointer disabled:cursor-not-allowed aria-disabled:cursor-not-allowed',
       },
       defaultVariants: {
         size: 'md',

@@ -56,12 +56,18 @@ const navLinks = computed(() => {
           <div class="flex flex-wrap items-center gap-3 text-xs text-[color:var(--theme-text-muted)]">
             <UButton size="sm" color="secondary" variant="ghost" class="theme-pill" @click="toggleColorMode">
               <UIcon name="i-heroicons-moon" class="h-4 w-4" />
-              <span class="ml-2 uppercase tracking-[0.3em]">{{ colorModeLabel }}</span>
+              <ClientOnly>
+                <span class="ml-2 uppercase tracking-[0.3em]">{{ colorModeLabel }}</span>
+                <template #fallback>
+                  <span class="ml-2 uppercase tracking-[0.3em]">System</span>
+                </template>
+              </ClientOnly>
             </UButton>
             <span v-if="user?.email" class="hidden text-[color:var(--theme-text-muted)] md:inline">
               {{ user.email }}
             </span>
             <UButton size="sm" color="primary" variant="ghost" class="theme-pill" @click="logout">
+              <UIcon name="i-heroicons-lock-closed" class="h-4 w-4" />
               Logout
             </UButton>
           </div>
@@ -69,7 +75,7 @@ const navLinks = computed(() => {
       </UHeader>
 
       <UMain>
-        <div class="mx-auto max-w-6xl px-6 pb-16 pt-24">
+        <div class="mx-auto max-w-7xl px-6 pb-16 pt-24">
           <UPage :ui="{ root: 'flex flex-col lg:grid lg:grid-cols-12 lg:gap-10', left: 'lg:col-span-3', center: 'lg:col-span-9' }">
             <template #left>
               <UCard class="sticky top-24 h-fit theme-reveal" :ui="{ body: 'p-4' }">

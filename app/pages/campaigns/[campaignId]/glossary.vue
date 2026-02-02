@@ -141,7 +141,7 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
   <div class="space-y-8">
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <p class="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-500">Glossary</p>
+        <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Glossary</p>
         <h1 class="mt-2 text-2xl font-semibold">World index</h1>
       </div>
       <UButton size="lg" @click="openCreate">New entry</UButton>
@@ -163,31 +163,31 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
     </div>
 
     <div v-if="pending" class="grid gap-4 sm:grid-cols-2">
-      <UCard v-for="i in 3" :key="i" class="h-32 animate-pulse bg-white/80 dark:bg-slate-900/40" />
+      <UCard v-for="i in 3" :key="i"  class="h-32 animate-pulse" />
     </div>
 
-    <div v-else-if="error" class="rounded-xl border border-dashed border-red-900/60 p-10 text-center">
-      <p class="text-sm text-red-300">Unable to load glossary entries.</p>
+    <UCard v-else-if="error" class="text-center">
+      <p class="text-sm text-error">Unable to load glossary entries.</p>
       <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
-    </div>
+    </UCard>
 
-    <div v-else-if="!entries?.length" class="rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-10 text-center">
-      <p class="text-sm text-slate-600 dark:text-slate-400">No entries yet.</p>
+    <UCard v-else-if="!entries?.length" class="text-center">
+      <p class="text-sm text-muted">No entries yet.</p>
       <UButton class="mt-4" variant="outline" @click="openCreate">Create your first entry</UButton>
-    </div>
+    </UCard>
 
     <div v-else class="grid gap-4 sm:grid-cols-2">
       <UCard
         v-for="entry in entries"
         :key="entry.id"
-        class="border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/40"
+        
       >
         <template #header>
           <div class="flex items-start justify-between gap-3">
             <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-500">{{ entry.type }}</p>
+              <p class="text-xs uppercase tracking-[0.2em] text-dimmed">{{ entry.type }}</p>
               <h3 class="text-lg font-semibold">{{ entry.name }}</h3>
-              <p v-if="entry.aliases" class="text-xs text-slate-600 dark:text-slate-400">Aliases: {{ entry.aliases }}</p>
+              <p v-if="entry.aliases" class="text-xs text-muted">Aliases: {{ entry.aliases }}</p>
             </div>
             <div class="flex gap-2">
               <UButton size="xs" variant="outline" @click="openEdit(entry)">Edit</UButton>
@@ -195,9 +195,9 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
             </div>
           </div>
         </template>
-        <p class="text-sm text-slate-700 dark:text-slate-300">{{ entry.description }}</p>
+        <p class="text-sm text-default">{{ entry.description }}</p>
         <div class="mt-4 space-y-2">
-          <p class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-500">Linked sessions</p>
+          <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Linked sessions</p>
           <div v-if="entry.sessions.length" class="flex flex-wrap gap-2">
             <UButton
               v-for="link in entry.sessions"
@@ -209,17 +209,14 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
               {{ link.session.title }}
             </UButton>
           </div>
-          <div v-else class="text-xs text-slate-600 dark:text-slate-400">No sessions linked yet.</div>
+          <div v-else class="text-xs text-muted">No sessions linked yet.</div>
           <div class="flex gap-2">
-            <select
-              class="w-full rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-200"
-              @change="linkSession(entry, ($event.target as HTMLSelectElement).value)"
-            >
-              <option value="">Link a session...</option>
-              <option v-for="session in sessions || []" :key="session.id" :value="session.id">
-                {{ session.title }}
-              </option>
-            </select>
+            <USelect
+              :items="(sessions || []).map((session) => ({ label: session.title, value: session.id }))"
+              placeholder="Link a session..."
+              :model-value="''"
+              @update:model-value="(value) => linkSession(entry, value as string)"
+            />
           </div>
         </div>
       </UCard>
@@ -227,7 +224,7 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
 
     <UModal v-model:open="isEditOpen">
       <template #content>
-        <UCard class="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+        <UCard >
           <template #header>
             <h2 class="text-lg font-semibold">
               {{ editMode === 'create' ? 'Create glossary entry' : 'Edit glossary entry' }}
@@ -235,29 +232,22 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
           </template>
           <div class="space-y-4">
             <div>
-              <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">Type</label>
-              <select
-                v-model="editForm.type"
-                class="w-full rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-200"
-              >
-                <option v-for="type in types" :key="type.value" :value="type.value">
-                  {{ type.label }}
-                </option>
-              </select>
+              <label class="mb-2 block text-sm text-muted">Type</label>
+              <USelect v-model="editForm.type" :items="types" />
             </div>
             <div>
-              <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">Name</label>
+              <label class="mb-2 block text-sm text-default">Name</label>
               <UInput v-model="editForm.name" />
             </div>
             <div>
-              <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">Aliases</label>
+              <label class="mb-2 block text-sm text-default">Aliases</label>
               <UInput v-model="editForm.aliases" placeholder="Comma-separated" />
             </div>
             <div>
-              <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">Description</label>
+              <label class="mb-2 block text-sm text-default">Description</label>
               <UTextarea v-model="editForm.description" :rows="6" />
             </div>
-            <p v-if="editError" class="text-sm text-red-300">{{ editError }}</p>
+            <p v-if="editError" class="text-sm text-error">{{ editError }}</p>
           </div>
           <template #footer>
             <div class="flex justify-end gap-3">

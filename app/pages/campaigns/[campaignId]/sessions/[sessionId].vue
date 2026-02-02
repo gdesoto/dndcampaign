@@ -400,50 +400,50 @@ const formatBytes = (value: number) => {
   <div class="space-y-8">
     <div class="flex items-center justify-between gap-4">
       <div>
-        <p class="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-500">Session</p>
+        <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Session</p>
         <h1 class="mt-2 text-2xl font-semibold">{{ session?.title || 'Session detail' }}</h1>
       </div>
       <UButton variant="outline" :to="`/campaigns/${campaignId}/sessions`">Back to sessions</UButton>
     </div>
 
     <div v-if="pending" class="grid gap-4">
-      <UCard class="h-28 animate-pulse bg-white/80 dark:bg-slate-900/40" />
-      <UCard class="h-40 animate-pulse bg-white/80 dark:bg-slate-900/40" />
+      <UCard  class="h-28 animate-pulse" />
+      <UCard  class="h-40 animate-pulse" />
     </div>
 
-    <div v-else-if="error" class="rounded-xl border border-dashed border-red-900/60 p-10 text-center">
-      <p class="text-sm text-red-300">Unable to load this session.</p>
+    <UCard v-else-if="error" class="text-center">
+      <p class="text-sm text-error">Unable to load this session.</p>
       <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
-    </div>
+    </UCard>
 
     <div v-else class="space-y-6">
-      <UCard class="border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/40">
+      <UCard >
         <template #header>
           <div>
             <h2 class="text-lg font-semibold">Session details</h2>
-            <p class="text-sm text-slate-600 dark:text-slate-400">Keep the record current.</p>
+            <p class="text-sm text-muted">Keep the record current.</p>
           </div>
         </template>
         <div class="space-y-4">
           <div>
-            <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">Title</label>
+            <label class="mb-2 block text-sm text-default">Title</label>
             <UInput v-model="form.title" />
           </div>
           <div class="grid gap-4 sm:grid-cols-2">
             <div>
-              <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">Session number</label>
+              <label class="mb-2 block text-sm text-default">Session number</label>
               <UInput v-model="form.sessionNumber" type="number" />
             </div>
             <div>
-              <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">Played at</label>
+              <label class="mb-2 block text-sm text-default">Played at</label>
               <UInput v-model="form.playedAt" type="date" />
             </div>
           </div>
           <div>
-            <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">Notes</label>
+            <label class="mb-2 block text-sm text-default">Notes</label>
             <UTextarea v-model="form.notes" :rows="6" />
           </div>
-          <p v-if="saveError" class="text-sm text-red-300">{{ saveError }}</p>
+          <p v-if="saveError" class="text-sm text-error">{{ saveError }}</p>
         </div>
         <template #footer>
           <div class="flex justify-end">
@@ -452,18 +452,17 @@ const formatBytes = (value: number) => {
         </template>
       </UCard>
 
-      <UCard class="border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/40">
+      <UCard >
         <template #header>
           <div>
             <h2 class="text-lg font-semibold">Recap podcast</h2>
-            <p class="text-sm text-slate-600 dark:text-slate-400">
+            <p class="text-sm text-muted">
               Upload a short audio recap for this session.
             </p>
           </div>
         </template>
         <div class="space-y-4">
-          <input
-            class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-100"
+          <UInput
             type="file"
             accept="audio/*"
             @change="recapFile = ($event.target as HTMLInputElement).files?.[0] || null"
@@ -487,21 +486,21 @@ const formatBytes = (value: number) => {
             >
               Delete recap
             </UButton>
-            <span v-if="recap" class="text-xs text-emerald-400">Attached</span>
+            <span v-if="recap" class="text-xs text-success">Attached</span>
           </div>
-          <div v-if="recapPlaybackUrl" class="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+          <UCard v-if="recapPlaybackUrl">
             <audio class="w-full" controls preload="metadata" :src="recapPlaybackUrl" />
-          </div>
-          <p v-if="recapError" class="text-sm text-red-300">{{ recapError }}</p>
-          <p v-if="recapDeleteError" class="text-sm text-red-300">{{ recapDeleteError }}</p>
+          </UCard>
+          <p v-if="recapError" class="text-sm text-error">{{ recapError }}</p>
+          <p v-if="recapDeleteError" class="text-sm text-error">{{ recapDeleteError }}</p>
         </div>
       </UCard>
 
-      <UCard class="border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/40">
+      <UCard >
         <template #header>
           <div>
             <h2 class="text-lg font-semibold">Transcript</h2>
-            <p class="text-sm text-slate-600 dark:text-slate-400">
+            <p class="text-sm text-muted">
               Capture the session transcript or import a file.
             </p>
           </div>
@@ -519,8 +518,7 @@ const formatBytes = (value: number) => {
             </UButton>
           </div>
           <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
-            <input
-              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-100"
+            <UInput
               type="file"
               accept=".txt,.md,.markdown,.vtt"
               @change="transcriptFile = ($event.target as HTMLInputElement).files?.[0] || null"
@@ -533,16 +531,16 @@ const formatBytes = (value: number) => {
               Import file
             </UButton>
           </div>
-          <p v-if="transcriptError" class="text-sm text-red-300">{{ transcriptError }}</p>
-          <p v-if="transcriptImportError" class="text-sm text-red-300">{{ transcriptImportError }}</p>
+          <p v-if="transcriptError" class="text-sm text-error">{{ transcriptError }}</p>
+          <p v-if="transcriptImportError" class="text-sm text-error">{{ transcriptImportError }}</p>
         </div>
       </UCard>
 
-      <UCard class="border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/40">
+      <UCard >
         <template #header>
           <div>
             <h2 class="text-lg font-semibold">Summary</h2>
-            <p class="text-sm text-slate-600 dark:text-slate-400">
+            <p class="text-sm text-muted">
               Write a recap or import one.
             </p>
           </div>
@@ -560,8 +558,7 @@ const formatBytes = (value: number) => {
             </UButton>
           </div>
           <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
-            <input
-              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-100"
+            <UInput
               type="file"
               accept=".txt,.md,.markdown"
               @change="summaryFile = ($event.target as HTMLInputElement).files?.[0] || null"
@@ -570,58 +567,57 @@ const formatBytes = (value: number) => {
               Import file
             </UButton>
           </div>
-          <p v-if="summaryError" class="text-sm text-red-300">{{ summaryError }}</p>
-          <p v-if="summaryImportError" class="text-sm text-red-300">{{ summaryImportError }}</p>
+          <p v-if="summaryError" class="text-sm text-error">{{ summaryError }}</p>
+          <p v-if="summaryImportError" class="text-sm text-error">{{ summaryImportError }}</p>
         </div>
       </UCard>
 
-      <UCard class="border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/40">
+      <UCard >
         <template #header>
           <div>
             <h2 class="text-lg font-semibold">Recordings</h2>
-            <p class="text-sm text-slate-600 dark:text-slate-400">Upload and review session media.</p>
+            <p class="text-sm text-muted">Upload and review session media.</p>
           </div>
         </template>
         <div class="space-y-4">
           <div class="grid gap-4 sm:grid-cols-2">
             <div>
-              <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">File</label>
-              <input
-                class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-100"
+              <label class="mb-2 block text-sm text-default">File</label>
+              <UInput
                 type="file"
                 accept="audio/*,video/*"
                 @change="selectedFile = ($event.target as HTMLInputElement).files?.[0] || null"
               />
             </div>
             <div>
-              <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">Kind</label>
-              <select
+              <label class="mb-2 block text-sm text-muted">Kind</label>
+              <USelect
                 v-model="selectedKind"
-                class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-100"
-              >
-                <option value="AUDIO">Audio</option>
-                <option value="VIDEO">Video</option>
-              </select>
+                :items="[
+                  { label: 'Audio', value: 'AUDIO' },
+                  { label: 'Video', value: 'VIDEO' },
+                ]"
+              />
             </div>
           </div>
           <div class="flex items-center gap-3">
             <UButton :loading="isUploading" @click="uploadRecording">Upload recording</UButton>
-            <span v-if="isUploading" class="text-xs text-slate-500 dark:text-slate-400">
+            <span v-if="isUploading" class="text-xs text-muted">
               Uploading...
             </span>
-            <p v-if="uploadError" class="text-sm text-red-300">{{ uploadError }}</p>
+            <p v-if="uploadError" class="text-sm text-error">{{ uploadError }}</p>
           </div>
-          <p v-if="playbackError" class="text-sm text-red-300">{{ playbackError }}</p>
+          <p v-if="playbackError" class="text-sm text-error">{{ playbackError }}</p>
           <div v-if="recordings?.length" class="space-y-3">
             <div
               v-for="recording in recordings"
               :key="recording.id"
-              class="rounded-lg border border-slate-200 p-4 dark:border-slate-800"
+            class="rounded-lg border border-default bg-elevated/30 p-4"
             >
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <p class="text-sm font-semibold">{{ recording.filename }}</p>
-                  <p class="text-xs text-slate-500 dark:text-slate-500">
+                  <p class="text-xs text-dimmed">
                     {{ recording.kind }} - {{ formatBytes(recording.byteSize) }} - {{ new Date(recording.createdAt).toLocaleString() }}
                   </p>
                 </div>
@@ -661,7 +657,7 @@ const formatBytes = (value: number) => {
               </div>
             </div>
           </div>
-          <p v-else class="text-sm text-slate-600 dark:text-slate-400">No recordings yet.</p>
+          <p v-else class="text-sm text-muted">No recordings yet.</p>
         </div>
       </UCard>
     </div>

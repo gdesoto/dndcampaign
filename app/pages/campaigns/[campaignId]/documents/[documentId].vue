@@ -115,7 +115,7 @@ const importDocument = async () => {
     <div class="space-y-8">
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p class="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-500">
+          <p class="text-xs uppercase tracking-[0.3em] text-dimmed">
             Document
           </p>
           <h1 class="mt-2 text-2xl font-semibold">
@@ -137,21 +137,21 @@ const importDocument = async () => {
       </div>
 
       <div v-if="pending" class="grid gap-4">
-        <UCard class="h-32 animate-pulse bg-white/80 dark:bg-slate-900/40" />
-        <UCard class="h-52 animate-pulse bg-white/80 dark:bg-slate-900/40" />
+        <UCard  class="h-32 animate-pulse" />
+        <UCard  class="h-52 animate-pulse" />
       </div>
 
-      <div v-else-if="error" class="rounded-xl border border-dashed border-red-900/60 p-10 text-center">
-        <p class="text-sm text-red-300">Unable to load this document.</p>
+      <UCard v-else-if="error" class="text-center">
+        <p class="text-sm text-error">Unable to load this document.</p>
         <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
-      </div>
+      </UCard>
 
       <div v-else class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <UCard class="border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/40">
+        <UCard >
           <template #header>
             <div>
               <h2 class="text-lg font-semibold">Editor</h2>
-              <p class="text-sm text-slate-600 dark:text-slate-400">
+              <p class="text-sm text-muted">
                 Markdown-first editor with version tracking.
               </p>
             </div>
@@ -161,8 +161,7 @@ const importDocument = async () => {
             <div class="flex flex-wrap items-center gap-3">
               <UButton :loading="isSaving" @click="saveDocument">Save version</UButton>
               <div class="flex items-center gap-2">
-                <input
-                  class="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-100"
+                <UInput
                   type="file"
                   accept=".txt,.md,.markdown,.vtt"
                   @change="importFile = ($event.target as HTMLInputElement).files?.[0] || null"
@@ -177,16 +176,16 @@ const importDocument = async () => {
                 </UButton>
               </div>
             </div>
-            <p v-if="saveError" class="text-sm text-red-300">{{ saveError }}</p>
-            <p v-if="importError" class="text-sm text-red-300">{{ importError }}</p>
+            <p v-if="saveError" class="text-sm text-error">{{ saveError }}</p>
+            <p v-if="importError" class="text-sm text-error">{{ importError }}</p>
           </div>
         </UCard>
 
-        <UCard class="border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/40">
+        <UCard >
           <template #header>
             <div>
               <h2 class="text-lg font-semibold">Version history</h2>
-              <p class="text-sm text-slate-600 dark:text-slate-400">
+              <p class="text-sm text-muted">
                 Restore any previous version.
               </p>
             </div>
@@ -195,12 +194,12 @@ const importDocument = async () => {
             <div
               v-for="version in versions"
               :key="version.id"
-              class="rounded-lg border border-slate-200 p-3 text-sm dark:border-slate-800"
+              class="rounded-lg border border-default bg-elevated/30 p-3 text-sm"
             >
               <div class="flex items-center justify-between gap-2">
                 <div>
                   <p class="font-semibold">Version {{ version.versionNumber }}</p>
-                  <p class="text-xs text-slate-500 dark:text-slate-500">
+                  <p class="text-xs text-dimmed">
                     {{ new Date(version.createdAt).toLocaleString() }} · {{ version.source }}
                   </p>
                 </div>
@@ -214,10 +213,10 @@ const importDocument = async () => {
                 </UButton>
               </div>
             </div>
-            <p v-if="!versions?.length" class="text-sm text-slate-600 dark:text-slate-400">
+            <p v-if="!versions?.length" class="text-sm text-muted">
               No versions yet.
             </p>
-            <p v-if="restoreError" class="text-sm text-red-300">{{ restoreError }}</p>
+            <p v-if="restoreError" class="text-sm text-error">{{ restoreError }}</p>
           </div>
         </UCard>
       </div>

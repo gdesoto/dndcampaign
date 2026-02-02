@@ -112,32 +112,32 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
   <div class="space-y-8">
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <p class="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-500">Quests</p>
+        <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Quests</p>
         <h1 class="mt-2 text-2xl font-semibold">Quest tracker</h1>
       </div>
       <UButton size="lg" @click="openCreate">New quest</UButton>
     </div>
 
     <div v-if="pending" class="grid gap-4 sm:grid-cols-2">
-      <UCard v-for="i in 3" :key="i" class="h-32 animate-pulse bg-white/80 dark:bg-slate-900/40" />
+      <UCard v-for="i in 3" :key="i"  class="h-32 animate-pulse" />
     </div>
 
-    <div v-else-if="error" class="rounded-xl border border-dashed border-red-900/60 p-10 text-center">
-      <p class="text-sm text-red-300">Unable to load quests.</p>
+    <UCard v-else-if="error" class="text-center">
+      <p class="text-sm text-error">Unable to load quests.</p>
       <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
-    </div>
+    </UCard>
 
-    <div v-else-if="!quests?.length" class="rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-10 text-center">
-      <p class="text-sm text-slate-600 dark:text-slate-400">No quests yet.</p>
+    <UCard v-else-if="!quests?.length" class="text-center">
+      <p class="text-sm text-muted">No quests yet.</p>
       <UButton class="mt-4" variant="outline" @click="openCreate">Create your first quest</UButton>
-    </div>
+    </UCard>
 
     <div v-else class="grid gap-4 sm:grid-cols-2">
-      <UCard v-for="quest in quests" :key="quest.id" class="border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/40">
+      <UCard v-for="quest in quests" :key="quest.id" >
         <template #header>
           <div class="flex items-start justify-between gap-3">
             <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-500">Quest</p>
+              <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Quest</p>
               <h3 class="text-lg font-semibold">{{ quest.title }}</h3>
             </div>
             <div class="flex gap-2">
@@ -146,53 +146,42 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
             </div>
           </div>
         </template>
-        <p class="text-sm text-slate-700 dark:text-slate-300">{{ quest.description || 'Add quest notes.' }}</p>
+        <p class="text-sm text-default">{{ quest.description || 'Add quest notes.' }}</p>
         <div class="mt-4 flex items-center justify-between gap-3">
-          <select
-            class="rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-200"
-            :value="quest.status"
-            @change="updateStatus(quest, ($event.target as HTMLSelectElement).value as QuestItem['status'])"
-          >
-            <option v-for="status in statusOptions" :key="status.value" :value="status.value">
-              {{ status.label }}
-            </option>
-          </select>
-          <span class="text-xs text-slate-600 dark:text-slate-400">{{ quest.progressNotes || 'No progress notes.' }}</span>
+          <USelect
+            :items="statusOptions"
+            :model-value="quest.status"
+            @update:model-value="(value) => updateStatus(quest, value as QuestItem['status'])"
+          />
+          <span class="text-xs text-muted">{{ quest.progressNotes || 'No progress notes.' }}</span>
         </div>
       </UCard>
     </div>
 
     <UModal v-model:open="isEditOpen">
       <template #content>
-        <UCard class="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+        <UCard >
           <template #header>
             <h2 class="text-lg font-semibold">{{ editMode === 'create' ? 'Create quest' : 'Edit quest' }}</h2>
           </template>
           <div class="space-y-4">
             <div>
-              <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">Title</label>
+              <label class="mb-2 block text-sm text-muted">Title</label>
               <UInput v-model="editForm.title" />
             </div>
             <div>
-              <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">Status</label>
-              <select
-                v-model="editForm.status"
-                class="w-full rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-200"
-              >
-                <option v-for="status in statusOptions" :key="status.value" :value="status.value">
-                  {{ status.label }}
-                </option>
-              </select>
+              <label class="mb-2 block text-sm text-muted">Status</label>
+              <USelect v-model="editForm.status" :items="statusOptions" />
             </div>
             <div>
-              <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">Description</label>
+              <label class="mb-2 block text-sm text-muted">Description</label>
               <UTextarea v-model="editForm.description" :rows="4" />
             </div>
             <div>
-              <label class="mb-2 block text-sm text-slate-700 dark:text-slate-300">Progress notes</label>
+              <label class="mb-2 block text-sm text-muted">Progress notes</label>
               <UTextarea v-model="editForm.progressNotes" :rows="3" />
             </div>
-            <p v-if="editError" class="text-sm text-red-300">{{ editError }}</p>
+            <p v-if="editError" class="text-sm text-error">{{ editError }}</p>
           </div>
           <template #footer>
             <div class="flex justify-end gap-3">
