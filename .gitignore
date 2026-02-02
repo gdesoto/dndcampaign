@@ -28,3 +28,4 @@ storage/
 coverage/
 
 /app/generated/prisma
+/prisma/db
