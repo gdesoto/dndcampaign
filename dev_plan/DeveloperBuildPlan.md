@@ -776,21 +776,25 @@ Errors:
 
 * Artifacts metadata
 
-### **Milestone D — ElevenLabs transcription**
+### **Milestone D — Document editing \+ version history**
 
-* Start transcription endpoint
+* Manual transcript \+ summary document creation or upload
 
-* Webhook endpoint \+ artifact ingestion
-
-* Transcript document creation
-
-### **Milestone E — Document editing \+ version history**
+* Document model + APIs (DocumentService + documents endpoints)
 
 * Document editor page
 
 * Version history \+ restore
 
 * Editable transcript \+ summary
+
+* Attach vtt transcript to video recording
+
+### **Milestone E — ElevenLabs transcription**
+
+* Start transcription endpoint
+
+* Webhook endpoint \+ artifact ingestion
 
 ### **Milestone F — n8n summarization**
 
