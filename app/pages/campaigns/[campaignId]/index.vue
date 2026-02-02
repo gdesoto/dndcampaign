@@ -11,6 +11,18 @@ type Campaign = {
   updatedAt: string
 }
 
+type RecapItem = {
+  id: string
+  filename: string
+  createdAt: string
+  session: {
+    id: string
+    title: string
+    sessionNumber?: number | null
+    playedAt?: string | null
+  }
+}
+
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
 const { request } = useApi()
@@ -19,6 +31,61 @@ const { data: campaign, pending, refresh, error } = await useAsyncData(
   () => `campaign-${campaignId.value}`,
   () => request<Campaign>(`/api/campaigns/${campaignId.value}`)
 )
+
+const { data: recaps, refresh: refreshRecaps } = await useAsyncData(
+  () => `campaign-recaps-${campaignId.value}`,
+  () => request<RecapItem[]>(`/api/campaigns/${campaignId.value}/recaps`)
+)
+
+const selectedRecapId = ref('')
+const recapPlaybackUrl = ref('')
+const recapLoading = ref(false)
+const recapError = ref('')
+const recapDeleting = ref(false)
+const recapDeleteError = ref('')
+
+watch(
+  () => recaps.value,
+  (value) => {
+    if (value?.length && !selectedRecapId.value) {
+      selectedRecapId.value = value[0].id
+    }
+  },
+  { immediate: true }
+)
+
+const playRecap = async (recapId: string) => {
+  recapError.value = ''
+  recapLoading.value = true
+  try {
+    const payload = await request<{ url: string }>(`/api/recaps/${recapId}/playback-url`)
+    recapPlaybackUrl.value = payload.url
+    selectedRecapId.value = recapId
+  } catch (error) {
+    recapError.value =
+      (error as Error & { message?: string }).message || 'Unable to load recap.'
+  } finally {
+    recapLoading.value = false
+  }
+}
+
+const deleteRecap = async (recapId: string) => {
+  recapDeleteError.value = ''
+  recapDeleting.value = true
+  try {
+    await request(`/api/recaps/${recapId}`, { method: 'DELETE' })
+    if (selectedRecapId.value === recapId) {
+      recapPlaybackUrl.value = ''
+      selectedRecapId.value = ''
+    }
+    await refreshRecaps()
+  } catch (error) {
+    recapDeleteError.value =
+      (error as Error & { message?: string }).message || 'Unable to delete recap.'
+  } finally {
+    recapDeleting.value = false
+  }
+}
 
 const statusDraft = ref('')
 const isSaving = ref(false)
@@ -132,10 +199,10 @@ const saveCampaign = async () => {
             <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100">Campaign workbench</h3>
           </template>
           <div class="flex flex-wrap gap-3">
+            <UButton size="sm" variant="outline" :to="`/campaigns/${campaignId}/sessions`">Sessions</UButton>
             <UButton size="sm" variant="outline" :to="`/campaigns/${campaignId}/glossary`">Glossary</UButton>
             <UButton size="sm" variant="outline" :to="`/campaigns/${campaignId}/quests`">Quests</UButton>
             <UButton size="sm" variant="outline" :to="`/campaigns/${campaignId}/milestones`">Milestones</UButton>
-            <UButton size="sm" variant="outline" :to="`/campaigns/${campaignId}/sessions`">Sessions</UButton>
           </div>
         </UCard>
         <UCard class="border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/40">
@@ -164,6 +231,82 @@ const saveCampaign = async () => {
             <UButton :loading="isSaving" @click="saveStatus">Save status</UButton>
           </div>
         </template>
+      </UCard>
+
+      <UCard class="border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/40">
+        <template #header>
+          <div>
+            <h2 class="text-lg font-semibold">Recap playlist</h2>
+            <p class="text-sm text-slate-600 dark:text-slate-400">
+              Listen to session recaps across the campaign.
+            </p>
+          </div>
+        </template>
+        <div class="space-y-4">
+          <div v-if="recaps?.length" class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
+            <div class="space-y-3">
+              <div
+                v-for="recap in recaps"
+                :key="recap.id"
+                class="flex items-start justify-between gap-3 rounded-lg border border-slate-200 p-3 text-sm transition dark:border-slate-800"
+                :class="recap.id === selectedRecapId ? 'bg-emerald-500/5 border-emerald-500/30' : ''"
+              >
+                <div>
+                  <p class="font-semibold">{{ recap.session.title }}</p>
+                  <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Session {{ recap.session.sessionNumber ?? '—' }}
+                    · {{ recap.session.playedAt ? new Date(recap.session.playedAt).toLocaleDateString() : 'Unscheduled' }}
+                  </p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <UButton
+                    size="xs"
+                    variant="outline"
+                    :loading="recapLoading && recap.id === selectedRecapId"
+                    @click="playRecap(recap.id)"
+                  >
+                    Play
+                  </UButton>
+                  <UButton
+                    size="xs"
+                    variant="ghost"
+                    color="red"
+                    :loading="recapDeleting"
+                    @click="deleteRecap(recap.id)"
+                  >
+                    Delete
+                  </UButton>
+                </div>
+              </div>
+            </div>
+            <div class="rounded-lg border border-slate-200 p-3 text-xs dark:border-slate-800">
+              <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Now playing</p>
+              <p class="mt-2 text-sm font-semibold">
+                {{ recaps.find((item) => item.id === selectedRecapId)?.session.title || 'Pick a recap' }}
+              </p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                {{ recaps.find((item) => item.id === selectedRecapId)?.session.sessionNumber ?? '—' }}
+              </p>
+              <div class="mt-3">
+                <audio
+                  v-if="recapPlaybackUrl"
+                  class="w-full"
+                  controls
+                  preload="metadata"
+                  :src="recapPlaybackUrl"
+                />
+                <p v-else class="text-xs text-slate-500 dark:text-slate-400">
+                  Select a recap to start listening.
+                </p>
+              </div>
+            </div>
+          </div>
+          <p v-else class="text-sm text-slate-600 dark:text-slate-400">
+            No recaps yet. Upload a recap on a session to build the playlist.
+          </p>
+          <p v-if="recapError" class="text-sm text-red-300">{{ recapError }}</p>
+          <p v-if="recapDeleteError" class="text-sm text-red-300">{{ recapDeleteError }}</p>
+        </div>
       </UCard>
     </div>
 

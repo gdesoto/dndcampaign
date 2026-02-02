@@ -25,6 +25,15 @@ type CreateRecordingStreamInput = {
   durationSeconds?: number
 }
 
+type AttachVttStreamInput = {
+  ownerId: string
+  campaignId: string
+  recordingId: string
+  filename: string
+  mimeType: string
+  stream: Readable
+}
+
 export class RecordingService {
   private artifactService = new ArtifactService()
 
@@ -71,6 +80,26 @@ export class RecordingService {
         durationSeconds: input.durationSeconds,
         artifactId: artifact.id,
       },
+    })
+  }
+
+  async attachVttFromStream(input: AttachVttStreamInput) {
+    const artifact = await this.artifactService.createArtifactFromStream({
+      ownerId: input.ownerId,
+      campaignId: input.campaignId,
+      filename: input.filename,
+      mimeType: input.mimeType,
+      stream: input.stream,
+      label: 'Transcript VTT',
+      meta: {
+        recordingId: input.recordingId,
+        kind: 'subtitle',
+      },
+    })
+
+    return prisma.recording.update({
+      where: { id: input.recordingId },
+      data: { vttArtifactId: artifact.id },
     })
   }
 }

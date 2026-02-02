@@ -21,6 +21,7 @@ model User {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   campaigns    Campaign[]
+  documentVersions DocumentVersion[]
 
   @@index([email])
 }
@@ -39,6 +40,7 @@ model Campaign {
   glossary      GlossaryEntry[]
   quests        Quest[]
   milestones    Milestone[]
+  documents     Document[]
 
   @@index([ownerId])
 }
@@ -55,6 +57,8 @@ model Session {
   updatedAt     DateTime @updatedAt
   glossaryLinks GlossarySessionLink[]
   recordings    Recording[]
+  documents     Document[]
+  recap         RecapRecording?
 
   @@index([campaignId])
 }
@@ -124,7 +128,9 @@ model Artifact {
   label         String?
   meta          String?
   createdAt     DateTime        @default(now())
-  recordings    Recording[]
+  recordings    Recording[]     @relation("RecordingMedia")
+  vttRecordings Recording[]     @relation("RecordingVtt")
+  recapRecordings RecapRecording[]
 
   @@index([ownerId])
   @@index([campaignId])
@@ -136,6 +142,27 @@ model Recording {
   sessionId       String
   session         Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   kind            RecordingKind
+  filename        String
+  mimeType        String
+  byteSize        Int
+  durationSeconds Int?
+  artifactId      String
+  artifact        Artifact     @relation("RecordingMedia", fields: [artifactId], references: [id], onDelete: Restrict)
+  vttArtifactId   String?
+  vttArtifact     Artifact?    @relation("RecordingVtt", fields: [vttArtifactId], references: [id], onDelete: SetNull)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  documents       Document[]
+
+  @@index([sessionId])
+  @@index([artifactId])
+  @@index([vttArtifactId])
+}
+
+model RecapRecording {
+  id              String       @id @default(uuid())
+  sessionId       String       @unique
+  session         Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   filename        String
   mimeType        String
   byteSize        Int
@@ -176,4 +203,60 @@ model Milestone {
   updatedAt   DateTime @updatedAt
 
   @@index([campaignId])
+}
+
+enum DocumentType {
+  TRANSCRIPT
+  SUMMARY
+  NOTES
+}
+
+enum DocumentFormat {
+  MARKDOWN
+  PLAINTEXT
+}
+
+enum DocumentSource {
+  USER_EDIT
+  USER_IMPORT
+  SYSTEM_AUTOSAVE
+}
+
+model Document {
+  id               String          @id @default(uuid())
+  campaignId       String
+  campaign         Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  sessionId        String?
+  session          Session?        @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  recordingId      String?
+  recording        Recording?      @relation(fields: [recordingId], references: [id], onDelete: SetNull)
+  type             DocumentType
+  title            String
+  currentVersionId String?       @unique
+  currentVersion   DocumentVersion? @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+  versions         DocumentVersion[] @relation("DocumentVersions")
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([campaignId])
+  @@index([sessionId])
+  @@index([recordingId])
+  @@unique([sessionId, type])
+}
+
+model DocumentVersion {
+  id             String         @id @default(uuid())
+  documentId     String
+  document       Document       @relation("DocumentVersions", fields: [documentId], references: [id], onDelete: Cascade)
+  currentForDocument Document?  @relation("CurrentVersion")
+  versionNumber  Int
+  content        String
+  format         DocumentFormat @default(MARKDOWN)
+  source         DocumentSource @default(USER_EDIT)
+  createdByUserId String?
+  createdByUser  User?          @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt      DateTime       @default(now())
+
+  @@unique([documentId, versionNumber])
+  @@index([createdByUserId])
 }

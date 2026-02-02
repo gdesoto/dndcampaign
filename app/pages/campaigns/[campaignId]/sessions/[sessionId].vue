@@ -16,6 +16,32 @@ type RecordingItem = {
   mimeType: string
   byteSize: number
   createdAt: string
+  vttArtifactId?: string | null
+}
+
+type RecapRecording = {
+  id: string
+  filename: string
+  mimeType: string
+  byteSize: number
+  createdAt: string
+}
+
+type DocumentVersion = {
+  id: string
+  content: string
+  format: 'MARKDOWN' | 'PLAINTEXT'
+  versionNumber: number
+  source: string
+  createdAt: string
+}
+
+type DocumentDetail = {
+  id: string
+  type: 'TRANSCRIPT' | 'SUMMARY' | 'NOTES'
+  title: string
+  currentVersionId?: string | null
+  currentVersion?: DocumentVersion | null
 }
 
 const route = useRoute()
@@ -43,10 +69,60 @@ const selectedKind = ref<'AUDIO' | 'VIDEO'>('AUDIO')
 const playbackUrls = reactive<Record<string, string>>({})
 const playbackLoading = reactive<Record<string, boolean>>({})
 const playbackError = ref('')
+const recapFile = ref<File | null>(null)
+const recapUploading = ref(false)
+const recapError = ref('')
+const recapPlaybackUrl = ref('')
+const recapPlaybackLoading = ref(false)
+const recapDeleting = ref(false)
+const recapDeleteError = ref('')
+const transcriptSaving = ref(false)
+const summarySaving = ref(false)
+const transcriptError = ref('')
+const summaryError = ref('')
+const transcriptImportError = ref('')
+const summaryImportError = ref('')
+const transcriptImporting = ref(false)
+const summaryImporting = ref(false)
+const transcriptFile = ref<File | null>(null)
+const summaryFile = ref<File | null>(null)
+
+const transcriptForm = reactive({
+  content: '',
+})
+const summaryForm = reactive({
+  content: '',
+})
 
 const { data: recordings, refresh: refreshRecordings } = await useAsyncData(
   () => `recordings-${sessionId.value}`,
   () => request<RecordingItem[]>(`/api/sessions/${sessionId.value}/recordings`)
+)
+
+const { data: recap, refresh: refreshRecap } = await useAsyncData(
+  () => `recap-${sessionId.value}`,
+  () => request<RecapRecording | null>(`/api/sessions/${sessionId.value}/recap`)
+)
+
+watch(
+  () => recap.value,
+  () => {
+    recapPlaybackUrl.value = ''
+  }
+)
+
+const { data: transcriptDoc, refresh: refreshTranscript } = await useAsyncData(
+  () => `documents-transcript-${sessionId.value}`,
+  () =>
+    request<DocumentDetail | null>(
+      `/api/sessions/${sessionId.value}/documents?type=TRANSCRIPT`
+    )
+)
+
+const { data: summaryDoc, refresh: refreshSummary } = await useAsyncData(
+  () => `documents-summary-${sessionId.value}`,
+  () =>
+    request<DocumentDetail | null>(`/api/sessions/${sessionId.value}/documents?type=SUMMARY`)
 )
 
 watch(
@@ -56,6 +132,22 @@ watch(
     form.sessionNumber = value?.sessionNumber?.toString() || ''
     form.playedAt = value?.playedAt ? value.playedAt.slice(0, 10) : ''
     form.notes = value?.notes || ''
+  },
+  { immediate: true }
+)
+
+watch(
+  () => transcriptDoc.value,
+  (value) => {
+    transcriptForm.content = value?.currentVersion?.content || ''
+  },
+  { immediate: true }
+)
+
+watch(
+  () => summaryDoc.value,
+  (value) => {
+    summaryForm.content = value?.currentVersion?.content || ''
   },
   { immediate: true }
 )
@@ -119,6 +211,176 @@ const loadPlayback = async (recordingId: string) => {
   } finally {
     playbackLoading[recordingId] = false
   }
+}
+
+const uploadRecap = async () => {
+  if (!recapFile.value) return
+  recapError.value = ''
+  recapUploading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', recapFile.value)
+    await request(`/api/sessions/${sessionId.value}/recap`, {
+      method: 'POST',
+      body: formData,
+    })
+    recapFile.value = null
+    await refreshRecap()
+  } catch (error) {
+    recapError.value =
+      (error as Error & { message?: string }).message || 'Unable to upload recap.'
+  } finally {
+    recapUploading.value = false
+  }
+}
+
+const loadRecapPlayback = async () => {
+  if (!recap.value || recapPlaybackUrl.value || recapPlaybackLoading.value) return
+  recapPlaybackLoading.value = true
+  try {
+    const payload = await request<{ url: string }>(`/api/recaps/${recap.value.id}/playback-url`)
+    recapPlaybackUrl.value = payload.url
+  } catch (error) {
+    recapError.value =
+      (error as Error & { message?: string }).message || 'Unable to load recap.'
+  } finally {
+    recapPlaybackLoading.value = false
+  }
+}
+
+const deleteRecap = async () => {
+  if (!recap.value) return
+  recapDeleteError.value = ''
+  recapDeleting.value = true
+  try {
+    await request(`/api/recaps/${recap.value.id}`, {
+      method: 'DELETE',
+    })
+    recapPlaybackUrl.value = ''
+    await refreshRecap()
+  } catch (error) {
+    recapDeleteError.value =
+      (error as Error & { message?: string }).message || 'Unable to delete recap.'
+  } finally {
+    recapDeleting.value = false
+  }
+}
+const createDocument = async (type: 'TRANSCRIPT' | 'SUMMARY', content = '') => {
+  const titleBase = type === 'SUMMARY' ? 'Summary' : 'Transcript'
+  const title = session.value?.title ? `${titleBase}: ${session.value.title}` : titleBase
+  return request<DocumentDetail>(`/api/sessions/${sessionId.value}/documents`, {
+    method: 'POST',
+    body: {
+      type,
+      title,
+      content,
+      format: 'MARKDOWN',
+    },
+  })
+}
+
+const saveTranscript = async () => {
+  transcriptError.value = ''
+  transcriptSaving.value = true
+  try {
+    if (!transcriptDoc.value) {
+      await createDocument('TRANSCRIPT', transcriptForm.content)
+    } else {
+      await request(`/api/documents/${transcriptDoc.value.id}`, {
+        method: 'PATCH',
+        body: {
+          content: transcriptForm.content,
+          format: 'MARKDOWN',
+        },
+      })
+    }
+    await refreshTranscript()
+  } catch (error) {
+    transcriptError.value =
+      (error as Error & { message?: string }).message || 'Unable to save transcript.'
+  } finally {
+    transcriptSaving.value = false
+  }
+}
+
+const saveSummary = async () => {
+  summaryError.value = ''
+  summarySaving.value = true
+  try {
+    if (!summaryDoc.value) {
+      await createDocument('SUMMARY', summaryForm.content)
+    } else {
+      await request(`/api/documents/${summaryDoc.value.id}`, {
+        method: 'PATCH',
+        body: {
+          content: summaryForm.content,
+          format: 'MARKDOWN',
+        },
+      })
+    }
+    await refreshSummary()
+  } catch (error) {
+    summaryError.value =
+      (error as Error & { message?: string }).message || 'Unable to save summary.'
+  } finally {
+    summarySaving.value = false
+  }
+}
+
+const importDocument = async (
+  type: 'TRANSCRIPT' | 'SUMMARY',
+  file: File | null,
+  setError: (value: string) => void,
+  setLoading: (value: boolean) => void,
+  refresh: () => Promise<void>
+) => {
+  if (!file) return
+  setError('')
+  setLoading(true)
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('type', type)
+    await request(`/api/sessions/${sessionId.value}/documents/import`, {
+      method: 'POST',
+      body: formData,
+    })
+    await refresh()
+  } catch (error) {
+    setError((error as Error & { message?: string }).message || 'Import failed.')
+  } finally {
+    setLoading(false)
+  }
+}
+
+const importTranscript = async () => {
+  await importDocument(
+    'TRANSCRIPT',
+    transcriptFile.value,
+    (value) => {
+      transcriptImportError.value = value
+    },
+    (value) => {
+      transcriptImporting.value = value
+    },
+    refreshTranscript
+  )
+  transcriptFile.value = null
+}
+
+const importSummary = async () => {
+  await importDocument(
+    'SUMMARY',
+    summaryFile.value,
+    (value) => {
+      summaryImportError.value = value
+    },
+    (value) => {
+      summaryImporting.value = value
+    },
+    refreshSummary
+  )
+  summaryFile.value = null
 }
 
 const formatBytes = (value: number) => {
@@ -188,6 +450,129 @@ const formatBytes = (value: number) => {
             <UButton :loading="isSaving" @click="saveSession">Save changes</UButton>
           </div>
         </template>
+      </UCard>
+
+      <UCard class="border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/40">
+        <template #header>
+          <div>
+            <h2 class="text-lg font-semibold">Recap podcast</h2>
+            <p class="text-sm text-slate-600 dark:text-slate-400">
+              Upload a short audio recap for this session.
+            </p>
+          </div>
+        </template>
+        <div class="space-y-4">
+          <input
+            class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-100"
+            type="file"
+            accept="audio/*"
+            @change="recapFile = ($event.target as HTMLInputElement).files?.[0] || null"
+          />
+          <div class="flex items-center gap-3">
+            <UButton :loading="recapUploading" @click="uploadRecap">Upload recap</UButton>
+            <UButton
+              variant="outline"
+              :disabled="!recap"
+              :loading="recapPlaybackLoading"
+              @click="loadRecapPlayback"
+            >
+              Play recap
+            </UButton>
+            <UButton
+              variant="ghost"
+              color="red"
+              :disabled="!recap"
+              :loading="recapDeleting"
+              @click="deleteRecap"
+            >
+              Delete recap
+            </UButton>
+            <span v-if="recap" class="text-xs text-emerald-400">Attached</span>
+          </div>
+          <div v-if="recapPlaybackUrl" class="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+            <audio class="w-full" controls preload="metadata" :src="recapPlaybackUrl" />
+          </div>
+          <p v-if="recapError" class="text-sm text-red-300">{{ recapError }}</p>
+          <p v-if="recapDeleteError" class="text-sm text-red-300">{{ recapDeleteError }}</p>
+        </div>
+      </UCard>
+
+      <UCard class="border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/40">
+        <template #header>
+          <div>
+            <h2 class="text-lg font-semibold">Transcript</h2>
+            <p class="text-sm text-slate-600 dark:text-slate-400">
+              Capture the session transcript or import a file.
+            </p>
+          </div>
+        </template>
+        <div class="space-y-4">
+          <UTextarea v-model="transcriptForm.content" :rows="6" />
+          <div class="flex flex-wrap items-center gap-3">
+            <UButton :loading="transcriptSaving" @click="saveTranscript">Save transcript</UButton>
+            <UButton
+              v-if="transcriptDoc"
+              variant="outline"
+              :to="`/campaigns/${campaignId}/documents/${transcriptDoc.id}`"
+            >
+              Open editor
+            </UButton>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
+            <input
+              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-100"
+              type="file"
+              accept=".txt,.md,.markdown,.vtt"
+              @change="transcriptFile = ($event.target as HTMLInputElement).files?.[0] || null"
+            />
+            <UButton
+              :loading="transcriptImporting"
+              variant="outline"
+              @click="importTranscript"
+            >
+              Import file
+            </UButton>
+          </div>
+          <p v-if="transcriptError" class="text-sm text-red-300">{{ transcriptError }}</p>
+          <p v-if="transcriptImportError" class="text-sm text-red-300">{{ transcriptImportError }}</p>
+        </div>
+      </UCard>
+
+      <UCard class="border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/40">
+        <template #header>
+          <div>
+            <h2 class="text-lg font-semibold">Summary</h2>
+            <p class="text-sm text-slate-600 dark:text-slate-400">
+              Write a recap or import one.
+            </p>
+          </div>
+        </template>
+        <div class="space-y-4">
+          <UTextarea v-model="summaryForm.content" :rows="5" />
+          <div class="flex flex-wrap items-center gap-3">
+            <UButton :loading="summarySaving" @click="saveSummary">Save summary</UButton>
+            <UButton
+              v-if="summaryDoc"
+              variant="outline"
+              :to="`/campaigns/${campaignId}/documents/${summaryDoc.id}`"
+            >
+              Open editor
+            </UButton>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
+            <input
+              class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-100"
+              type="file"
+              accept=".txt,.md,.markdown"
+              @change="summaryFile = ($event.target as HTMLInputElement).files?.[0] || null"
+            />
+            <UButton :loading="summaryImporting" variant="outline" @click="importSummary">
+              Import file
+            </UButton>
+          </div>
+          <p v-if="summaryError" class="text-sm text-red-300">{{ summaryError }}</p>
+          <p v-if="summaryImportError" class="text-sm text-red-300">{{ summaryImportError }}</p>
+        </div>
       </UCard>
 
       <UCard class="border border-slate-200 bg-white/80 dark:border-slate-800 dark:bg-slate-900/40">

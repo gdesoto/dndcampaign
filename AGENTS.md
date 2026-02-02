@@ -34,7 +34,5 @@ DND Campaign is a Nuxt 4 web app for running tabletop campaigns. It manages camp
 
 ## Common Commands
 - Dev server: `yarn dev`
-- Build: `yarn build`
-- Preview: `yarn preview`
 - Prisma generate: `npx prisma generate`
 - Prisma migrate (dev): `npx prisma migrate dev`

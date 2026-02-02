@@ -11,6 +11,7 @@ type CreateArtifactInput = {
   mimeType: string
   data: Buffer
   label?: string
+  meta?: Record<string, unknown>
 }
 
 type CreateArtifactStreamInput = {
@@ -20,6 +21,7 @@ type CreateArtifactStreamInput = {
   mimeType: string
   stream: Readable
   label?: string
+  meta?: Record<string, unknown>
 }
 
 export class ArtifactService {
@@ -38,6 +40,7 @@ export class ArtifactService {
         byteSize: result.byteSize,
         checksumSha256: result.checksumSha256,
         label: input.label,
+        meta: input.meta ? JSON.stringify(input.meta) : undefined,
       },
     })
   }
@@ -57,6 +60,7 @@ export class ArtifactService {
         byteSize: result.byteSize,
         checksumSha256: result.checksumSha256,
         label: input.label,
+        meta: input.meta ? JSON.stringify(input.meta) : undefined,
       },
     })
   }
@@ -66,6 +70,15 @@ export class ArtifactService {
     if (!artifact) return null
     const adapter = getStorageAdapter()
     return adapter.getObject(artifact.storageKey)
+  }
+
+  async deleteArtifact(artifactId: string) {
+    const artifact = await prisma.artifact.findUnique({ where: { id: artifactId } })
+    if (!artifact) return null
+    const adapter = getStorageAdapter()
+    await adapter.deleteObject(artifact.storageKey)
+    await prisma.artifact.delete({ where: { id: artifactId } })
+    return artifact
   }
 
   private buildStorageKey(input: CreateArtifactInput) {

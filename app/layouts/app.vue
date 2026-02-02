@@ -19,10 +19,10 @@ const navLinks = computed(() => {
   const links = [
     { label: 'All Campaigns', to: '/campaigns' },
     { label: 'Overview', to: base, requiresCampaign: true },
+    { label: 'Sessions', to: `${base}/sessions`, requiresCampaign: true },
     { label: 'Glossary', to: `${base}/glossary`, requiresCampaign: true },
     { label: 'Quests', to: `${base}/quests`, requiresCampaign: true },
     { label: 'Milestones', to: `${base}/milestones`, requiresCampaign: true },
-    { label: 'Sessions', to: `${base}/sessions`, requiresCampaign: true },
     { label: 'Settings', to: '/settings', requiresCampaign: false },
   ]
   return links.filter((link) => !link.requiresCampaign || campaignId.value)
