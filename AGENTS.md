@@ -18,6 +18,8 @@ DND Campaign is a Nuxt 4 web app for running tabletop campaigns. It manages camp
 - When unsure about component APIs or available props, consult the Nuxt UI docs (UPage, UHeader, UMain, UCard, etc.).
 - Use Nuxt docs for config/runtime questions and module behavior.
 - Favor Nuxt UI primitives for layout and consistent styling before custom markup.
+- For `app/app.config.ts` theme overrides, only use keys shown in the Nuxt UI component docs (e.g., `defaultVariants`, `slots`, `variants`, `compoundVariants`).
+- Always verify component config keys with the Nuxt UI tool before adding/changing `ui.*` entries (e.g., `dropdownMenu`, not `dropdown`).
 
 ## Code Style
 - TypeScript first; prefer explicit types for API payloads and service inputs.

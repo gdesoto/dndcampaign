@@ -30,65 +30,75 @@ const navLinks = computed(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-    <UHeader>
-      <template #left>
-        <div class="flex items-center gap-2">
-          <UIcon name="i-heroicons-sparkles" class="h-5 w-5 text-amber-500" />
-          <span class="text-sm font-semibold">Campaign Desk</span>
-        </div>
-      </template>
-      <template #default>
-        <span class="text-md uppercase tracking-[0.3em] text-slate-500 dark:text-slate-500">Dungeon Master Vault</span>
-      </template>
-      <template #right>
-        <div class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
-          <UButton
-            size="sm"
-            color="gray"
-            variant="ghost"
-            @click="toggleColorMode"
-          >
-            <UIcon name="i-heroicons-moon" class="h-4 w-4" />
-            <span class="ml-2">{{ colorModeLabel }}</span>
-          </UButton>
-          <span v-if="user?.email">{{ user.email }}</span>
-          <UButton size="sm" color="gray" variant="ghost" @click="logout">
-            Logout
-          </UButton>
-        </div>
-      </template>
-    </UHeader>
+  <div class="theme-shell">
+    <div class="theme-overlay theme-overlay-noise"></div>
+    <div class="theme-overlay theme-overlay-pattern"></div>
 
-    <UMain>
-      <UPage>
+    <div class="relative z-10">
+      <UHeader class="theme-header fixed left-0 right-0 top-0 z-20">
         <template #left>
-          <aside class="border-r border-slate-200 bg-white px-5 py-8 dark:border-slate-800 dark:bg-slate-950 lg:sticky lg:top-[var(--ui-header-height)] lg:h-[calc(100vh-var(--ui-header-height))]">
-            <div class="mb-8">
-              <p class="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-500">DM Vault</p>
-              <h1 class="mt-2 text-xl font-semibold">Campaign Desk</h1>
+          <div class="flex items-center gap-4">
+            <div class="theme-seal flex h-11 w-11 items-center justify-center rounded-full text-amber-100">
+              <UIcon name="i-heroicons-sparkles" class="h-5 w-5" />
             </div>
-
-            <nav class="space-y-2">
-            <NuxtLink
-              v-for="link in navLinks"
-              :key="link.label"
-              :to="link.to"
-              class="block rounded-md px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-white"
-            >
-              {{ link.label }}
-            </NuxtLink>
-          </nav>
-          <p v-if="!campaignId" class="mt-4 text-xs text-slate-500 dark:text-slate-500">
-            Select a campaign to unlock more sections.
-          </p>
-          </aside>
+            <div>
+              <div class="font-display text-lg tracking-[0.2em] uppercase">Campaign Desk</div>
+              <div class="text-xs italic text-[color:var(--theme-text-soft)]">
+                Where ancient vellum meets evergreen trails
+              </div>
+            </div>
+          </div>
         </template>
+        <template #default>
+          <span class="text-xs uppercase tracking-[0.4em] text-[color:var(--theme-text-muted)]">Dungeon Master Vault</span>
+        </template>
+        <template #right>
+          <div class="flex flex-wrap items-center gap-3 text-xs text-[color:var(--theme-text-muted)]">
+            <UButton size="sm" color="secondary" variant="ghost" class="theme-pill" @click="toggleColorMode">
+              <UIcon name="i-heroicons-moon" class="h-4 w-4" />
+              <span class="ml-2 uppercase tracking-[0.3em]">{{ colorModeLabel }}</span>
+            </UButton>
+            <span v-if="user?.email" class="hidden text-[color:var(--theme-text-muted)] md:inline">
+              {{ user.email }}
+            </span>
+            <UButton size="sm" color="primary" variant="ghost" class="theme-pill" @click="logout">
+              Logout
+            </UButton>
+          </div>
+        </template>
+      </UHeader>
 
-        <div class="px-8 py-8">
-          <slot />
+      <UMain>
+        <div class="mx-auto max-w-6xl px-6 pb-16 pt-24">
+          <UPage :ui="{ root: 'flex flex-col lg:grid lg:grid-cols-12 lg:gap-10', left: 'lg:col-span-3', center: 'lg:col-span-9' }">
+            <template #left>
+              <UCard class="sticky top-24 h-fit theme-reveal" :ui="{ body: 'p-4' }">
+                <div class="font-display text-sm tracking-[0.4em] uppercase text-[color:var(--theme-accent)]">
+                  Navigation
+                </div>
+                <nav class="mt-4 space-y-2 text-sm">
+                  <NuxtLink
+                    v-for="link in navLinks"
+                    :key="link.label"
+                    :to="link.to"
+                    class="theme-nav-link flex items-center justify-between rounded-2xl px-4 py-3"
+                  >
+                    <span>{{ link.label }}</span>
+                    <UIcon name="i-heroicons-chevron-right" class="h-4 w-4 text-[color:var(--theme-accent)]" />
+                  </NuxtLink>
+                </nav>
+                <p v-if="!campaignId" class="mt-4 text-xs text-[color:var(--theme-text-muted)]">
+                  Select a campaign to unlock more sections.
+                </p>
+              </UCard>
+            </template>
+
+            <div class="px-2 py-6">
+              <slot />
+            </div>
+          </UPage>
         </div>
-      </UPage>
-    </UMain>
+      </UMain>
+    </div>
   </div>
 </template>

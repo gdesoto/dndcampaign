@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Design 4 - Verdant Ledger</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #261f18;
+      --gold: #c7a06a;
+      --parchment: #f0e5c7;
+      --parchment-dark: #d7c39a;
+      --forest: #0f2b1e;
+      --sage: #8ab78c;
+      --ember: #f3a14b;
+    }
+    body {
+      font-family: "Merriweather", serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1000px 700px at 10% 0%, rgba(138,183,140,0.28), transparent 60%),
+        radial-gradient(900px 600px at 90% 10%, rgba(243,161,75,0.18), transparent 55%),
+        linear-gradient(180deg, var(--parchment) 0%, var(--parchment-dark) 100%);
+      min-height: 100vh;
+    }
+    .parchment-noise {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.18;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+      mix-blend-mode: multiply;
+      z-index: 0;
+    }
+    .leaf-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        repeating-radial-gradient(circle at 30% 20%, rgba(15,43,30,0.08) 0, rgba(15,43,30,0.08) 1px, transparent 1px, transparent 22px),
+        repeating-radial-gradient(circle at 70% 60%, rgba(15,43,30,0.06) 0, rgba(15,43,30,0.06) 1px, transparent 1px, transparent 18px);
+      opacity: 0.35;
+      z-index: 0;
+    }
+    .title-font { font-family: "Cinzel", serif; }
+    .ink-border { border: 1px solid rgba(38,31,24,0.25); }
+    .forest-card {
+      background: linear-gradient(160deg, rgba(255,252,244,0.88) 0%, rgba(240,229,199,0.85) 100%);
+      box-shadow: 0 18px 40px rgba(15,43,30,0.15);
+    }
+    .seal {
+      background: radial-gradient(circle at 35% 35%, #b63b2f 0%, #7b231d 45%, #4a1210 100%);
+      box-shadow: 0 6px 20px rgba(74,18,16,0.35);
+    }
+    .reveal { animation: reveal 700ms ease-out both; }
+    @keyframes reveal {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="parchment-noise"></div>
+  <div class="leaf-overlay"></div>
+
+  <div id="app" class="relative z-10">
+    <header class="fixed top-0 left-0 right-0 z-20 bg-[rgba(240,229,199,0.9)] backdrop-blur border-b border-[rgba(38,31,24,0.2)]">
+      <div class="mx-auto max-w-6xl px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="seal h-12 w-12 rounded-full flex items-center justify-center text-amber-100 text-xl">✦</div>
+          <div>
+            <div class="title-font text-2xl tracking-[0.2em] uppercase">Verdant Ledger</div>
+            <div class="text-sm italic text-[color:var(--forest)]">Where ancient vellum meets evergreen trails</div>
+          </div>
+        </div>
+        <div class="hidden md:flex items-center gap-3 text-sm">
+          <span class="px-3 py-1 rounded-full border border-[rgba(38,31,24,0.2)]">Frostwane 12, 1492</span>
+          <span class="px-3 py-1 rounded-full border border-[rgba(38,31,24,0.2)]">Campaign: Evergrove Path</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-6xl px-6 pt-24 pb-16 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
+      <nav class="ink-border forest-card rounded-2xl p-4 h-fit sticky top-24">
+        <div class="title-font text-lg mb-3 tracking-[0.2em] uppercase text-[color:var(--forest)]">Navigation</div>
+        <ul class="space-y-2">
+          <li v-for="link in nav" :key="link" class="group">
+            <a href="#" class="flex items-center justify-between rounded-xl px-4 py-3 ink-border bg-[rgba(255,255,255,0.65)] hover:bg-[rgba(255,255,255,0.9)] transition">
+              <span>{{ link }}</span>
+              <span class="text-[color:var(--ember)] group-hover:translate-x-1 transition">➝</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <section class="space-y-6">
+        <div class="ink-border forest-card rounded-3xl p-6 md:p-8 reveal">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 class="title-font text-3xl md:text-4xl tracking-wide">Trail & Chronicle</h2>
+              <p class="mt-2 text-base max-w-xl">A blended sanctuary for campfire tales and archival precision. Track chapters, quests, and travel paths with warm clarity.</p>
+            </div>
+            <div class="flex gap-3">
+              <button class="px-4 py-2 rounded-full bg-[color:var(--forest)] text-amber-50">New Session</button>
+              <button class="px-4 py-2 rounded-full border border-[rgba(38,31,24,0.3)]">Add Waypoint</button>
+            </div>
+          </div>
+          <div class="mt-6 grid md:grid-cols-3 gap-4">
+            <div class="ink-border rounded-2xl p-4 bg-[rgba(255,255,255,0.6)]">
+              <div class="title-font text-lg">Morale</div>
+              <div class="text-3xl mt-2">81%</div>
+              <div class="text-sm italic">High after the Moonbloom feast.</div>
+            </div>
+            <div class="ink-border rounded-2xl p-4 bg-[rgba(255,255,255,0.6)]">
+              <div class="title-font text-lg">Quest Trails</div>
+              <div class="text-3xl mt-2">7</div>
+              <div class="text-sm italic">Two bound to sacred groves.</div>
+            </div>
+            <div class="ink-border rounded-2xl p-4 bg-[rgba(255,255,255,0.6)]">
+              <div class="title-font text-lg">Lore Index</div>
+              <div class="text-3xl mt-2">136</div>
+              <div class="text-sm italic">Herbal codex completed.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+          <div class="ink-border forest-card rounded-3xl p-6 reveal">
+            <div class="title-font text-xl">Active Quests</div>
+            <div class="mt-4 space-y-3">
+              <div class="ink-border rounded-2xl p-4 bg-[rgba(255,255,255,0.6)]">
+                <div class="flex items-center justify-between">
+                  <div class="title-font">The Sundered Bell</div>
+                  <span class="text-sm px-2 py-1 border border-[rgba(38,31,24,0.3)] rounded-full">Urgent</span>
+                </div>
+                <p class="text-sm mt-2">Recover the bell shards before the eclipse sets the ward.</p>
+              </div>
+              <div class="ink-border rounded-2xl p-4 bg-[rgba(255,255,255,0.6)]">
+                <div class="flex items-center justify-between">
+                  <div class="title-font">Moonbloom Rite</div>
+                  <span class="text-sm px-2 py-1 border border-[rgba(38,31,24,0.3)] rounded-full">Ritual</span>
+                </div>
+                <p class="text-sm mt-2">Gather petals before frost and calm the spirit circle.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="ink-border forest-card rounded-3xl p-6 reveal">
+            <div class="title-font text-xl">Camp Journal</div>
+            <ul class="mt-4 space-y-3 text-sm">
+              <li class="ink-border rounded-2xl p-4 bg-[rgba(255,255,255,0.6)]">New map sketch of the Ironpine Ridge completed.</li>
+              <li class="ink-border rounded-2xl p-4 bg-[rgba(255,255,255,0.6)]">Seraphine learned the True Name of the Wind Warden.</li>
+              <li class="ink-border rounded-2xl p-4 bg-[rgba(255,255,255,0.6)]">Rations restocked after meeting the riverfolk caravan.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="ink-border forest-card rounded-3xl p-6 reveal">
+          <div class="title-font text-xl">Region Notes</div>
+          <div class="mt-4 grid md:grid-cols-3 gap-4">
+            <div class="ink-border rounded-2xl p-4 bg-[rgba(255,255,255,0.6)]">
+              <div class="title-font">Foxglove Hollow</div>
+              <p class="text-sm mt-2">Healers gather here under lantern pines.</p>
+            </div>
+            <div class="ink-border rounded-2xl p-4 bg-[rgba(255,255,255,0.6)]">
+              <div class="title-font">Ashen Cathedral</div>
+              <p class="text-sm mt-2">Choir echoes at dusk. Entry by lunar key.</p>
+            </div>
+            <div class="ink-border rounded-2xl p-4 bg-[rgba(255,255,255,0.6)]">
+              <div class="title-font">Skybarrow Cliffs</div>
+              <p class="text-sm mt-2">Echoing drums at dusk. Carry wind charms.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+    createApp({
+      data() {
+        return {
+          nav: ["Home", "All Campaigns", "Overview", "Quests", "Sessions", "Settings"]
+        };
+      }
+    }).mount("#app");
+  </script>
+</body>
+</html>

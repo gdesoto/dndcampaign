@@ -1,14 +1,15 @@
 export default defineAppConfig({
   ui: {
     colors: {
-      primary: 'amber',
-      gray: 'slate',
+      primary: 'forest',
+      secondary: 'ember',
+      neutral: 'parchment',
     },
     button: {
       slots: {
-        base: 'rounded-md font-medium inline-flex items-center transition-colors',
+        base: 'rounded-full font-medium inline-flex items-center transition-colors',
       },
-      default: {
+      defaultVariants: {
         size: 'md',
         color: 'primary',
         variant: 'solid',
@@ -16,10 +17,10 @@ export default defineAppConfig({
     },
     card: {
       slots: {
-        root: 'rounded-xl overflow-hidden bg-white/80 ring-1 ring-slate-200 dark:bg-slate-900/40 dark:ring-slate-800',
-        header: 'p-5 sm:p-6 border-b border-slate-200 dark:border-slate-800',
+        root: 'theme-card rounded-2xl overflow-hidden',
+        header: 'p-5 sm:p-6 border-b border-[var(--theme-card-border)]',
         body: 'p-5 sm:p-6',
-        footer: 'p-5 sm:p-6 border-t border-slate-200 dark:border-slate-800',
+        footer: 'p-5 sm:p-6 border-t border-[var(--theme-card-border)]',
       },
       defaultVariants: {
         variant: 'outline',
@@ -29,39 +30,50 @@ export default defineAppConfig({
       slots: {
         root: 'relative inline-flex items-center w-full',
         base:
-          'w-full rounded-md border border-slate-200 bg-white text-slate-900 placeholder:text-slate-500 focus:outline-none dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-100 dark:placeholder:text-slate-500',
+          'w-full rounded-sm border border-[var(--theme-panel-border)] bg-[var(--theme-panel-bg)] text-default placeholder:text-muted focus:outline-none',
       },
-      rounded: 'rounded-md',
-      size: 'md',
+      defaultVariants: {
+        size: 'md',
+      },
     },
     textarea: {
       slots: {
         root: 'relative inline-flex items-center w-full',
         base:
-          'w-full rounded-md border border-slate-200 bg-white text-slate-900 placeholder:text-slate-500 focus:outline-none dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-100 dark:placeholder:text-slate-500',
+          'w-full rounded-sm border border-[var(--theme-panel-border)] bg-[var(--theme-panel-bg)] text-default placeholder:text-muted focus:outline-none',
       },
-      rounded: 'rounded-md',
-      size: 'md',
+      defaultVariants: {
+        size: 'md',
+      },
     },
     modal: {
-      background: 'bg-white dark:bg-slate-950',
-      overlay: 'bg-slate-950/80 backdrop-blur-sm',
-      container: 'items-center',
-      rounded: 'rounded-xl',
-      width: 'sm:max-w-xl',
-      shadow: 'shadow-2xl',
+      slots: {
+        overlay: 'bg-black/70 backdrop-blur-sm',
+        content:
+          'bg-[var(--theme-card-bg)] rounded-2xl shadow-2xl w-[calc(100vw-2rem)] max-w-xl ring ring-default',
+      },
     },
     badge: {
-      rounded: 'rounded-full',
-      size: 'sm',
+      variants: {
+        size: {
+          sm: {
+            base: 'text-[10px]/3 px-1.5 py-1 gap-1 rounded-full',
+          },
+        },
+      },
+      defaultVariants: {
+        size: 'sm',
+      },
     },
-    dropdown: {
-      rounded: 'rounded-md',
-      shadow: 'shadow-xl',
+    dropdownMenu: {
+      slots: {
+        content: 'rounded-2xl shadow-2xl',
+      },
     },
     tooltip: {
-      rounded: 'rounded-md',
-      shadow: 'shadow-xl',
+      slots: {
+        content: 'rounded-2xl shadow-2xl',
+      },
     },
   },
 })
