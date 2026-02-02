@@ -1,4 +1,3 @@
-//import { requireUserSession } from '#auth-utils'
 import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 
@@ -19,3 +18,4 @@ export default defineEventHandler(async (event) => {
   await prisma.glossaryEntry.delete({ where: { id: entryId } })
   return ok({ success: true })
 })
+

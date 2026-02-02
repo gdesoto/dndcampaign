@@ -1,4 +1,3 @@
-//import { requireUserSession } from '#auth-utils'
 import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { readValidatedBodySafe } from '#server/utils/validate'
@@ -33,3 +32,4 @@ export default defineEventHandler(async (event) => {
 
   return ok(milestone)
 })
+

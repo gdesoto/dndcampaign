@@ -9,16 +9,19 @@ export default defineEventHandler(async (event) => {
   }
 
   const session = await prisma.session.findFirst({
-    where: {
-      id: sessionId,
-      campaign: { ownerId: sessionUser.user.id },
-    },
+    where: { id: sessionId, campaign: { ownerId: sessionUser.user.id } },
   })
-
   if (!session) {
     return fail(404, 'NOT_FOUND', 'Session not found')
   }
 
-  return ok(session)
+  const recordings = await prisma.recording.findMany({
+    where: { sessionId },
+    orderBy: { createdAt: 'desc' },
+  })
+
+  return ok(recordings)
 })
+
+
 

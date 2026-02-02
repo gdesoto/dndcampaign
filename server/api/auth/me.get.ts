@@ -1,4 +1,3 @@
-//import { getUserSession } from '#auth-utils'
 import { ok, fail } from '#server/utils/http'
 
 export default defineEventHandler(async (event) => {
@@ -9,3 +8,4 @@ export default defineEventHandler(async (event) => {
 
   return ok({ user: session.user })
 })
+

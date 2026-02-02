@@ -15,5 +15,11 @@ export default defineNuxtConfig({
     preference: 'system',
     fallback: 'dark',
     classSuffix: ''
+  },
+  runtimeConfig: {
+    storage: {
+      provider: process.env.STORAGE_PROVIDER_DEFAULT || 'local',
+      localRoot: process.env.STORAGE_LOCAL_ROOT || './storage'
+    }
   }
 })
