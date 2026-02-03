@@ -792,9 +792,15 @@ Errors:
 
 ### **Milestone E — ElevenLabs transcription**
 
-* Start transcription endpoint
+* Transcription Job model \+ APIs
+
+* Configure ElevenLabs js library
+
+* Start transcription UI \+ endpoint
 
 * Webhook endpoint \+ artifact ingestion
+
+* Artifact post processing UI add as session transcript and video VTT
 
 ### **Milestone F — n8n summarization**
 
