@@ -87,6 +87,23 @@ const summaryImporting = ref(false)
 const transcriptFile = ref<File | null>(null)
 const summaryFile = ref<File | null>(null)
 
+const activeTab = ref('overview')
+const tabItems = [
+  { label: 'Overview', value: 'overview' },
+  { label: 'Notes', value: 'notes' },
+  { label: 'Recap', value: 'recap' },
+  { label: 'Artifacts', value: 'artifacts' },
+]
+
+const isEditSessionOpen = ref(false)
+
+const checklistItems = ref([
+  { id: 'prep', label: 'Prep highlights captured', done: false },
+  { id: 'npcs', label: 'NPCs updated', done: false },
+  { id: 'locations', label: 'Locations noted', done: false },
+  { id: 'loot', label: 'Loot recorded', done: false },
+])
+
 const transcriptForm = reactive({
   content: '',
 })
@@ -136,6 +153,31 @@ watch(
   { immediate: true }
 )
 
+const sessionDateLabel = computed(() => {
+  if (!session.value?.playedAt) return 'Unscheduled'
+  return new Date(session.value.playedAt).toLocaleDateString()
+})
+
+const recordingsCount = computed(() => recordings.value?.length || 0)
+const recapStatus = computed(() => (recap.value ? 'Attached' : 'Missing'))
+const transcriptStatus = computed(() => (transcriptDoc.value ? 'Available' : 'Missing'))
+const summaryStatus = computed(() => (summaryDoc.value ? 'Available' : 'Missing'))
+
+const activePlayback = computed(() => {
+  if (recapPlaybackUrl.value) {
+    return { kind: 'AUDIO' as const, label: recap.value?.filename || 'Recap', src: recapPlaybackUrl.value }
+  }
+  const firstRecording = (recordings.value || []).find((recording) => playbackUrls[recording.id])
+  if (firstRecording) {
+    return {
+      kind: firstRecording.kind,
+      label: firstRecording.filename,
+      src: playbackUrls[firstRecording.id],
+    }
+  }
+  return null
+})
+
 watch(
   () => transcriptDoc.value,
   (value) => {
@@ -166,6 +208,7 @@ const saveSession = async () => {
       },
     })
     await refresh()
+    if (isEditSessionOpen.value) isEditSessionOpen.value = false
   } catch (error) {
     saveError.value =
       (error as Error & { message?: string }).message || 'Unable to update session.'
@@ -398,13 +441,6 @@ const formatBytes = (value: number) => {
 
 <template>
   <div class="space-y-8">
-    <div class="flex items-center justify-between gap-4">
-      <div>
-        <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Session</p>
-        <h1 class="mt-2 text-2xl font-semibold">{{ session?.title || 'Session detail' }}</h1>
-      </div>
-      <UButton variant="outline" :to="`/campaigns/${campaignId}/sessions`">Back to sessions</UButton>
-    </div>
 
     <div v-if="pending" class="grid gap-4">
       <UCard  class="h-28 animate-pulse" />
@@ -417,251 +453,463 @@ const formatBytes = (value: number) => {
     </UCard>
 
     <div v-else class="space-y-6">
-      <UCard >
-        <template #header>
-          <div>
-            <h2 class="text-lg font-semibold">Session details</h2>
-            <p class="text-sm text-muted">Keep the record current.</p>
-          </div>
-        </template>
-        <div class="space-y-4">
-          <div>
-            <label class="mb-2 block text-sm text-default">Title</label>
-            <UInput v-model="form.title" />
-          </div>
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label class="mb-2 block text-sm text-default">Session number</label>
-              <UInput v-model="form.sessionNumber" type="number" />
-            </div>
-            <div>
-              <label class="mb-2 block text-sm text-default">Played at</label>
-              <UInput v-model="form.playedAt" type="date" />
-            </div>
-          </div>
-          <div>
-            <label class="mb-2 block text-sm text-default">Notes</label>
-            <UTextarea v-model="form.notes" :rows="6" />
-          </div>
-          <p v-if="saveError" class="text-sm text-error">{{ saveError }}</p>
+        <div class="flex flex-wrap items-center justify-end gap-3">
+          <UButton size="xl" :to="`/campaigns/${campaignId}`">
+            Back to campaign
+          </UButton>
+          <UButton size="xl" variant="outline" :to="`/campaigns/${campaignId}/sessions`">
+            Back to sessions
+          </UButton>
         </div>
-        <template #footer>
-          <div class="flex justify-end">
-            <UButton :loading="isSaving" @click="saveSession">Save changes</UButton>
-          </div>
-        </template>
-      </UCard>
 
-      <UCard >
-        <template #header>
-          <div>
-            <h2 class="text-lg font-semibold">Recap podcast</h2>
-            <p class="text-sm text-muted">
-              Upload a short audio recap for this session.
-            </p>
-          </div>
-        </template>
-        <div class="space-y-4">
-          <UInput
-            type="file"
-            accept="audio/*"
-            @change="recapFile = ($event.target as HTMLInputElement).files?.[0] || null"
-          />
-          <div class="flex items-center gap-3">
-            <UButton :loading="recapUploading" @click="uploadRecap">Upload recap</UButton>
-            <UButton
-              variant="outline"
-              :disabled="!recap"
-              :loading="recapPlaybackLoading"
-              @click="loadRecapPlayback"
-            >
-              Play recap
-            </UButton>
-            <UButton
-              variant="ghost"
-              color="red"
-              :disabled="!recap"
-              :loading="recapDeleting"
-              @click="deleteRecap"
-            >
-              Delete recap
-            </UButton>
-            <span v-if="recap" class="text-xs text-success">Attached</span>
-          </div>
-          <UCard v-if="recapPlaybackUrl">
-            <audio class="w-full" controls preload="metadata" :src="recapPlaybackUrl" />
+        <div class="sticky top-[calc(var(--ui-header-height)+1rem)] z-10">
+          <UCard>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Session</p>
+                <h2 class="text-lg font-semibold">{{ session?.title || 'Session detail' }}</h2>
+                <p class="text-xs text-muted">Played at: {{ sessionDateLabel }}</p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <UButton size="sm" @click="activeTab = 'recap'">Recap</UButton>
+              </div>
+            </div>
           </UCard>
-          <p v-if="recapError" class="text-sm text-error">{{ recapError }}</p>
-          <p v-if="recapDeleteError" class="text-sm text-error">{{ recapDeleteError }}</p>
         </div>
-      </UCard>
-
-      <UCard >
-        <template #header>
-          <div>
-            <h2 class="text-lg font-semibold">Transcript</h2>
-            <p class="text-sm text-muted">
-              Capture the session transcript or import a file.
-            </p>
-          </div>
-        </template>
-        <div class="space-y-4">
-          <UTextarea v-model="transcriptForm.content" :rows="6" />
-          <div class="flex flex-wrap items-center gap-3">
-            <UButton :loading="transcriptSaving" @click="saveTranscript">Save transcript</UButton>
-            <UButton
-              v-if="transcriptDoc"
-              variant="outline"
-              :to="`/campaigns/${campaignId}/documents/${transcriptDoc.id}`"
-            >
-              Open editor
-            </UButton>
-          </div>
-          <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
-            <UInput
-              type="file"
-              accept=".txt,.md,.markdown,.vtt"
-              @change="transcriptFile = ($event.target as HTMLInputElement).files?.[0] || null"
-            />
-            <UButton
-              :loading="transcriptImporting"
-              variant="outline"
-              @click="importTranscript"
-            >
-              Import file
-            </UButton>
-          </div>
-          <p v-if="transcriptError" class="text-sm text-error">{{ transcriptError }}</p>
-          <p v-if="transcriptImportError" class="text-sm text-error">{{ transcriptImportError }}</p>
+        <div class="grid gap-4 md:grid-cols-4">
+          <UCard :ui="{ body: 'p-4' }">
+            <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Recordings</p>
+            <p class="mt-2 text-lg font-semibold">{{ recordingsCount }}</p>
+            <p class="text-xs text-muted">Uploaded media files.</p>
+          </UCard>
+          <UCard :ui="{ body: 'p-4' }">
+            <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Recap</p>
+            <p class="mt-2 text-lg font-semibold">{{ recapStatus }}</p>
+            <p class="text-xs text-muted">Audio recap status.</p>
+          </UCard>
+          <UCard :ui="{ body: 'p-4' }">
+            <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Transcript</p>
+            <p class="mt-2 text-lg font-semibold">{{ transcriptStatus }}</p>
+            <p class="text-xs text-muted">Transcript document.</p>
+          </UCard>
+          <UCard :ui="{ body: 'p-4' }">
+            <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Summary</p>
+            <p class="mt-2 text-lg font-semibold">{{ summaryStatus }}</p>
+            <p class="text-xs text-muted">Session summary.</p>
+          </UCard>
         </div>
-      </UCard>
 
-      <UCard >
-        <template #header>
-          <div>
-            <h2 class="text-lg font-semibold">Summary</h2>
-            <p class="text-sm text-muted">
-              Write a recap or import one.
-            </p>
-          </div>
-        </template>
-        <div class="space-y-4">
-          <UTextarea v-model="summaryForm.content" :rows="5" />
-          <div class="flex flex-wrap items-center gap-3">
-            <UButton :loading="summarySaving" @click="saveSummary">Save summary</UButton>
-            <UButton
-              v-if="summaryDoc"
-              variant="outline"
-              :to="`/campaigns/${campaignId}/documents/${summaryDoc.id}`"
-            >
-              Open editor
-            </UButton>
-          </div>
-          <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
-            <UInput
-              type="file"
-              accept=".txt,.md,.markdown"
-              @change="summaryFile = ($event.target as HTMLInputElement).files?.[0] || null"
-            />
-            <UButton :loading="summaryImporting" variant="outline" @click="importSummary">
-              Import file
-            </UButton>
-          </div>
-          <p v-if="summaryError" class="text-sm text-error">{{ summaryError }}</p>
-          <p v-if="summaryImportError" class="text-sm text-error">{{ summaryImportError }}</p>
-        </div>
-      </UCard>
-
-      <UCard >
-        <template #header>
-          <div>
-            <h2 class="text-lg font-semibold">Recordings</h2>
-            <p class="text-sm text-muted">Upload and review session media.</p>
-          </div>
-        </template>
-        <div class="space-y-4">
-          <div class="grid gap-4 sm:grid-cols-2">
+        <UCard>
+          <template #header>
             <div>
-              <label class="mb-2 block text-sm text-default">File</label>
-              <UInput
-                type="file"
-                accept="audio/*,video/*"
-                @change="selectedFile = ($event.target as HTMLInputElement).files?.[0] || null"
+              <h3 class="text-sm font-semibold">Now playing</h3>
+              <p class="text-xs text-muted">Quick playback controls.</p>
+            </div>
+          </template>
+          <div class="space-y-3">
+            <div v-if="activePlayback" class="space-y-2">
+              <p class="text-sm font-semibold">{{ activePlayback.label }}</p>
+              <audio
+                v-if="activePlayback.kind === 'AUDIO'"
+                class="w-full"
+                controls
+                preload="metadata"
+                :src="activePlayback.src"
+              />
+              <video
+                v-else
+                class="w-full rounded-lg"
+                controls
+                preload="metadata"
+                :src="activePlayback.src"
               />
             </div>
-            <div>
-              <label class="mb-2 block text-sm text-muted">Kind</label>
-              <USelect
-                v-model="selectedKind"
-                :items="[
-                  { label: 'Audio', value: 'AUDIO' },
-                  { label: 'Video', value: 'VIDEO' },
-                ]"
-              />
-            </div>
+            <p v-else class="text-sm text-muted">Start playback to pin it here.</p>
           </div>
-          <div class="flex items-center gap-3">
-            <UButton :loading="isUploading" @click="uploadRecording">Upload recording</UButton>
-            <span v-if="isUploading" class="text-xs text-muted">
-              Uploading...
-            </span>
-            <p v-if="uploadError" class="text-sm text-error">{{ uploadError }}</p>
-          </div>
-          <p v-if="playbackError" class="text-sm text-error">{{ playbackError }}</p>
-          <div v-if="recordings?.length" class="space-y-3">
-            <div
-              v-for="recording in recordings"
-              :key="recording.id"
-            class="rounded-lg border border-default bg-elevated/30 p-4"
-            >
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p class="text-sm font-semibold">{{ recording.filename }}</p>
-                  <p class="text-xs text-dimmed">
-                    {{ recording.kind }} - {{ formatBytes(recording.byteSize) }} - {{ new Date(recording.createdAt).toLocaleString() }}
-                  </p>
+        </UCard>
+
+        <UTabs v-model="activeTab" :items="tabItems" variant="pill" size="sm">
+          <template #content="{ item }">
+            <div v-if="item.value === 'overview'" class="space-y-4">
+              <UCard>
+                <template #header>
+                  <div class="flex items-start justify-between gap-4">
+                    <div>
+                    <h2 class="text-lg font-semibold">Session details</h2>
+                    <p class="text-sm text-muted">Keep the record current.</p>
+                    </div>
+                    <UButton size="sm" variant="outline" @click="isEditSessionOpen = true">
+                      Edit session
+                    </UButton>
+                  </div>
+                </template>
+                <div class="space-y-4">
+                  <div class="grid gap-4 sm:grid-cols-2 text-sm">
+                    <div>
+                      <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Session number</p>
+                      <p class="mt-1 font-semibold">{{ form.sessionNumber || '—' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Played at</p>
+                      <p class="mt-1 font-semibold">{{ form.playedAt || 'Unscheduled' }}</p>
+                    </div>
+                    <div class="sm:col-span-2">
+                      <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Notes</p>
+                      <p class="mt-1 text-sm text-muted">
+                        {{ form.notes || 'No notes added yet.' }}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div class="flex flex-wrap gap-2">
-                  <UButton
-                    size="xs"
-                    variant="outline"
-                    :loading="playbackLoading[recording.id]"
-                    @click="loadPlayback(recording.id)"
+              </UCard>
+              <UCard>
+                <template #header>
+                  <div>
+                    <h3 class="text-sm font-semibold">Session checklist</h3>
+                    <p class="text-xs text-muted">Mark prep items as you go.</p>
+                  </div>
+                </template>
+                <div class="space-y-2">
+                  <div
+                    v-for="item in checklistItems"
+                    :key="item.id"
+                    class="flex items-center gap-2"
                   >
-                    Play
-                  </UButton>
-                  <UButton
-                    size="xs"
-                    variant="outline"
-                    :to="`/campaigns/${campaignId}/recordings/${recording.id}`"
-                  >
-                    Open
-                  </UButton>
+                    <UCheckbox v-model="item.done" />
+                    <span class="text-sm">{{ item.label }}</span>
+                  </div>
                 </div>
-              </div>
-              <div v-if="playbackUrls[recording.id]" class="mt-3">
-                <audio
-                  v-if="recording.kind === 'AUDIO'"
-                  class="w-full"
-                  controls
-                  preload="metadata"
-                  :src="playbackUrls[recording.id]"
-                />
-                <video
-                  v-else-if="recording.kind === 'VIDEO'"
-                  class="w-full rounded-lg"
-                  controls
-                  preload="metadata"
-                  :src="playbackUrls[recording.id]"
-                />
-              </div>
+              </UCard>
+              <UCard>
+                <template #header>
+                  <div>
+                    <h3 class="text-sm font-semibold">Session checklist</h3>
+                    <p class="text-xs text-muted">Mark prep items as you go.</p>
+                  </div>
+                </template>
+                <div class="space-y-2">
+                  <div
+                    v-for="item in checklistItems"
+                    :key="item.id"
+                    class="flex items-center gap-2"
+                  >
+                    <UCheckbox v-model="item.done" />
+                    <span class="text-sm">{{ item.label }}</span>
+                  </div>
+                </div>
+              </UCard>
+              <UCard>
+                <template #header>
+                  <div>
+                    <h3 class="text-sm font-semibold">Session checklist</h3>
+                    <p class="text-xs text-muted">Mark prep items as you go.</p>
+                  </div>
+                </template>
+                <div class="space-y-2">
+                  <div
+                    v-for="item in checklistItems"
+                    :key="item.id"
+                    class="flex items-center gap-2"
+                  >
+                    <UCheckbox v-model="item.done" />
+                    <span class="text-sm">{{ item.label }}</span>
+                  </div>
+                </div>
+              </UCard>
+              <UCard>
+                <template #header>
+                  <div>
+                    <h3 class="text-sm font-semibold">Session checklist</h3>
+                    <p class="text-xs text-muted">Mark prep items as you go.</p>
+                  </div>
+                </template>
+                <div class="space-y-2">
+                  <div
+                    v-for="item in checklistItems"
+                    :key="item.id"
+                    class="flex items-center gap-2"
+                  >
+                    <UCheckbox v-model="item.done" />
+                    <span class="text-sm">{{ item.label }}</span>
+                  </div>
+                </div>
+              </UCard>
             </div>
-          </div>
-          <p v-else class="text-sm text-muted">No recordings yet.</p>
-        </div>
-      </UCard>
+
+            <div v-else-if="item.value === 'notes'" class="space-y-4">
+              <UCard>
+                <template #header>
+                  <div>
+                    <h2 class="text-lg font-semibold">Session notes</h2>
+                    <p class="text-sm text-muted">Track what happened this session.</p>
+                  </div>
+                </template>
+                <div class="space-y-4">
+                  <UTextarea v-model="form.notes" :rows="6" />
+                  <p v-if="saveError" class="text-sm text-error">{{ saveError }}</p>
+                </div>
+              </UCard>
+
+              <UCard>
+                <template #header>
+                  <div>
+                    <h2 class="text-lg font-semibold">Transcript</h2>
+                    <p class="text-sm text-muted">
+                      Capture the session transcript or import a file.
+                    </p>
+                  </div>
+                </template>
+                <div class="space-y-4">
+                  <UTextarea v-model="transcriptForm.content" :rows="6" />
+                  <div class="flex flex-wrap items-center gap-3">
+                    <UButton :loading="transcriptSaving" @click="saveTranscript">Save transcript</UButton>
+                    <UButton
+                      v-if="transcriptDoc"
+                      variant="outline"
+                      :to="`/campaigns/${campaignId}/documents/${transcriptDoc.id}`"
+                    >
+                      Open editor
+                    </UButton>
+                  </div>
+                  <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
+                    <UFileUpload
+                      v-model="transcriptFile"
+                      accept=".txt,.md,.markdown,.vtt"
+                      variant="button"
+                      label="Select transcript file"
+                      :preview="false"
+                    />
+                    <UButton
+                      :loading="transcriptImporting"
+                      variant="outline"
+                      @click="importTranscript"
+                    >
+                      Import file
+                    </UButton>
+                  </div>
+                  <p v-if="transcriptError" class="text-sm text-error">{{ transcriptError }}</p>
+                  <p v-if="transcriptImportError" class="text-sm text-error">{{ transcriptImportError }}</p>
+                </div>
+              </UCard>
+
+              <UCard>
+                <template #header>
+                  <div>
+                    <h2 class="text-lg font-semibold">Summary</h2>
+                    <p class="text-sm text-muted">
+                      Write a recap or import one.
+                    </p>
+                  </div>
+                </template>
+                <div class="space-y-4">
+                  <UTextarea v-model="summaryForm.content" :rows="5" />
+                  <div class="flex flex-wrap items-center gap-3">
+                    <UButton :loading="summarySaving" @click="saveSummary">Save summary</UButton>
+                    <UButton
+                      v-if="summaryDoc"
+                      variant="outline"
+                      :to="`/campaigns/${campaignId}/documents/${summaryDoc.id}`"
+                    >
+                      Open editor
+                    </UButton>
+                  </div>
+                  <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
+                    <UFileUpload
+                      v-model="summaryFile"
+                      accept=".txt,.md,.markdown"
+                      variant="button"
+                      label="Select summary file"
+                      :preview="false"
+                    />
+                    <UButton :loading="summaryImporting" variant="outline" @click="importSummary">
+                      Import file
+                    </UButton>
+                  </div>
+                  <p v-if="summaryError" class="text-sm text-error">{{ summaryError }}</p>
+                  <p v-if="summaryImportError" class="text-sm text-error">{{ summaryImportError }}</p>
+                </div>
+              </UCard>
+            </div>
+
+            <div v-else-if="item.value === 'recap'" class="space-y-4">
+              <UCard>
+                <template #header>
+                  <div>
+                    <h2 class="text-lg font-semibold">Recap podcast</h2>
+                    <p class="text-sm text-muted">
+                      Upload a short audio recap for this session.
+                    </p>
+                  </div>
+                </template>
+                <div class="space-y-4">
+                  <UFileUpload
+                    v-model="recapFile"
+                    accept="audio/*"
+                    variant="button"
+                    label="Select recap audio"
+                    :preview="false"
+                  />
+                  <div class="flex items-center gap-3">
+                    <UButton :loading="recapUploading" @click="uploadRecap">Upload recap</UButton>
+                    <UButton
+                      variant="outline"
+                      :disabled="!recap"
+                      :loading="recapPlaybackLoading"
+                      @click="loadRecapPlayback"
+                    >
+                      Play recap
+                    </UButton>
+                    <UButton
+                      variant="ghost"
+                      color="red"
+                      :disabled="!recap"
+                      :loading="recapDeleting"
+                      @click="deleteRecap"
+                    >
+                      Delete recap
+                    </UButton>
+                    <span v-if="recap" class="text-xs text-success">Attached</span>
+                  </div>
+                  <UCard v-if="recapPlaybackUrl">
+                    <audio class="w-full" controls preload="metadata" :src="recapPlaybackUrl" />
+                  </UCard>
+                  <p v-if="recapError" class="text-sm text-error">{{ recapError }}</p>
+                  <p v-if="recapDeleteError" class="text-sm text-error">{{ recapDeleteError }}</p>
+                </div>
+              </UCard>
+            </div>
+
+            <div v-else class="space-y-4">
+              <UCard>
+                <template #header>
+                  <div>
+                    <h2 class="text-lg font-semibold">Recordings</h2>
+                    <p class="text-sm text-muted">Upload and review session media.</p>
+                  </div>
+                </template>
+                <div class="space-y-4">
+                  <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label class="mb-2 block text-sm text-muted">File</label>
+                      <UFileUpload
+                        v-model="selectedFile"
+                        accept="audio/*,video/*"
+                        variant="button"
+                        label="Select recording"
+                        :preview="false"
+                      />
+                    </div>
+                    <div>
+                      <label class="mb-2 block text-sm text-muted">Kind</label>
+                      <USelect
+                        v-model="selectedKind"
+                        :items="[
+                          { label: 'Audio', value: 'AUDIO' },
+                          { label: 'Video', value: 'VIDEO' },
+                        ]"
+                      />
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <UButton :loading="isUploading" @click="uploadRecording">Upload recording</UButton>
+                    <span v-if="isUploading" class="text-xs text-muted">
+                      Uploading...
+                    </span>
+                    <p v-if="uploadError" class="text-sm text-error">{{ uploadError }}</p>
+                  </div>
+                  <p v-if="playbackError" class="text-sm text-error">{{ playbackError }}</p>
+                  <div v-if="recordings?.length" class="space-y-3">
+                    <div
+                      v-for="recording in recordings"
+                      :key="recording.id"
+                      class="rounded-lg border border-default bg-elevated/30 p-4"
+                    >
+                      <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <p class="text-sm font-semibold">{{ recording.filename }}</p>
+                          <p class="text-xs text-dimmed">
+                            {{ recording.kind }} - {{ formatBytes(recording.byteSize) }} - {{ new Date(recording.createdAt).toLocaleString() }}
+                          </p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                          <UButton
+                            size="xs"
+                            variant="outline"
+                            :loading="playbackLoading[recording.id]"
+                            @click="loadPlayback(recording.id)"
+                          >
+                            Play
+                          </UButton>
+                          <UButton
+                            size="xs"
+                            variant="outline"
+                            :to="`/campaigns/${campaignId}/recordings/${recording.id}`"
+                          >
+                            Open
+                          </UButton>
+                        </div>
+                      </div>
+                      <div v-if="playbackUrls[recording.id]" class="mt-3">
+                        <audio
+                          v-if="recording.kind === 'AUDIO'"
+                          class="w-full"
+                          controls
+                          preload="metadata"
+                          :src="playbackUrls[recording.id]"
+                        />
+                        <video
+                          v-else-if="recording.kind === 'VIDEO'"
+                          class="w-full rounded-lg"
+                          controls
+                          preload="metadata"
+                          :src="playbackUrls[recording.id]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <p v-else class="text-sm text-muted">No recordings yet.</p>
+                </div>
+              </UCard>
+            </div>
+          </template>
+        </UTabs>
     </div>
+
+    <UModal v-model:open="isEditSessionOpen">
+      <template #content>
+        <UCard>
+          <template #header>
+            <h2 class="text-lg font-semibold">Edit session</h2>
+          </template>
+          <div class="space-y-4">
+            <div>
+              <label class="mb-2 block text-sm text-muted">Title</label>
+              <UInput v-model="form.title" />
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label class="mb-2 block text-sm text-muted">Session number</label>
+                <UInput v-model="form.sessionNumber" type="number" />
+              </div>
+              <div>
+                <label class="mb-2 block text-sm text-muted">Played at</label>
+                <UInput v-model="form.playedAt" type="date" />
+              </div>
+            </div>
+            <div>
+              <label class="mb-2 block text-sm text-muted">Notes</label>
+              <UTextarea v-model="form.notes" :rows="6" />
+            </div>
+            <p v-if="saveError" class="text-sm text-error">{{ saveError }}</p>
+          </div>
+          <template #footer>
+            <div class="flex justify-end gap-3">
+              <UButton variant="ghost" color="gray" @click="isEditSessionOpen = false">Cancel</UButton>
+              <UButton :loading="isSaving" @click="saveSession">Save session</UButton>
+            </div>
+          </template>
+        </UCard>
+      </template>
+    </UModal>
   </div>
 </template>
-
-

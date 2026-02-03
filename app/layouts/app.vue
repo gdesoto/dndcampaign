@@ -14,19 +14,21 @@ const toggleColorMode = () => {
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string | undefined)
 
-const navLinks = computed(() => {
-  const base = campaignId.value ? `/campaigns/${campaignId.value}` : '/campaigns'
-  const links = [
-    { label: 'All Campaigns', to: '/campaigns' },
-    { label: 'Overview', to: base, requiresCampaign: true },
-    { label: 'Sessions', to: `${base}/sessions`, requiresCampaign: true },
-    { label: 'Glossary', to: `${base}/glossary`, requiresCampaign: true },
-    { label: 'Quests', to: `${base}/quests`, requiresCampaign: true },
-    { label: 'Milestones', to: `${base}/milestones`, requiresCampaign: true },
-    { label: 'Settings', to: '/settings', requiresCampaign: false },
-  ]
-  return links.filter((link) => !link.requiresCampaign || campaignId.value)
-})
+type CampaignNavItem = {
+  id: string
+  name: string
+}
+
+const { request } = useApi()
+const { data: campaigns } = await useAsyncData(
+  'nav-campaigns',
+  () => request<CampaignNavItem[]>('/api/campaigns')
+)
+
+const navLinks = computed(() => [
+  { label: 'Home', to: '/' },
+  { label: 'Settings', to: '/settings' },
+])
 </script>
 
 <template>
@@ -93,6 +95,30 @@ const navLinks = computed(() => {
                     <UIcon name="i-heroicons-chevron-right" class="h-4 w-4 text-[color:var(--theme-accent)]" />
                   </NuxtLink>
                 </nav>
+                <details class="mt-2">
+                  <summary class="theme-nav-link flex cursor-pointer items-center justify-between rounded-2xl px-4 py-3">
+                    <span>My campaigns</span>
+                    <UIcon name="i-heroicons-chevron-down" class="h-4 w-4 text-[color:var(--theme-accent)]" />
+                  </summary>
+                  <div class="mt-2 space-y-2 pl-2">
+                    <NuxtLink
+                      v-for="campaign in campaigns || []"
+                      :key="campaign.id"
+                      :to="`/campaigns/${campaign.id}`"
+                      class="theme-nav-link flex items-center justify-between rounded-2xl px-4 py-2 text-xs"
+                    >
+                      <span class="truncate">{{ campaign.name }}</span>
+                      <UIcon name="i-heroicons-chevron-right" class="h-3 w-3 text-[color:var(--theme-accent)]" />
+                    </NuxtLink>
+                    <NuxtLink
+                      to="/campaigns"
+                      class="theme-nav-link flex items-center justify-between rounded-2xl px-4 py-2 text-xs"
+                    >
+                      <span>View all</span>
+                      <UIcon name="i-heroicons-chevron-right" class="h-3 w-3 text-[color:var(--theme-accent)]" />
+                    </NuxtLink>
+                  </div>
+                </details>
                 <p v-if="!campaignId" class="mt-4 text-xs text-[color:var(--theme-text-muted)]">
                   Select a campaign to unlock more sections.
                 </p>

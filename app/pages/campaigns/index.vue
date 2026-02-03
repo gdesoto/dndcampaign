@@ -127,7 +127,7 @@ const createCampaign = async () => {
           </div>
           <template #footer>
             <div class="flex justify-end gap-3">
-              <UButton variant="ghost" color="gray" @click="isCreateOpen = false">Cancel</UButton>
+              <UButton variant="ghost" @click="isCreateOpen = false">Cancel</UButton>
               <UButton :loading="isCreating" @click="createCampaign">Create</UButton>
             </div>
           </template>

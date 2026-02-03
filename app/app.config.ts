@@ -48,10 +48,16 @@ export default defineAppConfig({
     },
     modal: {
       slots: {
-        overlay: 'bg-black/70 backdrop-blur-sm',
-        content:
-          'bg-[var(--theme-card-bg)] rounded-2xl shadow-2xl w-[calc(100vw-2rem)] max-w-xl ring ring-default',
+        // overlay: 'bg-black/70 backdrop-blur-sm',
+        // content: 'bg-[var(--theme-card-bg)] divide-y divide-default flex flex-col focus:outline-none',
       },
+      variants: {
+        fullscreen: {
+          false: {
+            content: 'w-[calc(100vw-2rem)] max-w-lg rounded-2xl shadow-2xl ring ring-default',
+          }
+        }
+      }
     },
     badge: {
       variants: {
