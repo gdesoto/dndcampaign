@@ -49,6 +49,7 @@ const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
 const sessionId = computed(() => route.params.sessionId as string)
 const { request } = useApi()
+const player = useMediaPlayer()
 
 const { data: session, pending, refresh, error } = await useAsyncData(
   () => `session-${sessionId.value}`,
@@ -192,20 +193,7 @@ const videoOptions = computed(() =>
     }))
 )
 
-const activePlayback = computed(() => {
-  if (recapPlaybackUrl.value) {
-    return { kind: 'AUDIO' as const, label: recap.value?.filename || 'Recap', src: recapPlaybackUrl.value }
-  }
-  const firstRecording = (recordings.value || []).find((recording) => playbackUrls[recording.id])
-  if (firstRecording) {
-    return {
-      kind: firstRecording.kind,
-      label: firstRecording.filename,
-      src: playbackUrls[firstRecording.id],
-    }
-  }
-  return null
-})
+const activePlayback = computed(() => player.state.value.source)
 
 const transcriptPreview = computed(() => {
   const value = transcriptDoc.value?.currentVersion?.content || ''
@@ -362,7 +350,24 @@ const uploadRecording = async () => {
 }
 
 const loadPlayback = async (recordingId: string) => {
-  if (playbackUrls[recordingId] || playbackLoading[recordingId]) return
+  const cachedUrl = playbackUrls[recordingId]
+  if (cachedUrl) {
+    const recording = recordings.value?.find((item) => item.id === recordingId)
+    if (recording) {
+      await player.playSource(
+        {
+          id: recordingId,
+          title: recording.filename,
+          subtitle: recording.kind,
+          kind: recording.kind,
+          src: cachedUrl,
+        },
+        { presentation: 'global' }
+      )
+    }
+    return
+  }
+  if (playbackLoading[recordingId]) return
   playbackError.value = ''
   playbackLoading[recordingId] = true
   try {
@@ -370,6 +375,19 @@ const loadPlayback = async (recordingId: string) => {
       `/api/recordings/${recordingId}/playback-url`
     )
     playbackUrls[recordingId] = payload.url
+    const recording = recordings.value?.find((item) => item.id === recordingId)
+    if (recording) {
+      await player.playSource(
+        {
+          id: recordingId,
+          title: recording.filename,
+          subtitle: recording.kind,
+          kind: recording.kind,
+          src: payload.url,
+        },
+        { presentation: 'global' }
+      )
+    }
   } catch (error) {
     playbackError.value =
       (error as Error & { message?: string }).message || 'Unable to load playback.'
@@ -400,11 +418,35 @@ const uploadRecap = async () => {
 }
 
 const loadRecapPlayback = async () => {
-  if (!recap.value || recapPlaybackUrl.value || recapPlaybackLoading.value) return
+  if (!recap.value) return
+  if (recapPlaybackUrl.value) {
+    await player.playSource(
+      {
+        id: recap.value.id,
+        title: recap.value.filename || 'Recap',
+        subtitle: 'Recap audio',
+        kind: 'AUDIO',
+        src: recapPlaybackUrl.value,
+      },
+      { presentation: 'global' }
+    )
+    return
+  }
+  if (recapPlaybackLoading.value) return
   recapPlaybackLoading.value = true
   try {
     const payload = await request<{ url: string }>(`/api/recaps/${recap.value.id}/playback-url`)
     recapPlaybackUrl.value = payload.url
+    await player.playSource(
+      {
+        id: recap.value.id,
+        title: recap.value.filename || 'Recap',
+        subtitle: 'Recap audio',
+        kind: 'AUDIO',
+        src: payload.url,
+      },
+      { presentation: 'global' }
+    )
   } catch (error) {
     recapError.value =
       (error as Error & { message?: string }).message || 'Unable to load recap.'
@@ -626,29 +668,23 @@ const formatBytes = (value: number) => {
               </div>
             </UCard>
             <UCard class="sticky top-24 h-fit theme-reveal">
-              <div class="mb-4 font-display text-sm tracking-[0.4em] uppercase text-[color:var(--theme-accent)]">
-                Now playing
-              </div>
-              <div class="space-y-3">
-                <div v-if="activePlayback" class="space-y-2">
-                  <p class="text-sm font-semibold">{{ activePlayback.label }}</p>
-                  <audio
-                    v-if="activePlayback.kind === 'AUDIO'"
-                    class="w-full"
-                    controls
-                    preload="metadata"
-                    :src="activePlayback.src"
-                  />
-                  <video
-                    v-else
-                    class="w-full rounded-lg"
-                    controls
-                    preload="metadata"
-                    :src="activePlayback.src"
-                  />
+                <div class="mb-4 font-display text-sm tracking-[0.4em] uppercase text-[color:var(--theme-accent)]">
+                  Now playing
                 </div>
-                <p v-else class="text-sm text-muted">Start playback to pin it here.</p>
-              </div>
+                <div class="space-y-3">
+                  <div v-if="activePlayback" class="flex items-center justify-between gap-3">
+                    <div>
+                      <p class="text-sm font-semibold">{{ activePlayback.title }}</p>
+                      <p v-if="activePlayback.subtitle" class="text-xs text-muted">
+                        {{ activePlayback.subtitle }}
+                      </p>
+                    </div>
+                    <UButton size="xs" variant="ghost" @click="player.openDrawer">
+                      Open player
+                    </UButton>
+                  </div>
+                  <p v-else class="text-sm text-muted">Start playback to pin it here.</p>
+                </div>
             </UCard>
             <UCard class="sticky top-24 h-fit theme-reveal">
               <div class="mb-4 font-display text-sm tracking-[0.4em] uppercase text-[color:var(--theme-accent)]">
@@ -858,21 +894,14 @@ const formatBytes = (value: number) => {
                         </UButton>
                       </div>
                     </div>
-                    <div v-if="playbackUrls[recording.id]" class="mt-3">
-                      <audio
-                        v-if="recording.kind === 'AUDIO'"
-                        class="w-full"
-                        controls
-                        preload="metadata"
-                        :src="playbackUrls[recording.id]"
-                      />
-                      <video
-                        v-else-if="recording.kind === 'VIDEO'"
-                        class="w-full rounded-lg"
-                        controls
-                        preload="metadata"
-                        :src="playbackUrls[recording.id]"
-                      />
+                    <div
+                      v-if="playbackUrls[recording.id]"
+                      class="mt-3 flex items-center justify-between gap-3 text-xs text-muted"
+                    >
+                      <span>Playing in the global player.</span>
+                      <UButton size="xs" variant="ghost" @click="player.openDrawer">
+                        Open player
+                      </UButton>
                     </div>
                   </div>
                 </div>
@@ -900,7 +929,12 @@ const formatBytes = (value: number) => {
                   <span v-if="recap" class="text-xs text-success">Attached</span>
                 </div>
                 <UCard v-if="recapPlaybackUrl">
-                  <audio class="w-full" controls preload="metadata" :src="recapPlaybackUrl" />
+                  <div class="flex items-center justify-between gap-3 text-xs text-muted">
+                    <span>Recap is playing in the global player.</span>
+                    <UButton size="xs" variant="ghost" @click="player.openDrawer">
+                      Open player
+                    </UButton>
+                  </div>
                 </UCard>
                 <p v-if="recapError" class="text-sm text-error">{{ recapError }}</p>
               </div>
@@ -1037,22 +1071,15 @@ const formatBytes = (value: number) => {
                           </UButton>
                         </div>
                       </div>
-                      <div v-if="playbackUrls[recording.id]" class="mt-3">
-                        <audio
-                          v-if="recording.kind === 'AUDIO'"
-                          class="w-full"
-                          controls
-                          preload="metadata"
-                          :src="playbackUrls[recording.id]"
-                        />
-                        <video
-                          v-else-if="recording.kind === 'VIDEO'"
-                          class="w-full rounded-lg"
-                          controls
-                          preload="metadata"
-                          :src="playbackUrls[recording.id]"
-                        />
-                      </div>
+                        <div
+                          v-if="playbackUrls[recording.id]"
+                          class="mt-3 flex items-center justify-between gap-3 text-xs text-muted"
+                        >
+                          <span>Playing in the global player.</span>
+                          <UButton size="xs" variant="ghost" @click="player.openDrawer">
+                            Open player
+                          </UButton>
+                        </div>
                     </div>
                   </div>
                   <p v-else class="text-sm text-muted">No recordings yet.</p>
@@ -1233,9 +1260,14 @@ const formatBytes = (value: number) => {
                     </UButton>
                     <span v-if="recap" class="text-xs text-success">Attached</span>
                   </div>
-                  <UCard v-if="recapPlaybackUrl">
-                    <audio class="w-full" controls preload="metadata" :src="recapPlaybackUrl" />
-                  </UCard>
+                    <UCard v-if="recapPlaybackUrl">
+                      <div class="flex items-center justify-between gap-3 text-xs text-muted">
+                        <span>Recap is playing in the global player.</span>
+                        <UButton size="xs" variant="ghost" @click="player.openDrawer">
+                          Open player
+                        </UButton>
+                      </div>
+                    </UCard>
                   <p v-if="recapError" class="text-sm text-error">{{ recapError }}</p>
                   <p v-if="recapDeleteError" class="text-sm text-error">{{ recapDeleteError }}</p>
                 </div>

@@ -50,6 +50,7 @@ type RecapItem = {
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
 const { request } = useApi()
+const player = useMediaPlayer()
 
 const { data: campaign, pending, refresh, error } = await useAsyncData(
   () => `campaign-${campaignId.value}`,
@@ -224,6 +225,19 @@ const playRecap = async (recapId: string) => {
     const payload = await request<{ url: string }>(`/api/recaps/${recapId}/playback-url`)
     recapPlaybackUrl.value = payload.url
     selectedRecapId.value = recapId
+    const recap = recaps.value?.find((item) => item.id === recapId)
+    await player.playSource(
+      {
+        id: recapId,
+        title: recap?.session.title || recap?.filename || 'Recap audio',
+        subtitle: recap
+          ? `Session ${recap.session.sessionNumber ?? '-'} - ${formatDateTime(recap.createdAt)}`
+          : undefined,
+        kind: 'AUDIO',
+        src: payload.url,
+      },
+      { presentation: 'global' }
+    )
   } catch (error) {
     recapError.value =
       (error as Error & { message?: string }).message || 'Unable to load recap.'
@@ -585,13 +599,12 @@ const saveCampaign = async () => {
                     {{ recaps.find((item) => item.id === selectedRecapId)?.session.sessionNumber ?? '-' }}
                   </p>
                   <div class="mt-3">
-                    <audio
-                      v-if="recapPlaybackUrl"
-                      class="w-full"
-                      controls
-                      preload="metadata"
-                      :src="recapPlaybackUrl"
-                    />
+                    <div v-if="recapPlaybackUrl" class="flex items-center justify-between gap-3">
+                      <p class="text-xs text-muted">Playing in the global player.</p>
+                      <UButton size="xs" variant="ghost" @click="player.openDrawer">
+                        Open player
+                      </UButton>
+                    </div>
                     <p v-else class="text-xs text-muted">
                       Select a recap to start listening.
                     </p>
@@ -779,13 +792,12 @@ const saveCampaign = async () => {
                     {{ recaps.find((item) => item.id === selectedRecapId)?.session.sessionNumber ?? '-' }}
                   </p>
                   <div class="mt-3">
-                    <audio
-                      v-if="recapPlaybackUrl"
-                      class="w-full"
-                      controls
-                      preload="metadata"
-                      :src="recapPlaybackUrl"
-                    />
+                    <div v-if="recapPlaybackUrl" class="flex items-center justify-between gap-3">
+                      <p class="text-xs text-muted">Playing in the global player.</p>
+                      <UButton size="xs" variant="ghost" @click="player.openDrawer">
+                        Open player
+                      </UButton>
+                    </div>
                     <p v-else class="text-xs text-muted">
                       Select a recap to start listening.
                     </p>

@@ -154,6 +154,10 @@ const profileMenuItems = computed(() => [
           </div>
         </div>
       </UMain>
+
+      <ClientOnly>
+        <GlobalMediaPlayer />
+      </ClientOnly>
     </div>
   </div>
 </template>

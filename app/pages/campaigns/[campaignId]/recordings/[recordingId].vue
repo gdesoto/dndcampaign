@@ -59,6 +59,7 @@ const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
 const recordingId = computed(() => route.params.recordingId as string)
 const { request } = useApi()
+const player = useMediaPlayer()
 
 const { data: recording, pending, refresh, error } = await useAsyncData(
   () => `recording-${recordingId.value}`,
@@ -341,6 +342,21 @@ const attachSubtitlesFromArtifact = async (jobId: string, artifactId: string) =>
   }
 }
 
+const startPlayback = async () => {
+  if (!recording.value || !playbackUrl.value) return
+  await player.playSource(
+    {
+      id: recording.value.id,
+      title: recording.value.filename,
+      subtitle: recording.value.kind,
+      kind: recording.value.kind,
+      src: playbackUrl.value,
+      vttUrl: vttUrl.value || undefined,
+    },
+    { presentation: 'page' }
+  )
+}
+
 const formatBytes = (value: number) => {
   if (!value) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB']
@@ -402,29 +418,12 @@ const formatBytes = (value: number) => {
             <div v-if="playbackPending" class="text-sm text-muted">
               Preparing playback...
             </div>
-            <audio
-              v-else-if="recording.kind === 'AUDIO' && playbackUrl"
-              class="w-full"
-              controls
-              preload="metadata"
-              :src="playbackUrl"
-            />
-            <video
-              v-else-if="recording.kind === 'VIDEO' && playbackUrl"
-              class="w-full rounded-lg"
-              controls
-              preload="metadata"
-              :src="playbackUrl"
-            >
-              <track
-                v-if="vttUrl"
-                kind="subtitles"
-                label="Transcript"
-                srclang="en"
-                :src="vttUrl"
-                default
-              />
-            </video>
+            <div v-else-if="playbackUrl" class="space-y-3">
+              <UButton size="sm" variant="outline" @click="startPlayback">
+                Play in page player
+              </UButton>
+              <MediaPlayerDock dock-id="recording-player-dock" mode="page" />
+            </div>
             <p v-else class="text-sm text-muted">
               Playback is not available right now.
             </p>
