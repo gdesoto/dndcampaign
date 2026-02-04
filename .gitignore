@@ -29,4 +29,5 @@ coverage/
 
 /app/generated/prisma
 /prisma/db
+/db
 /dev_plan
