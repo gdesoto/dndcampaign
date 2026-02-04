@@ -12,6 +12,7 @@ const toggleColorMode = () => {
   colorMode.preference = next as typeof colorMode.preference
 }
 const route = useRoute()
+const router = useRouter()
 const campaignId = computed(() => route.params.campaignId as string | undefined)
 
 type CampaignNavItem = {
@@ -25,9 +26,69 @@ const { data: campaigns } = await useAsyncData(
   () => request<CampaignNavItem[]>('/api/campaigns')
 )
 
-const navLinks = computed(() => [
+const topNavItems = computed(() => [
   { label: 'Home', to: '/' },
-  { label: 'Settings', to: '/settings' },
+  { label: 'Campaigns', to: '/campaigns' },
+])
+
+const campaignOptions = computed(() => {
+  const items = (campaigns.value || []).map((campaign) => ({
+    label: campaign.name,
+    id: campaign.id,
+  }))
+  return [{ label: 'All campaigns', id: 'all' }, ...items]
+})
+
+const selectedCampaignId = ref<string>('all')
+const campaignSelectReady = ref(false)
+
+watch(
+  () => campaignId.value,
+  (value) => {
+    selectedCampaignId.value = value || 'all'
+  },
+  { immediate: true }
+)
+
+watch(
+  () => campaigns.value,
+  (value) => {
+    if (!value?.length && selectedCampaignId.value !== 'all') {
+      selectedCampaignId.value = 'all'
+    }
+  }
+)
+
+watch(
+  () => selectedCampaignId.value,
+  (value) => {
+    if (!campaignSelectReady.value) return
+    if (!value) return
+    if (value === 'all') {
+      router.push('/campaigns')
+      return
+    }
+    if (value !== campaignId.value) {
+      router.push(`/campaigns/${value}`)
+    }
+  }
+)
+
+onMounted(() => {
+  campaignSelectReady.value = true
+})
+
+const profileMenuItems = computed(() => [
+  [
+    {
+      label: user.value?.email || 'Account',
+      type: 'label',
+    },
+  ],
+  [
+    { label: 'Settings', icon: 'i-lucide-cog', to: '/settings' },
+    { label: 'Logout', icon: 'i-lucide-log-out', onSelect: () => logout() },
+  ],
 ])
 </script>
 
@@ -44,15 +105,26 @@ const navLinks = computed(() => [
               <UIcon name="i-heroicons-sparkles" class="h-5 w-5" />
             </div>
             <div>
-              <div class="font-display text-lg tracking-[0.2em] uppercase">Campaign Desk</div>
-              <div class="text-xs italic text-[color:var(--theme-text-soft)]">
-                Where ancient vellum meets evergreen trails
+              <div class="font-display text-lg tracking-[0.2em] uppercase">DM Vault</div>
+              <div class="text-xs uppercase tracking-[0.4em] text-[color:var(--theme-text-muted)]">
+                Campaign Desk
               </div>
             </div>
           </div>
         </template>
         <template #default>
-          <span class="text-xs uppercase tracking-[0.4em] text-[color:var(--theme-text-muted)]">Dungeon Master Vault</span>
+          <div class="flex w-full items-center justify-center gap-4">
+            <UNavigationMenu class="w-full justify-center" :items="topNavItems" />
+            <USelectMenu
+              v-model="selectedCampaignId"
+              value-key="id"
+              label-key="label"
+              :items="campaignOptions"
+              placeholder="Select campaign"
+              size="sm"
+              class="w-52"
+            />
+          </div>
         </template>
         <template #right>
           <div class="flex flex-wrap items-center gap-3 text-xs text-[color:var(--theme-text-muted)]">
@@ -65,70 +137,21 @@ const navLinks = computed(() => [
                 </template>
               </ClientOnly>
             </UButton>
-            <span v-if="user?.email" class="hidden text-[color:var(--theme-text-muted)] md:inline">
-              {{ user.email }}
-            </span>
-            <UButton size="sm" color="primary" variant="ghost" class="theme-pill" @click="logout">
-              <UIcon name="i-heroicons-lock-closed" class="h-4 w-4" />
-              Logout
-            </UButton>
+            <UDropdownMenu :items="profileMenuItems">
+              <UButton size="sm" color="primary" variant="ghost" class="theme-pill">
+                <UIcon name="i-heroicons-user-circle" class="h-4 w-4" />
+                <span class="ml-2 hidden uppercase tracking-[0.3em] md:inline">Profile</span>
+              </UButton>
+            </UDropdownMenu>
           </div>
         </template>
       </UHeader>
 
       <UMain>
         <div class="mx-auto max-w-7xl px-6 pb-16 pt-24">
-          <UPage :ui="{ root: 'flex flex-col lg:grid lg:grid-cols-12 lg:gap-10', left: 'lg:col-span-3', center: 'lg:col-span-9' }">
-            <template #left>
-              <UCard class="sticky top-24 h-fit theme-reveal" :ui="{ body: 'p-4' }">
-                <div class="font-display text-sm tracking-[0.4em] uppercase text-[color:var(--theme-accent)]">
-                  Navigation
-                </div>
-                <nav class="mt-4 space-y-2 text-sm">
-                  <NuxtLink
-                    v-for="link in navLinks"
-                    :key="link.label"
-                    :to="link.to"
-                    class="theme-nav-link flex items-center justify-between rounded-2xl px-4 py-3"
-                  >
-                    <span>{{ link.label }}</span>
-                    <UIcon name="i-heroicons-chevron-right" class="h-4 w-4 text-[color:var(--theme-accent)]" />
-                  </NuxtLink>
-                </nav>
-                <details class="mt-2">
-                  <summary class="theme-nav-link flex cursor-pointer items-center justify-between rounded-2xl px-4 py-3">
-                    <span>My campaigns</span>
-                    <UIcon name="i-heroicons-chevron-down" class="h-4 w-4 text-[color:var(--theme-accent)]" />
-                  </summary>
-                  <div class="mt-2 space-y-2 pl-2">
-                    <NuxtLink
-                      v-for="campaign in campaigns || []"
-                      :key="campaign.id"
-                      :to="`/campaigns/${campaign.id}`"
-                      class="theme-nav-link flex items-center justify-between rounded-2xl px-4 py-2 text-xs"
-                    >
-                      <span class="truncate">{{ campaign.name }}</span>
-                      <UIcon name="i-heroicons-chevron-right" class="h-3 w-3 text-[color:var(--theme-accent)]" />
-                    </NuxtLink>
-                    <NuxtLink
-                      to="/campaigns"
-                      class="theme-nav-link flex items-center justify-between rounded-2xl px-4 py-2 text-xs"
-                    >
-                      <span>View all</span>
-                      <UIcon name="i-heroicons-chevron-right" class="h-3 w-3 text-[color:var(--theme-accent)]" />
-                    </NuxtLink>
-                  </div>
-                </details>
-                <p v-if="!campaignId" class="mt-4 text-xs text-[color:var(--theme-text-muted)]">
-                  Select a campaign to unlock more sections.
-                </p>
-              </UCard>
-            </template>
-
-            <div class="px-2 py-6">
-              <slot />
-            </div>
-          </UPage>
+          <div class="px-2 py-6">
+            <slot />
+          </div>
         </div>
       </UMain>
     </div>
