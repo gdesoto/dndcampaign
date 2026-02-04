@@ -26,7 +26,33 @@ type DocumentDetail = {
 type ArtifactDetail = {
   id: string
   storageKey: string
+  mimeType?: string
+  byteSize?: number
   createdAt: string
+}
+
+type SessionRecording = {
+  id: string
+  kind: 'AUDIO' | 'VIDEO'
+  filename: string
+  createdAt: string
+}
+
+type TranscriptionArtifact = {
+  id: string
+  format: 'TXT' | 'SRT' | 'DOCX' | 'PDF' | 'HTML' | 'SEGMENTED_JSON'
+  artifact: ArtifactDetail
+}
+
+type TranscriptionJob = {
+  id: string
+  status: string
+  externalJobId?: string | null
+  requestedFormats: string[]
+  errorMessage?: string | null
+  createdAt: string
+  completedAt?: string | null
+  artifacts: TranscriptionArtifact[]
 }
 
 const route = useRoute()
@@ -49,7 +75,7 @@ const { data: playbackUrl, pending: playbackPending } = await useAsyncData(
   }
 )
 
-const { data: transcriptDoc } = await useAsyncData(
+const { data: transcriptDoc, refresh: refreshTranscript } = await useAsyncData(
   () => `recording-transcript-${recordingId.value}`,
   async () => {
     if (!recording.value?.sessionId) return null
@@ -58,6 +84,26 @@ const { data: transcriptDoc } = await useAsyncData(
     )
   },
   { watch: [recording] }
+)
+
+const { data: sessionRecordings } = await useAsyncData(
+  () => `session-recordings-${recordingId.value}`,
+  async () => {
+    if (!recording.value?.sessionId) return []
+    return request<SessionRecording[]>(
+      `/api/sessions/${recording.value.sessionId}/recordings`
+    )
+  },
+  { watch: [recording] }
+)
+
+const videoOptions = computed(() =>
+  (sessionRecordings.value || [])
+    .filter((item) => item.kind === 'VIDEO')
+    .map((item) => ({
+      label: item.filename,
+      value: item.id,
+    }))
 )
 
 const vttUrl = computed(() =>
@@ -78,6 +124,25 @@ const transcriptAttachLoading = ref(false)
 const transcriptAttachError = ref('')
 const detachLoading = ref(false)
 const detachError = ref('')
+const transcribeModalOpen = ref(false)
+const transcribeLoading = ref(false)
+const transcribeError = ref('')
+const transcribeActionError = ref('')
+const selectedVideoByArtifact = reactive<Record<string, string>>({})
+
+const transcribeForm = reactive({
+  numSpeakers: '12',
+  diarize: true,
+  keyterms: '',
+  formats: {
+    txt: true,
+    srt: true,
+    docx: false,
+    pdf: false,
+    html: false,
+    segmented_json: false,
+  },
+})
 
 const uploadVtt = async () => {
   if (!vttFile.value) return
@@ -136,6 +201,43 @@ const { data: vttHistory, refresh: refreshVttHistory } = await useAsyncData(
   { watch: [recording] }
 )
 
+const { data: transcriptionJobs, refresh: refreshTranscriptions } = await useAsyncData(
+  () => `recording-transcriptions-${recordingId.value}`,
+  async () => {
+    if (!recording.value) return []
+    return request<TranscriptionJob[]>(`/api/recordings/${recordingId.value}/transcriptions`)
+  },
+  { watch: [recording] }
+)
+
+watch(
+  () => [transcriptionJobs.value, videoOptions.value],
+  () => {
+    if (!transcriptionJobs.value?.length || !videoOptions.value.length) return
+    for (const job of transcriptionJobs.value) {
+      for (const artifact of job.artifacts || []) {
+        if (
+          artifact.format === 'SRT' &&
+          !selectedVideoByArtifact[artifact.artifact.id]
+        ) {
+          selectedVideoByArtifact[artifact.artifact.id] = videoOptions.value[0].value
+        }
+      }
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => route.query.transcribe,
+  (value) => {
+    if (value) {
+      transcribeModalOpen.value = true
+    }
+  },
+  { immediate: true }
+)
+
 const detachSubtitles = async () => {
   if (!recording.value?.vttArtifactId) return
   detachError.value = ''
@@ -151,6 +253,91 @@ const detachSubtitles = async () => {
       (error as Error & { message?: string }).message || 'Unable to detach subtitles.'
   } finally {
     detachLoading.value = false
+  }
+}
+
+const buildTranscribeFormats = () =>
+  Object.entries(transcribeForm.formats)
+    .filter(([, enabled]) => enabled)
+    .map(([format]) => format)
+
+const parseKeyterms = (value: string) =>
+  value
+    .split(/[\n,]/)
+    .map((term) => term.trim())
+    .filter(Boolean)
+
+const startTranscription = async () => {
+  if (!recording.value) return
+  transcribeError.value = ''
+  transcribeLoading.value = true
+  try {
+    const formats = buildTranscribeFormats()
+    if (!formats.length) {
+      transcribeError.value = 'Select at least one output format.'
+      return
+    }
+    const numSpeakers = Number(transcribeForm.numSpeakers)
+    const payload = {
+      formats,
+      numSpeakers: Number.isFinite(numSpeakers) ? numSpeakers : undefined,
+      keyterms: parseKeyterms(transcribeForm.keyterms),
+      diarize: transcribeForm.diarize,
+    }
+    await request(`/api/recordings/${recordingId.value}/transcribe`, {
+      method: 'POST',
+      body: payload,
+    })
+    await refreshTranscriptions()
+    transcribeModalOpen.value = false
+  } catch (error) {
+    transcribeError.value =
+      (error as Error & { message?: string }).message || 'Unable to start transcription.'
+  } finally {
+    transcribeLoading.value = false
+  }
+}
+
+const fetchTranscription = async (jobId: string) => {
+  transcribeActionError.value = ''
+  try {
+    await request(`/api/transcriptions/${jobId}/fetch`, {
+      method: 'POST',
+    })
+    await refreshTranscriptions()
+  } catch (error) {
+    transcribeActionError.value =
+      (error as Error & { message?: string }).message || 'Unable to fetch transcription.'
+  }
+}
+
+const applyTranscript = async (jobId: string, artifactId: string) => {
+  transcribeActionError.value = ''
+  try {
+    await request(`/api/transcriptions/${jobId}/apply-transcript`, {
+      method: 'POST',
+      body: { artifactId },
+    })
+    await refreshTranscript()
+  } catch (error) {
+    transcribeActionError.value =
+      (error as Error & { message?: string }).message || 'Unable to apply transcript.'
+  }
+}
+
+const attachSubtitlesFromArtifact = async (jobId: string, artifactId: string) => {
+  transcribeActionError.value = ''
+  try {
+    const recordingId = selectedVideoByArtifact[artifactId]
+    await request(`/api/transcriptions/${jobId}/attach-vtt`, {
+      method: 'POST',
+      body: { artifactId, recordingId },
+    })
+    await refresh()
+    await refreshVttHistory()
+  } catch (error) {
+    transcribeActionError.value =
+      (error as Error & { message?: string }).message || 'Unable to attach subtitles.'
   }
 }
 
@@ -240,6 +427,109 @@ const formatBytes = (value: number) => {
             </video>
             <p v-else class="text-sm text-muted">
               Playback is not available right now.
+            </p>
+          </div>
+        </UCard>
+
+        <UCard>
+          <template #header>
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h2 class="text-lg font-semibold">Transcription</h2>
+                <p class="text-sm text-muted">
+                  Start a speech-to-text job and review outputs.
+                </p>
+              </div>
+              <UButton size="sm" variant="outline" @click="transcribeModalOpen = true">
+                Start transcription
+              </UButton>
+            </div>
+          </template>
+          <div class="space-y-3">
+            <div
+              v-for="job in transcriptionJobs"
+              :key="job.id"
+              class="rounded-lg border border-default bg-elevated/30 p-4 text-sm"
+            >
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p class="font-semibold">Status: {{ job.status }}</p>
+                  <p class="text-xs text-dimmed">
+                    {{ new Date(job.createdAt).toLocaleString() }}
+                  </p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 text-xs text-dimmed">
+                  <span>Formats: {{ job.requestedFormats?.join(', ') || '—' }}</span>
+                  <UButton
+                    v-if="job.externalJobId && job.status !== 'COMPLETED'"
+                    size="xs"
+                    variant="ghost"
+                    @click="fetchTranscription(job.id)"
+                  >
+                    Fetch from ElevenLabs
+                  </UButton>
+                </div>
+              </div>
+              <div v-if="job.artifacts?.length" class="mt-3 space-y-2">
+                <div
+                  v-for="artifact in job.artifacts"
+                  :key="artifact.id"
+                  class="flex flex-wrap items-center justify-between gap-2 rounded-md border border-default bg-default/40 px-3 py-2"
+                >
+                  <div>
+                    <p class="text-xs uppercase tracking-[0.2em] text-dimmed">
+                      {{ artifact.format }}
+                    </p>
+                    <p class="text-xs text-muted">
+                      {{ new Date(artifact.artifact.createdAt).toLocaleString() }}
+                    </p>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <UButton
+                      v-if="artifact.format === 'TXT'"
+                      size="xs"
+                      variant="outline"
+                      @click="applyTranscript(job.id, artifact.artifact.id)"
+                    >
+                      Use as transcript
+                    </UButton>
+                    <UButton
+                      v-if="artifact.format === 'SRT'"
+                      size="xs"
+                      variant="outline"
+                      :disabled="!selectedVideoByArtifact[artifact.artifact.id]"
+                      @click="attachSubtitlesFromArtifact(job.id, artifact.artifact.id)"
+                    >
+                      Attach subtitles
+                    </UButton>
+                    <USelect
+                      v-if="artifact.format === 'SRT'"
+                      v-model="selectedVideoByArtifact[artifact.artifact.id]"
+                      size="xs"
+                      :items="videoOptions"
+                      placeholder="Select video"
+                    />
+                    <UButton
+                      size="xs"
+                      variant="ghost"
+                      :to="`/api/artifacts/${artifact.artifact.id}/stream`"
+                      target="_blank"
+                    >
+                      Download
+                    </UButton>
+                  </div>
+                </div>
+              </div>
+              <p v-else class="mt-2 text-xs text-muted">Waiting for artifacts.</p>
+              <p v-if="job.errorMessage" class="mt-2 text-xs text-error">
+                {{ job.errorMessage }}
+              </p>
+            </div>
+            <p v-if="!transcriptionJobs?.length" class="text-sm text-muted">
+              No transcription jobs yet.
+            </p>
+            <p v-if="transcribeActionError" class="text-sm text-error">
+              {{ transcribeActionError }}
             </p>
           </div>
         </UCard>
@@ -352,5 +642,74 @@ const formatBytes = (value: number) => {
         </UCard>
       </div>
     </div>
+
+    <UModal v-model:open="transcribeModalOpen">
+      <template #content>
+        <UCard>
+          <template #header>
+            <div>
+              <h2 class="text-lg font-semibold">Start transcription</h2>
+              <p class="text-sm text-muted">
+                Configure the ElevenLabs transcription request.
+              </p>
+            </div>
+          </template>
+          <div class="space-y-4">
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label class="mb-2 block text-sm text-muted">Speakers</label>
+                <UInput v-model="transcribeForm.numSpeakers" type="number" min="1" max="32" />
+              </div>
+              <div class="flex items-center gap-2">
+                <UCheckbox v-model="transcribeForm.diarize" />
+                <span class="text-sm">Enable diarization</span>
+              </div>
+            </div>
+            <div>
+              <label class="mb-2 block text-sm text-muted">Keyterms</label>
+              <UTextarea
+                v-model="transcribeForm.keyterms"
+                :rows="3"
+                placeholder="Comma or line separated terms to bias the transcript."
+              />
+            </div>
+            <div>
+              <p class="mb-2 text-sm text-muted">Formats</p>
+              <div class="grid gap-2 sm:grid-cols-2">
+                <label class="flex items-center gap-2 text-sm">
+                  <UCheckbox v-model="transcribeForm.formats.txt" /> TXT
+                </label>
+                <label class="flex items-center gap-2 text-sm">
+                  <UCheckbox v-model="transcribeForm.formats.srt" /> SRT
+                </label>
+                <label class="flex items-center gap-2 text-sm">
+                  <UCheckbox v-model="transcribeForm.formats.docx" /> DOCX
+                </label>
+                <label class="flex items-center gap-2 text-sm">
+                  <UCheckbox v-model="transcribeForm.formats.pdf" /> PDF
+                </label>
+                <label class="flex items-center gap-2 text-sm">
+                  <UCheckbox v-model="transcribeForm.formats.html" /> HTML
+                </label>
+                <label class="flex items-center gap-2 text-sm">
+                  <UCheckbox v-model="transcribeForm.formats.segmented_json" /> Segmented JSON
+                </label>
+              </div>
+            </div>
+            <p v-if="transcribeError" class="text-sm text-error">{{ transcribeError }}</p>
+          </div>
+          <template #footer>
+            <div class="flex justify-end gap-3">
+              <UButton variant="ghost" color="gray" @click="transcribeModalOpen = false">
+                Cancel
+              </UButton>
+              <UButton :loading="transcribeLoading" @click="startTranscription">
+                Start transcription
+              </UButton>
+            </div>
+          </template>
+        </UCard>
+      </template>
+    </UModal>
   </UPage>
 </template>

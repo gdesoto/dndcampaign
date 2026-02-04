@@ -19,6 +19,13 @@ type DocumentDetail = {
   currentVersion?: DocumentVersion | null
 }
 
+type SessionRecording = {
+  id: string
+  kind: 'AUDIO' | 'VIDEO'
+  filename: string
+  createdAt: string
+}
+
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
 const documentId = computed(() => route.params.documentId as string)
@@ -41,11 +48,48 @@ const restoreError = ref('')
 const importing = ref(false)
 const importError = ref('')
 const importFile = ref<File | null>(null)
+const subtitleAttachLoading = ref(false)
+const subtitleAttachError = ref('')
+const selectedSubtitleRecordingId = ref('')
+
+const { data: sessionRecordings } = await useAsyncData(
+  () => `document-session-recordings-${documentId.value}`,
+  async () => {
+    if (!document.value?.sessionId) return []
+    return request<SessionRecording[]>(
+      `/api/sessions/${document.value.sessionId}/recordings`
+    )
+  },
+  { watch: [document] }
+)
+
+const videoOptions = computed(() =>
+  (sessionRecordings.value || [])
+    .filter((recording) => recording.kind === 'VIDEO')
+    .map((recording) => ({
+      label: recording.filename,
+      value: recording.id,
+    }))
+)
 
 watch(
   () => document.value,
   (value) => {
     content.value = value?.currentVersion?.content || ''
+  },
+  { immediate: true }
+)
+
+watch(
+  () => videoOptions.value,
+  (value) => {
+    if (!value.length) {
+      selectedSubtitleRecordingId.value = ''
+      return
+    }
+    if (!selectedSubtitleRecordingId.value) {
+      selectedSubtitleRecordingId.value = value[0].value
+    }
   },
   { immediate: true }
 )
@@ -106,6 +150,22 @@ const importDocument = async () => {
       (error as Error & { message?: string }).message || 'Import failed.'
   } finally {
     importing.value = false
+  }
+}
+
+const attachTranscriptToVideo = async () => {
+  if (!selectedSubtitleRecordingId.value || document.value?.type !== 'TRANSCRIPT') return
+  subtitleAttachError.value = ''
+  subtitleAttachLoading.value = true
+  try {
+    await request(`/api/recordings/${selectedSubtitleRecordingId.value}/vtt/from-transcript`, {
+      method: 'POST',
+    })
+  } catch (error) {
+    subtitleAttachError.value =
+      (error as Error & { message?: string }).message || 'Unable to attach subtitles.'
+  } finally {
+    subtitleAttachLoading.value = false
   }
 }
 </script>
@@ -176,8 +236,28 @@ const importDocument = async () => {
                 </UButton>
               </div>
             </div>
+            <div
+              v-if="document?.type === 'TRANSCRIPT'"
+              class="flex flex-wrap items-center gap-3"
+            >
+              <USelect
+                v-model="selectedSubtitleRecordingId"
+                :items="videoOptions"
+                placeholder="Select video"
+                size="sm"
+              />
+              <UButton
+                variant="outline"
+                :disabled="!selectedSubtitleRecordingId"
+                :loading="subtitleAttachLoading"
+                @click="attachTranscriptToVideo"
+              >
+                Attach subtitles
+              </UButton>
+            </div>
             <p v-if="saveError" class="text-sm text-error">{{ saveError }}</p>
             <p v-if="importError" class="text-sm text-error">{{ importError }}</p>
+            <p v-if="subtitleAttachError" class="text-sm text-error">{{ subtitleAttachError }}</p>
           </div>
         </UCard>
 

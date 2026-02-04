@@ -116,6 +116,27 @@ enum RecordingKind {
   VIDEO
 }
 
+enum TranscriptionProvider {
+  ELEVENLABS
+}
+
+enum TranscriptionStatus {
+  SENDING
+  SENT
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum TranscriptionArtifactFormat {
+  TXT
+  SRT
+  DOCX
+  PDF
+  HTML
+  SEGMENTED_JSON
+}
+
 model Artifact {
   id            String          @id @default(uuid())
   ownerId       String
@@ -131,6 +152,7 @@ model Artifact {
   recordings    Recording[]     @relation("RecordingMedia")
   vttRecordings Recording[]     @relation("RecordingVtt")
   recapRecordings RecapRecording[]
+  transcriptionArtifacts TranscriptionArtifact[]
 
   @@index([ownerId])
   @@index([campaignId])
@@ -153,10 +175,48 @@ model Recording {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   documents       Document[]
+  transcriptionJobs TranscriptionJob[]
 
   @@index([sessionId])
   @@index([artifactId])
   @@index([vttArtifactId])
+}
+
+model TranscriptionJob {
+  id               String                @id @default(uuid())
+  recordingId      String
+  recording        Recording             @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  provider         TranscriptionProvider
+  status           TranscriptionStatus
+  requestId        String?
+  externalJobId    String?              @unique
+  modelId          String?
+  languageCode     String?
+  numSpeakers      Int?
+  diarize          Boolean               @default(true)
+  requestedFormats String?
+  keyterms         String?
+  errorMessage     String?
+  completedAt      DateTime?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  artifacts        TranscriptionArtifact[]
+
+  @@index([recordingId])
+  @@index([status])
+}
+
+model TranscriptionArtifact {
+  id                 String                     @id @default(uuid())
+  transcriptionJobId String
+  transcriptionJob   TranscriptionJob           @relation(fields: [transcriptionJobId], references: [id], onDelete: Cascade)
+  artifactId         String
+  artifact           Artifact                   @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  format             TranscriptionArtifactFormat
+  createdAt          DateTime                   @default(now())
+
+  @@unique([transcriptionJobId, format])
+  @@index([artifactId])
 }
 
 model RecapRecording {
@@ -220,6 +280,7 @@ enum DocumentSource {
   USER_EDIT
   USER_IMPORT
   SYSTEM_AUTOSAVE
+  ELEVENLABS_IMPORT
 }
 
 model Document {

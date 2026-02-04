@@ -86,6 +86,9 @@ const transcriptImporting = ref(false)
 const summaryImporting = ref(false)
 const transcriptFile = ref<File | null>(null)
 const summaryFile = ref<File | null>(null)
+const subtitleAttachLoading = ref(false)
+const subtitleAttachError = ref('')
+const selectedSubtitleRecordingId = ref('')
 
 const activeTab = ref('overview')
 const tabItems = [
@@ -98,10 +101,19 @@ const tabItems = [
 const isEditSessionOpen = ref(false)
 
 const checklistItems = ref([
-  { id: 'prep', label: 'Prep highlights captured', done: false },
-  { id: 'npcs', label: 'NPCs updated', done: false },
-  { id: 'locations', label: 'Locations noted', done: false },
-  { id: 'loot', label: 'Loot recorded', done: false },
+  { id: 'details', label: 'Session details captured', done: false },
+  { id: 'recordings', label: 'Audio/video recordings uploaded', done: false },
+  { id: 'transcribe', label: 'Transcription requested from ElevenLabs', done: false },
+  { id: 'transcript_received', label: 'Transcript received and saved', done: false },
+  { id: 'attach_initial_vtt', label: 'Transcript attached to video (VTT)', done: false },
+  { id: 'edit_transcript', label: 'Transcript edits saved in editor', done: false },
+  { id: 'attach_final_vtt', label: 'Updated transcript re-attached as VTT', done: false },
+  { id: 'send_summary', label: 'Transcript sent to n8n for summary', done: false },
+  { id: 'summary_received', label: 'Summary received and saved', done: false },
+  { id: 'edit_summary', label: 'Summary edits saved in editor', done: false },
+  { id: 'review_links', label: 'Glossary/quests/milestones reviewed and linked', done: false },
+  { id: 'send_recap', label: 'Summary sent to ElevenLabs for recap', done: false },
+  { id: 'recap_received', label: 'Recap podcast received and saved', done: false },
 ])
 
 const transcriptForm = reactive({
@@ -162,6 +174,14 @@ const recordingsCount = computed(() => recordings.value?.length || 0)
 const recapStatus = computed(() => (recap.value ? 'Attached' : 'Missing'))
 const transcriptStatus = computed(() => (transcriptDoc.value ? 'Available' : 'Missing'))
 const summaryStatus = computed(() => (summaryDoc.value ? 'Available' : 'Missing'))
+const videoOptions = computed(() =>
+  (recordings.value || [])
+    .filter((recording) => recording.kind === 'VIDEO')
+    .map((recording) => ({
+      label: recording.filename,
+      value: recording.id,
+    }))
+)
 
 const activePlayback = computed(() => {
   if (recapPlaybackUrl.value) {
@@ -190,6 +210,20 @@ watch(
   () => summaryDoc.value,
   (value) => {
     summaryForm.content = value?.currentVersion?.content || ''
+  },
+  { immediate: true }
+)
+
+watch(
+  () => videoOptions.value,
+  (value) => {
+    if (!value.length) {
+      selectedSubtitleRecordingId.value = ''
+      return
+    }
+    if (!selectedSubtitleRecordingId.value) {
+      selectedSubtitleRecordingId.value = value[0].value
+    }
   },
   { immediate: true }
 )
@@ -426,6 +460,23 @@ const importSummary = async () => {
   summaryFile.value = null
 }
 
+const attachTranscriptToVideo = async () => {
+  if (!selectedSubtitleRecordingId.value) return
+  subtitleAttachError.value = ''
+  subtitleAttachLoading.value = true
+  try {
+    await request(`/api/recordings/${selectedSubtitleRecordingId.value}/vtt/from-transcript`, {
+      method: 'POST',
+    })
+    await refreshRecordings()
+  } catch (error) {
+    subtitleAttachError.value =
+      (error as Error & { message?: string }).message || 'Unable to attach subtitles.'
+  } finally {
+    subtitleAttachLoading.value = false
+  }
+}
+
 const formatBytes = (value: number) => {
   if (!value) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB']
@@ -483,11 +534,6 @@ const formatBytes = (value: number) => {
             <p class="text-xs text-muted">Uploaded media files.</p>
           </UCard>
           <UCard :ui="{ body: 'p-4' }">
-            <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Recap</p>
-            <p class="mt-2 text-lg font-semibold">{{ recapStatus }}</p>
-            <p class="text-xs text-muted">Audio recap status.</p>
-          </UCard>
-          <UCard :ui="{ body: 'p-4' }">
             <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Transcript</p>
             <p class="mt-2 text-lg font-semibold">{{ transcriptStatus }}</p>
             <p class="text-xs text-muted">Transcript document.</p>
@@ -496,6 +542,11 @@ const formatBytes = (value: number) => {
             <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Summary</p>
             <p class="mt-2 text-lg font-semibold">{{ summaryStatus }}</p>
             <p class="text-xs text-muted">Session summary.</p>
+          </UCard>
+          <UCard :ui="{ body: 'p-4' }">
+            <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Recap</p>
+            <p class="mt-2 text-lg font-semibold">{{ recapStatus }}</p>
+            <p class="text-xs text-muted">Audio recap status.</p>
           </UCard>
         </div>
 
@@ -580,60 +631,6 @@ const formatBytes = (value: number) => {
                   </div>
                 </div>
               </UCard>
-              <UCard>
-                <template #header>
-                  <div>
-                    <h3 class="text-sm font-semibold">Session checklist</h3>
-                    <p class="text-xs text-muted">Mark prep items as you go.</p>
-                  </div>
-                </template>
-                <div class="space-y-2">
-                  <div
-                    v-for="item in checklistItems"
-                    :key="item.id"
-                    class="flex items-center gap-2"
-                  >
-                    <UCheckbox v-model="item.done" />
-                    <span class="text-sm">{{ item.label }}</span>
-                  </div>
-                </div>
-              </UCard>
-              <UCard>
-                <template #header>
-                  <div>
-                    <h3 class="text-sm font-semibold">Session checklist</h3>
-                    <p class="text-xs text-muted">Mark prep items as you go.</p>
-                  </div>
-                </template>
-                <div class="space-y-2">
-                  <div
-                    v-for="item in checklistItems"
-                    :key="item.id"
-                    class="flex items-center gap-2"
-                  >
-                    <UCheckbox v-model="item.done" />
-                    <span class="text-sm">{{ item.label }}</span>
-                  </div>
-                </div>
-              </UCard>
-              <UCard>
-                <template #header>
-                  <div>
-                    <h3 class="text-sm font-semibold">Session checklist</h3>
-                    <p class="text-xs text-muted">Mark prep items as you go.</p>
-                  </div>
-                </template>
-                <div class="space-y-2">
-                  <div
-                    v-for="item in checklistItems"
-                    :key="item.id"
-                    class="flex items-center gap-2"
-                  >
-                    <UCheckbox v-model="item.done" />
-                    <span class="text-sm">{{ item.label }}</span>
-                  </div>
-                </div>
-              </UCard>
             </div>
 
             <div v-else-if="item.value === 'notes'" class="space-y-4">
@@ -687,8 +684,25 @@ const formatBytes = (value: number) => {
                       Import file
                     </UButton>
                   </div>
+                  <div class="flex flex-wrap items-center gap-3">
+                    <USelect
+                      v-model="selectedSubtitleRecordingId"
+                      :items="videoOptions"
+                      placeholder="Select video"
+                      size="sm"
+                    />
+                    <UButton
+                      variant="outline"
+                      :disabled="!selectedSubtitleRecordingId"
+                      :loading="subtitleAttachLoading"
+                      @click="attachTranscriptToVideo"
+                    >
+                      Attach subtitles
+                    </UButton>
+                  </div>
                   <p v-if="transcriptError" class="text-sm text-error">{{ transcriptError }}</p>
                   <p v-if="transcriptImportError" class="text-sm text-error">{{ transcriptImportError }}</p>
+                  <p v-if="subtitleAttachError" class="text-sm text-error">{{ subtitleAttachError }}</p>
                 </div>
               </UCard>
 
@@ -839,6 +853,13 @@ const formatBytes = (value: number) => {
                             @click="loadPlayback(recording.id)"
                           >
                             Play
+                          </UButton>
+                          <UButton
+                            size="xs"
+                            variant="outline"
+                            :to="`/campaigns/${campaignId}/recordings/${recording.id}?transcribe=1`"
+                          >
+                            Transcribe
                           </UButton>
                           <UButton
                             size="xs"
