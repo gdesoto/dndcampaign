@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { Readable } from 'node:stream'
 import { prisma } from '#server/db/prisma'
-import { getStorageAdapter } from './storage/storage.factory'
+import { getStorageAdapter } from '#server/services/storage/storage.factory'
 import type { StorageProvider } from '@prisma/client'
 
 type CreateArtifactInput = {
