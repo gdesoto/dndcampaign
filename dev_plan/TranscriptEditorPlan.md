@@ -1,7 +1,7 @@
 # Transcript Editor Build Plan
 
 ## Goal
-Build a dedicated, performant transcript editor suited for 4�6 hour sessions. Editing should be audio-synced, searchable, and segmented; the session page only links into this editor.
+Build a dedicated, performant transcript editor suited for 4-6 hour sessions. Editing should be audio-synced, searchable, and segmented; the session page only links into this editor.
 
 ## Scope
 - Replace raw textarea editing with a segmented transcript editor.
@@ -40,7 +40,9 @@ Build a dedicated, performant transcript editor suited for 4�6 hour sessions. 
 - **Version history**: existing versions list and restore.
 
 ### Enhanced (Phase 2)
-- **Speaker tools**: rename speaker, merge/split segments.
+- **Speaker tools**: rename speaker, merge/split segments, set speaker on selection or filtered segments, disable segments from preview.
+- **Selection tools**: select segments in bulk to enable/disable or set speaker.
+- **Filters**: filter by speaker(s), time range, and optionally filter to search matches.
 - **Keyboard shortcuts**: play/pause, jump �5s, next/prev match.
 - **Side-by-side view**: waveform + segments.
 - **Low-confidence marker**: highlight segments that need review.
@@ -65,6 +67,8 @@ Build a dedicated, performant transcript editor suited for 4�6 hour sessions. 
    - Build segmented list with virtualization.
    - Add search + navigation.
    - Add sticky playback controls + audio sync.
+   - Add speaker tools: rename, set speaker on selection/filtered, disable segments.
+   - Add selection + filtering controls.
 
 3. **Save workflow**
    - Convert segments -> content payload.
@@ -81,6 +85,8 @@ Build a dedicated, performant transcript editor suited for 4�6 hour sessions. 
 - Editing a segment updates content and saves as new version.
 - Audio sync works for at least one recording.
 - Version history + restore continue to work.
+- Speaker tools allow bulk rename and per-segment disable for read-only preview.
+- Selection and filtering allow bulk enable/disable + speaker updates and optional search filtering.
 
 ## Milestones
 - **M1**: Segmented display + search + playback sync.
@@ -91,3 +97,18 @@ Build a dedicated, performant transcript editor suited for 4�6 hour sessions. 
 - Choosing canonical storage format (JSON vs Markdown+timecodes).
 - Forced alignment for proper timed VTT generation (future).
 - Handling multiple recordings per session.
+
+## Implementation Notes (Completed)
+- Canonical transcript storage is JSON in `DocumentVersion.content` with `{ version, segments }`.
+- Backwards compatibility: plaintext/SRT/VTT is parsed into segments on load.
+- VTT generation now detects segmented JSON and converts via timestamps.
+- Session page only previews and links to the transcript editor.
+
+## Completion Status
+- [x] Segment model defined and conversion helpers added.
+- [x] Transcript editor UI built (segmented list, search, jump-to-time).
+- [x] Audio sync via global media player and recording selector.
+- [x] Save/restore versions integrated with existing document endpoints.
+- [x] VTT attachment handles segmented transcripts.
+- [x] Speaker tools: bulk apply speaker, per-segment disable in preview.
+- [x] Selection + filters + search filter toggle.

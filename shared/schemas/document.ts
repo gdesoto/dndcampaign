@@ -3,12 +3,12 @@ import { z } from 'zod'
 export const documentCreateSchema = z.object({
   type: z.enum(['TRANSCRIPT', 'SUMMARY', 'NOTES']),
   title: z.string().min(1).max(200),
-  content: z.string().max(200000).optional().default(''),
+  content: z.string().max(2000000).optional().default(''),
   format: z.enum(['MARKDOWN', 'PLAINTEXT']).optional().default('MARKDOWN'),
 })
 
 export const documentUpdateSchema = z.object({
-  content: z.string().max(200000),
+  content: z.string().max(2000000),
   format: z.enum(['MARKDOWN', 'PLAINTEXT']).optional().default('MARKDOWN'),
 })
 

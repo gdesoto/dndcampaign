@@ -345,6 +345,22 @@ export class TranscriptionService {
     })
   }
 
+  async fetchTranscriptionByExternalId(jobId: string, externalJobId: string) {
+    const response = (await this.client.speechToText.transcripts.get(
+      externalJobId
+    )) as TranscriptionResponsePayload
+
+    await this.storeArtifacts(jobId, normalizeResponsePayload(response))
+
+    return prisma.transcriptionJob.update({
+      where: { id: jobId },
+      data: {
+        status: 'COMPLETED',
+        completedAt: new Date(),
+      },
+    })
+  }
+
   private async storeArtifacts(jobId: string, normalized: NormalizedWebhookPayload) {
     const job = await prisma.transcriptionJob.findUnique({
       where: { id: jobId },

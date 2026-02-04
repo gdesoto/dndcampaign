@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import type { StepperItem } from '@nuxt/ui'
+import {
+  isSegmentedTranscript,
+  parseTranscriptSegments,
+  segmentsToPlainText,
+} from '#shared/utils/transcript'
 definePageMeta({ layout: 'app' })
 
 type SessionDetail = {
@@ -199,6 +204,11 @@ const transcriptPreview = computed(() => {
   const value = transcriptDoc.value?.currentVersion?.content || ''
   if (!value) return 'No transcript yet.'
   const trimmed = value.trim()
+  if (isSegmentedTranscript(trimmed)) {
+    const segments = parseTranscriptSegments(trimmed)
+    const preview = segmentsToPlainText(segments.slice(0, 3), { includeDisabled: false })
+    return preview || 'No transcript yet.'
+  }
   return trimmed.length > 240 ? `${trimmed.slice(0, 240)}...` : trimmed
 })
 
@@ -481,7 +491,7 @@ const createDocument = async (type: 'TRANSCRIPT' | 'SUMMARY', content = '') => {
       type,
       title,
       content,
-      format: 'MARKDOWN',
+      format: type === 'TRANSCRIPT' ? 'PLAINTEXT' : 'MARKDOWN',
     },
   })
 }
@@ -497,7 +507,7 @@ const saveTranscript = async () => {
         method: 'PATCH',
         body: {
           content: transcriptForm.content,
-          format: 'MARKDOWN',
+          format: 'PLAINTEXT',
         },
       })
     }

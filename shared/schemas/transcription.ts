@@ -36,6 +36,11 @@ export const transcriptionAttachVttSchema = z.object({
   recordingId: z.string().uuid().optional(),
 })
 
+export const transcriptionImportSchema = z.object({
+  transcriptionId: z.string().min(1).max(200),
+})
+
 export type TranscriptionStartInput = z.infer<typeof transcriptionStartSchema>
 export type TranscriptionApplyInput = z.infer<typeof transcriptionApplySchema>
 export type TranscriptionAttachVttInput = z.infer<typeof transcriptionAttachVttSchema>
+export type TranscriptionImportInput = z.infer<typeof transcriptionImportSchema>

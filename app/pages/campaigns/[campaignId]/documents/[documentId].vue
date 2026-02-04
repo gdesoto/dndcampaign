@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import {
+  parseTranscriptSegments,
+  serializeTranscriptSegments,
+  segmentsToPlainText,
+  type TranscriptSegment,
+} from '#shared/utils/transcript'
+
 definePageMeta({ layout: 'app' })
 
 type DocumentVersion = {
@@ -24,12 +31,20 @@ type SessionRecording = {
   kind: 'AUDIO' | 'VIDEO'
   filename: string
   createdAt: string
+  durationSeconds?: number | null
+  vttArtifactId?: string | null
 }
+
+type HighlightPart = { text: string; match: boolean }
 
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
 const documentId = computed(() => route.params.documentId as string)
 const { request } = useApi()
+const player = useMediaPlayer()
+const hasMounted = ref(false)
+const playbackRangeError = ref('')
+let playbackRangeTimer: ReturnType<typeof setInterval> | undefined
 
 const { data: document, pending, refresh, error } = await useAsyncData(
   () => `document-${documentId.value}`,
@@ -42,6 +57,9 @@ const { data: versions, refresh: refreshVersions } = await useAsyncData(
 )
 
 const content = ref('')
+const segments = ref<TranscriptSegment[]>([])
+const isDirty = ref(false)
+const lastSavedAt = ref<string | null>(null)
 const saveError = ref('')
 const isSaving = ref(false)
 const restoreError = ref('')
@@ -51,6 +69,20 @@ const importFile = ref<File | null>(null)
 const subtitleAttachLoading = ref(false)
 const subtitleAttachError = ref('')
 const selectedSubtitleRecordingId = ref('')
+
+const windowStart = ref(0)
+const windowSize = ref(200)
+const searchInput = ref('')
+const searchTerm = ref('')
+const activeMatchIndex = ref(0)
+const selectedSegmentId = ref('')
+const selectedSegmentIds = ref<string[]>([])
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+const searchFilterEnabled = ref(false)
+const speakerFilterSelection = ref<string[]>([])
+const startTimeFilter = ref('')
+const endTimeFilter = ref('')
+const speakerBulkInput = ref('')
 
 const { data: sessionRecordings } = await useAsyncData(
   () => `document-session-recordings-${documentId.value}`,
@@ -63,6 +95,13 @@ const { data: sessionRecordings } = await useAsyncData(
   { watch: [document] }
 )
 
+const recordingOptions = computed(() =>
+  (sessionRecordings.value || []).map((recording) => ({
+    label: `${recording.filename} (${recording.kind})`,
+    value: recording.id,
+  }))
+)
+
 const videoOptions = computed(() =>
   (sessionRecordings.value || [])
     .filter((recording) => recording.kind === 'VIDEO')
@@ -72,39 +111,368 @@ const videoOptions = computed(() =>
     }))
 )
 
+const selectedRecordingId = ref('')
+
+const { data: selectedRecording } = await useAsyncData(
+  () => `document-recording-${selectedRecordingId.value}`,
+  async () => {
+    if (!selectedRecordingId.value) return null
+    return request<SessionRecording>(`/api/recordings/${selectedRecordingId.value}`)
+  },
+  { watch: [selectedRecordingId] }
+)
+
+const { data: playbackUrl, pending: playbackPending } = await useAsyncData(
+  () => `document-recording-playback-${selectedRecordingId.value}`,
+  async () => {
+    if (!selectedRecordingId.value) return ''
+    const payload = await request<{ url: string }>(
+      `/api/recordings/${selectedRecordingId.value}/playback-url`
+    )
+    return payload.url
+  },
+  { watch: [selectedRecordingId] }
+)
+
+onMounted(() => {
+  hasMounted.value = true
+})
+
+onBeforeUnmount(() => {
+  if (playbackRangeTimer) {
+    clearInterval(playbackRangeTimer)
+  }
+})
+
+const vttUrl = computed(() =>
+  selectedRecording.value?.vttArtifactId
+    ? `/api/artifacts/${selectedRecording.value.vttArtifactId}/stream`
+    : undefined
+)
+
+const playbackReady = computed(() =>
+  hasMounted.value ? Boolean(playbackUrl.value) : false
+)
+
 watch(
   () => document.value,
   (value) => {
-    content.value = value?.currentVersion?.content || ''
+    const nextContent = value?.currentVersion?.content || ''
+    content.value = nextContent
+    if (value?.type === 'TRANSCRIPT') {
+      segments.value = parseTranscriptSegments(nextContent)
+      isDirty.value = false
+      lastSavedAt.value = value?.currentVersion?.createdAt || null
+      windowStart.value = 0
+      selectedSegmentId.value = ''
+      selectedSegmentIds.value = []
+      activeMatchIndex.value = 0
+    } else {
+      segments.value = []
+    }
   },
   { immediate: true }
 )
 
 watch(
-  () => videoOptions.value,
-  (value) => {
-    if (!value.length) {
-      selectedSubtitleRecordingId.value = ''
-      return
+  () => [videoOptions.value, recordingOptions.value],
+  ([videoList, recordingList]) => {
+    if (videoList.length && !selectedSubtitleRecordingId.value) {
+      selectedSubtitleRecordingId.value = videoList[0].value
     }
-    if (!selectedSubtitleRecordingId.value) {
-      selectedSubtitleRecordingId.value = value[0].value
+    if (recordingList.length && !selectedRecordingId.value) {
+      const preferred =
+        sessionRecordings.value?.find((item) => item.kind === 'AUDIO') ||
+        sessionRecordings.value?.[0]
+      selectedRecordingId.value = preferred?.id || ''
     }
   },
   { immediate: true }
 )
+
+watch(
+  () => searchInput.value,
+  (value) => {
+    const nextValue = String(value ?? '').trim()
+    if (!nextValue) {
+      if (searchTimer) {
+        clearTimeout(searchTimer)
+      }
+      searchTerm.value = ''
+      activeMatchIndex.value = 0
+      return
+    }
+    if (searchTimer) {
+      clearTimeout(searchTimer)
+    }
+    searchTimer = setTimeout(() => {
+      searchTerm.value = nextValue
+      activeMatchIndex.value = 0
+    }, 200)
+  }
+)
+
+const parseTimeInput = (value: string) => {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  const parts = trimmed.split(':').map((part) => Number(part))
+  if (parts.some((part) => Number.isNaN(part))) return null
+  if (parts.length === 1) return parts[0] * 1000
+  if (parts.length === 2) return (parts[0] * 60 + parts[1]) * 1000
+  if (parts.length === 3) return (parts[0] * 3600 + parts[1] * 60 + parts[2]) * 1000
+  return null
+}
+
+const speakerFilters = computed(() =>
+  speakerFilterSelection.value.map((item) => item.toLowerCase())
+)
+
+const speakerOptions = computed(() => {
+  const unique = new Set<string>()
+  segments.value.forEach((segment) => {
+    const speaker = (segment.speaker || '').trim()
+    if (speaker) unique.add(speaker)
+  })
+  return Array.from(unique).sort((a, b) => a.localeCompare(b))
+})
+
+const startFilterMs = computed(() => parseTimeInput(startTimeFilter.value))
+const endFilterMs = computed(() => parseTimeInput(endTimeFilter.value))
+
+const baseFilteredSegments = computed(() => {
+  const speakerList = speakerFilters.value
+  const startMs = startFilterMs.value
+  const endMs = endFilterMs.value
+  return segments.value.filter((segment) => {
+    if (speakerList.length) {
+      const speaker = (segment.speaker || '').toLowerCase()
+      if (!speaker || !speakerList.includes(speaker)) return false
+    }
+    if (startMs !== null || endMs !== null) {
+      if (segment.startMs === null || segment.endMs === null) return false
+      if (startMs !== null && segment.endMs < startMs) return false
+      if (endMs !== null && segment.startMs > endMs) return false
+    }
+    return true
+  })
+})
+
+const filteredSegments = computed(() => {
+  if (!searchFilterEnabled.value || !searchTerm.value) return baseFilteredSegments.value
+  const needle = searchTerm.value.toLowerCase()
+  return baseFilteredSegments.value.filter((segment) =>
+    segment.text.toLowerCase().includes(needle)
+  )
+})
+
+const matchIndices = computed(() => {
+  if (!searchTerm.value) return []
+  const needle = searchTerm.value.toLowerCase()
+  const matches: number[] = []
+  filteredSegments.value.forEach((segment, index) => {
+    if (segment.text.toLowerCase().includes(needle)) {
+      matches.push(index)
+    }
+  })
+  return matches
+})
+
+const visibleSegments = computed(() =>
+  filteredSegments.value.slice(windowStart.value, windowStart.value + windowSize.value)
+)
+
+const canPrevWindow = computed(() => windowStart.value > 0)
+const canNextWindow = computed(
+  () => windowStart.value + windowSize.value < filteredSegments.value.length
+)
+
+const windowLabel = computed(() => {
+  if (!filteredSegments.value.length) return '0 segments'
+  const start = windowStart.value + 1
+  const end = Math.min(windowStart.value + windowSize.value, filteredSegments.value.length)
+  return `${start}-${end} of ${filteredSegments.value.length}`
+})
+
+const currentTimeMs = computed(() => player.state.value.currentTime * 1000)
+const activeSegmentId = computed(() => {
+  if (!currentTimeMs.value) return ''
+  const match = visibleSegments.value.find(
+    (segment) =>
+      typeof segment.startMs === 'number' &&
+      typeof segment.endMs === 'number' &&
+      currentTimeMs.value >= segment.startMs &&
+      currentTimeMs.value <= segment.endMs
+  )
+  return match?.id || ''
+})
+
+const formatTimestamp = (value: number | null) => {
+  if (value === null || !Number.isFinite(value)) return '--:--'
+  const totalSeconds = Math.floor(value / 1000)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds
+      .toString()
+      .padStart(2, '0')}`
+  }
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`
+}
+
+const formatDuration = (segment: TranscriptSegment) => {
+  if (segment.startMs === null || segment.endMs === null) return ''
+  const duration = Math.max(0, segment.endMs - segment.startMs)
+  return `${(duration / 1000).toFixed(1)}s`
+}
+
+const highlightParts = (text: string): HighlightPart[] => {
+  const needle = searchTerm.value.toLowerCase()
+  if (!needle) return [{ text, match: false }]
+  const lower = text.toLowerCase()
+  const parts: HighlightPart[] = []
+  let index = 0
+  while (index < text.length) {
+    const matchIndex = lower.indexOf(needle, index)
+    if (matchIndex === -1) {
+      parts.push({ text: text.slice(index), match: false })
+      break
+    }
+    if (matchIndex > index) {
+      parts.push({ text: text.slice(index, matchIndex), match: false })
+    }
+    parts.push({
+      text: text.slice(matchIndex, matchIndex + needle.length),
+      match: true,
+    })
+    index = matchIndex + needle.length
+  }
+  return parts
+}
+
+const markDirty = () => {
+  if (!isDirty.value) {
+    isDirty.value = true
+  }
+}
+
+const toggleSegmentDisabled = (segment: TranscriptSegment) => {
+  segment.disabled = !segment.disabled
+  markDirty()
+}
+
+const selectedSet = computed(() => new Set(selectedSegmentIds.value))
+
+const toggleSegmentSelection = (segmentId: string) => {
+  const next = new Set(selectedSegmentIds.value)
+  if (next.has(segmentId)) {
+    next.delete(segmentId)
+  } else {
+    next.add(segmentId)
+  }
+  selectedSegmentIds.value = Array.from(next)
+}
+
+const selectAllFiltered = () => {
+  selectedSegmentIds.value = filteredSegments.value.map((segment) => segment.id)
+}
+
+const clearSelection = () => {
+  selectedSegmentIds.value = []
+}
+
+const applyDisableToSelection = (disabled: boolean) => {
+  const selection = selectedSet.value
+  if (!selection.size) return
+  segments.value.forEach((segment) => {
+    if (selection.has(segment.id)) {
+      segment.disabled = disabled
+    }
+  })
+  markDirty()
+}
+
+const applySpeakerToSelection = (speakerValue: string) => {
+  const trimmed = speakerValue.trim()
+  if (!trimmed) return
+  const selection = selectedSet.value
+  if (!selection.size) return
+  segments.value.forEach((segment) => {
+    if (selection.has(segment.id)) {
+      segment.speaker = trimmed
+    }
+  })
+  markDirty()
+}
+
+const applySpeakerToFiltered = (speakerValue: string) => {
+  const trimmed = speakerValue.trim()
+  if (!trimmed) return
+  const filteredIds = new Set(filteredSegments.value.map((segment) => segment.id))
+  segments.value.forEach((segment) => {
+    if (filteredIds.has(segment.id)) {
+      segment.speaker = trimmed
+    }
+  })
+  markDirty()
+}
+
+const jumpToSegment = async (segment: TranscriptSegment) => {
+  if (segment.startMs === null || segment.startMs === undefined) return
+  player.seek(segment.startMs / 1000)
+}
+
+const goToMatch = (direction: 1 | -1) => {
+  if (!matchIndices.value.length) return
+  const nextIndex =
+    (activeMatchIndex.value + direction + matchIndices.value.length) %
+    matchIndices.value.length
+  activeMatchIndex.value = nextIndex
+  const segmentIndex = matchIndices.value[nextIndex]
+  if (typeof segmentIndex !== 'number') return
+  selectedSegmentId.value = filteredSegments.value[segmentIndex]?.id || ''
+  const nextWindowStart = Math.max(0, segmentIndex - Math.floor(windowSize.value / 2))
+  windowStart.value = nextWindowStart
+  nextTick(() => {
+    const el = globalThis.document?.querySelector(
+      `#segment-${selectedSegmentId.value}`
+    )
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  })
+}
+
+const moveWindow = (direction: 1 | -1) => {
+  const nextStart = Math.max(
+    0,
+    Math.min(
+      windowStart.value + direction * windowSize.value,
+      Math.max(0, filteredSegments.value.length - windowSize.value)
+    )
+  )
+  windowStart.value = nextStart
+}
 
 const saveDocument = async () => {
   saveError.value = ''
   isSaving.value = true
   try {
+    const isTranscript = document.value?.type === 'TRANSCRIPT'
+    const payloadContent = isTranscript
+      ? serializeTranscriptSegments(segments.value)
+      : content.value
+    const format = isTranscript ? 'PLAINTEXT' : 'MARKDOWN'
+
     await request(`/api/documents/${documentId.value}`, {
       method: 'PATCH',
       body: {
-        content: content.value,
-        format: 'MARKDOWN',
+        content: payloadContent,
+        format,
       },
     })
+    isDirty.value = false
+    lastSavedAt.value = new Date().toISOString()
     await refresh()
     await refreshVersions()
   } catch (error) {
@@ -168,6 +536,90 @@ const attachTranscriptToVideo = async () => {
     subtitleAttachLoading.value = false
   }
 }
+
+const startPlayback = async () => {
+  if (!selectedRecording.value || !playbackUrl.value) return
+  await player.playSource(
+    {
+      id: selectedRecording.value.id,
+      title: selectedRecording.value.filename,
+      subtitle: selectedRecording.value.kind,
+      kind: selectedRecording.value.kind,
+      src: playbackUrl.value,
+      vttUrl: vttUrl.value,
+    },
+    { presentation: 'page' }
+  )
+}
+
+const stopPlaybackRangeTimer = () => {
+  if (playbackRangeTimer) {
+    clearInterval(playbackRangeTimer)
+    playbackRangeTimer = undefined
+  }
+}
+
+const playRange = async (startMs: number, endMs: number) => {
+  playbackRangeError.value = ''
+  if (!selectedRecording.value || !playbackUrl.value) {
+    playbackRangeError.value = 'Select a recording to play this segment.'
+    return
+  }
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) {
+    playbackRangeError.value = 'Segment time range is invalid.'
+    return
+  }
+
+  await startPlayback()
+  player.seek(startMs / 1000)
+  await player.play()
+
+  stopPlaybackRangeTimer()
+  const endSeconds = endMs / 1000
+  playbackRangeTimer = setInterval(() => {
+    const current = player.state.value.currentTime
+    if (current >= endSeconds) {
+      player.pause()
+      stopPlaybackRangeTimer()
+    }
+  }, 150)
+}
+
+const playSegment = async (segment: TranscriptSegment) => {
+  if (segment.startMs === null || segment.endMs === null) {
+    playbackRangeError.value = 'This segment has no timestamps.'
+    return
+  }
+  await playRange(segment.startMs, segment.endMs)
+}
+
+const playSelection = async () => {
+  const selection = selectedSet.value
+  if (!selection.size) {
+    playbackRangeError.value = 'Select at least one segment.'
+    return
+  }
+  const selectedSegments = segments.value.filter((segment) =>
+    selection.has(segment.id)
+  )
+  const timed = selectedSegments.filter(
+    (segment) =>
+      typeof segment.startMs === 'number' && typeof segment.endMs === 'number'
+  )
+  if (!timed.length) {
+    playbackRangeError.value = 'Selected segments have no timestamps.'
+    return
+  }
+  const startMs = Math.min(...timed.map((segment) => segment.startMs as number))
+  const endMs = Math.max(...timed.map((segment) => segment.endMs as number))
+  await playRange(startMs, endMs)
+}
+
+const transcriptPreview = computed(() => {
+  if (document.value?.type !== 'TRANSCRIPT') return ''
+  if (!segments.value.length) return 'No segments yet.'
+  return segmentsToPlainText(segments.value.slice(0, 3), { includeDisabled: false })
+})
 </script>
 
 <template>
@@ -197,8 +649,8 @@ const attachTranscriptToVideo = async () => {
       </div>
 
       <div v-if="pending" class="grid gap-4">
-        <UCard  class="h-32 animate-pulse" />
-        <UCard  class="h-52 animate-pulse" />
+        <UCard class="h-32 animate-pulse" />
+        <UCard class="h-52 animate-pulse" />
       </div>
 
       <UCard v-else-if="error" class="text-center">
@@ -206,8 +658,401 @@ const attachTranscriptToVideo = async () => {
         <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
       </UCard>
 
+      <div
+        v-else-if="document?.type === 'TRANSCRIPT'"
+        class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]"
+      >
+        <UCard>
+          <template #header>
+            <div class="space-y-4">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 class="text-lg font-semibold">Transcript editor</h2>
+                  <p class="text-sm text-muted">
+                    Segmented editing with audio sync and search.
+                  </p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 text-xs text-dimmed">
+                  <span v-if="isDirty" class="rounded-full bg-warning/20 px-2 py-1 text-warning">
+                    Unsaved changes
+                  </span>
+                  <span v-if="lastSavedAt">
+                    Last saved {{ new Date(lastSavedAt).toLocaleString() }}
+                  </span>
+                  <UButton :loading="isSaving" size="sm" @click="saveDocument">
+                    Save version
+                  </UButton>
+                </div>
+              </div>
+              <div class="flex flex-wrap items-center gap-3">
+                <UInput
+                  v-model="searchInput"
+                  size="sm"
+                  class="min-w-[220px]"
+                  placeholder="Search transcript"
+                />
+                <UCheckbox v-model="searchFilterEnabled" label="Filter matches" />
+                <div class="flex items-center gap-2 text-xs text-dimmed">
+                  <UButton
+                    size="xs"
+                    variant="outline"
+                    :disabled="!matchIndices.length"
+                    @click="goToMatch(-1)"
+                  >
+                    Prev
+                  </UButton>
+                  <UButton
+                    size="xs"
+                    variant="outline"
+                    :disabled="!matchIndices.length"
+                    @click="goToMatch(1)"
+                  >
+                    Next
+                  </UButton>
+                  <span v-if="matchIndices.length">
+                    {{ activeMatchIndex + 1 }}/{{ matchIndices.length }} matches
+                  </span>
+                </div>
+              </div>
+              <div class="flex flex-wrap items-center gap-3 text-xs text-dimmed">
+                <UInputMenu
+                  v-model="speakerFilterSelection"
+                  size="xs"
+                  class="min-w-[200px]"
+                  multiple
+                  :items="speakerOptions"
+                  placeholder="Filter speakers"
+                />
+                <UInput
+                  v-model="startTimeFilter"
+                  size="xs"
+                  class="w-28"
+                  placeholder="Start mm:ss"
+                />
+                <UInput
+                  v-model="endTimeFilter"
+                  size="xs"
+                  class="w-28"
+                  placeholder="End mm:ss"
+                />
+                <div class="flex flex-wrap items-center gap-2">
+                  <UInput
+                    v-model="speakerBulkInput"
+                    size="xs"
+                    class="min-w-[150px]"
+                    placeholder="Set speaker"
+                  />
+                  <UButton
+                    size="xs"
+                    variant="outline"
+                    :disabled="!selectedSegmentIds.length"
+                    @click="applySpeakerToSelection(speakerBulkInput)"
+                  >
+                    Apply to selection
+                  </UButton>
+                  <UButton
+                    size="xs"
+                    variant="outline"
+                    :disabled="!filteredSegments.length"
+                    @click="applySpeakerToFiltered(speakerBulkInput)"
+                  >
+                    Apply to filtered
+                  </UButton>
+                </div>
+              </div>
+              <div class="flex flex-wrap items-center gap-2 text-xs text-dimmed">
+                <UButton size="xs" variant="ghost" @click="selectAllFiltered">
+                  Select filtered
+                </UButton>
+                <UButton size="xs" variant="ghost" @click="clearSelection">
+                  Clear selection
+                </UButton>
+                <UButton
+                  size="xs"
+                  variant="outline"
+                  :disabled="!selectedSegmentIds.length"
+                  @click="applyDisableToSelection(true)"
+                >
+                  Disable selection
+                </UButton>
+                <UButton
+                  size="xs"
+                  variant="outline"
+                  :disabled="!selectedSegmentIds.length"
+                  @click="applyDisableToSelection(false)"
+                >
+                  Enable selection
+                </UButton>
+                <UButton
+                  size="xs"
+                  variant="outline"
+                  :disabled="!selectedSegmentIds.length"
+                  @click="playSelection"
+                >
+                  Play selection
+                </UButton>
+              </div>
+              <div class="flex flex-wrap items-center justify-between gap-3 text-xs text-dimmed">
+                <span>Showing {{ windowLabel }}</span>
+                <div class="flex items-center gap-2">
+                  <UButton
+                    size="xs"
+                    variant="ghost"
+                    :disabled="!canPrevWindow"
+                    @click="moveWindow(-1)"
+                  >
+                    Previous window
+                  </UButton>
+                  <UButton
+                    size="xs"
+                    variant="ghost"
+                    :disabled="!canNextWindow"
+                    @click="moveWindow(1)"
+                  >
+                    Next window
+                  </UButton>
+                </div>
+              </div>
+              <p v-if="saveError" class="text-sm text-error">{{ saveError }}</p>
+            </div>
+          </template>
+
+          <div class="space-y-4">
+            <p v-if="!segments.length" class="text-sm text-muted">
+              No segments yet. Import a transcript or start a transcription job.
+            </p>
+
+            <div v-else class="space-y-3">
+              <div
+                v-for="(segment, idx) in visibleSegments"
+                :id="`segment-${segment.id}`"
+                :key="segment.id"
+                class="rounded-lg border border-default bg-elevated/30 p-3"
+                :class="{
+                  'border-primary/60 bg-primary/10': segment.id === activeSegmentId,
+                  'border-warning/50': matchIndices.includes(windowStart + idx),
+                  'opacity-60': segment.disabled,
+                }"
+              >
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div class="flex items-center gap-2 text-xs text-dimmed">
+                    <span>{{ formatTimestamp(segment.startMs) }}</span>
+                    <span v-if="segment.endMs !== null">- {{ formatTimestamp(segment.endMs) }}</span>
+                    <span v-if="formatDuration(segment)">
+                      - {{ formatDuration(segment) }}
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <UCheckbox
+                      :model-value="selectedSet.has(segment.id)"
+                      @update:modelValue="() => toggleSegmentSelection(segment.id)"
+                    />
+                    <UButton
+                      size="xs"
+                      variant="ghost"
+                      @click="toggleSegmentDisabled(segment)"
+                    >
+                      {{ segment.disabled ? 'Enable' : 'Disable' }}
+                    </UButton>
+                    <UButton
+                      size="xs"
+                      variant="ghost"
+                      :disabled="segment.startMs === null || segment.endMs === null"
+                      @click="playSegment(segment)"
+                    >
+                      Play segment
+                    </UButton>
+                    <UButton
+                      size="xs"
+                      variant="ghost"
+                      :disabled="segment.startMs === null"
+                      @click="jumpToSegment(segment)"
+                    >
+                      Jump
+                    </UButton>
+                  </div>
+                </div>
+                <div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                  <UInput
+                    v-model="segment.speaker"
+                    size="xs"
+                    class="w-36"
+                    placeholder="Speaker"
+                    @input="markDirty"
+                  />
+                  <span v-if="segment.disabled" class="rounded-full bg-warning/20 px-2 py-0.5 text-warning">
+                    Disabled in preview
+                  </span>
+                  <span v-if="segment.confidence !== null" class="text-dimmed">
+                    Confidence: {{ Math.round(segment.confidence * 100) }}%
+                  </span>
+                </div>
+                <div v-if="searchTerm" class="mt-2 text-xs text-muted">
+                  <span v-for="(part, partIndex) in highlightParts(segment.text)" :key="partIndex">
+                    <span v-if="part.match" class="rounded bg-warning/30 px-1">
+                      {{ part.text }}
+                    </span>
+                    <span v-else>{{ part.text }}</span>
+                  </span>
+                </div>
+                <UTextarea
+                  v-model="segment.text"
+                  :rows="2"
+                  size="sm"
+                  class="mt-2"
+                  @input="markDirty"
+                />
+              </div>
+            </div>
+          </div>
+        </UCard>
+
+        <div class="space-y-6">
+          <UCard>
+            <template #header>
+              <div>
+                <h2 class="text-lg font-semibold">Playback</h2>
+                <p class="text-sm text-muted">
+                  Sync transcript edits with session audio or video.
+                </p>
+              </div>
+            </template>
+            <div class="space-y-3">
+              <USelect
+                v-model="selectedRecordingId"
+                :items="recordingOptions"
+                placeholder="Select recording"
+              />
+              <div class="flex flex-wrap items-center gap-2">
+                <UButton
+                  size="sm"
+                  variant="outline"
+                  :disabled="!playbackReady"
+                  :loading="hasMounted && playbackPending"
+                  @click="startPlayback"
+                >
+                  Play in editor
+                </UButton>
+                <span v-if="hasMounted && playbackPending" class="text-xs text-dimmed">
+                  Loading stream...
+                </span>
+              </div>
+              <MediaPlayerDock dock-id="transcript-player-dock" mode="page" />
+              <p class="text-xs text-dimmed">
+                Current time: {{ formatTimestamp(currentTimeMs) }}
+              </p>
+              <p v-if="player.state.error" class="text-sm text-error">
+                {{ player.state.error }}
+              </p>
+              <p v-if="playbackRangeError" class="text-sm text-error">
+                {{ playbackRangeError }}
+              </p>
+            </div>
+          </UCard>
+
+          <UCard>
+            <template #header>
+              <div>
+                <h2 class="text-lg font-semibold">Transcript actions</h2>
+                <p class="text-sm text-muted">
+                  Import text or attach subtitles to video recordings.
+                </p>
+              </div>
+            </template>
+            <div class="space-y-4">
+              <div class="flex flex-wrap items-center gap-2">
+                <UInput
+                  type="file"
+                  accept=".txt,.md,.markdown,.vtt"
+                  @change="importFile = ($event.target as HTMLInputElement).files?.[0] || null"
+                />
+                <UButton
+                  :disabled="!document?.sessionId"
+                  :loading="importing"
+                  variant="outline"
+                  @click="importDocument"
+                >
+                  Import file
+                </UButton>
+              </div>
+              <div class="flex flex-wrap items-center gap-3">
+                <USelect
+                  v-model="selectedSubtitleRecordingId"
+                  :items="videoOptions"
+                  placeholder="Select video"
+                  size="sm"
+                />
+                <UButton
+                  variant="outline"
+                  :disabled="!selectedSubtitleRecordingId"
+                  :loading="subtitleAttachLoading"
+                  @click="attachTranscriptToVideo"
+                >
+                  Attach subtitles
+                </UButton>
+              </div>
+              <p v-if="importError" class="text-sm text-error">{{ importError }}</p>
+              <p v-if="subtitleAttachError" class="text-sm text-error">{{ subtitleAttachError }}</p>
+            </div>
+          </UCard>
+
+          <UCard>
+            <template #header>
+              <div>
+                <h2 class="text-lg font-semibold">Preview</h2>
+                <p class="text-sm text-muted">
+                  Quick glance at the first segments.
+                </p>
+              </div>
+            </template>
+            <div class="whitespace-pre-line text-sm text-muted">
+              {{ transcriptPreview || 'No transcript yet.' }}
+            </div>
+          </UCard>
+
+          <UCard>
+            <template #header>
+              <div>
+                <h2 class="text-lg font-semibold">Version history</h2>
+                <p class="text-sm text-muted">
+                  Restore any previous version.
+                </p>
+              </div>
+            </template>
+            <div class="space-y-3">
+              <div
+                v-for="version in versions"
+                :key="version.id"
+                class="rounded-lg border border-default bg-elevated/30 p-3 text-sm"
+              >
+                <div class="flex items-center justify-between gap-2">
+                  <div>
+                    <p class="font-semibold">Version {{ version.versionNumber }}</p>
+                    <p class="text-xs text-dimmed">
+                      {{ new Date(version.createdAt).toLocaleString() }} - {{ version.source }}
+                    </p>
+                  </div>
+                  <UButton
+                    size="xs"
+                    variant="outline"
+                    :disabled="document?.currentVersionId === version.id"
+                    @click="restoreVersion(version.id)"
+                  >
+                    Restore
+                  </UButton>
+                </div>
+              </div>
+              <p v-if="!versions?.length" class="text-sm text-muted">
+                No versions yet.
+              </p>
+              <p v-if="restoreError" class="text-sm text-error">{{ restoreError }}</p>
+            </div>
+          </UCard>
+        </div>
+      </div>
+
       <div v-else class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <UCard >
+        <UCard>
           <template #header>
             <div>
               <h2 class="text-lg font-semibold">Editor</h2>
@@ -236,32 +1081,12 @@ const attachTranscriptToVideo = async () => {
                 </UButton>
               </div>
             </div>
-            <div
-              v-if="document?.type === 'TRANSCRIPT'"
-              class="flex flex-wrap items-center gap-3"
-            >
-              <USelect
-                v-model="selectedSubtitleRecordingId"
-                :items="videoOptions"
-                placeholder="Select video"
-                size="sm"
-              />
-              <UButton
-                variant="outline"
-                :disabled="!selectedSubtitleRecordingId"
-                :loading="subtitleAttachLoading"
-                @click="attachTranscriptToVideo"
-              >
-                Attach subtitles
-              </UButton>
-            </div>
             <p v-if="saveError" class="text-sm text-error">{{ saveError }}</p>
             <p v-if="importError" class="text-sm text-error">{{ importError }}</p>
-            <p v-if="subtitleAttachError" class="text-sm text-error">{{ subtitleAttachError }}</p>
           </div>
         </UCard>
 
-        <UCard >
+        <UCard>
           <template #header>
             <div>
               <h2 class="text-lg font-semibold">Version history</h2>
@@ -280,7 +1105,7 @@ const attachTranscriptToVideo = async () => {
                 <div>
                   <p class="font-semibold">Version {{ version.versionNumber }}</p>
                   <p class="text-xs text-dimmed">
-                    {{ new Date(version.createdAt).toLocaleString() }} · {{ version.source }}
+                    {{ new Date(version.createdAt).toLocaleString() }} - {{ version.source }}
                   </p>
                 </div>
                 <UButton

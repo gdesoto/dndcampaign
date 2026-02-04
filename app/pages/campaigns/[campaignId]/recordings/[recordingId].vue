@@ -129,6 +129,10 @@ const transcribeModalOpen = ref(false)
 const transcribeLoading = ref(false)
 const transcribeError = ref('')
 const transcribeActionError = ref('')
+const importModalOpen = ref(false)
+const importTranscriptionId = ref('')
+const importLoading = ref(false)
+const importError = ref('')
 const selectedVideoByArtifact = reactive<Record<string, string>>({})
 
 const transcribeForm = reactive({
@@ -299,6 +303,31 @@ const startTranscription = async () => {
   }
 }
 
+const importTranscription = async () => {
+  if (!recording.value) return
+  importError.value = ''
+  importLoading.value = true
+  try {
+    const transcriptionId = importTranscriptionId.value.trim()
+    if (!transcriptionId) {
+      importError.value = 'Provide a transcription ID.'
+      return
+    }
+    await request(`/api/recordings/${recordingId.value}/transcriptions/import`, {
+      method: 'POST',
+      body: { transcriptionId },
+    })
+    await refreshTranscriptions()
+    importTranscriptionId.value = ''
+    importModalOpen.value = false
+  } catch (error) {
+    importError.value =
+      (error as Error & { message?: string }).message || 'Unable to import transcription.'
+  } finally {
+    importLoading.value = false
+  }
+}
+
 const fetchTranscription = async (jobId: string) => {
   transcribeActionError.value = ''
   try {
@@ -439,9 +468,14 @@ const formatBytes = (value: number) => {
                   Start a speech-to-text job and review outputs.
                 </p>
               </div>
-              <UButton size="sm" variant="outline" @click="transcribeModalOpen = true">
-                Start transcription
-              </UButton>
+              <div class="flex flex-wrap items-center gap-2">
+                <UButton size="sm" variant="outline" @click="importModalOpen = true">
+                  Import transcription
+                </UButton>
+                <UButton size="sm" variant="outline" @click="transcribeModalOpen = true">
+                  Start transcription
+                </UButton>
+              </div>
             </div>
           </template>
           <div class="space-y-3">
@@ -485,7 +519,7 @@ const formatBytes = (value: number) => {
                   </div>
                   <div class="flex flex-wrap gap-2">
                     <UButton
-                      v-if="artifact.format === 'TXT'"
+                      v-if="artifact.format === 'TXT' || artifact.format === 'SEGMENTED_JSON'"
                       size="xs"
                       variant="outline"
                       @click="applyTranscript(job.id, artifact.artifact.id)"
@@ -642,7 +676,7 @@ const formatBytes = (value: number) => {
       </div>
     </div>
 
-    <UModal v-model:open="transcribeModalOpen">
+  <UModal v-model:open="transcribeModalOpen">
       <template #content>
         <UCard>
           <template #header>
@@ -708,7 +742,39 @@ const formatBytes = (value: number) => {
             </div>
           </template>
         </UCard>
-      </template>
-    </UModal>
+    </template>
+  </UModal>
+
+  <UModal v-model:open="importModalOpen">
+    <template #content>
+      <UCard>
+        <template #header>
+          <div>
+            <h2 class="text-lg font-semibold">Import transcription</h2>
+            <p class="text-sm text-muted">
+              Paste an ElevenLabs transcription ID to fetch its outputs.
+            </p>
+          </div>
+        </template>
+        <div class="space-y-4">
+          <div>
+            <label class="mb-2 block text-sm text-muted">Transcription ID</label>
+            <UInput v-model="importTranscriptionId" placeholder="e.g. nJn7Iy1UFLm5T0aEpd7L" />
+          </div>
+          <p v-if="importError" class="text-sm text-error">{{ importError }}</p>
+        </div>
+        <template #footer>
+          <div class="flex justify-end gap-3">
+            <UButton variant="ghost" color="gray" @click="importModalOpen = false">
+              Cancel
+            </UButton>
+            <UButton :loading="importLoading" @click="importTranscription">
+              Import
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+    </template>
+  </UModal>
   </UPage>
 </template>

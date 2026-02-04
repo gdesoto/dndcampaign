@@ -2,6 +2,11 @@ import { Readable } from 'node:stream'
 import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { RecordingService } from '#server/services/recording.service'
+import {
+  isSegmentedTranscript,
+  parseTranscriptSegments,
+  segmentsToVtt,
+} from '#shared/utils/transcript'
 
 const srtToVtt = (input: string) => {
   const normalized = input.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim()
@@ -86,7 +91,11 @@ export default defineEventHandler(async (event) => {
   }
 
   const rawContent = transcript.currentVersion.content
-  const vttContent = isLikelySrt(rawContent) ? srtToVtt(rawContent) : normalizeVtt(rawContent)
+  const vttContent = isSegmentedTranscript(rawContent)
+    ? segmentsToVtt(parseTranscriptSegments(rawContent))
+    : isLikelySrt(rawContent)
+      ? srtToVtt(rawContent)
+      : normalizeVtt(rawContent)
 
   const service = new RecordingService()
   await service.attachVttFromStream({
