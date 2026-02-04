@@ -1,75 +1,43 @@
-# Nuxt Minimal Starter
+# DND Campaign
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+DND Campaign is a Nuxt 4 web app for running tabletop campaigns. It manages campaigns, sessions, glossary entries, quests, milestones, and recordings. Recordings are stored via a storage abstraction (local by default) and streamed with range support for media playback.
 
-## Setup
+**Tech Stack**
+1. Nuxt 4 (server routes)
+2. Prisma (SQLite by default)
+3. Nuxt UI
 
-Make sure to install dependencies:
+**Prerequisites**
+1. Node.js
+2. Yarn
 
+**Setup**
 ```bash
-# npm
-npm install
-
-# pnpm
-pnpm install
-
-# yarn
 yarn install
-
-# bun
-bun install
 ```
 
-## Development Server
+**Environment**
+1. Database: `prisma/db/dev.db`
+2. Storage root (local): `./storage`
+3. Runtime config: `runtimeConfig.storage` (see `.env` if present)
 
-Start the development server on `http://localhost:3000`:
-
+**Database**
 ```bash
-# npm
-npm run dev
+npx prisma generate
+npx prisma migrate dev
+```
 
-# pnpm
-pnpm dev
-
-# yarn
+**Development**
+Start the dev server on `http://localhost:3000`:
+```bash
 yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
-
-Build the application for production:
-
+**Testing**
 ```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
+yarn test
+yarn test:unit
+yarn test:nuxt
+yarn test:coverage
 ```
 
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
