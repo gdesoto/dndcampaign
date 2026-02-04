@@ -1,0 +1,8 @@
+---
+deployment:
+  tasks:
+    - source /home/lithium/nodevenv/repositories/dndcampaign/24/bin/activate
+    - cd /home/lithium/repositories/dndcampaign
+    - npm install --force
+    - npm run db:migrate:dev
+    - npm run build
