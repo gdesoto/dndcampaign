@@ -17,7 +17,7 @@ yarn install
 ```
 
 **Environment**
-1. Database: `prisma/db/dev.db`
+1. Database: `storage/db/dev.db`
 2. Storage root (local): `./storage`
 3. Runtime config: `runtimeConfig.storage` (see `.env` if present)
 
