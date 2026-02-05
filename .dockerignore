@@ -1,0 +1,11 @@
+.git
+.nuxt
+.vscode
+coverage
+dev_plan
+node_modules
+storage
+test
+.env
+README.md
+*.log
