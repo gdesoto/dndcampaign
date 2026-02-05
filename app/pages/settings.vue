@@ -6,7 +6,7 @@ type RuntimeConfigSnapshot = {
   values: Record<string, unknown>
 }
 
-const isDev = true; //import.meta.dev
+const isDev = import.meta.dev
 const { request } = useApi()
 
 const { data: runtimeConfig, pending, error, refresh } = await useAsyncData(

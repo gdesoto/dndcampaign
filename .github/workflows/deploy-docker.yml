@@ -1,4 +1,4 @@
-name: Build and Publish (GHCR)
+name: Build and Publish
 
 on:
   push:
