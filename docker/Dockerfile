@@ -1,4 +1,5 @@
 FROM node:24-bookworm-slim AS base
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 FROM base AS deps

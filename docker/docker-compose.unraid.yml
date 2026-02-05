@@ -16,6 +16,7 @@ services:
       STORAGE_PROVIDER_DEFAULT: "local"
       STORAGE_LOCAL_ROOT: "/data/storage"
       NUXT_SESSION_PASSWORD: "change_this_to_a_long_random_value"
+      NUXT_SESSION_COOKIE_SECURE: "false"
       ELEVENLABS_API_KEY: ""
       ELEVENLABS_WEBHOOK_SECRET: ""
       ELEVENLABS_WEBHOOK_ID: ""

@@ -17,6 +17,13 @@ export default defineNuxtConfig({
     classSuffix: ''
   },
   runtimeConfig: {
+    session: {
+      password: process.env.NUXT_SESSION_PASSWORD || '',
+      cookie: {
+        sameSite: 'lax',
+        secure: process.env.NUXT_SESSION_COOKIE_SECURE === 'true'
+      }
+    },
     storage: {
       provider: process.env.STORAGE_PROVIDER_DEFAULT || 'local',
       localRoot: process.env.STORAGE_LOCAL_ROOT || './storage'
