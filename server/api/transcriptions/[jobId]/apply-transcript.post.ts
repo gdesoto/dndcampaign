@@ -83,5 +83,12 @@ export default defineEventHandler(async (event) => {
         createdByUserId: sessionUser.user.id,
       })
 
+  if (existing && existing.recordingId !== job.recordingId) {
+    await prisma.document.update({
+      where: { id: existing.id },
+      data: { recordingId: job.recordingId },
+    })
+  }
+
   return ok(updated)
 })

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { StepperItem } from '@nuxt/ui'
+import type { TimelineItem } from '@nuxt/ui'
 import {
   isSegmentedTranscript,
   parseTranscriptSegments,
@@ -96,6 +97,7 @@ const summaryFile = ref<File | null>(null)
 const subtitleAttachLoading = ref(false)
 const subtitleAttachError = ref('')
 const selectedSubtitleRecordingId = ref('')
+const showFullTranscript = ref(false)
 
 const setMode = (value: 'overview' | 'workflow') => {
   mode.value = value
@@ -212,6 +214,16 @@ const transcriptPreview = computed(() => {
   return trimmed.length > 240 ? `${trimmed.slice(0, 240)}...` : trimmed
 })
 
+const fullTranscript = computed(() => {
+  const value = transcriptDoc.value?.currentVersion?.content || ''
+  if (!value) return 'No transcript yet.'
+  const trimmed = value.trim()
+  if (isSegmentedTranscript(trimmed)) {
+    return segmentsToPlainText(parseTranscriptSegments(trimmed), { includeDisabled: false }) || 'No transcript yet.'
+  }
+  return trimmed
+})
+
 const summaryPreview = computed(() => {
   const value = summaryDoc.value?.currentVersion?.content || ''
   if (!value) return 'No summary yet.'
@@ -244,7 +256,7 @@ watch(
   { immediate: true }
 )
 
-const workflowItems = computed<StepperItem[]>(() => [
+const workflowItems = computed<TimelineItem[]>(() => [
   {
     title: 'Session details',
     description: hasRecordings.value ? 'Ready to add recordings' : 'Add notes & basics',
@@ -646,7 +658,7 @@ const formatBytes = (value: number) => {
       <UPage>
         <template #left>
           <div class="space-y-4 lg:sticky lg:top-[calc(var(--ui-header-height)+1rem)]">
-            <UCard class="sticky top-24 h-fit theme-reveal">
+            <UCard class="sticky top-24 z-10 h-fit theme-reveal">
               <div class="flex flex-col gap-2">
                 <div class="mb-4 font-display text-sm tracking-[0.4em] uppercase text-[color:var(--theme-accent)]">
                   Navigation
@@ -677,7 +689,7 @@ const formatBytes = (value: number) => {
                   @update:modelValue="(v) => v ? setMode('workflow') : setMode('overview')" />
               </div>
             </UCard>
-            <UCard class="sticky top-24 h-fit theme-reveal">
+            <UCard class="theme-reveal">
                 <div class="mb-4 font-display text-sm tracking-[0.4em] uppercase text-[color:var(--theme-accent)]">
                   Now playing
                 </div>
@@ -696,7 +708,7 @@ const formatBytes = (value: number) => {
                   <p v-else class="text-sm text-muted">Start playback to pin it here.</p>
                 </div>
             </UCard>
-            <UCard class="sticky top-24 h-fit theme-reveal">
+            <UCard class="theme-reveal">
               <div class="mb-4 font-display text-sm tracking-[0.4em] uppercase text-[color:var(--theme-accent)]">
                 Status
               </div>
@@ -719,23 +731,23 @@ const formatBytes = (value: number) => {
                 </div>
               </div>
             </UCard>
-            <UCard v-if="mode == 'workflow'" class="sticky top-24 h-fit theme-reveal">
+            <UCard v-if="mode == 'workflow'" class="sticky top-24 z-10 h-fit theme-reveal">
               <div class="mb-4 font-display text-sm tracking-[0.4em] uppercase text-[color:var(--theme-accent)]">
                 Workflow steps
               </div>
-              <UStepper
+              <UTimeline
                 v-model="activeStep"
                 :items="workflowItems"
                 orientation="vertical"
                 class="w-full"
-                @update:modelValue="(value) => { activeStep = value as string; stepTouched = true }"
+                @select="(_e, item: TimelineItem) => { activeStep = item.value as string; stepTouched = true }"
               />
             </UCard>
           </div>
         </template>
 
         <div class="space-y-6">
-          <UCard class="sticky top-24 h-fit theme-reveal">
+          <UCard class="sticky top-24 z-10 h-fit theme-reveal">
             <template #header>
               <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -1135,7 +1147,20 @@ const formatBytes = (value: number) => {
                   </div>
                 </template>
                 <div class="space-y-4">
-                  <p class="whitespace-pre-line text-sm text-muted">{{ transcriptPreview }}</p>
+                  <UButton
+                    size="xs"
+                    variant="outline"
+                    class="w-full justify-center"
+                    @click="showFullTranscript = !showFullTranscript"
+                  >
+                    {{ showFullTranscript ? 'Hide full transcript' : 'Show full transcript' }}
+                  </UButton>
+                  <p
+                    class="whitespace-pre-line text-sm text-muted"
+                    :class="showFullTranscript ? 'max-h-96 overflow-y-auto' : ''"
+                  >
+                    {{ showFullTranscript ? fullTranscript : transcriptPreview }}
+                  </p>
                   <div class="flex flex-wrap items-center gap-3">
                     <UButton
                       v-if="transcriptDoc"

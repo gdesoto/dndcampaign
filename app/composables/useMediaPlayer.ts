@@ -25,6 +25,7 @@ type MediaPlayerState = {
   drawerOpen: boolean
   autoplay: boolean
   error: string
+  playToken: number
 }
 
 const stateKey = 'media-player-state'
@@ -43,6 +44,7 @@ export const useMediaPlayer = () => {
     drawerOpen: false,
     autoplay: false,
     error: '',
+    playToken: 0,
   }))
 
   const element = useState<HTMLMediaElement | null>(elementKey, () => null)
@@ -50,10 +52,20 @@ export const useMediaPlayer = () => {
   const hasSource = computed(() => Boolean(state.value.source))
 
   const setElement = (value: HTMLMediaElement | null) => {
+    const previous = element.value
     element.value = value
+    if (previous && previous !== value) {
+      previous.pause()
+      previous.currentTime = 0
+      previous.removeAttribute('src')
+      previous.load()
+    }
     if (!value) return
     value.volume = state.value.volume
     value.playbackRate = state.value.playbackRate
+    if (state.value.source) {
+      value.pause()
+    }
     if (state.value.source && value.src !== state.value.source.src) {
       value.src = state.value.source.src
       value.load()
@@ -70,12 +82,24 @@ export const useMediaPlayer = () => {
     }
   }
 
+  const lastPlay = useState<{ id: string; at: number }>('media-player-last-play', () => ({
+    id: '',
+    at: 0,
+  }))
+
   const playSource = async (
     source: MediaSource,
     options?: { presentation?: MediaPresentation; openDrawer?: boolean }
   ) => {
+    const now = Date.now()
+    if (lastPlay.value.id === source.id && now - lastPlay.value.at < 300) {
+      return
+    }
+    lastPlay.value = { id: source.id, at: now }
     state.value.error = ''
+    state.value.isPlaying = false
     state.value.source = source
+    state.value.playToken += 1
     if (options?.presentation) {
       state.value.presentation = options.presentation
     }
@@ -89,15 +113,29 @@ export const useMediaPlayer = () => {
       return
     }
 
+    const expectedTag = source.kind === 'VIDEO' ? 'VIDEO' : 'AUDIO'
+    if (media.tagName !== expectedTag) {
+      // Element will be replaced (audio -> video or video -> audio). Defer play until new element mounts.
+      media.pause()
+      media.removeAttribute('src')
+      media.load()
+      state.value.autoplay = true
+      return
+    }
+
     if (media.src !== source.src) {
+      const token = state.value.playToken
       state.value.autoplay = true
       media.src = source.src
       media.load()
       const onCanPlay = () => {
         media.removeEventListener('canplay', onCanPlay)
-        if (!state.value.autoplay) return
+        if (!state.value.autoplay || token !== state.value.playToken) return
         media
           .play()
+          .then(() => {
+            state.value.isPlaying = true
+          })
           .catch(() => {
             state.value.error = 'Unable to play media.'
           })
@@ -111,6 +149,7 @@ export const useMediaPlayer = () => {
 
     try {
       await media.play()
+      state.value.isPlaying = true
     } catch (error) {
       state.value.error =
         (error as Error & { message?: string }).message || 'Unable to play media.'
@@ -122,6 +161,7 @@ export const useMediaPlayer = () => {
     if (!media) return
     try {
       await media.play()
+      state.value.isPlaying = true
     } catch (error) {
       state.value.error =
         (error as Error & { message?: string }).message || 'Unable to play media.'

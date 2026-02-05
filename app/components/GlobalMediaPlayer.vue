@@ -53,12 +53,30 @@ const progress = computed(() => {
 
 const formatTime = (value: number) => {
   if (!Number.isFinite(value) || value <= 0) return '0:00'
-  const minutes = Math.floor(value / 60)
-  const seconds = Math.floor(value % 60)
+  const totalSeconds = Math.floor(value)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds
+      .toString()
+      .padStart(2, '0')}`
+  }
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
 const attachListeners = (el: HTMLMediaElement) => {
+  const pauseOtherMedia = () => {
+    const root = globalThis.document
+    if (!root) return
+    root.querySelectorAll<HTMLMediaElement>('audio,video').forEach((media) => {
+      if (media === el) return
+      if (!media.paused) {
+        media.pause()
+      }
+    })
+  }
+
   const onTime = () => {
     state.value.currentTime = el.currentTime || 0
   }
@@ -67,9 +85,18 @@ const attachListeners = (el: HTMLMediaElement) => {
   }
   const onPlay = () => {
     state.value.isPlaying = true
+    pauseOtherMedia()
+  }
+  const onPlaying = () => {
+    state.value.isPlaying = true
+    pauseOtherMedia()
   }
   const onPause = () => {
     state.value.isPlaying = false
+  }
+  const onSeek = () => {
+    state.value.isPlaying = !el.paused
+    state.value.currentTime = el.currentTime || 0
   }
   const onEnded = () => {
     state.value.isPlaying = false
@@ -82,7 +109,10 @@ const attachListeners = (el: HTMLMediaElement) => {
   el.addEventListener('durationchange', onDuration)
   el.addEventListener('loadedmetadata', onDuration)
   el.addEventListener('play', onPlay)
+  el.addEventListener('playing', onPlaying)
   el.addEventListener('pause', onPause)
+  el.addEventListener('seeking', onSeek)
+  el.addEventListener('seeked', onSeek)
   el.addEventListener('ended', onEnded)
   el.addEventListener('volumechange', onVolume)
 
@@ -91,7 +121,10 @@ const attachListeners = (el: HTMLMediaElement) => {
     el.removeEventListener('durationchange', onDuration)
     el.removeEventListener('loadedmetadata', onDuration)
     el.removeEventListener('play', onPlay)
+    el.removeEventListener('playing', onPlaying)
     el.removeEventListener('pause', onPause)
+    el.removeEventListener('seeking', onSeek)
+    el.removeEventListener('seeked', onSeek)
     el.removeEventListener('ended', onEnded)
     el.removeEventListener('volumechange', onVolume)
   }
@@ -142,6 +175,10 @@ watch(
 
 onBeforeUnmount(() => {
   cleanupListeners.value?.()
+})
+
+onMounted(() => {
+  // noop
 })
 
 const onSeek = (event: Event) => {
@@ -327,4 +364,5 @@ const openFullPlayer = () => {
       </div>
     </template>
   </UDrawer>
+
 </template>

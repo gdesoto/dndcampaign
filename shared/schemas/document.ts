@@ -16,6 +16,11 @@ export const documentRestoreSchema = z.object({
   versionId: z.string().uuid(),
 })
 
+export const documentLinkRecordingSchema = z.object({
+  recordingId: z.string().uuid().nullable(),
+})
+
 export type DocumentCreateInput = z.infer<typeof documentCreateSchema>
 export type DocumentUpdateInput = z.infer<typeof documentUpdateSchema>
 export type DocumentRestoreInput = z.infer<typeof documentRestoreSchema>
+export type DocumentLinkRecordingInput = z.infer<typeof documentLinkRecordingSchema>

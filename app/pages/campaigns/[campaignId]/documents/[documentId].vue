@@ -22,6 +22,7 @@ type DocumentDetail = {
   type: 'TRANSCRIPT' | 'SUMMARY' | 'NOTES'
   title: string
   sessionId?: string | null
+  recordingId?: string | null
   currentVersionId?: string | null
   currentVersion?: DocumentVersion | null
 }
@@ -45,6 +46,7 @@ const player = useMediaPlayer()
 const hasMounted = ref(false)
 const playbackRangeError = ref('')
 let playbackRangeTimer: ReturnType<typeof setInterval> | undefined
+const showFullTranscript = ref(false)
 
 const { data: document, pending, refresh, error } = await useAsyncData(
   () => `document-${documentId.value}`,
@@ -82,6 +84,8 @@ const searchFilterEnabled = ref(false)
 const speakerFilterSelection = ref<string[]>([])
 const startTimeFilter = ref('')
 const endTimeFilter = ref('')
+const minLengthFilter = ref('')
+const maxLengthFilter = ref('')
 const speakerBulkInput = ref('')
 
 const { data: sessionRecordings } = await useAsyncData(
@@ -102,6 +106,21 @@ const recordingOptions = computed(() =>
   }))
 )
 
+const linkedRecordingLabel = computed(() => {
+  const id = linkedRecordingId.value
+  if (!id) return ''
+  const match = sessionRecordings.value?.find((recording) => recording.id === id)
+  return match ? `${match.filename} (${match.kind})` : id
+})
+
+const selectedRecordingLabel = computed(() => {
+  if (!selectedRecordingId.value) return 'None selected'
+  const match = sessionRecordings.value?.find(
+    (recording) => recording.id === selectedRecordingId.value
+  )
+  return match ? `${match.filename} (${match.kind})` : selectedRecordingId.value
+})
+
 const videoOptions = computed(() =>
   (sessionRecordings.value || [])
     .filter((recording) => recording.kind === 'VIDEO')
@@ -112,6 +131,7 @@ const videoOptions = computed(() =>
 )
 
 const selectedRecordingId = ref('')
+const linkedRecordingId = computed(() => document.value?.recordingId || '')
 
 const { data: selectedRecording } = await useAsyncData(
   () => `document-recording-${selectedRecordingId.value}`,
@@ -136,6 +156,12 @@ const { data: playbackUrl, pending: playbackPending } = await useAsyncData(
 
 onMounted(() => {
   hasMounted.value = true
+})
+
+onBeforeUnmount(() => {
+  if (playbackRangeTimer) {
+    clearInterval(playbackRangeTimer)
+  }
 })
 
 onBeforeUnmount(() => {
@@ -181,6 +207,10 @@ watch(
       selectedSubtitleRecordingId.value = videoList[0].value
     }
     if (recordingList.length && !selectedRecordingId.value) {
+      if (linkedRecordingId.value) {
+        selectedRecordingId.value = linkedRecordingId.value
+        return
+      }
       const preferred =
         sessionRecordings.value?.find((item) => item.kind === 'AUDIO') ||
         sessionRecordings.value?.[0]
@@ -238,11 +268,25 @@ const speakerOptions = computed(() => {
 
 const startFilterMs = computed(() => parseTimeInput(startTimeFilter.value))
 const endFilterMs = computed(() => parseTimeInput(endTimeFilter.value))
+const minLengthMs = computed(() => {
+  const raw = minLengthFilter.value.trim()
+  if (!raw) return null
+  const value = Number(raw)
+  return Number.isFinite(value) && value >= 0 ? value * 1000 : null
+})
+const maxLengthMs = computed(() => {
+  const raw = maxLengthFilter.value.trim()
+  if (!raw) return null
+  const value = Number(raw)
+  return Number.isFinite(value) && value >= 0 ? value * 1000 : null
+})
 
 const baseFilteredSegments = computed(() => {
   const speakerList = speakerFilters.value
   const startMs = startFilterMs.value
   const endMs = endFilterMs.value
+  const minLen = minLengthMs.value
+  const maxLen = maxLengthMs.value
   return segments.value.filter((segment) => {
     if (speakerList.length) {
       const speaker = (segment.speaker || '').toLowerCase()
@@ -252,6 +296,12 @@ const baseFilteredSegments = computed(() => {
       if (segment.startMs === null || segment.endMs === null) return false
       if (startMs !== null && segment.endMs < startMs) return false
       if (endMs !== null && segment.startMs > endMs) return false
+    }
+    if (minLen !== null || maxLen !== null) {
+      if (segment.startMs === null || segment.endMs === null) return false
+      const duration = segment.endMs - segment.startMs
+      if (minLen !== null && duration < minLen) return false
+      if (maxLen !== null && duration > maxLen) return false
     }
     return true
   })
@@ -590,7 +640,15 @@ const playSegment = async (segment: TranscriptSegment) => {
     playbackRangeError.value = 'This segment has no timestamps.'
     return
   }
-  await playRange(segment.startMs, segment.endMs)
+  let startMs = segment.startMs
+  let endMs = segment.endMs
+  const duration = endMs - startMs
+  if (duration < 1000) {
+    const pad = (1000 - duration) / 2
+    startMs = Math.max(0, startMs - pad)
+    endMs = endMs + pad
+  }
+  await playRange(startMs, endMs)
 }
 
 const playSelection = async () => {
@@ -610,9 +668,49 @@ const playSelection = async () => {
     playbackRangeError.value = 'Selected segments have no timestamps.'
     return
   }
-  const startMs = Math.min(...timed.map((segment) => segment.startMs as number))
-  const endMs = Math.max(...timed.map((segment) => segment.endMs as number))
+  let startMs = Math.min(...timed.map((segment) => segment.startMs as number))
+  let endMs = Math.max(...timed.map((segment) => segment.endMs as number))
+  const duration = endMs - startMs
+  if (duration < 1000) {
+    const pad = (1000 - duration) / 2
+    startMs = Math.max(0, startMs - pad)
+    endMs = endMs + pad
+  }
   await playRange(startMs, endMs)
+}
+
+const linkRecordingToTranscript = async () => {
+  if (!document.value?.id) return
+  if (!selectedRecordingId.value) {
+    playbackRangeError.value = 'Select a recording to link.'
+    return
+  }
+  playbackRangeError.value = ''
+  try {
+    await request(`/api/documents/${document.value.id}/link-recording`, {
+      method: 'POST',
+      body: { recordingId: selectedRecordingId.value },
+    })
+    await refresh()
+  } catch (error) {
+    playbackRangeError.value =
+      (error as Error & { message?: string }).message || 'Unable to link recording.'
+  }
+}
+
+const unlinkRecording = async () => {
+  if (!document.value?.id) return
+  playbackRangeError.value = ''
+  try {
+    await request(`/api/documents/${document.value.id}/link-recording`, {
+      method: 'POST',
+      body: { recordingId: null },
+    })
+    await refresh()
+  } catch (error) {
+    playbackRangeError.value =
+      (error as Error & { message?: string }).message || 'Unable to unlink recording.'
+  }
 }
 
 const transcriptPreview = computed(() => {
@@ -620,6 +718,10 @@ const transcriptPreview = computed(() => {
   if (!segments.value.length) return 'No segments yet.'
   return segmentsToPlainText(segments.value.slice(0, 3), { includeDisabled: false })
 })
+
+const fullTranscript = computed(() =>
+  segmentsToPlainText(segments.value, { includeDisabled: false })
+)
 </script>
 
 <template>
@@ -734,6 +836,18 @@ const transcriptPreview = computed(() => {
                   size="xs"
                   class="w-28"
                   placeholder="End mm:ss"
+                />
+                <UInput
+                  v-model="minLengthFilter"
+                  size="xs"
+                  class="w-24"
+                  placeholder="Min s"
+                />
+                <UInput
+                  v-model="maxLengthFilter"
+                  size="xs"
+                  class="w-24"
+                  placeholder="Max s"
                 />
                 <div class="flex flex-wrap items-center gap-2">
                   <UInput
@@ -908,7 +1022,7 @@ const transcriptPreview = computed(() => {
         </UCard>
 
         <div class="space-y-6">
-          <UCard>
+            <UCard class="sticky top-24 z-20">
             <template #header>
               <div>
                 <h2 class="text-lg font-semibold">Playback</h2>
@@ -918,11 +1032,13 @@ const transcriptPreview = computed(() => {
               </div>
             </template>
             <div class="space-y-3">
-              <USelect
-                v-model="selectedRecordingId"
-                :items="recordingOptions"
-                placeholder="Select recording"
-              />
+              <div class="flex items-center gap-2 text-xs text-dimmed">
+                <span>Selected audio file:</span>
+                <span class="font-semibold text-default">{{ selectedRecordingLabel }}</span>
+                <UTooltip text="Change the linked audio in Transcript actions.">
+                  <UIcon name="i-lucide-info" class="h-4 w-4 text-dimmed" />
+                </UTooltip>
+              </div>
               <div class="flex flex-wrap items-center gap-2">
                 <UButton
                   size="sm"
@@ -938,9 +1054,6 @@ const transcriptPreview = computed(() => {
                 </span>
               </div>
               <MediaPlayerDock dock-id="transcript-player-dock" mode="page" />
-              <p class="text-xs text-dimmed">
-                Current time: {{ formatTimestamp(currentTimeMs) }}
-              </p>
               <p v-if="player.state.error" class="text-sm text-error">
                 {{ player.state.error }}
               </p>
@@ -960,29 +1073,66 @@ const transcriptPreview = computed(() => {
               </div>
             </template>
             <div class="space-y-4">
-              <div class="flex flex-wrap items-center gap-2">
+              <div class="grid gap-3">
                 <UInput
                   type="file"
                   accept=".txt,.md,.markdown,.vtt"
                   @change="importFile = ($event.target as HTMLInputElement).files?.[0] || null"
                 />
                 <UButton
+                  class="w-full justify-center"
                   :disabled="!document?.sessionId"
                   :loading="importing"
                   variant="outline"
                   @click="importDocument"
                 >
-                  Import file
+                  Import transcript file
                 </UButton>
               </div>
-              <div class="flex flex-wrap items-center gap-3">
+
+              <div class="space-y-2 rounded-lg border border-default bg-elevated/30 p-3">
+                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Audio link</p>
+                <USelect
+                  v-model="selectedRecordingId"
+                  :items="recordingOptions"
+                  placeholder="Select recording"
+                  size="sm"
+                  class="w-full"
+                />
+                <div class="flex flex-wrap items-center gap-2 text-xs text-dimmed">
+                  <span v-if="linkedRecordingId">
+                    Linked: {{ linkedRecordingLabel }}
+                  </span>
+                  <UButton
+                    size="xs"
+                    variant="outline"
+                    :disabled="!selectedRecordingId"
+                    @click="linkRecordingToTranscript"
+                  >
+                    Set as default
+                  </UButton>
+                  <UButton
+                    size="xs"
+                    variant="ghost"
+                    :disabled="!linkedRecordingId"
+                    @click="unlinkRecording"
+                  >
+                    Clear default
+                  </UButton>
+                </div>
+              </div>
+
+              <div class="space-y-2 rounded-lg border border-default bg-elevated/30 p-3">
+                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Subtitles</p>
                 <USelect
                   v-model="selectedSubtitleRecordingId"
                   :items="videoOptions"
                   placeholder="Select video"
                   size="sm"
+                  class="w-full"
                 />
                 <UButton
+                  class="w-full justify-center"
                   variant="outline"
                   :disabled="!selectedSubtitleRecordingId"
                   :loading="subtitleAttachLoading"
@@ -991,6 +1141,7 @@ const transcriptPreview = computed(() => {
                   Attach subtitles
                 </UButton>
               </div>
+
               <p v-if="importError" class="text-sm text-error">{{ importError }}</p>
               <p v-if="subtitleAttachError" class="text-sm text-error">{{ subtitleAttachError }}</p>
             </div>
@@ -999,14 +1150,29 @@ const transcriptPreview = computed(() => {
           <UCard>
             <template #header>
               <div>
-                <h2 class="text-lg font-semibold">Preview</h2>
+                <h2 class="text-lg font-semibold">
+                  {{ showFullTranscript ? 'Read-only transcript' : 'Transcript preview' }}
+                </h2>
                 <p class="text-sm text-muted">
-                  Quick glance at the first segments.
+                  {{ showFullTranscript ? 'Full transcript text (read-only).' : 'Top segments for quick review.' }}
                 </p>
               </div>
             </template>
-            <div class="whitespace-pre-line text-sm text-muted">
-              {{ transcriptPreview || 'No transcript yet.' }}
+            <div class="space-y-3">
+              <div
+                class="whitespace-pre-line text-sm text-muted"
+                :class="showFullTranscript ? 'max-h-96 overflow-y-auto' : ''"
+              >
+                {{ (showFullTranscript ? fullTranscript : transcriptPreview) || 'No transcript yet.' }}
+              </div>
+              <UButton
+                size="sm"
+                variant="outline"
+                class="w-full justify-center"
+                @click="showFullTranscript = !showFullTranscript"
+              >
+                {{ showFullTranscript ? 'Hide full transcript' : 'Show full transcript' }}
+              </UButton>
             </div>
           </UCard>
 
@@ -1062,7 +1228,7 @@ const transcriptPreview = computed(() => {
             </div>
           </template>
           <div class="space-y-4">
-            <UTextarea v-model="content" :rows="14" />
+            <UTextarea v-model="content" autoresize />
             <div class="flex flex-wrap items-center gap-3">
               <UButton :loading="isSaving" @click="saveDocument">Save version</UButton>
               <div class="flex items-center gap-2">
