@@ -17,10 +17,26 @@ export default defineAppConfig({
     },
     card: {
       slots: {
-        root: 'theme-card rounded-2xl overflow-hidden',
-        header: 'p-5 sm:p-6 border-b border-[var(--theme-card-border)]',
-        body: 'p-5 sm:p-6',
-        footer: 'p-5 sm:p-6 border-t border-[var(--theme-card-border)]',
+        root: 'theme-card rounded-ld xl:py-2 overflow-hidden',
+        header: 'p-2 xl:p-4 xl:py-2 border-b-0', // border-[var(--theme-card-border)]',
+        body: 'p-2 xl:p-4 xl:py-2 border-b-0', //
+        footer: 'p-2 xl:p-4 xl:py-2', // border-t-0 border-[var(--theme-card-border)]',
+      },
+      variants: {
+        variant: {
+          solid: {
+            root: 'bg-inverted text-inverted'
+          },
+          outline: {
+            root: 'bg-default ring ring-default divide-y divide-default'
+          },
+          soft: {
+            root: 'bg-elevated/50 divide-y divide-default'
+          },
+          subtle: {
+            root: 'bg-elevated/50 ring ring-default divide-y divide-default'
+          }
+        }
       },
       defaultVariants: {
         variant: 'outline',

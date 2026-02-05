@@ -346,14 +346,16 @@ const saveCampaign = async () => {
 </script>
 
 <template>
-  <UPage>
+  <UPage class="theme-reveal">
     <template v-if="campaign" #left>
       <div class="space-y-4 lg:sticky lg:top-[calc(var(--ui-header-height)+1rem)]">
-        <UCard class="sticky top-24 h-fit theme-reveal">
-          <div class="flex flex-col gap-2">
-            <div class="mb-4 font-display text-sm tracking-[0.4em] uppercase text-[color:var(--theme-accent)]">
+        <UCard class="sticky top-24 h-fit">
+          <template #header>
+            <div class="font-display text-lg tracking-[0.2em] uppercase text-secondary">
               Navigation
             </div>
+          </template>
+          <div class="flex flex-col gap-2">
             <UButton
               v-for="item in tabItems"
               :key="item.value"
@@ -363,7 +365,7 @@ const saveCampaign = async () => {
               @click="activeTab = item.value"
             >
               <span>{{ item.label }}</span>
-              <UIcon name="i-heroicons-chevron-right" class="h-4 w-4 text-[color:var(--theme-accent)]" />
+              <UIcon name="i-heroicons-chevron-right" class="h-4 w-4 text-(--theme-accent)" />
                   
             </UButton>
           </div>
@@ -384,7 +386,7 @@ const saveCampaign = async () => {
 
       <div v-else-if="campaign" class="space-y-6">
       
-      <UCard class="top-24 h-fit theme-reveal">
+      <UCard class="top-24 h-fit">
         <template #header>
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div>

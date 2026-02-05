@@ -643,7 +643,7 @@ const formatBytes = (value: number) => {
 </script>
 
 <template>
-  <div class="space-y-8">
+  <div class="space-y-8 theme-reveal">
     <div v-if="pending" class="grid gap-4">
       <UCard class="h-28 animate-pulse" />
       <UCard class="h-40 animate-pulse" />
@@ -658,7 +658,7 @@ const formatBytes = (value: number) => {
       <UPage>
         <template #left>
           <div class="space-y-4 lg:sticky lg:top-[calc(var(--ui-header-height)+1rem)]">
-            <UCard class="sticky top-24 z-10 h-fit theme-reveal">
+            <UCard class="sticky top-24 z-10 h-fit">
               <div class="flex flex-col gap-2">
                 <div class="mb-4 font-display text-sm tracking-[0.4em] uppercase text-[color:var(--theme-accent)]">
                   Navigation
@@ -689,7 +689,7 @@ const formatBytes = (value: number) => {
                   @update:modelValue="(v) => v ? setMode('workflow') : setMode('overview')" />
               </div>
             </UCard>
-            <UCard class="theme-reveal">
+            <UCard>
                 <div class="mb-4 font-display text-sm tracking-[0.4em] uppercase text-[color:var(--theme-accent)]">
                   Now playing
                 </div>
@@ -708,7 +708,7 @@ const formatBytes = (value: number) => {
                   <p v-else class="text-sm text-muted">Start playback to pin it here.</p>
                 </div>
             </UCard>
-            <UCard class="theme-reveal">
+            <UCard>
               <div class="mb-4 font-display text-sm tracking-[0.4em] uppercase text-[color:var(--theme-accent)]">
                 Status
               </div>
@@ -731,7 +731,7 @@ const formatBytes = (value: number) => {
                 </div>
               </div>
             </UCard>
-            <UCard v-if="mode == 'workflow'" class="sticky top-24 z-10 h-fit theme-reveal">
+            <UCard v-if="mode == 'workflow'" class="sticky top-24 z-10 h-fit">
               <div class="mb-4 font-display text-sm tracking-[0.4em] uppercase text-[color:var(--theme-accent)]">
                 Workflow steps
               </div>
@@ -747,7 +747,7 @@ const formatBytes = (value: number) => {
         </template>
 
         <div class="space-y-6">
-          <UCard class="sticky top-24 z-10 h-fit theme-reveal">
+          <UCard class="sticky top-24 z-10 h-fit">
             <template #header>
               <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
