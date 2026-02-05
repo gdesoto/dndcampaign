@@ -18,20 +18,20 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     session: {
-      password: process.env.NUXT_SESSION_PASSWORD || '',
+      password: '',
       cookie: {
         sameSite: 'lax',
-        secure: process.env.NUXT_SESSION_COOKIE_SECURE === 'true'
+        secure: false
       }
     },
     storage: {
-      provider: process.env.STORAGE_PROVIDER_DEFAULT || 'local',
-      localRoot: process.env.STORAGE_LOCAL_ROOT || './storage'
+      provider: 'local',
+      localRoot: './storage'
     },
     elevenLabs: {
-      apiKey: process.env.ELEVENLABS_API_KEY || '',
-      webhookSecret: process.env.ELEVENLABS_WEBHOOK_SECRET || '',
-      webhookId: process.env.ELEVENLABS_WEBHOOK_ID || ''
+      apiKey: '',
+      webhookSecret: '',
+      webhookId: ''
     }
   }
 })

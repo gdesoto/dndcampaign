@@ -13,13 +13,13 @@ services:
       HOST: 0.0.0.0
       NITRO_PORT: 3000
       DATABASE_URL: "file:/data/db/app.db"
-      STORAGE_PROVIDER_DEFAULT: "local"
-      STORAGE_LOCAL_ROOT: "/data/storage"
+      NUXT_STORAGE_PROVIDER: "local"
+      NUXT_STORAGE_LOCAL_ROOT: "/data/storage"
       NUXT_SESSION_PASSWORD: "change_this_to_a_long_random_value"
       NUXT_SESSION_COOKIE_SECURE: "false"
-      ELEVENLABS_API_KEY: ""
-      ELEVENLABS_WEBHOOK_SECRET: ""
-      ELEVENLABS_WEBHOOK_ID: ""
+      NUXT_ELEVENLABS_API_KEY: ""
+      NUXT_ELEVENLABS_WEBHOOK_SECRET: ""
+      NUXT_ELEVENLABS_WEBHOOK_ID: ""
       RUN_MIGRATIONS: "1"
     volumes:
       - /mnt/user/appdata/dndcampaign:/data

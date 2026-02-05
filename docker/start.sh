@@ -1,6 +1,26 @@
 #!/usr/bin/env sh
 set -e
 
+if [ -z "${NUXT_STORAGE_LOCAL_ROOT:-}" ] && [ -n "${STORAGE_LOCAL_ROOT:-}" ]; then
+  export NUXT_STORAGE_LOCAL_ROOT="$STORAGE_LOCAL_ROOT"
+fi
+
+if [ -z "${NUXT_STORAGE_PROVIDER:-}" ] && [ -n "${STORAGE_PROVIDER_DEFAULT:-}" ]; then
+  export NUXT_STORAGE_PROVIDER="$STORAGE_PROVIDER_DEFAULT"
+fi
+
+if [ -z "${NUXT_ELEVENLABS_API_KEY:-}" ] && [ -n "${ELEVENLABS_API_KEY:-}" ]; then
+  export NUXT_ELEVENLABS_API_KEY="$ELEVENLABS_API_KEY"
+fi
+
+if [ -z "${NUXT_ELEVENLABS_WEBHOOK_SECRET:-}" ] && [ -n "${ELEVENLABS_WEBHOOK_SECRET:-}" ]; then
+  export NUXT_ELEVENLABS_WEBHOOK_SECRET="$ELEVENLABS_WEBHOOK_SECRET"
+fi
+
+if [ -z "${NUXT_ELEVENLABS_WEBHOOK_ID:-}" ] && [ -n "${ELEVENLABS_WEBHOOK_ID:-}" ]; then
+  export NUXT_ELEVENLABS_WEBHOOK_ID="$ELEVENLABS_WEBHOOK_ID"
+fi
+
 if [ -n "${STORAGE_LOCAL_ROOT:-}" ]; then
   mkdir -p "$STORAGE_LOCAL_ROOT"
 fi
