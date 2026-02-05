@@ -22,6 +22,7 @@ model User {
   updatedAt    DateTime   @updatedAt
   campaigns    Campaign[]
   documentVersions DocumentVersion[]
+  playerCharacters PlayerCharacter[]
 
   @@index([email])
 }
@@ -41,6 +42,7 @@ model Campaign {
   quests        Quest[]
   milestones    Milestone[]
   documents     Document[]
+  characters    CampaignCharacter[]
 
   @@index([ownerId])
 }
@@ -153,6 +155,7 @@ model Artifact {
   vttRecordings Recording[]     @relation("RecordingVtt")
   recapRecordings RecapRecording[]
   transcriptionArtifacts TranscriptionArtifact[]
+  characterPortraits PlayerCharacter[] @relation("CharacterPortrait")
 
   @@index([ownerId])
   @@index([campaignId])
@@ -320,4 +323,85 @@ model DocumentVersion {
 
   @@unique([documentId, versionNumber])
   @@index([createdByUserId])
+}
+
+enum CharacterSourceProvider {
+  MANUAL
+  DND_BEYOND
+}
+
+enum CharacterCampaignStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum CharacterOverwriteMode {
+  FULL
+  SECTIONS
+}
+
+model PlayerCharacter {
+  id                String   @id @default(uuid())
+  ownerId           String
+  owner             User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name              String
+  status            String?
+  portraitUrl       String?
+  portraitArtifactId String?
+  portraitArtifact  Artifact? @relation("CharacterPortrait", fields: [portraitArtifactId], references: [id], onDelete: SetNull)
+  sheetJson         Json
+  summaryJson       Json
+  sourceProvider    CharacterSourceProvider @default(MANUAL)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  campaignLinks     CampaignCharacter[]
+  imports           CharacterImport[]
+  importSettings    CharacterImportSettings?
+
+  @@index([ownerId])
+  @@index([name])
+}
+
+model CampaignCharacter {
+  id          String   @id @default(uuid())
+  campaignId  String
+  characterId String
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  character   PlayerCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  status      CharacterCampaignStatus @default(ACTIVE)
+  roleLabel   String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([campaignId, characterId])
+  @@index([campaignId, status])
+  @@index([characterId])
+}
+
+model CharacterImport {
+  id             String   @id @default(uuid())
+  characterId    String
+  character      PlayerCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  provider       CharacterSourceProvider
+  externalId     String?
+  sourceUrl      String?
+  rawJson        Json
+  rawHash        String
+  importedAt     DateTime @default(now())
+  lastSyncedAt   DateTime?
+  lastSyncStatus String?
+  lastSyncMessage String?
+
+  @@index([characterId])
+  @@index([provider, externalId])
+}
+
+model CharacterImportSettings {
+  characterId          String   @id
+  character            PlayerCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  lockedSections       Json?
+  defaultOverwriteMode CharacterOverwriteMode @default(SECTIONS)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 }

@@ -84,6 +84,7 @@ const tabItems = [
   { label: 'Quests', value: 'quests' },
   { label: 'Milestones', value: 'milestones' },
   { label: 'Recap playlist', value: 'recaps' },
+  { label: 'Characters', value: 'characters' },
   { label: 'Glossary', value: 'glossary' },
 ]
 
@@ -816,6 +817,25 @@ const saveCampaign = async () => {
               </div>
               <p v-if="recapError" class="text-sm text-error">{{ recapError }}</p>
               <p v-if="recapDeleteError" class="text-sm text-error">{{ recapDeleteError }}</p>
+            </div>
+          </UCard>
+        </div>
+
+        <div v-else-if="activeTab === 'characters'" class="space-y-4">
+          <UCard>
+            <template #header>
+              <div>
+                <h2 class="text-lg font-semibold">Characters</h2>
+                <p class="text-sm text-muted">Manage campaign party members.</p>
+              </div>
+            </template>
+            <div class="space-y-3">
+              <p class="text-sm text-muted">
+                Attach or manage PCs that belong to this campaign.
+              </p>
+              <UButton variant="outline" :to="`/campaigns/${campaignId}/characters`">
+                Open characters
+              </UButton>
             </div>
           </UCard>
         </div>

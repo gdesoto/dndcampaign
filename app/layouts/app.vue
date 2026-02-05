@@ -14,6 +14,10 @@ const toggleColorMode = () => {
 const route = useRoute()
 const router = useRouter()
 const campaignId = computed(() => route.params.campaignId as string | undefined)
+const showCampaignSelect = computed(() => {
+  const path = route.path || ''
+  return path === '/campaigns' || path.startsWith('/campaigns/')
+})
 
 type CampaignNavItem = {
   id: string
@@ -29,6 +33,7 @@ const { data: campaigns } = await useAsyncData(
 const topNavItems = computed(() => [
   { label: 'Home', to: '/' },
   { label: 'Campaigns', to: '/campaigns' },
+  { label: 'Characters', to: '/characters' },
 ])
 
 const campaignOptions = computed(() => {
@@ -63,6 +68,7 @@ watch(
   () => selectedCampaignId.value,
   (value) => {
     if (!campaignSelectReady.value) return
+    if (!showCampaignSelect.value) return
     if (!value) return
     if (value === 'all') {
       router.push('/campaigns')
@@ -112,20 +118,21 @@ const profileMenuItems = computed(() => [
             </div>
           </div>
         </template>
-        <template #default>
-          <div class="flex w-full items-center justify-center gap-4">
-            <UNavigationMenu class="w-full justify-center" :items="topNavItems" />
-            <USelectMenu
-              v-model="selectedCampaignId"
-              value-key="id"
-              label-key="label"
-              :items="campaignOptions"
-              placeholder="Select campaign"
-              size="sm"
-              class="w-52"
-            />
-          </div>
-        </template>
+      <template #default>
+        <div class="flex w-full items-center justify-center gap-4">
+          <UNavigationMenu class="w-full justify-center" :items="topNavItems" />
+          <USelectMenu
+            v-if="showCampaignSelect"
+            v-model="selectedCampaignId"
+            value-key="id"
+            label-key="label"
+            :items="campaignOptions"
+            placeholder="Select campaign"
+            size="sm"
+            class="w-52"
+          />
+        </div>
+      </template>
         <template #right>
           <div class="flex flex-wrap items-center gap-3 text-xs text-[color:var(--theme-text-muted)]">
             <UButton size="sm" color="secondary" variant="ghost" class="theme-pill" @click="toggleColorMode">

@@ -97,5 +97,10 @@ export default defineAppConfig({
         content: 'rounded-2xl shadow-2xl',
       },
     },
+    page: {
+      slots: {
+        root: 'flex flex-col lg:grid lg:grid-cols-10 lg:gap-10',
+      },
+    },
   },
 })
