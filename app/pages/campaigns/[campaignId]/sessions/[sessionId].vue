@@ -13,6 +13,10 @@ type SessionDetail = {
   title: string
   sessionNumber?: number | null
   playedAt?: string | null
+  guestDungeonMasterName?: string | null
+  campaign?: {
+    dungeonMasterName?: string | null
+  } | null
   notes?: string | null
 }
 
@@ -92,6 +96,7 @@ const form = reactive({
   title: '',
   sessionNumber: '',
   playedAt: '',
+  guestDungeonMasterName: '',
   notes: '',
 })
 const isSaving = ref(false)
@@ -204,6 +209,7 @@ watch(
     form.title = value?.title || ''
     form.sessionNumber = value?.sessionNumber?.toString() || ''
     form.playedAt = value?.playedAt ? value.playedAt.slice(0, 10) : ''
+    form.guestDungeonMasterName = value?.guestDungeonMasterName || ''
     form.notes = value?.notes || ''
   },
   { immediate: true }
@@ -213,6 +219,12 @@ const sessionDateLabel = computed(() => {
   if (!session.value?.playedAt) return 'Unscheduled'
   return new Date(session.value.playedAt).toLocaleDateString()
 })
+
+const sessionDungeonMasterLabel = computed(() =>
+  session.value?.guestDungeonMasterName
+  || session.value?.campaign?.dungeonMasterName
+  || 'None'
+)
 
 const recordingsCount = computed(() => recordings.value?.length || 0)
 const recapStatus = computed(() => (recap.value ? 'Attached' : 'Missing'))
@@ -359,16 +371,10 @@ const workflowItems = computed<TimelineItem[]>(() => [
     icon: hasRecordings.value ? 'i-lucide-check-circle' : 'i-lucide-upload',
   },
   {
-    title: 'Transcription',
-    description: hasTranscript.value ? 'Transcript available' : 'Request transcription',
-    value: 'transcription',
-    icon: hasTranscript.value ? 'i-lucide-check-circle' : 'i-lucide-wand-2',
-  },
-  {
     title: 'Transcript edit',
     description: hasTranscript.value ? 'Review & edit transcript' : 'Await transcript',
     value: 'transcript',
-    icon: 'i-lucide-file-text',
+    icon: hasTranscript.value ? 'i-lucide-file-text' : 'i-lucide-wand-2',
   },
   {
     title: 'Summary',
@@ -425,6 +431,7 @@ const saveSession = async () => {
         title: form.title || undefined,
         sessionNumber: form.sessionNumber ? Number(form.sessionNumber) : undefined,
         playedAt: form.playedAt ? new Date(form.playedAt).toISOString() : null,
+        guestDungeonMasterName: form.guestDungeonMasterName || null,
         notes: form.notes || null,
       },
     })
@@ -804,37 +811,39 @@ const formatBytes = (value: number) => {
       <UPage>
         <template #left>
           <div class="space-y-4 lg:sticky lg:top-[calc(var(--ui-header-height)+1rem)]">
-            <UCard class="sticky top-24 z-10 h-fit">
-              <div class="flex flex-col gap-2">
-                <div class="mb-4 font-display text-sm tracking-[0.4em] uppercase text-[color:var(--theme-accent)]">
-                  Navigation
-                </div>
-                <UButton
-                  class="flex items-center justify-between rounded-2xl px-4 py-3"
-                  size="sm"
-                  variant="outline"
-                  :to="`/campaigns/${campaignId}`">
-                  <span>Back to campaign</span>
-                  <UIcon name="i-heroicons-chevron-left" class="h-4 w-4 text-[color:var(--theme-accent)]" />
-                </UButton>
-                <UButton
-                  class="flex items-center justify-between rounded-2xl px-4 py-3"
-                  size="sm"
-                  variant="outline"
-                  :to="`/campaigns/${campaignId}/sessions`">
-                  <span>Back to sessions</span>
-                  <UIcon name="i-heroicons-chevron-left" class="h-4 w-4 text-[color:var(--theme-accent)]" />
-                </UButton>
-                <USwitch
-                  :default-value="mode == 'workflow'"
-                  class="mt-4"
-                  indicator="end"
-                  variant="card"
-                  color="primary"
-                  label="Workflow Mode"
-                  @update:modelValue="(v) => v ? setMode('workflow') : setMode('overview')" />
+          <UCard class="sticky top-24 z-20 h-fit">
+            <template #header>
+              <div class="font-display text-lg tracking-[0.2em] uppercase text-secondary">
+                Navigation
               </div>
-            </UCard>
+            </template>
+            <div class="flex flex-col gap-2">
+              <UButton
+                class="flex items-center justify-between rounded-2xl px-4 py-3"
+                size="sm"
+                variant="outline"
+                :to="`/campaigns/${campaignId}`">
+                <span>Back to campaign</span>
+                <UIcon name="i-heroicons-chevron-left" class="h-4 w-4 text-[color:var(--theme-accent)]" />
+              </UButton>
+              <UButton
+                class="flex items-center justify-between rounded-2xl px-4 py-3"
+                size="sm"
+                variant="outline"
+                :to="`/campaigns/${campaignId}/sessions`">
+                <span>Back to sessions</span>
+                <UIcon name="i-heroicons-chevron-left" class="h-4 w-4 text-[color:var(--theme-accent)]" />
+              </UButton>
+              <USwitch
+                :default-value="mode == 'workflow'"
+                class="mt-4"
+                indicator="end"
+                variant="card"
+                color="primary"
+                label="Workflow Mode"
+                @update:modelValue="(v) => v ? setMode('workflow') : setMode('overview')" />
+            </div>
+          </UCard>
             <UCard>
                 <div class="mb-4 font-display text-sm tracking-[0.4em] uppercase text-[color:var(--theme-accent)]">
                   Now playing
@@ -854,29 +863,6 @@ const formatBytes = (value: number) => {
                   <p v-else class="text-sm text-muted">Start playback to pin it here.</p>
                 </div>
             </UCard>
-            <UCard>
-              <div class="mb-4 font-display text-sm tracking-[0.4em] uppercase text-[color:var(--theme-accent)]">
-                Status
-              </div>
-              <div class="space-y-2 text-sm">
-                <div class="flex items-center justify-between">
-                  <span>Recordings</span>
-                  <span class="font-semibold">{{ recordingsCount }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span>Transcript</span>
-                  <span class="font-semibold">{{ transcriptStatus }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span>Summary</span>
-                  <span class="font-semibold">{{ summaryStatus }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span>Recap</span>
-                  <span class="font-semibold">{{ recapStatus }}</span>
-                </div>
-              </div>
-            </UCard>
             <UCard v-if="mode == 'workflow'" class="sticky top-24 z-10 h-fit">
               <div class="mb-4 font-display text-sm tracking-[0.4em] uppercase text-[color:var(--theme-accent)]">
                 Workflow steps
@@ -895,27 +881,50 @@ const formatBytes = (value: number) => {
         <div class="space-y-6">
           <UCard class="sticky top-24 z-10 h-fit">
             <template #header>
-              <div class="flex flex-wrap items-start justify-between gap-4">
-                <div>
+              <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="space-y-1">
                   <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Session</p>
-                  <h1 class="mt-2 text-2xl font-semibold">{{ session?.title || 'Session' }}</h1>
-                  <p class="mt-2 text-sm text-muted">
+                  <h1 class="text-2xl font-semibold">{{ session?.title || 'Session' }}</h1>
+                  <p class="text-sm text-muted">
                     Played at: {{ sessionDateLabel }}
                   </p>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                  <UButton size="sm" variant="outline" @click="isEditSessionOpen = true">
+                  <UButton variant="outline" @click="isEditSessionOpen = true">
                     Edit session
                   </UButton>
-                  <UButton v-if="mode === 'overview'" size="sm" @click="setMode('workflow')">
-                    Continue workflow
+                  <UButton v-if="mode === 'overview'" @click="setMode('workflow')">
+                    Enter Workflow Mode
                   </UButton>
                 </div>
               </div>
             </template>
           </UCard>
 
-          <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <UCard class="sm:hidden">
+            <div class="mb-4 font-display text-sm tracking-[0.4em] uppercase text-(--theme-accent)">
+              Status
+            </div>
+            <div class="space-y-2 text-sm">
+              <div class="flex items-center justify-between">
+                <span>Recordings</span>
+                <span class="font-semibold">{{ recordingsCount }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>Transcript</span>
+                <span class="font-semibold">{{ transcriptStatus }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>Summary</span>
+                <span class="font-semibold">{{ summaryStatus }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>Recap</span>
+                <span class="font-semibold">{{ recapStatus }}</span>
+              </div>
+            </div>
+          </UCard>
+          <div class="hidden gap-4 sm:grid md:grid-cols-2 xl:grid-cols-4">
             <UCard :ui="{ body: 'p-4' }">
               <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Recordings</p>
               <p class="mt-2 text-lg font-semibold">{{ recordingsCount }}</p>
@@ -959,16 +968,20 @@ const formatBytes = (value: number) => {
                   </UButton>
                 </div>
               </template>
-              <div class="grid gap-4 sm:grid-cols-2 text-sm">
+              <div class="grid gap-4 sm:grid-cols-3 text-sm">
                 <div>
-                  <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Session number</p>
+                  <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Session #</p>
                   <p class="mt-1 font-semibold">{{ form.sessionNumber || '-' }}</p>
                 </div>
                 <div>
                   <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Played at</p>
                   <p class="mt-1 font-semibold">{{ form.playedAt || 'Unscheduled' }}</p>
                 </div>
-                <div class="sm:col-span-2">
+                <div>
+                  <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Dungeon Master</p>
+                  <p class="mt-1 font-semibold">{{ sessionDungeonMasterLabel }}</p>
+                </div>
+                <div class="sm:col-span-3">
                   <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Notes</p>
                   <p class="mt-1 text-sm text-muted">
                     {{ form.notes || 'No notes added yet.' }}
@@ -1254,8 +1267,7 @@ const formatBytes = (value: number) => {
                 </div>
               </UCard>
             </div>
-
-            <div v-else-if="activeStep === 'transcription'" class="space-y-4">
+            <div v-else-if="activeStep === 'transcript'" class="space-y-4">
               <UCard>
                 <template #header>
                   <div>
@@ -1273,16 +1285,13 @@ const formatBytes = (value: number) => {
                       :key="recording.id"
                       size="sm"
                       variant="outline"
-                      :to="`/campaigns/${campaignId}/recordings/${recording.id}-transcribe=1`"
+                      :to="`/campaigns/${campaignId}/recordings/${recording.id}?transcribe=1`"
                     >
                       Transcribe {{ recording.filename }}
                     </UButton>
                   </div>
                 </div>
               </UCard>
-            </div>
-
-            <div v-else-if="activeStep === 'transcript'" class="space-y-4">
               <UCard>
                 <template #header>
                   <div>
@@ -1569,6 +1578,10 @@ const formatBytes = (value: number) => {
                 <label class="mb-2 block text-sm text-muted">Played at</label>
                 <UInput v-model="form.playedAt" type="date" />
               </div>
+            </div>
+            <div>
+              <label class="mb-2 block text-sm text-muted">Guest dungeon master</label>
+              <UInput v-model="form.guestDungeonMasterName" placeholder="Optional guest DM" />
             </div>
             <div>
               <label class="mb-2 block text-sm text-muted">Notes</label>

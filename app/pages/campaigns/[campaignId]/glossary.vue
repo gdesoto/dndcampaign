@@ -240,6 +240,14 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
     </div>
 
     <UModal v-model:open="isEditOpen">
+      <template #title>
+        <span class="sr-only">
+          {{ editMode === 'create' ? 'Create glossary entry' : 'Edit glossary entry' }}
+        </span>
+      </template>
+      <template #description>
+        <span class="sr-only">Manage glossary entry details for this campaign.</span>
+      </template>
       <template #content>
         <UCard >
           <template #header>

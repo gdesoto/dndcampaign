@@ -5,6 +5,7 @@ type Campaign = {
   id: string
   name: string
   system: string
+  dungeonMasterName?: string | null
   description?: string | null
   currentStatus?: string | null
   createdAt: string
@@ -80,11 +81,11 @@ const { data: recaps, refresh: refreshRecaps } = await useAsyncData(
 const activeTab = ref('overview')
 const tabItems = [
   { label: 'Overview', value: 'overview' },
+  { label: 'Characters', value: 'characters' },
   { label: 'Sessions', value: 'sessions' },
   { label: 'Quests', value: 'quests' },
   { label: 'Milestones', value: 'milestones' },
   { label: 'Recap playlist', value: 'recaps' },
-  { label: 'Characters', value: 'characters' },
   { label: 'Glossary', value: 'glossary' },
 ]
 
@@ -281,6 +282,7 @@ const isEditOpen = ref(false)
 const editForm = reactive({
   name: '',
   system: '',
+  dungeonMasterName: '',
   description: '',
 })
 const editError = ref('')
@@ -291,6 +293,7 @@ watch(
   (value) => {
     editForm.name = value?.name || ''
     editForm.system = value?.system || ''
+    editForm.dungeonMasterName = value?.dungeonMasterName || ''
     editForm.description = value?.description || ''
   },
   { immediate: true }
@@ -318,6 +321,7 @@ const openEdit = () => {
   if (campaign.value) {
     editForm.name = campaign.value.name
     editForm.system = campaign.value.system
+    editForm.dungeonMasterName = campaign.value.dungeonMasterName || ''
     editForm.description = campaign.value.description || ''
   }
   isEditOpen.value = true
@@ -332,6 +336,7 @@ const saveCampaign = async () => {
       body: {
         name: editForm.name,
         system: editForm.system || undefined,
+        dungeonMasterName: editForm.dungeonMasterName || undefined,
         description: editForm.description || undefined,
       },
     })
@@ -388,20 +393,24 @@ const saveCampaign = async () => {
       <div v-else-if="campaign" class="space-y-6">
       
       <UCard class="top-24 h-fit">
-        <template #header>
-          <div class="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p class="text-xs uppercase tracking-[0.3em] text-dimmed">{{ campaign.system }}</p>
-              <h1 class="mt-2 text-2xl font-semibold">{{ campaign?.name || 'Campaign' }}</h1>
-              <p class="mt-2 text-sm text-muted">
-                {{ campaign.description || 'Add a short overview for the campaign.' }}
-              </p>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <UButton size="xl" variant="subtle" @click="openEdit">Edit campaign</UButton>
-            </div>
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="space-y-2">
+            <p class="text-xs uppercase tracking-[0.3em] text-dimmed">
+              <span>{{ campaign.system }}</span>
+              <span v-if="campaign.dungeonMasterName" class="mx-2 text-muted">•</span>
+              <span v-if="campaign.dungeonMasterName">
+                DM: {{ campaign.dungeonMasterName }}
+              </span>
+            </p>
+            <h1 class="text-2xl font-semibold">{{ campaign?.name || 'Campaign' }}</h1>
+            <p class="text-sm text-muted">
+              {{ campaign.description || 'Add a short overview for the campaign.' }}
+            </p>
           </div>
-        </template>
+          <div class="flex flex-wrap gap-2">
+            <UButton size="xl" variant="subtle" @click="openEdit">Edit campaign</UButton>
+          </div>
+        </div>
       </UCard>
 
       <div class="grid gap-4 md:grid-cols-4">
@@ -876,6 +885,10 @@ const saveCampaign = async () => {
             <div>
               <label class="mb-2 block text-sm text-muted">System</label>
               <UInput v-model="editForm.system" />
+            </div>
+            <div>
+              <label class="mb-2 block text-sm text-muted">Dungeon master</label>
+              <UInput v-model="editForm.dungeonMasterName" placeholder="DM name" />
             </div>
             <div>
               <label class="mb-2 block text-sm text-muted">Description</label>

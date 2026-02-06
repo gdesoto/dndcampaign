@@ -13,6 +13,13 @@ export default defineEventHandler(async (event) => {
       id: sessionId,
       campaign: { ownerId: sessionUser.user.id },
     },
+    include: {
+      campaign: {
+        select: {
+          dungeonMasterName: true,
+        },
+      },
+    },
   })
 
   if (!session) {

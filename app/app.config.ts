@@ -89,7 +89,7 @@ export default defineAppConfig({
     },
     dropdownMenu: {
       slots: {
-        content: 'rounded-2xl shadow-2xl',
+        content: 'rounded-lg shadow-2xl',
       },
     },
     tooltip: {

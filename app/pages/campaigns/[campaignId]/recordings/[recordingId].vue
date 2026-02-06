@@ -55,6 +55,13 @@ type TranscriptionJob = {
   artifacts: TranscriptionArtifact[]
 }
 
+type GlossaryEntry = {
+  id: string
+  type: 'PC' | 'NPC' | 'ITEM' | 'LOCATION'
+  name: string
+  aliases?: string | null
+}
+
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
 const recordingId = computed(() => route.params.recordingId as string)
@@ -148,6 +155,40 @@ const transcribeForm = reactive({
     segmented_json: false,
   },
 })
+
+const glossaryTypeOptions = [
+  { label: 'PCs', value: 'PC' },
+  { label: 'NPCs', value: 'NPC' },
+  { label: 'Items', value: 'ITEM' },
+  { label: 'Locations', value: 'LOCATION' },
+]
+const glossaryType = ref<'PC' | 'NPC' | 'ITEM' | 'LOCATION'>('PC')
+const selectedGlossaryIds = ref<string[]>([])
+
+const { data: glossaryEntries, pending: glossaryPending, error: glossaryError } =
+  await useAsyncData(
+    () => `transcribe-glossary-${campaignId.value}-${glossaryType.value}`,
+    () =>
+      request<GlossaryEntry[]>(
+        `/api/campaigns/${campaignId.value}/glossary?type=${glossaryType.value}`
+      ),
+    { watch: [glossaryType] }
+  )
+
+const glossaryOptions = computed(() =>
+  (glossaryEntries.value || []).map((entry) => ({
+    id: entry.id,
+    label: entry.name,
+    description: entry.aliases || undefined,
+  }))
+)
+
+watch(
+  () => glossaryType.value,
+  () => {
+    selectedGlossaryIds.value = []
+  }
+)
 
 const uploadVtt = async () => {
   if (!vttFile.value) return
@@ -271,6 +312,50 @@ const parseKeyterms = (value: string) =>
     .split(/[\n,]/)
     .map((term) => term.trim())
     .filter(Boolean)
+
+const appendKeyterms = (terms: string[]) => {
+  if (!terms.length) return
+  const existing = parseKeyterms(transcribeForm.keyterms)
+  const normalized = new Set(existing.map((term) => term.toLowerCase()))
+  const additions = terms.filter((term) => !normalized.has(term.toLowerCase()))
+  const next = [...existing, ...additions]
+  transcribeForm.keyterms = next.join('\n')
+}
+
+const addGlossaryKeyterms = () => {
+  const ids = new Set(selectedGlossaryIds.value)
+  if (!ids.size) return
+  const terms = (glossaryEntries.value || [])
+    .filter((entry) => ids.has(entry.id))
+    .map((entry) => entry.name)
+  appendKeyterms(terms)
+  selectedGlossaryIds.value = []
+}
+
+const addAllGlossaryForType = () => {
+  const terms = (glossaryEntries.value || []).map((entry) => entry.name)
+  appendKeyterms(terms)
+  selectedGlossaryIds.value = []
+}
+
+const addAllGlossary = async () => {
+  const allTypes: Array<'PC' | 'NPC' | 'ITEM' | 'LOCATION'> = [
+    'PC',
+    'NPC',
+    'ITEM',
+    'LOCATION',
+  ]
+  const results = await Promise.all(
+    allTypes.map((type) =>
+      request<GlossaryEntry[]>(
+        `/api/campaigns/${campaignId.value}/glossary?type=${type}`
+      )
+    )
+  )
+  const terms = results.flat().map((entry) => entry.name)
+  appendKeyterms(terms)
+  selectedGlossaryIds.value = []
+}
 
 const startTranscription = async () => {
   if (!recording.value) return
@@ -677,6 +762,12 @@ const formatBytes = (value: number) => {
     </div>
 
   <UModal v-model:open="transcribeModalOpen">
+      <template #title>
+        <span class="sr-only">Start transcription</span>
+      </template>
+      <template #description>
+        <span class="sr-only">Configure the ElevenLabs transcription request.</span>
+      </template>
       <template #content>
         <UCard>
           <template #header>
@@ -705,6 +796,41 @@ const formatBytes = (value: number) => {
                 :rows="3"
                 placeholder="Comma or line separated terms to bias the transcript."
               />
+            </div>
+            <div class="space-y-2">
+              <label class="mb-2 block text-sm text-muted">Add glossary terms</label>
+              <div class="grid gap-3 sm:grid-cols-[160px_minmax(0,1fr)_auto]">
+                <USelect v-model="glossaryType" :items="glossaryTypeOptions" />
+                <USelectMenu
+                  v-model="selectedGlossaryIds"
+                  multiple
+                  value-key="id"
+                  label-key="label"
+                  description-key="description"
+                  :items="glossaryOptions"
+                  :loading="glossaryPending"
+                  placeholder="Select glossary entries"
+                />
+                <UButton
+                  size="sm"
+                  variant="outline"
+                  :disabled="!selectedGlossaryIds.length"
+                  @click="addGlossaryKeyterms"
+                >
+                  Add
+                </UButton>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <UButton size="xs" variant="ghost" @click="addAllGlossaryForType">
+                  Add all from type
+                </UButton>
+                <UButton size="xs" variant="ghost" @click="addAllGlossary">
+                  Add all glossary items
+                </UButton>
+              </div>
+              <p v-if="glossaryError" class="text-sm text-error">
+                Unable to load glossary entries.
+              </p>
             </div>
             <div>
               <p class="mb-2 text-sm text-muted">Formats</p>
@@ -746,6 +872,12 @@ const formatBytes = (value: number) => {
   </UModal>
 
   <UModal v-model:open="importModalOpen">
+    <template #title>
+      <span class="sr-only">Import transcription</span>
+    </template>
+    <template #description>
+      <span class="sr-only">Provide an ElevenLabs transcription ID to fetch outputs.</span>
+    </template>
     <template #content>
       <UCard>
         <template #header>
