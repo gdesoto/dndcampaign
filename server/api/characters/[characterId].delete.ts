@@ -15,6 +15,18 @@ export default defineEventHandler(async (event) => {
     return fail(404, 'NOT_FOUND', 'Character not found')
   }
 
+  const links = await prisma.campaignCharacter.findMany({
+    where: { characterId: character.id },
+    select: { glossaryEntryId: true },
+  })
+
   await prisma.playerCharacter.delete({ where: { id: character.id } })
+
+  const glossaryIds = links.map((link) => link.glossaryEntryId).filter(Boolean) as string[]
+  if (glossaryIds.length) {
+    await prisma.glossaryEntry.deleteMany({
+      where: { id: { in: glossaryIds } },
+    })
+  }
   return ok({ success: true })
 })

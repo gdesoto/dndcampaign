@@ -15,6 +15,12 @@ export default defineEventHandler(async (event) => {
     return fail(404, 'NOT_FOUND', 'Glossary entry not found')
   }
 
+  if (existing.type === 'PC') {
+    await prisma.campaignCharacter.deleteMany({
+      where: { glossaryEntryId: existing.id },
+    })
+  }
+
   await prisma.glossaryEntry.delete({ where: { id: entryId } })
   return ok({ success: true })
 })

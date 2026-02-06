@@ -56,10 +56,11 @@ export default defineEventHandler(async (event) => {
 
     await prisma.campaignCharacter.upsert({
       where: { campaignId_characterId: { campaignId: entry.campaignId, characterId: character.id } },
-      update: {},
+      update: { glossaryEntryId: entry.id },
       create: {
         campaignId: entry.campaignId,
         characterId: character.id,
+        glossaryEntryId: entry.id,
       },
     })
 

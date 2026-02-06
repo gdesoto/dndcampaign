@@ -2,6 +2,7 @@ import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { readValidatedBodySafe } from '#server/utils/validate'
 import { glossaryCreateSchema } from '#shared/schemas/glossary'
+import { CharacterService } from '#server/services/character.service'
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
@@ -31,6 +32,29 @@ export default defineEventHandler(async (event) => {
       description: parsed.data.description,
     },
   })
+
+  if (parsed.data.type === 'PC') {
+    const characterService = new CharacterService()
+    const existingCharacter = await prisma.playerCharacter.findFirst({
+      where: { ownerId: session.user.id, name: parsed.data.name },
+    })
+    const character =
+      existingCharacter ||
+      (await characterService.createManualCharacter(session.user.id, parsed.data.name, {
+        basics: { name: parsed.data.name },
+        notes: { other: parsed.data.description },
+      }))
+
+    await prisma.campaignCharacter.upsert({
+      where: { campaignId_characterId: { campaignId, characterId: character.id } },
+      update: { glossaryEntryId: entry.id },
+      create: {
+        campaignId,
+        characterId: character.id,
+        glossaryEntryId: entry.id,
+      },
+    })
+  }
 
   return ok(entry)
 })

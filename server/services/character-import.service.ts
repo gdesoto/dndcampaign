@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import { ofetch } from 'ofetch'
 import type { CharacterSection } from '#shared/schemas/character'
 import { computeCharacterSummary, setSheetSection } from './character.service'
+import { CharacterSyncService } from './character-sync.service'
 
 type ImportOptions = {
   overwriteMode?: 'FULL' | 'SECTIONS'
@@ -142,6 +143,7 @@ const mapDndBeyondToSheet = (payload: any) => {
 }
 
 export class CharacterImportService {
+  private syncService = new CharacterSyncService()
   async fetchDndBeyondCharacter(externalId: string) {
     const url = `https://character-service.dndbeyond.com/character/v5/character/${externalId}`
     return ofetch(url, { headers: dndBeyondHeaders })
@@ -184,7 +186,7 @@ export class CharacterImportService {
       ((sheet.portrait as Record<string, unknown> | undefined)?.avatarUrl as string | undefined)
     const summary = computeCharacterSummary(name, nextSheet, portraitUrl)
 
-    return prisma.playerCharacter.update({
+    const updated = await prisma.playerCharacter.update({
       where: { id: character.id },
       data: {
         name,
@@ -194,6 +196,8 @@ export class CharacterImportService {
         portraitUrl: portraitUrl ?? character.portraitUrl,
       },
     })
+    await this.syncService.syncGlossaryForCharacter(updated.id, ownerId)
+    return updated
   }
 
   async createFromImport(ownerId: string, externalId: string, options: ImportOptions) {

@@ -24,5 +24,11 @@ export default defineEventHandler(async (event) => {
   }
 
   await prisma.campaignCharacter.delete({ where: { id: link.id } })
+
+  if (link.glossaryEntryId) {
+    await prisma.glossaryEntry.delete({
+      where: { id: link.glossaryEntryId },
+    })
+  }
   return ok({ success: true })
 })

@@ -43,6 +43,7 @@ model Campaign {
   milestones    Milestone[]
   documents     Document[]
   characters    CampaignCharacter[]
+  summaryJobs   SummaryJob[]
 
   @@index([ownerId])
 }
@@ -61,6 +62,7 @@ model Session {
   recordings    Recording[]
   documents     Document[]
   recap         RecapRecording?
+  summaryJobs   SummaryJob[]
 
   @@index([campaignId])
 }
@@ -83,6 +85,7 @@ model GlossaryEntry {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   sessions    GlossarySessionLink[]
+  campaignCharacters CampaignCharacter[]
 
   @@index([campaignId, type])
 }
@@ -284,6 +287,43 @@ enum DocumentSource {
   USER_IMPORT
   SYSTEM_AUTOSAVE
   ELEVENLABS_IMPORT
+  N8N_IMPORT
+}
+
+enum SummaryJobStatus {
+  QUEUED
+  SENT
+  PROCESSING
+  READY_FOR_REVIEW
+  APPLIED
+  FAILED
+}
+
+enum SummaryJobMode {
+  SYNC
+  ASYNC
+}
+
+enum SummarySuggestionEntityType {
+  QUEST
+  MILESTONE
+  GLOSSARY
+  PC
+  NPC
+  ITEM
+  LOCATION
+}
+
+enum SummarySuggestionAction {
+  CREATE
+  UPDATE
+  DISCARD
+}
+
+enum SummarySuggestionStatus {
+  PENDING
+  APPLIED
+  DISCARDED
 }
 
 model Document {
@@ -299,6 +339,8 @@ model Document {
   currentVersionId String?       @unique
   currentVersion   DocumentVersion? @relation("CurrentVersion", fields: [currentVersionId], references: [id])
   versions         DocumentVersion[] @relation("DocumentVersions")
+  summaryJobsAsTranscript SummaryJob[] @relation("SummaryJobTranscript")
+  summaryJobsAsSummary   SummaryJob[] @relation("SummaryJobSummary")
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
@@ -323,6 +365,53 @@ model DocumentVersion {
 
   @@unique([documentId, versionNumber])
   @@index([createdByUserId])
+}
+
+model SummaryJob {
+  id               String          @id @default(uuid())
+  campaignId       String
+  sessionId        String
+  documentId       String
+  summaryDocumentId String?
+  trackingId       String          @unique
+  status           SummaryJobStatus
+  mode             SummaryJobMode
+  promptProfile    String?
+  webhookUrl       String?
+  requestHash      String?
+  responseHash     String?
+  errorMessage     String?
+  meta             Json?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  campaign         Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  session          Session         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  document         Document        @relation("SummaryJobTranscript", fields: [documentId], references: [id], onDelete: Cascade)
+  summaryDocument  Document?       @relation("SummaryJobSummary", fields: [summaryDocumentId], references: [id], onDelete: SetNull)
+  suggestions      SummarySuggestion[]
+
+  @@index([campaignId])
+  @@index([sessionId])
+  @@index([documentId])
+  @@index([status])
+}
+
+model SummarySuggestion {
+  id            String                    @id @default(uuid())
+  summaryJobId  String
+  entityType    SummarySuggestionEntityType
+  action        SummarySuggestionAction
+  status        SummarySuggestionStatus   @default(PENDING)
+  match         Json?
+  payload       Json
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+
+  summaryJob    SummaryJob                @relation(fields: [summaryJobId], references: [id], onDelete: Cascade)
+
+  @@index([summaryJobId])
+  @@index([status])
 }
 
 enum CharacterSourceProvider {
@@ -368,6 +457,8 @@ model CampaignCharacter {
   characterId String
   campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   character   PlayerCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  glossaryEntryId String?
+  glossaryEntry GlossaryEntry? @relation(fields: [glossaryEntryId], references: [id], onDelete: SetNull)
   status      CharacterCampaignStatus @default(ACTIVE)
   roleLabel   String?
   notes       String?
@@ -377,6 +468,7 @@ model CampaignCharacter {
   @@unique([campaignId, characterId])
   @@index([campaignId, status])
   @@index([characterId])
+  @@index([glossaryEntryId])
 }
 
 model CharacterImport {

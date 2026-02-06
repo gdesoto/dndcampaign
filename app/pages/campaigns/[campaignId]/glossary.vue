@@ -12,6 +12,14 @@ type GlossaryLink = {
   session: SessionItem
 }
 
+type CharacterLink = {
+  id: string
+  character: {
+    id: string
+    name: string
+  }
+}
+
 type GlossaryEntry = {
   id: string
   type: 'PC' | 'NPC' | 'ITEM' | 'LOCATION'
@@ -19,6 +27,7 @@ type GlossaryEntry = {
   aliases?: string | null
   description: string
   sessions: GlossaryLink[]
+  campaignCharacters?: CharacterLink[]
 }
 
 const route = useRoute()
@@ -190,6 +199,14 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
               <p v-if="entry.aliases" class="text-xs text-muted">Aliases: {{ entry.aliases }}</p>
             </div>
             <div class="flex gap-2">
+              <UButton
+                v-if="entry.type === 'PC' && entry.campaignCharacters?.length"
+                size="xs"
+                variant="outline"
+                :to="`/characters/${entry.campaignCharacters[0].character.id}`"
+              >
+                View character
+              </UButton>
               <UButton size="xs" variant="outline" @click="openEdit(entry)">Edit</UButton>
               <UButton size="xs" color="red" variant="ghost" @click="deleteEntry(entry)">Delete</UButton>
             </div>

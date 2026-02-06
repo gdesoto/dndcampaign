@@ -47,6 +47,13 @@ export default defineEventHandler(async (event) => {
         },
         orderBy: { createdAt: 'desc' },
       },
+      campaignCharacters: {
+        include: {
+          character: {
+            select: { id: true, name: true },
+          },
+        },
+      },
     },
     orderBy: { name: 'asc' },
   })

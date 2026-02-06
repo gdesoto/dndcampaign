@@ -2,6 +2,7 @@ import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { readValidatedBodySafe } from '#server/utils/validate'
 import { glossaryUpdateSchema } from '#shared/schemas/glossary'
+import { CharacterSyncService } from '#server/services/character-sync.service'
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
@@ -26,6 +27,11 @@ export default defineEventHandler(async (event) => {
     where: { id: entryId },
     data: parsed.data,
   })
+
+  if (updated.type === 'PC') {
+    const syncService = new CharacterSyncService()
+    await syncService.syncCharacterFromGlossary(updated.id, session.user.id)
+  }
 
   return ok(updated)
 })

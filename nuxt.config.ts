@@ -24,6 +24,9 @@ export default defineNuxtConfig({
         secure: false
       }
     },
+    public: {
+      appUrl: ''
+    },
     storage: {
       provider: 'local',
       localRoot: './storage'
@@ -32,6 +35,10 @@ export default defineNuxtConfig({
       apiKey: '',
       webhookSecret: '',
       webhookId: ''
+    },
+    n8n: {
+      webhookUrlDefault: '',
+      webhookSecret: ''
     }
   }
 })

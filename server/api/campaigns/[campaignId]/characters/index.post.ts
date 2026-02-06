@@ -1,6 +1,7 @@
 import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { readBody } from 'h3'
+import { CharacterSyncService } from '#server/services/character-sync.service'
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
@@ -28,10 +29,17 @@ export default defineEventHandler(async (event) => {
     return fail(404, 'NOT_FOUND', 'Character not found')
   }
 
+  const syncService = new CharacterSyncService()
   const link = await prisma.campaignCharacter.upsert({
     where: { campaignId_characterId: { campaignId, characterId: body.characterId } },
     update: { status: 'ACTIVE' },
     create: { campaignId, characterId: body.characterId },
+  })
+
+  await syncService.ensureGlossaryEntryForCharacter({
+    ownerId: session.user.id,
+    campaignId,
+    characterId: body.characterId,
   })
 
   return ok(link)

@@ -1,5 +1,6 @@
 import { prisma } from '#server/db/prisma'
 import type { CharacterSection } from '#shared/schemas/character'
+import { CharacterSyncService } from './character-sync.service'
 
 type CharacterSectionKey =
   | 'basics'
@@ -135,6 +136,8 @@ export const computeCharacterSummary = (
 }
 
 export class CharacterService {
+  private syncService = new CharacterSyncService()
+
   async createManualCharacter(ownerId: string, name: string, sheetJson?: Record<string, unknown>) {
     const sheet = sheetJson || { basics: { name } }
     const summary = computeCharacterSummary(name, sheet)
@@ -159,13 +162,15 @@ export class CharacterService {
     const updatedSheet = setSheetSection({ ...sheetJson }, section, payload)
     const summary = computeCharacterSummary(character.name, updatedSheet, character.portraitUrl)
 
-    return prisma.playerCharacter.update({
+    const updated = await prisma.playerCharacter.update({
       where: { id: character.id },
       data: {
         sheetJson: updatedSheet,
         summaryJson: summary,
       },
     })
+    await this.syncService.syncGlossaryForCharacter(updated.id, ownerId)
+    return updated
   }
 
   async updateCharacterMeta(
@@ -182,7 +187,7 @@ export class CharacterService {
     const sheetJson = (character.sheetJson as Record<string, unknown>) || {}
     const summary = computeCharacterSummary(name, sheetJson, data.portraitUrl ?? character.portraitUrl)
 
-    return prisma.playerCharacter.update({
+    const updated = await prisma.playerCharacter.update({
       where: { id: character.id },
       data: {
         name,
@@ -191,5 +196,7 @@ export class CharacterService {
         summaryJson: summary,
       },
     })
+    await this.syncService.syncGlossaryForCharacter(updated.id, ownerId)
+    return updated
   }
 }

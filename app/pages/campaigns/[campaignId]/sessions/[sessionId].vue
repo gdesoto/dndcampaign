@@ -51,6 +51,32 @@ type DocumentDetail = {
   currentVersion?: DocumentVersion | null
 }
 
+type SummaryJob = {
+  id: string
+  status: string
+  mode: string
+  trackingId: string
+  promptProfile?: string | null
+  summaryDocumentId?: string | null
+  createdAt: string
+  updatedAt: string
+  meta?: Record<string, unknown> | null
+}
+
+type SummarySuggestion = {
+  id: string
+  entityType: string
+  action: string
+  status: string
+  match?: Record<string, unknown> | null
+  payload: Record<string, unknown>
+}
+
+type SummaryJobResponse = {
+  job: SummaryJob | null
+  suggestions: SummarySuggestion[]
+}
+
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
 const sessionId = computed(() => route.params.sessionId as string)
@@ -94,6 +120,9 @@ const transcriptImporting = ref(false)
 const summaryImporting = ref(false)
 const transcriptFile = ref<File | null>(null)
 const summaryFile = ref<File | null>(null)
+const summarySending = ref(false)
+const summarySendError = ref('')
+const summaryActionError = ref('')
 const subtitleAttachLoading = ref(false)
 const subtitleAttachError = ref('')
 const selectedSubtitleRecordingId = ref('')
@@ -164,6 +193,11 @@ const { data: summaryDoc, refresh: refreshSummary } = await useAsyncData(
     request<DocumentDetail | null>(`/api/sessions/${sessionId.value}/documents?type=SUMMARY`)
 )
 
+const { data: summaryJobData, refresh: refreshSummaryJob } = await useAsyncData(
+  () => `summary-job-${sessionId.value}`,
+  () => request<SummaryJobResponse>(`/api/sessions/${sessionId.value}/summary-jobs`)
+)
+
 watch(
   () => session.value,
   (value) => {
@@ -191,6 +225,8 @@ const hasRecap = computed(() => Boolean(recap.value))
 const isSessionComplete = computed(
   () => hasRecordings.value && hasTranscript.value && hasSummary.value
 )
+const summaryJob = computed(() => summaryJobData.value?.job || null)
+const summarySuggestions = computed(() => summaryJobData.value?.suggestions || [])
 const videoOptions = computed(() =>
   (recordings.value || [])
     .filter((recording) => recording.kind === 'VIDEO')
@@ -229,6 +265,59 @@ const summaryPreview = computed(() => {
   if (!value) return 'No summary yet.'
   const trimmed = value.trim()
   return trimmed.length > 240 ? `${trimmed.slice(0, 240)}...` : trimmed
+})
+
+const summaryHighlights = computed(() => {
+  const meta = summaryJob.value?.meta as Record<string, unknown> | undefined
+  const summaryContent = (meta?.summaryContent || {}) as Record<string, unknown>
+  const highlights = summaryContent.highlights
+  return Array.isArray(highlights) ? highlights.filter(Boolean) : []
+})
+
+const summaryStatusLabel = computed(() => {
+  switch (summaryJob.value?.status) {
+    case 'READY_FOR_REVIEW':
+      return 'Ready for review'
+    case 'PROCESSING':
+      return 'Processing'
+    case 'SENT':
+      return 'Sent'
+    case 'APPLIED':
+      return 'Applied'
+    case 'FAILED':
+      return 'Failed'
+    case 'QUEUED':
+      return 'Queued'
+    default:
+      return 'Not started'
+  }
+})
+
+const summaryStatusColor = computed(() => {
+  switch (summaryJob.value?.status) {
+    case 'READY_FOR_REVIEW':
+      return 'warning'
+    case 'PROCESSING':
+    case 'SENT':
+    case 'QUEUED':
+      return 'primary'
+    case 'APPLIED':
+      return 'success'
+    case 'FAILED':
+      return 'error'
+    default:
+      return 'secondary'
+  }
+})
+
+const summarySuggestionGroups = computed(() => {
+  const groups: Record<string, SummarySuggestion[]> = {}
+  for (const suggestion of summarySuggestions.value) {
+    const key = suggestion.entityType
+    if (!groups[key]) groups[key] = []
+    groups[key].push(suggestion)
+  }
+  return Object.entries(groups).map(([label, items]) => ({ label, items }))
 })
 
 watch(
@@ -554,6 +643,63 @@ const saveSummary = async () => {
   } finally {
     summarySaving.value = false
   }
+}
+
+const sendSummaryToN8n = async () => {
+  if (!transcriptDoc.value) {
+    summarySendError.value = 'Transcript is required to generate a summary.'
+    return
+  }
+  summarySendError.value = ''
+  summarySending.value = true
+  try {
+    await request(`/api/documents/${transcriptDoc.value.id}/summarize`, {
+      method: 'POST',
+      body: {
+        mode: 'async',
+      },
+    })
+    await refreshSummaryJob()
+    await refreshSummary()
+  } catch (error) {
+    summarySendError.value =
+      (error as Error & { message?: string }).message || 'Unable to send summary to n8n.'
+  } finally {
+    summarySending.value = false
+  }
+}
+
+const applySummarySuggestion = async (suggestionId: string) => {
+  summaryActionError.value = ''
+  try {
+    await request(`/api/summary-suggestions/${suggestionId}/apply`, {
+      method: 'POST',
+    })
+    await refreshSummaryJob()
+  } catch (error) {
+    summaryActionError.value =
+      (error as Error & { message?: string }).message || 'Unable to apply suggestion.'
+  }
+}
+
+const discardSummarySuggestion = async (suggestionId: string) => {
+  summaryActionError.value = ''
+  try {
+    await request(`/api/summary-suggestions/${suggestionId}/discard`, {
+      method: 'POST',
+    })
+    await refreshSummaryJob()
+  } catch (error) {
+    summaryActionError.value =
+      (error as Error & { message?: string }).message || 'Unable to discard suggestion.'
+  }
+}
+
+const suggestionTitle = (suggestion: SummarySuggestion) => {
+  const payload = suggestion.payload || {}
+  if (typeof payload.title === 'string' && payload.title) return payload.title
+  if (typeof payload.name === 'string' && payload.name) return payload.name
+  return 'Untitled suggestion'
 }
 
 const importDocument = async (
@@ -1217,6 +1363,96 @@ const formatBytes = (value: number) => {
             </div>
 
             <div v-else-if="activeStep === 'summary'" class="space-y-4">
+              <UCard>
+                <template #header>
+                  <div>
+                    <h2 class="text-lg font-semibold">n8n summarization</h2>
+                    <p class="text-sm text-muted">
+                      Send the transcript to n8n and review suggestions.
+                    </p>
+                  </div>
+                </template>
+                <div class="space-y-4">
+                  <div class="flex flex-wrap items-center gap-3">
+                    <UButton
+                      :loading="summarySending"
+                      :disabled="!transcriptDoc"
+                      @click="sendSummaryToN8n"
+                    >
+                      Send transcript to n8n
+                    </UButton>
+                    <UBadge variant="soft" :color="summaryStatusColor" size="sm">
+                      {{ summaryStatusLabel }}
+                    </UBadge>
+                    <span v-if="summaryJob?.trackingId" class="text-xs text-muted">
+                      {{ summaryJob.trackingId }}
+                    </span>
+                  </div>
+                  <p
+                    v-if="summaryJob?.status === 'READY_FOR_REVIEW'"
+                    class="text-sm text-muted"
+                  >
+                    Review the suggestions below and apply changes you want to keep.
+                  </p>
+                  <div v-if="summaryHighlights.length" class="space-y-2">
+                    <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Highlights</p>
+                    <ul class="list-disc space-y-1 pl-5 text-sm text-muted">
+                      <li v-for="highlight in summaryHighlights" :key="highlight">{{ highlight }}</li>
+                    </ul>
+                  </div>
+                  <div v-if="summarySuggestionGroups.length" class="space-y-3">
+                    <div
+                      v-for="group in summarySuggestionGroups"
+                      :key="group.label"
+                      class="rounded-lg border border-default bg-elevated/20 p-4"
+                    >
+                      <div class="flex items-center justify-between gap-2">
+                        <p class="text-sm font-semibold">{{ group.label }}</p>
+                        <UBadge variant="soft" color="primary" size="sm">
+                          {{ group.items.length }}
+                        </UBadge>
+                      </div>
+                      <div class="mt-3 space-y-3">
+                        <div
+                          v-for="suggestion in group.items"
+                          :key="suggestion.id"
+                          class="rounded-md border border-default bg-background/60 p-3"
+                        >
+                          <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                              <p class="text-sm font-semibold">{{ suggestionTitle(suggestion) }}</p>
+                              <p class="text-xs text-muted">
+                                {{ suggestion.action }} · {{ suggestion.status }}
+                              </p>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                              <UButton
+                                size="xs"
+                                variant="outline"
+                                :disabled="suggestion.status !== 'PENDING'"
+                                @click="applySummarySuggestion(suggestion.id)"
+                              >
+                                Apply
+                              </UButton>
+                              <UButton
+                                size="xs"
+                                variant="ghost"
+                                color="gray"
+                                :disabled="suggestion.status !== 'PENDING'"
+                                @click="discardSummarySuggestion(suggestion.id)"
+                              >
+                                Discard
+                              </UButton>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <p v-if="summarySendError" class="text-sm text-error">{{ summarySendError }}</p>
+                  <p v-if="summaryActionError" class="text-sm text-error">{{ summaryActionError }}</p>
+                </div>
+              </UCard>
               <UCard>
                 <template #header>
                   <div>
