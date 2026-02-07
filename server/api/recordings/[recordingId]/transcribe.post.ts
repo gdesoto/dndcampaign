@@ -28,14 +28,14 @@ export default defineEventHandler(async (event) => {
   }
 
   const config = useRuntimeConfig()
-  if (!config.elevenLabs?.apiKey) {
+  if (!config.elevenlabs?.apiKey) {
     return fail(500, 'CONFIG_ERROR', 'ElevenLabs API key is not configured')
   }
 
-  const webhookEnabled = Boolean(config.elevenLabs.webhookId)
+  const webhookEnabled = Boolean(config.elevenlabs.webhookId)
   const service = new TranscriptionService(
-    config.elevenLabs.apiKey,
-    config.elevenLabs.webhookId,
+    config.elevenlabs.apiKey,
+    config.elevenlabs.webhookId,
     webhookEnabled
   )
   const job = await service.startTranscription({

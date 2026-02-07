@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
     return fail(500, 'CONFIG_ERROR', 'ElevenLabs API key is not configured')
   }
 
-  const service = new TranscriptionService(config.elevenLabs.apiKey)
+  const service = new TranscriptionService(config.elevenlabs.apiKey)
   const updated = await service.fetchTranscription(job.id)
   if (!updated) {
     return fail(404, 'NOT_FOUND', 'Unable to fetch transcription')

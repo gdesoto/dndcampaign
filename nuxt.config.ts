@@ -31,7 +31,7 @@ export default defineNuxtConfig({
       provider: 'local',
       localRoot: './storage'
     },
-    elevenLabs: {
+    elevenlabs: {
       apiKey: '',
       webhookSecret: '',
       webhookId: ''
