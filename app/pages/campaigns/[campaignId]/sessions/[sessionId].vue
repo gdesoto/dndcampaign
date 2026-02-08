@@ -103,6 +103,20 @@ const { data: session, pending, refresh, error } = await useAsyncData(
   () => request<SessionDetail>(`/api/sessions/${sessionId.value}`)
 )
 
+useSeoMeta({
+  title: () => {
+    if (!session.value) return `Session details | Campaign ${campaignId.value} | DM Vault`
+    const label = session.value.sessionNumber
+      ? `Session ${session.value.sessionNumber}`
+      : 'Session'
+    return `${label}: ${session.value.title} | DM Vault`
+  },
+  description: () => {
+    if (!session.value?.notes) return 'Manage recordings, transcript, summary, and recap for this session.'
+    return session.value.notes.slice(0, 160)
+  },
+})
+
 const form = reactive({
   title: '',
   sessionNumber: '',

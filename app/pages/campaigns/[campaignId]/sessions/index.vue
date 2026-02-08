@@ -74,10 +74,7 @@ const createSession = async () => {
         <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Sessions</p>
         <h1 class="mt-2 text-2xl font-semibold">Session log</h1>
       </div>
-      <div class="flex flex-wrap items-center gap-3">
-        <UButton variant="outline" :to="`/campaigns/${campaignId}`">Back to campaign</UButton>
-        <UButton size="lg" @click="openCreate">New session</UButton>
-      </div>
+      <UButton size="lg" @click="openCreate">New session</UButton>
     </div>
 
     <div v-if="pending" class="grid gap-4 sm:grid-cols-2">

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'app' })
-
 type Campaign = {
   id: string
   name: string
@@ -77,17 +75,6 @@ const { data: recaps, refresh: refreshRecaps } = await useAsyncData(
   () => `campaign-recaps-${campaignId.value}`,
   () => request<RecapItem[]>(`/api/campaigns/${campaignId.value}/recaps`)
 )
-
-const activeTab = ref('overview')
-const tabItems = [
-  { label: 'Overview', value: 'overview' },
-  { label: 'Characters', value: 'characters' },
-  { label: 'Sessions', value: 'sessions' },
-  { label: 'Quests', value: 'quests' },
-  { label: 'Milestones', value: 'milestones' },
-  { label: 'Recap playlist', value: 'recaps' },
-  { label: 'Glossary', value: 'glossary' },
-]
 
 const formatDate = (value?: string | null) => {
   if (!value) return 'Unscheduled'
@@ -352,73 +339,38 @@ const saveCampaign = async () => {
 </script>
 
 <template>
-  <UPage class="theme-reveal">
-    <template v-if="campaign" #left>
-      <div class="space-y-4 lg:sticky lg:top-[calc(var(--ui-header-height)+1rem)]">
-        <UCard class="sticky top-24 h-fit">
-          <template #header>
-            <div class="font-display text-lg tracking-[0.2em] uppercase text-secondary">
-              Navigation
-            </div>
-          </template>
-          <div class="flex flex-col gap-2">
-            <UButton
-              v-for="item in tabItems"
-              :key="item.value"
-              size="sm"
-              class="flex items-center justify-between rounded-2xl px-4 py-3"
-              :variant="activeTab === item.value ? 'solid' : 'outline'"
-              @click="activeTab = item.value"
-            >
-              <span>{{ item.label }}</span>
-              <UIcon name="i-heroicons-chevron-right" class="h-4 w-4 text-(--theme-accent)" />
-                  
-            </UButton>
-          </div>
-        </UCard>
-      </div>
-    </template>
-    
-    <div class="space-y-8">
-      <div v-if="pending" class="space-y-4">
-        <UCard class="h-28 animate-pulse" />
-        <UCard class="h-40 animate-pulse" />
-      </div>
+  <div class="space-y-8 theme-reveal">
+    <div v-if="pending" class="space-y-4">
+      <UCard class="h-28 animate-pulse" />
+      <UCard class="h-40 animate-pulse" />
+    </div>
 
-      <UCard v-else-if="error" class="text-center">
-        <p class="text-sm text-error">Unable to load this campaign.</p>
-        <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
-      </UCard>
+    <UCard v-else-if="error" class="text-center">
+      <p class="text-sm text-error">Unable to load this campaign.</p>
+      <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
+    </UCard>
 
-      <div v-else-if="campaign" class="space-y-6">
-      
-      <UCard class="top-24 h-fit">
+    <div v-else-if="campaign" class="space-y-6">
+      <UCard>
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div class="space-y-2">
             <p class="text-xs uppercase tracking-[0.3em] text-dimmed">
               <span>{{ campaign.system }}</span>
               <span v-if="campaign.dungeonMasterName" class="mx-2 text-muted">•</span>
-              <span v-if="campaign.dungeonMasterName">
-                DM: {{ campaign.dungeonMasterName }}
-              </span>
+              <span v-if="campaign.dungeonMasterName">DM: {{ campaign.dungeonMasterName }}</span>
             </p>
-            <h1 class="text-2xl font-semibold">{{ campaign?.name || 'Campaign' }}</h1>
             <p class="text-sm text-muted">
               {{ campaign.description || 'Add a short overview for the campaign.' }}
             </p>
           </div>
-          <div class="flex flex-wrap gap-2">
-            <UButton size="xl" variant="subtle" @click="openEdit">Edit campaign</UButton>
-          </div>
+          <UButton size="lg" variant="subtle" @click="openEdit">Edit campaign</UButton>
         </div>
       </UCard>
 
       <div class="grid gap-4 md:grid-cols-4">
         <UCard :ui="{ body: 'p-4' }">
           <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Last session</p>
-          <p class="mt-2 text-lg font-semibold">
-            {{ latestSession?.sessionNumber ?? '-' }}
-          </p>
+          <p class="mt-2 text-lg font-semibold">{{ latestSession?.sessionNumber ?? '-' }}</p>
           <p class="text-xs text-muted">
             {{ latestSession ? formatDate(latestSession.playedAt || latestSession.createdAt) : 'No sessions yet.' }}
           </p>
@@ -446,429 +398,199 @@ const saveCampaign = async () => {
         </UCard>
       </div>
 
-      <div class="space-y-6">
-        <div v-if="activeTab === 'overview'" class="space-y-6">
-          <UCard>
-            <template #header>
-              <div>
-                <h2 class="text-lg font-semibold">Current status</h2>
-                <p class="text-sm text-muted">Update where the story left off.</p>
-              </div>
-            </template>
-            <div class="space-y-4">
-              <UTextarea v-model="statusDraft" :rows="6" placeholder="Where did we last leave the party?" />
-              <p v-if="saveError" class="text-sm text-error">{{ saveError }}</p>
-            </div>
-            <template #footer>
-              <div class="flex flex-wrap items-center justify-between gap-3">
-                <p class="text-xs text-muted">
-                  Last updated: {{ formatDateTime(campaign.updatedAt) }}
-                </p>
-                <UButton :loading="isSaving" @click="saveStatus">Save status</UButton>
-              </div>
-            </template>
-          </UCard>
-
-          <div class="grid gap-4 lg:grid-cols-3">
-            <UCard>
-              <template #header>
-                <div class="flex items-center justify-between">
-                  <h3 class="text-sm font-semibold">Recent sessions</h3>
-                  <UButton size="xs" variant="outline" :to="`/campaigns/${campaignId}/sessions`">
-                    View all
-                  </UButton>
-                </div>
-              </template>
-              <div v-if="recentSessions.length" class="space-y-3 text-sm">
-                <div
-                  v-for="session in recentSessions"
-                  :key="session.id"
-                  class="flex items-center justify-between gap-2 rounded-lg border border-default bg-elevated/30 p-3"
-                >
-                  <div>
-                    <p class="font-semibold">{{ session.title }}</p>
-                    <p class="text-xs text-muted">
-                      Session {{ session.sessionNumber ?? '-' }} - {{ formatDate(session.playedAt || session.createdAt) }}
-                    </p>
-                  </div>
-                  <UButton size="xs" variant="outline" :to="`/campaigns/${campaignId}/sessions/${session.id}`">
-                    Open
-                  </UButton>
-                </div>
-              </div>
-              <p v-else class="text-sm text-muted">No sessions yet.</p>
-            </UCard>
-
-            <UCard>
-              <template #header>
-                <div class="flex items-center justify-between">
-                  <h3 class="text-sm font-semibold">Active quests</h3>
-                  <UButton size="xs" variant="outline" :to="`/campaigns/${campaignId}/quests`">
-                    View all
-                  </UButton>
-                </div>
-              </template>
-              <div v-if="recentQuests.length" class="space-y-3 text-sm">
-                <div
-                  v-for="quest in recentQuests"
-                  :key="quest.id"
-                  class="flex items-center justify-between gap-2 rounded-lg border border-default bg-elevated/30 p-3"
-                >
-                  <div>
-                    <p class="font-semibold">{{ quest.title }}</p>
-                    <p class="text-xs text-muted">Status: {{ quest.status }}</p>
-                  </div>
-                  <UBadge :color="questStatusColor(quest.status)" variant="soft" size="sm">
-                    {{ quest.status }}
-                  </UBadge>
-                </div>
-              </div>
-              <p v-else class="text-sm text-muted">No quests yet.</p>
-            </UCard>
-
-            <UCard>
-              <template #header>
-                <div class="flex items-center justify-between">
-                  <h3 class="text-sm font-semibold">Milestones</h3>
-                  <UButton size="xs" variant="outline" :to="`/campaigns/${campaignId}/milestones`">
-                    View all
-                  </UButton>
-                </div>
-              </template>
-              <div v-if="recentMilestones.length" class="space-y-3 text-sm">
-                <div
-                  v-for="milestone in recentMilestones"
-                  :key="milestone.id"
-                  class="flex items-center justify-between gap-2 rounded-lg border border-default bg-elevated/30 p-3"
-                >
-                  <div>
-                    <p class="font-semibold">{{ milestone.title }}</p>
-                    <p class="text-xs text-muted">
-                      {{ milestone.isComplete ? 'Completed' : 'In progress' }}
-                    </p>
-                  </div>
-                  <UBadge :color="milestone.isComplete ? 'success' : 'secondary'" variant="soft" size="sm">
-                    {{ milestone.isComplete ? 'Done' : 'Open' }}
-                  </UBadge>
-                </div>
-              </div>
-              <p v-else class="text-sm text-muted">No milestones yet.</p>
-            </UCard>
+      <UCard>
+        <template #header>
+          <div>
+            <h2 class="text-lg font-semibold">Current status</h2>
+            <p class="text-sm text-muted">Update where the story left off.</p>
           </div>
+        </template>
+        <div class="space-y-4">
+          <UTextarea v-model="statusDraft" :rows="6" placeholder="Where did we last leave the party?" />
+          <p v-if="saveError" class="text-sm text-error">{{ saveError }}</p>
+        </div>
+        <template #footer>
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <p class="text-xs text-muted">Last updated: {{ formatDateTime(campaign.updatedAt) }}</p>
+            <UButton :loading="isSaving" @click="saveStatus">Save status</UButton>
+          </div>
+        </template>
+      </UCard>
 
-          <UCard>
-            <template #header>
+      <div class="grid gap-4 lg:grid-cols-3">
+        <UCard>
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-semibold">Recent sessions</h3>
+              <UButton size="xs" variant="outline" :to="`/campaigns/${campaignId}/sessions`">View all</UButton>
+            </div>
+          </template>
+          <div v-if="recentSessions.length" class="space-y-3 text-sm">
+            <div
+              v-for="session in recentSessions"
+              :key="session.id"
+              class="flex items-center justify-between gap-2 rounded-lg border border-default bg-elevated/30 p-3"
+            >
               <div>
-                <h2 class="text-lg font-semibold">Recap playlist</h2>
-                <p class="text-sm text-muted">
-                  Listen to session recaps across the campaign.
+                <p class="font-semibold">{{ session.title }}</p>
+                <p class="text-xs text-muted">
+                  Session {{ session.sessionNumber ?? '-' }} - {{ formatDate(session.playedAt || session.createdAt) }}
                 </p>
               </div>
-            </template>
-            <div class="space-y-4">
-              <div v-if="recaps?.length" class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
-                <div class="space-y-3">
-                  <div
-                    v-for="recap in recaps"
-                    :key="recap.id"
-                    class="flex items-start justify-between gap-3 rounded-lg border border-default bg-elevated/30 p-3 text-sm transition"
-                    :class="recap.id === selectedRecapId ? 'bg-primary/10 border-primary/40' : ''"
-                  >
-                    <div>
-                      <p class="font-semibold">{{ recap.session.title }}</p>
-                      <p class="text-xs text-muted">
-                        Session {{ recap.session.sessionNumber ?? '-' }}
-                        - {{ recap.session.playedAt ? new Date(recap.session.playedAt).toLocaleDateString() : 'Unscheduled' }}
-                      </p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <UButton
-                        size="xs"
-                        variant="outline"
-                        :loading="recapLoading && recap.id === selectedRecapId"
-                        @click="playRecap(recap.id)"
-                      >
-                        Play
-                      </UButton>
-                      <UButton
-                        size="xs"
-                        variant="ghost"
-                        color="red"
-                        :loading="recapDeleting"
-                        @click="deleteRecap(recap.id)"
-                      >
-                        Delete
-                      </UButton>
-                    </div>
-                  </div>
-                </div>
-                <UCard class="text-xs">
-                  <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Now playing</p>
-                  <p class="mt-2 text-sm font-semibold">
-                    {{ recaps.find((item) => item.id === selectedRecapId)?.session.title || 'Pick a recap' }}
-                  </p>
-                  <p class="text-xs text-muted">
-                    {{ recaps.find((item) => item.id === selectedRecapId)?.session.sessionNumber ?? '-' }}
-                  </p>
-                  <div class="mt-3">
-                    <div v-if="recapPlaybackUrl" class="flex items-center justify-between gap-3">
-                      <p class="text-xs text-muted">Playing in the global player.</p>
-                      <UButton size="xs" variant="ghost" @click="player.openDrawer">
-                        Open player
-                      </UButton>
-                    </div>
-                    <p v-else class="text-xs text-muted">
-                      Select a recap to start listening.
-                    </p>
-                  </div>
-                </UCard>
-              </div>
-              <div v-else class="space-y-3">
-                <p class="text-sm text-muted">
-                  No recaps yet. Upload a recap on a session to build the playlist.
-                </p>
-                <UButton variant="outline" :to="`/campaigns/${campaignId}/sessions`">
-                  Upload a recap
-                </UButton>
-              </div>
-              <p v-if="recapError" class="text-sm text-error">{{ recapError }}</p>
-              <p v-if="recapDeleteError" class="text-sm text-error">{{ recapDeleteError }}</p>
+              <UButton size="xs" variant="outline" :to="`/campaigns/${campaignId}/sessions/${session.id}`">Open</UButton>
             </div>
-          </UCard>
+          </div>
+          <p v-else class="text-sm text-muted">No sessions yet.</p>
+        </UCard>
 
-          <UCard>
-            <template #header>
-              <div class="flex items-center justify-between gap-4">
-                <div>
-                  <h2 class="text-lg font-semibold">Recent activity</h2>
-                  <p class="text-sm text-muted">Latest changes across the campaign.</p>
-                </div>
-                <UButton variant="outline" :to="`/campaigns/${campaignId}/sessions`">View sessions</UButton>
-              </div>
-            </template>
-            <div v-if="activityItems.length" class="space-y-4">
-              <UTimeline :items="activityItems">
-                <template #date="{ item }">
-                  <span class="text-xs text-muted">{{ formatDateTime(item.date) }}</span>
-                </template>
-                <template #title="{ item }">
-                  <span class="text-sm font-semibold">{{ item.title }}</span>
-                </template>
-                <template #description="{ item }">
-                  <span class="text-xs text-muted">{{ item.description }}</span>
-                </template>
-              </UTimeline>
+        <UCard>
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-semibold">Active quests</h3>
+              <UButton size="xs" variant="outline" :to="`/campaigns/${campaignId}/quests`">View all</UButton>
             </div>
-            <p v-else class="text-sm text-muted">No recent activity yet.</p>
-          </UCard>
-        </div>
-
-        <div v-else-if="activeTab === 'sessions'" class="space-y-4">
-          <UCard>
-            <template #header>
-              <div class="flex items-center justify-between">
-                <h2 class="text-lg font-semibold">Sessions</h2>
-                <UButton variant="outline" :to="`/campaigns/${campaignId}/sessions`">Open log</UButton>
-              </div>
-            </template>
-            <div v-if="sessions?.length" class="space-y-3 text-sm">
-              <div
-                v-for="session in sessions"
-                :key="session.id"
-                class="flex items-center justify-between gap-2 rounded-lg border border-default bg-elevated/30 p-3"
-              >
-                <div>
-                  <p class="font-semibold">{{ session.title }}</p>
-                  <p class="text-xs text-muted">
-                    Session {{ session.sessionNumber ?? '-' }} - {{ formatDate(session.playedAt || session.createdAt) }}
-                  </p>
-                </div>
-                <UButton size="xs" variant="outline" :to="`/campaigns/${campaignId}/sessions/${session.id}`">
-                  Open
-                </UButton>
-              </div>
-            </div>
-            <p v-else class="text-sm text-muted">No sessions yet.</p>
-          </UCard>
-        </div>
-
-        <div v-else-if="activeTab === 'quests'" class="space-y-4">
-          <UCard>
-            <template #header>
-              <div class="flex items-center justify-between">
-                <h2 class="text-lg font-semibold">Quests</h2>
-                <UButton variant="outline" :to="`/campaigns/${campaignId}/quests`">Open quests</UButton>
-              </div>
-            </template>
-            <div v-if="quests?.length" class="space-y-3 text-sm">
-              <div
-                v-for="quest in quests"
-                :key="quest.id"
-                class="flex items-center justify-between gap-2 rounded-lg border border-default bg-elevated/30 p-3"
-              >
-                <div>
-                  <p class="font-semibold">{{ quest.title }}</p>
-                  <p class="text-xs text-muted">Status: {{ quest.status }}</p>
-                </div>
-                <UBadge :color="questStatusColor(quest.status)" variant="soft" size="sm">
-                  {{ quest.status }}
-                </UBadge>
-              </div>
-            </div>
-            <p v-else class="text-sm text-muted">No quests yet.</p>
-          </UCard>
-        </div>
-
-        <div v-else-if="activeTab === 'milestones'" class="space-y-4">
-          <UCard>
-            <template #header>
-              <div class="flex items-center justify-between">
-                <h2 class="text-lg font-semibold">Milestones</h2>
-                <UButton variant="outline" :to="`/campaigns/${campaignId}/milestones`">Open milestones</UButton>
-              </div>
-            </template>
-            <div v-if="milestones?.length" class="space-y-3 text-sm">
-              <div
-                v-for="milestone in milestones"
-                :key="milestone.id"
-                class="flex items-center justify-between gap-2 rounded-lg border border-default bg-elevated/30 p-3"
-              >
-                <div>
-                  <p class="font-semibold">{{ milestone.title }}</p>
-                  <p class="text-xs text-muted">
-                    {{ milestone.isComplete ? 'Completed' : 'In progress' }}
-                  </p>
-                </div>
-                <UBadge :color="milestone.isComplete ? 'success' : 'secondary'" variant="soft" size="sm">
-                  {{ milestone.isComplete ? 'Done' : 'Open' }}
-                </UBadge>
-              </div>
-            </div>
-            <p v-else class="text-sm text-muted">No milestones yet.</p>
-          </UCard>
-        </div>
-
-        <div v-else-if="activeTab === 'recaps'" class="space-y-4">
-          <UCard>
-            <template #header>
+          </template>
+          <div v-if="recentQuests.length" class="space-y-3 text-sm">
+            <div
+              v-for="quest in recentQuests"
+              :key="quest.id"
+              class="flex items-center justify-between gap-2 rounded-lg border border-default bg-elevated/30 p-3"
+            >
               <div>
-                <h2 class="text-lg font-semibold">Recap playlist</h2>
-                <p class="text-sm text-muted">
-                  Listen to session recaps across the campaign.
+                <p class="font-semibold">{{ quest.title }}</p>
+                <p class="text-xs text-muted">Status: {{ quest.status }}</p>
+              </div>
+              <UBadge :color="questStatusColor(quest.status)" variant="soft" size="sm">
+                {{ quest.status }}
+              </UBadge>
+            </div>
+          </div>
+          <p v-else class="text-sm text-muted">No quests yet.</p>
+        </UCard>
+
+        <UCard>
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-semibold">Milestones</h3>
+              <UButton size="xs" variant="outline" :to="`/campaigns/${campaignId}/milestones`">View all</UButton>
+            </div>
+          </template>
+          <div v-if="recentMilestones.length" class="space-y-3 text-sm">
+            <div
+              v-for="milestone in recentMilestones"
+              :key="milestone.id"
+              class="flex items-center justify-between gap-2 rounded-lg border border-default bg-elevated/30 p-3"
+            >
+              <div>
+                <p class="font-semibold">{{ milestone.title }}</p>
+                <p class="text-xs text-muted">
+                  {{ milestone.isComplete ? 'Completed' : 'In progress' }}
                 </p>
               </div>
-            </template>
-            <div class="space-y-4">
-              <div v-if="recaps?.length" class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
-                <div class="space-y-3">
-                  <div
-                    v-for="recap in recaps"
-                    :key="recap.id"
-                    class="flex items-start justify-between gap-3 rounded-lg border border-default bg-elevated/30 p-3 text-sm transition"
-                    :class="recap.id === selectedRecapId ? 'bg-primary/10 border-primary/40' : ''"
-                  >
-                    <div>
-                      <p class="font-semibold">{{ recap.session.title }}</p>
-                      <p class="text-xs text-muted">
-                        Session {{ recap.session.sessionNumber ?? '-' }}
-                        - {{ recap.session.playedAt ? new Date(recap.session.playedAt).toLocaleDateString() : 'Unscheduled' }}
-                      </p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <UButton
-                        size="xs"
-                        variant="outline"
-                        :loading="recapLoading && recap.id === selectedRecapId"
-                        @click="playRecap(recap.id)"
-                      >
-                        Play
-                      </UButton>
-                      <UButton
-                        size="xs"
-                        variant="ghost"
-                        color="red"
-                        :loading="recapDeleting"
-                        @click="deleteRecap(recap.id)"
-                      >
-                        Delete
-                      </UButton>
-                    </div>
-                  </div>
-                </div>
-                <UCard class="text-xs">
-                  <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Now playing</p>
-                  <p class="mt-2 text-sm font-semibold">
-                    {{ recaps.find((item) => item.id === selectedRecapId)?.session.title || 'Pick a recap' }}
-                  </p>
-                  <p class="text-xs text-muted">
-                    {{ recaps.find((item) => item.id === selectedRecapId)?.session.sessionNumber ?? '-' }}
-                  </p>
-                  <div class="mt-3">
-                    <div v-if="recapPlaybackUrl" class="flex items-center justify-between gap-3">
-                      <p class="text-xs text-muted">Playing in the global player.</p>
-                      <UButton size="xs" variant="ghost" @click="player.openDrawer">
-                        Open player
-                      </UButton>
-                    </div>
-                    <p v-else class="text-xs text-muted">
-                      Select a recap to start listening.
-                    </p>
-                  </div>
-                </UCard>
-              </div>
-              <div v-else class="space-y-3">
-                <p class="text-sm text-muted">
-                  No recaps yet. Upload a recap on a session to build the playlist.
-                </p>
-                <UButton variant="outline" :to="`/campaigns/${campaignId}/sessions`">
-                  Upload a recap
-                </UButton>
-              </div>
-              <p v-if="recapError" class="text-sm text-error">{{ recapError }}</p>
-              <p v-if="recapDeleteError" class="text-sm text-error">{{ recapDeleteError }}</p>
+              <UBadge :color="milestone.isComplete ? 'success' : 'secondary'" variant="soft" size="sm">
+                {{ milestone.isComplete ? 'Done' : 'Open' }}
+              </UBadge>
             </div>
-          </UCard>
-        </div>
-
-        <div v-else-if="activeTab === 'characters'" class="space-y-4">
-          <UCard>
-            <template #header>
-              <div>
-                <h2 class="text-lg font-semibold">Characters</h2>
-                <p class="text-sm text-muted">Manage campaign party members.</p>
-              </div>
-            </template>
-            <div class="space-y-3">
-              <p class="text-sm text-muted">
-                Attach or manage PCs that belong to this campaign.
-              </p>
-              <UButton variant="outline" :to="`/campaigns/${campaignId}/characters`">
-                Open characters
-              </UButton>
-            </div>
-          </UCard>
-        </div>
-
-        <div v-else class="space-y-4">
-          <UCard>
-            <template #header>
-              <div>
-                <h2 class="text-lg font-semibold">Glossary</h2>
-                <p class="text-sm text-muted">Track NPCs, locations, and items.</p>
-              </div>
-            </template>
-            <div class="space-y-3">
-              <p class="text-sm text-muted">
-                Keep your world index updated with every session.
-              </p>
-              <UButton variant="outline" :to="`/campaigns/${campaignId}/glossary`">
-                Open glossary
-              </UButton>
-            </div>
-          </UCard>
-        </div>
+          </div>
+          <p v-else class="text-sm text-muted">No milestones yet.</p>
+        </UCard>
       </div>
 
+      <UCard>
+        <template #header>
+          <div>
+            <h2 class="text-lg font-semibold">Recap playlist</h2>
+            <p class="text-sm text-muted">Listen to session recaps across the campaign.</p>
+          </div>
+        </template>
+        <div class="space-y-4">
+          <div v-if="recaps?.length" class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
+            <div class="space-y-3">
+              <div
+                v-for="recap in recaps"
+                :key="recap.id"
+                class="flex items-start justify-between gap-3 rounded-lg border border-default bg-elevated/30 p-3 text-sm transition"
+                :class="recap.id === selectedRecapId ? 'bg-primary/10 border-primary/40' : ''"
+              >
+                <div>
+                  <p class="font-semibold">{{ recap.session.title }}</p>
+                  <p class="text-xs text-muted">
+                    Session {{ recap.session.sessionNumber ?? '-' }}
+                    - {{ recap.session.playedAt ? new Date(recap.session.playedAt).toLocaleDateString() : 'Unscheduled' }}
+                  </p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <UButton
+                    size="xs"
+                    variant="outline"
+                    :loading="recapLoading && recap.id === selectedRecapId"
+                    @click="playRecap(recap.id)"
+                  >
+                    Play
+                  </UButton>
+                  <UButton
+                    size="xs"
+                    variant="ghost"
+                    color="red"
+                    :loading="recapDeleting"
+                    @click="deleteRecap(recap.id)"
+                  >
+                    Delete
+                  </UButton>
+                </div>
+              </div>
+            </div>
+            <UCard class="text-xs">
+              <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Now playing</p>
+              <p class="mt-2 text-sm font-semibold">
+                {{ recaps.find((item) => item.id === selectedRecapId)?.session.title || 'Pick a recap' }}
+              </p>
+              <p class="text-xs text-muted">
+                {{ recaps.find((item) => item.id === selectedRecapId)?.session.sessionNumber ?? '-' }}
+              </p>
+              <div class="mt-3">
+                <div v-if="recapPlaybackUrl" class="flex items-center justify-between gap-3">
+                  <p class="text-xs text-muted">Playing in the global player.</p>
+                  <UButton size="xs" variant="ghost" @click="player.openDrawer">Open player</UButton>
+                </div>
+                <p v-else class="text-xs text-muted">Select a recap to start listening.</p>
+              </div>
+            </UCard>
+          </div>
+          <div v-else class="space-y-3">
+            <p class="text-sm text-muted">No recaps yet. Upload a recap on a session to build the playlist.</p>
+            <UButton variant="outline" :to="`/campaigns/${campaignId}/sessions`">Upload a recap</UButton>
+          </div>
+          <p v-if="recapError" class="text-sm text-error">{{ recapError }}</p>
+          <p v-if="recapDeleteError" class="text-sm text-error">{{ recapDeleteError }}</p>
+        </div>
+      </UCard>
+
+      <UCard>
+        <template #header>
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <h2 class="text-lg font-semibold">Recent activity</h2>
+              <p class="text-sm text-muted">Latest changes across the campaign.</p>
+            </div>
+            <UButton variant="outline" :to="`/campaigns/${campaignId}/sessions`">View sessions</UButton>
+          </div>
+        </template>
+        <div v-if="activityItems.length" class="space-y-4">
+          <UTimeline :items="activityItems">
+            <template #date="{ item }">
+              <span class="text-xs text-muted">{{ formatDateTime(item.date) }}</span>
+            </template>
+            <template #title="{ item }">
+              <span class="text-sm font-semibold">{{ item.title }}</span>
+            </template>
+            <template #description="{ item }">
+              <span class="text-xs text-muted">{{ item.description }}</span>
+            </template>
+          </UTimeline>
+        </div>
+        <p v-else class="text-sm text-muted">No recent activity yet.</p>
+      </UCard>
     </div>
 
     <UModal v-model:open="isEditOpen">
@@ -905,6 +627,5 @@ const saveCampaign = async () => {
         </UCard>
       </template>
     </UModal>
-    </div>
-  </UPage>
+  </div>
 </template>
