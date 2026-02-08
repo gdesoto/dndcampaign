@@ -48,6 +48,7 @@ export default defineEventHandler(async (event) => {
     numSpeakers: validation.data.numSpeakers,
     keyterms: validation.data.keyterms,
     diarize: validation.data.diarize ?? true,
+    tagAudioEvents: validation.data.tagAudioEvents ?? false,
     languageCode: validation.data.languageCode,
   })
 

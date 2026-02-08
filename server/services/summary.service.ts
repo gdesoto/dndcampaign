@@ -34,7 +34,7 @@ type NormalizedTranscript = {
 }
 
 type SuggestionInput = {
-  entityType: 'QUEST' | 'MILESTONE' | 'GLOSSARY' | 'PC' | 'NPC' | 'ITEM' | 'LOCATION'
+  entityType: 'SESSION' | 'QUEST' | 'MILESTONE' | 'GLOSSARY' | 'PC' | 'NPC' | 'ITEM' | 'LOCATION'
   action: 'CREATE' | 'UPDATE' | 'DISCARD'
   match?: Record<string, unknown>
   payload: Record<string, unknown>
@@ -95,6 +95,15 @@ const flattenSuggestions = (suggestions?: SummarySuggestions): SuggestionInput[]
 
   pushItems('QUEST', suggestions.quests as Record<string, unknown>[] | undefined)
   pushItems('MILESTONE', suggestions.milestones as Record<string, unknown>[] | undefined)
+
+  if (suggestions.session && typeof suggestions.session === 'object') {
+    items.push({
+      entityType: 'SESSION',
+      action: normalizeAction((suggestions.session as Record<string, unknown>).action as string | undefined),
+      match: (suggestions.session as Record<string, unknown>).match as Record<string, unknown> | undefined,
+      payload: stripSuggestionPayload(suggestions.session as Record<string, unknown>),
+    })
+  }
 
   if (suggestions.glossary && typeof suggestions.glossary === 'object') {
     const glossary = suggestions.glossary as Record<string, Record<string, unknown>[]>
@@ -281,7 +290,10 @@ export class SummaryService {
       return null
     }
 
-    if (job.status === 'READY_FOR_REVIEW' || job.status === 'APPLIED') {
+    const forceOverwrite =
+      Boolean(payload.meta && typeof payload.meta === 'object' && (payload.meta as { forceOverwrite?: boolean }).forceOverwrite)
+
+    if (!forceOverwrite && (job.status === 'READY_FOR_REVIEW' || job.status === 'APPLIED')) {
       return job
     }
 
@@ -305,33 +317,6 @@ export class SummaryService {
           status: 'PROCESSING',
           meta: payload.meta || job.meta || undefined,
         },
-      })
-    }
-
-    const summaryText = resolveSummaryText(payload.summaryContent)
-
-    let summaryDocumentId = job.summaryDocumentId
-    if (!summaryDocumentId) {
-      const titleBase = 'Summary'
-      const title = job.session?.title ? `${titleBase}: ${job.session.title}` : titleBase
-      const created = await this.documentService.createDocument({
-        campaignId: job.campaignId,
-        sessionId: job.sessionId,
-        type: 'SUMMARY',
-        title,
-        content: summaryText,
-        format: 'MARKDOWN',
-        source: 'N8N_IMPORT',
-        createdByUserId: null,
-      })
-      summaryDocumentId = created.id
-    } else {
-      await this.documentService.updateDocument({
-        documentId: summaryDocumentId,
-        content: summaryText,
-        format: 'MARKDOWN',
-        source: 'N8N_IMPORT',
-        createdByUserId: null,
       })
     }
 
@@ -365,9 +350,67 @@ export class SummaryService {
       where: { id: job.id },
       data: {
         status: 'READY_FOR_REVIEW',
-        summaryDocumentId,
         responseHash,
         meta: nextMeta,
+      },
+    })
+  }
+
+  async applySummaryFromJob(jobId: string, userId: string) {
+    const job = await prisma.summaryJob.findFirst({
+      where: { id: jobId, campaign: { ownerId: userId } },
+      include: { session: true },
+    })
+    if (!job) return null
+
+    const summaryText = resolveSummaryText(
+      (job.meta as { summaryContent?: SummaryContent } | null)?.summaryContent
+    )
+    if (!summaryText) {
+      throw new Error('Summary content is missing')
+    }
+
+    let summaryDocumentId = job.summaryDocumentId
+    if (!summaryDocumentId) {
+      const existingSummary = await prisma.document.findFirst({
+        where: { sessionId: job.sessionId, type: 'SUMMARY' },
+      })
+      if (existingSummary) {
+        summaryDocumentId = existingSummary.id
+      } else {
+        const titleBase = 'Summary'
+        const title = job.session?.title ? `${titleBase}: ${job.session.title}` : titleBase
+        const created = await this.documentService.createDocument({
+          campaignId: job.campaignId,
+          sessionId: job.sessionId,
+          type: 'SUMMARY',
+          title,
+          content: summaryText,
+          format: 'MARKDOWN',
+          source: 'N8N_IMPORT',
+          createdByUserId: null,
+        })
+        summaryDocumentId = created.id
+      }
+    }
+
+    await this.documentService.updateDocument({
+      documentId: summaryDocumentId,
+      content: summaryText,
+      format: 'MARKDOWN',
+      source: 'N8N_IMPORT',
+      createdByUserId: null,
+    })
+
+    const pendingCount = await prisma.summarySuggestion.count({
+      where: { summaryJobId: job.id, status: 'PENDING' },
+    })
+
+    return prisma.summaryJob.update({
+      where: { id: job.id },
+      data: {
+        summaryDocumentId,
+        status: pendingCount === 0 ? 'APPLIED' : job.status,
       },
     })
   }

@@ -130,7 +130,7 @@ const createSession = async () => {
           <div class="space-y-4">
             <div>
               <label class="mb-2 block text-sm text-muted">Title</label>
-              <UInput v-model="createForm.title" placeholder="Session 12: The Glass Crypt" />
+              <UInput v-model="createForm.title" placeholder="The Glass Crypt" />
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
               <div>

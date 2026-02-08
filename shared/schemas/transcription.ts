@@ -23,6 +23,7 @@ export const transcriptionStartSchema = z.object({
   numSpeakers: z.number().int().min(1).max(32).optional(),
   keyterms: z.array(keytermSchema).max(100).optional(),
   diarize: z.boolean().optional().default(true),
+  tagAudioEvents: z.boolean().optional().default(false),
   languageCode: z.string().min(2).max(10).optional(),
   modelId: z.string().min(1).max(50).optional().default('scribe_v2'),
 })

@@ -1,0 +1,437 @@
+{
+  "type": "object",
+  "description": "Response payload sent from n8n to the app webhook after summarization.",
+  "required": [
+    "trackingId",
+    "summaryContent",
+    "suggestions"
+  ],
+  "properties": {
+    "trackingId": {
+      "type": "string",
+      "description": "Tracking id provided by the app in the request."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "COMPLETED",
+        "FAILED",
+        "PROCESSING"
+      ],
+      "description": "Optional job status hint."
+    },
+    "summaryContent": {
+      "description": "Summary content. Prefer fullSummary/keyMoments/sessionTags. Additional fields are allowed for structured narrative.",
+      "type": "object",
+      "properties": {
+        "fullSummary": {
+          "type": "string",
+          "description": "Full summary in markdown."
+        },
+        "keyMoments": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Key moments, highlights or bullets for quick review."
+        },
+        "sessionTags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional tags describing the session."
+        },
+        "notableDialogue": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional list of notable dialogue lines and the person who said it. Example: I have a dream. - MLK Jr"
+        },
+        "concreteFacts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional list of concrete facts extracted from the session."
+        }
+      },
+      "additionalProperties": true
+    },
+    "suggestions": {
+      "type": "object",
+      "description": "Structured suggestions to apply to the campaign/session.",
+      "required": [
+        "session",
+        "quests",
+        "milestone",
+        "glossary"
+      ],
+      "properties": {
+        "session": {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": [
+                "update"
+              ],
+              "description": "How the app should treat this suggestion."
+            },
+            "match": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Optional matching info (id or name) for updates."
+            },
+            "title": {
+              "type": "string",
+              "description": "Short, creative session title."
+            },
+            "notes": {
+              "type": "string",
+              "description": "Creative description of the overall session."
+            }
+          },
+          "additionalProperties": true
+        },
+        "quests": {
+          "type": "array",
+          "description": "Quest create/update suggestions.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "create",
+                  "update",
+                  "discard"
+                ],
+                "description": "How the app should treat this suggestion."
+              },
+              "match": {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "Optional matching info (id or title) for updates."
+              },
+              "title": {
+                "type": "string",
+                "description": "Quest title."
+              },
+              "description": {
+                "type": "string",
+                "description": "Quest description."
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "ACTIVE",
+                  "COMPLETED",
+                  "FAILED",
+                  "ON_HOLD"
+                ],
+                "description": "Quest status."
+              },
+              "progressNotes": {
+                "type": "string",
+                "description": "Progress notes."
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "milestones": {
+          "type": "array",
+          "description": "Milestone create/update suggestions.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "create",
+                  "update",
+                  "discard"
+                ],
+                "description": "How the app should treat this suggestion."
+              },
+              "match": {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "Optional matching info (id or title) for updates."
+              },
+              "title": {
+                "type": "string",
+                "description": "Milestone title."
+              },
+              "description": {
+                "type": "string",
+                "description": "Milestone description."
+              },
+              "isComplete": {
+                "type": "boolean",
+                "description": "Whether the milestone is complete."
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "glossary": {
+          "type": "object",
+          "description": "Glossary suggestions grouped by type.",
+          "properties": {
+            "pcs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "create",
+                      "update",
+                      "discard"
+                    ],
+                    "description": "How the app should treat this suggestion."
+                  },
+                  "match": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "description": "Optional matching info (id or name) for updates."
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "PC",
+                      "NPC",
+                      "ITEM",
+                      "LOCATION"
+                    ],
+                    "description": "Glossary entry type."
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Glossary entry name."
+                  },
+                  "aliases": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "description": "Comma-separated aliases."
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Aliases list."
+                      },
+                      {
+                        "type": "null",
+                        "description": "Explicit null when no aliases are available."
+                      }
+                    ]
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Glossary entry description."
+                  }
+                },
+                "additionalProperties": true
+              }
+            },
+            "npcs": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "create",
+                      "update",
+                      "discard"
+                    ],
+                    "description": "How the app should treat this suggestion."
+                  },
+                  "match": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "description": "Optional matching info (id or name) for updates."
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "PC",
+                      "NPC",
+                      "ITEM",
+                      "LOCATION"
+                    ],
+                    "description": "Glossary entry type."
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Glossary entry name."
+                  },
+                  "aliases": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "description": "Comma-separated aliases."
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Aliases list."
+                      },
+                      {
+                        "type": "null",
+                        "description": "Explicit null when no aliases are available."
+                      }
+                    ]
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Glossary entry description."
+                  }
+                },
+                "additionalProperties": true
+              }
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "create",
+                      "update",
+                      "discard"
+                    ],
+                    "description": "How the app should treat this suggestion."
+                  },
+                  "match": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "description": "Optional matching info (id or name) for updates."
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "PC",
+                      "NPC",
+                      "ITEM",
+                      "LOCATION"
+                    ],
+                    "description": "Glossary entry type."
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Glossary entry name."
+                  },
+                  "aliases": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "description": "Comma-separated aliases."
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Aliases list."
+                      },
+                      {
+                        "type": "null",
+                        "description": "Explicit null when no aliases are available."
+                      }
+                    ]
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Glossary entry description."
+                  }
+                },
+                "additionalProperties": true
+              }
+            },
+            "locations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "create",
+                      "update",
+                      "discard"
+                    ],
+                    "description": "How the app should treat this suggestion."
+                  },
+                  "match": {
+                    "type": "object",
+                    "additionalProperties": true,
+                    "description": "Optional matching info (id or name) for updates."
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "PC",
+                      "NPC",
+                      "ITEM",
+                      "LOCATION"
+                    ],
+                    "description": "Glossary entry type."
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Glossary entry name."
+                  },
+                  "aliases": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "description": "Comma-separated aliases."
+                      },
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Aliases list."
+                      },
+                      {
+                        "type": "null",
+                        "description": "Explicit null when no aliases are available."
+                      }
+                    ]
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Glossary entry description."
+                  }
+                },
+                "additionalProperties": true
+              }
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Optional metadata about the model, timing, tokens, etc."
+    }
+  },
+  "additionalProperties": true
+}

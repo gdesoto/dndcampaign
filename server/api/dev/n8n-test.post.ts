@@ -164,6 +164,12 @@ const validateN8nResponse = (response: unknown): ValidationResult => {
   }
 
   validateSuggestions(response.suggestions, warnings)
+  if (isRecord(response.suggestions) && response.suggestions.session) {
+    const sessionSuggestion = response.suggestions.session
+    if (!isRecord(sessionSuggestion)) {
+      warnings.push('suggestions.session should be an object')
+    }
+  }
 
   return { valid: errors.length === 0, errors, warnings }
 }

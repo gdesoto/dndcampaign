@@ -1,3 +1,4 @@
+import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { SummaryService } from '#server/services/summary.service'
 
@@ -11,8 +12,22 @@ export default defineEventHandler(async (event) => {
   const service = new SummaryService()
   const job = await service.getLatestJobForSession(sessionId, sessionUser.user.id)
 
+  const jobs = await prisma.summaryJob.findMany({
+    where: { sessionId, campaign: { ownerId: sessionUser.user.id } },
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      status: true,
+      mode: true,
+      trackingId: true,
+      summaryDocumentId: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  })
+
   if (!job) {
-    return ok({ job: null, suggestions: [] })
+    return ok({ job: null, suggestions: [], jobs })
   }
 
   return ok({
@@ -35,5 +50,6 @@ export default defineEventHandler(async (event) => {
       match: suggestion.match,
       payload: suggestion.payload,
     })),
+    jobs,
   })
 })

@@ -19,6 +19,7 @@ type StartTranscriptionInput = {
   numSpeakers?: number
   keyterms?: string[]
   diarize: boolean
+  tagAudioEvents?: boolean
   languageCode?: string
 }
 
@@ -129,8 +130,8 @@ const normalizeWebhookPayload = (payload: unknown): NormalizedWebhookPayload => 
   const webhookMetadata =
     parseWebhookMetadata(
       (data as { webhook_metadata?: unknown })?.webhook_metadata ??
-        (data as { webhookMetadata?: unknown })?.webhookMetadata ??
-        (root as { webhook_metadata?: unknown })?.webhook_metadata
+      (data as { webhookMetadata?: unknown })?.webhookMetadata ??
+      (root as { webhook_metadata?: unknown })?.webhook_metadata
     ) ?? undefined
 
   return {
@@ -140,20 +141,20 @@ const normalizeWebhookPayload = (payload: unknown): NormalizedWebhookPayload => 
     webhookMetadata,
     formats: Array.isArray(formats)
       ? formats.map((item) => ({
-          requestedFormat:
-            (item as { requested_format?: string })?.requested_format ??
-            (item as { requestedFormat?: string })?.requestedFormat,
-          fileExtension:
-            (item as { file_extension?: string })?.file_extension ??
-            (item as { fileExtension?: string })?.fileExtension,
-          contentType:
-            (item as { content_type?: string })?.content_type ??
-            (item as { contentType?: string })?.contentType,
-          isBase64Encoded:
-            (item as { is_base64_encoded?: boolean })?.is_base64_encoded ??
-            (item as { isBase64Encoded?: boolean })?.isBase64Encoded,
-          content: (item as { content?: string })?.content,
-        }))
+        requestedFormat:
+          (item as { requested_format?: string })?.requested_format ??
+          (item as { requestedFormat?: string })?.requestedFormat,
+        fileExtension:
+          (item as { file_extension?: string })?.file_extension ??
+          (item as { fileExtension?: string })?.fileExtension,
+        contentType:
+          (item as { content_type?: string })?.content_type ??
+          (item as { contentType?: string })?.contentType,
+        isBase64Encoded:
+          (item as { is_base64_encoded?: boolean })?.is_base64_encoded ??
+          (item as { isBase64Encoded?: boolean })?.isBase64Encoded,
+        content: (item as { content?: string })?.content,
+      }))
       : [],
   }
 }
@@ -184,6 +185,7 @@ export class TranscriptionService {
         languageCode: input.languageCode,
         numSpeakers: input.numSpeakers,
         diarize: input.diarize,
+        tagAudioEvents: input.tagAudioEvents ?? false,
         requestedFormats: JSON.stringify(input.formats),
         keyterms: input.keyterms ? JSON.stringify(input.keyterms) : undefined,
       },
@@ -200,6 +202,7 @@ export class TranscriptionService {
         numSpeakers: input.numSpeakers,
         diarize: input.diarize,
         keyterms: input.keyterms,
+        tagAudioEvents: input.tagAudioEvents,
         additionalFormats,
         webhook: this.webhookEnabled,
         webhookId: this.webhookEnabled ? this.webhookId || undefined : undefined,

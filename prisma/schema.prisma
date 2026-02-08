@@ -202,6 +202,7 @@ model TranscriptionJob {
   languageCode     String?
   numSpeakers      Int?
   diarize          Boolean               @default(true)
+  tagAudioEvents   Boolean               @default(false)
   requestedFormats String?
   keyterms         String?
   errorMessage     String?
@@ -307,6 +308,7 @@ enum SummaryJobMode {
 }
 
 enum SummarySuggestionEntityType {
+  SESSION
   QUEST
   MILESTONE
   GLOSSARY

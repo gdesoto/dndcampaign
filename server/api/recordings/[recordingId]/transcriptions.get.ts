@@ -42,6 +42,7 @@ export default defineEventHandler(async (event) => {
       languageCode: job.languageCode,
       numSpeakers: job.numSpeakers,
       diarize: job.diarize,
+      tagAudioEvents: job.tagAudioEvents,
       requestedFormats: parseJsonArray(job.requestedFormats),
       keyterms: parseJsonArray(job.keyterms),
       errorMessage: job.errorMessage,

@@ -146,13 +146,14 @@ const transcribeForm = reactive({
   numSpeakers: '12',
   diarize: true,
   keyterms: '',
+  tagAudioEvents: false,
   formats: {
     txt: true,
     srt: true,
     docx: false,
     pdf: false,
     html: false,
-    segmented_json: false,
+    segmented_json: true,
   },
 })
 
@@ -373,6 +374,7 @@ const startTranscription = async () => {
       numSpeakers: Number.isFinite(numSpeakers) ? numSpeakers : undefined,
       keyterms: parseKeyterms(transcribeForm.keyterms),
       diarize: transcribeForm.diarize,
+      tagAudioEvents: transcribeForm.tagAudioEvents,
     }
     await request(`/api/recordings/${recordingId.value}/transcribe`, {
       method: 'POST',
@@ -578,6 +580,7 @@ const formatBytes = (value: number) => {
                 </div>
                 <div class="flex flex-wrap items-center gap-2 text-xs text-dimmed">
                   <span>Formats: {{ job.requestedFormats?.join(', ') || '—' }}</span>
+                  <span>Audio events: {{ job.tagAudioEvents ? 'on' : 'off' }}</span>
                   <UButton
                     v-if="job.externalJobId && job.status !== 'COMPLETED'"
                     size="xs"
@@ -788,6 +791,10 @@ const formatBytes = (value: number) => {
                 <UCheckbox v-model="transcribeForm.diarize" />
                 <span class="text-sm">Enable diarization</span>
               </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <UCheckbox v-model="transcribeForm.tagAudioEvents" />
+              <span class="text-sm">Tag audio events (laughter, footsteps, etc.)</span>
             </div>
             <div>
               <label class="mb-2 block text-sm text-muted">Keyterms</label>

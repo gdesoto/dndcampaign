@@ -90,6 +90,51 @@ export class SummarySuggestionService {
     const payload = suggestion.payload as Record<string, unknown>
     const match = (suggestion.match || {}) as Record<string, unknown>
 
+    if (suggestion.entityType === 'SESSION') {
+      if (suggestion.action !== 'UPDATE') {
+        await prisma.summarySuggestion.update({
+          where: { id: suggestion.id },
+          data: { status: 'DISCARDED' },
+        })
+
+        if (!(await hasPendingSuggestions(suggestion.summaryJobId))) {
+          await prisma.summaryJob.update({
+            where: { id: suggestion.summaryJobId },
+            data: { status: 'APPLIED' },
+          })
+        }
+
+        return { suggestionId: suggestion.id, status: 'DISCARDED', entityType: suggestion.entityType }
+      }
+
+      const updated = await prisma.session.update({
+        where: { id: suggestion.summaryJob.sessionId },
+        data: {
+          title: typeof payload.title === 'string' ? payload.title : undefined,
+          notes: typeof payload.notes === 'string' ? payload.notes : undefined,
+        },
+      })
+
+      await prisma.summarySuggestion.update({
+        where: { id: suggestion.id },
+        data: { status: 'APPLIED' },
+      })
+
+      if (!(await hasPendingSuggestions(suggestion.summaryJobId))) {
+        await prisma.summaryJob.update({
+          where: { id: suggestion.summaryJobId },
+          data: { status: 'APPLIED' },
+        })
+      }
+
+      return {
+        suggestionId: suggestion.id,
+        status: 'APPLIED',
+        entityId: updated.id,
+        entityType: suggestion.entityType,
+      }
+    }
+
     if (suggestion.entityType === 'QUEST') {
       let questId = typeof match.id === 'string' ? match.id : undefined
       if (!questId && typeof match.title === 'string') {

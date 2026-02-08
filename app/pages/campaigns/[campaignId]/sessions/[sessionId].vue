@@ -67,6 +67,16 @@ type SummaryJob = {
   meta?: Record<string, unknown> | null
 }
 
+type SummaryJobListItem = {
+  id: string
+  status: string
+  mode: string
+  trackingId: string
+  summaryDocumentId?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
 type SummarySuggestion = {
   id: string
   entityType: string
@@ -79,6 +89,7 @@ type SummarySuggestion = {
 type SummaryJobResponse = {
   job: SummaryJob | null
   suggestions: SummarySuggestion[]
+  jobs: SummaryJobListItem[]
 }
 
 const route = useRoute()
@@ -128,6 +139,7 @@ const summaryFile = ref<File | null>(null)
 const summarySending = ref(false)
 const summarySendError = ref('')
 const summaryActionError = ref('')
+const selectedSummaryJobId = ref('')
 const subtitleAttachLoading = ref(false)
 const subtitleAttachError = ref('')
 const selectedSubtitleRecordingId = ref('')
@@ -203,6 +215,17 @@ const { data: summaryJobData, refresh: refreshSummaryJob } = await useAsyncData(
   () => request<SummaryJobResponse>(`/api/sessions/${sessionId.value}/summary-jobs`)
 )
 
+const { data: selectedSummaryJobData, refresh: refreshSelectedSummaryJob } = await useAsyncData(
+  () => `summary-job-detail-${selectedSummaryJobId.value || 'latest'}`,
+  () => {
+    if (!selectedSummaryJobId.value) return Promise.resolve(null)
+    return request<SummaryJob & { suggestions: SummarySuggestion[] }>(
+      `/api/summary-jobs/${selectedSummaryJobId.value}`
+    )
+  },
+  { immediate: false }
+)
+
 watch(
   () => session.value,
   (value) => {
@@ -237,8 +260,49 @@ const hasRecap = computed(() => Boolean(recap.value))
 const isSessionComplete = computed(
   () => hasRecordings.value && hasTranscript.value && hasSummary.value
 )
-const summaryJob = computed(() => summaryJobData.value?.job || null)
-const summarySuggestions = computed(() => summaryJobData.value?.suggestions || [])
+const summaryJob = computed(() => {
+  if (selectedSummaryJobId.value && selectedSummaryJobData.value) {
+    return selectedSummaryJobData.value
+  }
+  return summaryJobData.value?.job || null
+})
+const summarySuggestions = computed(() => {
+  if (selectedSummaryJobId.value && selectedSummaryJobData.value) {
+    return selectedSummaryJobData.value.suggestions || []
+  }
+  return summaryJobData.value?.suggestions || []
+})
+const summaryJobHistory = computed(() => summaryJobData.value?.jobs || [])
+const sessionSuggestion = computed(() =>
+  summarySuggestions.value.find((suggestion) => suggestion.entityType === 'SESSION') || null
+)
+const summaryJobOptions = computed(() =>
+  summaryJobHistory.value.map((job) => {
+    const dateLabel = new Date(job.createdAt).toLocaleString()
+    return {
+      label: `${dateLabel} · ${job.status}`,
+      value: job.id,
+    }
+  })
+)
+
+watch(
+  () => summaryJobData.value?.job?.id,
+  (value) => {
+    if (!selectedSummaryJobId.value && value) {
+      selectedSummaryJobId.value = value
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => selectedSummaryJobId.value,
+  async (value) => {
+    if (!value) return
+    await refreshSelectedSummaryJob()
+  }
+)
 const videoOptions = computed(() =>
   (recordings.value || [])
     .filter((recording) => recording.kind === 'VIDEO')
@@ -282,8 +346,44 @@ const summaryPreview = computed(() => {
 const summaryHighlights = computed(() => {
   const meta = summaryJob.value?.meta as Record<string, unknown> | undefined
   const summaryContent = (meta?.summaryContent || {}) as Record<string, unknown>
+  const keyMoments = summaryContent.keyMoments
+  if (Array.isArray(keyMoments)) {
+    return keyMoments.filter(Boolean)
+  }
   const highlights = summaryContent.highlights
   return Array.isArray(highlights) ? highlights.filter(Boolean) : []
+})
+
+const summaryPendingText = computed(() => {
+  const meta = summaryJob.value?.meta as Record<string, unknown> | undefined
+  const summaryContent = (meta?.summaryContent || {}) as Record<string, unknown>
+  if (typeof summaryContent === 'string') return summaryContent
+  if (typeof summaryContent.fullSummary === 'string') return summaryContent.fullSummary
+  return ''
+})
+
+const summarySessionTags = computed(() => {
+  const meta = summaryJob.value?.meta as Record<string, unknown> | undefined
+  const summaryContent = (meta?.summaryContent || {}) as Record<string, unknown>
+  return Array.isArray(summaryContent.sessionTags)
+    ? summaryContent.sessionTags.filter(Boolean)
+    : []
+})
+
+const summaryNotableDialogue = computed(() => {
+  const meta = summaryJob.value?.meta as Record<string, unknown> | undefined
+  const summaryContent = (meta?.summaryContent || {}) as Record<string, unknown>
+  return Array.isArray(summaryContent.notableDialogue)
+    ? summaryContent.notableDialogue.filter(Boolean)
+    : []
+})
+
+const summaryConcreteFacts = computed(() => {
+  const meta = summaryJob.value?.meta as Record<string, unknown> | undefined
+  const summaryContent = (meta?.summaryContent || {}) as Record<string, unknown>
+  return Array.isArray(summaryContent.concreteFacts)
+    ? summaryContent.concreteFacts.filter(Boolean)
+    : []
 })
 
 const summaryStatusLabel = computed(() => {
@@ -371,9 +471,9 @@ const workflowItems = computed<TimelineItem[]>(() => [
     icon: hasRecordings.value ? 'i-lucide-check-circle' : 'i-lucide-upload',
   },
   {
-    title: 'Transcript edit',
+    title: 'Transcription',
     description: hasTranscript.value ? 'Review & edit transcript' : 'Await transcript',
-    value: 'transcript',
+    value: 'transcription',
     icon: hasTranscript.value ? 'i-lucide-file-text' : 'i-lucide-wand-2',
   },
   {
@@ -683,6 +783,7 @@ const applySummarySuggestion = async (suggestionId: string) => {
       method: 'POST',
     })
     await refreshSummaryJob()
+    await refreshSelectedSummaryJob()
   } catch (error) {
     summaryActionError.value =
       (error as Error & { message?: string }).message || 'Unable to apply suggestion.'
@@ -696,6 +797,7 @@ const discardSummarySuggestion = async (suggestionId: string) => {
       method: 'POST',
     })
     await refreshSummaryJob()
+    await refreshSelectedSummaryJob()
   } catch (error) {
     summaryActionError.value =
       (error as Error & { message?: string }).message || 'Unable to discard suggestion.'
@@ -707,6 +809,22 @@ const suggestionTitle = (suggestion: SummarySuggestion) => {
   if (typeof payload.title === 'string' && payload.title) return payload.title
   if (typeof payload.name === 'string' && payload.name) return payload.name
   return 'Untitled suggestion'
+}
+
+const applyPendingSummary = async () => {
+  if (!summaryJob.value?.id) return
+  summaryActionError.value = ''
+  try {
+    await request(`/api/summary-jobs/${summaryJob.value.id}/apply-summary`, {
+      method: 'POST',
+    })
+    await refreshSummary()
+    await refreshSummaryJob()
+    await refreshSelectedSummaryJob()
+  } catch (error) {
+    summaryActionError.value =
+      (error as Error & { message?: string }).message || 'Unable to apply summary.'
+  }
 }
 
 const importDocument = async (
@@ -883,7 +1001,7 @@ const formatBytes = (value: number) => {
             <template #header>
               <div class="flex flex-wrap items-center justify-between gap-4">
                 <div class="space-y-1">
-                  <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Session</p>
+                  <p class="text-xs uppercase tracking-[0.3em] text-dimmed">{{ session?.sessionNumber ? `Session ${session?.sessionNumber}` : 'Session'}}</p>
                   <h1 class="text-2xl font-semibold">{{ session?.title || 'Session' }}</h1>
                   <p class="text-sm text-muted">
                     Played at: {{ sessionDateLabel }}
@@ -1267,38 +1385,95 @@ const formatBytes = (value: number) => {
                 </div>
               </UCard>
             </div>
-            <div v-else-if="activeStep === 'transcript'" class="space-y-4">
+            <div v-else-if="activeStep === 'transcription'" class="space-y-4">
               <UCard>
                 <template #header>
                   <div>
-                    <h2 class="text-lg font-semibold">Transcription</h2>
-                    <p class="text-sm text-muted">Start transcription from recordings.</p>
+                    <h2 class="text-lg font-semibold">Transcription tools</h2>
+                    <p class="text-sm text-muted">
+                      Start transcription, create/import a transcript, or attach subtitles.
+                    </p>
                   </div>
                 </template>
-                <div class="space-y-3">
-                  <p class="text-sm text-muted">
-                    Open a recording to start transcription and monitor jobs.
-                  </p>
-                  <div class="flex flex-wrap gap-2">
-                    <UButton
-                      v-for="recording in recordings || []"
-                      :key="recording.id"
-                      size="sm"
-                      variant="outline"
-                      :to="`/campaigns/${campaignId}/recordings/${recording.id}?transcribe=1`"
-                    >
-                      Transcribe {{ recording.filename }}
-                    </UButton>
+                <div class="space-y-4">
+                  <div class="grid gap-4 lg:grid-cols-3">
+                    <div class="rounded-lg border border-dashed border-muted-200 p-4">
+                      <div class="space-y-2">
+                        <p class="text-sm font-semibold">1. Start from a recording</p>
+                        <p class="text-sm text-muted">
+                          Open a recording to start transcription and monitor jobs.
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                          <UButton
+                            v-for="recording in recordings || []"
+                            :key="recording.id"
+                            size="sm"
+                            variant="outline"
+                            :to="`/campaigns/${campaignId}/recordings/${recording.id}?transcribe=1`"
+                          >
+                            Transcribe {{ recording.filename }}
+                          </UButton>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="rounded-lg border border-dashed border-muted-200 p-4">
+                      <div class="space-y-3">
+                        <p class="text-sm font-semibold">2. Create a transcript from scratch</p>
+                        <UButton
+                          variant="outline"
+                          class="w-full justify-center"
+                          @click="saveTranscript"
+                        >
+                          Create transcript
+                        </UButton>
+                        <p v-if="transcriptError" class="text-sm text-error">{{ transcriptError }}</p>
+                      </div>
+                    </div>
+                    <div class="rounded-lg border border-dashed border-muted-200 p-4">
+                      <div class="space-y-3">
+                        <p class="text-sm font-semibold">3. Import a transcript file</p>
+                        <div class="grid gap-3">
+                          <UFileUpload
+                            v-model="transcriptFile"
+                            accept=".txt,.md,.markdown,.vtt"
+                            variant="button"
+                            label="Select transcript file"
+                            :preview="false"
+                          />
+                          <UButton
+                            :loading="transcriptImporting"
+                            variant="outline"
+                            class="w-full justify-center"
+                            @click="importTranscript"
+                          >
+                            Import file
+                          </UButton>
+                        </div>
+                        <p v-if="transcriptImportError" class="text-sm text-error">
+                          {{ transcriptImportError }}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </UCard>
               <UCard>
                 <template #header>
-                  <div>
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
                     <h2 class="text-lg font-semibold">Transcript</h2>
                     <p class="text-sm text-muted">
                       Review the transcript and open the editor for full editing.
                     </p>
+                  </div>
+                    <UButton
+                      v-if="transcriptDoc"
+                      variant="outline"
+                      size="sm"
+                      :to="`/campaigns/${campaignId}/documents/${transcriptDoc.id}`"
+                    >
+                      Open editor
+                    </UButton>
                   </div>
                 </template>
                 <div class="space-y-4">
@@ -1316,57 +1491,33 @@ const formatBytes = (value: number) => {
                   >
                     {{ showFullTranscript ? fullTranscript : transcriptPreview }}
                   </p>
-                  <div class="flex flex-wrap items-center gap-3">
-                    <UButton
-                      v-if="transcriptDoc"
-                      variant="outline"
-                      :to="`/campaigns/${campaignId}/documents/${transcriptDoc.id}`"
-                    >
-                      Open editor
-                    </UButton>
-                    <UButton
-                      v-else
-                      variant="outline"
-                      @click="saveTranscript"
-                    >
-                      Create transcript
-                    </UButton>
+                  <div class="rounded-lg border border-dashed border-muted-200 p-4">
+                    <div class="space-y-3">
+                      <p class="text-sm font-semibold">Attach subtitles to a video</p>
+                      <p class="text-sm text-muted">
+                        Do this after a transcript has been added.
+                      </p>
+                      <div class="flex flex-wrap items-center gap-3">
+                        <USelect
+                          v-model="selectedSubtitleRecordingId"
+                          :items="videoOptions"
+                          placeholder="Select video"
+                          size="sm"
+                        />
+                        <UButton
+                          variant="outline"
+                          :disabled="!selectedSubtitleRecordingId"
+                          :loading="subtitleAttachLoading"
+                          @click="attachTranscriptToVideo"
+                        >
+                          Attach subtitles
+                        </UButton>
+                      </div>
+                      <p v-if="subtitleAttachError" class="text-sm text-error">
+                        {{ subtitleAttachError }}
+                      </p>
+                    </div>
                   </div>
-                  <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
-                    <UFileUpload
-                      v-model="transcriptFile"
-                      accept=".txt,.md,.markdown,.vtt"
-                      variant="button"
-                      label="Select transcript file"
-                      :preview="false"
-                    />
-                    <UButton
-                      :loading="transcriptImporting"
-                      variant="outline"
-                      @click="importTranscript"
-                    >
-                      Import file
-                    </UButton>
-                  </div>
-                  <div class="flex flex-wrap items-center gap-3">
-                    <USelect
-                      v-model="selectedSubtitleRecordingId"
-                      :items="videoOptions"
-                      placeholder="Select video"
-                      size="sm"
-                    />
-                    <UButton
-                      variant="outline"
-                      :disabled="!selectedSubtitleRecordingId"
-                      :loading="subtitleAttachLoading"
-                      @click="attachTranscriptToVideo"
-                    >
-                      Attach subtitles
-                    </UButton>
-                  </div>
-                  <p v-if="transcriptError" class="text-sm text-error">{{ transcriptError }}</p>
-                  <p v-if="transcriptImportError" class="text-sm text-error">{{ transcriptImportError }}</p>
-                  <p v-if="subtitleAttachError" class="text-sm text-error">{{ subtitleAttachError }}</p>
                 </div>
               </UCard>
             </div>
@@ -1382,6 +1533,16 @@ const formatBytes = (value: number) => {
                   </div>
                 </template>
                 <div class="space-y-4">
+                  <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
+                    <USelect
+                      v-model="selectedSummaryJobId"
+                      :items="summaryJobOptions"
+                      placeholder="Select summary job"
+                    />
+                    <UButton size="sm" variant="outline" @click="refreshSummaryJob">
+                      Refresh jobs
+                    </UButton>
+                  </div>
                   <div class="flex flex-wrap items-center gap-3">
                     <UButton
                       :loading="summarySending"
@@ -1397,6 +1558,15 @@ const formatBytes = (value: number) => {
                       {{ summaryJob.trackingId }}
                     </span>
                   </div>
+                  <div v-if="summaryPendingText" class="space-y-2">
+                    <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Pending summary</p>
+                    <p class="whitespace-pre-line text-sm text-muted">
+                      {{ summaryPendingText }}
+                    </p>
+                    <UButton size="sm" variant="outline" @click="applyPendingSummary">
+                      Apply summary
+                    </UButton>
+                  </div>
                   <p
                     v-if="summaryJob?.status === 'READY_FOR_REVIEW'"
                     class="text-sm text-muted"
@@ -1404,12 +1574,82 @@ const formatBytes = (value: number) => {
                     Review the suggestions below and apply changes you want to keep.
                   </p>
                   <div v-if="summaryHighlights.length" class="space-y-2">
-                    <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Highlights</p>
+                    <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Key moments</p>
                     <ul class="list-disc space-y-1 pl-5 text-sm text-muted">
                       <li v-for="highlight in summaryHighlights" :key="highlight">{{ highlight }}</li>
                     </ul>
                   </div>
+                  <div v-if="summarySessionTags.length" class="space-y-2">
+                    <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Session tags</p>
+                    <div class="flex flex-wrap gap-2">
+                      <UBadge
+                        v-for="tag in summarySessionTags"
+                        :key="tag"
+                        variant="soft"
+                        color="secondary"
+                        size="sm"
+                      >
+                        {{ tag }}
+                      </UBadge>
+                    </div>
+                  </div>
+                  <div v-if="summaryNotableDialogue.length" class="space-y-2">
+                    <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Notable dialogue</p>
+                    <ul class="list-disc space-y-1 pl-5 text-sm text-muted">
+                      <li v-for="line in summaryNotableDialogue" :key="line">{{ line }}</li>
+                    </ul>
+                  </div>
+                  <div v-if="summaryConcreteFacts.length" class="space-y-2">
+                    <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Concrete facts</p>
+                    <ul class="list-disc space-y-1 pl-5 text-sm text-muted">
+                      <li v-for="fact in summaryConcreteFacts" :key="fact">{{ fact }}</li>
+                    </ul>
+                  </div>
                   <div v-if="summarySuggestionGroups.length" class="space-y-3">
+                    <div
+                      v-if="sessionSuggestion"
+                      class="rounded-lg border border-default bg-elevated/20 p-4"
+                    >
+                      <div class="flex items-center justify-between gap-2">
+                        <p class="text-sm font-semibold">Session suggestion</p>
+                        <UBadge variant="soft" color="primary" size="sm">
+                          {{ sessionSuggestion.action }}
+                        </UBadge>
+                      </div>
+                      <div class="mt-3 space-y-2 text-sm text-muted">
+                        <div v-if="sessionSuggestion.payload.title">
+                          <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Title</p>
+                          <p class="mt-1 font-semibold text-default">
+                            {{ sessionSuggestion.payload.title }}
+                          </p>
+                        </div>
+                        <div v-if="sessionSuggestion.payload.notes">
+                          <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Notes</p>
+                          <p class="mt-1 whitespace-pre-line">
+                            {{ sessionSuggestion.payload.notes }}
+                          </p>
+                        </div>
+                      </div>
+                      <div class="mt-3 flex flex-wrap gap-2">
+                        <UButton
+                          size="xs"
+                          variant="outline"
+                          :disabled="sessionSuggestion.status !== 'PENDING'"
+                          @click="applySummarySuggestion(sessionSuggestion.id)"
+                        >
+                          Apply
+                        </UButton>
+                        <UButton
+                          size="xs"
+                          variant="ghost"
+                          color="gray"
+                          :disabled="sessionSuggestion.status !== 'PENDING'"
+                          @click="discardSummarySuggestion(sessionSuggestion.id)"
+                        >
+                          Discard
+                        </UButton>
+                      </div>
+                    </div>
                     <div
                       v-for="group in summarySuggestionGroups"
                       :key="group.label"
@@ -1567,7 +1807,7 @@ const formatBytes = (value: number) => {
           <div class="space-y-4">
             <div>
               <label class="mb-2 block text-sm text-muted">Title</label>
-              <UInput v-model="form.title" />
+              <UInput v-model="form.title" placeholder="This Is Why Taverns Have Rules" />
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
               <div>

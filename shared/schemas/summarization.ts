@@ -33,8 +33,10 @@ export const summaryContentSchema = z.union([
   z
     .object({
       fullSummary: z.string().optional(),
-      highlights: z.array(z.string()).optional(),
+      keyMoments: z.array(z.string()).optional(),
       sessionTags: z.array(z.string()).optional(),
+      notableDialogue: z.array(z.string()).optional(),
+      concreteFacts: z.array(z.string()).optional(),
     })
     .partial(),
 ])
@@ -48,6 +50,7 @@ export const summarySuggestionItemSchema = z
 
 export const summarySuggestionsSchema = z
   .object({
+    session: summarySuggestionItemSchema.optional(),
     quests: z.array(summarySuggestionItemSchema).optional(),
     milestones: z.array(summarySuggestionItemSchema).optional(),
     glossary: z
