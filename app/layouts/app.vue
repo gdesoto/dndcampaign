@@ -13,11 +13,6 @@ const toggleColorMode = () => {
 }
 const route = useRoute()
 const router = useRouter()
-const campaignId = computed(() => route.params.campaignId as string | undefined)
-const showCampaignSelect = computed(() => {
-  const path = route.path || ''
-  return path === '/campaigns' || path.startsWith('/campaigns/')
-})
 
 type CampaignNavItem = {
   id: string
@@ -35,54 +30,11 @@ const topNavItems = computed(() => [
   { label: 'Campaigns', to: '/campaigns' },
   { label: 'Characters', to: '/characters' },
 ])
-
-const campaignOptions = computed(() => {
-  const items = (campaigns.value || []).map((campaign) => ({
-    label: campaign.name,
-    id: campaign.id,
-  }))
-  return [{ label: 'All campaigns', id: 'all' }, ...items]
-})
-
-const selectedCampaignId = ref<string>('all')
-const campaignSelectReady = ref(false)
-
-watch(
-  () => campaignId.value,
-  (value) => {
-    selectedCampaignId.value = value || 'all'
-  },
-  { immediate: true }
+const { showCampaignSelect, campaignOptions, selectedCampaignId } = useCampaignSelector(
+  route,
+  router,
+  campaigns
 )
-
-watch(
-  () => campaigns.value,
-  (value) => {
-    if (!value?.length && selectedCampaignId.value !== 'all') {
-      selectedCampaignId.value = 'all'
-    }
-  }
-)
-
-watch(
-  () => selectedCampaignId.value,
-  (value) => {
-    if (!campaignSelectReady.value) return
-    if (!showCampaignSelect.value) return
-    if (!value) return
-    if (value === 'all') {
-      router.push('/campaigns')
-      return
-    }
-    if (value !== campaignId.value) {
-      router.push(`/campaigns/${value}`)
-    }
-  }
-)
-
-onMounted(() => {
-  campaignSelectReady.value = true
-})
 
 const profileMenuItems = computed(() => [
   [
@@ -112,7 +64,7 @@ const profileMenuItems = computed(() => [
             </div>
             <div>
               <div class="font-display text-lg tracking-[0.2em] uppercase">DM Vault</div>
-              <div class="text-xs uppercase tracking-[0.4em] text-[color:var(--theme-text-muted)]">
+              <div class="theme-text-muted text-xs uppercase tracking-[0.4em]">
                 Campaign Desk
               </div>
             </div>
@@ -134,7 +86,7 @@ const profileMenuItems = computed(() => [
         </div>
       </template>
         <template #right>
-          <div class="flex flex-wrap items-center gap-3 text-xs text-[color:var(--theme-text-muted)]">
+          <div class="theme-text-muted flex flex-wrap items-center gap-3 text-xs">
             <UButton size="sm" color="secondary" variant="ghost" class="theme-pill" @click="toggleColorMode">
               <UIcon name="i-heroicons-moon" class="h-4 w-4" />
               <ClientOnly>

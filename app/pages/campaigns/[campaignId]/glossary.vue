@@ -171,117 +171,98 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
       <UInput v-model="search" placeholder="Search names, aliases, description..." class="min-w-[240px]" />
     </div>
 
-    <div v-if="pending" class="grid gap-4 sm:grid-cols-2">
-      <UCard v-for="i in 3" :key="i"  class="h-32 animate-pulse" />
-    </div>
+    <SharedResourceState
+      :pending="pending"
+      :error="error"
+      :empty="!entries?.length"
+      error-message="Unable to load glossary entries."
+      empty-message="No entries yet."
+      @retry="refresh"
+    >
+      <template #loading>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <UCard v-for="i in 3" :key="i" class="h-32 animate-pulse" />
+        </div>
+      </template>
+      <template #emptyActions>
+        <UButton variant="outline" @click="openCreate">Create your first entry</UButton>
+      </template>
 
-    <UCard v-else-if="error" class="text-center">
-      <p class="text-sm text-error">Unable to load glossary entries.</p>
-      <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
-    </UCard>
-
-    <UCard v-else-if="!entries?.length" class="text-center">
-      <p class="text-sm text-muted">No entries yet.</p>
-      <UButton class="mt-4" variant="outline" @click="openCreate">Create your first entry</UButton>
-    </UCard>
-
-    <div v-else class="grid gap-4 sm:grid-cols-2">
-      <UCard
-        v-for="entry in entries"
-        :key="entry.id"
-        
-      >
-        <template #header>
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-dimmed">{{ entry.type }}</p>
-              <h3 class="text-lg font-semibold">{{ entry.name }}</h3>
-              <p v-if="entry.aliases" class="text-xs text-muted">Aliases: {{ entry.aliases }}</p>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <SharedListItemCard
+          v-for="entry in entries"
+          :key="entry.id"
+        >
+          <template #header>
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">{{ entry.type }}</p>
+                <h3 class="text-lg font-semibold">{{ entry.name }}</h3>
+                <p v-if="entry.aliases" class="text-xs text-muted">Aliases: {{ entry.aliases }}</p>
+              </div>
+              <div class="flex gap-2">
+                <UButton
+                  v-if="entry.type === 'PC' && entry.campaignCharacters?.length"
+                  size="xs"
+                  variant="outline"
+                  :to="`/characters/${entry.campaignCharacters[0].character.id}`"
+                >
+                  View character
+                </UButton>
+                <UButton size="xs" variant="outline" @click="openEdit(entry)">Edit</UButton>
+                <UButton size="xs" color="red" variant="ghost" @click="deleteEntry(entry)">Delete</UButton>
+              </div>
             </div>
-            <div class="flex gap-2">
+          </template>
+          <p class="text-sm text-default">{{ entry.description }}</p>
+          <div class="mt-4 space-y-2">
+            <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Linked sessions</p>
+            <div v-if="entry.sessions.length" class="flex flex-wrap gap-2">
               <UButton
-                v-if="entry.type === 'PC' && entry.campaignCharacters?.length"
+                v-for="link in entry.sessions"
+                :key="link.id"
                 size="xs"
                 variant="outline"
-                :to="`/characters/${entry.campaignCharacters[0].character.id}`"
+                @click="unlinkSession(entry, link.sessionId)"
               >
-                View character
+                {{ link.session.title }}
               </UButton>
-              <UButton size="xs" variant="outline" @click="openEdit(entry)">Edit</UButton>
-              <UButton size="xs" color="red" variant="ghost" @click="deleteEntry(entry)">Delete</UButton>
+            </div>
+            <div v-else class="text-xs text-muted">No sessions linked yet.</div>
+            <div class="flex gap-2">
+              <USelect
+                :items="(sessions || []).map((session) => ({ label: session.title, value: session.id }))"
+                placeholder="Link a session..."
+                :model-value="''"
+                @update:model-value="(value) => linkSession(entry, value as string)"
+              />
             </div>
           </div>
-        </template>
-        <p class="text-sm text-default">{{ entry.description }}</p>
-        <div class="mt-4 space-y-2">
-          <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Linked sessions</p>
-          <div v-if="entry.sessions.length" class="flex flex-wrap gap-2">
-            <UButton
-              v-for="link in entry.sessions"
-              :key="link.id"
-              size="xs"
-              variant="outline"
-              @click="unlinkSession(entry, link.sessionId)"
-            >
-              {{ link.session.title }}
-            </UButton>
-          </div>
-          <div v-else class="text-xs text-muted">No sessions linked yet.</div>
-          <div class="flex gap-2">
-            <USelect
-              :items="(sessions || []).map((session) => ({ label: session.title, value: session.id }))"
-              placeholder="Link a session..."
-              :model-value="''"
-              @update:model-value="(value) => linkSession(entry, value as string)"
-            />
-          </div>
-        </div>
-      </UCard>
-    </div>
+        </SharedListItemCard>
+      </div>
+    </SharedResourceState>
 
-    <UModal v-model:open="isEditOpen">
-      <template #title>
-        <span class="sr-only">
-          {{ editMode === 'create' ? 'Create glossary entry' : 'Edit glossary entry' }}
-        </span>
-      </template>
-      <template #description>
-        <span class="sr-only">Manage glossary entry details for this campaign.</span>
-      </template>
-      <template #content>
-        <UCard >
-          <template #header>
-            <h2 class="text-lg font-semibold">
-              {{ editMode === 'create' ? 'Create glossary entry' : 'Edit glossary entry' }}
-            </h2>
-          </template>
-          <div class="space-y-4">
-            <div>
-              <label class="mb-2 block text-sm text-muted">Type</label>
-              <USelect v-model="editForm.type" :items="types" />
-            </div>
-            <div>
-              <label class="mb-2 block text-sm text-default">Name</label>
-              <UInput v-model="editForm.name" />
-            </div>
-            <div>
-              <label class="mb-2 block text-sm text-default">Aliases</label>
-              <UInput v-model="editForm.aliases" placeholder="Comma-separated" />
-            </div>
-            <div>
-              <label class="mb-2 block text-sm text-default">Description</label>
-              <UTextarea v-model="editForm.description" :rows="6" />
-            </div>
-            <p v-if="editError" class="text-sm text-error">{{ editError }}</p>
-          </div>
-          <template #footer>
-            <div class="flex justify-end gap-3">
-              <UButton variant="ghost" color="gray" @click="isEditOpen = false">Cancel</UButton>
-              <UButton :loading="isSaving" @click="saveEntry">Save</UButton>
-            </div>
-          </template>
-        </UCard>
-      </template>
-    </UModal>
+    <SharedEntityFormModal
+      v-model:open="isEditOpen"
+      :title="editMode === 'create' ? 'Create glossary entry' : 'Edit glossary entry'"
+      description="Manage glossary entry details for this campaign."
+      :saving="isSaving"
+      :error="editError"
+      :submit-label="editMode === 'create' ? 'Create' : 'Save'"
+      @submit="saveEntry"
+    >
+      <UFormField label="Type" name="type">
+        <USelect v-model="editForm.type" :items="types" />
+      </UFormField>
+      <UFormField label="Name" name="name">
+        <UInput v-model="editForm.name" />
+      </UFormField>
+      <UFormField label="Aliases" name="aliases">
+        <UInput v-model="editForm.aliases" placeholder="Comma-separated" />
+      </UFormField>
+      <UFormField label="Description" name="description">
+        <UTextarea v-model="editForm.description" :rows="6" />
+      </UFormField>
+    </SharedEntityFormModal>
   </div>
 </template>

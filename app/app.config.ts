@@ -1,3 +1,7 @@
+const panelFieldBase =
+  'w-full rounded-sm border border-[var(--theme-panel-border)] bg-[var(--theme-panel-bg)] text-default placeholder:text-muted focus:outline-none'
+const cardSectionPadding = 'p-2 xl:p-4 xl:py-2'
+
 export default defineAppConfig({
   ui: {
     colors: {
@@ -17,10 +21,10 @@ export default defineAppConfig({
     },
     card: {
       slots: {
-        root: 'theme-card rounded-ld xl:py-2 overflow-hidden',
-        header: 'p-2 xl:p-4 xl:py-2 border-b-0', // border-[var(--theme-card-border)]',
-        body: 'p-2 xl:p-4 xl:py-2 border-b-0', //
-        footer: 'p-2 xl:p-4 xl:py-2', // border-t-0 border-[var(--theme-card-border)]',
+        root: 'theme-card rounded-lg xl:py-2 overflow-hidden',
+        header: `${cardSectionPadding} border-b-0`,
+        body: `${cardSectionPadding} border-b-0`,
+        footer: cardSectionPadding,
       },
       variants: {
         variant: {
@@ -45,8 +49,7 @@ export default defineAppConfig({
     input: {
       slots: {
         root: 'relative inline-flex items-center w-full',
-        base:
-          'w-full rounded-sm border border-[var(--theme-panel-border)] bg-[var(--theme-panel-bg)] text-default placeholder:text-muted focus:outline-none',
+        base: panelFieldBase,
       },
       defaultVariants: {
         size: 'md',
@@ -55,18 +58,13 @@ export default defineAppConfig({
     textarea: {
       slots: {
         root: 'relative inline-flex items-center w-full',
-        base:
-          'w-full rounded-sm border border-[var(--theme-panel-border)] bg-[var(--theme-panel-bg)] text-default placeholder:text-muted focus:outline-none',
+        base: panelFieldBase,
       },
       defaultVariants: {
         size: 'md',
       },
     },
     modal: {
-      slots: {
-        // overlay: 'bg-black/70 backdrop-blur-sm',
-        // content: 'bg-[var(--theme-card-bg)] divide-y divide-default flex flex-col focus:outline-none',
-      },
       variants: {
         fullscreen: {
           false: {

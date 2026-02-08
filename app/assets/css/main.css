@@ -229,6 +229,14 @@ body {
   background: transparent;
 }
 
+.theme-accent {
+  color: var(--theme-accent);
+}
+
+.theme-text-muted {
+  color: var(--theme-text-muted);
+}
+
 .theme-reveal {
   animation: theme-reveal 700ms ease-out both;
 }

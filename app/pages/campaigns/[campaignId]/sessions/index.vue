@@ -77,82 +77,73 @@ const createSession = async () => {
       <UButton size="lg" @click="openCreate">New session</UButton>
     </div>
 
-    <div v-if="pending" class="grid gap-4 sm:grid-cols-2">
-      <UCard v-for="i in 3" :key="i"  class="h-28 animate-pulse" />
-    </div>
-
-    <UCard v-else-if="error" class="text-center">
-      <p class="text-sm text-error">Unable to load sessions.</p>
-      <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
-    </UCard>
-
-    <UCard v-else-if="!sessions?.length" class="text-center">
-      <p class="text-sm text-muted">No sessions yet.</p>
-      <UButton class="mt-4" variant="outline" @click="openCreate">Create your first session</UButton>
-    </UCard>
-
-    <div v-else class="grid gap-4 sm:grid-cols-2">
-      <NuxtLink
-        v-for="session in sessions"
-        :key="session.id"
-        :to="`/campaigns/${campaignId}/sessions/${session.id}`"
-      >
-        <UCard  class="transition hover:shadow-lg">
-          <template #header>
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">
-                  Session {{ session.sessionNumber ?? '—' }}
-                </p>
-                <h3 class="text-lg font-semibold">{{ session.title }}</h3>
-              </div>
-              <span class="text-xs text-muted">
-                {{ session.playedAt ? new Date(session.playedAt).toLocaleDateString() : 'Unscheduled' }}
-              </span>
-            </div>
-          </template>
-          <p class="text-sm text-default line-clamp-2">
-            {{ session.notes || 'Add notes to capture what happened.' }}
-          </p>
-        </UCard>
-      </NuxtLink>
-    </div>
-
-    <UModal v-model:open="isCreateOpen">
-      <template #content>
-        <UCard >
-          <template #header>
-            <h2 class="text-lg font-semibold">Create session</h2>
-          </template>
-          <div class="space-y-4">
-            <div>
-              <label class="mb-2 block text-sm text-muted">Title</label>
-              <UInput v-model="createForm.title" placeholder="The Glass Crypt" />
-            </div>
-            <div class="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label class="mb-2 block text-sm text-muted">Session number</label>
-                <UInput v-model="createForm.sessionNumber" type="number" placeholder="12" />
-              </div>
-              <div>
-                <label class="mb-2 block text-sm text-muted">Played at</label>
-                <UInput v-model="createForm.playedAt" type="date" />
-              </div>
-            </div>
-            <div>
-              <label class="mb-2 block text-sm text-muted">Notes</label>
-              <UTextarea v-model="createForm.notes" :rows="4" placeholder="Quick recap..." />
-            </div>
-            <p v-if="createError" class="text-sm text-error">{{ createError }}</p>
-          </div>
-          <template #footer>
-            <div class="flex justify-end gap-3">
-              <UButton variant="ghost" color="gray" @click="isCreateOpen = false">Cancel</UButton>
-              <UButton :loading="isCreating" @click="createSession">Create</UButton>
-            </div>
-          </template>
-        </UCard>
+    <SharedResourceState
+      :pending="pending"
+      :error="error"
+      :empty="!sessions?.length"
+      error-message="Unable to load sessions."
+      empty-message="No sessions yet."
+      @retry="refresh"
+    >
+      <template #loading>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <UCard v-for="i in 3" :key="i" class="h-28 animate-pulse" />
+        </div>
       </template>
-    </UModal>
+      <template #emptyActions>
+        <UButton variant="outline" @click="openCreate">Create your first session</UButton>
+      </template>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <NuxtLink
+          v-for="session in sessions"
+          :key="session.id"
+          :to="`/campaigns/${campaignId}/sessions/${session.id}`"
+        >
+          <SharedListItemCard>
+            <template #header>
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <p class="text-xs uppercase tracking-[0.2em] text-dimmed">
+                    Session {{ session.sessionNumber ?? '—' }}
+                  </p>
+                  <h3 class="text-lg font-semibold">{{ session.title }}</h3>
+                </div>
+                <span class="text-xs text-muted">
+                  {{ session.playedAt ? new Date(session.playedAt).toLocaleDateString() : 'Unscheduled' }}
+                </span>
+              </div>
+            </template>
+            <p class="text-sm text-default line-clamp-2">
+              {{ session.notes || 'Add notes to capture what happened.' }}
+            </p>
+          </SharedListItemCard>
+        </NuxtLink>
+      </div>
+    </SharedResourceState>
+
+    <SharedEntityFormModal
+      v-model:open="isCreateOpen"
+      title="Create session"
+      :saving="isCreating"
+      :error="createError"
+      submit-label="Create"
+      @submit="createSession"
+    >
+      <UFormField label="Title" name="title">
+        <UInput v-model="createForm.title" placeholder="The Glass Crypt" />
+      </UFormField>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <UFormField label="Session number" name="sessionNumber">
+          <UInput v-model="createForm.sessionNumber" type="number" placeholder="12" />
+        </UFormField>
+        <UFormField label="Played at" name="playedAt">
+          <UInput v-model="createForm.playedAt" type="date" />
+        </UFormField>
+      </div>
+      <UFormField label="Notes" name="notes">
+        <UTextarea v-model="createForm.notes" :rows="4" placeholder="Quick recap..." />
+      </UFormField>
+    </SharedEntityFormModal>
   </div>
 </template>

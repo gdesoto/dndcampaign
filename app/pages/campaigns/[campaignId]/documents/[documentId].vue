@@ -41,6 +41,11 @@ type HighlightPart = { text: string; match: boolean }
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
 const documentId = computed(() => route.params.documentId as string)
+const returnTo = computed(() =>
+  typeof route.query.returnTo === 'string' && route.query.returnTo
+    ? route.query.returnTo
+    : ''
+)
 const { request } = useApi()
 const player = useMediaPlayer()
 const hasMounted = ref(false)
@@ -740,7 +745,7 @@ const fullTranscript = computed(() =>
           <UButton
             v-if="document?.sessionId"
             variant="outline"
-            :to="`/campaigns/${campaignId}/sessions/${document.sessionId}`"
+            :to="returnTo || `/campaigns/${campaignId}/sessions/${document.sessionId}`"
           >
             Back to session
           </UButton>

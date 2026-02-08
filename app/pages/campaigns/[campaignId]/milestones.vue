@@ -100,74 +100,61 @@ const toggleComplete = async (milestone: MilestoneItem) => {
       <UButton size="lg" @click="openCreate">New milestone</UButton>
     </div>
 
-    <div v-if="pending" class="grid gap-4 sm:grid-cols-2">
-      <UCard v-for="i in 3" :key="i"  class="h-28 animate-pulse" />
-    </div>
-
-    <UCard v-else-if="error" class="text-center">
-      <p class="text-sm text-error">Unable to load milestones.</p>
-      <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
-    </UCard>
-
-    <UCard v-else-if="!milestones?.length" class="text-center">
-      <p class="text-sm text-muted">No milestones yet.</p>
-      <UButton class="mt-4" variant="outline" @click="openCreate">Create your first milestone</UButton>
-    </UCard>
-
-    <div v-else class="grid gap-4 sm:grid-cols-2">
-      <UCard
-        v-for="milestone in milestones"
-        :key="milestone.id"
-        
-      >
-        <template #header>
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Milestone</p>
-              <h3 class="text-lg font-semibold">{{ milestone.title }}</h3>
-            </div>
-            <UButton size="xs" variant="outline" @click="openEdit(milestone)">Edit</UButton>
-          </div>
-        </template>
-        <p class="text-sm text-default">{{ milestone.description || 'Add details about this milestone.' }}</p>
-        <div class="mt-4 flex items-center justify-between gap-3">
-          <span class="text-xs text-muted">
-            {{ milestone.isComplete ? 'Completed' : 'In progress' }}
-          </span>
-          <UButton size="xs" variant="outline" @click="toggleComplete(milestone)">
-            {{ milestone.isComplete ? 'Mark incomplete' : 'Mark complete' }}
-          </UButton>
+    <SharedResourceState
+      :pending="pending"
+      :error="error"
+      :empty="!milestones?.length"
+      error-message="Unable to load milestones."
+      empty-message="No milestones yet."
+      @retry="refresh"
+    >
+      <template #loading>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <UCard v-for="i in 3" :key="i" class="h-28 animate-pulse" />
         </div>
-      </UCard>
-    </div>
-
-    <UModal v-model:open="isEditOpen">
-      <template #content>
-        <UCard >
-          <template #header>
-            <h2 class="text-lg font-semibold">
-              {{ editMode === 'create' ? 'Create milestone' : 'Edit milestone' }}
-            </h2>
-          </template>
-          <div class="space-y-4">
-            <div>
-              <label class="mb-2 block text-sm text-muted">Title</label>
-              <UInput v-model="editForm.title" />
-            </div>
-            <div>
-              <label class="mb-2 block text-sm text-muted">Description</label>
-              <UTextarea v-model="editForm.description" :rows="4" />
-            </div>
-            <p v-if="editError" class="text-sm text-error">{{ editError }}</p>
-          </div>
-          <template #footer>
-            <div class="flex justify-end gap-3">
-              <UButton variant="ghost" color="gray" @click="isEditOpen = false">Cancel</UButton>
-              <UButton :loading="isSaving" @click="saveMilestone">Save</UButton>
-            </div>
-          </template>
-        </UCard>
       </template>
-    </UModal>
+      <template #emptyActions>
+        <UButton variant="outline" @click="openCreate">Create your first milestone</UButton>
+      </template>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <SharedListItemCard v-for="milestone in milestones" :key="milestone.id">
+          <template #header>
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Milestone</p>
+                <h3 class="text-lg font-semibold">{{ milestone.title }}</h3>
+              </div>
+              <UButton size="xs" variant="outline" @click="openEdit(milestone)">Edit</UButton>
+            </div>
+          </template>
+          <p class="text-sm text-default">{{ milestone.description || 'Add details about this milestone.' }}</p>
+          <div class="mt-4 flex items-center justify-between gap-3">
+            <span class="text-xs text-muted">
+              {{ milestone.isComplete ? 'Completed' : 'In progress' }}
+            </span>
+            <UButton size="xs" variant="outline" @click="toggleComplete(milestone)">
+              {{ milestone.isComplete ? 'Mark incomplete' : 'Mark complete' }}
+            </UButton>
+          </div>
+        </SharedListItemCard>
+      </div>
+    </SharedResourceState>
+
+    <SharedEntityFormModal
+      v-model:open="isEditOpen"
+      :title="editMode === 'create' ? 'Create milestone' : 'Edit milestone'"
+      :saving="isSaving"
+      :error="editError"
+      :submit-label="editMode === 'create' ? 'Create' : 'Save'"
+      @submit="saveMilestone"
+    >
+      <UFormField label="Title" name="title">
+        <UInput v-model="editForm.title" />
+      </UFormField>
+      <UFormField label="Description" name="description">
+        <UTextarea v-model="editForm.description" :rows="4" />
+      </UFormField>
+    </SharedEntityFormModal>
   </div>
 </template>

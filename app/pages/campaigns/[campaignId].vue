@@ -8,6 +8,13 @@ type CampaignShell = {
   dungeonMasterName?: string | null
 }
 
+type SessionShellHeader = {
+  id: string
+  title: string
+  sessionNumber?: number | null
+  playedAt?: string | null
+}
+
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
 const { request } = useApi()
@@ -17,46 +24,34 @@ const { data: campaign, pending, error, refresh } = await useAsyncData(
   () => request<CampaignShell>(`/api/campaigns/${campaignId.value}`)
 )
 
-const navItems = computed(() => [
-  { label: 'Overview', to: `/campaigns/${campaignId.value}`, icon: 'i-lucide-layout-dashboard' },
-  { label: 'Characters', to: `/campaigns/${campaignId.value}/characters`, icon: 'i-lucide-users' },
-  { label: 'Sessions', to: `/campaigns/${campaignId.value}/sessions`, icon: 'i-lucide-calendar-days' },
-  { label: 'Quests', to: `/campaigns/${campaignId.value}/quests`, icon: 'i-lucide-scroll-text' },
-  { label: 'Milestones', to: `/campaigns/${campaignId.value}/milestones`, icon: 'i-lucide-flag' },
-  { label: 'Glossary', to: `/campaigns/${campaignId.value}/glossary`, icon: 'i-lucide-book-open-text' },
-  { label: 'Settings', to: `/campaigns/${campaignId.value}/settings`, icon: 'i-lucide-settings' },
-])
+const { navItems, sectionTitle, breadcrumbItems } = useCampaignNavigation(
+  route,
+  campaignId,
+  campaign
+)
 
-const sectionTitle = computed(() => {
-  const path = route.path
-  if (path.endsWith('/characters')) return 'Characters'
-  if (path.endsWith('/sessions')) return 'Sessions'
-  if (path.includes('/sessions/')) return 'Session details'
-  if (path.endsWith('/quests')) return 'Quests'
-  if (path.endsWith('/milestones')) return 'Milestones'
-  if (path.endsWith('/glossary')) return 'Glossary'
-  if (path.endsWith('/settings')) return 'Settings'
-  return 'Overview'
-})
+const sessionId = computed(() =>
+  typeof route.params.sessionId === 'string' ? route.params.sessionId : ''
+)
 
-const breadcrumbItems = computed(() => {
-  const rootItems = [
-    { label: 'Campaigns', to: '/campaigns' },
-    { label: campaign.value?.name || 'Campaign', to: `/campaigns/${campaignId.value}` },
-  ]
+const isSessionDetailRoute = computed(() =>
+  route.path.includes(`/campaigns/${campaignId.value}/sessions/`) && Boolean(sessionId.value)
+)
 
-  const path = route.path
-  if (path === `/campaigns/${campaignId.value}`) {
-    return rootItems
+const { data: sessionHeader } = await useAsyncData(
+  () => `campaign-shell-session-header-${sessionId.value || 'none'}`,
+  async () => {
+    if (!isSessionDetailRoute.value || !sessionId.value) return null
+    return request<SessionShellHeader>(`/api/sessions/${sessionId.value}`)
+  },
+  {
+    watch: [sessionId, isSessionDetailRoute],
   }
-  if (path.includes(`/campaigns/${campaignId.value}/sessions/`)) {
-    return [
-      ...rootItems,
-      { label: 'Sessions', to: `/campaigns/${campaignId.value}/sessions` },
-      { label: 'Session details' },
-    ]
-  }
-  return [...rootItems, { label: sectionTitle.value }]
+)
+
+const sessionDateLabel = computed(() => {
+  if (!sessionHeader.value?.playedAt) return 'Unscheduled'
+  return new Date(sessionHeader.value.playedAt).toLocaleDateString()
 })
 
 useSeoMeta({
@@ -84,30 +79,28 @@ useSeoMeta({
     </UCard>
 
     <div v-else-if="campaign" class="space-y-4">
-      <UCard>
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Campaign</p>
-            <h1 class="mt-1 text-2xl font-semibold">{{ campaign.name }}</h1>
-            <p class="text-sm text-muted">
-              <span>{{ campaign.system || 'System not set' }}</span>
-              <span v-if="campaign.dungeonMasterName" class="mx-2">•</span>
-              <span v-if="campaign.dungeonMasterName">DM: {{ campaign.dungeonMasterName }}</span>
-            </p>
-          </div>
-          <UBadge variant="soft" color="secondary" size="sm">
-            {{ sectionTitle }}
-          </UBadge>
-        </div>
-      </UCard>
+      <div :class="isSessionDetailRoute && sessionHeader ? 'grid gap-4 lg:grid-cols-2' : ''">
+        <CampaignShellHeader
+          :name="campaign.name"
+          :system="campaign.system"
+          :dungeon-master-name="campaign.dungeonMasterName"
+          :section-title="sectionTitle"
+        />
 
-      <UCard>
-        <UBreadcrumb :items="breadcrumbItems" />
-      </UCard>
+        <SessionHeaderCard
+          v-if="isSessionDetailRoute && sessionHeader"
+          :session-number="sessionHeader.sessionNumber"
+          :title="sessionHeader.title"
+          :session-date-label="sessionDateLabel"
+          :show-edit="false"
+          :sticky="false"
+        />
+      </div>
 
-      <UCard>
-        <UNavigationMenu :items="navItems" class="w-full" />
-      </UCard>
+      <CampaignSectionNav
+        :breadcrumb-items="breadcrumbItems"
+        :nav-items="navItems"
+      />
 
       <NuxtPage />
     </div>

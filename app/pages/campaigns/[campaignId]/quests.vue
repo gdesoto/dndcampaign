@@ -118,79 +118,70 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
       <UButton size="lg" @click="openCreate">New quest</UButton>
     </div>
 
-    <div v-if="pending" class="grid gap-4 sm:grid-cols-2">
-      <UCard v-for="i in 3" :key="i"  class="h-32 animate-pulse" />
-    </div>
-
-    <UCard v-else-if="error" class="text-center">
-      <p class="text-sm text-error">Unable to load quests.</p>
-      <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
-    </UCard>
-
-    <UCard v-else-if="!quests?.length" class="text-center">
-      <p class="text-sm text-muted">No quests yet.</p>
-      <UButton class="mt-4" variant="outline" @click="openCreate">Create your first quest</UButton>
-    </UCard>
-
-    <div v-else class="grid gap-4 sm:grid-cols-2">
-      <UCard v-for="quest in quests" :key="quest.id" >
-        <template #header>
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Quest</p>
-              <h3 class="text-lg font-semibold">{{ quest.title }}</h3>
-            </div>
-            <div class="flex gap-2">
-              <UButton size="xs" variant="outline" @click="openEdit(quest)">Edit</UButton>
-              <UButton size="xs" color="red" variant="ghost" @click="deleteQuest(quest)">Delete</UButton>
-            </div>
-          </div>
-        </template>
-        <p class="text-sm text-default">{{ quest.description || 'Add quest notes.' }}</p>
-        <div class="mt-4 flex items-center justify-between gap-3">
-          <USelect
-            :items="statusOptions"
-            :model-value="quest.status"
-            @update:model-value="(value) => updateStatus(quest, value as QuestItem['status'])"
-          />
-          <span class="text-xs text-muted">{{ quest.progressNotes || 'No progress notes.' }}</span>
+    <SharedResourceState
+      :pending="pending"
+      :error="error"
+      :empty="!quests?.length"
+      error-message="Unable to load quests."
+      empty-message="No quests yet."
+      @retry="refresh"
+    >
+      <template #loading>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <UCard v-for="i in 3" :key="i" class="h-32 animate-pulse" />
         </div>
-      </UCard>
-    </div>
-
-    <UModal v-model:open="isEditOpen">
-      <template #content>
-        <UCard >
-          <template #header>
-            <h2 class="text-lg font-semibold">{{ editMode === 'create' ? 'Create quest' : 'Edit quest' }}</h2>
-          </template>
-          <div class="space-y-4">
-            <div>
-              <label class="mb-2 block text-sm text-muted">Title</label>
-              <UInput v-model="editForm.title" />
-            </div>
-            <div>
-              <label class="mb-2 block text-sm text-muted">Status</label>
-              <USelect v-model="editForm.status" :items="statusOptions" />
-            </div>
-            <div>
-              <label class="mb-2 block text-sm text-muted">Description</label>
-              <UTextarea v-model="editForm.description" :rows="4" />
-            </div>
-            <div>
-              <label class="mb-2 block text-sm text-muted">Progress notes</label>
-              <UTextarea v-model="editForm.progressNotes" :rows="3" />
-            </div>
-            <p v-if="editError" class="text-sm text-error">{{ editError }}</p>
-          </div>
-          <template #footer>
-            <div class="flex justify-end gap-3">
-              <UButton variant="ghost" color="gray" @click="isEditOpen = false">Cancel</UButton>
-              <UButton :loading="isSaving" @click="saveQuest">Save</UButton>
-            </div>
-          </template>
-        </UCard>
       </template>
-    </UModal>
+      <template #emptyActions>
+        <UButton variant="outline" @click="openCreate">Create your first quest</UButton>
+      </template>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <SharedListItemCard v-for="quest in quests" :key="quest.id">
+          <template #header>
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Quest</p>
+                <h3 class="text-lg font-semibold">{{ quest.title }}</h3>
+              </div>
+              <div class="flex gap-2">
+                <UButton size="xs" variant="outline" @click="openEdit(quest)">Edit</UButton>
+                <UButton size="xs" color="red" variant="ghost" @click="deleteQuest(quest)">Delete</UButton>
+              </div>
+            </div>
+          </template>
+          <p class="text-sm text-default">{{ quest.description || 'Add quest notes.' }}</p>
+          <div class="mt-4 flex items-center justify-between gap-3">
+            <USelect
+              :items="statusOptions"
+              :model-value="quest.status"
+              @update:model-value="(value) => updateStatus(quest, value as QuestItem['status'])"
+            />
+            <span class="text-xs text-muted">{{ quest.progressNotes || 'No progress notes.' }}</span>
+          </div>
+        </SharedListItemCard>
+      </div>
+    </SharedResourceState>
+
+    <SharedEntityFormModal
+      v-model:open="isEditOpen"
+      :title="editMode === 'create' ? 'Create quest' : 'Edit quest'"
+      :saving="isSaving"
+      :error="editError"
+      :submit-label="editMode === 'create' ? 'Create' : 'Save'"
+      @submit="saveQuest"
+    >
+      <UFormField label="Title" name="title">
+        <UInput v-model="editForm.title" />
+      </UFormField>
+      <UFormField label="Status" name="status">
+        <USelect v-model="editForm.status" :items="statusOptions" />
+      </UFormField>
+      <UFormField label="Description" name="description">
+        <UTextarea v-model="editForm.description" :rows="4" />
+      </UFormField>
+      <UFormField label="Progress notes" name="progressNotes">
+        <UTextarea v-model="editForm.progressNotes" :rows="3" />
+      </UFormField>
+    </SharedEntityFormModal>
   </div>
 </template>
