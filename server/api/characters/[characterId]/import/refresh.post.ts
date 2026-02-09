@@ -4,6 +4,14 @@ import { characterImportRefreshSchema } from '#shared/schemas/character'
 import { CharacterImportService } from '#server/services/character-import.service'
 
 const importService = new CharacterImportService()
+const getErrorStatusCode = (error: unknown) => {
+  const typedError = error as {
+    status?: number
+    statusCode?: number
+    response?: { status?: number }
+  }
+  return typedError.statusCode || typedError.status || typedError.response?.status
+}
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
@@ -27,6 +35,11 @@ export default defineEventHandler(async (event) => {
     }
     return ok(character)
   } catch (error) {
-    return fail(500, 'IMPORT_FAILED', (error as Error).message || 'Import refresh failed')
+    const statusCode = getErrorStatusCode(error)
+    const message = (error as Error).message || 'Import refresh failed'
+    if (statusCode === 403) {
+      return fail(403, 'IMPORT_FORBIDDEN', message)
+    }
+    return fail(500, 'IMPORT_FAILED', message)
   }
 })

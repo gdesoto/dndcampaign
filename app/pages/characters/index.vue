@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import type { CharacterImportPayload } from '~/utils/character-import'
+import { getCharacterImportErrorMessage } from '~/utils/character-import'
+
 definePageMeta({ layout: 'app' })
 
 type Character = {
@@ -59,69 +62,25 @@ const createCharacter = async () => {
 const isImportOpen = ref(false)
 const importError = ref('')
 const isImporting = ref(false)
-const sectionItems = [
-  { label: 'Basics', value: 'BASICS' },
-  { label: 'Ability Scores', value: 'ABILITY_SCORES' },
-  { label: 'Saves', value: 'SAVES' },
-  { label: 'Skills', value: 'SKILLS' },
-  { label: 'Classes', value: 'CLASSES' },
-  { label: 'Race', value: 'RACE' },
-  { label: 'Background', value: 'BACKGROUND' },
-  { label: 'Equipment', value: 'EQUIPMENT' },
-  { label: 'Currency', value: 'CURRENCY' },
-  { label: 'Spells', value: 'SPELLS' },
-  { label: 'Features', value: 'FEATURES' },
-  { label: 'Proficiencies', value: 'PROFICIENCIES' },
-  { label: 'Languages', value: 'LANGUAGES' },
-  { label: 'Traits', value: 'TRAITS' },
-  { label: 'Inventory', value: 'INVENTORY' },
-  { label: 'Resources', value: 'RESOURCES' },
-  { label: 'Hit Points', value: 'HIT_POINTS' },
-  { label: 'Defenses', value: 'DEFENSES' },
-  { label: 'Conditions', value: 'CONDITIONS' },
-  { label: 'Attacks', value: 'ATTACKS' },
-  { label: 'Notes', value: 'NOTES' },
-  { label: 'Appearance', value: 'APPEARANCE' },
-  { label: 'Portrait', value: 'PORTRAIT' },
-  { label: 'Allies', value: 'ALLIES' },
-  { label: 'Organizations', value: 'ORGANIZATIONS' },
-  { label: 'Companions', value: 'COMPANIONS' },
-  { label: 'Custom', value: 'CUSTOM' },
-]
-
-const importForm = reactive({
-  externalId: '',
-  overwriteMode: 'SECTIONS',
-  sections: sectionItems.map((item) => item.value),
-})
 
 const openImport = () => {
   importError.value = ''
-  importForm.externalId = ''
-  importForm.overwriteMode = 'SECTIONS'
-  importForm.sections = sectionItems.map((item) => item.value)
   isImportOpen.value = true
 }
 
-const importCharacter = async () => {
+const importCharacter = async (payload: CharacterImportPayload) => {
   importError.value = ''
   isImporting.value = true
   try {
     const character = await request<Character>('/api/characters/import', {
       method: 'POST',
-      body: {
-        provider: 'DND_BEYOND',
-        externalId: importForm.externalId,
-        overwriteMode: importForm.overwriteMode,
-        sections: importForm.sections,
-      },
+      body: payload,
     })
     isImportOpen.value = false
     await refresh()
     router.push(`/characters/${character.id}`)
   } catch (error) {
-    importError.value =
-      (error as Error & { message?: string }).message || 'Unable to import character.'
+    importError.value = getCharacterImportErrorMessage(error, 'Unable to import character.')
   } finally {
     isImporting.value = false
   }
@@ -216,40 +175,12 @@ const importCharacter = async () => {
       </template>
     </UModal>
 
-    <UModal
+    <CharactersImportModal
       v-model:open="isImportOpen"
-      title="Import from D&amp;D Beyond"
-      description="Provide a character ID and choose which sections to overwrite."
-    >
-      <template #body>
-        <div class="space-y-4">
-          <div>
-            <label class="mb-2 block text-sm text-muted">Character ID</label>
-            <UInput v-model="importForm.externalId" placeholder="e.g. 135280063" />
-          </div>
-          <div>
-            <label class="mb-2 block text-sm text-muted">Overwrite mode</label>
-            <USelect
-              v-model="importForm.overwriteMode"
-              :items="[
-                { label: 'Section overwrite', value: 'SECTIONS' },
-                { label: 'Full overwrite', value: 'FULL' },
-              ]"
-            />
-          </div>
-          <div>
-            <label class="mb-2 block text-sm text-muted">Sections to import</label>
-            <UCheckboxGroup v-model="importForm.sections" :items="sectionItems" variant="list" />
-          </div>
-          <p v-if="importError" class="text-sm text-error">{{ importError }}</p>
-        </div>
-      </template>
-      <template #footer>
-        <div class="flex justify-end gap-3">
-          <UButton variant="ghost" color="gray" @click="isImportOpen = false">Cancel</UButton>
-          <UButton :loading="isImporting" @click="importCharacter">Import</UButton>
-        </div>
-      </template>
-    </UModal>
+      :loading="isImporting"
+      :error="importError"
+      default-mode="FULL"
+      @submit="importCharacter"
+    />
   </UPage>
 </template>

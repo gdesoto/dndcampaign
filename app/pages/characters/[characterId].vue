@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import type { CharacterImportPayload, CharacterImportRefreshPayload } from '~/utils/character-import'
+import { getCharacterImportErrorMessage } from '~/utils/character-import'
+
 definePageMeta({ layout: 'app' })
 
 type CampaignOption = { id: string; name: string }
@@ -190,87 +193,40 @@ const saveRaw = async () => saveSection('CUSTOM', parseJson(rawJson.value, {}))
 const isImportOpen = ref(false)
 const importError = ref('')
 const isImporting = ref(false)
-const importSectionItems = [
-  { label: 'Basics', value: 'BASICS' },
-  { label: 'Ability Scores', value: 'ABILITY_SCORES' },
-  { label: 'Saves', value: 'SAVES' },
-  { label: 'Skills', value: 'SKILLS' },
-  { label: 'Classes', value: 'CLASSES' },
-  { label: 'Race', value: 'RACE' },
-  { label: 'Background', value: 'BACKGROUND' },
-  { label: 'Equipment', value: 'EQUIPMENT' },
-  { label: 'Currency', value: 'CURRENCY' },
-  { label: 'Spells', value: 'SPELLS' },
-  { label: 'Features', value: 'FEATURES' },
-  { label: 'Proficiencies', value: 'PROFICIENCIES' },
-  { label: 'Languages', value: 'LANGUAGES' },
-  { label: 'Traits', value: 'TRAITS' },
-  { label: 'Inventory', value: 'INVENTORY' },
-  { label: 'Resources', value: 'RESOURCES' },
-  { label: 'Hit Points', value: 'HIT_POINTS' },
-  { label: 'Defenses', value: 'DEFENSES' },
-  { label: 'Conditions', value: 'CONDITIONS' },
-  { label: 'Attacks', value: 'ATTACKS' },
-  { label: 'Notes', value: 'NOTES' },
-  { label: 'Appearance', value: 'APPEARANCE' },
-  { label: 'Portrait', value: 'PORTRAIT' },
-  { label: 'Allies', value: 'ALLIES' },
-  { label: 'Organizations', value: 'ORGANIZATIONS' },
-  { label: 'Companions', value: 'COMPANIONS' },
-  { label: 'Custom', value: 'CUSTOM' },
-]
-const importForm = reactive({
-  externalId: '',
-  overwriteMode: 'SECTIONS',
-  sections: importSectionItems.map((item) => item.value),
-})
 
 const openImport = () => {
   importError.value = ''
-  importForm.externalId = ''
-  importForm.overwriteMode = 'SECTIONS'
-  importForm.sections = importSectionItems.map((item) => item.value)
   isImportOpen.value = true
 }
 
-const importCharacter = async () => {
+const importCharacter = async (payload: CharacterImportPayload) => {
   importError.value = ''
   isImporting.value = true
   try {
     await request(`/api/characters/${characterId.value}/import`, {
       method: 'POST',
-      body: {
-        provider: 'DND_BEYOND',
-        externalId: importForm.externalId,
-        overwriteMode: importForm.overwriteMode,
-        sections: importForm.sections,
-      },
+      body: payload,
     })
     isImportOpen.value = false
     await refresh()
   } catch (error) {
-    importError.value =
-      (error as Error & { message?: string }).message || 'Unable to import character.'
+    importError.value = getCharacterImportErrorMessage(error, 'Unable to import character.')
   } finally {
     isImporting.value = false
   }
 }
 
-const refreshImport = async () => {
+const refreshImport = async (payload: CharacterImportRefreshPayload) => {
   importError.value = ''
   isImporting.value = true
   try {
     await request(`/api/characters/${characterId.value}/import/refresh`, {
       method: 'POST',
-      body: {
-        overwriteMode: importForm.overwriteMode,
-        sections: importForm.sections,
-      },
+      body: payload,
     })
     await refresh()
   } catch (error) {
-    importError.value =
-      (error as Error & { message?: string }).message || 'Unable to refresh import.'
+    importError.value = getCharacterImportErrorMessage(error, 'Unable to refresh import.')
   } finally {
     isImporting.value = false
   }
@@ -305,6 +261,11 @@ const removeFromCampaign = async (link: CampaignLink) => {
     method: 'DELETE',
   })
   await refresh()
+}
+
+const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void) => {
+  await removeFromCampaign(link)
+  close()
 }
 
 const deleteCharacter = async () => {
@@ -504,27 +465,65 @@ const deleteCharacter = async () => {
                 <div
                   v-for="link in character.campaignLinks"
                   :key="link.id"
-                  class="flex items-center justify-between gap-2 rounded-lg border border-default bg-elevated/30 p-3"
+                  class="space-y-2 rounded-lg border border-default bg-elevated/30 px-3 py-2.5"
                 >
-                  <div>
-                    <p class="font-semibold">{{ link.campaign.name }}</p>
-                    <p class="text-xs text-muted">{{ link.status }}</p>
+                  <div class="flex items-center justify-between gap-2">
+                    <p class="min-w-0 truncate font-semibold">{{ link.campaign.name }}</p>
+                    <UTooltip text="Open campaign" :content="{ side: 'left' }">
+                      <UButton
+                        :to="`/campaigns/${link.campaignId}`"
+                        size="xs"
+                        variant="ghost"
+                        icon="i-lucide-square-arrow-out-up-right"
+                        aria-label="Open campaign"
+                      />
+                    </UTooltip>
                   </div>
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center justify-between gap-2">
                     <USelect
                       :items="statusOptions"
                       :model-value="link.status"
                       size="xs"
+                      class="w-full max-w-36"
                       @update:model-value="(value) => updateCampaignLink(link, value as CampaignLink['status'])"
                     />
-                    <UButton size="xs" variant="ghost" color="red" @click="removeFromCampaign(link)">
-                      Remove
-                    </UButton>
+                    <UPopover :content="{ side: 'left', align: 'end' }" :ui="{ content: 'w-64 p-3' }">
+                      <UTooltip text="Remove link" :content="{ side: 'left' }">
+                        <UButton
+                          size="xs"
+                          variant="ghost"
+                          color="error"
+                          icon="i-lucide-trash-2"
+                          aria-label="Remove campaign link"
+                        />
+                      </UTooltip>
+                      <template #content="{ close }">
+                        <div class="space-y-3">
+                          <p class="text-sm text-muted">
+                            Remove {{ character?.name || 'this character' }} from
+                            "{{ link.campaign.name }}"?
+                          </p>
+                          <div class="flex justify-end gap-2">
+                            <UButton size="xs" variant="ghost" color="neutral" @click="close">
+                              Cancel
+                            </UButton>
+                            <UButton
+                              size="xs"
+                              color="error"
+                              icon="i-lucide-trash-2"
+                              @click="removeFromCampaignWithClose(link, close)"
+                            >
+                              Remove
+                            </UButton>
+                          </div>
+                        </div>
+                      </template>
+                    </UPopover>
                   </div>
                 </div>
               </div>
               <p v-else class="text-xs text-muted">Not linked to any campaigns yet.</p>
-              <div class="flex gap-2">
+              <div class="flex flex-col gap-2 sm:flex-row">
                 <USelectMenu
                   v-model="attachCampaignId"
                   value-key="id"
@@ -533,7 +532,9 @@ const deleteCharacter = async () => {
                   placeholder="Attach to campaign"
                   class="flex-1"
                 />
-                <UButton :disabled="!attachCampaignId" @click="attachToCampaign">Attach</UButton>
+                <UButton :disabled="!attachCampaignId" class="w-full sm:w-auto" @click="attachToCampaign">
+                  Attach
+                </UButton>
               </div>
             </div>
           </UCard>
@@ -543,40 +544,14 @@ const deleteCharacter = async () => {
 
     </div>
 
-    <UModal
+    <CharactersImportModal
       v-model:open="isImportOpen"
-      title="Import from D&amp;D Beyond"
-      description="Provide a character ID and choose which sections to overwrite."
-    >
-      <template #body>
-        <div class="space-y-4">
-          <div>
-            <label class="mb-2 block text-sm text-muted">Character ID</label>
-            <UInput v-model="importForm.externalId" placeholder="e.g. 135280063" />
-          </div>
-          <div>
-            <label class="mb-2 block text-sm text-muted">Overwrite mode</label>
-            <USelect
-              v-model="importForm.overwriteMode"
-              :items="[
-                { label: 'Section overwrite', value: 'SECTIONS' },
-                { label: 'Full overwrite', value: 'FULL' },
-              ]"
-            />
-          </div>
-          <div>
-            <label class="mb-2 block text-sm text-muted">Sections to overwrite</label>
-            <UCheckboxGroup v-model="importForm.sections" :items="importSectionItems" variant="list" />
-          </div>
-          <div class="flex gap-2">
-            <UButton :loading="isImporting" variant="outline" @click="refreshImport">
-              Refresh with last import
-            </UButton>
-            <UButton :loading="isImporting" @click="importCharacter">Import</UButton>
-          </div>
-          <p v-if="importError" class="text-sm text-error">{{ importError }}</p>
-        </div>
-      </template>
-    </UModal>
+      :loading="isImporting"
+      :error="importError"
+      default-mode="SECTIONS"
+      :show-refresh-button="true"
+      @submit="importCharacter"
+      @refresh="refreshImport"
+    />
   </UPage>
 </template>
