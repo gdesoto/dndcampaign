@@ -1,34 +1,8 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'app' })
 
-type CampaignShell = {
-  id: string
-  name: string
-  system?: string | null
-  dungeonMasterName?: string | null
-}
-
-type SessionShellHeader = {
-  id: string
-  title: string
-  sessionNumber?: number | null
-  playedAt?: string | null
-}
-
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
-const { request } = useApi()
-
-const { data: campaign, pending, error, refresh } = await useAsyncData(
-  () => `campaign-shell-${campaignId.value}`,
-  () => request<CampaignShell>(`/api/campaigns/${campaignId.value}`)
-)
-
-const { navItems, sectionTitle, breadcrumbItems } = useCampaignNavigation(
-  route,
-  campaignId,
-  campaign
-)
 
 const sessionId = computed(() =>
   typeof route.params.sessionId === 'string' ? route.params.sessionId : ''
@@ -38,15 +12,22 @@ const isSessionDetailRoute = computed(() =>
   route.path.includes(`/campaigns/${campaignId.value}/sessions/`) && Boolean(sessionId.value)
 )
 
-const { data: sessionHeader } = await useAsyncData(
-  () => `campaign-shell-session-header-${sessionId.value || 'none'}`,
-  async () => {
-    if (!isSessionDetailRoute.value || !sessionId.value) return null
-    return request<SessionShellHeader>(`/api/sessions/${sessionId.value}`)
-  },
-  {
-    watch: [sessionId, isSessionDetailRoute],
-  }
+const {
+  campaign,
+  sessionHeader,
+  pending,
+  error,
+  refreshCampaign,
+} = await useCampaignWorkspace({
+  campaignId,
+  sessionId,
+  isSessionDetailRoute,
+})
+
+const { navItems, sectionTitle, breadcrumbItems } = useCampaignNavigation(
+  route,
+  campaignId,
+  campaign
 )
 
 const sessionDateLabel = computed(() => {
@@ -75,7 +56,7 @@ useSeoMeta({
 
     <UCard v-else-if="error" class="text-center">
       <p class="text-sm text-error">Unable to load campaign shell.</p>
-      <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
+      <UButton class="mt-4" variant="outline" @click="refreshCampaign">Try again</UButton>
     </UCard>
 
     <div v-else-if="campaign" class="space-y-4">

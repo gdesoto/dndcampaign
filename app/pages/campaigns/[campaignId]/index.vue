@@ -1,38 +1,10 @@
 <script setup lang="ts">
-type Campaign = {
-  id: string
-  name: string
-  system: string
-  dungeonMasterName?: string | null
-  description?: string | null
-  currentStatus?: string | null
-  createdAt: string
-  updatedAt: string
-}
-
-type SessionSummary = {
-  id: string
-  title: string
-  sessionNumber?: number | null
-  playedAt?: string | null
-  createdAt: string
-}
-
-type QuestSummary = {
-  id: string
-  title: string
-  status: 'ACTIVE' | 'COMPLETED' | 'FAILED' | 'ON_HOLD'
-  updatedAt?: string | null
-  createdAt?: string | null
-}
-
-type MilestoneSummary = {
-  id: string
-  title: string
-  isComplete: boolean
-  completedAt?: string | null
-  createdAt?: string | null
-}
+import type {
+  CampaignMilestoneSummary,
+  CampaignOverviewDetail,
+  CampaignQuestSummary,
+  CampaignSessionSummary,
+} from '#shared/types/campaign-overview'
 
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
@@ -40,22 +12,26 @@ const { request } = useApi()
 
 const { data: campaign, pending, refresh, error } = await useAsyncData(
   () => `campaign-${campaignId.value}`,
-  () => request<Campaign>(`/api/campaigns/${campaignId.value}`)
+  () => request<CampaignOverviewDetail>(`/api/campaigns/${campaignId.value}`)
 )
+
+const campaignInvalidation = useCampaignWorkspaceInvalidation({
+  refreshCampaign: refresh,
+})
 
 const { data: sessions } = await useAsyncData(
   () => `campaign-sessions-${campaignId.value}`,
-  () => request<SessionSummary[]>(`/api/campaigns/${campaignId.value}/sessions`)
+  () => request<CampaignSessionSummary[]>(`/api/campaigns/${campaignId.value}/sessions`)
 )
 
 const { data: quests } = await useAsyncData(
   () => `campaign-quests-${campaignId.value}`,
-  () => request<QuestSummary[]>(`/api/campaigns/${campaignId.value}/quests`)
+  () => request<CampaignQuestSummary[]>(`/api/campaigns/${campaignId.value}/quests`)
 )
 
 const { data: milestones } = await useAsyncData(
   () => `campaign-milestones-${campaignId.value}`,
-  () => request<MilestoneSummary[]>(`/api/campaigns/${campaignId.value}/milestones`)
+  () => request<CampaignMilestoneSummary[]>(`/api/campaigns/${campaignId.value}/milestones`)
 )
 
 const formatDate = (value?: string | null) => {
@@ -74,7 +50,7 @@ const {
   playRecap,
   deleteRecap,
   openPlayer,
-} = useCampaignRecaps(campaignId)
+} = useCampaignRecaps(campaignId, campaignInvalidation.afterRecapMutation)
 
 const {
   latestSession,
@@ -123,13 +99,23 @@ watch(
 const saveStatus = async () => {
   saveError.value = ''
   isSaving.value = true
+  const previousStatus = campaign.value?.currentStatus || ''
+  const previousUpdatedAt = campaign.value?.updatedAt
+  if (campaign.value) {
+    campaign.value.currentStatus = statusDraft.value || ''
+    campaign.value.updatedAt = new Date().toISOString()
+  }
   try {
     await request(`/api/campaigns/${campaignId.value}`, {
       method: 'PATCH',
       body: { currentStatus: statusDraft.value || undefined },
     })
-    await refresh()
+    await campaignInvalidation.afterCampaignMutation()
   } catch (error) {
+    if (campaign.value) {
+      campaign.value.currentStatus = previousStatus
+      if (previousUpdatedAt) campaign.value.updatedAt = previousUpdatedAt
+    }
     saveError.value =
       (error as Error & { message?: string }).message || 'Unable to update status.'
   } finally {
@@ -161,7 +147,7 @@ const saveCampaign = async () => {
         description: editForm.description || undefined,
       },
     })
-    await refresh()
+    await campaignInvalidation.afterCampaignMutation()
     isEditOpen.value = false
   } catch (error) {
     editError.value =
@@ -181,7 +167,7 @@ const saveCampaign = async () => {
 
     <UCard v-else-if="error" class="text-center">
       <p class="text-sm text-error">Unable to load this campaign.</p>
-      <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
+      <UButton class="mt-4" variant="outline" @click="campaignInvalidation.refreshWorkspace">Try again</UButton>
     </UCard>
 
     <div v-else-if="campaign" class="space-y-6">

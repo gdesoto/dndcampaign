@@ -5,24 +5,7 @@ import {
   parseTranscriptSegments,
   segmentsToPlainText,
 } from '#shared/utils/transcript'
-import type {
-  SessionRecordingItem,
-  SessionRecapRecording,
-  SessionDocumentDetail,
-} from '#shared/types/session-workflow'
 definePageMeta({ layout: 'app' })
-
-type SessionDetail = {
-  id: string
-  title: string
-  sessionNumber?: number | null
-  playedAt?: string | null
-  guestDungeonMasterName?: string | null
-  campaign?: {
-    dungeonMasterName?: string | null
-  } | null
-  notes?: string | null
-}
 
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
@@ -30,10 +13,32 @@ const sessionId = computed(() => route.params.sessionId as string)
 const { request } = useApi()
 const player = useMediaPlayer()
 
-const { data: session, pending, refresh, error } = await useAsyncData(
-  () => `session-${sessionId.value}`,
-  () => request<SessionDetail>(`/api/sessions/${sessionId.value}`)
-)
+const {
+  session,
+  recordings,
+  recap,
+  transcriptDoc,
+  summaryDoc,
+  pending,
+  error,
+  refreshAll,
+  refreshSession,
+  refreshRecordings,
+  refreshRecap,
+  refreshTranscript,
+  refreshSummary,
+} = await useSessionWorkspace({
+  sessionId,
+})
+
+const sessionInvalidation = useSessionWorkspaceInvalidation({
+  refreshAll,
+  refreshSession,
+  refreshRecordings,
+  refreshRecap,
+  refreshTranscript,
+  refreshSummary,
+})
 
 useSeoMeta({
   title: () => {
@@ -113,11 +118,6 @@ const currentSection = computed<SessionSection>(() =>
     : 'overview'
 )
 
-const { data: recordings, refresh: refreshRecordings } = await useAsyncData(
-  () => `recordings-${sessionId.value}`,
-  () => request<SessionRecordingItem[]>(`/api/sessions/${sessionId.value}/recordings`)
-)
-
 const {
   uploadError,
   isUploading,
@@ -131,13 +131,8 @@ const {
 } = useSessionRecordings({
   sessionId,
   recordings,
-  refreshRecordings,
+  refreshRecordings: sessionInvalidation.afterRecordingsMutation,
 })
-
-const { data: recap, refresh: refreshRecap } = await useAsyncData(
-  () => `recap-${sessionId.value}`,
-  () => request<SessionRecapRecording | null>(`/api/sessions/${sessionId.value}/recap`)
-)
 
 const {
   recapFile,
@@ -153,22 +148,8 @@ const {
 } = useSessionRecap({
   sessionId,
   recap,
-  refreshRecap,
+  refreshRecap: sessionInvalidation.afterRecapMutation,
 })
-
-const { data: transcriptDoc, refresh: refreshTranscript } = await useAsyncData(
-  () => `documents-transcript-${sessionId.value}`,
-  () =>
-    request<SessionDocumentDetail | null>(
-      `/api/sessions/${sessionId.value}/documents?type=TRANSCRIPT`
-    )
-)
-
-const { data: summaryDoc, refresh: refreshSummary } = await useAsyncData(
-  () => `documents-summary-${sessionId.value}`,
-  () =>
-    request<SessionDocumentDetail | null>(`/api/sessions/${sessionId.value}/documents?type=SUMMARY`)
-)
 
 const {
   summarySending,
@@ -194,7 +175,7 @@ const {
 } = useSessionSummaryJobs({
   sessionId,
   transcriptDoc,
-  refreshSummary,
+  refreshSummary: sessionInvalidation.afterSummaryMutation,
 })
 
 const transcriptContent = toRef(transcriptForm, 'content')
@@ -222,8 +203,8 @@ const {
   summaryDoc,
   transcriptContent,
   summaryContent,
-  refreshTranscript,
-  refreshSummary,
+  refreshTranscript: sessionInvalidation.afterTranscriptMutation,
+  refreshSummary: sessionInvalidation.afterSummaryMutation,
 })
 
 watch(
@@ -396,7 +377,7 @@ const saveSession = async () => {
         notes: form.notes || null,
       },
     })
-    await refresh()
+    await sessionInvalidation.afterSessionMutation()
     if (isEditSessionOpen.value) isEditSessionOpen.value = false
   } catch (error) {
     saveError.value =
@@ -414,7 +395,7 @@ const attachTranscriptToVideo = async () => {
     await request(`/api/recordings/${selectedSubtitleRecordingId.value}/vtt/from-transcript`, {
       method: 'POST',
     })
-    await refreshRecordings()
+    await sessionInvalidation.afterRecordingsMutation()
   } catch (error) {
     subtitleAttachError.value =
       (error as Error & { message?: string }).message || 'Unable to attach subtitles.'
@@ -434,7 +415,7 @@ const attachTranscriptToVideo = async () => {
 
     <UCard v-else-if="error" class="text-center">
       <p class="text-sm text-error">Unable to load this session.</p>
-      <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
+      <UButton class="mt-4" variant="outline" @click="refreshSession">Try again</UButton>
     </UCard>
 
     <div v-else class="space-y-6">

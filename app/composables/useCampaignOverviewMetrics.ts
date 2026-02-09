@@ -1,33 +1,14 @@
 import { computed, type Ref } from 'vue'
-
-type OverviewSession = {
-  id: string
-  title: string
-  sessionNumber?: number | null
-  playedAt?: string | null
-  createdAt: string
-}
-
-type OverviewQuest = {
-  id: string
-  title: string
-  status: 'ACTIVE' | 'COMPLETED' | 'FAILED' | 'ON_HOLD'
-  updatedAt?: string | null
-  createdAt?: string | null
-}
-
-type OverviewMilestone = {
-  id: string
-  title: string
-  isComplete: boolean
-  completedAt?: string | null
-  createdAt?: string | null
-}
+import type {
+  CampaignMilestoneSummary,
+  CampaignQuestSummary,
+  CampaignSessionSummary,
+} from '#shared/types/campaign-overview'
 
 export const useCampaignOverviewMetrics = (
-  sessions: Ref<OverviewSession[] | null | undefined>,
-  quests: Ref<OverviewQuest[] | null | undefined>,
-  milestones: Ref<OverviewMilestone[] | null | undefined>
+  sessions: Ref<CampaignSessionSummary[] | null | undefined>,
+  quests: Ref<CampaignQuestSummary[] | null | undefined>,
+  milestones: Ref<CampaignMilestoneSummary[] | null | undefined>
 ) => {
   const sortByDate = <T extends { createdAt?: string | null }>(
     items: T[],
@@ -41,7 +22,7 @@ export const useCampaignOverviewMetrics = (
 
   const latestSession = computed(() => {
     const list = sessions.value || []
-    return list.reduce<OverviewSession | null>((latest, current) => {
+    return list.reduce<CampaignSessionSummary | null>((latest, current) => {
       const currentDate = new Date(current.playedAt || current.createdAt).getTime()
       const latestDate = latest ? new Date(latest.playedAt || latest.createdAt).getTime() : 0
       return currentDate > latestDate ? current : latest
@@ -68,7 +49,7 @@ export const useCampaignOverviewMetrics = (
     sortByDate(milestones.value || [], (milestone) => milestone.completedAt || milestone.createdAt).slice(0, 5)
   )
 
-  const questStatusColor = (status: OverviewQuest['status']) => {
+  const questStatusColor = (status: CampaignQuestSummary['status']) => {
     switch (status) {
       case 'COMPLETED':
         return 'success'

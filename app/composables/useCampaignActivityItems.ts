@@ -1,54 +1,19 @@
 import { computed, type Ref } from 'vue'
-
-type ActivityCampaign = {
-  id: string
-  updatedAt?: string | null
-}
-
-type ActivitySession = {
-  id: string
-  title: string
-  sessionNumber?: number | null
-  playedAt?: string | null
-  createdAt: string
-}
-
-type ActivityQuest = {
-  id: string
-  title: string
-  updatedAt?: string | null
-  createdAt?: string | null
-}
-
-type ActivityMilestone = {
-  id: string
-  title: string
-  isComplete: boolean
-  completedAt?: string | null
-  createdAt?: string | null
-}
-
-type ActivityRecap = {
-  id: string
-  createdAt: string
-  session: {
-    title: string
-  }
-}
-
-type CampaignActivityItem = {
-  id: string
-  date: string
-  title: string
-  description: string
-}
+import type {
+  CampaignActivityItem,
+  CampaignMilestoneSummary,
+  CampaignQuestSummary,
+  CampaignRecapItem,
+  CampaignSessionSummary,
+} from '#shared/types/campaign-overview'
+import type { CampaignOverviewDetail } from '#shared/types/campaign-overview'
 
 export const useCampaignActivityItems = (
-  campaign: Ref<ActivityCampaign | null | undefined>,
-  recaps: Ref<ActivityRecap[] | null | undefined>,
-  sessions: Ref<ActivitySession[] | null | undefined>,
-  quests: Ref<ActivityQuest[] | null | undefined>,
-  milestones: Ref<ActivityMilestone[] | null | undefined>
+  campaign: Ref<CampaignOverviewDetail | null | undefined>,
+  recaps: Ref<CampaignRecapItem[] | null | undefined>,
+  sessions: Ref<CampaignSessionSummary[] | null | undefined>,
+  quests: Ref<CampaignQuestSummary[] | null | undefined>,
+  milestones: Ref<CampaignMilestoneSummary[] | null | undefined>
 ) => {
   const formatDateTime = (value?: string | null) => {
     if (!value) return 'Unscheduled'

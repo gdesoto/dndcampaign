@@ -58,7 +58,7 @@ const recapFileModel = computed({
         v-if="workflowMode"
         v-model="recapFileModel"
         accept="audio/*"
-        variant="button"
+        variant="area"
         label="Select recap audio"
         :preview="false"
       />

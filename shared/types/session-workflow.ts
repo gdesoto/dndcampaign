@@ -1,5 +1,17 @@
 export type RecordingKind = 'AUDIO' | 'VIDEO'
 
+export type SessionDetail = {
+  id: string
+  title: string
+  sessionNumber?: number | null
+  playedAt?: string | null
+  guestDungeonMasterName?: string | null
+  campaign?: {
+    dungeonMasterName?: string | null
+  } | null
+  notes?: string | null
+}
+
 export type SessionRecordingItem = {
   id: string
   kind: RecordingKind
@@ -70,4 +82,16 @@ export type SessionSummaryJobResponse = {
   job: SessionSummaryJob | null
   suggestions: SessionSummarySuggestion[]
   jobs: SessionSummaryJobListItem[]
+}
+
+export type SessionSummaryJobDetail = SessionSummaryJob & {
+  suggestions: SessionSummarySuggestion[]
+}
+
+export type SessionWorkspace = {
+  session: SessionDetail
+  recordings: SessionRecordingItem[]
+  recap: SessionRecapRecording | null
+  transcriptDoc: SessionDocumentDetail | null
+  summaryDoc: SessionDocumentDetail | null
 }

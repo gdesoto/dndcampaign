@@ -31,7 +31,13 @@ describe('useCampaignOverviewMetrics', () => {
 
 describe('useCampaignActivityItems', () => {
   it('builds sorted activity feed and caps to 6 items', () => {
-    const campaign = ref({ id: 'c1', updatedAt: '2026-02-05T00:00:00.000Z' })
+    const campaign = ref({
+      id: 'c1',
+      name: 'Alpha',
+      system: 'DND 5e',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-02-05T00:00:00.000Z',
+    })
     const recaps = ref([
       { id: 'r1', createdAt: '2026-02-04T00:00:00.000Z', session: { title: 'Session A' } },
       { id: 'r2', createdAt: '2026-02-03T00:00:00.000Z', session: { title: 'Session B' } },

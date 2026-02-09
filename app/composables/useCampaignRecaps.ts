@@ -1,16 +1,9 @@
-type CampaignRecapItem = {
-  id: string
-  filename: string
-  createdAt: string
-  session: {
-    id: string
-    title: string
-    sessionNumber?: number | null
-    playedAt?: string | null
-  }
-}
+import type { CampaignRecapItem } from '#shared/types/campaign-overview'
 
-export const useCampaignRecaps = (campaignId: Ref<string>) => {
+export const useCampaignRecaps = (
+  campaignId: Ref<string>,
+  afterRecapMutation?: () => Promise<void>
+) => {
   const { request } = useApi()
   const player = useMediaPlayer()
 
@@ -72,14 +65,29 @@ export const useCampaignRecaps = (campaignId: Ref<string>) => {
   const deleteRecap = async (recapId: string) => {
     recapDeleteError.value = ''
     recapDeleting.value = true
+    const previousRecaps = recaps.value ? [...recaps.value] : undefined
+    const previousSelectedRecapId = selectedRecapId.value
+    const previousPlaybackUrl = recapPlaybackUrl.value
+
+    if (recaps.value) {
+      recaps.value = recaps.value.filter((item) => item.id !== recapId)
+    }
+    if (selectedRecapId.value === recapId) {
+      recapPlaybackUrl.value = ''
+      selectedRecapId.value = recaps.value?.[0]?.id || ''
+    }
     try {
       await request(`/api/recaps/${recapId}`, { method: 'DELETE' })
-      if (selectedRecapId.value === recapId) {
-        recapPlaybackUrl.value = ''
-        selectedRecapId.value = ''
-      }
       await refreshRecaps()
+      if (afterRecapMutation) {
+        await afterRecapMutation()
+      }
     } catch (error) {
+      if (previousRecaps) {
+        recaps.value = previousRecaps
+      }
+      selectedRecapId.value = previousSelectedRecapId
+      recapPlaybackUrl.value = previousPlaybackUrl
       recapDeleteError.value =
         (error as Error & { message?: string }).message || 'Unable to delete recap.'
     } finally {

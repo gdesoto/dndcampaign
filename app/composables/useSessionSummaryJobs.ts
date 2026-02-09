@@ -1,8 +1,6 @@
 import type { Ref } from 'vue'
 import type {
-  SessionSummaryJob,
   SessionSummarySuggestion,
-  SessionSummaryJobResponse,
 } from '#shared/types/session-workflow'
 
 type UseSessionSummaryJobsOptions = {
@@ -17,52 +15,20 @@ export function useSessionSummaryJobs(options: UseSessionSummaryJobsOptions) {
   const summarySending = ref(false)
   const summarySendError = ref('')
   const summaryActionError = ref('')
-  const selectedSummaryJobId = ref('')
-
-  const { data: summaryJobData, refresh: refreshSummaryJob } = useAsyncData(
-    () => `summary-job-${options.sessionId.value}`,
-    () => request<SessionSummaryJobResponse>(`/api/sessions/${options.sessionId.value}/summary-jobs`)
-  )
-
-  const { data: selectedSummaryJobData, refresh: refreshSelectedSummaryJob } = useAsyncData(
-    () => `summary-job-detail-${selectedSummaryJobId.value || 'latest'}`,
-    () => {
-      if (!selectedSummaryJobId.value) return Promise.resolve(null)
-      return request<SessionSummaryJob & { suggestions: SessionSummarySuggestion[] }>(
-        `/api/summary-jobs/${selectedSummaryJobId.value}`
-      )
-    },
-    { immediate: false }
-  )
-
-  const summaryJob = computed(() => {
-    if (selectedSummaryJobId.value && selectedSummaryJobData.value) {
-      return selectedSummaryJobData.value
-    }
-    return summaryJobData.value?.job || null
+  const {
+    selectedSummaryJobId,
+    summaryJob,
+    summarySuggestions,
+    summaryJobHistory,
+    summaryJobOptions,
+    refreshSummaryJob,
+    refreshSelectedSummaryJob,
+  } = useSummaryJobState({
+    sessionId: options.sessionId,
   })
-
-  const summarySuggestions = computed(() => {
-    if (selectedSummaryJobId.value && selectedSummaryJobData.value) {
-      return selectedSummaryJobData.value.suggestions || []
-    }
-    return summaryJobData.value?.suggestions || []
-  })
-
-  const summaryJobHistory = computed(() => summaryJobData.value?.jobs || [])
 
   const sessionSuggestion = computed(() =>
     summarySuggestions.value.find((suggestion) => suggestion.entityType === 'SESSION') || null
-  )
-
-  const summaryJobOptions = computed(() =>
-    summaryJobHistory.value.map((job) => {
-      const dateLabel = new Date(job.createdAt).toLocaleString()
-      return {
-        label: `${dateLabel} · ${job.status}`,
-        value: job.id,
-      }
-    })
   )
 
   const summaryHighlights = computed(() => {
@@ -153,24 +119,6 @@ export function useSessionSummaryJobs(options: UseSessionSummaryJobsOptions) {
     }
     return Object.entries(groups).map(([label, items]) => ({ label, items }))
   })
-
-  watch(
-    () => summaryJobData.value?.job?.id,
-    (value) => {
-      if (!selectedSummaryJobId.value && value) {
-        selectedSummaryJobId.value = value
-      }
-    },
-    { immediate: true }
-  )
-
-  watch(
-    () => selectedSummaryJobId.value,
-    async (value) => {
-      if (!value) return
-      await refreshSelectedSummaryJob()
-    }
-  )
 
   const sendSummaryToN8n = async () => {
     if (!options.transcriptDoc.value) {

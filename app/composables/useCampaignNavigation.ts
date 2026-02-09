@@ -1,11 +1,5 @@
 import { computed } from 'vue'
-
-type CampaignShell = {
-  id: string
-  name: string
-  system?: string | null
-  dungeonMasterName?: string | null
-}
+import type { CampaignShell } from '#shared/types/campaign-workflow'
 
 export const useCampaignNavigation = (
   route: ReturnType<typeof useRoute>,
