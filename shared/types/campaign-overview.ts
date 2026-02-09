@@ -20,6 +20,7 @@ export type CampaignSessionSummary = {
 export type CampaignQuestSummary = {
   id: string
   title: string
+  type: 'MAIN' | 'SIDE' | 'PLAYER'
   status: 'ACTIVE' | 'COMPLETED' | 'FAILED' | 'ON_HOLD'
   updatedAt?: string | null
   createdAt?: string | null

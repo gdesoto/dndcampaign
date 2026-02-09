@@ -12,6 +12,7 @@ export const useCampaignNavigation = (
     { label: 'Characters', to: `/campaigns/${campaignId.value}/characters`, icon: 'i-lucide-users' },
     { label: 'Quests', to: `/campaigns/${campaignId.value}/quests`, icon: 'i-lucide-scroll-text' },
     { label: 'Milestones', to: `/campaigns/${campaignId.value}/milestones`, icon: 'i-lucide-flag' },
+    { label: 'Maps', to: `/campaigns/${campaignId.value}/maps`, icon: 'i-lucide-map' },
     { label: 'Glossary', to: `/campaigns/${campaignId.value}/glossary`, icon: 'i-lucide-book-open-text' },
     { label: 'Settings', to: `/campaigns/${campaignId.value}/settings`, icon: 'i-lucide-settings' },
   ])
@@ -26,6 +27,7 @@ export const useCampaignNavigation = (
     if (suffix.startsWith('/quests')) return 'Quests'
     if (suffix.startsWith('/milestones')) return 'Milestones'
     if (suffix.startsWith('/glossary')) return 'Glossary'
+    if (suffix.startsWith('/maps')) return 'Maps'
     if (suffix.startsWith('/settings')) return 'Settings'
     return 'Overview'
   }

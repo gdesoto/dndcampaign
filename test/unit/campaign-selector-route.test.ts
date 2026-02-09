@@ -22,6 +22,12 @@ describe('resolveCampaignSelectorRoute', () => {
     )
   })
 
+  it('keeps maps section when switching campaigns', () => {
+    expect(resolveCampaignSelectorRoute('/campaigns/abc/maps', 'abc', 'xyz')).toBe(
+      '/campaigns/xyz/maps'
+    )
+  })
+
   it('falls back to target overview for unknown suffixes', () => {
     expect(resolveCampaignSelectorRoute('/campaigns/abc/unknown/path', 'abc', 'xyz')).toBe(
       '/campaigns/xyz'

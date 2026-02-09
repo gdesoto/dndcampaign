@@ -45,6 +45,7 @@ model Campaign {
   documents     Document[]
   characters    CampaignCharacter[]
   summaryJobs   SummaryJob[]
+  maps          CampaignMap[]
 
   @@index([ownerId])
 }
@@ -88,8 +89,132 @@ model GlossaryEntry {
   updatedAt   DateTime @updatedAt
   sessions    GlossarySessionLink[]
   campaignCharacters CampaignCharacter[]
+  sourceMapId String?
+  sourceMapFeatureId String?
+  sourceMap   CampaignMap? @relation("GlossaryEntrySourceMap", fields: [sourceMapId], references: [id], onDelete: SetNull)
+  sourceMapFeature CampaignMapFeature? @relation("GlossaryEntrySourceFeature", fields: [sourceMapFeatureId], references: [id], onDelete: SetNull)
+  mapLinks    CampaignMapGlossaryLink[]
 
   @@index([campaignId, type])
+  @@index([sourceMapId])
+  @@index([sourceMapFeatureId])
+}
+
+enum CampaignMapStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum CampaignMapSourceType {
+  AZGAAR_FULL_JSON
+}
+
+enum CampaignMapFileKind {
+  FULL_JSON
+  SVG
+  GEOJSON_MARKERS
+  GEOJSON_RIVERS
+  GEOJSON_ROUTES
+  GEOJSON_CELLS
+}
+
+enum CampaignMapFeatureType {
+  STATE
+  PROVINCE
+  BURG
+  MARKER
+  RIVER
+  ROUTE
+  CELL
+}
+
+enum CampaignMapGlossaryLinkType {
+  LINKED
+  MERGED
+}
+
+model CampaignMap {
+  id                String               @id @default(uuid())
+  campaignId        String
+  campaign          Campaign             @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  name              String
+  slug              String
+  isPrimary         Boolean              @default(false)
+  status            CampaignMapStatus    @default(ACTIVE)
+  sourceType        CampaignMapSourceType @default(AZGAAR_FULL_JSON)
+  createdById       String
+  rawManifestJson   Json?
+  importVersion     Int                  @default(1)
+  sourceFingerprint String
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  files             CampaignMapFile[]
+  features          CampaignMapFeature[]
+  glossaryLinks     CampaignMapGlossaryLink[]
+  sourceGlossaryEntries GlossaryEntry[]  @relation("GlossaryEntrySourceMap")
+
+  @@index([campaignId])
+  @@index([campaignId, isPrimary])
+  @@unique([campaignId, slug])
+}
+
+model CampaignMapFile {
+  id              String             @id @default(uuid())
+  campaignMapId   String
+  campaignMap     CampaignMap        @relation(fields: [campaignMapId], references: [id], onDelete: Cascade)
+  kind            CampaignMapFileKind
+  storageProvider StorageProvider
+  storageKey      String
+  contentType     String
+  sizeBytes       Int
+  checksum        String?
+  createdAt       DateTime           @default(now())
+
+  @@index([campaignMapId])
+  @@index([kind])
+}
+
+model CampaignMapFeature {
+  id             String                @id @default(uuid())
+  campaignMapId  String
+  campaignMap    CampaignMap           @relation(fields: [campaignMapId], references: [id], onDelete: Cascade)
+  externalId     String
+  featureType    CampaignMapFeatureType
+  name           String
+  displayName    String
+  normalizedName String
+  description    String?
+  geometryType   String
+  geometryJson   Json
+  propertiesJson Json?
+  sourceRef      String
+  isActive       Boolean               @default(true)
+  removed        Boolean               @default(false)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  glossaryLinks  CampaignMapGlossaryLink[]
+  sourceGlossaryEntries GlossaryEntry[] @relation("GlossaryEntrySourceFeature")
+
+  @@index([campaignMapId])
+  @@index([campaignMapId, featureType])
+  @@index([campaignMapId, normalizedName])
+  @@unique([campaignMapId, featureType, externalId])
+}
+
+model CampaignMapGlossaryLink {
+  id             String                    @id @default(uuid())
+  campaignMapId  String
+  campaignMap    CampaignMap               @relation(fields: [campaignMapId], references: [id], onDelete: Cascade)
+  mapFeatureId   String
+  mapFeature     CampaignMapFeature        @relation(fields: [mapFeatureId], references: [id], onDelete: Cascade)
+  glossaryEntryId String
+  glossaryEntry  GlossaryEntry             @relation(fields: [glossaryEntryId], references: [id], onDelete: Cascade)
+  linkType       CampaignMapGlossaryLinkType
+  createdAt      DateTime                  @default(now())
+
+  @@unique([mapFeatureId, glossaryEntryId])
+  @@index([campaignMapId])
+  @@index([glossaryEntryId])
 }
 
 model GlossarySessionLink {
@@ -109,6 +234,12 @@ enum QuestStatus {
   COMPLETED
   FAILED
   ON_HOLD
+}
+
+enum QuestType {
+  MAIN
+  SIDE
+  PLAYER
 }
 
 enum StorageProvider {
@@ -251,6 +382,7 @@ model Quest {
   campaign      Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   title         String
   description   String?
+  type          QuestType   @default(SIDE)
   status        QuestStatus @default(ACTIVE)
   progressNotes String?
   sortOrder     Int         @default(0)

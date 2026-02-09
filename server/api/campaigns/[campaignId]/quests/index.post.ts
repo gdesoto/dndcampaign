@@ -27,6 +27,7 @@ export default defineEventHandler(async (event) => {
       campaignId,
       title: parsed.data.title,
       description: parsed.data.description,
+      type: parsed.data.type,
       status: parsed.data.status,
       progressNotes: parsed.data.progressNotes,
     },

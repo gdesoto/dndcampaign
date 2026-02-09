@@ -42,6 +42,9 @@ describe('useCampaignNavigation', () => {
     route.path = '/campaigns/c1/glossary'
     expect(navigation.sectionTitle.value).toBe('Glossary')
 
+    route.path = '/campaigns/c1/maps'
+    expect(navigation.sectionTitle.value).toBe('Maps')
+
     route.path = '/campaigns/c1/settings'
     expect(navigation.sectionTitle.value).toBe('Settings')
 

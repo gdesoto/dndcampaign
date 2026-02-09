@@ -10,8 +10,8 @@ describe('useCampaignOverviewMetrics', () => {
       { id: 's2', title: 'Two', sessionNumber: 2, playedAt: '2026-02-01T00:00:00.000Z', createdAt: '2026-02-01T00:00:00.000Z' },
     ])
     const quests = ref([
-      { id: 'q1', title: 'Q1', status: 'ACTIVE' as const, updatedAt: '2026-02-02T00:00:00.000Z' },
-      { id: 'q2', title: 'Q2', status: 'FAILED' as const, updatedAt: '2026-01-15T00:00:00.000Z' },
+      { id: 'q1', title: 'Q1', type: 'MAIN' as const, status: 'ACTIVE' as const, updatedAt: '2026-02-02T00:00:00.000Z' },
+      { id: 'q2', title: 'Q2', type: 'SIDE' as const, status: 'FAILED' as const, updatedAt: '2026-01-15T00:00:00.000Z' },
     ])
     const milestones = ref([
       { id: 'm1', title: 'M1', isComplete: false, createdAt: '2026-01-10T00:00:00.000Z' },
@@ -47,7 +47,7 @@ describe('useCampaignActivityItems', () => {
       { id: 's2', title: 'S2', sessionNumber: 2, playedAt: '2026-02-01T00:00:00.000Z', createdAt: '2026-02-01T00:00:00.000Z' },
     ])
     const quests = ref([
-      { id: 'q1', title: 'Quest', updatedAt: '2026-01-31T00:00:00.000Z' },
+      { id: 'q1', title: 'Quest', type: 'PLAYER' as const, status: 'ON_HOLD' as const, updatedAt: '2026-01-31T00:00:00.000Z' },
     ])
     const milestones = ref([
       { id: 'm1', title: 'Milestone', isComplete: true, completedAt: '2026-01-30T00:00:00.000Z' },

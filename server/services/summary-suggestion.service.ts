@@ -1,5 +1,5 @@
 import { prisma } from '#server/db/prisma'
-import type { GlossaryType } from '@prisma/client'
+import type { GlossaryType, QuestType } from '@prisma/client'
 
 type ApplyResult = {
   suggestionId: string
@@ -41,6 +41,15 @@ const parseDate = (value?: unknown) => {
     return Number.isNaN(parsed.getTime()) ? null : parsed
   }
   return null
+}
+
+const normalizeQuestType = (value?: unknown): QuestType | undefined => {
+  if (typeof value !== 'string') return undefined
+  const normalized = value.toUpperCase()
+  if (normalized === 'MAIN' || normalized === 'SIDE' || normalized === 'PLAYER') {
+    return normalized as QuestType
+  }
+  return undefined
 }
 
 const hasPendingSuggestions = async (summaryJobId: string) => {
@@ -151,6 +160,7 @@ export class SummarySuggestionService {
           data: {
             title: payload.title as string | undefined,
             description: payload.description as string | undefined,
+            type: normalizeQuestType(payload.type),
             status: payload.status as 'ACTIVE' | 'COMPLETED' | 'FAILED' | 'ON_HOLD' | undefined,
             progressNotes: payload.progressNotes as string | undefined,
           },
@@ -173,6 +183,7 @@ export class SummarySuggestionService {
           campaignId: suggestion.summaryJob.campaignId,
           title: String(payload.title || 'New quest'),
           description: payload.description as string | undefined,
+          type: normalizeQuestType(payload.type),
           status: payload.status as 'ACTIVE' | 'COMPLETED' | 'FAILED' | 'ON_HOLD' | undefined,
           progressNotes: payload.progressNotes as string | undefined,
         },
