@@ -157,13 +157,14 @@ const validateN8nResponse = (response: unknown): ValidationResult => {
     }
   }
 
-  if (!('summaryContent' in response)) {
-    errors.push('summaryContent is required')
-  } else {
+  if ('summaryContent' in response) {
     validateSummaryContent(response.summaryContent, errors, warnings)
   }
 
   validateSuggestions(response.suggestions, warnings)
+  if (!('summaryContent' in response) && !('suggestions' in response)) {
+    errors.push('summaryContent or suggestions is required')
+  }
   if (isRecord(response.suggestions) && response.suggestions.session) {
     const sessionSuggestion = response.suggestions.session
     if (!isRecord(sessionSuggestion)) {

@@ -402,6 +402,25 @@ export class MapService {
       where: { campaignMapId: mapId },
       orderBy: [{ featureType: 'asc' }, { displayName: 'asc' }],
     })
+    const glossaryLinks = await prisma.campaignMapGlossaryLink.findMany({
+      where: { campaignMapId: mapId },
+      select: { mapFeatureId: true },
+    })
+    const glossaryEntries = await prisma.glossaryEntry.findMany({
+      where: { campaignId: map.campaignId },
+      select: {
+        id: true,
+        type: true,
+        name: true,
+        sourceMapFeatureId: true,
+      },
+    })
+
+    const linkedFeatureIds = new Set(glossaryLinks.map((entry) => entry.mapFeatureId))
+    const normalizedGlossary = glossaryEntries.map((entry) => ({
+      ...entry,
+      normalizedName: normalizeMapName(entry.name),
+    }))
 
     const manifest = (map.rawManifestJson || {}) as Record<string, unknown>
     const bounds =
@@ -423,21 +442,34 @@ export class MapService {
         mapCoordinates,
         defaultActiveLayers: [...defaultMapLayerTypes],
       },
-      features: features.map((feature) => ({
-        id: feature.id,
-        type: 'Feature',
-        geometry: feature.geometryJson as { type: string; coordinates: unknown },
-        properties: {
-          mapFeatureId: feature.id,
-          featureType: featureTypeFromDb(feature.featureType),
-          displayName: feature.displayName,
-          description: feature.description,
-          externalId: feature.externalId,
-          removed: feature.removed,
-          sourceRef: feature.sourceRef,
-          ...(feature.propertiesJson as Record<string, unknown> | null | undefined),
-        },
-      })),
+      features: features.map((feature) => {
+        const glossaryLinked = linkedFeatureIds.has(feature.id)
+        const glossaryMatched =
+          !glossaryLinked &&
+          buildGlossaryConflictCandidates(normalizedGlossary, {
+            id: feature.id,
+            normalizedName: feature.normalizedName,
+          }).length > 0
+
+        return {
+          id: feature.id,
+          type: 'Feature',
+          geometry: feature.geometryJson as { type: string; coordinates: unknown },
+          properties: {
+            mapFeatureId: feature.id,
+            featureType: featureTypeFromDb(feature.featureType),
+            displayName: feature.displayName,
+            description: feature.description,
+            externalId: feature.externalId,
+            removed: feature.removed,
+            sourceRef: feature.sourceRef,
+            glossaryLinked,
+            glossaryMatched,
+            glossaryLinkedOrMatched: glossaryLinked || glossaryMatched,
+            ...(feature.propertiesJson as Record<string, unknown> | null | undefined),
+          },
+        }
+      }),
     }
   }
 

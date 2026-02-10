@@ -1,7 +1,4 @@
 import type { Ref } from 'vue'
-import type {
-  SessionSummarySuggestion,
-} from '#shared/types/session-workflow'
 
 type UseSessionSummaryJobsOptions = {
   sessionId: Ref<string>
@@ -18,18 +15,15 @@ export function useSessionSummaryJobs(options: UseSessionSummaryJobsOptions) {
   const {
     selectedSummaryJobId,
     summaryJob,
-    summarySuggestions,
     summaryJobHistory,
     summaryJobOptions,
     refreshSummaryJob,
     refreshSelectedSummaryJob,
   } = useSummaryJobState({
     sessionId: options.sessionId,
+    jobKind: 'SUMMARY_GENERATION',
+    keyPrefix: 'summary',
   })
-
-  const sessionSuggestion = computed(() =>
-    summarySuggestions.value.find((suggestion) => suggestion.entityType === 'SESSION') || null
-  )
 
   const summaryHighlights = computed(() => {
     const meta = summaryJob.value?.meta as Record<string, unknown> | undefined
@@ -110,16 +104,6 @@ export function useSessionSummaryJobs(options: UseSessionSummaryJobsOptions) {
     }
   })
 
-  const summarySuggestionGroups = computed(() => {
-    const groups: Record<string, SessionSummarySuggestion[]> = {}
-    for (const suggestion of summarySuggestions.value) {
-      const key = suggestion.entityType
-      if (!groups[key]) groups[key] = []
-      groups[key].push(suggestion)
-    }
-    return Object.entries(groups).map(([label, items]) => ({ label, items }))
-  })
-
   const sendSummaryToN8n = async () => {
     if (!options.transcriptDoc.value) {
       summarySendError.value = 'Transcript is required to generate a summary.'
@@ -141,34 +125,6 @@ export function useSessionSummaryJobs(options: UseSessionSummaryJobsOptions) {
         (error as Error & { message?: string }).message || 'Unable to send summary to n8n.'
     } finally {
       summarySending.value = false
-    }
-  }
-
-  const applySummarySuggestion = async (suggestionId: string) => {
-    summaryActionError.value = ''
-    try {
-      await request(`/api/summary-suggestions/${suggestionId}/apply`, {
-        method: 'POST',
-      })
-      await refreshSummaryJob()
-      await refreshSelectedSummaryJob()
-    } catch (error) {
-      summaryActionError.value =
-        (error as Error & { message?: string }).message || 'Unable to apply suggestion.'
-    }
-  }
-
-  const discardSummarySuggestion = async (suggestionId: string) => {
-    summaryActionError.value = ''
-    try {
-      await request(`/api/summary-suggestions/${suggestionId}/discard`, {
-        method: 'POST',
-      })
-      await refreshSummaryJob()
-      await refreshSelectedSummaryJob()
-    } catch (error) {
-      summaryActionError.value =
-        (error as Error & { message?: string }).message || 'Unable to discard suggestion.'
     }
   }
 
@@ -194,9 +150,7 @@ export function useSessionSummaryJobs(options: UseSessionSummaryJobsOptions) {
     summaryActionError,
     selectedSummaryJobId,
     summaryJob,
-    summarySuggestions,
     summaryJobHistory,
-    sessionSuggestion,
     summaryJobOptions,
     summaryHighlights,
     summaryPendingText,
@@ -205,11 +159,8 @@ export function useSessionSummaryJobs(options: UseSessionSummaryJobsOptions) {
     summaryConcreteFacts,
     summaryStatusLabel,
     summaryStatusColor,
-    summarySuggestionGroups,
     refreshSummaryJob,
     sendSummaryToN8n,
-    applySummarySuggestion,
-    discardSummarySuggestion,
     applyPendingSummary,
   }
 }

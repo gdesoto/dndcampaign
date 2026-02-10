@@ -18,6 +18,7 @@ export default defineEventHandler(async (event) => {
     id: job.id,
     status: job.status,
     mode: job.mode,
+    kind: job.kind,
     trackingId: job.trackingId,
     promptProfile: job.promptProfile,
     summaryDocumentId: job.summaryDocumentId,

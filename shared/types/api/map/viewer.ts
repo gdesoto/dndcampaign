@@ -23,6 +23,9 @@ export type ViewerGeoJsonFeature = {
     externalId: string
     removed: boolean
     sourceRef: string
+    glossaryLinked?: boolean
+    glossaryMatched?: boolean
+    glossaryLinkedOrMatched?: boolean
     [key: string]: unknown
   }
 }

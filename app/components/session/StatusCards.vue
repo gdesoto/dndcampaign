@@ -1,10 +1,11 @@
 <script setup lang="ts">
-type WorkflowStep = 'recordings' | 'transcription' | 'summary' | 'recap'
+type WorkflowStep = 'recordings' | 'transcription' | 'summary' | 'suggestions' | 'recap'
 
 const props = defineProps<{
   recordingsCount: number
   transcriptStatus: string
   summaryStatus: string
+  suggestionStatus?: string
   recapStatus: string
   mode: 'overview' | 'workflow'
   activeStep: string
@@ -32,6 +33,12 @@ const statusCards = computed(() => [
     label: 'Summary',
     value: props.summaryStatus,
     hint: props.summaryStatus === 'Available' ? 'Capture key beats.' : 'Generate summary.',
+  },
+  {
+    id: 'suggestions' as const,
+    label: 'Suggestions',
+    value: props.suggestionStatus || 'Not started',
+    hint: props.suggestionStatus === 'Ready for review' ? 'Review changes.' : 'Generate suggestions.',
   },
   {
     id: 'recap' as const,
@@ -70,7 +77,7 @@ const statusCards = computed(() => [
     </div>
   </UCard>
 
-  <div class="hidden gap-4 sm:grid md:grid-cols-2 xl:grid-cols-4">
+  <div class="hidden gap-4 sm:grid md:grid-cols-2 xl:grid-cols-5">
     <UCard
       v-for="card in statusCards"
       :key="card.id"

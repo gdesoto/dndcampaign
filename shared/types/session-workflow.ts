@@ -51,6 +51,7 @@ export type SessionSummaryJob = {
   id: string
   status: string
   mode: string
+  kind: 'SUMMARY_GENERATION' | 'SUGGESTION_GENERATION'
   trackingId: string
   promptProfile?: string | null
   summaryDocumentId?: string | null
@@ -72,6 +73,7 @@ export type SessionSummaryJobListItem = {
   id: string
   status: string
   mode: string
+  kind: 'SUMMARY_GENERATION' | 'SUGGESTION_GENERATION'
   trackingId: string
   summaryDocumentId?: string | null
   createdAt: string
@@ -80,7 +82,11 @@ export type SessionSummaryJobListItem = {
 
 export type SessionSummaryJobResponse = {
   job: SessionSummaryJob | null
+  latestSummaryJob: SessionSummaryJob | null
+  latestSuggestionJob: SessionSummaryJob | null
   suggestions: SessionSummarySuggestion[]
+  latestSummarySuggestions: SessionSummarySuggestion[]
+  latestSuggestionSuggestions: SessionSummarySuggestion[]
   jobs: SessionSummaryJobListItem[]
 }
 

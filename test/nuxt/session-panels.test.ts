@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import StatusCards from '../../app/components/session/StatusCards.vue'
 import SummaryPanel from '../../app/components/session/SummaryPanel.vue'
+import SuggestionsPanel from '../../app/components/session/SuggestionsPanel.vue'
 import RecapPanel from '../../app/components/session/RecapPanel.vue'
 import TranscriptPanel from '../../app/components/session/TranscriptPanel.vue'
 
@@ -18,6 +19,7 @@ describe('SessionStatusCards', () => {
         recordingsCount: 1,
         transcriptStatus: 'Available',
         summaryStatus: 'Available',
+        suggestionStatus: 'Ready for review',
         recapStatus: 'Attached',
         mode: 'workflow',
         activeStep: 'recordings',
@@ -55,8 +57,6 @@ describe('SessionSummaryPanel', () => {
         summarySessionTags: [],
         summaryNotableDialogue: [],
         summaryConcreteFacts: [],
-        summarySuggestionGroups: [],
-        sessionSuggestion: null,
         summarySendError: '',
         summaryActionError: '',
         summaryContent: 'abc',
@@ -74,6 +74,28 @@ describe('SessionSummaryPanel', () => {
 
     expect(wrapper.emitted('send-to-n8n')).toBeTruthy()
     expect(wrapper.emitted('save-summary')).toBeTruthy()
+  })
+})
+
+describe('SessionSuggestionsPanel', () => {
+  it('emits generation and review actions', async () => {
+    const wrapper = await mountSuspended(SuggestionsPanel, {
+      props: {
+        selectedSuggestionJobId: '',
+        suggestionJobOptions: [],
+        suggestionSending: false,
+        hasSummary: true,
+        suggestionStatusColor: 'primary',
+        suggestionStatusLabel: 'Ready',
+        suggestionGroups: [],
+        sessionSuggestion: null,
+        suggestionSendError: '',
+        suggestionActionError: '',
+      },
+    })
+
+    await clickByText(wrapper, 'Generate suggestions')
+    expect(wrapper.emitted('generate-suggestions')).toBeTruthy()
   })
 })
 

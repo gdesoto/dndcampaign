@@ -45,7 +45,14 @@ const props = defineProps<{
   summarySessionTags: unknown[]
   summaryNotableDialogue: unknown[]
   summaryConcreteFacts: unknown[]
-  summarySuggestionGroups: Array<{
+  hasSummary: boolean
+  selectedSuggestionJobId: string
+  suggestionJobOptions: Array<{ label: string; value: string }>
+  suggestionSending: boolean
+  suggestionStatusColor: string
+  suggestionStatusLabel: string
+  suggestionTrackingId?: string
+  suggestionGroups: Array<{
     label: string
     items: Array<{
       id: string
@@ -64,6 +71,8 @@ const props = defineProps<{
   } | null
   summarySendError: string
   summaryActionError: string
+  suggestionSendError: string
+  suggestionActionError: string
   summaryContent: string
   summarySaving: boolean
   summaryDocId?: string
@@ -98,7 +107,10 @@ const emit = defineEmits<{
   'refresh-jobs': []
   'send-to-n8n': []
   'apply-pending-summary': []
-  'apply-suggestion': [suggestionId: string]
+  'update:selectedSuggestionJobId': [value: string]
+  'refresh-suggestion-jobs': []
+  'generate-suggestions': []
+  'apply-suggestion': [input: { suggestionId: string; payload: Record<string, unknown> }]
   'discard-suggestion': [suggestionId: string]
   'update:summaryContent': [value: string]
   'save-summary': []
@@ -226,8 +238,6 @@ const returnToPath = computed(
         :summary-session-tags="summarySessionTags"
         :summary-notable-dialogue="summaryNotableDialogue"
         :summary-concrete-facts="summaryConcreteFacts"
-        :summary-suggestion-groups="summarySuggestionGroups"
-        :session-suggestion="sessionSuggestion"
         :summary-send-error="summarySendError"
         :summary-action-error="summaryActionError"
         :summary-content="summaryContent"
@@ -241,12 +251,31 @@ const returnToPath = computed(
         @refresh-jobs="emit('refresh-jobs')"
         @send-to-n8n="emit('send-to-n8n')"
         @apply-pending-summary="emit('apply-pending-summary')"
-        @apply-suggestion="emit('apply-suggestion', $event)"
-        @discard-suggestion="emit('discard-suggestion', $event)"
         @update:summary-content="emit('update:summaryContent', $event)"
         @save-summary="emit('save-summary')"
         @update:summary-file="emit('update:summaryFile', $event)"
         @import-summary="emit('import-summary')"
+      />
+    </div>
+
+    <div v-else-if="currentStep === 'suggestions'" class="space-y-4">
+      <SessionSuggestionsPanel
+        :selected-suggestion-job-id="selectedSuggestionJobId"
+        :suggestion-job-options="suggestionJobOptions"
+        :suggestion-sending="suggestionSending"
+        :has-summary="hasSummary"
+        :suggestion-status-color="suggestionStatusColor"
+        :suggestion-status-label="suggestionStatusLabel"
+        :suggestion-tracking-id="suggestionTrackingId"
+        :suggestion-groups="suggestionGroups"
+        :session-suggestion="sessionSuggestion"
+        :suggestion-send-error="suggestionSendError"
+        :suggestion-action-error="suggestionActionError"
+        @update:selected-suggestion-job-id="emit('update:selectedSuggestionJobId', $event)"
+        @refresh-jobs="emit('refresh-suggestion-jobs')"
+        @generate-suggestions="emit('generate-suggestions')"
+        @apply-suggestion="emit('apply-suggestion', $event)"
+        @discard-suggestion="emit('discard-suggestion', $event)"
       />
     </div>
 

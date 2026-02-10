@@ -60,7 +60,11 @@ const hasPendingSuggestions = async (summaryJobId: string) => {
 }
 
 export class SummarySuggestionService {
-  async applySuggestion(userId: string, suggestionId: string): Promise<ApplyResult | null> {
+  async applySuggestion(
+    userId: string,
+    suggestionId: string,
+    payloadOverride?: Record<string, unknown>
+  ): Promise<ApplyResult | null> {
     const suggestion = await prisma.summarySuggestion.findFirst({
       where: {
         id: suggestionId,
@@ -96,7 +100,13 @@ export class SummarySuggestionService {
       return { suggestionId: suggestion.id, status: 'DISCARDED', entityType: suggestion.entityType }
     }
 
-    const payload = suggestion.payload as Record<string, unknown>
+    const payload = payloadOverride || (suggestion.payload as Record<string, unknown>)
+    if (payloadOverride) {
+      await prisma.summarySuggestion.update({
+        where: { id: suggestion.id },
+        data: { payload: payloadOverride },
+      })
+    }
     const match = (suggestion.match || {}) as Record<string, unknown>
 
     if (suggestion.entityType === 'SESSION') {

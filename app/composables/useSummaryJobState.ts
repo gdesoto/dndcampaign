@@ -7,6 +7,8 @@ import type {
 
 type UseSummaryJobStateOptions = {
   sessionId: Ref<string>
+  jobKind: 'SUMMARY_GENERATION' | 'SUGGESTION_GENERATION'
+  keyPrefix: string
 }
 
 export function useSummaryJobState(options: UseSummaryJobStateOptions) {
@@ -15,12 +17,12 @@ export function useSummaryJobState(options: UseSummaryJobStateOptions) {
   const selectedSummaryJobId = ref('')
 
   const { data: summaryJobData, refresh: refreshSummaryJob } = useAsyncData(
-    () => `summary-job-${options.sessionId.value}`,
+    () => `${options.keyPrefix}-summary-job-${options.sessionId.value}`,
     () => request<SessionSummaryJobResponse>(`/api/sessions/${options.sessionId.value}/summary-jobs`)
   )
 
   const { data: selectedSummaryJobData, refresh: refreshSelectedSummaryJob } = useAsyncData(
-    () => `summary-job-detail-${selectedSummaryJobId.value || 'latest'}`,
+    () => `${options.keyPrefix}-summary-job-detail-${selectedSummaryJobId.value || 'latest'}`,
     () => {
       if (!selectedSummaryJobId.value) return Promise.resolve(null)
       return request<SessionSummaryJobDetail>(`/api/summary-jobs/${selectedSummaryJobId.value}`)
@@ -28,21 +30,33 @@ export function useSummaryJobState(options: UseSummaryJobStateOptions) {
     { immediate: false }
   )
 
+  const defaultJobForKind = computed(() => {
+    if (options.jobKind === 'SUMMARY_GENERATION') {
+      return summaryJobData.value?.latestSummaryJob || null
+    }
+    return summaryJobData.value?.latestSuggestionJob || null
+  })
+
   const summaryJob = computed(() => {
     if (selectedSummaryJobId.value && selectedSummaryJobData.value) {
       return selectedSummaryJobData.value
     }
-    return summaryJobData.value?.job || null
+    return defaultJobForKind.value
   })
 
   const summarySuggestions = computed<SessionSummarySuggestion[]>(() => {
     if (selectedSummaryJobId.value && selectedSummaryJobData.value) {
       return selectedSummaryJobData.value.suggestions || []
     }
-    return summaryJobData.value?.suggestions || []
+    if (options.jobKind === 'SUMMARY_GENERATION') {
+      return summaryJobData.value?.latestSummarySuggestions || []
+    }
+    return summaryJobData.value?.latestSuggestionSuggestions || []
   })
 
-  const summaryJobHistory = computed(() => summaryJobData.value?.jobs || [])
+  const summaryJobHistory = computed(() =>
+    (summaryJobData.value?.jobs || []).filter((job) => job.kind === options.jobKind)
+  )
 
   const summaryJobOptions = computed(() =>
     summaryJobHistory.value.map((job) => {
@@ -55,7 +69,7 @@ export function useSummaryJobState(options: UseSummaryJobStateOptions) {
   )
 
   watch(
-    () => summaryJobData.value?.job?.id,
+    () => defaultJobForKind.value?.id,
     (value) => {
       if (!selectedSummaryJobId.value && value) {
         selectedSummaryJobId.value = value

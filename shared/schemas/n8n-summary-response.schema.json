@@ -2,9 +2,19 @@
   "type": "object",
   "description": "Response payload sent from n8n to the app webhook after summarization.",
   "required": [
-    "trackingId",
-    "summaryContent",
-    "suggestions"
+    "trackingId"
+  ],
+  "anyOf": [
+    {
+      "required": [
+        "summaryContent"
+      ]
+    },
+    {
+      "required": [
+        "suggestions"
+      ]
+    }
   ],
   "properties": {
     "trackingId": {
@@ -62,12 +72,6 @@
     "suggestions": {
       "type": "object",
       "description": "Structured suggestions to apply to the campaign/session.",
-      "required": [
-        "session",
-        "quests",
-        "milestone",
-        "glossary"
-      ],
       "properties": {
         "session": {
           "type": "object",

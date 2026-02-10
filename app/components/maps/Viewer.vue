@@ -6,6 +6,7 @@ const props = defineProps<{
   svgBackgroundUrl?: string
   activeLayers: MapFeatureType[]
   selectedFeatureIds: string[]
+  glossaryPointsOnly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -16,6 +17,8 @@ const emit = defineEmits<{
 const containerRef = ref<HTMLElement | null>(null)
 const isReady = ref(false)
 const mapError = ref('')
+const svgRasterCache = new Map<number, string>()
+const svgRasterScale = ref(1)
 
 type MapLike = {
   remove: () => void
@@ -25,6 +28,7 @@ type MapLike = {
   getLayer: (id: string) => unknown
   getSource: (id: string) => { setData: (data: unknown) => void } | undefined
   setLayoutProperty: (id: string, name: string, value: unknown) => void
+  setFilter: (id: string, filter: unknown) => void
   on: (event: string, callback: (...args: any[]) => void) => void
   queryRenderedFeatures: (point: unknown, options?: unknown) => Array<{ properties?: Record<string, unknown> }>
   fitBounds: (...args: any[]) => void
@@ -48,7 +52,7 @@ const loadImage = (src: string) =>
     image.src = src
   })
 
-const buildRasterBackgroundDataUrl = async (sourceUrl: string) => {
+const buildRasterBackgroundDataUrl = async (sourceUrl: string, scale = 1) => {
   const response = await fetch(sourceUrl, { credentials: 'include' })
   if (!response.ok) {
     throw new Error(`Unable to fetch SVG background (${response.status})`)
@@ -63,8 +67,10 @@ const buildRasterBackgroundDataUrl = async (sourceUrl: string) => {
   const svgBlobUrl = URL.createObjectURL(blob)
   try {
     const image = await loadImage(svgBlobUrl)
-    const width = Math.max(Math.round(image.naturalWidth || image.width || 1920), 1)
-    const height = Math.max(Math.round(image.naturalHeight || image.height || 1080), 1)
+    const baseWidth = Math.max(Math.round(image.naturalWidth || image.width || 1920), 1)
+    const baseHeight = Math.max(Math.round(image.naturalHeight || image.height || 1080), 1)
+    const width = Math.max(Math.round(baseWidth * scale), 1)
+    const height = Math.max(Math.round(baseHeight * scale), 1)
     const canvas = document.createElement('canvas')
     canvas.width = width
     canvas.height = height
@@ -127,6 +133,13 @@ const fitBoundsCoverAndLock = (map: MapLike, bounds: [[number, number], [number,
   map.setMinZoom(Math.max(0, map.getZoom()))
 }
 
+const rasterScaleForZoom = (zoom: number) => {
+  if (zoom >= 7) return 4
+  if (zoom >= 5) return 3
+  if (zoom >= 3) return 2
+  return 1
+}
+
 const svgImageCoordinates = computed(() => {
   const coords = props.viewer?.map.mapCoordinates
   if (!props.svgBackgroundUrl) return null
@@ -149,10 +162,33 @@ const svgImageCoordinates = computed(() => {
   ] as [[number, number], [number, number], [number, number], [number, number]]
 })
 
+const ensureSvgBackgroundForZoom = async (map: MapLike) => {
+  if (!props.svgBackgroundUrl || !svgImageCoordinates.value) return
+  const nextScale = rasterScaleForZoom(map.getZoom())
+  if (svgRasterScale.value === nextScale) return
+
+  let rasterUrl = svgRasterCache.get(nextScale)
+  if (!rasterUrl) {
+    rasterUrl = await buildRasterBackgroundDataUrl(props.svgBackgroundUrl, nextScale)
+    svgRasterCache.set(nextScale, rasterUrl)
+  }
+
+  const source = map.getSource('campaign-map-svg') as unknown as
+    | { updateImage?: (payload: { url: string; coordinates: [[number, number], [number, number], [number, number], [number, number]] }) => void }
+    | undefined
+  if (source?.updateImage) {
+    source.updateImage({
+      url: rasterUrl,
+      coordinates: svgImageCoordinates.value,
+    })
+    svgRasterScale.value = nextScale
+  }
+}
+
 const layerIdsByType: Record<MapFeatureType, string[]> = {
   state: ['map-state-fill', 'map-state-line'],
   province: ['map-province-fill', 'map-province-line'],
-  burg: ['map-burg-point'],
+  burg: ['map-burg-capital', 'map-burg-major', 'map-burg-minor'],
   marker: ['map-marker-point'],
   river: ['map-river-line'],
   route: ['map-route-line'],
@@ -161,11 +197,88 @@ const layerIdsByType: Record<MapFeatureType, string[]> = {
 
 const interactiveLayerIds = Object.values(layerIdsByType).flat()
 
+const toNumber = (value: unknown, fallback = 0) =>
+  typeof value === 'number' && Number.isFinite(value) ? value : fallback
+
+const burgPopulationThresholds = computed(() => {
+  const burgs = allFeatures.value
+    .filter((feature) => feature.properties.featureType === 'burg')
+    .map((feature) => toNumber(feature.properties.population, 0))
+    .filter((value) => Number.isFinite(value))
+    .sort((a, b) => a - b)
+
+  if (!burgs.length) {
+    return {
+      major: 10,
+    }
+  }
+
+  const q90 = burgs[Math.floor((burgs.length - 1) * 0.9)] || 0
+  return {
+    major: Math.max(3, Number(q90.toFixed(2))),
+  }
+})
+
+const baseGlossaryFilter = (featureType: MapFeatureType) =>
+  props.glossaryPointsOnly
+    ? [
+        'all',
+        ['==', ['get', 'featureType'], featureType],
+        ['==', ['get', 'glossaryLinkedOrMatched'], true],
+      ]
+    : ['==', ['get', 'featureType'], featureType]
+
+const burgFilter = (bucket: 'capital' | 'major' | 'minor') => {
+  const withGlossary = baseGlossaryFilter('burg')
+  if (bucket === 'capital') {
+    return ['all', withGlossary, ['==', ['to-boolean', ['coalesce', ['get', 'capital'], false]], true]]
+  }
+  if (bucket === 'major') {
+    return [
+      'all',
+      withGlossary,
+      ['==', ['to-boolean', ['coalesce', ['get', 'capital'], false]], false],
+      ['>=', ['to-number', ['coalesce', ['get', 'population'], 0]], burgPopulationThresholds.value.major],
+    ]
+  }
+  return [
+    'all',
+    withGlossary,
+    ['==', ['to-boolean', ['coalesce', ['get', 'capital'], false]], false],
+    ['<', ['to-number', ['coalesce', ['get', 'population'], 0]], burgPopulationThresholds.value.major],
+  ]
+}
+
+const updateGlossaryFilters = () => {
+  const map = mapRef.value
+  if (!map) return
+  if (map.getLayer('map-state-fill')) {
+    map.setFilter('map-state-fill', baseGlossaryFilter('state'))
+  }
+  if (map.getLayer('map-state-line')) {
+    map.setFilter('map-state-line', baseGlossaryFilter('state'))
+  }
+  if (map.getLayer('map-burg-capital')) {
+    map.setFilter('map-burg-capital', burgFilter('capital'))
+  }
+  if (map.getLayer('map-burg-major')) {
+    map.setFilter('map-burg-major', burgFilter('major'))
+  }
+  if (map.getLayer('map-burg-minor')) {
+    map.setFilter('map-burg-minor', burgFilter('minor'))
+  }
+  if (map.getLayer('map-marker-point')) {
+    map.setFilter('map-marker-point', baseGlossaryFilter('marker'))
+  }
+}
+
 const updateLayerVisibility = () => {
   const map = mapRef.value
   if (!map) return
   for (const [type, ids] of Object.entries(layerIdsByType) as Array<[MapFeatureType, string[]]>) {
-    const visible = props.activeLayers.includes(type)
+    const glossaryOnly = props.glossaryPointsOnly
+    const isGlossaryToggleType = type === 'state' || type === 'burg' || type === 'marker'
+    const visible = props.activeLayers.includes(type) && (!glossaryOnly || isGlossaryToggleType)
     for (const layerId of ids) {
       if (map.getLayer(layerId)) {
         map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none')
@@ -220,7 +333,10 @@ onMounted(async () => {
       if (props.svgBackgroundUrl && svgImageCoordinates.value) {
         let backgroundUrl = props.svgBackgroundUrl
         try {
-          backgroundUrl = await buildRasterBackgroundDataUrl(props.svgBackgroundUrl)
+          const initialScale = rasterScaleForZoom(map.getZoom())
+          backgroundUrl = await buildRasterBackgroundDataUrl(props.svgBackgroundUrl, initialScale)
+          svgRasterCache.set(initialScale, backgroundUrl)
+          svgRasterScale.value = initialScale
         } catch (error) {
           console.warn('Skipping SVG background layer:', error)
           backgroundUrl = ''
@@ -270,14 +386,14 @@ onMounted(async () => {
         id: 'map-state-fill',
         type: 'fill',
         source: 'campaign-map-features',
-        filter: ['==', ['get', 'featureType'], 'state'],
+        filter: baseGlossaryFilter('state'),
         paint: { 'fill-color': '#4a6752', 'fill-opacity': 0.18 },
       })
       map.addLayer({
         id: 'map-state-line',
         type: 'line',
         source: 'campaign-map-features',
-        filter: ['==', ['get', 'featureType'], 'state'],
+        filter: baseGlossaryFilter('state'),
         paint: { 'line-color': '#1f3b2d', 'line-width': 1.8 },
       })
       map.addLayer({
@@ -309,22 +425,48 @@ onMounted(async () => {
         paint: { 'line-color': '#6b4e30', 'line-width': 1.4, 'line-dasharray': [1, 1] },
       })
       map.addLayer({
-        id: 'map-burg-point',
+        id: 'map-burg-capital',
         type: 'circle',
         source: 'campaign-map-features',
-        filter: ['==', ['get', 'featureType'], 'burg'],
+        filter: burgFilter('capital'),
         paint: {
-          'circle-radius': 4.5,
+          'circle-radius': 5.3,
+          'circle-color': '#f7c25c',
+          'circle-stroke-color': '#2c231c',
+          'circle-stroke-width': 1.2,
+        },
+      })
+      map.addLayer({
+        id: 'map-burg-major',
+        type: 'circle',
+        source: 'campaign-map-features',
+        minzoom: 4,
+        filter: burgFilter('major'),
+        paint: {
+          'circle-radius': 4.7,
           'circle-color': '#f3a14b',
           'circle-stroke-color': '#2c231c',
           'circle-stroke-width': 1,
         },
       })
       map.addLayer({
+        id: 'map-burg-minor',
+        type: 'circle',
+        source: 'campaign-map-features',
+        minzoom: 7,
+        filter: burgFilter('minor'),
+        paint: {
+          'circle-radius': 3.8,
+          'circle-color': '#e58f3a',
+          'circle-stroke-color': '#2c231c',
+          'circle-stroke-width': 0.9,
+        },
+      })
+      map.addLayer({
         id: 'map-marker-point',
         type: 'circle',
         source: 'campaign-map-features',
-        filter: ['==', ['get', 'featureType'], 'marker'],
+        filter: baseGlossaryFilter('marker'),
         paint: {
           'circle-radius': 4.8,
           'circle-color': '#b63b2f',
@@ -410,7 +552,16 @@ onMounted(async () => {
         map.setMaxBounds(bounds)
         fitBoundsCoverAndLock(map, bounds)
       }
+      ensureSvgBackgroundForZoom(map).catch((error) => {
+        console.warn('Unable to refresh SVG raster for current zoom:', error)
+      })
+      map.on('zoomend', () => {
+        ensureSvgBackgroundForZoom(map).catch((error) => {
+          console.warn('Unable to refresh SVG raster for zoom tier:', error)
+        })
+      })
       updateLayerVisibility()
+      updateGlossaryFilters()
       updateSelectedSource()
       isReady.value = true
     })
@@ -429,11 +580,28 @@ watch(
 
 watch(sourceCollection, () => {
   updateSource()
+  updateGlossaryFilters()
 })
 
 watch(
   () => props.selectedFeatureIds,
   () => updateSelectedSource(),
+  { deep: true }
+)
+
+watch(
+  () => props.glossaryPointsOnly,
+  () => {
+    updateLayerVisibility()
+    updateGlossaryFilters()
+  }
+)
+
+watch(
+  burgPopulationThresholds,
+  () => {
+    updateGlossaryFilters()
+  },
   { deep: true }
 )
 
@@ -461,8 +629,12 @@ onBeforeUnmount(() => {
     />
     <div
       v-if="hoverState"
-      class="pointer-events-none fixed z-30 rounded-md border border-[var(--theme-panel-border)] bg-[var(--theme-card-bg)] px-3 py-2 text-xs shadow-xl"
-      :style="{ left: `${hoverState.x + 14}px`, top: `${hoverState.y + 14}px` }"
+      class="pointer-events-none fixed z-30 rounded-md border border-[var(--theme-panel-border)] px-3 py-2 text-xs shadow-xl"
+      :style="{
+        left: `${hoverState.x + 14}px`,
+        top: `${hoverState.y + 14}px`,
+        background: 'var(--theme-card-bg)',
+      }"
     >
       <p class="font-semibold text-default">{{ hoverState.name }}</p>
       <p class="uppercase tracking-[0.2em] text-dimmed">{{ hoverState.type }}</p>

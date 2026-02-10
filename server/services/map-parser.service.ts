@@ -391,6 +391,7 @@ export const parseAzgaarFullJson = (payload: Buffer): ParsedAzgaarMap => {
         culture: burg.culture,
         population: burg.population,
         type: burg.type,
+        capital: burg.capital,
       },
       sourceRef: `pack.burgs[${id}]`,
       removed: Boolean(burg.removed),

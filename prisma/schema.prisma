@@ -439,6 +439,11 @@ enum SummaryJobMode {
   ASYNC
 }
 
+enum SummaryJobKind {
+  SUMMARY_GENERATION
+  SUGGESTION_GENERATION
+}
+
 enum SummarySuggestionEntityType {
   SESSION
   QUEST
@@ -512,6 +517,7 @@ model SummaryJob {
   trackingId       String          @unique
   status           SummaryJobStatus
   mode             SummaryJobMode
+  kind             SummaryJobKind  @default(SUMMARY_GENERATION)
   promptProfile    String?
   webhookUrl       String?
   requestHash      String?
@@ -531,6 +537,8 @@ model SummaryJob {
   @@index([sessionId])
   @@index([documentId])
   @@index([status])
+  @@index([kind])
+  @@index([sessionId, kind, createdAt])
 }
 
 model SummarySuggestion {

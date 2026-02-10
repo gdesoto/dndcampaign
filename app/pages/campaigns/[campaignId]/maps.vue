@@ -195,6 +195,7 @@ const deleteMap = async (mapId: string) => {
 }
 
 const activeLayers = ref<MapFeatureType[]>(['state', 'marker', 'river', 'burg', 'route'])
+const glossaryPointsOnly = ref(false)
 const selectedFeatureIds = ref<string[]>([])
 const selectedFeatureLabels = computed(() => {
   const byId = new Map((viewer.value?.features || []).map((feature) => [feature.id, feature]))
@@ -434,6 +435,11 @@ const applyReimport = async () => {
             <div class="flex flex-wrap items-center justify-between gap-2">
               <h2 class="text-lg font-semibold">Map viewer</h2>
               <div class="flex flex-wrap items-center gap-2">
+                <UCheckbox
+                  v-model="glossaryPointsOnly"
+                  label="Show glossary features only"
+                  :disabled="!selectedMapId"
+                />
                 <UButton
                   size="sm"
                   :disabled="!selectedFeatureIds.length || !selectedMapId"
@@ -456,6 +462,7 @@ const applyReimport = async () => {
                 :svg-background-url="selectedMapHasSvg ? svgViewerUrl : ''"
                 :active-layers="activeLayers"
                 :selected-feature-ids="selectedFeatureIds"
+                :glossary-points-only="glossaryPointsOnly"
                 @update:selected-feature-ids="selectedFeatureIds = $event"
               />
             </ClientOnly>

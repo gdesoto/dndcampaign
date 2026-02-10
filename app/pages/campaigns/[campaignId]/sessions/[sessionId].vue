@@ -68,7 +68,7 @@ const subtitleAttachError = ref('')
 const selectedSubtitleRecordingId = ref('')
 const showFullTranscript = ref(false)
 
-const workflowStepOrder = ['details', 'recordings', 'transcription', 'summary', 'recap'] as const
+const workflowStepOrder = ['details', 'recordings', 'transcription', 'summary', 'suggestions', 'recap'] as const
 type WorkflowStep = (typeof workflowStepOrder)[number]
 const sessionSectionOrder = ['overview', ...workflowStepOrder] as const
 type SessionSection = (typeof sessionSectionOrder)[number]
@@ -97,7 +97,8 @@ const checklistItems = ref([
   { id: 'send_summary', label: 'Transcript sent to n8n for summary', done: false },
   { id: 'summary_received', label: 'Summary received and saved', done: false },
   { id: 'edit_summary', label: 'Summary edits saved in editor', done: false },
-  { id: 'review_links', label: 'Glossary/quests/milestones reviewed and linked', done: false },
+  { id: 'generate_suggestions', label: 'Suggestions generated from summary', done: false },
+  { id: 'review_links', label: 'Suggestions reviewed (apply/discard)', done: false },
   { id: 'send_recap', label: 'Summary sent to ElevenLabs for recap', done: false },
   { id: 'recap_received', label: 'Recap podcast received and saved', done: false },
 ])
@@ -157,7 +158,6 @@ const {
   summaryActionError,
   selectedSummaryJobId,
   summaryJob,
-  sessionSuggestion,
   summaryJobOptions,
   summaryHighlights,
   summaryPendingText,
@@ -166,16 +166,33 @@ const {
   summaryConcreteFacts,
   summaryStatusLabel,
   summaryStatusColor,
-  summarySuggestionGroups,
   refreshSummaryJob,
   sendSummaryToN8n,
-  applySummarySuggestion,
-  discardSummarySuggestion,
   applyPendingSummary,
 } = useSessionSummaryJobs({
   sessionId,
   transcriptDoc,
   refreshSummary: sessionInvalidation.afterSummaryMutation,
+})
+
+const {
+  suggestionSending,
+  suggestionSendError,
+  suggestionActionError,
+  selectedSuggestionJobId,
+  suggestionJob,
+  suggestionJobOptions,
+  sessionSuggestion,
+  suggestionStatusLabel,
+  suggestionStatusColor,
+  suggestionGroups,
+  refreshSuggestionJobs,
+  generateSuggestions,
+  applySuggestion,
+  discardSuggestion,
+} = useSessionSuggestionJobs({
+  sessionId,
+  summaryDoc,
 })
 
 const transcriptContent = toRef(transcriptForm, 'content')
@@ -232,6 +249,7 @@ const summaryStatus = computed(() => (summaryDoc.value ? 'Available' : 'Missing'
 const hasRecordings = computed(() => (recordings.value?.length || 0) > 0)
 const hasTranscript = computed(() => Boolean(transcriptDoc.value))
 const hasSummary = computed(() => Boolean(summaryDoc.value))
+const hasSuggestionJob = computed(() => Boolean(suggestionJob.value))
 const hasRecap = computed(() => Boolean(recap.value))
 const videoOptions = computed(() =>
   (recordings.value || [])
@@ -314,9 +332,15 @@ const sessionNavigationItems = computed<TimelineItem[]>(() => [
   },
   {
     title: 'Summary',
-    description: hasSummary.value ? 'Summary available' : 'Send to n8n',
+    description: hasSummary.value ? 'Generate and review summary' : 'Send to n8n',
     value: 'summary',
     icon: hasSummary.value ? 'i-lucide-check-circle' : 'i-lucide-sparkles',
+  },
+  {
+    title: 'Suggestions',
+    description: hasSuggestionJob.value ? 'Review suggested updates' : 'Generate suggestions',
+    value: 'suggestions',
+    icon: hasSuggestionJob.value ? 'i-lucide-check-circle' : 'i-lucide-git-merge',
   },
   {
     title: 'Recap',
@@ -330,6 +354,7 @@ const defaultStep = computed(() => {
   if (!hasRecordings.value) return 'recordings'
   if (!hasTranscript.value) return 'transcription'
   if (!hasSummary.value) return 'summary'
+  if (!hasSuggestionJob.value) return 'suggestions'
   if (!hasRecap.value) return 'recap'
   return 'details'
 })
@@ -438,6 +463,7 @@ const attachTranscriptToVideo = async () => {
           :recordings-count="recordingsCount"
           :transcript-status="transcriptStatus"
           :summary-status="summaryStatus"
+          :suggestion-status="suggestionStatusLabel"
           :recap-status="recapStatus"
           :transcript-doc-id="transcriptDoc?.id"
           :summary-doc-id="summaryDoc?.id"
@@ -463,7 +489,7 @@ const attachTranscriptToVideo = async () => {
           :selected-summary-job-id="selectedSummaryJobId"
           :summary-job-options="summaryJobOptions"
           :summary-sending="summarySending"
-          :has-transcript="Boolean(transcriptDoc)"
+          :has-transcript="hasTranscript"
           :summary-status-color="summaryStatusColor"
           :summary-status-label="summaryStatusLabel"
           :summary-tracking-id="summaryJob?.trackingId"
@@ -472,10 +498,19 @@ const attachTranscriptToVideo = async () => {
           :summary-session-tags="summarySessionTags"
           :summary-notable-dialogue="summaryNotableDialogue"
           :summary-concrete-facts="summaryConcreteFacts"
-          :summary-suggestion-groups="summarySuggestionGroups"
-          :session-suggestion="sessionSuggestion"
           :summary-send-error="summarySendError"
           :summary-action-error="summaryActionError"
+          :has-summary="hasSummary"
+          :selected-suggestion-job-id="selectedSuggestionJobId"
+          :suggestion-job-options="suggestionJobOptions"
+          :suggestion-sending="suggestionSending"
+          :suggestion-status-color="suggestionStatusColor"
+          :suggestion-status-label="suggestionStatusLabel"
+          :suggestion-tracking-id="suggestionJob?.trackingId"
+          :suggestion-groups="suggestionGroups"
+          :session-suggestion="sessionSuggestion"
+          :suggestion-send-error="suggestionSendError"
+          :suggestion-action-error="suggestionActionError"
           :summary-content="summaryForm.content"
           :summary-saving="summarySaving"
           :summary-file="summaryFile"
@@ -489,7 +524,7 @@ const attachTranscriptToVideo = async () => {
           :recap-playback-url="recapPlaybackUrl"
           :recap-error="recapError"
           :recap-delete-error="recapDeleteError"
-          :has-recap="Boolean(recap)"
+          :has-recap="hasRecap"
           @open-edit="isEditSessionOpen = true"
           @update:selected-file="selectedFile = $event"
           @update:selected-kind="selectedKind = $event"
@@ -506,8 +541,11 @@ const attachTranscriptToVideo = async () => {
           @refresh-jobs="refreshSummaryJob"
           @send-to-n8n="sendSummaryToN8n"
           @apply-pending-summary="applyPendingSummary"
-          @apply-suggestion="applySummarySuggestion"
-          @discard-suggestion="discardSummarySuggestion"
+          @update:selected-suggestion-job-id="selectedSuggestionJobId = $event"
+          @refresh-suggestion-jobs="refreshSuggestionJobs"
+          @generate-suggestions="generateSuggestions"
+          @apply-suggestion="applySuggestion"
+          @discard-suggestion="discardSuggestion"
           @update:summary-content="summaryForm.content = $event"
           @save-summary="saveSummary"
           @update:summary-file="summaryFile = $event"

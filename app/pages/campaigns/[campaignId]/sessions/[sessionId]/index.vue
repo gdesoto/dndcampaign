@@ -11,7 +11,7 @@ type RecordingItem = {
   filename: string
 }
 
-type WorkflowStep = 'details' | 'recordings' | 'transcription' | 'summary' | 'recap'
+type WorkflowStep = 'details' | 'recordings' | 'transcription' | 'summary' | 'suggestions' | 'recap'
 
 const props = defineProps<{
   campaignId: string
@@ -22,6 +22,7 @@ const props = defineProps<{
   recordingsCount: number
   transcriptStatus: string
   summaryStatus: string
+  suggestionStatus?: string
   recapStatus: string
   transcriptDocId?: string
   summaryDocId?: string
@@ -63,6 +64,7 @@ const emit = defineEmits<{
       :recordings-count="recordingsCount"
       :transcript-status="transcriptStatus"
       :summary-status="summaryStatus"
+      :suggestion-status="suggestionStatus"
       :recap-status="recapStatus"
       mode="overview"
       active-step="details"

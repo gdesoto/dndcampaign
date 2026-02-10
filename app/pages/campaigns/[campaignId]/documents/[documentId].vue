@@ -92,6 +92,7 @@ const endTimeFilter = ref('')
 const minLengthFilter = ref('')
 const maxLengthFilter = ref('')
 const speakerBulkInput = ref('')
+const speakerDrafts = ref<Record<string, string>>({})
 
 const { data: sessionRecordings } = await useAsyncData(
   () => `document-session-recordings-${documentId.value}`,
@@ -192,6 +193,9 @@ watch(
     content.value = nextContent
     if (value?.type === 'TRANSCRIPT') {
       segments.value = parseTranscriptSegments(nextContent)
+      speakerDrafts.value = Object.fromEntries(
+        segments.value.map((segment) => [segment.id, segment.speaker ?? ''])
+      )
       isDirty.value = false
       lastSavedAt.value = value?.currentVersion?.createdAt || null
       windowStart.value = 0
@@ -200,6 +204,7 @@ watch(
       activeMatchIndex.value = 0
     } else {
       segments.value = []
+      speakerDrafts.value = {}
     }
   },
   { immediate: true }
@@ -455,6 +460,7 @@ const applySpeakerToSelection = (speakerValue: string) => {
   segments.value.forEach((segment) => {
     if (selection.has(segment.id)) {
       segment.speaker = trimmed
+      speakerDrafts.value[segment.id] = trimmed
     }
   })
   markDirty()
@@ -467,8 +473,26 @@ const applySpeakerToFiltered = (speakerValue: string) => {
   segments.value.forEach((segment) => {
     if (filteredIds.has(segment.id)) {
       segment.speaker = trimmed
+      speakerDrafts.value[segment.id] = trimmed
     }
   })
+  markDirty()
+}
+
+const getSpeakerDraft = (segment: TranscriptSegment) =>
+  speakerDrafts.value[segment.id] ?? segment.speaker ?? ''
+
+const setSpeakerDraft = (segmentId: string, value: string | number | null | undefined) => {
+  speakerDrafts.value[segmentId] = value == null ? '' : String(value)
+}
+
+const commitSpeakerDraft = (segment: TranscriptSegment) => {
+  const draft = (speakerDrafts.value[segment.id] ?? '').trim()
+  const nextSpeaker = draft || null
+  const currentSpeaker = (segment.speaker || '').trim() || null
+  if (currentSpeaker === nextSpeaker) return
+  segment.speaker = nextSpeaker
+  speakerDrafts.value[segment.id] = nextSpeaker ?? ''
   markDirty()
 }
 
@@ -791,145 +815,204 @@ const fullTranscript = computed(() =>
                   </UButton>
                 </div>
               </div>
-              <div class="flex flex-wrap items-center gap-3">
-                <UInput
-                  v-model="searchInput"
-                  size="sm"
-                  class="min-w-[220px]"
-                  placeholder="Search transcript"
-                />
-                <UCheckbox v-model="searchFilterEnabled" label="Filter matches" />
-                <div class="flex items-center gap-2 text-xs text-dimmed">
-                  <UButton
-                    size="xs"
-                    variant="outline"
-                    :disabled="!matchIndices.length"
-                    @click="goToMatch(-1)"
-                  >
-                    Prev
-                  </UButton>
-                  <UButton
-                    size="xs"
-                    variant="outline"
-                    :disabled="!matchIndices.length"
-                    @click="goToMatch(1)"
-                  >
-                    Next
-                  </UButton>
-                  <span v-if="matchIndices.length">
-                    {{ activeMatchIndex + 1 }}/{{ matchIndices.length }} matches
-                  </span>
+              <div class="space-y-3 rounded-xl border border-default/60 bg-elevated/20 p-3">
+                <div class="space-y-2">
+                  <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
+                    Search
+                  </p>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <UInput
+                      v-model="searchInput"
+                      size="xs"
+                      class="w-56"
+                      placeholder="Search transcript"
+                    />
+                    <UCheckbox v-model="searchFilterEnabled" label="Filter matches" />
+                    <UButton
+                      size="xs"
+                      variant="outline"
+                      :disabled="!matchIndices.length"
+                      @click="goToMatch(-1)"
+                    >
+                      Prev
+                    </UButton>
+                    <UButton
+                      size="xs"
+                      variant="outline"
+                      :disabled="!matchIndices.length"
+                      @click="goToMatch(1)"
+                    >
+                      Next
+                    </UButton>
+                    <span v-if="matchIndices.length" class="text-xs text-dimmed">
+                      {{ activeMatchIndex + 1 }}/{{ matchIndices.length }}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <div class="flex flex-wrap items-center gap-3 text-xs text-dimmed">
-                <UInputMenu
-                  v-model="speakerFilterSelection"
-                  size="xs"
-                  class="min-w-[200px]"
-                  multiple
-                  :items="speakerOptions"
-                  placeholder="Filter speakers"
-                />
-                <UInput
-                  v-model="startTimeFilter"
-                  size="xs"
-                  class="w-28"
-                  placeholder="Start mm:ss"
-                />
-                <UInput
-                  v-model="endTimeFilter"
-                  size="xs"
-                  class="w-28"
-                  placeholder="End mm:ss"
-                />
-                <UInput
-                  v-model="minLengthFilter"
-                  size="xs"
-                  class="w-24"
-                  placeholder="Min s"
-                />
-                <UInput
-                  v-model="maxLengthFilter"
-                  size="xs"
-                  class="w-24"
-                  placeholder="Max s"
-                />
-                <div class="flex flex-wrap items-center gap-2">
-                  <UInput
-                    v-model="speakerBulkInput"
-                    size="xs"
-                    class="min-w-[150px]"
-                    placeholder="Set speaker"
-                  />
-                  <UButton
-                    size="xs"
-                    variant="outline"
-                    :disabled="!selectedSegmentIds.length"
-                    @click="applySpeakerToSelection(speakerBulkInput)"
-                  >
-                    Apply to selection
-                  </UButton>
-                  <UButton
-                    size="xs"
-                    variant="outline"
-                    :disabled="!filteredSegments.length"
-                    @click="applySpeakerToFiltered(speakerBulkInput)"
-                  >
-                    Apply to filtered
-                  </UButton>
+
+                <div class="overflow-x-auto">
+                  <div class="flex min-w-max items-end gap-4 rounded-lg border border-default/60 bg-default/30 p-3">
+                    <div class="space-y-2 border-r border-default/60 pr-4">
+                      <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
+                        Filtering
+                      </p>
+                      <UInputMenu
+                        v-model="speakerFilterSelection"
+                        size="xs"
+                        class="w-56"
+                        multiple
+                        :items="speakerOptions"
+                        placeholder="All speakers"
+                      />
+                    </div>
+
+                    <div class="space-y-2 border-r border-default/60 pr-4">
+                      <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
+                        Time Range
+                      </p>
+                      <div class="flex items-center gap-2">
+                        <UInput
+                          v-model="startTimeFilter"
+                          size="xs"
+                          class="w-28"
+                          placeholder="Start mm:ss"
+                        />
+                        <span class="text-xs text-dimmed">|</span>
+                        <UInput
+                          v-model="endTimeFilter"
+                          size="xs"
+                          class="w-28"
+                          placeholder="End mm:ss"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="space-y-2">
+                      <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
+                        Duration Filter
+                      </p>
+                      <div class="flex items-center gap-2">
+                        <UInput
+                          v-model="minLengthFilter"
+                          size="xs"
+                          class="w-24"
+                          placeholder="Min s"
+                        />
+                        <UInput
+                          v-model="maxLengthFilter"
+                          size="xs"
+                          class="w-24"
+                          placeholder="Max s"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div class="flex flex-wrap items-center gap-2 text-xs text-dimmed">
-                <UButton size="xs" variant="ghost" @click="selectAllFiltered">
-                  Select filtered
-                </UButton>
-                <UButton size="xs" variant="ghost" @click="clearSelection">
-                  Clear selection
-                </UButton>
-                <UButton
-                  size="xs"
-                  variant="outline"
-                  :disabled="!selectedSegmentIds.length"
-                  @click="applyDisableToSelection(true)"
-                >
-                  Disable selection
-                </UButton>
-                <UButton
-                  size="xs"
-                  variant="outline"
-                  :disabled="!selectedSegmentIds.length"
-                  @click="applyDisableToSelection(false)"
-                >
-                  Enable selection
-                </UButton>
-                <UButton
-                  size="xs"
-                  variant="outline"
-                  :disabled="!selectedSegmentIds.length"
-                  @click="playSelection"
-                >
-                  Play selection
-                </UButton>
-              </div>
-              <div class="flex flex-wrap items-center justify-between gap-3 text-xs text-dimmed">
-                <span>Showing {{ windowLabel }}</span>
-                <div class="flex items-center gap-2">
-                  <UButton
-                    size="xs"
-                    variant="ghost"
-                    :disabled="!canPrevWindow"
-                    @click="moveWindow(-1)"
-                  >
-                    Previous window
-                  </UButton>
-                  <UButton
-                    size="xs"
-                    variant="ghost"
-                    :disabled="!canNextWindow"
-                    @click="moveWindow(1)"
-                  >
-                    Next window
-                  </UButton>
+
+                <div class="overflow-x-auto">
+                  <div class="flex min-w-max items-end gap-4 rounded-lg border border-default/60 bg-default/30 p-3">
+                    <div class="space-y-2">
+                      <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
+                        Speaker Updates
+                      </p>
+                      <div class="flex items-center gap-2">
+                        <UInput
+                          v-model="speakerBulkInput"
+                          size="xs"
+                          class="w-32"
+                          placeholder="Set speaker"
+                        />
+                        <UButton
+                          size="xs"
+                          variant="outline"
+                          :disabled="!selectedSegmentIds.length"
+                          @click="applySpeakerToSelection(speakerBulkInput)"
+                        >
+                          Selection
+                        </UButton>
+                        <UButton
+                          size="xs"
+                          variant="outline"
+                          :disabled="!filteredSegments.length"
+                          @click="applySpeakerToFiltered(speakerBulkInput)"
+                        >
+                          Filtered
+                        </UButton>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                  <div class="flex min-w-max items-end gap-4 rounded-lg border border-default/60 bg-default/30 p-3">
+                    <div class="space-y-2 border-r border-default/60 pr-4">
+                      <div class="flex items-center gap-2">
+                        <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
+                          Selection
+                        </p>
+                        <span class="text-xs text-dimmed">{{ selectedSegmentIds.length }}</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <UButton size="xs" variant="ghost" @click="selectAllFiltered">
+                          Select filtered
+                        </UButton>
+                        <UButton size="xs" variant="ghost" @click="clearSelection">
+                          Clear
+                        </UButton>
+                        <UButton
+                          size="xs"
+                          variant="outline"
+                          :disabled="!selectedSegmentIds.length"
+                          @click="applyDisableToSelection(true)"
+                        >
+                          Disable
+                        </UButton>
+                        <UButton
+                          size="xs"
+                          variant="outline"
+                          :disabled="!selectedSegmentIds.length"
+                          @click="applyDisableToSelection(false)"
+                        >
+                          Enable
+                        </UButton>
+                        <UButton
+                          size="xs"
+                          variant="outline"
+                          :disabled="!selectedSegmentIds.length"
+                          @click="playSelection"
+                        >
+                          Play
+                        </UButton>
+                      </div>
+                    </div>
+
+                    <div class="space-y-2">
+                      <div class="flex items-center gap-2">
+                        <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
+                          View Window
+                        </p>
+                        <span class="text-xs text-dimmed">{{ windowLabel }}</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <UButton
+                          size="xs"
+                          variant="ghost"
+                          :disabled="!canPrevWindow"
+                          @click="moveWindow(-1)"
+                        >
+                          Previous
+                        </UButton>
+                        <UButton
+                          size="xs"
+                          variant="ghost"
+                          :disabled="!canNextWindow"
+                          @click="moveWindow(1)"
+                        >
+                          Next
+                        </UButton>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
               <p v-if="saveError" class="text-sm text-error">{{ saveError }}</p>
@@ -955,6 +1038,10 @@ const fullTranscript = computed(() =>
               >
                 <div class="flex flex-wrap items-center justify-between gap-2">
                   <div class="flex items-center gap-2 text-xs text-dimmed">
+                    <UCheckbox
+                      :model-value="selectedSet.has(segment.id)"
+                      @update:modelValue="() => toggleSegmentSelection(segment.id)"
+                    />
                     <span>{{ formatTimestamp(segment.startMs) }}</span>
                     <span v-if="segment.endMs !== null">- {{ formatTimestamp(segment.endMs) }}</span>
                     <span v-if="formatDuration(segment)">
@@ -962,20 +1049,17 @@ const fullTranscript = computed(() =>
                     </span>
                   </div>
                   <div class="flex items-center gap-2">
-                    <UCheckbox
-                      :model-value="selectedSet.has(segment.id)"
-                      @update:modelValue="() => toggleSegmentSelection(segment.id)"
-                    />
                     <UButton
                       size="xs"
-                      variant="ghost"
+                      variant="outline"
                       @click="toggleSegmentDisabled(segment)"
                     >
                       {{ segment.disabled ? 'Enable' : 'Disable' }}
                     </UButton>
                     <UButton
                       size="xs"
-                      variant="ghost"
+                      icon="i-lucide-play"
+                      color="primary"
                       :disabled="segment.startMs === null || segment.endMs === null"
                       @click="playSegment(segment)"
                     >
@@ -983,7 +1067,8 @@ const fullTranscript = computed(() =>
                     </UButton>
                     <UButton
                       size="xs"
-                      variant="ghost"
+                      variant="outline"
+                      icon="i-lucide-skip-forward"
                       :disabled="segment.startMs === null"
                       @click="jumpToSegment(segment)"
                     >
@@ -993,11 +1078,13 @@ const fullTranscript = computed(() =>
                 </div>
                 <div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
                   <UInput
-                    v-model="segment.speaker"
+                    :model-value="getSpeakerDraft(segment)"
                     size="xs"
                     class="w-36"
                     placeholder="Speaker"
-                    @input="markDirty"
+                    @update:model-value="(value) => setSpeakerDraft(segment.id, value)"
+                    @blur="commitSpeakerDraft(segment)"
+                    @keydown.enter.prevent="commitSpeakerDraft(segment)"
                   />
                   <span v-if="segment.disabled" class="rounded-full bg-warning/20 px-2 py-0.5 text-warning">
                     Disabled in preview

@@ -1,19 +1,4 @@
 <script setup lang="ts">
-type SummarySuggestion = {
-  id: string
-  entityType: string
-  action: string
-  status: string
-  payload: Record<string, unknown>
-}
-
-type SummarySuggestionGroup = {
-  label: string
-  items: SummarySuggestion[]
-}
-
-type SessionSuggestion = SummarySuggestion | null
-
 const props = defineProps<{
   campaignId: string
   returnToPath?: string
@@ -29,8 +14,6 @@ const props = defineProps<{
   summarySessionTags: unknown[]
   summaryNotableDialogue: unknown[]
   summaryConcreteFacts: unknown[]
-  summarySuggestionGroups: SummarySuggestionGroup[]
-  sessionSuggestion: SessionSuggestion
   summarySendError: string
   summaryActionError: string
   summaryContent: string
@@ -47,8 +30,6 @@ const emit = defineEmits<{
   'refresh-jobs': []
   'send-to-n8n': []
   'apply-pending-summary': []
-  'apply-suggestion': [suggestionId: string]
-  'discard-suggestion': [suggestionId: string]
   'update:summaryContent': [value: string]
   'save-summary': []
   'update:summaryFile': [value: File | null]
@@ -69,13 +50,6 @@ const summaryFileModel = computed({
   get: () => props.summaryFile,
   set: (value: File | null | undefined) => emit('update:summaryFile', value ?? null),
 })
-
-const suggestionTitle = (suggestion: SummarySuggestion) => {
-  if (typeof suggestion.payload.title === 'string') return suggestion.payload.title
-  if (typeof suggestion.payload.name === 'string') return suggestion.payload.name
-  if (typeof suggestion.payload.summary === 'string') return suggestion.payload.summary
-  return 'Suggestion'
-}
 </script>
 
 <template>
@@ -85,7 +59,7 @@ const suggestionTitle = (suggestion: SummarySuggestion) => {
         <div>
           <h2 class="text-lg font-semibold">n8n summarization</h2>
           <p class="text-sm text-muted">
-            Send the transcript to n8n and review suggestions.
+            Send the transcript to n8n and review summary content.
           </p>
         </div>
       </template>
@@ -155,99 +129,6 @@ const suggestionTitle = (suggestion: SummarySuggestion) => {
           <ul class="list-disc space-y-1 pl-5 text-sm text-muted">
             <li v-for="fact in summaryConcreteFacts" :key="String(fact)">{{ fact }}</li>
           </ul>
-        </div>
-        <div v-if="summarySuggestionGroups.length" class="space-y-3">
-          <div
-            v-if="sessionSuggestion"
-            class="rounded-lg border border-default bg-elevated/20 p-4"
-          >
-            <div class="flex items-center justify-between gap-2">
-              <p class="text-sm font-semibold">Session suggestion</p>
-              <UBadge variant="soft" color="primary" size="sm">
-                {{ sessionSuggestion.action }}
-              </UBadge>
-            </div>
-            <div class="mt-3 space-y-2 text-sm text-muted">
-              <div v-if="sessionSuggestion.payload.title">
-                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Title</p>
-                <p class="mt-1 font-semibold text-default">
-                  {{ sessionSuggestion.payload.title }}
-                </p>
-              </div>
-              <div v-if="sessionSuggestion.payload.notes">
-                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Notes</p>
-                <p class="mt-1 whitespace-pre-line">
-                  {{ sessionSuggestion.payload.notes }}
-                </p>
-              </div>
-            </div>
-            <div class="mt-3 flex flex-wrap gap-2">
-              <UButton
-                size="xs"
-                variant="outline"
-                :disabled="sessionSuggestion.status !== 'PENDING'"
-                @click="emit('apply-suggestion', sessionSuggestion.id)"
-              >
-                Apply
-              </UButton>
-              <UButton
-                size="xs"
-                variant="ghost"
-                color="gray"
-                :disabled="sessionSuggestion.status !== 'PENDING'"
-                @click="emit('discard-suggestion', sessionSuggestion.id)"
-              >
-                Discard
-              </UButton>
-            </div>
-          </div>
-          <div
-            v-for="group in summarySuggestionGroups"
-            :key="group.label"
-            class="rounded-lg border border-default bg-elevated/20 p-4"
-          >
-            <div class="flex items-center justify-between gap-2">
-              <p class="text-sm font-semibold">{{ group.label }}</p>
-              <UBadge variant="soft" color="primary" size="sm">
-                {{ group.items.length }}
-              </UBadge>
-            </div>
-            <div class="mt-3 space-y-3">
-              <div
-                v-for="suggestion in group.items"
-                :key="suggestion.id"
-                class="rounded-md border border-default bg-background/60 p-3"
-              >
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p class="text-sm font-semibold">{{ suggestionTitle(suggestion) }}</p>
-                    <p class="text-xs text-muted">
-                      {{ suggestion.action }} · {{ suggestion.status }}
-                    </p>
-                  </div>
-                  <div class="flex flex-wrap gap-2">
-                    <UButton
-                      size="xs"
-                      variant="outline"
-                      :disabled="suggestion.status !== 'PENDING'"
-                      @click="emit('apply-suggestion', suggestion.id)"
-                    >
-                      Apply
-                    </UButton>
-                    <UButton
-                      size="xs"
-                      variant="ghost"
-                      color="gray"
-                      :disabled="suggestion.status !== 'PENDING'"
-                      @click="emit('discard-suggestion', suggestion.id)"
-                    >
-                      Discard
-                    </UButton>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
         <p v-if="summarySendError" class="text-sm text-error">{{ summarySendError }}</p>
         <p v-if="summaryActionError" class="text-sm text-error">{{ summaryActionError }}</p>
