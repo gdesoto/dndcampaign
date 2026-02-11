@@ -83,10 +83,36 @@ export class DocumentService {
     })
   }
 
-  async listVersions(documentId: string) {
+  async listVersions(documentId: string, options?: { includeContent?: boolean }) {
+    const includeContent = options?.includeContent === true
+
+    if (includeContent) {
+      return prisma.documentVersion.findMany({
+        where: { documentId },
+        orderBy: { versionNumber: 'desc' },
+        select: {
+          id: true,
+          versionNumber: true,
+          content: true,
+          format: true,
+          source: true,
+          createdByUserId: true,
+          createdAt: true,
+        },
+      })
+    }
+
     return prisma.documentVersion.findMany({
       where: { documentId },
       orderBy: { versionNumber: 'desc' },
+      select: {
+        id: true,
+        versionNumber: true,
+        format: true,
+        source: true,
+        createdByUserId: true,
+        createdAt: true,
+      },
     })
   }
 

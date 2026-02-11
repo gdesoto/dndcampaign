@@ -16,7 +16,14 @@ export default defineEventHandler(async (event) => {
     return fail(404, 'NOT_FOUND', 'Document not found')
   }
 
+  const query = getQuery(event)
+  const includeContentRaw = query.includeContent
+  const includeContent =
+    includeContentRaw === true ||
+    includeContentRaw === 'true' ||
+    includeContentRaw === '1'
+
   const service = new DocumentService()
-  const versions = await service.listVersions(documentId)
+  const versions = await service.listVersions(documentId, { includeContent })
   return ok(versions)
 })

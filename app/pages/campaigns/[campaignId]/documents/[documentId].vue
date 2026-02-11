@@ -9,7 +9,7 @@ import { getFirstNameTerm } from '#shared/utils/name'
 
 definePageMeta({ layout: 'app' })
 
-type DocumentVersion = {
+type DocumentVersionDetail = {
   id: string
   content: string
   format: 'MARKDOWN' | 'PLAINTEXT'
@@ -18,6 +18,8 @@ type DocumentVersion = {
   createdAt: string
 }
 
+type DocumentVersionListItem = Omit<DocumentVersionDetail, 'content'>
+
 type DocumentDetail = {
   id: string
   type: 'TRANSCRIPT' | 'SUMMARY' | 'NOTES'
@@ -25,7 +27,7 @@ type DocumentDetail = {
   sessionId?: string | null
   recordingId?: string | null
   currentVersionId?: string | null
-  currentVersion?: DocumentVersion | null
+  currentVersion?: DocumentVersionDetail | null
 }
 
 type SessionRecording = {
@@ -81,7 +83,7 @@ const { data: document, pending, refresh, error } = await useAsyncData(
 
 const { data: versions, refresh: refreshVersions } = await useAsyncData(
   () => `document-versions-${documentId.value}`,
-  () => request<DocumentVersion[]>(`/api/documents/${documentId.value}/versions`)
+  () => request<DocumentVersionListItem[]>(`/api/documents/${documentId.value}/versions`)
 )
 
 const content = ref('')
