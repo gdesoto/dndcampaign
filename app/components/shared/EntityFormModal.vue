@@ -57,7 +57,7 @@ const onSubmit = () => {
           </template>
           <template v-else>
             <div class="flex justify-end gap-3">
-              <UButton variant="ghost" color="gray" @click="onCancel">{{ cancelLabel }}</UButton>
+              <UButton variant="ghost" color="neutral" @click="onCancel">{{ cancelLabel }}</UButton>
               <UButton type="submit" :loading="saving">{{ submitLabel }}</UButton>
             </div>
           </template>

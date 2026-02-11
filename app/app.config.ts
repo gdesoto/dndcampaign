@@ -68,7 +68,7 @@ export default defineAppConfig({
       variants: {
         fullscreen: {
           false: {
-            content: 'w-[calc(100vw-2rem)] max-w-lg rounded-2xl shadow-2xl ring ring-default',
+            content: 'w-[calc(100vw-2rem)] max-w-lg rounded-lg shadow-lg ring ring-default',
           }
         }
       }

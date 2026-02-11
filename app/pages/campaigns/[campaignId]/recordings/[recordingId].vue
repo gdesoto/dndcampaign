@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { getFirstNameTerm } from '#shared/utils/name'
+
 definePageMeta({ layout: 'app' })
 
 type RecordingDetail = {
@@ -144,6 +146,8 @@ const selectedVideoByArtifact = reactive<Record<string, string>>({})
 
 const transcribeForm = reactive({
   numSpeakers: '12',
+  speakerConfigMode: 'numSpeakers' as 'numSpeakers' | 'diarizationThreshold',
+  diarizationThreshold: '0.22',
   diarize: true,
   keyterms: '',
   tagAudioEvents: false,
@@ -314,6 +318,21 @@ const parseKeyterms = (value: string) =>
     .map((term) => term.trim())
     .filter(Boolean)
 
+const parseAliasTerms = (aliases?: string | null) =>
+  (aliases || '')
+    .split(',')
+    .map((alias) => alias.trim())
+    .filter(Boolean)
+
+const glossaryEntryToKeyterms = (entry: GlossaryEntry) => {
+  if (entry.type !== 'PC') {
+    return [entry.name]
+  }
+
+  const firstName = getFirstNameTerm(entry.name)
+  return [firstName, ...parseAliasTerms(entry.aliases)].filter(Boolean)
+}
+
 const appendKeyterms = (terms: string[]) => {
   if (!terms.length) return
   const existing = parseKeyterms(transcribeForm.keyterms)
@@ -328,13 +347,13 @@ const addGlossaryKeyterms = () => {
   if (!ids.size) return
   const terms = (glossaryEntries.value || [])
     .filter((entry) => ids.has(entry.id))
-    .map((entry) => entry.name)
+    .flatMap(glossaryEntryToKeyterms)
   appendKeyterms(terms)
   selectedGlossaryIds.value = []
 }
 
 const addAllGlossaryForType = () => {
-  const terms = (glossaryEntries.value || []).map((entry) => entry.name)
+  const terms = (glossaryEntries.value || []).flatMap(glossaryEntryToKeyterms)
   appendKeyterms(terms)
   selectedGlossaryIds.value = []
 }
@@ -353,7 +372,7 @@ const addAllGlossary = async () => {
       )
     )
   )
-  const terms = results.flat().map((entry) => entry.name)
+  const terms = results.flat().flatMap(glossaryEntryToKeyterms)
   appendKeyterms(terms)
   selectedGlossaryIds.value = []
 }
@@ -368,10 +387,39 @@ const startTranscription = async () => {
       transcribeError.value = 'Select at least one output format.'
       return
     }
-    const numSpeakers = Number(transcribeForm.numSpeakers)
+    const numSpeakers =
+      transcribeForm.speakerConfigMode === 'numSpeakers'
+        ? Number(transcribeForm.numSpeakers)
+        : undefined
+    const diarizationThreshold =
+      transcribeForm.speakerConfigMode === 'diarizationThreshold'
+        ? Number(transcribeForm.diarizationThreshold)
+        : undefined
+
+    if (transcribeForm.diarize && transcribeForm.speakerConfigMode === 'numSpeakers') {
+      if (!Number.isFinite(numSpeakers) || !Number.isInteger(numSpeakers) || numSpeakers < 1 || numSpeakers > 32) {
+        transcribeError.value = 'Speakers must be an integer between 1 and 32.'
+        return
+      }
+    }
+
+    if (transcribeForm.diarize && transcribeForm.speakerConfigMode === 'diarizationThreshold') {
+      if (!Number.isFinite(diarizationThreshold) || diarizationThreshold < 0.1 || diarizationThreshold > 0.4) {
+        transcribeError.value = 'Diarization threshold must be between 0.1 and 0.4.'
+        return
+      }
+    }
+
     const payload = {
       formats,
-      numSpeakers: Number.isFinite(numSpeakers) ? numSpeakers : undefined,
+      numSpeakers:
+        transcribeForm.diarize && transcribeForm.speakerConfigMode === 'numSpeakers'
+          ? numSpeakers
+          : undefined,
+      diarizationThreshold:
+        transcribeForm.diarize && transcribeForm.speakerConfigMode === 'diarizationThreshold'
+          ? diarizationThreshold
+          : undefined,
       keyterms: parseKeyterms(transcribeForm.keyterms),
       diarize: transcribeForm.diarize,
       tagAudioEvents: transcribeForm.tagAudioEvents,
@@ -783,13 +831,38 @@ const formatBytes = (value: number) => {
           </template>
           <div class="space-y-4">
             <div class="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label class="mb-2 block text-sm text-muted">Speakers</label>
-                <UInput v-model="transcribeForm.numSpeakers" type="number" min="1" max="32" />
-              </div>
               <div class="flex items-center gap-2">
                 <UCheckbox v-model="transcribeForm.diarize" />
                 <span class="text-sm">Enable diarization</span>
+              </div>
+            </div>
+            <div v-if="transcribeForm.diarize" class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label class="mb-2 block text-sm text-muted">Speaker config</label>
+                <USelect
+                  v-model="transcribeForm.speakerConfigMode"
+                  :items="[
+                    { label: 'Number of speakers', value: 'numSpeakers' },
+                    { label: 'Diarization threshold', value: 'diarizationThreshold' }
+                  ]"
+                />
+              </div>
+              <div v-if="transcribeForm.speakerConfigMode === 'numSpeakers'">
+                <label class="mb-2 block text-sm text-muted">Speakers</label>
+                <UInput v-model="transcribeForm.numSpeakers" type="number" min="1" max="32" />
+              </div>
+              <div v-else>
+                <label class="mb-2 block text-sm text-muted">Diarization threshold</label>
+                <UInput
+                  v-model="transcribeForm.diarizationThreshold"
+                  type="number"
+                  min="0.1"
+                  max="0.4"
+                  step="0.01"
+                />
+                <p class="mt-1 text-xs text-dimmed">
+                  0.1 to 0.4. Higher values usually predict fewer speakers.
+                </p>
               </div>
             </div>
             <div class="flex items-center gap-2">

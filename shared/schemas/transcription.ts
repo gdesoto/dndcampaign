@@ -21,11 +21,33 @@ const keytermSchema = z
 export const transcriptionStartSchema = z.object({
   formats: z.array(transcriptionFormatSchema).min(1),
   numSpeakers: z.number().int().min(1).max(32).optional(),
+  diarizationThreshold: z.number().min(0.1).max(0.4).optional(),
   keyterms: z.array(keytermSchema).max(100).optional(),
   diarize: z.boolean().optional().default(true),
   tagAudioEvents: z.boolean().optional().default(false),
   languageCode: z.string().min(2).max(10).optional(),
   modelId: z.string().min(1).max(50).optional().default('scribe_v2'),
+}).superRefine((data, ctx) => {
+  if (!data.diarize) return
+
+  const hasNumSpeakers = typeof data.numSpeakers === 'number'
+  const hasThreshold = typeof data.diarizationThreshold === 'number'
+
+  if (hasNumSpeakers && hasThreshold) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['diarizationThreshold'],
+      message: 'Set either numSpeakers or diarizationThreshold, not both.',
+    })
+  }
+
+  if (!hasNumSpeakers && !hasThreshold) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['numSpeakers'],
+      message: 'Provide numSpeakers or diarizationThreshold when diarization is enabled.',
+    })
+  }
 })
 
 export const transcriptionApplySchema = z.object({

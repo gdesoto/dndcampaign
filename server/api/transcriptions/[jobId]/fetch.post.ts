@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const config = useRuntimeConfig()
-  if (!config.elevenLabs?.apiKey) {
+  if (!config.elevenlabs?.apiKey) {
     return fail(500, 'CONFIG_ERROR', 'ElevenLabs API key is not configured')
   }
 

@@ -5,6 +5,7 @@ import {
   segmentsToPlainText,
   type TranscriptSegment,
 } from '#shared/utils/transcript'
+import { getFirstNameTerm } from '#shared/utils/name'
 
 definePageMeta({ layout: 'app' })
 
@@ -34,6 +35,26 @@ type SessionRecording = {
   createdAt: string
   durationSeconds?: number | null
   vttArtifactId?: string | null
+}
+
+type SessionDetail = {
+  id: string
+  guestDungeonMasterName?: string | null
+  campaign?: {
+    dungeonMasterName?: string | null
+  } | null
+}
+
+type CampaignDetail = {
+  id: string
+  dungeonMasterName?: string | null
+}
+
+type GlossaryEntry = {
+  id: string
+  type: 'PC' | 'NPC' | 'ITEM' | 'LOCATION'
+  name: string
+  aliases?: string | null
 }
 
 type HighlightPart = { text: string; match: boolean }
@@ -92,6 +113,7 @@ const endTimeFilter = ref('')
 const minLengthFilter = ref('')
 const maxLengthFilter = ref('')
 const speakerBulkInput = ref('')
+const selectedSpeakerPreset = ref<string | null>(null)
 const speakerDrafts = ref<Record<string, string>>({})
 
 const { data: sessionRecordings } = await useAsyncData(
@@ -103,6 +125,27 @@ const { data: sessionRecordings } = await useAsyncData(
     )
   },
   { watch: [document] }
+)
+
+const { data: sessionDetail } = await useAsyncData(
+  () => `document-session-detail-${documentId.value}`,
+  async () => {
+    if (!document.value?.sessionId) return null
+    return request<SessionDetail>(`/api/sessions/${document.value.sessionId}`)
+  },
+  { watch: [document] }
+)
+
+const { data: campaignDetail } = await useAsyncData(
+  () => `document-campaign-detail-${campaignId.value}`,
+  () => request<CampaignDetail>(`/api/campaigns/${campaignId.value}`),
+  { watch: [campaignId] }
+)
+
+const { data: pcGlossaryEntries } = await useAsyncData(
+  () => `document-speaker-pc-glossary-${campaignId.value}`,
+  () => request<GlossaryEntry[]>(`/api/campaigns/${campaignId.value}/glossary?type=PC`),
+  { watch: [campaignId] }
 )
 
 const recordingOptions = computed(() =>
@@ -252,6 +295,15 @@ watch(
   }
 )
 
+watch(
+  () => selectedSpeakerPreset.value,
+  (value) => {
+    const normalized = String(value || '').trim()
+    if (!normalized) return
+    speakerBulkInput.value = normalized
+  }
+)
+
 const parseTimeInput = (value: string) => {
   const trimmed = value.trim()
   if (!trimmed) return null
@@ -262,6 +314,47 @@ const parseTimeInput = (value: string) => {
   if (parts.length === 3) return (parts[0] * 3600 + parts[1] * 60 + parts[2]) * 1000
   return null
 }
+
+const parseAliasTerms = (aliases?: string | null) =>
+  (aliases || '')
+    .split(',')
+    .map((alias) => alias.trim())
+    .filter(Boolean)
+
+const speakerPresetOptions = computed(() => {
+  const options: string[] = []
+  const dmRaw =
+    sessionDetail.value?.guestDungeonMasterName ||
+    campaignDetail.value?.dungeonMasterName ||
+    ''
+  const dmFirstName = getFirstNameTerm(dmRaw)
+  if (dmFirstName) {
+    options.push(`DM (${dmFirstName})`)
+  }
+
+  const pcOptions = (pcGlossaryEntries.value || [])
+    .map((entry) => {
+      const characterFirstName = getFirstNameTerm(entry.name)
+      if (!characterFirstName) return ''
+      const playerName = parseAliasTerms(entry.aliases)[0] || ''
+      return playerName
+        ? `${characterFirstName} (${playerName})`
+        : characterFirstName
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b))
+
+  const seen = new Set<string>()
+  pcOptions.forEach((option) => {
+    const key = option.toLowerCase()
+    if (!seen.has(key)) {
+      seen.add(key)
+      options.push(option)
+    }
+  })
+
+  return options
+})
 
 const speakerFilters = computed(() =>
   speakerFilterSelection.value.map((item) => item.toLowerCase())
@@ -915,12 +1008,20 @@ const fullTranscript = computed(() =>
                       <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
                         Speaker Updates
                       </p>
-                      <div class="flex items-center gap-2">
+                      <div class="flex flex-wrap items-center gap-2">
                         <UInput
                           v-model="speakerBulkInput"
                           size="xs"
-                          class="w-32"
+                          class="w-40"
                           placeholder="Set speaker"
+                        />
+                        <USelectMenu
+                          v-model="selectedSpeakerPreset"
+                          size="xs"
+                          class="w-56"
+                          :items="speakerPresetOptions"
+                          :search-input="{ placeholder: 'Search speaker presets...' }"
+                          placeholder="Select preset"
                         />
                         <UButton
                           size="xs"

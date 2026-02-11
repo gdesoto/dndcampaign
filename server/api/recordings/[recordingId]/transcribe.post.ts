@@ -46,6 +46,7 @@ export default defineEventHandler(async (event) => {
     modelId: validation.data.modelId,
     formats: validation.data.formats,
     numSpeakers: validation.data.numSpeakers,
+    diarizationThreshold: validation.data.diarizationThreshold,
     keyterms: validation.data.keyterms,
     diarize: validation.data.diarize ?? true,
     tagAudioEvents: validation.data.tagAudioEvents ?? false,

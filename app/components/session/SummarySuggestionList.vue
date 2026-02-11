@@ -40,10 +40,14 @@ const toDraftPayload = (payload: Record<string, unknown>) => {
 }
 
 const ensureDraft = (suggestion: SuggestionItem) => {
-  if (!drafts[suggestion.id]) {
-    drafts[suggestion.id] = toDraftPayload(suggestion.payload)
+  const base = toDraftPayload(suggestion.payload)
+  const existing = drafts[suggestion.id] || {}
+  const merged: Record<string, unknown> = {}
+  for (const key of Object.keys(base)) {
+    merged[key] = key in existing ? existing[key] : base[key]
   }
-  return drafts[suggestion.id]
+  drafts[suggestion.id] = merged
+  return merged
 }
 
 const editableFields = (suggestion: SuggestionItem) =>
@@ -54,12 +58,42 @@ const updateField = (suggestionId: string, key: string, value: unknown) => {
   drafts[suggestionId][key] = value
 }
 
+const enumOptionsFor = (suggestion: SuggestionItem, field: string) => {
+  if (suggestion.entityType === 'QUEST' && field === 'status') {
+    return [
+      { label: 'ACTIVE', value: 'ACTIVE' },
+      { label: 'COMPLETED', value: 'COMPLETED' },
+      { label: 'FAILED', value: 'FAILED' },
+      { label: 'ON_HOLD', value: 'ON_HOLD' },
+    ]
+  }
+  if (suggestion.entityType === 'QUEST' && field === 'type') {
+    return [
+      { label: 'MAIN', value: 'MAIN' },
+      { label: 'SIDE', value: 'SIDE' },
+      { label: 'PLAYER', value: 'PLAYER' },
+    ]
+  }
+  return null
+}
+
 const applySuggestion = (suggestion: SuggestionItem) => {
   const payload = {
     ...suggestion.payload,
     ...ensureDraft(suggestion),
   }
   emit('apply-suggestion', { suggestionId: suggestion.id, payload })
+}
+
+const applySessionField = (suggestion: SuggestionItem, field: 'title' | 'notes') => {
+  const draft = ensureDraft(suggestion)
+  if (typeof draft[field] !== 'string') return
+  emit('apply-suggestion', {
+    suggestionId: suggestion.id,
+    payload: {
+      [field]: draft[field],
+    },
+  })
 }
 
 const suggestionTitle = (suggestion: SuggestionItem) => {
@@ -102,6 +136,22 @@ const suggestionTitle = (suggestion: SuggestionItem) => {
         </div>
       </div>
       <div class="mt-3 flex flex-wrap gap-2">
+        <UButton
+          size="xs"
+          variant="outline"
+          :disabled="sessionSuggestion.status !== 'PENDING' || typeof ensureDraft(sessionSuggestion).title !== 'string'"
+          @click="applySessionField(sessionSuggestion, 'title')"
+        >
+          Apply title
+        </UButton>
+        <UButton
+          size="xs"
+          variant="outline"
+          :disabled="sessionSuggestion.status !== 'PENDING' || typeof ensureDraft(sessionSuggestion).notes !== 'string'"
+          @click="applySessionField(sessionSuggestion, 'notes')"
+        >
+          Apply notes
+        </UButton>
         <UButton
           size="xs"
           variant="outline"
@@ -178,6 +228,13 @@ const suggestionTitle = (suggestion: SuggestionItem) => {
                   :rows="3"
                   class="mt-1"
                   @update:model-value="updateField(suggestion.id, field, $event)"
+                />
+                <USelect
+                  v-else-if="typeof fieldValue === 'string' && enumOptionsFor(suggestion, field)"
+                  :items="enumOptionsFor(suggestion, field)!"
+                  :model-value="String(fieldValue)"
+                  class="mt-1"
+                  @update:model-value="updateField(suggestion.id, field, String($event || ''))"
                 />
                 <UInput
                   v-else-if="typeof fieldValue === 'string'"

@@ -17,10 +17,17 @@ type StartTranscriptionInput = {
   modelId: string
   formats: string[]
   numSpeakers?: number
+  diarizationThreshold?: number
   keyterms?: string[]
   diarize: boolean
   tagAudioEvents?: boolean
   languageCode?: string
+}
+
+type ParseWebhookPayloadInput = {
+  rawBodyText: string
+  webhookSecret?: string
+  signature?: string
 }
 
 type WebhookFormatPayload = {
@@ -171,6 +178,36 @@ export class TranscriptionService {
     this.client = new ElevenLabsClient({ apiKey: this.apiKey })
   }
 
+  async parseWebhookPayload(input: ParseWebhookPayloadInput) {
+    if (input.webhookSecret) {
+      if (!input.signature) {
+        const error = new Error('Missing webhook signature')
+        ;(error as Error & { code?: string }).code = 'MISSING_SIGNATURE'
+        throw error
+      }
+
+      try {
+        return await this.client.webhooks.constructEvent(
+          input.rawBodyText,
+          input.signature,
+          input.webhookSecret
+        )
+      } catch {
+        const error = new Error('Invalid webhook signature')
+        ;(error as Error & { code?: string }).code = 'INVALID_SIGNATURE'
+        throw error
+      }
+    }
+
+    try {
+      return JSON.parse(input.rawBodyText)
+    } catch {
+      const error = new Error('Invalid JSON body')
+      ;(error as Error & { code?: string }).code = 'INVALID_JSON'
+      throw error
+    }
+  }
+
   async startTranscription(input: StartTranscriptionInput) {
     const additionalFormats = input.formats
       .map((format) => requestFormatMap[format])
@@ -183,7 +220,7 @@ export class TranscriptionService {
         status: 'SENDING',
         modelId: input.modelId,
         languageCode: input.languageCode,
-        numSpeakers: input.numSpeakers,
+        numSpeakers: input.diarize ? input.numSpeakers : undefined,
         diarize: input.diarize,
         tagAudioEvents: input.tagAudioEvents ?? false,
         requestedFormats: JSON.stringify(input.formats),
@@ -199,7 +236,11 @@ export class TranscriptionService {
         modelId: input.modelId,
         file: stream,
         languageCode: input.languageCode,
-        numSpeakers: input.numSpeakers,
+        numSpeakers: input.diarize ? input.numSpeakers : undefined,
+        diarizationThreshold:
+          input.diarize && typeof input.numSpeakers !== 'number'
+            ? input.diarizationThreshold
+            : undefined,
         diarize: input.diarize,
         keyterms: input.keyterms,
         tagAudioEvents: input.tagAudioEvents,

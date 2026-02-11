@@ -59,6 +59,22 @@ const hasPendingSuggestions = async (summaryJobId: string) => {
   return remaining > 0
 }
 
+const ensureGlossarySessionLink = async (glossaryEntryId: string, sessionId: string) => {
+  await prisma.glossarySessionLink.upsert({
+    where: {
+      glossaryEntryId_sessionId: {
+        glossaryEntryId,
+        sessionId,
+      },
+    },
+    update: {},
+    create: {
+      glossaryEntryId,
+      sessionId,
+    },
+  })
+}
+
 export class SummarySuggestionService {
   async applySuggestion(
     userId: string,
@@ -100,13 +116,8 @@ export class SummarySuggestionService {
       return { suggestionId: suggestion.id, status: 'DISCARDED', entityType: suggestion.entityType }
     }
 
-    const payload = payloadOverride || (suggestion.payload as Record<string, unknown>)
-    if (payloadOverride) {
-      await prisma.summarySuggestion.update({
-        where: { id: suggestion.id },
-        data: { payload: payloadOverride },
-      })
-    }
+    const originalPayload = suggestion.payload as Record<string, unknown>
+    const payload = payloadOverride || originalPayload
     const match = (suggestion.match || {}) as Record<string, unknown>
 
     if (suggestion.entityType === 'SESSION') {
@@ -134,16 +145,38 @@ export class SummarySuggestionService {
         },
       })
 
+      const sessionKeys: Array<'title' | 'notes'> = ['title', 'notes']
+      const remainingPayload = { ...originalPayload }
+      if (payloadOverride) {
+        for (const key of sessionKeys) {
+          if (key in payloadOverride) {
+            delete remainingPayload[key]
+          }
+        }
+      }
+
+      const hasRemainingSessionFields =
+        typeof remainingPayload.title === 'string' || typeof remainingPayload.notes === 'string'
+
       await prisma.summarySuggestion.update({
         where: { id: suggestion.id },
-        data: { status: 'APPLIED' },
+        data: payloadOverride && hasRemainingSessionFields
+          ? {
+              status: 'PENDING',
+              payload: remainingPayload,
+            }
+          : {
+              status: 'APPLIED',
+            },
       })
 
-      if (!(await hasPendingSuggestions(suggestion.summaryJobId))) {
-        await prisma.summaryJob.update({
-          where: { id: suggestion.summaryJobId },
-          data: { status: 'APPLIED' },
-        })
+      if (!(payloadOverride && hasRemainingSessionFields)) {
+        if (!(await hasPendingSuggestions(suggestion.summaryJobId))) {
+          await prisma.summaryJob.update({
+            where: { id: suggestion.summaryJobId },
+            data: { status: 'APPLIED' },
+          })
+        }
       }
 
       return {
@@ -152,6 +185,13 @@ export class SummarySuggestionService {
         entityId: updated.id,
         entityType: suggestion.entityType,
       }
+    }
+
+    if (payloadOverride) {
+      await prisma.summarySuggestion.update({
+        where: { id: suggestion.id },
+        data: { payload: payloadOverride },
+      })
     }
 
     if (suggestion.entityType === 'QUEST') {
@@ -302,6 +342,7 @@ export class SummarySuggestionService {
             aliases: normalizeAliases(payload.aliases) || undefined,
           },
         })
+        await ensureGlossarySessionLink(updated.id, suggestion.summaryJob.sessionId)
         await prisma.summarySuggestion.update({
           where: { id: suggestion.id },
           data: { status: 'APPLIED' },
@@ -324,6 +365,7 @@ export class SummarySuggestionService {
           aliases: normalizeAliases(payload.aliases) || undefined,
         },
       })
+      await ensureGlossarySessionLink(created.id, suggestion.summaryJob.sessionId)
 
       await prisma.summarySuggestion.update({
         where: { id: suggestion.id },
