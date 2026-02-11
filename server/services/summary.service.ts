@@ -153,6 +153,8 @@ const getCallback = (config: ReturnType<typeof useRuntimeConfig>) => {
   }
 }
 
+const getMirroredSuggestionTrackingId = (summaryTrackingId: string) => `sugjob_${summaryTrackingId}`
+
 export class SummaryService {
   private documentService = new DocumentService()
 
@@ -583,12 +585,71 @@ export class SummaryService {
     }
 
     const suggestionInputs = flattenSuggestions(payload.suggestions)
+    const shouldMirrorIntoSuggestionJob =
+      job.kind === 'SUMMARY_GENERATION' && suggestionInputs.length > 0
+    const mirroredTrackingId = getMirroredSuggestionTrackingId(job.trackingId)
+
     await prisma.$transaction(async (tx) => {
       await tx.summarySuggestion.deleteMany({ where: { summaryJobId: job.id } })
       if (suggestionInputs.length) {
         await tx.summarySuggestion.createMany({
           data: suggestionInputs.map((entry) => ({
             summaryJobId: job.id,
+            entityType: entry.entityType,
+            action: entry.action,
+            status: 'PENDING',
+            match: entry.match || undefined,
+            payload: entry.payload,
+          })),
+        })
+      }
+
+      if (shouldMirrorIntoSuggestionJob) {
+        const mirroredJob = await tx.summaryJob.upsert({
+          where: { trackingId: mirroredTrackingId },
+          create: {
+            campaignId: job.campaignId,
+            sessionId: job.sessionId,
+            documentId: job.documentId,
+            summaryDocumentId: job.summaryDocumentId,
+            trackingId: mirroredTrackingId,
+            status: 'READY_FOR_REVIEW',
+            mode: job.mode,
+            kind: 'SUGGESTION_GENERATION',
+            promptProfile: job.promptProfile,
+            webhookUrl: job.webhookUrl,
+            requestHash: job.requestHash,
+            responseHash: createHash('sha256')
+              .update(JSON.stringify({ sourceTrackingId: job.trackingId, suggestions: payload.suggestions }))
+              .digest('hex'),
+            meta: {
+              source: 'SUMMARY_GENERATION_CALLBACK',
+              sourceSummaryJobId: job.id,
+              sourceTrackingId: job.trackingId,
+            },
+          },
+          update: {
+            status: 'READY_FOR_REVIEW',
+            summaryDocumentId: job.summaryDocumentId,
+            promptProfile: job.promptProfile,
+            webhookUrl: job.webhookUrl,
+            requestHash: job.requestHash,
+            responseHash: createHash('sha256')
+              .update(JSON.stringify({ sourceTrackingId: job.trackingId, suggestions: payload.suggestions }))
+              .digest('hex'),
+            meta: {
+              source: 'SUMMARY_GENERATION_CALLBACK',
+              sourceSummaryJobId: job.id,
+              sourceTrackingId: job.trackingId,
+            },
+            errorMessage: null,
+          },
+        })
+
+        await tx.summarySuggestion.deleteMany({ where: { summaryJobId: mirroredJob.id } })
+        await tx.summarySuggestion.createMany({
+          data: suggestionInputs.map((entry) => ({
+            summaryJobId: mirroredJob.id,
             entityType: entry.entityType,
             action: entry.action,
             status: 'PENDING',
