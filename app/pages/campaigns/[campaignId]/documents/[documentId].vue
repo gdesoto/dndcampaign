@@ -1093,24 +1093,6 @@ const fullTranscript = computed(() =>
                   </p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 text-xs text-dimmed">
-                  <UButton
-                    size="xs"
-                    variant="outline"
-                    icon="i-lucide-undo-2"
-                    :disabled="!canUndo"
-                    @click="undoTranscriptChange"
-                  >
-                    Undo
-                  </UButton>
-                  <UButton
-                    size="xs"
-                    variant="outline"
-                    icon="i-lucide-redo-2"
-                    :disabled="!canRedo"
-                    @click="redoTranscriptChange"
-                  >
-                    Redo
-                  </UButton>
                   <span v-if="isDirty" class="rounded-full bg-warning/20 px-2 py-1 text-warning">
                     Unsaved changes
                   </span>
@@ -1221,9 +1203,31 @@ const fullTranscript = computed(() =>
               </div>
 
               <div class="space-y-3 rounded-lg border border-default/60 bg-elevated/20 p-3">
-                <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
-                  Updates
-                </p>
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
+                    Updates
+                  </p>
+                  <div class="flex items-center justify-end gap-2">
+                    <UButton
+                      size="xs"
+                      variant="outline"
+                      icon="i-lucide-undo-2"
+                      :disabled="!canUndo"
+                      @click="undoTranscriptChange"
+                    >
+                      Undo
+                    </UButton>
+                    <UButton
+                      size="xs"
+                      variant="outline"
+                      icon="i-lucide-redo-2"
+                      :disabled="!canRedo"
+                      @click="redoTranscriptChange"
+                    >
+                      Redo
+                    </UButton>
+                  </div>
+                </div>
                 <div class="grid grid-cols-1 gap-4 rounded-lg border border-default/60 bg-default/30 p-3 md:grid-cols-2">
                   <div class="space-y-2 md:border-r md:border-default/60 md:pr-4">
                     <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
