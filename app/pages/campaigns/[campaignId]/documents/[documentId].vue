@@ -748,6 +748,26 @@ const applySpeakerToFiltered = (speakerValue: string) => {
   })
 }
 
+const applySpeakerPresetToSegment = (segmentId: string, preset: string) => {
+  const trimmed = preset.trim()
+  if (!trimmed) return
+  applySegmentMutation((draft) => {
+    const segment = draft.find((item) => item.id === segmentId)
+    if (!segment) return
+    segment.speaker = trimmed
+  })
+  speakerDrafts.value[segmentId] = trimmed
+}
+
+const applySpeakerPresetToSegmentWithClose = (
+  segmentId: string,
+  preset: string,
+  close: () => void
+) => {
+  applySpeakerPresetToSegment(segmentId, preset)
+  close()
+}
+
 const clearSpeakerUpdateInputs = () => {
   selectedSpeakerPreset.value = null
   speakerBulkInput.value = ''
@@ -1524,10 +1544,46 @@ const fullTranscript = computed(() =>
                     size="xs"
                     class="w-36"
                     placeholder="Speaker"
+                    :ui="{ trailing: 'pe-1' }"
                     @update:model-value="(value) => setSpeakerDraft(segment.id, value)"
                     @blur="commitSpeakerDraft(segment.id)"
                     @keydown.enter.prevent="commitSpeakerDraft(segment.id)"
-                  />
+                  >
+                    <template #trailing>
+                      <UPopover :content="{ side: 'top', align: 'start' }" :ui="{ content: 'w-56 p-2' }">
+                        <UButton
+                          color="neutral"
+                          variant="link"
+                          size="sm"
+                          icon="i-lucide-arrow-right-left"
+                          :disabled="!speakerPresetOptions.length"
+                          aria-label="Swap speaker from preset"
+                        />
+                        <template #content="{ close }">
+                          <div class="space-y-1">
+                            <p class="px-1 text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
+                              Swap Speaker
+                            </p>
+                            <div v-if="speakerPresetOptions.length" class="max-h-48 space-y-1 overflow-y-auto pr-1">
+                              <UButton
+                                v-for="option in speakerPresetOptions"
+                                :key="`swap-${segment.id}-${option}`"
+                                size="xs"
+                                variant="ghost"
+                                class="w-full justify-start"
+                                @click="applySpeakerPresetToSegmentWithClose(segment.id, option, close)"
+                              >
+                                {{ option }}
+                              </UButton>
+                            </div>
+                            <p v-else class="px-1 text-xs text-dimmed">
+                              No speaker presets available.
+                            </p>
+                          </div>
+                        </template>
+                      </UPopover>
+                    </template>
+                  </UInput>
                   <span v-if="segment.disabled" class="rounded-full bg-warning/20 px-2 py-0.5 text-warning">
                     Disabled in preview
                   </span>
