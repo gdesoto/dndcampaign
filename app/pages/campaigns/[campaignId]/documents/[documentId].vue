@@ -1115,7 +1115,18 @@ const fullTranscript = computed(() =>
                       size="xs"
                       class="w-56"
                       placeholder="Search transcript"
-                    />
+                      :ui="{ trailing: 'pe-1' }">
+                      <template v-if="searchInput?.length" #trailing>
+                        <UButton
+                          color="neutral"
+                          variant="link"
+                          size="sm"
+                          icon="i-lucide-circle-x"
+                          aria-label="Clear input"
+                          @click="searchInput = ''"
+                        />
+                      </template>
+                    </UInput>
                     <UCheckbox v-model="searchFilterEnabled" label="Filter search matches" />
                     <UButton
                       size="xs"
@@ -1145,10 +1156,11 @@ const fullTranscript = computed(() =>
                       <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
                         Speakers
                       </p>
-                      <UInputMenu
+                      <USelectMenu
                         v-model="speakerFilterSelection"
                         size="xs"
                         class="w-full"
+                        clear
                         multiple
                         :items="speakerOptions"
                         placeholder="All speakers"
@@ -1163,16 +1175,56 @@ const fullTranscript = computed(() =>
                         <UFieldGroup class="w-full">
                           <UInput
                             v-model="startTimeFilter"
+                            :ui="{
+                              base: 'pl-11',
+                              leading: 'pointer-events-none',
+                              trailing: 'pe-1'
+                            }"
                             size="xs"
                             class="w-1/2 min-w-0"
-                            placeholder="Start mm:ss"
-                          />
+                            placeholder="mm:ss">
+                            <template #leading>
+                              <p class="text-xs text-muted">
+                                Start
+                              </p>
+                            </template>
+                            <template v-if="startTimeFilter?.length" #trailing>
+                              <UButton
+                                color="neutral"
+                                variant="link"
+                                size="sm"
+                                icon="i-lucide-circle-x"
+                                aria-label="Clear input"
+                                @click="startTimeFilter = ''"
+                              />
+                            </template>
+                          </UInput>
                           <UInput
                             v-model="endTimeFilter"
+                            :ui="{
+                              base: 'pl-11',
+                              leading: 'pointer-events-none',
+                              trailing: 'pe-1'
+                            }"
                             size="xs"
                             class="w-1/2 min-w-0"
-                            placeholder="End mm:ss"
-                          />
+                            placeholder="mm:ss">
+                            <template #leading>
+                              <p class="text-xs text-muted">
+                                End
+                              </p>
+                            </template>
+                            <template v-if="endTimeFilter?.length" #trailing>
+                              <UButton
+                                color="neutral"
+                                variant="link"
+                                size="sm"
+                                icon="i-lucide-circle-x"
+                                aria-label="Clear input"
+                                @click="endTimeFilter = ''"
+                              />
+                            </template>
+                          </UInput>
                         </UFieldGroup>
                       </div>
                     </div>
@@ -1185,16 +1237,56 @@ const fullTranscript = computed(() =>
                         <UFieldGroup class="w-full">
                           <UInput
                             v-model="minLengthFilter"
+                            :ui="{
+                              base: 'pl-10',
+                              leading: 'pointer-events-none',
+                              trailing: 'pe-1'
+                            }"
                             size="xs"
                             class="w-1/2 min-w-0"
-                            placeholder="Min s"
-                          />
+                            placeholder="seconds">
+                            <template #leading>
+                              <p class="text-xs text-muted">
+                                Min
+                              </p>
+                            </template>
+                            <template v-if="minLengthFilter?.length" #trailing>
+                              <UButton
+                                color="neutral"
+                                variant="link"
+                                size="sm"
+                                icon="i-lucide-circle-x"
+                                aria-label="Clear input"
+                                @click="minLengthFilter = ''"
+                              />
+                            </template>
+                          </UInput>
                           <UInput
                             v-model="maxLengthFilter"
+                            :ui="{
+                              base: 'pl-10',
+                              leading: 'pointer-events-none',
+                              trailing: 'pe-1'
+                            }"
                             size="xs"
                             class="w-1/2 min-w-0"
-                            placeholder="Max s"
-                          />
+                            placeholder="seconds">
+                            <template #leading>
+                              <p class="text-xs text-muted">
+                                Max
+                              </p>
+                            </template>
+                            <template v-if="maxLengthFilter?.length" #trailing>
+                              <UButton
+                                color="neutral"
+                                variant="link"
+                                size="sm"
+                                icon="i-lucide-circle-x"
+                                aria-label="Clear input"
+                                @click="maxLengthFilter = ''"
+                              />
+                            </template>
+                          </UInput>
                         </UFieldGroup>
                       </div>
                     </div>
@@ -1241,7 +1333,7 @@ const fullTranscript = computed(() =>
                           :search-input="{ placeholder: 'Search speaker presets...' }"
                           size="xs"
                           class="w-1/2 min-w-0"
-                          placeholder="Select preset"
+                          placeholder="Select character"
                         />
                         <UInput
                           v-model="speakerBulkInput"
