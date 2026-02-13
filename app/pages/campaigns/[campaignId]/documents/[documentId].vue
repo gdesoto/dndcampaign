@@ -110,6 +110,8 @@ const searchTerm = ref('')
 const activeMatchIndex = ref(0)
 const selectedSegmentId = ref('')
 const selectedSegmentIds = ref<string[]>([])
+const selectionAnchorSegmentId = ref('')
+const pendingSelectionClick = ref<{ segmentId: string; shiftKey: boolean } | null>(null)
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 const searchFilterEnabled = ref(false)
 const speakerFilterSelection = ref<string[]>([])
@@ -361,6 +363,8 @@ watch(
       windowStart.value = 0
       selectedSegmentId.value = ''
       selectedSegmentIds.value = []
+      selectionAnchorSegmentId.value = ''
+      pendingSelectionClick.value = null
       activeMatchIndex.value = 0
     } else {
       segments.value = []
@@ -369,6 +373,8 @@ watch(
       savedTranscriptState.value = ''
       speakerDrafts.value = {}
       isDirty.value = false
+      selectionAnchorSegmentId.value = ''
+      pendingSelectionClick.value = null
     }
   },
   { immediate: true }
@@ -634,22 +640,73 @@ const toggleSegmentDisabled = (segmentId: string) => {
 
 const selectedSet = computed(() => new Set(selectedSegmentIds.value))
 
-const toggleSegmentSelection = (segmentId: string) => {
+const setSegmentSelection = (segmentId: string, selected: boolean) => {
   const next = new Set(selectedSegmentIds.value)
-  if (next.has(segmentId)) {
-    next.delete(segmentId)
-  } else {
+  if (selected) {
     next.add(segmentId)
+  } else {
+    next.delete(segmentId)
   }
   selectedSegmentIds.value = Array.from(next)
 }
 
+const selectVisibleSegmentRange = (fromSegmentId: string, toSegmentId: string) => {
+  const ids = visibleSegments.value.map((segment) => segment.id)
+  const fromIndex = ids.indexOf(fromSegmentId)
+  const toIndex = ids.indexOf(toSegmentId)
+  if (fromIndex < 0 || toIndex < 0) {
+    setSegmentSelection(toSegmentId, true)
+    return
+  }
+
+  const start = Math.min(fromIndex, toIndex)
+  const end = Math.max(fromIndex, toIndex)
+  const next = new Set(selectedSegmentIds.value)
+  for (let index = start; index <= end; index += 1) {
+    next.add(ids[index])
+  }
+  selectedSegmentIds.value = Array.from(next)
+}
+
+const noteSegmentSelectionClick = (event: MouseEvent, segmentId: string) => {
+  pendingSelectionClick.value = { segmentId, shiftKey: event.shiftKey }
+}
+
+const handleSegmentSelectionUpdate = (
+  segmentId: string,
+  modelValue: boolean | 'indeterminate'
+) => {
+  const selected = modelValue === true
+  const pending = pendingSelectionClick.value
+  const shouldSelectRange =
+    selected &&
+    pending?.segmentId === segmentId &&
+    pending.shiftKey &&
+    Boolean(selectionAnchorSegmentId.value)
+
+  if (shouldSelectRange) {
+    selectVisibleSegmentRange(selectionAnchorSegmentId.value, segmentId)
+  } else {
+    setSegmentSelection(segmentId, selected)
+  }
+
+  if (selected) {
+    selectionAnchorSegmentId.value = segmentId
+  } else if (selectionAnchorSegmentId.value === segmentId) {
+    selectionAnchorSegmentId.value = ''
+  }
+
+  pendingSelectionClick.value = null
+}
+
 const selectAllFiltered = () => {
   selectedSegmentIds.value = filteredSegments.value.map((segment) => segment.id)
+  selectionAnchorSegmentId.value = ''
 }
 
 const clearSelection = () => {
   selectedSegmentIds.value = []
+  selectionAnchorSegmentId.value = ''
 }
 
 const applyDisableToSelection = (disabled: boolean) => {
@@ -689,6 +746,11 @@ const applySpeakerToFiltered = (speakerValue: string) => {
       }
     })
   })
+}
+
+const clearSpeakerUpdateInputs = () => {
+  selectedSpeakerPreset.value = null
+  speakerBulkInput.value = ''
 }
 
 const getSpeakerDraft = (segment: TranscriptSegment) =>
@@ -1168,21 +1230,22 @@ const fullTranscript = computed(() =>
                       Set Speaker
                     </p>
                     <div class="flex flex-wrap items-center gap-2">
-                      <USelectMenu
-                        v-model="selectedSpeakerPreset"
-                        :items="speakerPresetOptions"
-                        :search-input="{ placeholder: 'Search speaker presets...' }"
-                        size="xs"
-                        class="w-56"
-                        placeholder="Select preset"
-                      />
-                      <UInput
-                        v-model="speakerBulkInput"
-                        size="xs"
-                        class="w-40"
-                        placeholder="Set speaker"
-                      />
-                      
+                      <UFieldGroup class="w-full">
+                        <USelectMenu
+                          v-model="selectedSpeakerPreset"
+                          :items="speakerPresetOptions"
+                          :search-input="{ placeholder: 'Search speaker presets...' }"
+                          size="xs"
+                          class="w-1/2 min-w-0"
+                          placeholder="Select preset"
+                        />
+                        <UInput
+                          v-model="speakerBulkInput"
+                          size="xs"
+                          class="w-1/2 min-w-0"
+                          placeholder="Set custom speaker"
+                        />
+                      </UFieldGroup>
                       <div class="flex flex-wrap items-center gap-2">
                         <UButton
                           size="xs"
@@ -1199,6 +1262,15 @@ const fullTranscript = computed(() =>
                           @click="applySpeakerToFiltered(speakerBulkInput)"
                         >
                           Update Filtered
+                        </UButton>
+                        <UButton
+                          size="xs"
+                          variant="ghost"
+                          icon="i-lucide-x"
+                          :disabled="!selectedSpeakerPreset && !speakerBulkInput.trim()"
+                          @click="clearSpeakerUpdateInputs"
+                        >
+                          Clear
                         </UButton>
                       </div>
                     </div>
@@ -1242,7 +1314,12 @@ const fullTranscript = computed(() =>
                       <UButton size="xs" variant="ghost" @click="selectAllFiltered">
                         Select filtered
                       </UButton>
-                      <UButton size="xs" variant="ghost" @click="clearSelection">
+                      <UButton
+                        size="xs"
+                        variant="ghost"
+                        :disabled="!selectedSegmentIds.length"
+                        @click="clearSelection"
+                      >
                         Clear
                       </UButton>
                       <UButton
@@ -1308,7 +1385,8 @@ const fullTranscript = computed(() =>
                   <div class="flex items-center gap-2 text-xs text-dimmed">
                     <UCheckbox
                       :model-value="selectedSet.has(segment.id)"
-                      @update:modelValue="() => toggleSegmentSelection(segment.id)"
+                      @click="(event) => noteSegmentSelectionClick(event, segment.id)"
+                      @update:modelValue="(value) => handleSegmentSelectionUpdate(segment.id, value)"
                     />
                     <span>{{ formatTimestamp(segment.startMs) }}</span>
                     <span v-if="segment.endMs !== null">- {{ formatTimestamp(segment.endMs) }}</span>
