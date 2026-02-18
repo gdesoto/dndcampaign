@@ -13,6 +13,7 @@ definePageMeta({ layout: 'app' })
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
 const { request } = useApi()
+const canWriteContent = inject('campaignCanWriteContent', computed(() => true))
 
 const { data: maps, pending, refresh, error } = await useAsyncData(
   () => `campaign-maps-${campaignId.value}`,
@@ -84,6 +85,7 @@ watch(
 )
 
 const importMap = async () => {
+  if (!canWriteContent.value) return
   importError.value = ''
   if (!importFiles.value?.length) {
     importError.value = 'Select at least one file and include the Full JSON export.'
@@ -137,6 +139,7 @@ const savingMap = ref(false)
 const mapSaveError = ref('')
 
 const saveMapMeta = async () => {
+  if (!canWriteContent.value) return
   if (!selectedMap.value) return
   savingMap.value = true
   mapSaveError.value = ''
@@ -158,6 +161,7 @@ const saveMapMeta = async () => {
 }
 
 const setPrimary = async (mapId: string) => {
+  if (!canWriteContent.value) return
   await request(`/api/campaigns/${campaignId.value}/maps/${mapId}/set-primary`, {
     method: 'POST',
   })
@@ -168,6 +172,7 @@ const deleteError = ref('')
 const deletingMapId = ref('')
 
 const deleteMap = async (mapId: string) => {
+  if (!canWriteContent.value) return
   deleteError.value = ''
   const target = (maps.value || []).find((entry) => entry.id === mapId)
   if (!target) return
@@ -226,6 +231,7 @@ const applyMapName = ref('')
 const applyKeepPrimary = ref(false)
 
 const previewReimport = async () => {
+  if (!canWriteContent.value) return
   if (!selectedMap.value || !reimportFiles.value?.length) {
     reimportError.value = 'Choose re-import files first.'
     return
@@ -257,6 +263,7 @@ const previewReimport = async () => {
 }
 
 const applyReimport = async () => {
+  if (!canWriteContent.value) return
   if (!selectedMap.value || !reimportFiles.value?.length) return
   reimporting.value = true
   reimportError.value = ''
@@ -293,6 +300,14 @@ const applyReimport = async () => {
 
 <template>
   <div class="space-y-6">
+    <UAlert
+      v-if="!canWriteContent"
+      color="warning"
+      variant="subtle"
+      title="Read-only access"
+      description="Your role can view maps but cannot import, edit, or delete them."
+    />
+
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Campaign maps</p>
@@ -303,7 +318,7 @@ const applyReimport = async () => {
       </UBadge>
     </div>
 
-    <UCard v-if="!hasImportedMaps">
+    <UCard v-if="!hasImportedMaps && canWriteContent">
       <template #header>
         <h2 class="text-lg font-semibold">Import Azgaar export</h2>
       </template>
@@ -319,6 +334,11 @@ const applyReimport = async () => {
         @update:files="importFiles = $event"
         @submit="importMap"
       />
+    </UCard>
+    <UCard v-else-if="!hasImportedMaps && !pending && !error">
+      <p class="text-sm text-muted">
+        No maps are available yet. Your role is read-only, so only owners and collaborators can import maps.
+      </p>
     </UCard>
 
     <div v-if="pending" class="space-y-3">
@@ -364,6 +384,7 @@ const applyReimport = async () => {
                   size="xs"
                   variant="ghost"
                   color="neutral"
+                  :disabled="!canWriteContent"
                   @click.stop="setPrimary(map.id)"
                 >
                   Set primary
@@ -372,6 +393,7 @@ const applyReimport = async () => {
                   size="xs"
                   variant="ghost"
                   color="error"
+                  :disabled="!canWriteContent"
                   :loading="deletingMapId === map.id"
                   @click.stop="deleteMap(map.id)"
                 >
@@ -386,6 +408,7 @@ const applyReimport = async () => {
               class="mt-2 w-full"
               color="neutral"
               variant="outline"
+              :disabled="!canWriteContent"
               @click="importModalOpen = true"
             >
               Import another map
@@ -401,11 +424,12 @@ const applyReimport = async () => {
           </template>
           <div v-if="selectedMap" class="space-y-3">
             <UFormField label="Map name">
-              <UInput v-model="mapEditName" />
+              <UInput v-model="mapEditName" :disabled="!canWriteContent" />
             </UFormField>
             <UFormField label="Status">
               <USelect
                 v-model="mapEditStatus"
+                :disabled="!canWriteContent"
                 :items="[
                   { label: 'Active', value: 'ACTIVE' },
                   { label: 'Archived', value: 'ARCHIVED' },
@@ -413,10 +437,11 @@ const applyReimport = async () => {
               />
             </UFormField>
             <div class="flex items-center gap-2">
-              <UButton :loading="savingMap" @click="saveMapMeta">Save map</UButton>
+              <UButton :loading="savingMap" :disabled="!canWriteContent" @click="saveMapMeta">Save map</UButton>
               <UButton
                 color="error"
                 variant="ghost"
+                :disabled="!canWriteContent"
                 :loading="deletingMapId === selectedMap.id"
                 @click="deleteMap(selectedMap.id)"
               >
@@ -442,7 +467,8 @@ const applyReimport = async () => {
                 />
                 <UButton
                   size="sm"
-                  :disabled="!selectedFeatureIds.length || !selectedMapId"
+                  :disabled="!canWriteContent || !selectedFeatureIds.length || !selectedMapId"
+                  :title="canWriteContent ? undefined : 'Read-only role cannot stage glossary actions'"
                   @click="stageOpen = true"
                 >
                   Stage for glossary ({{ selectedFeatureIds.length }})
@@ -493,6 +519,7 @@ const applyReimport = async () => {
               size="sm"
               variant="ghost"
               color="neutral"
+              :disabled="!canWriteContent"
               @click="selectedFeatureIds = []"
             >
               Clear selection
@@ -508,12 +535,13 @@ const applyReimport = async () => {
             <UFileUpload
               v-model="reimportFiles"
               multiple
+              :disabled="!canWriteContent"
               label="Upload replacement files"
               accept=".json,.geojson,.svg"
               description="Preview diff first, then choose apply strategy."
             />
             <div class="flex items-center gap-2">
-              <UButton :loading="reimporting" :disabled="!selectedMap" @click="previewReimport">
+              <UButton :loading="reimporting" :disabled="!canWriteContent || !selectedMap" @click="previewReimport">
                 Preview re-import diff
               </UButton>
               <p v-if="reimportError" class="text-sm text-error">{{ reimportError }}</p>

@@ -13,11 +13,17 @@ type CampaignLink = {
   roleLabel?: string | null
   notes?: string | null
   campaign: { id: string; name: string }
+  accessImpact?: {
+    warningRequired: boolean
+    impactedUserCount: number
+  }
 }
 
 type Character = {
   id: string
   name: string
+  canEdit: boolean
+  isOwner: boolean
   status?: string | null
   portraitUrl?: string | null
   sheetJson?: Record<string, unknown>
@@ -40,6 +46,7 @@ const { data: campaigns } = await useAsyncData('characters-campaigns', () =>
 )
 
 const sheet = computed(() => (character.value?.sheetJson as Record<string, unknown>) || {})
+const canEdit = computed(() => Boolean(character.value?.canEdit))
 
 const activeSection = ref('BASICS')
 const sectionTabs = [
@@ -143,6 +150,7 @@ const savingSection = ref('')
 const sectionError = ref('')
 
 const saveSection = async (section: string, payload: unknown) => {
+  if (!canEdit.value) return
   sectionError.value = ''
   savingSection.value = section
   try {
@@ -160,6 +168,7 @@ const saveSection = async (section: string, payload: unknown) => {
 }
 
 const saveBasics = async () => {
+  if (!canEdit.value) return
   await request(`/api/characters/${characterId.value}`, {
     method: 'PATCH',
     body: {
@@ -195,11 +204,13 @@ const importError = ref('')
 const isImporting = ref(false)
 
 const openImport = () => {
+  if (!canEdit.value) return
   importError.value = ''
   isImportOpen.value = true
 }
 
 const importCharacter = async (payload: CharacterImportPayload) => {
+  if (!canEdit.value) return
   importError.value = ''
   isImporting.value = true
   try {
@@ -217,6 +228,7 @@ const importCharacter = async (payload: CharacterImportPayload) => {
 }
 
 const refreshImport = async (payload: CharacterImportRefreshPayload) => {
+  if (!canEdit.value) return
   importError.value = ''
   isImporting.value = true
   try {
@@ -239,6 +251,7 @@ const statusOptions = [
 
 const attachCampaignId = ref('')
 const attachToCampaign = async () => {
+  if (!canEdit.value) return
   if (!attachCampaignId.value) return
   await request(`/api/campaigns/${attachCampaignId.value}/characters`, {
     method: 'POST',
@@ -249,6 +262,7 @@ const attachToCampaign = async () => {
 }
 
 const updateCampaignLink = async (link: CampaignLink, status: CampaignLink['status']) => {
+  if (!canEdit.value) return
   await request(`/api/campaigns/${link.campaignId}/characters/${link.characterId}`, {
     method: 'PATCH',
     body: { status },
@@ -257,6 +271,7 @@ const updateCampaignLink = async (link: CampaignLink, status: CampaignLink['stat
 }
 
 const removeFromCampaign = async (link: CampaignLink) => {
+  if (!canEdit.value) return
   await request(`/api/campaigns/${link.campaignId}/characters/${link.characterId}`, {
     method: 'DELETE',
   })
@@ -269,6 +284,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
 }
 
 const deleteCharacter = async () => {
+  if (!canEdit.value) return
   await request(`/api/characters/${characterId.value}`, { method: 'DELETE' })
   router.push('/characters')
 }
@@ -284,6 +300,13 @@ const deleteCharacter = async () => {
     </UCard>
 
     <div v-else-if="character" class="space-y-6">
+      <UAlert
+        v-if="!canEdit"
+        color="warning"
+        variant="subtle"
+        title="Read-only access"
+        description="This character is shared through campaign membership. Only the character owner can edit or delete it."
+      />
       <UCard>
         <template #header>
           <div class="flex flex-wrap items-center justify-between gap-4">
@@ -292,8 +315,8 @@ const deleteCharacter = async () => {
               <h1 class="mt-2 text-2xl font-semibold">{{ character.name }}</h1>
             </div>
             <div class="flex flex-wrap gap-2">
-              <UButton variant="outline" @click="openImport">Import</UButton>
-              <UButton color="red" variant="ghost" @click="deleteCharacter">Delete</UButton>
+              <UButton variant="outline" :disabled="!canEdit" @click="openImport">Import</UButton>
+              <UButton color="red" variant="ghost" :disabled="!canEdit" @click="deleteCharacter">Delete</UButton>
             </div>
           </div>
         </template>
@@ -311,62 +334,63 @@ const deleteCharacter = async () => {
           <div v-if="activeSection === 'BASICS'" class="space-y-4">
             <div>
               <label class="mb-2 block text-sm text-muted">Name</label>
-              <UInput v-model="basicsForm.name" />
+              <UInput v-model="basicsForm.name" :disabled="!canEdit" />
             </div>
             <div>
               <label class="mb-2 block text-sm text-muted">Player name</label>
-              <UInput v-model="basicsForm.playerName" />
+              <UInput v-model="basicsForm.playerName" :disabled="!canEdit" />
             </div>
             <div class="grid gap-4 md:grid-cols-2">
               <div>
                 <label class="mb-2 block text-sm text-muted">Level</label>
-                <UInput v-model.number="basicsForm.level" type="number" min="1" />
+                <UInput v-model.number="basicsForm.level" type="number" min="1" :disabled="!canEdit" />
               </div>
               <div>
                 <label class="mb-2 block text-sm text-muted">Experience</label>
-                <UInput v-model.number="basicsForm.experience" type="number" min="0" />
+                <UInput v-model.number="basicsForm.experience" type="number" min="0" :disabled="!canEdit" />
               </div>
             </div>
             <div>
               <label class="mb-2 block text-sm text-muted">Alignment</label>
-              <UInput v-model="basicsForm.alignment" />
+              <UInput v-model="basicsForm.alignment" :disabled="!canEdit" />
             </div>
             <div class="flex items-center gap-3">
-              <USwitch v-model="basicsForm.inspiration" />
+              <USwitch v-model="basicsForm.inspiration" :disabled="!canEdit" />
               <span class="text-sm text-muted">Inspiration</span>
             </div>
-            <UButton :loading="savingSection === 'BASICS'" @click="saveBasics">Save basics</UButton>
+            <UButton :loading="savingSection === 'BASICS'" :disabled="!canEdit" @click="saveBasics">Save basics</UButton>
           </div>
 
           <div v-else-if="activeSection === 'ABILITY_SCORES'" class="space-y-4">
             <div class="grid gap-4 md:grid-cols-3">
               <div>
                 <label class="mb-2 block text-sm text-muted">STR</label>
-                <UInput v-model.number="abilityForm.str" type="number" min="1" />
+                <UInput v-model.number="abilityForm.str" type="number" min="1" :disabled="!canEdit" />
               </div>
               <div>
                 <label class="mb-2 block text-sm text-muted">DEX</label>
-                <UInput v-model.number="abilityForm.dex" type="number" min="1" />
+                <UInput v-model.number="abilityForm.dex" type="number" min="1" :disabled="!canEdit" />
               </div>
               <div>
                 <label class="mb-2 block text-sm text-muted">CON</label>
-                <UInput v-model.number="abilityForm.con" type="number" min="1" />
+                <UInput v-model.number="abilityForm.con" type="number" min="1" :disabled="!canEdit" />
               </div>
               <div>
                 <label class="mb-2 block text-sm text-muted">INT</label>
-                <UInput v-model.number="abilityForm.int" type="number" min="1" />
+                <UInput v-model.number="abilityForm.int" type="number" min="1" :disabled="!canEdit" />
               </div>
               <div>
                 <label class="mb-2 block text-sm text-muted">WIS</label>
-                <UInput v-model.number="abilityForm.wis" type="number" min="1" />
+                <UInput v-model.number="abilityForm.wis" type="number" min="1" :disabled="!canEdit" />
               </div>
               <div>
                 <label class="mb-2 block text-sm text-muted">CHA</label>
-                <UInput v-model.number="abilityForm.cha" type="number" min="1" />
+                <UInput v-model.number="abilityForm.cha" type="number" min="1" :disabled="!canEdit" />
               </div>
             </div>
             <UButton
               :loading="savingSection === 'ABILITY_SCORES'"
+              :disabled="!canEdit"
               @click="saveSection('ABILITY_SCORES', { ...abilityForm })"
             >
               Save ability scores
@@ -376,28 +400,29 @@ const deleteCharacter = async () => {
           <div v-else-if="activeSection === 'BACKGROUND'" class="space-y-4">
             <div>
               <label class="mb-2 block text-sm text-muted">Background name</label>
-              <UInput v-model="backgroundForm.name" />
+              <UInput v-model="backgroundForm.name" :disabled="!canEdit" />
             </div>
             <div class="grid gap-4 md:grid-cols-2">
               <div>
                 <label class="mb-2 block text-sm text-muted">Traits</label>
-                <UTextarea v-model="backgroundForm.traits" :rows="4" />
+                <UTextarea v-model="backgroundForm.traits" :rows="4" :disabled="!canEdit" />
               </div>
               <div>
                 <label class="mb-2 block text-sm text-muted">Ideals</label>
-                <UTextarea v-model="backgroundForm.ideals" :rows="4" />
+                <UTextarea v-model="backgroundForm.ideals" :rows="4" :disabled="!canEdit" />
               </div>
               <div>
                 <label class="mb-2 block text-sm text-muted">Bonds</label>
-                <UTextarea v-model="backgroundForm.bonds" :rows="4" />
+                <UTextarea v-model="backgroundForm.bonds" :rows="4" :disabled="!canEdit" />
               </div>
               <div>
                 <label class="mb-2 block text-sm text-muted">Flaws</label>
-                <UTextarea v-model="backgroundForm.flaws" :rows="4" />
+                <UTextarea v-model="backgroundForm.flaws" :rows="4" :disabled="!canEdit" />
               </div>
             </div>
             <UButton
               :loading="savingSection === 'BACKGROUND'"
+              :disabled="!canEdit"
               @click="
                 saveSection('BACKGROUND', {
                   name: backgroundForm.name,
@@ -413,31 +438,32 @@ const deleteCharacter = async () => {
           </div>
 
           <div v-else-if="activeSection === 'CLASSES'" class="space-y-4">
-            <UTextarea v-model="classesJson" :rows="10" />
-            <UButton :loading="savingSection === 'CLASSES'" @click="saveClasses">Save classes</UButton>
+            <UTextarea v-model="classesJson" :rows="10" :disabled="!canEdit" />
+            <UButton :loading="savingSection === 'CLASSES'" :disabled="!canEdit" @click="saveClasses">Save classes</UButton>
           </div>
 
           <div v-else-if="activeSection === 'SPELLS'" class="space-y-4">
-            <UTextarea v-model="spellsJson" :rows="10" />
-            <UButton :loading="savingSection === 'SPELLS'" @click="saveSpells">Save spells</UButton>
+            <UTextarea v-model="spellsJson" :rows="10" :disabled="!canEdit" />
+            <UButton :loading="savingSection === 'SPELLS'" :disabled="!canEdit" @click="saveSpells">Save spells</UButton>
           </div>
 
           <div v-else-if="activeSection === 'EQUIPMENT'" class="space-y-4">
-            <UTextarea v-model="equipmentJson" :rows="10" />
-            <UButton :loading="savingSection === 'EQUIPMENT'" @click="saveEquipment">Save equipment</UButton>
+            <UTextarea v-model="equipmentJson" :rows="10" :disabled="!canEdit" />
+            <UButton :loading="savingSection === 'EQUIPMENT'" :disabled="!canEdit" @click="saveEquipment">Save equipment</UButton>
           </div>
 
           <div v-else-if="activeSection === 'NOTES'" class="space-y-4">
             <div>
               <label class="mb-2 block text-sm text-muted">Backstory</label>
-              <UTextarea v-model="notesForm.backstory" :rows="6" />
+              <UTextarea v-model="notesForm.backstory" :rows="6" :disabled="!canEdit" />
             </div>
             <div>
               <label class="mb-2 block text-sm text-muted">Other notes</label>
-              <UTextarea v-model="notesForm.other" :rows="4" />
+              <UTextarea v-model="notesForm.other" :rows="4" :disabled="!canEdit" />
             </div>
             <UButton
               :loading="savingSection === 'NOTES'"
+              :disabled="!canEdit"
               @click="saveSection('NOTES', { backstory: notesForm.backstory, other: notesForm.other })"
             >
               Save notes
@@ -445,8 +471,8 @@ const deleteCharacter = async () => {
           </div>
 
           <div v-else class="space-y-4">
-            <UTextarea v-model="rawJson" :rows="12" />
-            <UButton :loading="savingSection === 'CUSTOM'" @click="saveRaw">Save raw data</UButton>
+            <UTextarea v-model="rawJson" :rows="12" :disabled="!canEdit" />
+            <UButton :loading="savingSection === 'CUSTOM'" :disabled="!canEdit" @click="saveRaw">Save raw data</UButton>
           </div>
 
           <p v-if="sectionError" class="text-sm text-error">{{ sectionError }}</p>
@@ -485,6 +511,7 @@ const deleteCharacter = async () => {
                       :model-value="link.status"
                       size="xs"
                       class="w-full max-w-36"
+                      :disabled="!canEdit"
                       @update:model-value="(value) => updateCampaignLink(link, value as CampaignLink['status'])"
                     />
                     <UPopover :content="{ side: 'left', align: 'end' }" :ui="{ content: 'w-64 p-3' }">
@@ -494,6 +521,7 @@ const deleteCharacter = async () => {
                           variant="ghost"
                           color="error"
                           icon="i-lucide-trash-2"
+                          :disabled="!canEdit"
                           aria-label="Remove campaign link"
                         />
                       </UTooltip>
@@ -503,6 +531,13 @@ const deleteCharacter = async () => {
                             Remove {{ character?.name || 'this character' }} from
                             "{{ link.campaign.name }}"?
                           </p>
+                          <UAlert
+                            v-if="link.accessImpact?.warningRequired"
+                            color="warning"
+                            variant="subtle"
+                            title="Shared access warning"
+                            :description="`Up to ${link.accessImpact.impactedUserCount} non-owner member(s) may lose access after removal.`"
+                          />
                           <div class="flex justify-end gap-2">
                             <UButton size="xs" variant="ghost" color="neutral" @click="close">
                               Cancel
@@ -511,6 +546,7 @@ const deleteCharacter = async () => {
                               size="xs"
                               color="error"
                               icon="i-lucide-trash-2"
+                              :disabled="!canEdit"
                               @click="removeFromCampaignWithClose(link, close)"
                             >
                               Remove
@@ -530,9 +566,10 @@ const deleteCharacter = async () => {
                   label-key="name"
                   :items="campaigns || []"
                   placeholder="Attach to campaign"
+                  :disabled="!canEdit"
                   class="flex-1"
                 />
-                <UButton :disabled="!attachCampaignId" class="w-full sm:w-auto" @click="attachToCampaign">
+                <UButton :disabled="!canEdit || !attachCampaignId" class="w-full sm:w-auto" @click="attachToCampaign">
                   Attach
                 </UButton>
               </div>

@@ -7,22 +7,31 @@ type CharacterLink = {
   character: {
     id: string
     name: string
+    canEdit: boolean
+    isOwner: boolean
     summaryJson?: {
       level?: number
       classes?: string[]
       race?: string
     }
   }
+  accessImpact?: {
+    warningRequired: boolean
+    impactedUserCount: number
+  }
 }
 
 type CharacterOption = {
   id: string
   name: string
+  canEdit: boolean
+  isOwner: boolean
 }
 
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
 const { request } = useApi()
+const canWriteContent = inject('campaignCanWriteContent', computed(() => true))
 
 const { data: links, pending, refresh, error } = await useAsyncData(
   () => `campaign-characters-${campaignId.value}`,
@@ -37,6 +46,7 @@ const attachCharacterId = ref('')
 const attachError = ref('')
 
 const attachCharacter = async () => {
+  if (!canWriteContent.value) return
   if (!attachCharacterId.value) return
   attachError.value = ''
   try {
@@ -53,6 +63,7 @@ const attachCharacter = async () => {
 }
 
 const updateStatus = async (link: CharacterLink, status: CharacterLink['status']) => {
+  if (!canWriteContent.value) return
   await request(`/api/campaigns/${campaignId.value}/characters/${link.character.id}`, {
     method: 'PATCH',
     body: { status },
@@ -61,11 +72,21 @@ const updateStatus = async (link: CharacterLink, status: CharacterLink['status']
 }
 
 const removeLink = async (link: CharacterLink) => {
+  if (!canWriteContent.value) return
   await request(`/api/campaigns/${campaignId.value}/characters/${link.character.id}`, {
     method: 'DELETE',
   })
   await refresh()
 }
+
+const removeLinkWithClose = async (link: CharacterLink, close: () => void) => {
+  await removeLink(link)
+  close()
+}
+
+const availableAttachCharacters = computed(() =>
+  (allCharacters.value || []).filter((character) => character.canEdit)
+)
 
 const statusOptions = [
   { label: 'Active', value: 'ACTIVE' },
@@ -76,6 +97,14 @@ const statusOptions = [
 <template>
   <UPage>
     <div class="space-y-6">
+      <UAlert
+        v-if="!canWriteContent"
+        color="warning"
+        variant="subtle"
+        title="Read-only access"
+        description="Your role can view campaign characters but cannot attach, update, or remove links."
+      />
+
       <UCard>
         <template #header>
           <div class="flex flex-wrap items-center justify-between gap-4">
@@ -93,11 +122,12 @@ const statusOptions = [
               v-model="attachCharacterId"
               value-key="id"
               label-key="name"
-              :items="allCharacters || []"
+              :items="availableAttachCharacters"
               placeholder="Attach existing character"
               class="min-w-[240px]"
+              :disabled="!canWriteContent"
             />
-            <UButton :disabled="!attachCharacterId" @click="attachCharacter">Attach</UButton>
+            <UButton :disabled="!canWriteContent || !attachCharacterId" @click="attachCharacter">Attach</UButton>
             <UButton variant="outline" :to="`/characters`">Create or import</UButton>
           </div>
           <p v-if="attachError" class="text-sm text-error">{{ attachError }}</p>
@@ -115,7 +145,14 @@ const statusOptions = [
 
       <UCard v-else-if="!links?.length" class="text-center">
         <p class="text-sm text-muted">No characters attached yet.</p>
-        <UButton class="mt-4" variant="outline" :to="`/characters`">Add a character</UButton>
+        <UButton
+          class="mt-4"
+          variant="outline"
+          :to="`/characters`"
+          :disabled="!canWriteContent"
+        >
+          Add a character
+        </UButton>
       </UCard>
 
       <div v-else class="grid gap-4 md:grid-cols-2">
@@ -144,9 +181,45 @@ const statusOptions = [
                 :items="statusOptions"
                 :model-value="link.status"
                 size="xs"
+                :disabled="!canWriteContent"
                 @update:model-value="(value) => updateStatus(link, value as CharacterLink['status'])"
               />
-              <UButton size="xs" color="red" variant="ghost" @click="removeLink(link)">Remove</UButton>
+              <UPopover
+                v-if="canWriteContent && link.character.isOwner"
+                :content="{ side: 'top', align: 'end' }"
+                :ui="{ content: 'w-72 p-3' }"
+              >
+                <UButton size="xs" color="red" variant="ghost">Remove</UButton>
+                <template #content="{ close }">
+                  <div class="space-y-3">
+                    <p class="text-sm text-muted">
+                      Remove {{ link.character.name }} from this campaign?
+                    </p>
+                    <UAlert
+                      v-if="link.accessImpact?.warningRequired"
+                      color="warning"
+                      variant="subtle"
+                      title="Shared access warning"
+                      :description="`Up to ${link.accessImpact.impactedUserCount} non-owner member(s) may lose access to this character after removal.`"
+                    />
+                    <div class="flex justify-end gap-2">
+                      <UButton size="xs" variant="ghost" color="neutral" @click="close">Cancel</UButton>
+                      <UButton
+                        size="xs"
+                        color="error"
+                        icon="i-lucide-trash-2"
+                        @click="removeLinkWithClose(link, close)"
+                      >
+                        Remove
+                      </UButton>
+                    </div>
+                  </div>
+                </template>
+              </UPopover>
+              <UTooltip v-else-if="canWriteContent && !link.character.isOwner" text="Only the character owner can remove this link.">
+                <UButton size="xs" color="red" variant="ghost" disabled>Remove</UButton>
+              </UTooltip>
+              <UButton v-else size="xs" color="red" variant="ghost" disabled>Remove</UButton>
             </div>
           </template>
         </UCard>

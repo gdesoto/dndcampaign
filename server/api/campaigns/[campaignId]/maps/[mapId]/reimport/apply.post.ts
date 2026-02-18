@@ -2,6 +2,7 @@ import { mapReimportApplySchema } from '#shared/schemas/map'
 import { readMapMultipartUpload } from '#server/services/map-upload.service'
 import { MapService } from '#server/services/map.service'
 import { ok, fail } from '#server/utils/http'
+import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 const VALIDATION_MESSAGES = new Set([
   'Expected multipart form data',
@@ -12,12 +13,13 @@ const VALIDATION_MESSAGES = new Set([
 ])
 
 export default defineEventHandler(async (event) => {
-  const session = await requireUserSession(event)
   const campaignId = event.context.params?.campaignId
   const mapId = event.context.params?.mapId
   if (!campaignId || !mapId) {
     return fail(400, 'VALIDATION_ERROR', 'Campaign id and map id are required')
   }
+  const authz = await requireCampaignPermission(event, campaignId, 'content.write')
+  if (!authz.ok) return authz.response
 
   try {
     const { files, fields } = await readMapMultipartUpload(event)
@@ -33,7 +35,7 @@ export default defineEventHandler(async (event) => {
     const applied = await new MapService().applyReimport(
       campaignId,
       mapId,
-      session.user.id,
+      authz.session.user.id,
       parsed.data.strategy,
       files,
       parsed.data.mapName,

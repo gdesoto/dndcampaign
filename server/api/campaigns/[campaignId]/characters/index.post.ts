@@ -2,31 +2,26 @@ import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { readBody } from 'h3'
 import { CharacterSyncService } from '#server/services/character-sync.service'
+import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
-  const session = await requireUserSession(event)
   const campaignId = event.context.params?.campaignId
   if (!campaignId) {
-    return fail(400, 'VALIDATION_ERROR', 'Campaign id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id is required')
   }
-
-  const campaign = await prisma.campaign.findFirst({
-    where: { id: campaignId, ownerId: session.user.id },
-  })
-  if (!campaign) {
-    return fail(404, 'NOT_FOUND', 'Campaign not found')
-  }
+  const authz = await requireCampaignPermission(event, campaignId, 'content.write')
+  if (!authz.ok) return authz.response
 
   const body = (await readBody(event)) as { characterId?: string }
   if (!body?.characterId) {
-    return fail(400, 'VALIDATION_ERROR', 'Character id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Character id is required')
   }
 
   const character = await prisma.playerCharacter.findFirst({
-    where: { id: body.characterId, ownerId: session.user.id },
+    where: { id: body.characterId, ownerId: authz.session.user.id },
   })
   if (!character) {
-    return fail(404, 'NOT_FOUND', 'Character not found')
+    return fail(event, 404, 'NOT_FOUND', 'Character not found')
   }
 
   const syncService = new CharacterSyncService()
@@ -37,7 +32,7 @@ export default defineEventHandler(async (event) => {
   })
 
   await syncService.ensureGlossaryEntryForCharacter({
-    ownerId: session.user.id,
+    ownerId: authz.session.user.id,
     campaignId,
     characterId: body.characterId,
   })

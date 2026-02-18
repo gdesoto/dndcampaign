@@ -1,28 +1,25 @@
 import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
+import { requireCampaignPermission } from '#server/utils/campaign-auth'
+import { calculateCharacterUnlinkAccessImpact } from '#server/utils/character-auth'
 
 export default defineEventHandler(async (event) => {
-  const session = await requireUserSession(event)
   const campaignId = event.context.params?.campaignId
   const characterId = event.context.params?.characterId
   if (!campaignId || !characterId) {
-    return fail(400, 'VALIDATION_ERROR', 'Campaign and character id are required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign and character id are required')
   }
-
-  const campaign = await prisma.campaign.findFirst({
-    where: { id: campaignId, ownerId: session.user.id },
-  })
-  if (!campaign) {
-    return fail(404, 'NOT_FOUND', 'Campaign not found')
-  }
+  const authz = await requireCampaignPermission(event, campaignId, 'content.write')
+  if (!authz.ok) return authz.response
 
   const link = await prisma.campaignCharacter.findUnique({
     where: { campaignId_characterId: { campaignId, characterId } },
   })
   if (!link) {
-    return fail(404, 'NOT_FOUND', 'Character not linked to campaign')
+    return fail(event, 404, 'NOT_FOUND', 'Character not linked to campaign')
   }
 
+  const accessImpact = await calculateCharacterUnlinkAccessImpact(campaignId, characterId)
   await prisma.campaignCharacter.delete({ where: { id: link.id } })
 
   if (link.glossaryEntryId) {
@@ -30,5 +27,5 @@ export default defineEventHandler(async (event) => {
       where: { id: link.glossaryEntryId },
     })
   }
-  return ok({ success: true })
+  return ok({ success: true, accessImpact })
 })

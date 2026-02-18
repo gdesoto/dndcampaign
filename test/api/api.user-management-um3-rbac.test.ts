@@ -37,6 +37,8 @@ const users = {
 
 const cookies: Record<string, string> = {}
 let campaignId = ''
+let mapId = ''
+let sharedCharacterId = ''
 
 const loginAndGetCookie = async (email: string) => {
   const response = await fetch(`${baseUrl}/api/auth/login`, {
@@ -107,6 +109,36 @@ describe('user management UM-3 RBAC', () => {
     })
     campaignId = campaign.id
 
+    const map = await prisma.campaignMap.create({
+      data: {
+        campaignId,
+        name: 'Shared Map',
+        slug: 'shared-map',
+        createdById: ownerId,
+        sourceFingerprint: 'um3-test-map-fingerprint',
+      },
+      select: { id: true },
+    })
+    mapId = map.id
+
+    const character = await prisma.playerCharacter.create({
+      data: {
+        ownerId,
+        name: 'Shared Character',
+        sheetJson: { basics: { name: 'Shared Character' } },
+        summaryJson: { name: 'Shared Character', level: 3 },
+      },
+      select: { id: true },
+    })
+    sharedCharacterId = character.id
+
+    await prisma.campaignCharacter.create({
+      data: {
+        campaignId,
+        characterId: character.id,
+      },
+    })
+
     for (const [key, value] of Object.entries(users)) {
       cookies[key] = await loginAndGetCookie(value.email)
     }
@@ -173,5 +205,68 @@ describe('user management UM-3 RBAC', () => {
       headers: { cookie: cookies.outsider },
     })
     expect(outsiderGet.status).toBe(403)
+  })
+
+  it('enforces map read/write by role', async () => {
+    const viewerList = await fetch(`${baseUrl}/api/campaigns/${campaignId}/maps`, {
+      headers: { cookie: cookies.viewer },
+    })
+    expect(viewerList.status).toBe(200)
+    const viewerPayload = await viewerList.json()
+    expect(viewerPayload.data.some((map: { id: string }) => map.id === mapId)).toBe(true)
+
+    const collaboratorPatch = await fetch(`${baseUrl}/api/campaigns/${campaignId}/maps/${mapId}`, {
+      method: 'PATCH',
+      headers: {
+        cookie: cookies.collaborator,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ name: 'Collaborator Updated Map' }),
+    })
+    expect(collaboratorPatch.status).toBe(200)
+
+    const viewerPatch = await fetch(`${baseUrl}/api/campaigns/${campaignId}/maps/${mapId}`, {
+      method: 'PATCH',
+      headers: {
+        cookie: cookies.viewer,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ name: 'Viewer Should Not Update Map' }),
+    })
+    expect(viewerPatch.status).toBe(403)
+    const viewerPatchPayload = await viewerPatch.json()
+    expect(viewerPatchPayload.error.code).toBe('FORBIDDEN')
+  })
+
+  it('allows campaign-linked shared character reads and denies non-owner character writes', async () => {
+    const collaboratorCharacterGet = await fetch(`${baseUrl}/api/characters/${sharedCharacterId}`, {
+      headers: { cookie: cookies.collaborator },
+    })
+    expect(collaboratorCharacterGet.status).toBe(200)
+    const collaboratorCharacterPayload = await collaboratorCharacterGet.json()
+    expect(collaboratorCharacterPayload.data.id).toBe(sharedCharacterId)
+    expect(collaboratorCharacterPayload.data.canEdit).toBe(false)
+
+    const viewerCharacterGet = await fetch(`${baseUrl}/api/characters/${sharedCharacterId}`, {
+      headers: { cookie: cookies.viewer },
+    })
+    expect(viewerCharacterGet.status).toBe(200)
+
+    const outsiderCharacterGet = await fetch(`${baseUrl}/api/characters/${sharedCharacterId}`, {
+      headers: { cookie: cookies.outsider },
+    })
+    expect(outsiderCharacterGet.status).toBe(404)
+
+    const collaboratorPatch = await fetch(`${baseUrl}/api/characters/${sharedCharacterId}`, {
+      method: 'PATCH',
+      headers: {
+        cookie: cookies.collaborator,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ name: 'Collaborator Rename Attempt' }),
+    })
+    expect(collaboratorPatch.status).toBe(403)
+    const collaboratorPatchPayload = await collaboratorPatch.json()
+    expect(collaboratorPatchPayload.error.code).toBe('FORBIDDEN')
   })
 })

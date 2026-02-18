@@ -18,6 +18,7 @@ import {
 } from './map-parser.service'
 import { buildGlossaryConflictCandidates } from './map-conflict.utils'
 import { defaultMapLayerTypes, type MapFeatureType } from '#shared/schemas/map'
+import { buildCampaignWhereForPermission, type CampaignPermission } from '#server/utils/campaign-auth'
 import type {
   CampaignMapSummaryDto,
   CampaignMapViewerDto,
@@ -144,20 +145,20 @@ const mergeAliases = (current: string | null, incoming?: string) => {
 }
 
 export class MapService {
-  private async ensureCampaignOwner(campaignId: string, userId: string) {
+  private async ensureCampaignPermission(campaignId: string, userId: string, permission: CampaignPermission) {
     const campaign = await prisma.campaign.findFirst({
-      where: { id: campaignId, ownerId: userId },
+      where: { id: campaignId, ...buildCampaignWhereForPermission(userId, permission) },
       select: { id: true },
     })
     return campaign
   }
 
-  private async ensureMapOwnership(campaignId: string, mapId: string, userId: string) {
+  private async ensureMapPermission(campaignId: string, mapId: string, userId: string, permission: CampaignPermission) {
     const map = await prisma.campaignMap.findFirst({
       where: {
         id: mapId,
         campaignId,
-        campaign: { ownerId: userId },
+        campaign: buildCampaignWhereForPermission(userId, permission),
       },
     })
     return map
@@ -220,7 +221,7 @@ export class MapService {
   }
 
   async createMapFromUpload(campaignId: string, userId: string, fields: Record<string, string>, files: UploadedMapFile[]) {
-    const campaign = await this.ensureCampaignOwner(campaignId, userId)
+    const campaign = await this.ensureCampaignPermission(campaignId, userId, 'content.write')
     if (!campaign) return null
 
     const classified = classifyMapUploadFiles(files)
@@ -291,7 +292,7 @@ export class MapService {
   }
 
   async listMaps(campaignId: string, userId: string) {
-    const campaign = await this.ensureCampaignOwner(campaignId, userId)
+    const campaign = await this.ensureCampaignPermission(campaignId, userId, 'content.read')
     if (!campaign) return null
     const maps = await prisma.campaignMap.findMany({
       where: { campaignId },
@@ -305,7 +306,7 @@ export class MapService {
   }
 
   async updateMap(campaignId: string, mapId: string, userId: string, input: { name?: string; status?: 'ACTIVE' | 'ARCHIVED'; isPrimary?: boolean }) {
-    const map = await this.ensureMapOwnership(campaignId, mapId, userId)
+    const map = await this.ensureMapPermission(campaignId, mapId, userId, 'content.write')
     if (!map) return null
 
     if (input.isPrimary) {
@@ -338,7 +339,7 @@ export class MapService {
   }
 
   async getMapSvg(campaignId: string, mapId: string, userId: string) {
-    const map = await this.ensureMapOwnership(campaignId, mapId, userId)
+    const map = await this.ensureMapPermission(campaignId, mapId, userId, 'content.read')
     if (!map) return null
 
     const svgFile = await prisma.campaignMapFile.findFirst({
@@ -358,7 +359,7 @@ export class MapService {
   }
 
   async deleteMap(campaignId: string, mapId: string, userId: string) {
-    const map = await this.ensureMapOwnership(campaignId, mapId, userId)
+    const map = await this.ensureMapPermission(campaignId, mapId, userId, 'content.write')
     if (!map) return null
 
     const files = await prisma.campaignMapFile.findMany({
@@ -395,7 +396,7 @@ export class MapService {
   }
 
   async getViewer(campaignId: string, mapId: string, userId: string): Promise<CampaignMapViewerDto | null> {
-    const map = await this.ensureMapOwnership(campaignId, mapId, userId)
+    const map = await this.ensureMapPermission(campaignId, mapId, userId, 'content.read')
     if (!map) return null
 
     const features = await prisma.campaignMapFeature.findMany({
@@ -474,7 +475,7 @@ export class MapService {
   }
 
   async getFeatures(campaignId: string, mapId: string, userId: string, filter: { types?: MapFeatureType[]; includeRemoved?: boolean }) {
-    const map = await this.ensureMapOwnership(campaignId, mapId, userId)
+    const map = await this.ensureMapPermission(campaignId, mapId, userId, 'content.read')
     if (!map) return null
 
     const features = await prisma.campaignMapFeature.findMany({
@@ -507,7 +508,7 @@ export class MapService {
   }
 
   async stageGlossary(campaignId: string, mapId: string, userId: string, featureIds: string[]): Promise<MapGlossaryStageResultDto | null> {
-    const map = await this.ensureMapOwnership(campaignId, mapId, userId)
+    const map = await this.ensureMapPermission(campaignId, mapId, userId, 'content.write')
     if (!map) return null
 
     const features = await prisma.campaignMapFeature.findMany({
@@ -564,7 +565,7 @@ export class MapService {
       glossaryPayload?: { type: GlossaryType; name: string; aliases?: string; description: string }
     }>
   ): Promise<MapGlossaryCommitResultDto | null> {
-    const map = await this.ensureMapOwnership(campaignId, mapId, userId)
+    const map = await this.ensureMapPermission(campaignId, mapId, userId, 'content.write')
     if (!map) return null
 
     const counters = {
@@ -679,7 +680,7 @@ export class MapService {
     userId: string,
     files: UploadedMapFile[]
   ): Promise<MapReimportPreviewDto | null> {
-    const map = await this.ensureMapOwnership(campaignId, mapId, userId)
+    const map = await this.ensureMapPermission(campaignId, mapId, userId, 'content.write')
     if (!map) return null
 
     const parsed = parseAzgaarFullJson(classifyMapUploadFiles(files).fullJson.buffer)
@@ -723,7 +724,7 @@ export class MapService {
     mapName?: string,
     keepPrimary = false
   ) {
-    const map = await this.ensureMapOwnership(campaignId, mapId, userId)
+    const map = await this.ensureMapPermission(campaignId, mapId, userId, 'content.write')
     if (!map) return null
 
     if (strategy === 'create_new_map') {

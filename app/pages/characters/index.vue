@@ -7,6 +7,8 @@ definePageMeta({ layout: 'app' })
 type Character = {
   id: string
   name: string
+  canEdit: boolean
+  isOwner: boolean
   status?: string | null
   summaryJson?: {
     level?: number
@@ -131,6 +133,14 @@ const importCharacter = async (payload: CharacterImportPayload) => {
                 <p class="text-xs uppercase tracking-[0.2em] text-dimmed">PC</p>
                 <h3 class="text-lg font-semibold">{{ character.name }}</h3>
                 <p v-if="character.status" class="text-xs text-muted">{{ character.status }}</p>
+                <UBadge
+                  :color="character.isOwner ? 'primary' : 'neutral'"
+                  variant="subtle"
+                  size="sm"
+                  class="mt-2"
+                >
+                  {{ character.isOwner ? 'Owned' : 'Shared read-only' }}
+                </UBadge>
               </div>
               <UButton size="xs" variant="outline" :to="`/characters/${character.id}`">Open</UButton>
             </div>

@@ -2,14 +2,16 @@ import { MapService } from '#server/services/map.service'
 import { ok, fail } from '#server/utils/http'
 import { readValidatedBodySafe } from '#server/utils/validate'
 import { mapGlossaryCommitSchema } from '#shared/schemas/map'
+import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
-  const session = await requireUserSession(event)
   const campaignId = event.context.params?.campaignId
   const mapId = event.context.params?.mapId
   if (!campaignId || !mapId) {
     return fail(400, 'VALIDATION_ERROR', 'Campaign id and map id are required')
   }
+  const authz = await requireCampaignPermission(event, campaignId, 'content.write')
+  if (!authz.ok) return authz.response
 
   const parsed = await readValidatedBodySafe(event, mapGlossaryCommitSchema)
   if (!parsed.success) {
@@ -19,7 +21,7 @@ export default defineEventHandler(async (event) => {
   const result = await new MapService().commitGlossary(
     campaignId,
     mapId,
-    session.user.id,
+    authz.session.user.id,
     parsed.data.items
   )
   if (!result) {
