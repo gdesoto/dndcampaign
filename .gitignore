@@ -32,3 +32,5 @@ coverage/
 /db
 /dev_plan
 /tmp
+playwright-report/
+test-results/

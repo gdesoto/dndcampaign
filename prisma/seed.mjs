@@ -9,12 +9,17 @@ const hash = new Hash(new Scrypt())
 const email = process.env.SEED_USER_EMAIL || 'dm@example.com'
 const password = process.env.SEED_USER_PASSWORD || 'password123'
 
+const seedTranscriptContent = `Welcome to the session transcript.
+
+[00:00] DM: The ruined watchtower rises over the ridge.
+[00:07] Player: We should scout for tracks before entering.`
+
 const main = async () => {
   const existingUser = await prisma.user.findUnique({ where: { email } })
   let user = existingUser
+  const passwordHash = await hash.make(password)
 
   if (!user) {
-    const passwordHash = await hash.make(password)
     user = await prisma.user.create({
       data: {
         email,
@@ -23,14 +28,23 @@ const main = async () => {
       },
     })
     console.log(`Seeded user: ${email}`)
+  } else {
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash,
+        name: user.name || 'Dungeon Master',
+      },
+    })
   }
 
-  const campaignCount = await prisma.campaign.count({
+  let campaign = await prisma.campaign.findFirst({
     where: { ownerId: user.id },
+    orderBy: { createdAt: 'asc' },
   })
 
-  if (campaignCount === 0) {
-    await prisma.campaign.create({
+  if (!campaign) {
+    campaign = await prisma.campaign.create({
       data: {
         ownerId: user.id,
         name: 'The Ashen Vale',
@@ -40,6 +54,106 @@ const main = async () => {
       },
     })
     console.log('Seeded campaign for user.')
+  }
+
+  let character = await prisma.playerCharacter.findFirst({
+    where: { ownerId: user.id },
+    orderBy: { createdAt: 'asc' },
+  })
+
+  if (!character) {
+    character = await prisma.playerCharacter.create({
+      data: {
+        ownerId: user.id,
+        name: 'Elyra Dawnshield',
+        status: 'Level 3 Paladin',
+        sheetJson: {
+          level: 3,
+          classes: ['Paladin'],
+          race: 'Half-Elf',
+        },
+        summaryJson: {
+          level: 3,
+          classes: ['Paladin'],
+          race: 'Half-Elf',
+          background: 'Knight of the Order',
+          alignment: 'Lawful Good',
+        },
+      },
+    })
+    console.log('Seeded player character.')
+  }
+
+  const campaignCharacter = await prisma.campaignCharacter.findFirst({
+    where: {
+      campaignId: campaign.id,
+      characterId: character.id,
+    },
+  })
+
+  if (!campaignCharacter) {
+    await prisma.campaignCharacter.create({
+      data: {
+        campaignId: campaign.id,
+        characterId: character.id,
+      },
+    })
+    console.log('Linked player character to campaign.')
+  }
+
+  let session = await prisma.session.findFirst({
+    where: { campaignId: campaign.id },
+    orderBy: { createdAt: 'asc' },
+  })
+
+  if (!session) {
+    session = await prisma.session.create({
+      data: {
+        campaignId: campaign.id,
+        title: 'Session 1: The Ruined Watchtower',
+        sessionNumber: 1,
+        notes: 'The party explored the tower and recovered a sealed map case.',
+      },
+    })
+    console.log('Seeded campaign session.')
+  }
+
+  const transcriptDocument = await prisma.document.findFirst({
+    where: {
+      sessionId: session.id,
+      type: 'TRANSCRIPT',
+    },
+    select: { id: true },
+  })
+
+  if (!transcriptDocument) {
+    await prisma.$transaction(async (tx) => {
+      const document = await tx.document.create({
+        data: {
+          campaignId: campaign.id,
+          sessionId: session.id,
+          type: 'TRANSCRIPT',
+          title: `Transcript: ${session.title}`,
+        },
+      })
+
+      const version = await tx.documentVersion.create({
+        data: {
+          documentId: document.id,
+          versionNumber: 1,
+          content: seedTranscriptContent,
+          format: 'PLAINTEXT',
+          source: 'USER_EDIT',
+          createdByUserId: user.id,
+        },
+      })
+
+      await tx.document.update({
+        where: { id: document.id },
+        data: { currentVersionId: version.id },
+      })
+    })
+    console.log('Seeded transcript document for first session.')
   }
 }
 
