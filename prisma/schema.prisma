@@ -13,14 +13,41 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserSystemRole {
+  USER
+  SYSTEM_ADMIN
+}
+
+enum CampaignRole {
+  OWNER
+  COLLABORATOR
+  VIEWER
+}
+
+enum CampaignInviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
+}
+
 model User {
   id           String     @id @default(uuid())
   email        String     @unique
   passwordHash String?
   name         String
+  systemRole   UserSystemRole @default(USER)
+  isActive     Boolean    @default(true)
+  lastLoginAt  DateTime?
+  avatarUrl    String?
+  deletedAt    DateTime?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   campaigns    Campaign[]
+  campaignMemberships CampaignMember[] @relation("CampaignMemberUser")
+  campaignMembershipInvitesSent CampaignMember[] @relation("CampaignMemberInviter")
+  campaignInvitesSent CampaignInvite[] @relation("CampaignInviteInviter")
+  campaignInvitesAccepted CampaignInvite[] @relation("CampaignInviteAccepter")
   documentVersions DocumentVersion[]
   playerCharacters PlayerCharacter[]
 
@@ -46,8 +73,48 @@ model Campaign {
   characters    CampaignCharacter[]
   summaryJobs   SummaryJob[]
   maps          CampaignMap[]
+  members       CampaignMember[]
+  invites       CampaignInvite[]
 
   @@index([ownerId])
+}
+
+model CampaignMember {
+  id              String       @id @default(uuid())
+  campaignId      String
+  campaign        Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User         @relation("CampaignMemberUser", fields: [userId], references: [id], onDelete: Cascade)
+  role            CampaignRole
+  invitedByUserId String
+  invitedByUser   User         @relation("CampaignMemberInviter", fields: [invitedByUserId], references: [id], onDelete: Restrict)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([campaignId, userId])
+  @@index([userId])
+  @@index([campaignId, role])
+}
+
+model CampaignInvite {
+  id              String             @id @default(uuid())
+  campaignId      String
+  campaign        Campaign           @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  email           String
+  role            CampaignRole
+  tokenHash       String             @unique
+  status          CampaignInviteStatus @default(PENDING)
+  expiresAt       DateTime
+  invitedByUserId String
+  invitedByUser   User               @relation("CampaignInviteInviter", fields: [invitedByUserId], references: [id], onDelete: Restrict)
+  acceptedByUserId String?
+  acceptedByUser  User?              @relation("CampaignInviteAccepter", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@index([campaignId, status])
+  @@index([email, status])
+  @@index([expiresAt])
 }
 
 model Session {

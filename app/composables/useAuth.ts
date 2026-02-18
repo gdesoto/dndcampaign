@@ -2,6 +2,19 @@ export const useAuth = () => {
   const session = useUserSession()
   const { request } = useApi()
 
+  const register = async (payload: {
+    name: string
+    email: string
+    password: string
+    termsAccepted: boolean
+  }) => {
+    await request('/api/auth/register', {
+      method: 'POST',
+      body: payload,
+    })
+    await session.fetch()
+  }
+
   const login = async (email: string, password: string) => {
     await request('/api/auth/login', {
       method: 'POST',
@@ -18,6 +31,7 @@ export const useAuth = () => {
 
   return {
     ...session,
+    register,
     login,
     logout,
   }

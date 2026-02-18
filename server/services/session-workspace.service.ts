@@ -1,11 +1,11 @@
 import { prisma } from '#server/db/prisma'
+import { resolveCampaignAccess } from '#server/utils/campaign-auth'
 
 export class SessionWorkspaceService {
-  async getWorkspace(sessionId: string, userId: string) {
+  async getWorkspace(sessionId: string, userId: string, systemRole?: 'USER' | 'SYSTEM_ADMIN') {
     const session = await prisma.session.findFirst({
       where: {
-        id: sessionId,
-        campaign: { ownerId: userId },
+        id: sessionId
       },
       include: {
         campaign: {
@@ -17,6 +17,11 @@ export class SessionWorkspaceService {
     })
 
     if (!session) {
+      return null
+    }
+
+    const accessResolution = await resolveCampaignAccess(session.campaignId, userId, systemRole)
+    if (!accessResolution.access) {
       return null
     }
 
@@ -44,6 +49,7 @@ export class SessionWorkspaceService {
       recap,
       transcriptDoc,
       summaryDoc,
+      access: accessResolution.access,
     }
   }
 }

@@ -2,6 +2,7 @@ import { getRequestHeader, sendStream, setHeader, setResponseStatus } from 'h3'
 import { prisma } from '#server/db/prisma'
 import { fail } from '#server/utils/http'
 import { getStorageAdapter } from '#server/services/storage/storage.factory'
+import { resolveCampaignAccess } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
@@ -10,11 +11,27 @@ export default defineEventHandler(async (event) => {
     return fail(400, 'VALIDATION_ERROR', 'Artifact id is required')
   }
 
-  const artifact = await prisma.artifact.findFirst({
-    where: { id: artifactId, ownerId: sessionUser.user.id },
+  const artifact = await prisma.artifact.findUnique({
+    where: { id: artifactId },
   })
   if (!artifact) {
     return fail(404, 'NOT_FOUND', 'Artifact not found')
+  }
+
+  if (artifact.ownerId !== sessionUser.user.id) {
+    if (!artifact.campaignId) {
+      return fail(403, 'FORBIDDEN', 'Artifact access is denied')
+    }
+
+    const campaignAccess = await resolveCampaignAccess(
+      artifact.campaignId,
+      sessionUser.user.id,
+      sessionUser.user.systemRole
+    )
+    const canRead = campaignAccess.access?.permissions.includes('content.read')
+    if (!canRead) {
+      return fail(403, 'FORBIDDEN', 'Artifact access is denied')
+    }
   }
 
   const adapter = getStorageAdapter()

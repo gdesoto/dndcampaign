@@ -4,6 +4,7 @@ import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { RecordingService } from '#server/services/recording.service'
 import { Readable } from 'node:stream'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 const MAX_BYTES = 2 * 1024 * 1024
 
@@ -68,7 +69,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const recording = await prisma.recording.findFirst({
-    where: { id: recordingId, session: { campaign: { ownerId: sessionUser.user.id } } },
+    where: {
+      id: recordingId,
+      session: { campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'document.edit') },
+    },
     include: { session: true },
   })
   if (!recording) {

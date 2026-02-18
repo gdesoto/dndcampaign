@@ -15,6 +15,8 @@ const isSessionDetailRoute = computed(() =>
 const {
   campaign,
   sessionHeader,
+  access,
+  canWriteContent,
   pending,
   error,
   refreshCampaign,
@@ -29,6 +31,9 @@ const { navItems, sectionTitle, breadcrumbItems } = useCampaignNavigation(
   campaignId,
   campaign
 )
+
+provide('campaignAccess', access)
+provide('campaignCanWriteContent', canWriteContent)
 
 const sessionDateLabel = computed(() => {
   if (!sessionHeader.value?.playedAt) return 'Unscheduled'

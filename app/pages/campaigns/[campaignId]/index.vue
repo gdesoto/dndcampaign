@@ -9,6 +9,7 @@ import type {
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
 const { request } = useApi()
+const canWriteContent = inject('campaignCanWriteContent', computed(() => true))
 
 const { data: campaign, pending, refresh, error } = await useAsyncData(
   () => `campaign-${campaignId.value}`,
@@ -97,6 +98,7 @@ watch(
 )
 
 const saveStatus = async () => {
+  if (!canWriteContent.value) return
   saveError.value = ''
   isSaving.value = true
   const previousStatus = campaign.value?.currentStatus || ''
@@ -124,6 +126,7 @@ const saveStatus = async () => {
 }
 
 const openEdit = () => {
+  if (!canWriteContent.value) return
   editError.value = ''
   if (campaign.value) {
     editForm.name = campaign.value.name
@@ -135,6 +138,7 @@ const openEdit = () => {
 }
 
 const saveCampaign = async () => {
+  if (!canWriteContent.value) return
   editError.value = ''
   isUpdating.value = true
   try {
@@ -177,6 +181,13 @@ const saveCampaign = async () => {
         :description="campaign.description"
         @edit="openEdit"
       />
+      <UAlert
+        v-if="!canWriteContent"
+        color="warning"
+        variant="subtle"
+        title="Read-only access"
+        description="Your role can view this campaign overview but cannot edit campaign details."
+      />
 
       <CampaignKpiGrid
         :last-session-number="latestSession?.sessionNumber ?? '-'"
@@ -188,6 +199,7 @@ const saveCampaign = async () => {
 
       <CampaignStatusEditor
         v-model:value="statusDraft"
+        :readonly="!canWriteContent"
         :saving="isSaving"
         :error="saveError"
         :updated-at-label="new Date(campaign.updatedAt).toLocaleString()"

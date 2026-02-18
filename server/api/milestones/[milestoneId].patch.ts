@@ -2,6 +2,7 @@ import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { readValidatedBodySafe } from '#server/utils/validate'
 import { milestoneUpdateSchema } from '#shared/schemas/milestone'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
@@ -16,7 +17,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const existing = await prisma.milestone.findFirst({
-    where: { id: milestoneId, campaign: { ownerId: session.user.id } },
+    where: {
+      id: milestoneId,
+      campaign: buildCampaignWhereForPermission(session.user.id, 'content.write'),
+    },
   })
   if (!existing) {
     return fail(404, 'NOT_FOUND', 'Milestone not found')

@@ -1,6 +1,7 @@
 import { getQuery } from 'h3'
 import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
@@ -10,7 +11,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const session = await prisma.session.findFirst({
-    where: { id: sessionId, campaign: { ownerId: sessionUser.user.id } },
+    where: {
+      id: sessionId,
+      campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'content.read'),
+    },
   })
   if (!session) {
     return fail(404, 'NOT_FOUND', 'Session not found')

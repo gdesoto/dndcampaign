@@ -12,6 +12,7 @@ type MilestoneItem = {
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
 const { request } = useApi()
+const canWriteContent = inject('campaignCanWriteContent', computed(() => true))
 
 const { data: milestones, pending, refresh, error } = await useAsyncData(
   () => `milestones-${campaignId.value}`,
@@ -29,6 +30,7 @@ const editError = ref('')
 const isSaving = ref(false)
 
 const openCreate = () => {
+  if (!canWriteContent.value) return
   editMode.value = 'create'
   editError.value = ''
   editForm.id = ''
@@ -38,6 +40,7 @@ const openCreate = () => {
 }
 
 const openEdit = (milestone: MilestoneItem) => {
+  if (!canWriteContent.value) return
   editMode.value = 'edit'
   editError.value = ''
   editForm.id = milestone.id
@@ -47,6 +50,7 @@ const openEdit = (milestone: MilestoneItem) => {
 }
 
 const saveMilestone = async () => {
+  if (!canWriteContent.value) return
   editError.value = ''
   isSaving.value = true
   try {
@@ -78,6 +82,7 @@ const saveMilestone = async () => {
 }
 
 const toggleComplete = async (milestone: MilestoneItem) => {
+  if (!canWriteContent.value) return
   const next = !milestone.isComplete
   await request(`/api/milestones/${milestone.id}`, {
     method: 'PATCH',
@@ -97,8 +102,15 @@ const toggleComplete = async (milestone: MilestoneItem) => {
         <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Milestones</p>
         <h1 class="mt-2 text-2xl font-semibold">Milestone board</h1>
       </div>
-      <UButton size="lg" @click="openCreate">New milestone</UButton>
+      <UButton size="lg" :disabled="!canWriteContent" @click="openCreate">New milestone</UButton>
     </div>
+    <UAlert
+      v-if="!canWriteContent"
+      color="warning"
+      variant="subtle"
+      title="Read-only access"
+      description="Your role can view milestones but cannot modify them."
+    />
 
     <SharedResourceState
       :pending="pending"
@@ -114,7 +126,7 @@ const toggleComplete = async (milestone: MilestoneItem) => {
         </div>
       </template>
       <template #emptyActions>
-        <UButton variant="outline" @click="openCreate">Create your first milestone</UButton>
+        <UButton variant="outline" :disabled="!canWriteContent" @click="openCreate">Create your first milestone</UButton>
       </template>
 
       <div class="grid gap-4 sm:grid-cols-2">
@@ -125,7 +137,7 @@ const toggleComplete = async (milestone: MilestoneItem) => {
                 <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Milestone</p>
                 <h3 class="text-lg font-semibold">{{ milestone.title }}</h3>
               </div>
-              <UButton size="xs" variant="outline" @click="openEdit(milestone)">Edit</UButton>
+              <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="openEdit(milestone)">Edit</UButton>
             </div>
           </template>
           <p class="text-sm text-default">{{ milestone.description || 'Add details about this milestone.' }}</p>
@@ -133,7 +145,7 @@ const toggleComplete = async (milestone: MilestoneItem) => {
             <span class="text-xs text-muted">
               {{ milestone.isComplete ? 'Completed' : 'In progress' }}
             </span>
-            <UButton size="xs" variant="outline" @click="toggleComplete(milestone)">
+            <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="toggleComplete(milestone)">
               {{ milestone.isComplete ? 'Mark incomplete' : 'Mark complete' }}
             </UButton>
           </div>

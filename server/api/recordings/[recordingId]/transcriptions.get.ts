@@ -1,5 +1,6 @@
 import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 const parseJsonArray = (value: string | null) => {
   if (!value) return []
@@ -21,7 +22,7 @@ export default defineEventHandler(async (event) => {
   const jobs = await prisma.transcriptionJob.findMany({
     where: {
       recordingId,
-      recording: { session: { campaign: { ownerId: sessionUser.user.id } } },
+      recording: { session: { campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'content.read') } },
     },
     include: {
       artifacts: {

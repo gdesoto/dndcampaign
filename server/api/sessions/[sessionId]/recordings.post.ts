@@ -4,6 +4,7 @@ import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { RecordingService } from '#server/services/recording.service'
 import type { RecordingKind } from '@prisma/client'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 const MAX_BYTES = 2 * 1024 * 1024 * 1024
 const ALLOWED_MIME = [
@@ -27,7 +28,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const session = await prisma.session.findFirst({
-    where: { id: sessionId, campaign: { ownerId: sessionUser.user.id } },
+    where: {
+      id: sessionId,
+      campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'recording.upload'),
+    },
     include: { campaign: true },
   })
   if (!session) {

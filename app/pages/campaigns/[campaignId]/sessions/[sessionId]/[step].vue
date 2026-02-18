@@ -3,6 +3,13 @@ const route = useRoute()
 
 const props = defineProps<{
   campaignId: string
+  access?: {
+    role: 'OWNER' | 'COLLABORATOR' | 'VIEWER'
+    permissions: string[]
+  } | null
+  canWriteContent: boolean
+  canUploadRecording: boolean
+  canRunSummary: boolean
   form: {
     title: string
     sessionNumber: string
@@ -146,30 +153,30 @@ const returnToPath = computed(
         </template>
         <UForm :state="form" class="space-y-4" @submit.prevent="emit('save-session')">
           <UFormField label="Title" name="title">
-            <UInput v-model="form.title" placeholder="This Is Why Taverns Have Rules" />
+            <UInput v-model="form.title" :disabled="!canWriteContent" placeholder="This Is Why Taverns Have Rules" />
           </UFormField>
 
           <div class="grid gap-4 sm:grid-cols-2">
             <UFormField label="Session number" name="sessionNumber">
-              <UInput v-model="form.sessionNumber" type="number" />
+              <UInput v-model="form.sessionNumber" :disabled="!canWriteContent" type="number" />
             </UFormField>
             <UFormField label="Played at" name="playedAt">
-              <UInput v-model="form.playedAt" type="date" />
+              <UInput v-model="form.playedAt" :disabled="!canWriteContent" type="date" />
             </UFormField>
           </div>
 
           <UFormField label="Guest dungeon master" name="guestDungeonMasterName">
-            <UInput v-model="form.guestDungeonMasterName" placeholder="Optional guest DM" />
+            <UInput v-model="form.guestDungeonMasterName" :disabled="!canWriteContent" placeholder="Optional guest DM" />
           </UFormField>
 
           <UFormField label="Notes" name="notes">
-            <UTextarea v-model="form.notes" :rows="6" />
+            <UTextarea v-model="form.notes" :disabled="!canWriteContent" :rows="6" />
           </UFormField>
 
           <p v-if="saveError" class="text-sm text-error">{{ saveError }}</p>
 
           <div class="flex justify-end">
-            <UButton type="submit" :loading="isSaving">Save session</UButton>
+            <UButton type="submit" :loading="isSaving" :disabled="!canWriteContent">Save session</UButton>
           </div>
         </UForm>
       </UCard>

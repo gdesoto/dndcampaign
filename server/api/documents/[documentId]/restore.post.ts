@@ -3,6 +3,7 @@ import { ok, fail } from '#server/utils/http'
 import { readValidatedBodySafe } from '#server/utils/validate'
 import { documentRestoreSchema } from '#shared/schemas/document'
 import { DocumentService } from '#server/services/document.service'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
@@ -17,7 +18,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const existing = await prisma.document.findFirst({
-    where: { id: documentId, campaign: { ownerId: sessionUser.user.id } },
+    where: {
+      id: documentId,
+      campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'document.edit'),
+    },
   })
   if (!existing) {
     return fail(404, 'NOT_FOUND', 'Document not found')

@@ -1,6 +1,7 @@
 import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { TranscriptionService } from '#server/services/transcription.service'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
@@ -12,7 +13,7 @@ export default defineEventHandler(async (event) => {
   const job = await prisma.transcriptionJob.findFirst({
     where: {
       id: jobId,
-      recording: { session: { campaign: { ownerId: sessionUser.user.id } } },
+      recording: { session: { campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'recording.transcribe') } },
     },
   })
 

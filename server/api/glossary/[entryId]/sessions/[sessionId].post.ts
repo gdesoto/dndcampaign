@@ -1,5 +1,6 @@
 import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
@@ -10,14 +11,20 @@ export default defineEventHandler(async (event) => {
   }
 
   const entry = await prisma.glossaryEntry.findFirst({
-    where: { id: entryId, campaign: { ownerId: sessionUser.user.id } },
+    where: {
+      id: entryId,
+      campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'content.write'),
+    },
   })
   if (!entry) {
     return fail(404, 'NOT_FOUND', 'Glossary entry not found')
   }
 
   const session = await prisma.session.findFirst({
-    where: { id: sessionId, campaign: { ownerId: sessionUser.user.id } },
+    where: {
+      id: sessionId,
+      campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'content.write'),
+    },
   })
   if (!session || session.campaignId !== entry.campaignId) {
     return fail(400, 'VALIDATION_ERROR', 'Session does not belong to campaign')

@@ -2,6 +2,8 @@ import { ok, fail } from '#server/utils/http'
 import { readValidatedBodySafe } from '#server/utils/validate'
 import { summarizeRequestSchema } from '#shared/schemas/summarization'
 import { SummaryService } from '#server/services/summary.service'
+import { prisma } from '#server/db/prisma'
+import { resolveCampaignAccess } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
@@ -13,6 +15,24 @@ export default defineEventHandler(async (event) => {
   const parsed = await readValidatedBodySafe(event, summarizeRequestSchema)
   if (!parsed.success) {
     return fail(400, 'VALIDATION_ERROR', 'Invalid summarization payload', parsed.fieldErrors)
+  }
+
+  const document = await prisma.document.findUnique({
+    where: { id: documentId },
+    select: { id: true, campaignId: true, type: true },
+  })
+  if (!document || document.type !== 'TRANSCRIPT') {
+    return fail(404, 'NOT_FOUND', 'Transcript document not found')
+  }
+
+  const campaignAccess = await resolveCampaignAccess(
+    document.campaignId,
+    sessionUser.user.id,
+    sessionUser.user.systemRole
+  )
+  const canRunSummary = campaignAccess.access?.permissions.includes('summary.run')
+  if (!canRunSummary) {
+    return fail(403, 'FORBIDDEN', 'You do not have permission to run summarization')
   }
 
   const service = new SummaryService()

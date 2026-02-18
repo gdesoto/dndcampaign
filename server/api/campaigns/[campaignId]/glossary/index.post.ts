@@ -3,6 +3,7 @@ import { ok, fail } from '#server/utils/http'
 import { readValidatedBodySafe } from '#server/utils/validate'
 import { glossaryCreateSchema } from '#shared/schemas/glossary'
 import { CharacterService } from '#server/services/character.service'
+import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
@@ -11,11 +12,9 @@ export default defineEventHandler(async (event) => {
     return fail(400, 'VALIDATION_ERROR', 'Campaign id is required')
   }
 
-  const campaign = await prisma.campaign.findFirst({
-    where: { id: campaignId, ownerId: session.user.id },
-  })
-  if (!campaign) {
-    return fail(404, 'NOT_FOUND', 'Campaign not found')
+  const authz = await requireCampaignPermission(event, campaignId, 'content.write')
+  if (!authz.ok) {
+    return authz.response
   }
 
   const parsed = await readValidatedBodySafe(event, glossaryCreateSchema)

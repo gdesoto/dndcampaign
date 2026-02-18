@@ -12,6 +12,8 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:migrate:status": "prisma migrate status",
     "db:seed": "node prisma/seed.mjs",
+    "db:um2:backfill-owner-memberships": "node scripts/user-management/backfill-campaign-owner-memberships.mjs",
+    "db:um2:verify-owner-memberships": "node scripts/user-management/verify-campaign-owner-memberships.mjs",
     "test:e2e:install": "playwright install chromium",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",

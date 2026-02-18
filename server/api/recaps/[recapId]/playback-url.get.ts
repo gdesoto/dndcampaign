@@ -1,5 +1,6 @@
 import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
@@ -9,7 +10,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const recap = await prisma.recapRecording.findFirst({
-    where: { id: recapId, session: { campaign: { ownerId: sessionUser.user.id } } },
+    where: {
+      id: recapId,
+      session: { campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'content.read') },
+    },
   })
   if (!recap) {
     return fail(404, 'NOT_FOUND', 'Recap not found')

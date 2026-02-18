@@ -8,7 +8,11 @@ export default defineEventHandler(async (event) => {
     return fail(400, 'VALIDATION_ERROR', 'Session id is required')
   }
 
-  const workspace = await new SessionWorkspaceService().getWorkspace(sessionId, sessionUser.user.id)
+  const workspace = await new SessionWorkspaceService().getWorkspace(
+    sessionId,
+    sessionUser.user.id,
+    sessionUser.user.systemRole
+  )
   if (!workspace) {
     return fail(404, 'NOT_FOUND', 'Session not found')
   }

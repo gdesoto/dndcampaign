@@ -8,35 +8,57 @@ const hash = new Hash(new Scrypt())
 
 const email = process.env.SEED_USER_EMAIL || 'dm@example.com'
 const password = process.env.SEED_USER_PASSWORD || 'password123'
+const collaboratorEmail = process.env.SEED_COLLABORATOR_EMAIL || 'collaborator@example.com'
+const collaboratorPassword = process.env.SEED_COLLABORATOR_PASSWORD || 'password123'
+const viewerEmail = process.env.SEED_VIEWER_EMAIL || 'viewer@example.com'
+const viewerPassword = process.env.SEED_VIEWER_PASSWORD || 'password123'
 
 const seedTranscriptContent = `Welcome to the session transcript.
 
 [00:00] DM: The ruined watchtower rises over the ridge.
 [00:07] Player: We should scout for tracks before entering.`
 
-const main = async () => {
+const upsertSeedUser = async ({ email, password, name }) => {
   const existingUser = await prisma.user.findUnique({ where: { email } })
-  let user = existingUser
   const passwordHash = await hash.make(password)
 
-  if (!user) {
-    user = await prisma.user.create({
+  if (!existingUser) {
+    const created = await prisma.user.create({
       data: {
         email,
         passwordHash,
-        name: 'Dungeon Master',
+        name,
       },
     })
     console.log(`Seeded user: ${email}`)
-  } else {
-    user = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordHash,
-        name: user.name || 'Dungeon Master',
-      },
-    })
+    return created
   }
+
+  return prisma.user.update({
+    where: { id: existingUser.id },
+    data: {
+      passwordHash,
+      name: existingUser.name || name,
+    },
+  })
+}
+
+const main = async () => {
+  const user = await upsertSeedUser({
+    email,
+    password,
+    name: 'Dungeon Master',
+  })
+  const collaboratorUser = await upsertSeedUser({
+    email: collaboratorEmail,
+    password: collaboratorPassword,
+    name: 'Campaign Collaborator',
+  })
+  const viewerUser = await upsertSeedUser({
+    email: viewerEmail,
+    password: viewerPassword,
+    name: 'Campaign Viewer',
+  })
 
   let campaign = await prisma.campaign.findFirst({
     where: { ownerId: user.id },
@@ -55,6 +77,63 @@ const main = async () => {
     })
     console.log('Seeded campaign for user.')
   }
+
+  await prisma.campaignMember.upsert({
+    where: {
+      campaignId_userId: {
+        campaignId: campaign.id,
+        userId: user.id,
+      },
+    },
+    update: {
+      role: 'OWNER',
+      invitedByUserId: user.id,
+    },
+    create: {
+      campaignId: campaign.id,
+      userId: user.id,
+      role: 'OWNER',
+      invitedByUserId: user.id,
+    },
+  })
+
+  await prisma.campaignMember.upsert({
+    where: {
+      campaignId_userId: {
+        campaignId: campaign.id,
+        userId: collaboratorUser.id,
+      },
+    },
+    update: {
+      role: 'COLLABORATOR',
+      invitedByUserId: user.id,
+    },
+    create: {
+      campaignId: campaign.id,
+      userId: collaboratorUser.id,
+      role: 'COLLABORATOR',
+      invitedByUserId: user.id,
+    },
+  })
+
+  await prisma.campaignMember.upsert({
+    where: {
+      campaignId_userId: {
+        campaignId: campaign.id,
+        userId: viewerUser.id,
+      },
+    },
+    update: {
+      role: 'VIEWER',
+      invitedByUserId: user.id,
+    },
+    create: {
+      campaignId: campaign.id,
+      userId: viewerUser.id,
+      role: 'VIEWER',
+      invitedByUserId: user.id,
+    },
+  })
 
   let character = await prisma.playerCharacter.findFirst({
     where: { ownerId: user.id },

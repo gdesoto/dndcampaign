@@ -6,6 +6,7 @@ import { getStorageAdapter } from '#server/services/storage/storage.factory'
 import { ok, fail } from '#server/utils/http'
 import { readValidatedBodySafe } from '#server/utils/validate'
 import { transcriptionAttachVttSchema } from '#shared/schemas/transcription'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 const streamToBuffer = async (stream: ReadableType) => {
   const chunks: Buffer[] = []
@@ -51,7 +52,7 @@ export default defineEventHandler(async (event) => {
   const job = await prisma.transcriptionJob.findFirst({
     where: {
       id: jobId,
-      recording: { session: { campaign: { ownerId: sessionUser.user.id } } },
+      recording: { session: { campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'document.edit') } },
     },
     include: {
       recording: { include: { session: { include: { campaign: true } } } },
@@ -68,7 +69,7 @@ export default defineEventHandler(async (event) => {
     where: {
       id: targetRecordingId,
       sessionId: job.recording.sessionId,
-      session: { campaign: { ownerId: sessionUser.user.id } },
+      session: { campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'document.edit') },
     },
     include: { session: { include: { campaign: true } } },
   })
@@ -94,7 +95,7 @@ export default defineEventHandler(async (event) => {
 
   const service = new RecordingService()
   const updated = await service.attachVttFromStream({
-    ownerId: targetRecording.session.campaign.ownerId,
+    ownerId: sessionUser.user.id,
     campaignId: targetRecording.session.campaignId,
     recordingId: targetRecording.id,
     filename: 'subtitles.vtt',

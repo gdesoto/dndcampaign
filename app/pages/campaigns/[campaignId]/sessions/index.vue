@@ -13,6 +13,7 @@ type SessionItem = {
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
 const { request } = useApi()
+const canWriteContent = inject('campaignCanWriteContent', computed(() => true))
 
 const { data: sessions, pending, refresh, error } = await useAsyncData(
   () => `sessions-${campaignId.value}`,
@@ -30,6 +31,7 @@ const createError = ref('')
 const isCreating = ref(false)
 
 const openCreate = () => {
+  if (!canWriteContent.value) return
   createError.value = ''
   createForm.title = ''
   createForm.sessionNumber = ''
@@ -39,6 +41,7 @@ const openCreate = () => {
 }
 
 const createSession = async () => {
+  if (!canWriteContent.value) return
   createError.value = ''
   isCreating.value = true
   try {
@@ -74,8 +77,15 @@ const createSession = async () => {
         <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Sessions</p>
         <h1 class="mt-2 text-2xl font-semibold">Session log</h1>
       </div>
-      <UButton size="lg" @click="openCreate">New session</UButton>
+      <UButton size="lg" :disabled="!canWriteContent" @click="openCreate">New session</UButton>
     </div>
+    <UAlert
+      v-if="!canWriteContent"
+      color="warning"
+      variant="subtle"
+      title="Read-only access"
+      description="Your role can view sessions but cannot create or edit them."
+    />
 
     <SharedResourceState
       :pending="pending"
@@ -91,7 +101,7 @@ const createSession = async () => {
         </div>
       </template>
       <template #emptyActions>
-        <UButton variant="outline" @click="openCreate">Create your first session</UButton>
+        <UButton variant="outline" :disabled="!canWriteContent" @click="openCreate">Create your first session</UButton>
       </template>
 
       <div class="grid gap-4 sm:grid-cols-2">

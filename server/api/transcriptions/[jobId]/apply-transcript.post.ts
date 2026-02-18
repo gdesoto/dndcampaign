@@ -5,6 +5,7 @@ import { getStorageAdapter } from '#server/services/storage/storage.factory'
 import { ok, fail } from '#server/utils/http'
 import { readValidatedBodySafe } from '#server/utils/validate'
 import { transcriptionApplySchema } from '#shared/schemas/transcription'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 const streamToBuffer = async (stream: Readable) => {
   const chunks: Buffer[] = []
@@ -29,7 +30,7 @@ export default defineEventHandler(async (event) => {
   const job = await prisma.transcriptionJob.findFirst({
     where: {
       id: jobId,
-      recording: { session: { campaign: { ownerId: sessionUser.user.id } } },
+      recording: { session: { campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'document.edit') } },
     },
     include: {
       recording: { include: { session: true } },

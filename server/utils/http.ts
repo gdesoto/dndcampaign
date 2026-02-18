@@ -1,3 +1,4 @@
+import type { H3Event } from 'h3'
 import { setResponseStatus } from 'h3'
 
 export type ApiError = {
@@ -17,14 +18,32 @@ export const ok = <T>(data: T): ApiResponse<T> => ({
 })
 
 export const fail = (
-  statusCode: number,
-  code: string,
-  message: string,
-  fields?: Record<string, string>
+  eventOrStatusCode: H3Event | number,
+  statusOrCode: number | string,
+  codeOrMessage: string,
+  messageOrFields?: string | Record<string, string>,
+  maybeFields?: Record<string, string>
 ): ApiResponse<null> => {
-  setResponseStatus(statusCode)
+  let statusCode: number
+  let code: string
+  let message: string
+  let fields: Record<string, string> | undefined
+
+  if (typeof eventOrStatusCode === 'number') {
+    statusCode = eventOrStatusCode
+    code = statusOrCode as string
+    message = codeOrMessage
+    fields = messageOrFields as Record<string, string> | undefined
+  } else {
+    statusCode = statusOrCode as number
+    code = codeOrMessage
+    message = (messageOrFields as string) || ''
+    fields = maybeFields
+    setResponseStatus(eventOrStatusCode, statusCode)
+  }
+
   return {
     data: null,
-    error: { code, message, fields },
+    error: { code, message, fields: fields && Object.keys(fields).length ? fields : undefined },
   }
 }

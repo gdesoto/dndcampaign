@@ -17,7 +17,8 @@ export default defineEventHandler(async (event) => {
   const workspace = await new CampaignWorkspaceService().getWorkspace(
     campaignId,
     sessionUser.user.id,
-    sessionId
+    sessionId,
+    sessionUser.user.systemRole
   )
   if (!workspace) {
     return fail(404, 'NOT_FOUND', 'Campaign not found')

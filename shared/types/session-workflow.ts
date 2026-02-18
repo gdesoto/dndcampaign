@@ -1,3 +1,4 @@
+import type { CampaignAccess } from '#shared/types/campaign-workflow'
 export type RecordingKind = 'AUDIO' | 'VIDEO'
 
 export type SessionDetail = {
@@ -100,4 +101,5 @@ export type SessionWorkspace = {
   recap: SessionRecapRecording | null
   transcriptDoc: SessionDocumentDetail | null
   summaryDoc: SessionDocumentDetail | null
+  access: CampaignAccess
 }

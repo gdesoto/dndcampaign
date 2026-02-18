@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import { prisma } from '#server/db/prisma'
 import { DocumentService } from '#server/services/document.service'
 import { isSegmentedTranscript, parseTranscriptSegments, segmentsToPlainText } from '#shared/utils/transcript'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 import type {
   N8nRequestPayload,
   N8nSuggestionRequestPayload,
@@ -191,7 +192,7 @@ export class SummaryService {
             id: input.summaryDocumentId,
             type: 'SUMMARY',
             sessionId: input.sessionId,
-            campaign: { ownerId: input.userId },
+            campaign: buildCampaignWhereForPermission(input.userId, 'summary.run'),
           },
           include: { currentVersion: true },
         })
@@ -211,7 +212,7 @@ export class SummaryService {
           where: {
             id: input.summaryJobId,
             sessionId: input.sessionId,
-            campaign: { ownerId: input.userId },
+            campaign: buildCampaignWhereForPermission(input.userId, 'summary.run'),
           },
           include: {
             summaryDocument: { include: { currentVersion: true } },
@@ -246,7 +247,7 @@ export class SummaryService {
       where: {
         sessionId: input.sessionId,
         type: 'SUMMARY',
-        campaign: { ownerId: input.userId },
+        campaign: buildCampaignWhereForPermission(input.userId, 'summary.run'),
       },
       include: { currentVersion: true },
       orderBy: { updatedAt: 'desc' },
@@ -264,7 +265,7 @@ export class SummaryService {
     const latestSummaryJob = await prisma.summaryJob.findFirst({
       where: {
         sessionId: input.sessionId,
-        campaign: { ownerId: input.userId },
+        campaign: buildCampaignWhereForPermission(input.userId, 'summary.run'),
         kind: 'SUMMARY_GENERATION',
       },
       orderBy: { createdAt: 'desc' },
@@ -353,7 +354,7 @@ export class SummaryService {
       where: {
         id: input.documentId,
         type: 'TRANSCRIPT',
-        campaign: { ownerId: input.userId },
+        campaign: buildCampaignWhereForPermission(input.userId, 'summary.run'),
       },
       include: {
         currentVersion: true,
@@ -447,7 +448,7 @@ export class SummaryService {
     const session = await prisma.session.findFirst({
       where: {
         id: input.sessionId,
-        campaign: { ownerId: input.userId },
+        campaign: buildCampaignWhereForPermission(input.userId, 'summary.run'),
       },
       include: {
         campaign: true,
@@ -685,7 +686,7 @@ export class SummaryService {
 
   async applySummaryFromJob(jobId: string, userId: string) {
     const job = await prisma.summaryJob.findFirst({
-      where: { id: jobId, campaign: { ownerId: userId } },
+      where: { id: jobId, campaign: buildCampaignWhereForPermission(userId, 'summary.run') },
       include: { session: true },
     })
     if (!job) return null
@@ -753,7 +754,7 @@ export class SummaryService {
     return prisma.summaryJob.findFirst({
       where: {
         sessionId,
-        campaign: { ownerId: userId },
+        campaign: buildCampaignWhereForPermission(userId, 'content.read'),
         kind: kind || undefined,
       },
       orderBy: { createdAt: 'desc' },
@@ -768,7 +769,7 @@ export class SummaryService {
     return prisma.summaryJob.findFirst({
       where: {
         id: jobId,
-        campaign: { ownerId: userId },
+        campaign: buildCampaignWhereForPermission(userId, 'content.read'),
       },
       include: {
         summaryDocument: true,

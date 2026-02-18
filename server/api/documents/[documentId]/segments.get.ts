@@ -1,6 +1,7 @@
 import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { parseTranscriptSegments } from '#shared/utils/transcript'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
@@ -10,7 +11,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const document = await prisma.document.findFirst({
-    where: { id: documentId, campaign: { ownerId: sessionUser.user.id } },
+    where: {
+      id: documentId,
+      campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'content.read'),
+    },
     include: { currentVersion: true },
   })
 

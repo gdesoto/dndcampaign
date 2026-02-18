@@ -30,6 +30,8 @@ export async function useCampaignWorkspace(options: UseCampaignWorkspaceOptions)
 
   const campaign = computed(() => workspace.value?.campaign)
   const sessionHeader = computed(() => workspace.value?.sessionHeader || null)
+  const access = computed(() => workspace.value?.access)
+  const canWriteContent = computed(() => Boolean(access.value?.permissions.includes('content.write')))
   const refreshCampaign = async () => refreshWorkspace()
   const refreshSessionHeader = async () => refreshWorkspace()
 
@@ -40,6 +42,8 @@ export async function useCampaignWorkspace(options: UseCampaignWorkspaceOptions)
   return {
     campaign,
     sessionHeader,
+    access,
+    canWriteContent,
     pending,
     error,
     refreshCampaign,

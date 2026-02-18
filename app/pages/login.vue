@@ -31,7 +31,7 @@ const onSubmit = async () => {
       <p class="text-xs uppercase tracking-[0.3em] text-muted">Welcome back</p>
       <h1 class="mt-3 text-3xl font-semibold">Sign in to your campaign desk</h1>
       <p class="mt-2 text-sm text-muted">
-        Use the seeded credentials to access your campaigns.
+        Use your account credentials to access your campaigns.
       </p>
     </div>
 
@@ -51,6 +51,11 @@ const onSubmit = async () => {
         <UButton type="submit" size="lg" :loading="isSubmitting" block>
           Sign in
         </UButton>
+
+        <p class="text-sm text-muted">
+          Need an account?
+          <NuxtLink class="font-medium text-primary" to="/register">Create one</NuxtLink>
+        </p>
       </form>
     </UCard>
   </div>

@@ -3,6 +3,7 @@ import { ok, fail } from '#server/utils/http'
 import { readValidatedBodySafe } from '#server/utils/validate'
 import { transcriptionStartSchema } from '#shared/schemas/transcription'
 import { TranscriptionService } from '#server/services/transcription.service'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
@@ -17,7 +18,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const recording = await prisma.recording.findFirst({
-    where: { id: recordingId, session: { campaign: { ownerId: sessionUser.user.id } } },
+    where: {
+      id: recordingId,
+      session: { campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'recording.transcribe') },
+    },
     include: {
       artifact: true,
       session: { include: { campaign: true } },

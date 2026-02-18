@@ -33,6 +33,7 @@ type GlossaryEntry = {
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
 const { request } = useApi()
+const canWriteContent = inject('campaignCanWriteContent', computed(() => true))
 
 const types = [
   { label: 'PCs', value: 'PC' },
@@ -73,6 +74,7 @@ const editError = ref('')
 const isSaving = ref(false)
 
 const openCreate = () => {
+  if (!canWriteContent.value) return
   editMode.value = 'create'
   editError.value = ''
   editForm.id = ''
@@ -84,6 +86,7 @@ const openCreate = () => {
 }
 
 const openEdit = (entry: GlossaryEntry) => {
+  if (!canWriteContent.value) return
   editMode.value = 'edit'
   editError.value = ''
   editForm.id = entry.id
@@ -95,6 +98,7 @@ const openEdit = (entry: GlossaryEntry) => {
 }
 
 const saveEntry = async () => {
+  if (!canWriteContent.value) return
   editError.value = ''
   isSaving.value = true
   try {
@@ -130,17 +134,20 @@ const saveEntry = async () => {
 }
 
 const deleteEntry = async (entry: GlossaryEntry) => {
+  if (!canWriteContent.value) return
   await request(`/api/glossary/${entry.id}`, { method: 'DELETE' })
   await refresh()
 }
 
 const linkSession = async (entry: GlossaryEntry, sessionId: string) => {
+  if (!canWriteContent.value) return
   if (!sessionId) return
   await request(`/api/glossary/${entry.id}/sessions/${sessionId}`, { method: 'POST' })
   await refresh()
 }
 
 const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
+  if (!canWriteContent.value) return
   await request(`/api/glossary/${entry.id}/sessions/${sessionId}`, { method: 'DELETE' })
   await refresh()
 }
@@ -153,8 +160,15 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
         <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Glossary</p>
         <h1 class="mt-2 text-2xl font-semibold">World index</h1>
       </div>
-      <UButton size="lg" @click="openCreate">New entry</UButton>
+      <UButton size="lg" :disabled="!canWriteContent" @click="openCreate">New entry</UButton>
     </div>
+    <UAlert
+      v-if="!canWriteContent"
+      color="warning"
+      variant="subtle"
+      title="Read-only access"
+      description="Your role can view glossary entries but cannot edit them."
+    />
 
     <div class="flex flex-wrap items-center gap-3">
       <div class="flex gap-2">
@@ -185,7 +199,7 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
         </div>
       </template>
       <template #emptyActions>
-        <UButton variant="outline" @click="openCreate">Create your first entry</UButton>
+        <UButton variant="outline" :disabled="!canWriteContent" @click="openCreate">Create your first entry</UButton>
       </template>
 
       <div class="grid gap-4 sm:grid-cols-2">
@@ -209,8 +223,8 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
                 >
                   View character
                 </UButton>
-                <UButton size="xs" variant="outline" @click="openEdit(entry)">Edit</UButton>
-                <UButton size="xs" color="red" variant="ghost" @click="deleteEntry(entry)">Delete</UButton>
+                <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="openEdit(entry)">Edit</UButton>
+                <UButton size="xs" color="red" variant="ghost" :disabled="!canWriteContent" @click="deleteEntry(entry)">Delete</UButton>
               </div>
             </div>
           </template>
@@ -218,13 +232,14 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
           <div class="mt-4 space-y-2">
             <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Linked sessions</p>
             <div v-if="entry.sessions.length" class="flex flex-wrap gap-2">
-              <UButton
-                v-for="link in entry.sessions"
-                :key="link.id"
-                size="xs"
-                variant="outline"
-                @click="unlinkSession(entry, link.sessionId)"
-              >
+                <UButton
+                  v-for="link in entry.sessions"
+                  :key="link.id"
+                  size="xs"
+                  variant="outline"
+                  :disabled="!canWriteContent"
+                  @click="unlinkSession(entry, link.sessionId)"
+                >
                 {{ link.session.title }}
               </UButton>
             </div>
@@ -233,6 +248,7 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
               <USelect
                 :items="(sessions || []).map((session) => ({ label: session.title, value: session.id }))"
                 placeholder="Link a session..."
+                :disabled="!canWriteContent"
                 :model-value="''"
                 @update:model-value="(value) => linkSession(entry, value as string)"
               />

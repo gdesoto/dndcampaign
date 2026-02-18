@@ -1,5 +1,6 @@
 import { prisma } from '#server/db/prisma'
 import type { GlossaryType, QuestType } from '@prisma/client'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 type ApplyResult = {
   suggestionId: string
@@ -84,7 +85,7 @@ export class SummarySuggestionService {
     const suggestion = await prisma.summarySuggestion.findFirst({
       where: {
         id: suggestionId,
-        summaryJob: { campaign: { ownerId: userId } },
+        summaryJob: { campaign: buildCampaignWhereForPermission(userId, 'summary.run') },
       },
       include: {
         summaryJob: true,
@@ -389,7 +390,7 @@ export class SummarySuggestionService {
     const suggestion = await prisma.summarySuggestion.findFirst({
       where: {
         id: suggestionId,
-        summaryJob: { campaign: { ownerId: userId } },
+        summaryJob: { campaign: buildCampaignWhereForPermission(userId, 'summary.run') },
       },
     })
 

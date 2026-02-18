@@ -2,9 +2,9 @@ import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { readValidatedBodySafe } from '#server/utils/validate'
 import { campaignUpdateSchema } from '#shared/schemas/campaign'
+import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
-  const session = await requireUserSession(event)
   const campaignId = event.context.params?.campaignId
 
   if (!campaignId) {
@@ -16,12 +16,9 @@ export default defineEventHandler(async (event) => {
     return fail(400, 'VALIDATION_ERROR', 'Invalid campaign payload', parsed.fieldErrors)
   }
 
-  const campaign = await prisma.campaign.findFirst({
-    where: { id: campaignId, ownerId: session.user.id },
-  })
-
-  if (!campaign) {
-    return fail(404, 'NOT_FOUND', 'Campaign not found')
+  const authz = await requireCampaignPermission(event, campaignId, 'campaign.settings.manage')
+  if (!authz.ok) {
+    return authz.response
   }
 
   const updated = await prisma.campaign.update({

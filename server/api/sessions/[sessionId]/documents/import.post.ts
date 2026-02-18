@@ -3,6 +3,7 @@ import Busboy from 'busboy'
 import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { DocumentService } from '#server/services/document.service'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 const MAX_BYTES = 5 * 1024 * 1024
 const ALLOWED_EXT = ['.txt', '.md', '.markdown', '.vtt']
@@ -20,7 +21,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const session = await prisma.session.findFirst({
-    where: { id: sessionId, campaign: { ownerId: sessionUser.user.id } },
+    where: {
+      id: sessionId,
+      campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'document.edit'),
+    },
   })
   if (!session) {
     return fail(404, 'NOT_FOUND', 'Session not found')

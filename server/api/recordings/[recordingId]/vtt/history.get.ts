@@ -1,5 +1,6 @@
 import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
@@ -9,7 +10,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const recording = await prisma.recording.findFirst({
-    where: { id: recordingId, session: { campaign: { ownerId: sessionUser.user.id } } },
+    where: {
+      id: recordingId,
+      session: { campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'content.read') },
+    },
     include: { session: true },
   })
   if (!recording) {
@@ -18,7 +22,6 @@ export default defineEventHandler(async (event) => {
 
   const history = await prisma.artifact.findMany({
     where: {
-      ownerId: sessionUser.user.id,
       campaignId: recording.session.campaignId,
       label: 'Transcript VTT',
       meta: {

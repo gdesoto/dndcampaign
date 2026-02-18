@@ -3,6 +3,7 @@ import Busboy from 'busboy'
 import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { RecapService } from '#server/services/recap.service'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 const MAX_BYTES = 512 * 1024 * 1024
 const ALLOWED_MIME = [
@@ -24,7 +25,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const session = await prisma.session.findFirst({
-    where: { id: sessionId, campaign: { ownerId: sessionUser.user.id } },
+    where: {
+      id: sessionId,
+      campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'recording.upload'),
+    },
     include: { campaign: true },
   })
   if (!session) {

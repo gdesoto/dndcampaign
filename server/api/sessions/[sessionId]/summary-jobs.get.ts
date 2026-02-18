@@ -1,6 +1,7 @@
 import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { SummaryService } from '#server/services/summary.service'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
@@ -17,7 +18,10 @@ export default defineEventHandler(async (event) => {
   ])
 
   const jobs = await prisma.summaryJob.findMany({
-    where: { sessionId, campaign: { ownerId: sessionUser.user.id } },
+    where: {
+      sessionId,
+      campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'content.read'),
+    },
     orderBy: { createdAt: 'desc' },
     select: {
       id: true,

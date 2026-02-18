@@ -7,6 +7,7 @@ import {
   parseTranscriptSegments,
   segmentsToVtt,
 } from '#shared/utils/transcript'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 const srtToVtt = (input: string) => {
   const normalized = input.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim()
@@ -71,7 +72,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const recording = await prisma.recording.findFirst({
-    where: { id: recordingId, session: { campaign: { ownerId: sessionUser.user.id } } },
+    where: {
+      id: recordingId,
+      session: { campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'document.edit') },
+    },
     include: { session: true },
   })
   if (!recording) {
@@ -82,7 +86,7 @@ export default defineEventHandler(async (event) => {
     where: {
       sessionId: recording.sessionId,
       type: 'TRANSCRIPT',
-      campaign: { ownerId: sessionUser.user.id },
+      campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'content.read'),
     },
     include: { currentVersion: true },
   })

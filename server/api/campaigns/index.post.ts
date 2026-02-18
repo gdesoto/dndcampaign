@@ -17,6 +17,13 @@ export default defineEventHandler(async (event) => {
       name: parsed.data.name,
       system: parsed.data.system,
       description: parsed.data.description,
+      members: {
+        create: {
+          userId: session.user.id,
+          role: 'OWNER',
+          invitedByUserId: session.user.id,
+        },
+      },
     },
   })
 

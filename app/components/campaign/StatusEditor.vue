@@ -4,6 +4,7 @@ const props = defineProps<{
   saving: boolean
   error: string
   updatedAtLabel: string
+  readonly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -26,13 +27,18 @@ const valueModel = computed({
       </div>
     </template>
     <div class="space-y-4">
-      <UTextarea v-model="valueModel" :rows="6" placeholder="Where did we last leave the party?" />
+      <UTextarea
+        v-model="valueModel"
+        :rows="6"
+        :disabled="readonly"
+        placeholder="Where did we last leave the party?"
+      />
       <p v-if="error" class="text-sm text-error">{{ error }}</p>
     </div>
     <template #footer>
       <div class="flex flex-wrap items-center justify-between gap-3">
         <p class="text-xs text-muted">Last updated: {{ updatedAtLabel }}</p>
-        <UButton :loading="saving" @click="emit('save')">Save status</UButton>
+        <UButton :loading="saving" :disabled="readonly" @click="emit('save')">Save status</UButton>
       </div>
     </template>
   </UCard>

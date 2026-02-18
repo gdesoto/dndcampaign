@@ -2,6 +2,7 @@ import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { readValidatedBodySafe } from '#server/utils/validate'
 import { sessionUpdateSchema } from '#shared/schemas/session'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
@@ -16,7 +17,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const existing = await prisma.session.findFirst({
-    where: { id: sessionId, campaign: { ownerId: sessionUser.user.id } },
+    where: {
+      id: sessionId,
+      campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'content.write'),
+    },
   })
   if (!existing) {
     return fail(404, 'NOT_FOUND', 'Session not found')

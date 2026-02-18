@@ -13,6 +13,7 @@ type QuestItem = {
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
 const { request } = useApi()
+const canWriteContent = inject('campaignCanWriteContent', computed(() => true))
 
 const { data: quests, pending, refresh, error } = await useAsyncData(
   () => `quests-${campaignId.value}`,
@@ -96,6 +97,7 @@ const editError = ref('')
 const isSaving = ref(false)
 
 const openCreate = () => {
+  if (!canWriteContent.value) return
   editMode.value = 'create'
   editError.value = ''
   editForm.id = ''
@@ -108,6 +110,7 @@ const openCreate = () => {
 }
 
 const openEdit = (quest: QuestItem) => {
+  if (!canWriteContent.value) return
   editMode.value = 'edit'
   editError.value = ''
   editForm.id = quest.id
@@ -120,6 +123,7 @@ const openEdit = (quest: QuestItem) => {
 }
 
 const saveQuest = async () => {
+  if (!canWriteContent.value) return
   editError.value = ''
   isSaving.value = true
   try {
@@ -157,11 +161,13 @@ const saveQuest = async () => {
 }
 
 const deleteQuest = async (quest: QuestItem) => {
+  if (!canWriteContent.value) return
   await request(`/api/quests/${quest.id}`, { method: 'DELETE' })
   await refresh()
 }
 
 const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
+  if (!canWriteContent.value) return
   await request(`/api/quests/${quest.id}`, {
     method: 'PATCH',
     body: { status },
@@ -177,8 +183,15 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
         <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Quests</p>
         <h1 class="mt-2 text-2xl font-semibold">Quest tracker</h1>
       </div>
-      <UButton size="lg" @click="openCreate">New quest</UButton>
+      <UButton size="lg" :disabled="!canWriteContent" @click="openCreate">New quest</UButton>
     </div>
+    <UAlert
+      v-if="!canWriteContent"
+      color="warning"
+      variant="subtle"
+      title="Read-only access"
+      description="Your role can view quests but cannot change them."
+    />
 
     <SharedResourceState
       :pending="pending"
@@ -194,7 +207,7 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
         </div>
       </template>
       <template #emptyActions>
-        <UButton variant="outline" @click="openCreate">Create your first quest</UButton>
+        <UButton variant="outline" :disabled="!canWriteContent" @click="openCreate">Create your first quest</UButton>
       </template>
 
       <div v-if="quests?.length" class="space-y-6">
@@ -221,8 +234,8 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
                     <h3 class="text-lg font-semibold">{{ quest.title }}</h3>
                   </div>
                   <div class="flex gap-2">
-                    <UButton size="xs" variant="outline" @click="openEdit(quest)">Edit</UButton>
-                    <UButton size="xs" color="red" variant="ghost" @click="deleteQuest(quest)">Delete</UButton>
+                    <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="openEdit(quest)">Edit</UButton>
+                    <UButton size="xs" color="red" variant="ghost" :disabled="!canWriteContent" @click="deleteQuest(quest)">Delete</UButton>
                   </div>
                 </div>
               </template>
@@ -237,6 +250,7 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
               </div>
               <div class="mt-4 flex items-center justify-between gap-3">
                 <USelect
+                  :disabled="!canWriteContent"
                   :items="statusOptions"
                   :model-value="quest.status"
                   @update:model-value="(value) => updateStatus(quest, value as QuestItem['status'])"
@@ -264,8 +278,8 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
                     <h3 class="text-lg font-semibold">{{ quest.title }}</h3>
                   </div>
                   <div class="flex gap-2">
-                    <UButton size="xs" variant="outline" @click="openEdit(quest)">Edit</UButton>
-                    <UButton size="xs" color="red" variant="ghost" @click="deleteQuest(quest)">Delete</UButton>
+                    <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="openEdit(quest)">Edit</UButton>
+                    <UButton size="xs" color="red" variant="ghost" :disabled="!canWriteContent" @click="deleteQuest(quest)">Delete</UButton>
                   </div>
                 </div>
               </template>
@@ -280,6 +294,7 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
               </div>
               <div class="mt-4 flex items-center justify-between gap-3">
                 <USelect
+                  :disabled="!canWriteContent"
                   :items="statusOptions"
                   :model-value="quest.status"
                   @update:model-value="(value) => updateStatus(quest, value as QuestItem['status'])"

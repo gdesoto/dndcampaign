@@ -19,6 +19,10 @@ const {
   recap,
   transcriptDoc,
   summaryDoc,
+  access,
+  canWriteContent,
+  canRunSummary,
+  canUploadRecording,
   pending,
   error,
   refreshAll,
@@ -389,6 +393,7 @@ watch(
 )
 
 const saveSession = async () => {
+  if (!canWriteContent.value) return
   saveError.value = ''
   isSaving.value = true
   try {
@@ -413,6 +418,7 @@ const saveSession = async () => {
 }
 
 const attachTranscriptToVideo = async () => {
+  if (!canWriteContent.value) return
   if (!selectedSubtitleRecordingId.value) return
   subtitleAttachError.value = ''
   subtitleAttachLoading.value = true
@@ -444,6 +450,13 @@ const attachTranscriptToVideo = async () => {
     </UCard>
 
     <div v-else class="space-y-6">
+      <UAlert
+        v-if="!canWriteContent"
+        color="warning"
+        variant="subtle"
+        title="Read-only access"
+        description="Your role can view this session workspace but cannot make changes."
+      />
       <div class="space-y-6">
         <SessionWorkflowTimeline
           :active-step="currentSection"
@@ -455,6 +468,10 @@ const attachTranscriptToVideo = async () => {
         <NuxtPage
           :campaign-id="campaignId"
           :form="form"
+          :access="access"
+          :can-write-content="canWriteContent"
+          :can-run-summary="canRunSummary"
+          :can-upload-recording="canUploadRecording"
           :is-saving="isSaving"
           :save-error="saveError"
           :session-dungeon-master-label="sessionDungeonMasterLabel"
@@ -528,33 +545,33 @@ const attachTranscriptToVideo = async () => {
           @open-edit="isEditSessionOpen = true"
           @update:selected-file="selectedFile = $event"
           @update:selected-kind="selectedKind = $event"
-          @upload-recording="uploadRecording"
+          @upload-recording="canUploadRecording ? uploadRecording : () => undefined"
           @play-recording="loadPlayback"
           @open-player="player.openDrawer"
           @update:transcript-file="transcriptFile = $event"
           @update:show-full-transcript="showFullTranscript = $event"
           @update:selected-subtitle-recording-id="selectedSubtitleRecordingId = $event"
-          @create-transcript="saveTranscript"
-          @import-transcript="importTranscript"
-          @attach-subtitles="attachTranscriptToVideo"
+          @create-transcript="canWriteContent ? saveTranscript : () => undefined"
+          @import-transcript="canWriteContent ? importTranscript : () => undefined"
+          @attach-subtitles="canWriteContent ? attachTranscriptToVideo : () => undefined"
           @update:selected-summary-job-id="selectedSummaryJobId = $event"
           @refresh-jobs="refreshSummaryJob"
-          @send-to-n8n="sendSummaryToN8n"
-          @apply-pending-summary="applyPendingSummary"
+          @send-to-n8n="canRunSummary ? sendSummaryToN8n : () => undefined"
+          @apply-pending-summary="canRunSummary ? applyPendingSummary : () => undefined"
           @update:selected-suggestion-job-id="selectedSuggestionJobId = $event"
           @refresh-suggestion-jobs="refreshSuggestionJobs"
-          @generate-suggestions="generateSuggestions"
-          @apply-suggestion="applySuggestion"
-          @discard-suggestion="discardSuggestion"
+          @generate-suggestions="canRunSummary ? generateSuggestions : () => undefined"
+          @apply-suggestion="canRunSummary ? applySuggestion : () => undefined"
+          @discard-suggestion="canRunSummary ? discardSuggestion : () => undefined"
           @update:summary-content="summaryForm.content = $event"
-          @save-summary="saveSummary"
+          @save-summary="canWriteContent ? saveSummary : () => undefined"
           @update:summary-file="summaryFile = $event"
-          @import-summary="importSummary"
+          @import-summary="canWriteContent ? importSummary : () => undefined"
           @update:recap-file="recapFile = $event"
-          @upload-recap="uploadRecap"
+          @upload-recap="canUploadRecording ? uploadRecap : () => undefined"
           @play-recap="loadRecapPlayback"
-          @delete-recap="deleteRecap"
-          @save-session="saveSession"
+          @delete-recap="canUploadRecording ? deleteRecap : () => undefined"
+          @save-session="canWriteContent ? saveSession : () => undefined"
           @jump-step="openSessionSection"
         />
       </div>

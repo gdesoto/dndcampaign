@@ -1,12 +1,20 @@
 import { prisma } from '#server/db/prisma'
+import { resolveCampaignAccess } from '#server/utils/campaign-auth'
 
 export class CampaignWorkspaceService {
-  async getWorkspace(campaignId: string, userId: string, sessionId?: string) {
-    const campaign = await prisma.campaign.findFirst({
-      where: {
-        id: campaignId,
-        ownerId: userId,
-      },
+  async getWorkspace(
+    campaignId: string,
+    userId: string,
+    sessionId?: string,
+    systemRole?: 'USER' | 'SYSTEM_ADMIN'
+  ) {
+    const accessResolution = await resolveCampaignAccess(campaignId, userId, systemRole)
+    if (!accessResolution.access) {
+      return null
+    }
+
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId },
       select: {
         id: true,
         name: true,
@@ -31,7 +39,6 @@ export class CampaignWorkspaceService {
         where: {
           id: sessionId,
           campaignId,
-          campaign: { ownerId: userId },
         },
         select: {
           id: true,
@@ -45,6 +52,7 @@ export class CampaignWorkspaceService {
     return {
       campaign,
       sessionHeader,
+      access: accessResolution.access,
     }
   }
 }

@@ -15,6 +15,9 @@ type WorkflowStep = 'details' | 'recordings' | 'transcription' | 'summary' | 'su
 
 const props = defineProps<{
   campaignId: string
+  canWriteContent: boolean
+  canUploadRecording: boolean
+  canRunSummary: boolean
   form: SessionForm
   sessionDungeonMasterLabel: string
   transcriptPreview: string
@@ -88,7 +91,7 @@ const emit = defineEmits<{
                 @click="emit('jump-step', 'details')"
               />
             </UTooltip>
-            <UButton size="sm" variant="outline" @click="emit('open-edit')">
+            <UButton size="sm" variant="outline" :disabled="!canWriteContent" @click="emit('open-edit')">
               Edit session
             </UButton>
           </div>

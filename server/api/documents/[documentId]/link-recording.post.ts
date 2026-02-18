@@ -2,6 +2,7 @@ import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { readValidatedBodySafe } from '#server/utils/validate'
 import { documentLinkRecordingSchema } from '#shared/schemas/document'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
@@ -16,7 +17,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const document = await prisma.document.findFirst({
-    where: { id: documentId, campaign: { ownerId: sessionUser.user.id } },
+    where: {
+      id: documentId,
+      campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'document.edit'),
+    },
   })
   if (!document) {
     return fail(404, 'NOT_FOUND', 'Document not found')
@@ -25,7 +29,10 @@ export default defineEventHandler(async (event) => {
   const recordingId = parsed.data.recordingId
   if (recordingId) {
     const recording = await prisma.recording.findFirst({
-      where: { id: recordingId, session: { campaign: { ownerId: sessionUser.user.id } } },
+      where: {
+        id: recordingId,
+        session: { campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'document.edit') },
+      },
     })
     if (!recording) {
       return fail(404, 'NOT_FOUND', 'Recording not found')
