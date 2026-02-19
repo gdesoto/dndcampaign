@@ -6,6 +6,7 @@ DND Campaign is a Nuxt 4 web app for running tabletop campaigns. It manages camp
 ## Project Planning Docs
 - `dev_plan/DeveloperBuildPlan.md` and `dev_plan/SoftwareDesignDocument.md` define goals, milestones, and scope.
 - Milestone checklists live in `dev_plan/` (e.g. `MilestoneA_Checklist.md`, `MilestoneB_Checklist.md`, `MilestoneC_Checklist.md`).
+- Frontend implementation standards live in `StyleGuide.md` and must be consulted for any applicable frontend/UI work (pages, components, composables, styling, accessibility, and frontend tests).
 
 ## Dev Environment Tips
 - Node + Yarn: use `yarn` for installs and scripts.
