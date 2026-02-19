@@ -15,16 +15,17 @@ type AdminOverview = {
 const { data: overview, pending, error, refresh } = await useAsyncData<AdminOverview>('admin-overview-home', () =>
   admin.getOverview() as Promise<AdminOverview>
 )
+
+const adminBreadcrumbItems = [{ label: 'Admin' }]
 </script>
 
 <template>
   <UPage>
-    <UHeader>
-      <div>
-        <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Admin</p>
-        <h1 class="mt-2 text-2xl font-semibold">System administration</h1>
-      </div>
-    </UHeader>
+    <UPageHeader headline="Admin" title="System administration">
+      <template #default>
+        <UBreadcrumb :items="adminBreadcrumbItems" />
+      </template>
+    </UPageHeader>
 
     <UMain>
       <div class="space-y-6">
@@ -50,10 +51,11 @@ const { data: overview, pending, error, refresh } = await useAsyncData<AdminOver
             <h2 class="text-lg font-semibold">Admin areas</h2>
           </template>
 
-          <div class="grid gap-3 md:grid-cols-3">
+          <div class="grid gap-3 md:grid-cols-4">
             <UButton to="/admin/users" variant="outline" icon="i-lucide-users">Manage users</UButton>
             <UButton to="/admin/campaigns" variant="outline" icon="i-lucide-flag">Manage campaigns</UButton>
             <UButton to="/admin/analytics" variant="outline" icon="i-lucide-chart-column">View analytics</UButton>
+            <UButton to="/admin/activity" variant="outline" icon="i-lucide-scroll-text">Activity log</UButton>
           </div>
         </UCard>
 

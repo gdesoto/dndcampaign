@@ -109,16 +109,20 @@ const jobsCsvUrl = computed(() =>
     to: filters.to || undefined,
   })
 )
+
+const adminBreadcrumbItems = [
+  { label: 'Admin', to: '/admin' },
+  { label: 'Analytics and reporting' },
+]
 </script>
 
 <template>
   <UPage>
-    <UHeader>
-      <div>
-        <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Admin</p>
-        <h1 class="mt-2 text-2xl font-semibold">Analytics and reporting</h1>
-      </div>
-    </UHeader>
+    <UPageHeader headline="Admin" title="Analytics and reporting">
+      <template #default>
+        <UBreadcrumb :items="adminBreadcrumbItems" />
+      </template>
+    </UPageHeader>
 
     <UMain>
       <div class="space-y-6">

@@ -1,9 +1,19 @@
 import { ok, fail } from '#server/utils/http'
 import { CampaignMembershipService } from '#server/services/campaign-membership.service'
+import { enforceRateLimit } from '#server/utils/rate-limit'
 
 const membershipService = new CampaignMembershipService()
 
 export default defineEventHandler(async (event) => {
+  const rateLimitResponse = enforceRateLimit(event, {
+    key: 'campaign-invite:accept',
+    max: 20,
+    windowMs: 10 * 60_000,
+  })
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
+
   const inviteToken = event.context.params?.token
   if (!inviteToken) {
     return fail(event, 400, 'VALIDATION_ERROR', 'Invite token is required')

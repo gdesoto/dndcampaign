@@ -117,16 +117,20 @@ const roleOptions = [
   { label: 'User', value: 'USER' },
   { label: 'System admin', value: 'SYSTEM_ADMIN' },
 ]
+
+const adminBreadcrumbItems = [
+  { label: 'Admin', to: '/admin' },
+  { label: 'User management' },
+]
 </script>
 
 <template>
   <UPage>
-    <UHeader>
-      <div>
-        <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Admin</p>
-        <h1 class="mt-2 text-2xl font-semibold">User management</h1>
-      </div>
-    </UHeader>
+    <UPageHeader headline="Admin" title="User management">
+      <template #default>
+        <UBreadcrumb :items="adminBreadcrumbItems" />
+      </template>
+    </UPageHeader>
 
     <UMain>
       <div class="space-y-6">

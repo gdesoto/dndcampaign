@@ -29,6 +29,16 @@ export const adminCampaignListQuerySchema = adminPaginationQuerySchema.extend({
   archived: z.enum(['all', 'active', 'archived']).default('all'),
 })
 
+export const adminActivityLogListQuerySchema = adminPaginationQuerySchema.extend({
+  search: z.string().trim().max(160).optional(),
+  scope: z.enum(['all', 'CAMPAIGN', 'ADMIN', 'SYSTEM']).default('all'),
+  action: z.string().trim().max(120).optional(),
+  actorUserId: z.string().uuid().optional(),
+  campaignId: z.string().uuid().optional(),
+  from: dateStringSchema.optional(),
+  to: dateStringSchema.optional(),
+})
+
 export const adminCampaignUpdateSchema = z
   .object({
     isArchived: z.boolean().optional(),
@@ -62,6 +72,7 @@ export const adminCsvFormatQuerySchema = z.object({
 export type AdminUserListQuery = z.infer<typeof adminUserListQuerySchema>
 export type AdminUserUpdateInput = z.infer<typeof adminUserUpdateSchema>
 export type AdminCampaignListQuery = z.infer<typeof adminCampaignListQuerySchema>
+export type AdminActivityLogListQuery = z.infer<typeof adminActivityLogListQuerySchema>
 export type AdminCampaignUpdateInput = z.infer<typeof adminCampaignUpdateSchema>
 export type AdminAnalyticsOverviewQuery = z.infer<typeof adminAnalyticsOverviewQuerySchema>
 export type AdminAnalyticsUsageQuery = z.infer<typeof adminAnalyticsUsageQuerySchema>

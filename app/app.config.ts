@@ -100,5 +100,22 @@ export default defineAppConfig({
         root: 'flex flex-col lg:grid lg:grid-cols-10 lg:gap-10',
       },
     },
+    pageHeader: {
+      slots: {
+        root: 'relative pb-4 pt-0 border-b-0',
+        wrapper: 'flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between',
+        headline: 'text-xs uppercase tracking-[0.3em] text-dimmed',
+        title: 'text-2xl font-semibold text-highlighted',
+        description: 'text-sm text-muted',
+        links: 'flex flex-wrap items-center gap-1.5',
+      },
+      variants: {
+        title: {
+          true: {
+            description: 'mt-1 text-sm text-muted',
+          }
+        }
+      },
+    },
   },
 })

@@ -305,12 +305,7 @@ const runN8nTest = async () => {
 
 <template>
   <UPage>
-    <UHeader>
-      <div>
-        <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Account</p>
-        <h1 class="mt-2 text-2xl font-semibold">Settings</h1>
-      </div>
-    </UHeader>
+    <UPageHeader headline="Account" title="Settings" />
 
     <UMain>
       <div class="space-y-6">

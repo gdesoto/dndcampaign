@@ -7,8 +7,10 @@ import type {
   CampaignMemberRoleUpdateInput,
   CampaignOwnerTransferInput,
 } from '#shared/schemas/campaign-membership'
+import { ActivityLogService } from '#server/services/activity-log.service'
 
 const DEFAULT_INVITE_EXPIRY_DAYS = 7
+const activityLogService = new ActivityLogService()
 
 const hashInviteToken = (token: string) => createHash('sha256').update(token).digest('hex')
 
@@ -382,6 +384,21 @@ export class CampaignMembershipService {
       },
     })
 
+    await activityLogService.log({
+      actorUserId: invitedByUserId,
+      campaignId,
+      scope: 'CAMPAIGN',
+      action: 'CAMPAIGN_MEMBER_INVITE_CREATED',
+      targetType: 'CAMPAIGN_INVITE',
+      targetId: invite.id,
+      summary: 'Created campaign invite.',
+      metadata: {
+        email: invite.email,
+        role: invite.role,
+        expiresAt: invite.expiresAt.toISOString(),
+      },
+    })
+
     return {
       ok: true,
       data: {
@@ -509,6 +526,20 @@ export class CampaignMembershipService {
       return member
     })
 
+    await activityLogService.log({
+      actorUserId: userId,
+      campaignId: invite.campaignId,
+      scope: 'CAMPAIGN',
+      action: 'CAMPAIGN_MEMBER_INVITE_ACCEPTED',
+      targetType: 'CAMPAIGN_INVITE',
+      targetId: invite.id,
+      summary: 'Accepted campaign invite.',
+      metadata: {
+        acceptedByUserId: userId,
+        role: membership.role,
+      },
+    })
+
     return {
       ok: true,
       data: {
@@ -584,6 +615,21 @@ export class CampaignMembershipService {
       },
     })
 
+    await activityLogService.log({
+      actorUserId,
+      campaignId,
+      scope: 'CAMPAIGN',
+      action: 'CAMPAIGN_MEMBER_ROLE_UPDATED',
+      targetType: 'CAMPAIGN_MEMBER',
+      targetId: member.id,
+      summary: 'Updated campaign member role.',
+      metadata: {
+        memberUserId: member.userId,
+        previousRole: member.role,
+        nextRole: updated.role,
+      },
+    })
+
     return {
       ok: true,
       data: toMemberRow(updated),
@@ -636,6 +682,20 @@ export class CampaignMembershipService {
 
     await prisma.campaignMember.delete({
       where: { id: member.id },
+    })
+
+    await activityLogService.log({
+      actorUserId,
+      campaignId,
+      scope: 'CAMPAIGN',
+      action: 'CAMPAIGN_MEMBER_REMOVED',
+      targetType: 'CAMPAIGN_MEMBER',
+      targetId: member.id,
+      summary: 'Removed campaign member.',
+      metadata: {
+        memberUserId: member.userId,
+        removedRole: member.role,
+      },
     })
 
     return {
@@ -753,6 +813,21 @@ export class CampaignMembershipService {
       })
 
       return updatedOwnerMember
+    })
+
+    await activityLogService.log({
+      actorUserId: ownerUserId,
+      campaignId,
+      scope: 'CAMPAIGN',
+      action: 'CAMPAIGN_OWNER_TRANSFERRED',
+      targetType: 'CAMPAIGN',
+      targetId: campaignId,
+      summary: 'Transferred campaign ownership.',
+      metadata: {
+        previousOwnerUserId: ownerUserId,
+        newOwnerUserId: transferResult.userId,
+        newOwnerMemberId: transferResult.id,
+      },
     })
 
     return {

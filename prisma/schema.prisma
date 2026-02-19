@@ -49,11 +49,32 @@ model User {
   campaignInvitesSent CampaignInvite[] @relation("CampaignInviteInviter")
   campaignInvitesAccepted CampaignInvite[] @relation("CampaignInviteAccepter")
   campaignPublicAccessUpdates CampaignPublicAccess[]
+  activityActions ActivityLog[] @relation("ActivityActor")
   documentVersions DocumentVersion[]
   playerCharacters PlayerCharacter[]
   adminAuditActions AdminAuditLog[] @relation("AdminAuditActor")
 
   @@index([email])
+}
+
+model ActivityLog {
+  id         String    @id @default(uuid())
+  actorUserId String?
+  actorUser  User?     @relation("ActivityActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  campaignId String?
+  campaign   Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  scope      String
+  action     String
+  targetType String?
+  targetId   String?
+  summary    String?
+  metadata   Json?
+  createdAt  DateTime  @default(now())
+
+  @@index([createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([campaignId, createdAt])
+  @@index([scope, action, createdAt])
 }
 
 model AdminAuditLog {
@@ -95,6 +116,7 @@ model Campaign {
   members       CampaignMember[]
   invites       CampaignInvite[]
   publicAccess  CampaignPublicAccess?
+  activityLogs  ActivityLog[]
 
   @@index([ownerId])
 }

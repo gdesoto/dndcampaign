@@ -89,12 +89,7 @@ const switchAccount = async () => {
 
 <template>
   <UPage>
-    <UHeader>
-      <div>
-        <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Campaign Invite</p>
-        <h1 class="mt-2 text-2xl font-semibold">Join campaign</h1>
-      </div>
-    </UHeader>
+    <UPageHeader headline="Campaign Invite" title="Join campaign" />
 
     <UMain>
       <UCard>

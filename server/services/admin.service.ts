@@ -1,18 +1,35 @@
 import { prisma } from '#server/db/prisma'
 import type { ServiceResult } from '#server/services/auth.service'
 import type {
+  AdminActivityLogListQuery,
   AdminCampaignListQuery,
   AdminCampaignUpdateInput,
   AdminUserListQuery,
   AdminUserUpdateInput,
 } from '#shared/schemas/admin'
 import { AdminAuditService } from '#server/services/admin-audit.service'
+import { ActivityLogService } from '#server/services/activity-log.service'
 
 const auditService = new AdminAuditService()
+const activityLogService = new ActivityLogService()
 
 const normalizeSearch = (value?: string) => {
   const normalized = value?.trim()
   return normalized ? normalized : undefined
+}
+
+const toDateRange = (from?: string, to?: string) => {
+  if (!from && !to) {
+    return undefined
+  }
+
+  const start = from ? new Date(`${from}T00:00:00.000Z`) : undefined
+  const end = to ? new Date(`${to}T23:59:59.999Z`) : undefined
+
+  return {
+    ...(start ? { gte: start } : {}),
+    ...(end ? { lte: end } : {}),
+  }
 }
 
 const getPagination = (page: number, pageSize: number) => ({
@@ -223,6 +240,21 @@ export class AdminService {
         },
       },
     })
+    await activityLogService.log({
+      actorUserId,
+      scope: 'ADMIN',
+      action: 'ADMIN_USER_UPDATE',
+      targetType: 'USER',
+      targetId: userId,
+      summary: 'Updated user role or active status',
+      metadata: {
+        before: existing,
+        after: {
+          systemRole: updated.systemRole,
+          isActive: updated.isActive,
+        },
+      },
+    })
 
     return {
       ok: true,
@@ -300,6 +332,97 @@ export class AdminService {
         documentCount: campaign._count.documents,
         createdAt: campaign.createdAt.toISOString(),
         updatedAt: campaign.updatedAt.toISOString(),
+      })),
+      page: query.page,
+      pageSize: query.pageSize,
+      total,
+    }
+  }
+
+  async listActivityLogs(query: AdminActivityLogListQuery) {
+    const search = normalizeSearch(query.search)
+    const dateRange = toDateRange(query.from, query.to)
+
+    const where = {
+      ...(query.scope !== 'all' ? { scope: query.scope } : {}),
+      ...(query.action ? { action: query.action.trim() } : {}),
+      ...(query.actorUserId ? { actorUserId: query.actorUserId } : {}),
+      ...(query.campaignId ? { campaignId: query.campaignId } : {}),
+      ...(dateRange ? { createdAt: dateRange } : {}),
+      ...(search
+        ? {
+            OR: [
+              { action: { contains: search } },
+              { summary: { contains: search } },
+              { targetType: { contains: search } },
+              { targetId: { contains: search } },
+              { actorUser: { email: { contains: search } } },
+              { actorUser: { name: { contains: search } } },
+              { campaign: { name: { contains: search } } },
+            ],
+          }
+        : {}),
+    }
+
+    const [total, rows] = await Promise.all([
+      prisma.activityLog.count({ where }),
+      prisma.activityLog.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }],
+        ...getPagination(query.page, query.pageSize),
+        select: {
+          id: true,
+          scope: true,
+          action: true,
+          targetType: true,
+          targetId: true,
+          summary: true,
+          metadata: true,
+          createdAt: true,
+          actorUserId: true,
+          actorUser: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+            },
+          },
+          campaignId: true,
+          campaign: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      }),
+    ])
+
+    return {
+      logs: rows.map((row) => ({
+        id: row.id,
+        scope: row.scope as 'CAMPAIGN' | 'ADMIN' | 'SYSTEM',
+        action: row.action,
+        targetType: row.targetType,
+        targetId: row.targetId,
+        summary: row.summary,
+        metadata: row.metadata,
+        createdAt: row.createdAt.toISOString(),
+        actorUserId: row.actorUserId,
+        actorUser: row.actorUser
+          ? {
+              id: row.actorUser.id,
+              email: row.actorUser.email,
+              name: row.actorUser.name,
+            }
+          : null,
+        campaignId: row.campaignId,
+        campaign: row.campaign
+          ? {
+              id: row.campaign.id,
+              name: row.campaign.name,
+            }
+          : null,
       })),
       page: query.page,
       pageSize: query.pageSize,
@@ -544,6 +667,22 @@ export class AdminService {
 
     await auditService.log({
       actorUserId,
+      action: 'ADMIN_CAMPAIGN_UPDATE',
+      targetType: 'CAMPAIGN',
+      targetId: campaignId,
+      summary: 'Updated campaign archive status or owner',
+      metadata: {
+        before: existing,
+        after: {
+          ownerId: updated.ownerId,
+          isArchived: updated.isArchived,
+        },
+      },
+    })
+    await activityLogService.log({
+      actorUserId,
+      campaignId,
+      scope: 'ADMIN',
       action: 'ADMIN_CAMPAIGN_UPDATE',
       targetType: 'CAMPAIGN',
       targetId: campaignId,

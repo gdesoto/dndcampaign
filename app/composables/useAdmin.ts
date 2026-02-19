@@ -19,6 +19,18 @@ type AdminAnalyticsQuery = {
   campaignLimit?: number
 }
 
+type AdminActivityQuery = {
+  search?: string
+  scope?: 'all' | 'CAMPAIGN' | 'ADMIN' | 'SYSTEM'
+  action?: string
+  actorUserId?: string
+  campaignId?: string
+  from?: string
+  to?: string
+  page?: number
+  pageSize?: number
+}
+
 export const useAdmin = () => {
   const { request } = useApi()
 
@@ -107,6 +119,33 @@ export const useAdmin = () => {
   const getOverview = (at?: string) => request(`/api/admin/analytics/overview${toQuery({ at })}`)
   const getUsage = (query: AdminAnalyticsQuery = {}) => request(`/api/admin/analytics/usage${toQuery(query)}`)
   const getJobs = (query: AdminAnalyticsQuery = {}) => request(`/api/admin/analytics/jobs${toQuery(query)}`)
+  const getActivity = (query: AdminActivityQuery = {}) =>
+    request<{
+      logs: Array<{
+        id: string
+        scope: 'CAMPAIGN' | 'ADMIN' | 'SYSTEM'
+        action: string
+        targetType: string | null
+        targetId: string | null
+        summary: string | null
+        metadata: unknown
+        createdAt: string
+        actorUserId: string | null
+        actorUser: {
+          id: string
+          email: string
+          name: string
+        } | null
+        campaignId: string | null
+        campaign: {
+          id: string
+          name: string
+        } | null
+      }>
+      page: number
+      pageSize: number
+      total: number
+    }>(`/api/admin/activity${toQuery(query)}`)
 
   const getUsageCsvUrl = (query: AdminAnalyticsQuery = {}) =>
     `/api/admin/analytics/usage.csv${toQuery(query)}`
@@ -123,6 +162,7 @@ export const useAdmin = () => {
     getOverview,
     getUsage,
     getJobs,
+    getActivity,
     getUsageCsvUrl,
     getJobsCsvUrl,
   }

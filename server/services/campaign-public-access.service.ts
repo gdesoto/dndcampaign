@@ -11,8 +11,10 @@ import type {
   CampaignPublicOverviewDto,
   PublicCampaignDirectoryItem,
 } from '#shared/schemas/campaign-public-access'
+import { ActivityLogService } from '#server/services/activity-log.service'
 
 const PUBLIC_SLUG_BYTE_LENGTH = 16
+const activityLogService = new ActivityLogService()
 
 type CampaignPublicAccessRecord = {
   campaignId: string
@@ -222,6 +224,44 @@ export class CampaignPublicAccessService {
         })
       : await createAccessRecord(campaignId, updatedByUserId, normalizedInput)
 
+    await activityLogService.log({
+      actorUserId: updatedByUserId,
+      campaignId,
+      scope: 'CAMPAIGN',
+      action: 'CAMPAIGN_PUBLIC_ACCESS_UPDATED',
+      targetType: 'CAMPAIGN_PUBLIC_ACCESS',
+      targetId: campaignId,
+      summary: 'Updated public campaign access settings.',
+      metadata: {
+        previous: existing
+          ? {
+              isEnabled: existing.isEnabled,
+              isListed: existing.isListed,
+              showCharacters: existing.showCharacters,
+              showRecaps: existing.showRecaps,
+              showSessions: existing.showSessions,
+              showGlossary: existing.showGlossary,
+              showQuests: existing.showQuests,
+              showMilestones: existing.showMilestones,
+              showMaps: existing.showMaps,
+              publicSlug: existing.publicSlug,
+            }
+          : null,
+        next: {
+          isEnabled: updated.isEnabled,
+          isListed: updated.isListed,
+          showCharacters: updated.showCharacters,
+          showRecaps: updated.showRecaps,
+          showSessions: updated.showSessions,
+          showGlossary: updated.showGlossary,
+          showQuests: updated.showQuests,
+          showMilestones: updated.showMilestones,
+          showMaps: updated.showMaps,
+          publicSlug: updated.publicSlug,
+        },
+      },
+    })
+
     return { ok: true, data: toOwnerDto(updated) }
   }
 
@@ -250,6 +290,20 @@ export class CampaignPublicAccessService {
                 updatedByUserId,
               },
             })
+
+        await activityLogService.log({
+          actorUserId: updatedByUserId,
+          campaignId,
+          scope: 'CAMPAIGN',
+          action: 'CAMPAIGN_PUBLIC_SLUG_REGENERATED',
+          targetType: 'CAMPAIGN_PUBLIC_ACCESS',
+          targetId: campaignId,
+          summary: 'Regenerated campaign public slug.',
+          metadata: {
+            previousPublicSlug: existing?.publicSlug || null,
+            nextPublicSlug: updated.publicSlug,
+          },
+        })
 
         return { ok: true, data: toOwnerDto(updated) }
       } catch (error) {
