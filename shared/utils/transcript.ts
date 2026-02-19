@@ -47,7 +47,7 @@ const extractSpeakerFromText = (value: string) => {
 const normalizeText = (value: string) =>
   value
     .replace(/\s+/g, ' ')
-    .replace(/\u0000/g, '')
+    .split('\u0000').join('')
     .trim()
 
 const parseTimedTranscript = (content: string) => {

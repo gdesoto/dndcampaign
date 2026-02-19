@@ -98,7 +98,7 @@ const switchAccount = async () => {
         </template>
 
         <div class="space-y-4">
-          <p class="text-sm text-muted" v-if="inviteState?.status !== 'ALREADY_MEMBER'">
+          <p v-if="inviteState?.status !== 'ALREADY_MEMBER'" class="text-sm text-muted">
             Accept this invite to join the campaign with the role defined by the campaign owner.
           </p>
 

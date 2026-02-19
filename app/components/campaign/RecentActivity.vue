@@ -6,7 +6,7 @@ type ActivityItem = {
   description: string
 }
 
-const props = defineProps<{
+defineProps<{
   campaignId: string
   items: ActivityItem[]
 }>()

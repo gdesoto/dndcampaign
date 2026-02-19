@@ -1,7 +1,7 @@
 <template>
   <UApp>
     <NuxtRouteAnnouncer />
-    <div id="global-media-player-host" class="hidden"></div>
+    <div id="global-media-player-host" class="hidden"/>
     <ClientOnly>
       <GlobalMediaPlayer />
     </ClientOnly>

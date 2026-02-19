@@ -4,9 +4,8 @@ import type {
   CampaignMilestoneSummary,
   CampaignQuestSummary,
   CampaignRecapItem,
-  CampaignSessionSummary,
+  CampaignSessionSummary, CampaignOverviewDetail 
 } from '#shared/types/campaign-overview'
-import type { CampaignOverviewDetail } from '#shared/types/campaign-overview'
 
 export const useCampaignActivityItems = (
   campaign: Ref<CampaignOverviewDetail | null | undefined>,

@@ -9,7 +9,7 @@ type SessionForm = {
 
 type WorkflowStep = 'details' | 'recordings' | 'transcription' | 'summary' | 'suggestions' | 'recap'
 
-const props = defineProps<{
+defineProps<{
   campaignId: string
   canWriteContent: boolean
   canUploadRecording: boolean

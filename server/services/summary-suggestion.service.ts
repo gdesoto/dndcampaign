@@ -1,6 +1,5 @@
 import { prisma } from '#server/db/prisma'
-import type { GlossaryType, QuestType } from '@prisma/client'
-import { Prisma } from '@prisma/client'
+import type { GlossaryType, QuestType, Prisma  } from '@prisma/client'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 type ApplyResult = {
@@ -148,14 +147,14 @@ export class SummarySuggestionService {
       })
 
       const sessionKeys: Array<'title' | 'notes'> = ['title', 'notes']
-      const remainingPayload = { ...originalPayload }
-      if (payloadOverride) {
-        for (const key of sessionKeys) {
-          if (key in payloadOverride) {
-            delete remainingPayload[key]
-          }
-        }
-      }
+      const overrideSessionKeys = payloadOverride
+        ? new Set(sessionKeys.filter((key) => key in payloadOverride))
+        : new Set<'title' | 'notes'>()
+      const remainingPayload = Object.fromEntries(
+        Object.entries(originalPayload).filter(
+          ([key]) => !overrideSessionKeys.has(key as 'title' | 'notes')
+        )
+      ) as Record<string, unknown>
 
       const hasRemainingSessionFields =
         typeof remainingPayload.title === 'string' || typeof remainingPayload.notes === 'string'

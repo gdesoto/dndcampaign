@@ -1,9 +1,10 @@
 import { expect, test } from '@nuxt/test-utils/playwright'
+import type { Page } from '@playwright/test'
 
 const seedEmail = process.env.SEED_USER_EMAIL ?? 'dm@example.com'
 const seedPassword = process.env.SEED_USER_PASSWORD ?? 'password123'
 
-const gotoWithRetry = async (page: { goto: Function; waitForTimeout: Function }, url: string) => {
+const gotoWithRetry = async (page: Pick<Page, 'goto' | 'waitForTimeout'>, url: string) => {
   try {
     await page.goto(url, { waitUntil: 'domcontentloaded' })
   } catch (error) {

@@ -1,9 +1,9 @@
 # DND Campaign
 
-DND Campaign is a Nuxt 4 web app for running tabletop campaigns. It manages campaigns, sessions, glossary entries, quests, milestones, and recordings. Recordings are stored via a storage abstraction (local by default) and streamed with range support for media playback.
+DND Campaign is a web app for running tabletop campaigns. It manages campaigns, sessions, glossary entries, quests, milestones, and recordings. Recordings are stored via a storage abstraction (local by default) and streamed with range support for media playback.
 
 **Tech Stack**
-1. Nuxt 4 (server routes)
+1. Nuxt 4
 2. Prisma (SQLite by default)
 3. Nuxt UI
 

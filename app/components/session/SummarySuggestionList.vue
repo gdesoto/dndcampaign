@@ -14,7 +14,7 @@ type SuggestionGroup = {
 
 type SessionSuggestion = SuggestionItem | null
 
-const props = defineProps<{
+defineProps<{
   suggestionGroups: SuggestionGroup[]
   sessionSuggestion: SessionSuggestion
 }>()

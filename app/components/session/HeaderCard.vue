@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{
+defineProps<{
   sessionNumber?: number | null
   title?: string | null
   sessionDateLabel: string

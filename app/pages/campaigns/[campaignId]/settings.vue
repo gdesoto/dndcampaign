@@ -161,7 +161,7 @@ const createInvite = async () => {
 }
 
 const copyInviteLink = async () => {
-  if (!inviteAction.link || !process.client) return
+  if (!inviteAction.link || !import.meta.client) return
   try {
     await navigator.clipboard.writeText(inviteAction.link)
     inviteAction.success = 'Invite link copied to clipboard.'
@@ -299,7 +299,7 @@ const regeneratePublicSlug = async () => {
 }
 
 const copyPublicUrl = async () => {
-  if (!publicAccessData.value?.publicUrl || !process.client) return
+  if (!publicAccessData.value?.publicUrl || !import.meta.client) return
   try {
     await navigator.clipboard.writeText(publicAccessData.value.publicUrl)
     publicAction.success = 'Public URL copied to clipboard.'
@@ -360,8 +360,8 @@ const copyPublicUrl = async () => {
           <div v-if="memberAction.error" class="mb-3 text-sm text-error">{{ memberAction.error }}</div>
 
           <div v-if="membersPending" class="space-y-2">
-            <div class="h-10 w-full animate-pulse rounded bg-muted"></div>
-            <div class="h-10 w-full animate-pulse rounded bg-muted"></div>
+            <div class="h-10 w-full animate-pulse rounded bg-muted"/>
+            <div class="h-10 w-full animate-pulse rounded bg-muted"/>
           </div>
 
           <div v-else-if="membersError" class="space-y-3">
@@ -498,8 +498,8 @@ const copyPublicUrl = async () => {
           </template>
 
           <div v-if="publicAccessPending" class="space-y-2">
-            <div class="h-10 w-full animate-pulse rounded bg-muted"></div>
-            <div class="h-10 w-full animate-pulse rounded bg-muted"></div>
+            <div class="h-10 w-full animate-pulse rounded bg-muted"/>
+            <div class="h-10 w-full animate-pulse rounded bg-muted"/>
           </div>
 
           <div v-else-if="publicAccessError" class="space-y-3">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = defineProps<{
+defineProps<{
   system: string
   dungeonMasterName?: string | null
   description?: string | null

@@ -203,7 +203,6 @@ const transcriptContent = toRef(transcriptForm, 'content')
 const summaryContent = toRef(summaryForm, 'content')
 
 const {
-  transcriptSaving,
   summarySaving,
   transcriptError,
   summaryError,

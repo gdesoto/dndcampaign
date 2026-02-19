@@ -11,7 +11,7 @@ type RecapItem = {
   }
 }
 
-const props = defineProps<{
+withDefaults(defineProps<{
   campaignId?: string
   recaps: RecapItem[] | null | undefined
   selectedRecapId: string
@@ -26,7 +26,9 @@ const props = defineProps<{
   emptyMessage?: string
   emptyActionLabel?: string
   emptyActionTo?: string
-}>()
+}>(), {
+  canDelete: true,
+})
 
 const emit = defineEmits<{
   play: [recapId: string]

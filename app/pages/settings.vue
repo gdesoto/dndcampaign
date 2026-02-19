@@ -323,9 +323,9 @@ const runN8nTest = async () => {
           </template>
 
           <div v-if="profilePending" class="space-y-3">
-            <div class="h-4 w-40 animate-pulse rounded bg-muted"></div>
-            <div class="h-10 w-full animate-pulse rounded bg-muted"></div>
-            <div class="h-10 w-full animate-pulse rounded bg-muted"></div>
+            <div class="h-4 w-40 animate-pulse rounded bg-muted"/>
+            <div class="h-10 w-full animate-pulse rounded bg-muted"/>
+            <div class="h-10 w-full animate-pulse rounded bg-muted"/>
           </div>
 
           <div v-else class="space-y-4">
@@ -420,8 +420,8 @@ const runN8nTest = async () => {
             <p v-if="revokeAction.error" class="text-sm text-error">{{ revokeAction.error }}</p>
 
             <div v-if="sessionsPending" class="space-y-2">
-              <div class="h-9 w-full animate-pulse rounded bg-muted"></div>
-              <div class="h-9 w-full animate-pulse rounded bg-muted"></div>
+              <div class="h-9 w-full animate-pulse rounded bg-muted"/>
+              <div class="h-9 w-full animate-pulse rounded bg-muted"/>
             </div>
 
             <div v-else-if="sessions?.length" class="space-y-2">
@@ -462,8 +462,8 @@ const runN8nTest = async () => {
           </template>
 
           <div v-if="pending" class="space-y-3">
-            <div class="h-4 w-40 animate-pulse rounded bg-muted"></div>
-            <div class="h-24 w-full animate-pulse rounded bg-muted"></div>
+            <div class="h-4 w-40 animate-pulse rounded bg-muted"/>
+            <div class="h-24 w-full animate-pulse rounded bg-muted"/>
           </div>
 
           <div v-else-if="error" class="space-y-3">

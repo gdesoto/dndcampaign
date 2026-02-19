@@ -223,7 +223,7 @@ const openFullPlayer = () => {
             srclang="en"
             :src="state.source?.vttUrl"
             default
-          />
+          >
         </component>
 
         <div v-if="showInline" class="space-y-3 rounded-lg border border-default bg-elevated/40 p-4">
@@ -251,7 +251,7 @@ const openFullPlayer = () => {
               step="0.1"
               :value="progress"
               @input="onSeek"
-            />
+            >
             <div class="flex items-center justify-between text-xs text-dimmed">
               <span>{{ formatTime(state.currentTime) }}</span>
               <span>{{ formatTime(state.duration) }}</span>
@@ -330,7 +330,7 @@ const openFullPlayer = () => {
             step="0.1"
             :value="progress"
             @input="onSeek"
-          />
+          >
           <div class="flex flex-wrap items-center gap-4">
             <label class="flex items-center gap-2 text-xs text-dimmed">
               Volume
@@ -342,7 +342,7 @@ const openFullPlayer = () => {
                 step="0.05"
                 :value="state.volume"
                 @input="onVolume"
-              />
+              >
             </label>
             <label class="flex items-center gap-2 text-xs text-dimmed">
               Speed

@@ -4,6 +4,7 @@ import type {
   CampaignQuestSummary,
   CampaignSessionSummary,
 } from '#shared/types/campaign-overview'
+import { useCampaignStatusBadges } from './useCampaignStatusBadges'
 
 export const useCampaignOverviewMetrics = (
   sessions: Ref<CampaignSessionSummary[] | null | undefined>,

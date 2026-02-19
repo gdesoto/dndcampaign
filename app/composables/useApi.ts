@@ -4,7 +4,7 @@ type RequestOptions = Parameters<typeof $fetch>[1]
 
 export const useApi = () => {
   const request = async <T>(url: string, options: RequestOptions = {}) => {
-    const serverHeaders = process.server ? useRequestHeaders(['cookie']) : {}
+    const serverHeaders = import.meta.server ? useRequestHeaders(['cookie']) : {}
     const optionHeaders = options.headers
       ? Object.fromEntries(new Headers(options.headers as HeadersInit))
       : {}

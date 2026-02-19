@@ -30,7 +30,7 @@ const child = spawn(
 
 let shuttingDown = false
 
-const shutdown = async (signal) => {
+const shutdown = async () => {
   if (shuttingDown) return
   shuttingDown = true
 

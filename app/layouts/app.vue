@@ -66,8 +66,8 @@ const profileMenuItems = computed(() => [
 
 <template>
   <div class="theme-shell">
-    <div class="theme-overlay theme-overlay-noise"></div>
-    <div class="theme-overlay theme-overlay-pattern"></div>
+    <div class="theme-overlay theme-overlay-noise"/>
+    <div class="theme-overlay theme-overlay-pattern"/>
 
     <div class="relative z-10">
       <UHeader class="theme-header fixed left-0 right-0 top-0 z-20">

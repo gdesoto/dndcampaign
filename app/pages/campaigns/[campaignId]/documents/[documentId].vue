@@ -232,12 +232,9 @@ const reconcileSpeakerDrafts = (
 ) => {
   const beforeById = new Map(beforeSegments.map((segment) => [segment.id, segment.speaker ?? '']))
   const nextIds = new Set(nextSegments.map((segment) => segment.id))
-  const nextDrafts = { ...speakerDrafts.value }
-  Object.keys(nextDrafts).forEach((segmentId) => {
-    if (!nextIds.has(segmentId)) {
-      delete nextDrafts[segmentId]
-    }
-  })
+  const nextDrafts: Record<string, string> = Object.fromEntries(
+    Object.entries(speakerDrafts.value).filter(([segmentId]) => nextIds.has(segmentId))
+  )
   nextSegments.forEach((segment) => {
     const previousSpeaker = beforeById.get(segment.id) ?? ''
     const existingDraft = nextDrafts[segment.id]
@@ -1509,7 +1506,7 @@ const fullTranscript = computed(() =>
                     <UCheckbox
                       :model-value="selectedSet.has(segment.id)"
                       @click="(event: MouseEvent) => noteSegmentSelectionClick(event, segment.id)"
-                      @update:modelValue="(value) => handleSegmentSelectionUpdate(segment.id, value)"
+                      @update:model-value="(value) => handleSegmentSelectionUpdate(segment.id, value)"
                     />
                     <span>{{ formatTimestamp(segment.startMs) }}</span>
                     <span v-if="segment.endMs !== null">- {{ formatTimestamp(segment.endMs) }}</span>

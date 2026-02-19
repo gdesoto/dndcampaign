@@ -21,7 +21,7 @@ type MilestoneSummary = {
 
 type UiColor = 'error' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'neutral'
 
-const props = defineProps<{
+defineProps<{
   campaignId: string
   sessions: SessionSummary[]
   quests: QuestSummary[]
