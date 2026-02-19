@@ -27,7 +27,13 @@ withDefaults(defineProps<{
   emptyActionLabel?: string
   emptyActionTo?: string
 }>(), {
+  campaignId: '',
   canDelete: true,
+  title: '',
+  description: '',
+  emptyMessage: '',
+  emptyActionLabel: '',
+  emptyActionTo: '',
 })
 
 const emit = defineEmits<{

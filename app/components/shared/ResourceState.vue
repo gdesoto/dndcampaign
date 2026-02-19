@@ -6,7 +6,7 @@ const props = withDefaults(defineProps<{
   errorMessage?: string
   emptyMessage?: string
 }>(), {
-  error: null,
+  error: undefined,
   empty: false,
   errorMessage: 'Unable to load data.',
   emptyMessage: 'No results yet.',
