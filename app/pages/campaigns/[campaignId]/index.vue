@@ -241,6 +241,7 @@ const saveCampaign = async () => {
       :form="editForm"
       :saving="isUpdating"
       :error="editError"
+      @update:form="Object.assign(editForm, $event)"
       @save="saveCampaign"
     />
   </div>

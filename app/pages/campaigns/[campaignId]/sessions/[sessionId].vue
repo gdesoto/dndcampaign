@@ -546,6 +546,7 @@ const attachTranscriptToVideo = async () => {
           :recap-delete-error="recapDeleteError"
           :has-recap="hasRecap"
           @open-edit="isEditSessionOpen = true"
+          @update:form="Object.assign(form, $event)"
           @update:selected-file="selectedFile = $event"
           @update:selected-kind="selectedKind = $event"
           @upload-recording="canUploadRecording ? uploadRecording : () => undefined"
@@ -585,6 +586,7 @@ const attachTranscriptToVideo = async () => {
       :form="form"
       :saving="isSaving"
       :error="saveError"
+      @update:form="Object.assign(form, $event)"
       @save="saveSession"
     />
   </div>
