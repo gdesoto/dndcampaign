@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { getFirstNameTerm } from '#shared/utils/name'
 
-definePageMeta({ layout: 'app' })
+definePageMeta({ layout: 'default' })
 
 type RecordingDetail = {
   id: string
@@ -990,5 +990,4 @@ const formatBytes = (value: number) => {
   </UModal>
   </UPage>
 </template>
-
 

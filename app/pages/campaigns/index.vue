@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'app' })
+definePageMeta({ layout: 'default' })
 
 type CampaignSummary = {
   id: string
@@ -132,5 +132,4 @@ const createCampaign = async () => {
     </div>
   </UPage>
 </template>
-
 

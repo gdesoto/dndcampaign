@@ -2,7 +2,7 @@
 import type { CharacterImportPayload, CharacterImportRefreshPayload } from '~/utils/character-import'
 import { getCharacterImportErrorMessage } from '~/utils/character-import'
 
-definePageMeta({ layout: 'app' })
+definePageMeta({ layout: 'default' })
 
 type CampaignOption = { id: string; name: string }
 type CampaignLink = {
@@ -592,5 +592,4 @@ const deleteCharacter = async () => {
     />
   </UPage>
 </template>
-
 

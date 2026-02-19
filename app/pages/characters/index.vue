@@ -2,7 +2,7 @@
 import type { CharacterImportPayload } from '~/utils/character-import'
 import { getCharacterImportErrorMessage } from '~/utils/character-import'
 
-definePageMeta({ layout: 'app' })
+definePageMeta({ layout: 'default' })
 
 type Character = {
   id: string
@@ -200,5 +200,4 @@ const importCharacter = async (payload: CharacterImportPayload) => {
     />
   </UPage>
 </template>
-
 

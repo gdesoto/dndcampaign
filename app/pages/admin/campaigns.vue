@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 
-definePageMeta({ layout: 'app' })
+definePageMeta({ layout: 'default' })
 
 const admin = useAdmin()
 

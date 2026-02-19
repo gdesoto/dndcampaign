@@ -8,7 +8,7 @@ import type {
   MapFeatureType,
 } from '#shared/types/api/map'
 
-definePageMeta({ layout: 'app' })
+definePageMeta({ layout: 'default' })
 
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
@@ -648,4 +648,3 @@ const applyReimport = async () => {
     </UModal>
   </div>
 </template>
-

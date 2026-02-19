@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'app' })
+definePageMeta({ layout: 'default' })
 
 const route = useRoute()
 const token = computed(() => route.params.token as string)

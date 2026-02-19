@@ -7,7 +7,7 @@ import {
 } from '#shared/utils/transcript'
 import { getFirstNameTerm } from '#shared/utils/name'
 
-definePageMeta({ layout: 'app' })
+definePageMeta({ layout: 'default' })
 
 type DocumentVersionDetail = {
   id: string
@@ -1888,4 +1888,3 @@ const fullTranscript = computed(() =>
     </div>
   </UPage>
 </template>
-

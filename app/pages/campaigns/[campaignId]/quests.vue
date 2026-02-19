@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'app' })
+definePageMeta({ layout: 'default' })
 
 type QuestItem = {
   id: string
@@ -336,4 +336,3 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
     </SharedEntityFormModal>
   </div>
 </template>
-

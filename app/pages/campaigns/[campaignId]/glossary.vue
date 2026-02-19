@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'app' })
+definePageMeta({ layout: 'default' })
 
 type SessionItem = {
   id: string
@@ -282,4 +282,3 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
     </SharedEntityFormModal>
   </div>
 </template>
-

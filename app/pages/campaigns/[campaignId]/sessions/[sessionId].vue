@@ -5,7 +5,7 @@ import {
   parseTranscriptSegments,
   segmentsToPlainText,
 } from '#shared/utils/transcript'
-definePageMeta({ layout: 'app' })
+definePageMeta({ layout: 'default' })
 
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)

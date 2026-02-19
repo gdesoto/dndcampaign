@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'app' })
+definePageMeta({ layout: 'default' })
 
 type AccountProfile = {
   id: string
@@ -309,4 +309,3 @@ const revokeOtherSessions = async () => {
     </UMain>
   </UPage>
 </template>
-
