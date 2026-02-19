@@ -34,6 +34,8 @@ DND Campaign is a Nuxt 4 web app for running tabletop campaigns. It manages camp
 - Unit tests: `yarn test:unit`
 - Nuxt/server tests: `yarn test:nuxt`
 - Coverage: `yarn test:coverage`
+- Linting: `yarn lint`
+- Typecheck: `yarn typecheck`
 
 ## Common Commands
 - Dev server: `yarn dev`

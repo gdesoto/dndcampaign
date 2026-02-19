@@ -22,7 +22,9 @@
     "test:api": "vitest run --project api",
     "test:nuxt": "vitest run --project nuxt",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "typecheck": "nuxt typecheck",
+    "cleanup": "nuxt cleanup"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"
