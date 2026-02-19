@@ -10,6 +10,8 @@ export const useCampaignOverviewMetrics = (
   quests: Ref<CampaignQuestSummary[] | null | undefined>,
   milestones: Ref<CampaignMilestoneSummary[] | null | undefined>
 ) => {
+  const { questStatusColor } = useCampaignStatusBadges()
+
   const sortByDate = <T extends { createdAt?: string | null }>(
     items: T[],
     getDate: (item: T) => string | null | undefined
@@ -48,19 +50,6 @@ export const useCampaignOverviewMetrics = (
   const recentMilestones = computed(() =>
     sortByDate(milestones.value || [], (milestone) => milestone.completedAt || milestone.createdAt).slice(0, 5)
   )
-
-  const questStatusColor = (status: CampaignQuestSummary['status']) => {
-    switch (status) {
-      case 'COMPLETED':
-        return 'success'
-      case 'FAILED':
-        return 'error'
-      case 'ON_HOLD':
-        return 'warning'
-      default:
-        return 'secondary'
-    }
-  }
 
   return {
     latestSession,

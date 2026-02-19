@@ -12,7 +12,7 @@ type RecapItem = {
 }
 
 const props = defineProps<{
-  campaignId: string
+  campaignId?: string
   recaps: RecapItem[] | null | undefined
   selectedRecapId: string
   playbackUrl: string
@@ -20,6 +20,12 @@ const props = defineProps<{
   deleting: boolean
   error: string
   deleteError: string
+  canDelete?: boolean
+  title?: string
+  description?: string
+  emptyMessage?: string
+  emptyActionLabel?: string
+  emptyActionTo?: string
 }>()
 
 const emit = defineEmits<{
@@ -34,8 +40,8 @@ const emit = defineEmits<{
   <UCard>
     <template #header>
       <div>
-        <h2 class="text-lg font-semibold">Recap playlist</h2>
-        <p class="text-sm text-muted">Listen to session recaps across the campaign.</p>
+        <h2 class="text-lg font-semibold">{{ title || 'Recap playlist' }}</h2>
+        <p class="text-sm text-muted">{{ description || 'Listen to session recaps across the campaign.' }}</p>
       </div>
     </template>
     <div class="space-y-4">
@@ -64,6 +70,7 @@ const emit = defineEmits<{
                 Play
               </UButton>
               <UButton
+                v-if="canDelete !== false"
                 size="xs"
                 variant="ghost"
                 color="red"
@@ -93,8 +100,14 @@ const emit = defineEmits<{
         </UCard>
       </div>
       <div v-else class="space-y-3">
-        <p class="text-sm text-muted">No recaps yet. Upload a recap on a session to build the playlist.</p>
-        <UButton variant="outline" :to="`/campaigns/${campaignId}/sessions`">Upload a recap</UButton>
+        <p class="text-sm text-muted">{{ emptyMessage || 'No recaps yet. Upload a recap on a session to build the playlist.' }}</p>
+        <UButton
+          v-if="emptyActionTo"
+          variant="outline"
+          :to="emptyActionTo"
+        >
+          {{ emptyActionLabel || 'Upload a recap' }}
+        </UButton>
       </div>
       <p v-if="error" class="text-sm text-error">{{ error }}</p>
       <p v-if="deleteError" class="text-sm text-error">{{ deleteError }}</p>

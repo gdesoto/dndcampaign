@@ -29,8 +29,12 @@ const campaignAccess = inject<ComputedRef<CampaignAccess>>('campaignAccess', com
 const canManageMembers = computed(() =>
   Boolean(campaignAccess.value?.permissions.includes('campaign.members.manage'))
 )
+const canManagePublic = computed(() =>
+  Boolean(campaignAccess.value?.permissions.includes('campaign.public.manage'))
+)
 
 const membership = useCampaignMembership()
+const publicAccessApi = useCampaignPublicAccess()
 
 const tabs = [
   { label: 'General', value: 'general' },
@@ -52,11 +56,25 @@ const {
   { immediate: false }
 )
 
+const {
+  data: publicAccessData,
+  pending: publicAccessPending,
+  error: publicAccessError,
+  refresh: refreshPublicAccess,
+} = await useAsyncData(
+  () => `campaign-public-access-${campaignId.value}`,
+  () => publicAccessApi.getSettings(campaignId.value),
+  { immediate: false }
+)
+
 watch(
-  () => [activeTab.value, canManageMembers.value] as const,
-  async ([tab, canManage]) => {
-    if (tab === 'members' && canManage) {
+  () => [activeTab.value, canManageMembers.value, canManagePublic.value] as const,
+  async ([tab, canManageMembersTab, canManagePublicTab]) => {
+    if (tab === 'members' && canManageMembersTab) {
       await refreshMembers()
+    }
+    if (tab === 'public' && canManagePublicTab) {
+      await refreshPublicAccess()
     }
   },
   { immediate: true }
@@ -217,6 +235,79 @@ const transferOwnership = async () => {
 }
 
 const formatDateTime = (value: string) => new Date(value).toLocaleString()
+
+const publicAction = reactive({
+  saving: false,
+  regenerating: false,
+  error: '',
+  success: '',
+})
+
+type PublicAccessToggleField =
+  | 'isEnabled'
+  | 'isListed'
+  | 'showCharacters'
+  | 'showRecaps'
+  | 'showSessions'
+  | 'showGlossary'
+  | 'showQuests'
+  | 'showMilestones'
+  | 'showMaps'
+
+const savePublicAccess = async (payload: Parameters<typeof publicAccessApi.updateSettings>[1]) => {
+  publicAction.error = ''
+  publicAction.success = ''
+  publicAction.saving = true
+
+  try {
+    const updated = await publicAccessApi.updateSettings(campaignId.value, payload)
+    if (!updated) {
+      throw new Error('Public access update failed.')
+    }
+    publicAccessData.value = updated
+    publicAction.success = 'Public access settings updated.'
+  } catch (error) {
+    publicAction.error =
+      (error as Error & { message?: string }).message || 'Unable to update public access settings.'
+  } finally {
+    publicAction.saving = false
+  }
+}
+
+const updatePublicToggle = async (key: PublicAccessToggleField, value: boolean) => {
+  await savePublicAccess({ [key]: value })
+}
+
+const regeneratePublicSlug = async () => {
+  publicAction.error = ''
+  publicAction.success = ''
+  publicAction.regenerating = true
+
+  try {
+    const updated = await publicAccessApi.regenerateSlug(campaignId.value)
+    if (!updated) {
+      throw new Error('Unable to regenerate public URL.')
+    }
+    publicAccessData.value = updated
+    publicAction.success = 'Public URL regenerated successfully.'
+  } catch (error) {
+    publicAction.error =
+      (error as Error & { message?: string }).message || 'Unable to regenerate public URL.'
+  } finally {
+    publicAction.regenerating = false
+  }
+}
+
+const copyPublicUrl = async () => {
+  if (!publicAccessData.value?.publicUrl || !process.client) return
+  try {
+    await navigator.clipboard.writeText(publicAccessData.value.publicUrl)
+    publicAction.success = 'Public URL copied to clipboard.'
+    publicAction.error = ''
+  } catch {
+    publicAction.error = 'Unable to copy public URL.'
+  }
+}
 </script>
 
 <template>
@@ -386,12 +477,137 @@ const formatDateTime = (value: string) => new Date(value).toLocaleString()
       </template>
     </div>
 
-    <UCard v-else-if="activeTab === 'public'">
-      <template #header>
-        <h2 class="text-lg font-semibold">Public Access</h2>
+    <div v-else-if="activeTab === 'public'" class="space-y-6">
+      <UAlert
+        v-if="!canManagePublic"
+        color="warning"
+        variant="subtle"
+        title="Owner access required"
+        description="Only campaign owners can manage public sharing settings."
+      />
+
+      <template v-else>
+        <UCard>
+          <template #header>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 class="text-lg font-semibold">Public Access</h2>
+                <p class="text-sm text-muted">Control what anonymous visitors can read from this campaign.</p>
+              </div>
+            </div>
+          </template>
+
+          <div v-if="publicAccessPending" class="space-y-2">
+            <div class="h-10 w-full animate-pulse rounded bg-muted"></div>
+            <div class="h-10 w-full animate-pulse rounded bg-muted"></div>
+          </div>
+
+          <div v-else-if="publicAccessError" class="space-y-3">
+            <p class="text-sm text-error">Unable to load public access settings.</p>
+            <UButton variant="outline" @click="() => refreshPublicAccess()">Try again</UButton>
+          </div>
+
+          <div v-else-if="publicAccessData" class="space-y-6">
+            <UAlert
+              color="warning"
+              variant="subtle"
+              title="Internet visibility warning"
+              description="Anyone with this URL can view enabled sections. Regenerating the URL invalidates previously shared links."
+            />
+
+            <div class="rounded-lg border border-default bg-elevated/20 p-4">
+              <USwitch
+                :model-value="publicAccessData.isEnabled"
+                label="Enable public campaign access"
+                description="Allow anonymous visitors to view enabled sections below."
+                :loading="publicAction.saving"
+                @update:model-value="(value) => updatePublicToggle('isEnabled', value)"
+              />
+            </div>
+
+            <div class="rounded-lg border border-default bg-elevated/20 p-4">
+              <USwitch
+                :model-value="publicAccessData.isListed"
+                label="List in public directory"
+                description="If enabled, this campaign can appear on the homepage sample and in the public campaign directory."
+                :disabled="!publicAccessData.isEnabled"
+                :loading="publicAction.saving"
+                @update:model-value="(value) => updatePublicToggle('isListed', value)"
+              />
+            </div>
+
+            <div class="space-y-3">
+              <h3 class="text-sm font-semibold uppercase tracking-wide text-muted">Public sections</h3>
+
+              <div class="grid gap-3 sm:grid-cols-2">
+                <USwitch
+                  :model-value="publicAccessData.showCharacters"
+                  label="Characters"
+                  :loading="publicAction.saving"
+                  @update:model-value="(value) => updatePublicToggle('showCharacters', value)"
+                />
+                <USwitch
+                  :model-value="publicAccessData.showRecaps"
+                  label="Recaps"
+                  :loading="publicAction.saving"
+                  @update:model-value="(value) => updatePublicToggle('showRecaps', value)"
+                />
+                <USwitch
+                  :model-value="publicAccessData.showSessions"
+                  label="Sessions"
+                  :loading="publicAction.saving"
+                  @update:model-value="(value) => updatePublicToggle('showSessions', value)"
+                />
+                <USwitch
+                  :model-value="publicAccessData.showGlossary"
+                  label="Glossary"
+                  :loading="publicAction.saving"
+                  @update:model-value="(value) => updatePublicToggle('showGlossary', value)"
+                />
+                <USwitch
+                  :model-value="publicAccessData.showQuests"
+                  label="Quests"
+                  :loading="publicAction.saving"
+                  @update:model-value="(value) => updatePublicToggle('showQuests', value)"
+                />
+                <USwitch
+                  :model-value="publicAccessData.showMilestones"
+                  label="Milestones"
+                  :loading="publicAction.saving"
+                  @update:model-value="(value) => updatePublicToggle('showMilestones', value)"
+                />
+                <USwitch
+                  :model-value="publicAccessData.showMaps"
+                  label="Maps"
+                  :loading="publicAction.saving"
+                  @update:model-value="(value) => updatePublicToggle('showMaps', value)"
+                />
+              </div>
+            </div>
+
+            <div class="rounded-lg border border-default bg-muted/20 p-4 space-y-3">
+              <p class="text-xs uppercase tracking-wide text-muted">Public URL</p>
+              <UInput :model-value="publicAccessData.publicUrl" readonly />
+              <div class="flex flex-wrap gap-2">
+                <UButton variant="outline" @click="copyPublicUrl">Copy URL</UButton>
+                <UButton
+                  color="warning"
+                  variant="soft"
+                  :loading="publicAction.regenerating"
+                  @click="regeneratePublicSlug"
+                >
+                  Regenerate URL
+                </UButton>
+              </div>
+              <p class="text-xs text-muted">Last updated: {{ formatDateTime(publicAccessData.updatedAt) }}</p>
+            </div>
+
+            <p v-if="publicAction.success" class="text-sm text-success">{{ publicAction.success }}</p>
+            <p v-if="publicAction.error" class="text-sm text-error">{{ publicAction.error }}</p>
+          </div>
+        </UCard>
       </template>
-      <p class="text-sm text-muted">Public sharing controls are scheduled for Milestone UM-5.</p>
-    </UCard>
+    </div>
 
     <UCard v-else>
       <template #header>

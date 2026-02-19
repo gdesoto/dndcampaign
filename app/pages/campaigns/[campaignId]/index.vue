@@ -223,6 +223,8 @@ const saveCampaign = async () => {
         :deleting="recapDeleting"
         :error="recapError"
         :delete-error="recapDeleteError"
+        :empty-action-to="`/campaigns/${campaignId}/sessions`"
+        empty-action-label="Upload a recap"
         @play="playRecap"
         @delete="deleteRecap"
         @open-player="openPlayer"
