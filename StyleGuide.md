@@ -40,6 +40,7 @@ Guidelines:
 ### Slots
 - Prefer slots for extensibility when parent views need layout control.
 - Document non-obvious slot contracts with brief comments near usage.
+- For `UTable` customization, prefer `#<column>-header` and `#<column>-cell` slots for simple UI composition (links/buttons/badges) instead of render-function definitions unless dynamic render logic is truly needed.
 
 ## Nuxt UI and Theming
 - Centralize theme overrides in `app/app.config.ts`.

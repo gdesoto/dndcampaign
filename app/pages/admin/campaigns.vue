@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { TableColumn } from '@nuxt/ui'
+
 definePageMeta({ layout: 'app' })
 
 const admin = useAdmin()
@@ -38,7 +40,16 @@ const {
 
 const campaigns = computed(() => campaignsData.value?.campaigns || [])
 
-const campaignColumns = [
+const campaignColumns: TableColumn<{
+  id: string
+  name: string
+  ownerEmail: string
+  isArchived: string
+  memberCount: number
+  sessionCount: number
+  documentCount: number
+  updatedAt: string
+}>[] = [
   { accessorKey: 'name', header: 'Name' },
   { accessorKey: 'ownerEmail', header: 'Owner email' },
   { accessorKey: 'isArchived', header: 'Archived' },
@@ -46,6 +57,15 @@ const campaignColumns = [
   { accessorKey: 'sessionCount', header: 'Sessions' },
   { accessorKey: 'documentCount', header: 'Documents' },
   { accessorKey: 'updatedAt', header: 'Updated' },
+  {
+    id: 'openCampaign',
+    header: 'Campaign',
+    meta: {
+      class: {
+        td: 'text-right',
+      },
+    },
+  },
 ]
 
 const campaignOptions = computed(() =>
@@ -237,7 +257,17 @@ const adminBreadcrumbItems = [
             :columns="campaignColumns"
             :loading="pending"
             empty="No campaigns found"
-          />
+          >
+            <template #openCampaign-cell="{ row }">
+              <UButton
+                :to="`/campaigns/${row.original.id}`"
+                variant="ghost"
+                size="xs"
+                icon="i-lucide-external-link"
+                label="Open campaign"
+              />
+            </template>
+          </UTable>
 
           <p v-if="error" class="mt-3 text-sm text-error">{{ (error as Error).message }}</p>
         </UCard>
