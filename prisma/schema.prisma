@@ -51,8 +51,25 @@ model User {
   campaignPublicAccessUpdates CampaignPublicAccess[]
   documentVersions DocumentVersion[]
   playerCharacters PlayerCharacter[]
+  adminAuditActions AdminAuditLog[] @relation("AdminAuditActor")
 
   @@index([email])
+}
+
+model AdminAuditLog {
+  id         String   @id @default(uuid())
+  actorUserId String
+  actorUser  User     @relation("AdminAuditActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  action     String
+  targetType String
+  targetId   String?
+  summary    String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([actorUserId, createdAt])
+  @@index([targetType, createdAt])
+  @@index([action, createdAt])
 }
 
 model Campaign {
@@ -61,6 +78,7 @@ model Campaign {
   owner         User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   name          String
   system        String   @default("D&D 5e")
+  isArchived    Boolean  @default(false)
   dungeonMasterName String?
   description   String?
   currentStatus String?

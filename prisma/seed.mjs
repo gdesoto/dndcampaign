@@ -12,13 +12,15 @@ const collaboratorEmail = process.env.SEED_COLLABORATOR_EMAIL || 'collaborator@e
 const collaboratorPassword = process.env.SEED_COLLABORATOR_PASSWORD || 'password123'
 const viewerEmail = process.env.SEED_VIEWER_EMAIL || 'viewer@example.com'
 const viewerPassword = process.env.SEED_VIEWER_PASSWORD || 'password123'
+const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@example.com'
+const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'password123'
 
 const seedTranscriptContent = `Welcome to the session transcript.
 
 [00:00] DM: The ruined watchtower rises over the ridge.
 [00:07] Player: We should scout for tracks before entering.`
 
-const upsertSeedUser = async ({ email, password, name }) => {
+const upsertSeedUser = async ({ email, password, name, systemRole = 'USER' }) => {
   const existingUser = await prisma.user.findUnique({ where: { email } })
   const passwordHash = await hash.make(password)
 
@@ -28,6 +30,7 @@ const upsertSeedUser = async ({ email, password, name }) => {
         email,
         passwordHash,
         name,
+        systemRole,
       },
     })
     console.log(`Seeded user: ${email}`)
@@ -39,6 +42,7 @@ const upsertSeedUser = async ({ email, password, name }) => {
     data: {
       passwordHash,
       name: existingUser.name || name,
+      systemRole,
     },
   })
 }
@@ -58,6 +62,12 @@ const main = async () => {
     email: viewerEmail,
     password: viewerPassword,
     name: 'Campaign Viewer',
+  })
+  await upsertSeedUser({
+    email: adminEmail,
+    password: adminPassword,
+    name: 'System Admin',
+    systemRole: 'SYSTEM_ADMIN',
   })
 
   let campaign = await prisma.campaign.findFirst({

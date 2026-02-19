@@ -4,12 +4,17 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return
   }
 
-  const { loggedIn, ready, fetch } = useUserSession()
+  const { loggedIn, ready, fetch, user } = useUserSession()
   if (!ready.value) {
     await fetch()
   }
 
   if (!loggedIn.value) {
     return navigateTo('/login')
+  }
+
+  const sessionUser = (user.value as { systemRole?: 'USER' | 'SYSTEM_ADMIN' } | null) || null
+  if (to.path.startsWith('/admin') && sessionUser?.systemRole !== 'SYSTEM_ADMIN') {
+    return navigateTo('/campaigns')
   }
 })

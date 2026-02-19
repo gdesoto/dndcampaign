@@ -1,5 +1,8 @@
 <script setup lang="ts">
 const { user, logout } = useAuth()
+const currentUser = computed(
+  () => (user.value as { email?: string; systemRole?: 'USER' | 'SYSTEM_ADMIN' } | null) || null
+)
 const colorMode = useColorMode()
 const colorModeLabel = computed(() => {
   if (colorMode.preference === 'system') return 'System'
@@ -25,11 +28,19 @@ const { data: campaigns } = await useAsyncData(
   () => request<CampaignNavItem[]>('/api/campaigns')
 )
 
-const topNavItems = computed(() => [
-  { label: 'Home', to: '/' },
-  { label: 'Campaigns', to: '/campaigns' },
-  { label: 'Characters', to: '/characters' },
-])
+const topNavItems = computed(() => {
+  const items = [
+    { label: 'Home', to: '/' },
+    { label: 'Campaigns', to: '/campaigns' },
+    { label: 'Characters', to: '/characters' },
+  ]
+
+  if (currentUser.value?.systemRole === 'SYSTEM_ADMIN') {
+    items.push({ label: 'Admin', to: '/admin' })
+  }
+
+  return items
+})
 const { showCampaignSelect, campaignOptions, selectedCampaignId } = useCampaignSelector(
   route,
   router,
@@ -39,11 +50,14 @@ const { showCampaignSelect, campaignOptions, selectedCampaignId } = useCampaignS
 const profileMenuItems = computed(() => [
   [
     {
-      label: user.value?.email || 'Account',
+      label: currentUser.value?.email || 'Account',
       type: 'label',
     },
   ],
   [
+    ...(currentUser.value?.systemRole === 'SYSTEM_ADMIN'
+      ? [{ label: 'Admin', icon: 'i-lucide-shield-check', to: '/admin' }]
+      : []),
     { label: 'Settings', icon: 'i-lucide-cog', to: '/settings' },
     { label: 'Logout', icon: 'i-lucide-log-out', onSelect: () => logout() },
   ],
