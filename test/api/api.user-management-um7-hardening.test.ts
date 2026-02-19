@@ -1,33 +1,24 @@
 // @vitest-environment node
 import { createHash } from 'node:crypto'
-import { resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { PrismaClient } from '@prisma/client'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
-import { createTestDbContext } from '../scripts/test-db-utils.mjs'
-import { startManagedNuxtDevServer } from '../scripts/nuxt-server-utils.mjs'
+import { getApiTestBaseUrl, getApiTestDatabaseUrl } from '../scripts/api-test-context.mjs'
 
-const rootDir = resolve(fileURLToPath(new URL('../..', import.meta.url)))
-const db = createTestDbContext({
-  rootDir,
-  prefix: 'api-um7',
-  sessionPassword: 'api-um7-session-password-1234567890-abcdefghijklmnopqrstuvwxyz',
-})
-
-const env = {
-  ...db.env,
-  VITE_HMR_PORT: '24684',
-  VITE_HMR_HOST: '127.0.0.1',
-}
-
-const prisma = new PrismaClient({ datasourceUrl: db.dbUrl })
+const prisma = new PrismaClient({ datasourceUrl: getApiTestDatabaseUrl() })
 const hash = new Hash(new Scrypt())
 
 const password = 'um7-password-12345'
-let baseUrl = ''
-let stopServer = async () => {}
+const baseUrl = getApiTestBaseUrl()
+const throttleProbeHeaders = {
+  'content-type': 'application/json',
+  'x-forwarded-for': '203.0.113.77',
+}
+const authHeaders = {
+  'content-type': 'application/json',
+  'x-forwarded-for': '203.0.113.17',
+}
 
 const users = {
   owner: { email: 'um7-owner@example.com', name: 'UM7 Owner', systemRole: 'USER' as const },
@@ -44,30 +35,29 @@ let campaignId = ''
 let viewerMemberId = ''
 let campaignArtifactId = ''
 
-const loginAndGetCookie = async (email: string) => {
-  const response = await fetch(`${baseUrl}/api/auth/login`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  })
+const sleep = (ms: number) => new Promise((resolveDelay) => setTimeout(resolveDelay, ms))
 
-  expect(response.status).toBe(200)
-  return response.headers.get('set-cookie') || ''
+const loginAndGetCookie = async (email: string) => {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const response = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({ email, password }),
+    })
+    if (response.status === 429) {
+      await sleep(250)
+      continue
+    }
+
+    expect(response.status).toBe(200)
+    return response.headers.get('set-cookie') || ''
+  }
+
+  throw new Error(`Rate-limited while logging in test user ${email}`)
 }
 
 describe('user management UM-7 hardening, audit, and release readiness', () => {
   beforeAll(async () => {
-    db.prepare({ migrate: true, seed: false, stdio: 'pipe' })
-
-    const server = await startManagedNuxtDevServer({
-      rootDir,
-      port: 4179,
-      env,
-    })
-
-    baseUrl = server.baseUrl
-    stopServer = server.stop
-
     const passwordHash = await hash.make(password)
 
     for (const [key, user] of Object.entries(users)) {
@@ -156,9 +146,7 @@ describe('user management UM-7 hardening, audit, and release readiness', () => {
   }, 120_000)
 
   afterAll(async () => {
-    await stopServer()
     await prisma.$disconnect()
-    await db.cleanup()
   })
 
   it('enforces campaign artifact ACL for members and non-members', async () => {
@@ -248,7 +236,7 @@ describe('user management UM-7 hardening, audit, and release readiness', () => {
     for (let i = 0; i < 20; i += 1) {
       const response = await fetch(`${baseUrl}/api/auth/register`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: throttleProbeHeaders,
         body: JSON.stringify({}),
       })
       if (response.status === 429) {
@@ -262,7 +250,7 @@ describe('user management UM-7 hardening, audit, and release readiness', () => {
     for (let i = 0; i < 30; i += 1) {
       const response = await fetch(`${baseUrl}/api/auth/login`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: throttleProbeHeaders,
         body: JSON.stringify({
           email: users.owner.email,
           password: 'bad-password',
@@ -281,6 +269,7 @@ describe('user management UM-7 hardening, audit, and release readiness', () => {
         method: 'POST',
         headers: {
           cookie: cookies.invitee,
+          'x-forwarded-for': '203.0.113.77',
         },
       })
       if (response.status === 429) {

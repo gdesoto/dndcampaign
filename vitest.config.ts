@@ -17,6 +17,7 @@ export default defineConfig({
           name: 'api',
           include: ['test/api/*.{test,spec}.ts'],
           environment: 'node',
+          globalSetup: ['test/scripts/api-global-setup.mjs'],
         },
       },
       await defineVitestProject({

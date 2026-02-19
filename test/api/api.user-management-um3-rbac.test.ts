@@ -1,32 +1,19 @@
 // @vitest-environment node
-import { resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { PrismaClient } from '@prisma/client'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
-import { createTestDbContext } from '../scripts/test-db-utils.mjs'
-import { startManagedNuxtDevServer } from '../scripts/nuxt-server-utils.mjs'
+import { getApiTestBaseUrl, getApiTestDatabaseUrl } from '../scripts/api-test-context.mjs'
 
-const rootDir = resolve(fileURLToPath(new URL('../..', import.meta.url)))
-const db = createTestDbContext({
-  rootDir,
-  prefix: 'api-um3',
-  sessionPassword: 'api-um3-session-password-1234567890-abcdefghijklmnopqrstuvwxyz',
-})
-
-const env = {
-  ...db.env,
-  VITE_HMR_PORT: '24681',
-  VITE_HMR_HOST: '127.0.0.1',
-}
-
-const prisma = new PrismaClient({ datasourceUrl: db.dbUrl })
+const prisma = new PrismaClient({ datasourceUrl: getApiTestDatabaseUrl() })
 const hash = new Hash(new Scrypt())
 
 const password = 'strongpass12345'
-let baseUrl = ''
-let stopServer = async () => {}
+const baseUrl = getApiTestBaseUrl()
+const authHeaders = {
+  'content-type': 'application/json',
+  'x-forwarded-for': '203.0.113.13',
+}
 
 const users = {
   owner: { email: 'um3-owner@example.com', name: 'UM3 Owner' },
@@ -40,28 +27,27 @@ let campaignId = ''
 let mapId = ''
 let sharedCharacterId = ''
 
+const sleep = (ms: number) => new Promise((resolveDelay) => setTimeout(resolveDelay, ms))
+
 const loginAndGetCookie = async (email: string) => {
-  const response = await fetch(`${baseUrl}/api/auth/login`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  })
-  expect(response.status).toBe(200)
-  return response.headers.get('set-cookie') || ''
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const response = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({ email, password }),
+    })
+    if (response.status === 429) {
+      await sleep(250)
+      continue
+    }
+    expect(response.status).toBe(200)
+    return response.headers.get('set-cookie') || ''
+  }
+  throw new Error(`Rate-limited while logging in test user ${email}`)
 }
 
 describe('user management UM-3 RBAC', () => {
   beforeAll(async () => {
-    db.prepare({ migrate: true, seed: false, stdio: 'pipe' })
-
-    const server = await startManagedNuxtDevServer({
-      rootDir,
-      port: 4176,
-      env,
-    })
-    baseUrl = server.baseUrl
-    stopServer = server.stop
-
     const passwordHash = await hash.make(password)
 
     const createdUsers = await Promise.all(
@@ -145,9 +131,7 @@ describe('user management UM-3 RBAC', () => {
   }, 120_000)
 
   afterAll(async () => {
-    await stopServer()
     await prisma.$disconnect()
-    await db.cleanup()
   })
 
   it('allows collaborator and viewer to see shared campaign in list', async () => {

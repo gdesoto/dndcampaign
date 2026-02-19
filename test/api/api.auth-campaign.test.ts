@@ -1,52 +1,48 @@
 // @vitest-environment node
-import { resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { ofetch } from 'ofetch'
 import { PrismaClient } from '@prisma/client'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
-import { createTestDbContext } from '../scripts/test-db-utils.mjs'
-import { startManagedNuxtDevServer } from '../scripts/nuxt-server-utils.mjs'
+import { getApiTestBaseUrl, getApiTestDatabaseUrl } from '../scripts/api-test-context.mjs'
 
-const rootDir = resolve(fileURLToPath(new URL('../..', import.meta.url)))
-const db = createTestDbContext({
-  rootDir,
-  prefix: 'api',
-  sessionPassword: 'api-session-password-1234567890-abcdefghijklmnopqrstuvwxyz',
-})
-
-const env = {
-  ...db.env,
-  VITE_HMR_PORT: '24679',
-  VITE_HMR_HOST: '127.0.0.1',
-}
-
-const prisma = new PrismaClient({ datasourceUrl: db.dbUrl })
+const prisma = new PrismaClient({ datasourceUrl: getApiTestDatabaseUrl() })
 const hash = new Hash(new Scrypt())
-let baseUrl = ''
-let stopServer = async () => {}
+const baseUrl = getApiTestBaseUrl()
 
 const testUser = {
   email: 'test-dm@example.com',
   password: 'password123',
   name: 'Test DM',
 }
+const authHeaders = {
+  'content-type': 'application/json',
+  'x-forwarded-for': '203.0.113.10',
+}
+
+const sleep = (ms: number) => new Promise((resolveDelay) => setTimeout(resolveDelay, ms))
+
+const loginAndGetCookie = async (email: string, password: string) => {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const loginResponse = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({ email, password }),
+    })
+    if (loginResponse.status === 429) {
+      await sleep(250)
+      continue
+    }
+    expect(loginResponse.status).toBe(200)
+    return loginResponse.headers.get('set-cookie') || ''
+  }
+  throw new Error(`Rate-limited while logging in test user ${email}`)
+}
 
 describe('auth + campaigns API', () => {
   let authCookie = ''
 
   beforeAll(async () => {
-    db.prepare({ migrate: true, seed: false, stdio: 'pipe' })
-
-    const server = await startManagedNuxtDevServer({
-      rootDir,
-      port: 4174,
-      env,
-    })
-    baseUrl = server.baseUrl
-    stopServer = server.stop
-
     const passwordHash = await hash.make(testUser.password)
     const user = await prisma.user.upsert({
       where: { email: testUser.email },
@@ -71,18 +67,11 @@ describe('auth + campaigns API', () => {
       },
     })
 
-    const loginResponse = await fetch(`${baseUrl}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email: testUser.email, password: testUser.password }),
-    })
-    authCookie = loginResponse.headers.get('set-cookie') || ''
+    authCookie = await loginAndGetCookie(testUser.email, testUser.password)
   }, 120_000)
 
   afterAll(async () => {
-    await stopServer()
     await prisma.$disconnect()
-    await db.cleanup()
   })
 
   it('rejects campaign list without auth', async () => {

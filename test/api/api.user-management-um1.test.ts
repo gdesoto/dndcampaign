@@ -1,60 +1,35 @@
 // @vitest-environment node
-import { resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { PrismaClient } from '@prisma/client'
-import { createTestDbContext } from '../scripts/test-db-utils.mjs'
-import { startManagedNuxtDevServer } from '../scripts/nuxt-server-utils.mjs'
+import { getApiTestBaseUrl, getApiTestDatabaseUrl } from '../scripts/api-test-context.mjs'
 
-const rootDir = resolve(fileURLToPath(new URL('../..', import.meta.url)))
-const db = createTestDbContext({
-  rootDir,
-  prefix: 'api-um1',
-  sessionPassword: 'api-um1-session-password-1234567890-abcdefghijklmnopqrstuvwxyz',
-})
-
-const env = {
-  ...db.env,
-  VITE_HMR_PORT: '24680',
-  VITE_HMR_HOST: '127.0.0.1',
-}
-
-const prisma = new PrismaClient({ datasourceUrl: db.dbUrl })
+const prisma = new PrismaClient({ datasourceUrl: getApiTestDatabaseUrl() })
 
 const registerUser = {
   name: 'UM1 Tester',
   email: 'um1@example.com',
   password: 'strongpass123',
 }
+const authHeaders = {
+  'content-type': 'application/json',
+  'x-forwarded-for': '203.0.113.11',
+}
 
 describe('user management UM-1', () => {
-  let baseUrl = ''
-  let stopServer = async () => {}
+  const baseUrl = getApiTestBaseUrl()
   let authCookie = ''
 
   beforeAll(async () => {
-    db.prepare({ migrate: true, seed: false, stdio: 'pipe' })
-
-    const server = await startManagedNuxtDevServer({
-      rootDir,
-      port: 4175,
-      env,
-    })
-
-    baseUrl = server.baseUrl
-    stopServer = server.stop
   }, 120_000)
 
   afterAll(async () => {
-    await stopServer()
     await prisma.$disconnect()
-    await db.cleanup()
   })
 
   it('registers a user and creates a session', async () => {
     const response = await fetch(`${baseUrl}/api/auth/register`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         ...registerUser,
         termsAccepted: true,
@@ -80,7 +55,7 @@ describe('user management UM-1', () => {
   it('returns 409 for duplicate registration email', async () => {
     const response = await fetch(`${baseUrl}/api/auth/register`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         name: 'Duplicate User',
         email: registerUser.email,
@@ -97,7 +72,7 @@ describe('user management UM-1', () => {
   it('rejects weak registration password', async () => {
     const response = await fetch(`${baseUrl}/api/auth/register`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         name: 'Weak Password User',
         email: 'weak-user@example.com',
@@ -174,7 +149,7 @@ describe('user management UM-1', () => {
 
     const oldPasswordLogin = await fetch(`${baseUrl}/api/auth/login`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         email: 'um1-updated@example.com',
         password: registerUser.password,
@@ -184,7 +159,7 @@ describe('user management UM-1', () => {
 
     const newPasswordLogin = await fetch(`${baseUrl}/api/auth/login`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         email: 'um1-updated@example.com',
         password: 'strongpass12345',
@@ -225,7 +200,7 @@ describe('user management UM-1', () => {
 
     await fetch(`${baseUrl}/api/auth/login`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify({
         email: 'um1-updated@example.com',
         password: 'strongpass12345',
