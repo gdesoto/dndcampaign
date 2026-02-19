@@ -50,6 +50,9 @@ const createCharacter = async () => {
       method: 'POST',
       body: { name: createForm.name },
     })
+    if (!character) {
+      throw new Error('Unable to create character.')
+    }
     isCreateOpen.value = false
     await refresh()
     router.push(`/characters/${character.id}`)
@@ -78,6 +81,9 @@ const importCharacter = async (payload: CharacterImportPayload) => {
       method: 'POST',
       body: payload,
     })
+    if (!character) {
+      throw new Error('Unable to import character.')
+    }
     isImportOpen.value = false
     await refresh()
     router.push(`/characters/${character.id}`)
@@ -114,7 +120,7 @@ const importCharacter = async (payload: CharacterImportPayload) => {
 
       <UCard v-else-if="error" class="text-center">
         <p class="text-sm text-error">Unable to load characters.</p>
-        <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
+        <UButton class="mt-4" variant="outline" @click="() => refresh()">Try again</UButton>
       </UCard>
 
       <UCard v-else-if="!characters?.length" class="text-center">
@@ -179,7 +185,7 @@ const importCharacter = async (payload: CharacterImportPayload) => {
       </template>
       <template #footer>
         <div class="flex justify-end gap-3">
-          <UButton variant="ghost" color="gray" @click="isCreateOpen = false">Cancel</UButton>
+          <UButton variant="ghost" color="neutral" @click="isCreateOpen = false">Cancel</UButton>
           <UButton :loading="isCreating" @click="createCharacter">Create</UButton>
         </div>
       </template>
@@ -194,3 +200,5 @@ const importCharacter = async (payload: CharacterImportPayload) => {
     />
   </UPage>
 </template>
+
+

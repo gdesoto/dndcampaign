@@ -1,4 +1,6 @@
 <script setup lang="ts">
+type UiColor = 'error' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'neutral'
+
 const props = defineProps<{
   campaignId: string
   returnToPath?: string
@@ -6,7 +8,7 @@ const props = defineProps<{
   summaryJobOptions: Array<{ label: string; value: string }>
   summarySending: boolean
   hasTranscript: boolean
-  summaryStatusColor: string
+  summaryStatusColor: UiColor
   summaryStatusLabel: string
   summaryTrackingId?: string
   summaryPendingText: string

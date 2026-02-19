@@ -37,7 +37,7 @@ const {
 
           <div v-else-if="error" class="space-y-3">
             <p class="text-sm text-error">Characters are not available for this public campaign.</p>
-            <UButton variant="outline" @click="refresh">Try again</UButton>
+            <UButton variant="outline" @click="() => refresh()">Try again</UButton>
           </div>
 
           <div v-else-if="!characters?.length" class="text-sm text-muted">No public characters available.</div>
@@ -63,3 +63,4 @@ const {
     </UPage>
   </UMain>
 </template>
+

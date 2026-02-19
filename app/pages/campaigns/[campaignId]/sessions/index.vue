@@ -58,6 +58,9 @@ const createSession = async () => {
         body: payload,
       }
     )
+    if (!created) {
+      throw new Error('Unable to create session.')
+    }
     isCreateOpen.value = false
     await refresh()
     await navigateTo(`/campaigns/${campaignId.value}/sessions/${created.id}`)

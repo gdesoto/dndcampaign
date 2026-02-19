@@ -211,7 +211,7 @@ export class TranscriptionService {
   async startTranscription(input: StartTranscriptionInput) {
     const additionalFormats = input.formats
       .map((format) => requestFormatMap[format])
-      .filter(Boolean)
+      .filter((value): value is { format: string } => Boolean(value))
 
     const job = await prisma.transcriptionJob.create({
       data: {
@@ -233,7 +233,7 @@ export class TranscriptionService {
 
     try {
       const response = (await this.client.speechToText.convert({
-        modelId: input.modelId,
+        modelId: input.modelId as any,
         file: stream,
         languageCode: input.languageCode,
         numSpeakers: input.diarize ? input.numSpeakers : undefined,
@@ -244,7 +244,7 @@ export class TranscriptionService {
         diarize: input.diarize,
         keyterms: input.keyterms,
         tagAudioEvents: input.tagAudioEvents,
-        additionalFormats,
+        additionalFormats: additionalFormats as any,
         webhook: this.webhookEnabled,
         webhookId: this.webhookEnabled ? this.webhookId || undefined : undefined,
         webhookMetadata: {

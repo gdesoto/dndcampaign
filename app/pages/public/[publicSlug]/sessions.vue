@@ -39,7 +39,7 @@ const formatDate = (value: string | null) => (value ? new Date(value).toLocaleDa
 
           <div v-else-if="error" class="space-y-3">
             <p class="text-sm text-error">Sessions are not available for this public campaign.</p>
-            <UButton variant="outline" @click="refresh">Try again</UButton>
+            <UButton variant="outline" @click="() => refresh()">Try again</UButton>
           </div>
 
           <div v-else-if="!sessions?.length" class="text-sm text-muted">No public sessions available.</div>
@@ -60,3 +60,4 @@ const formatDate = (value: string | null) => (value ? new Date(value).toLocaleDa
     </UPage>
   </UMain>
 </template>
+

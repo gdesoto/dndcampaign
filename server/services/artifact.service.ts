@@ -81,7 +81,7 @@ export class ArtifactService {
     return artifact
   }
 
-  private buildStorageKey(input: CreateArtifactInput) {
+  private buildStorageKey(input: Pick<CreateArtifactInput | CreateArtifactStreamInput, 'filename' | 'campaignId' | 'ownerId'>) {
     const safeName = input.filename.replace(/[^a-zA-Z0-9._-]/g, '_')
     const campaignPart = input.campaignId ? `campaigns/${input.campaignId}` : 'global'
     return `${campaignPart}/${input.ownerId}/${randomUUID()}-${safeName}`

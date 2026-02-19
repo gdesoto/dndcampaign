@@ -386,7 +386,10 @@ watch(
       return
     }
     if (!selectedSubtitleRecordingId.value) {
-      selectedSubtitleRecordingId.value = value[0].value
+      const firstVideo = value[0]
+      if (firstVideo) {
+        selectedSubtitleRecordingId.value = firstVideo.value
+      }
     }
   },
   { immediate: true }

@@ -1,4 +1,5 @@
 import { prisma } from '#server/db/prisma'
+import type { Prisma } from '@prisma/client'
 import { computeCharacterSummary } from './character.service'
 
 const buildGlossaryDescription = (sheetJson: Record<string, unknown>) => {
@@ -116,8 +117,8 @@ export class CharacterSyncService {
       where: { id: link.characterId },
       data: {
         name: entry.name,
-        sheetJson,
-        summaryJson: summary,
+        sheetJson: sheetJson as Prisma.InputJsonValue,
+        summaryJson: summary as Prisma.InputJsonValue,
       },
     })
   }

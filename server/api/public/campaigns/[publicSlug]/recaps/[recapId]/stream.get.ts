@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
   setHeader(event, 'Content-Disposition', `inline; filename="${result.data.filename}"`)
   setHeader(event, 'Cache-Control', 'no-store')
   if (result.data.stream.size != null) {
-    setHeader(event, 'Content-Length', `${result.data.stream.size}`)
+    setHeader(event, 'Content-Length', result.data.stream.size)
   }
 
   return sendStream(event, result.data.stream.stream)

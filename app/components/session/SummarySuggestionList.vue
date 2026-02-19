@@ -163,7 +163,7 @@ const suggestionTitle = (suggestion: SuggestionItem) => {
         <UButton
           size="xs"
           variant="ghost"
-          color="gray"
+          color="neutral"
           :disabled="sessionSuggestion.status !== 'PENDING'"
           @click="emit('discard-suggestion', sessionSuggestion.id)"
         >
@@ -208,7 +208,7 @@ const suggestionTitle = (suggestion: SuggestionItem) => {
               <UButton
                 size="xs"
                 variant="ghost"
-                color="gray"
+                color="neutral"
                 :disabled="suggestion.status !== 'PENDING'"
                 @click="emit('discard-suggestion', suggestion.id)"
               >
@@ -262,3 +262,4 @@ const suggestionTitle = (suggestion: SuggestionItem) => {
       </div>
   </div>
 </template>
+

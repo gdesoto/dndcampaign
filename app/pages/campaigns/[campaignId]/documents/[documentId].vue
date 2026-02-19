@@ -120,7 +120,7 @@ const endTimeFilter = ref('')
 const minLengthFilter = ref('')
 const maxLengthFilter = ref('')
 const speakerBulkInput = ref('')
-const selectedSpeakerPreset = ref<string | null>(null)
+const selectedSpeakerPreset = ref<string | undefined>(undefined)
 const speakerDrafts = ref<Record<string, string>>({})
 
 const { data: sessionRecordings } = await useAsyncData(
@@ -205,7 +205,7 @@ const { data: playbackUrl, pending: playbackPending } = await useAsyncData(
     const payload = await request<{ url: string }>(
       `/api/recordings/${selectedRecordingId.value}/playback-url`
     )
-    return payload.url
+    return payload?.url || ''
   },
   { watch: [selectedRecordingId] }
 )
@@ -382,9 +382,12 @@ watch(
 
 watch(
   () => [videoOptions.value, recordingOptions.value],
-  ([videoList, recordingList]) => {
+  ([videoList = [], recordingList = []]) => {
     if (videoList.length && !selectedSubtitleRecordingId.value) {
-      selectedSubtitleRecordingId.value = videoList[0].value
+      const firstVideo = videoList[0]
+      if (firstVideo) {
+        selectedSubtitleRecordingId.value = firstVideo.value
+      }
     }
     if (recordingList.length && !selectedRecordingId.value) {
       if (linkedRecordingId.value) {
@@ -436,9 +439,12 @@ const parseTimeInput = (value: string) => {
   if (!trimmed) return null
   const parts = trimmed.split(':').map((part) => Number(part))
   if (parts.some((part) => Number.isNaN(part))) return null
-  if (parts.length === 1) return parts[0] * 1000
-  if (parts.length === 2) return (parts[0] * 60 + parts[1]) * 1000
-  if (parts.length === 3) return (parts[0] * 3600 + parts[1] * 60 + parts[2]) * 1000
+  const p0 = parts[0] ?? 0
+  const p1 = parts[1] ?? 0
+  const p2 = parts[2] ?? 0
+  if (parts.length === 1) return p0 * 1000
+  if (parts.length === 2) return (p0 * 60 + p1) * 1000
+  if (parts.length === 3) return (p0 * 3600 + p1 * 60 + p2) * 1000
   return null
 }
 
@@ -663,7 +669,8 @@ const selectVisibleSegmentRange = (fromSegmentId: string, toSegmentId: string) =
   const end = Math.max(fromIndex, toIndex)
   const next = new Set(selectedSegmentIds.value)
   for (let index = start; index <= end; index += 1) {
-    next.add(ids[index])
+    const id = ids[index]
+    if (id) next.add(id)
   }
   selectedSegmentIds.value = Array.from(next)
 }
@@ -769,7 +776,7 @@ const applySpeakerPresetToSegmentWithClose = (
 }
 
 const clearSpeakerUpdateInputs = () => {
-  selectedSpeakerPreset.value = null
+  selectedSpeakerPreset.value = undefined
   speakerBulkInput.value = ''
 }
 
@@ -1095,7 +1102,7 @@ const fullTranscript = computed(() =>
 
       <UCard v-else-if="error" class="text-center">
         <p class="text-sm text-error">Unable to load this document.</p>
-        <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
+        <UButton class="mt-4" variant="outline" @click="() => refresh()">Try again</UButton>
       </UCard>
 
       <div
@@ -1501,7 +1508,7 @@ const fullTranscript = computed(() =>
                   <div class="flex items-center gap-2 text-xs text-dimmed">
                     <UCheckbox
                       :model-value="selectedSet.has(segment.id)"
-                      @click="(event) => noteSegmentSelectionClick(event, segment.id)"
+                      @click="(event: MouseEvent) => noteSegmentSelectionClick(event, segment.id)"
                       @update:modelValue="(value) => handleSegmentSelectionUpdate(segment.id, value)"
                     />
                     <span>{{ formatTimestamp(segment.startMs) }}</span>
@@ -1587,7 +1594,7 @@ const fullTranscript = computed(() =>
                   <span v-if="segment.disabled" class="rounded-full bg-warning/20 px-2 py-0.5 text-warning">
                     Disabled in preview
                   </span>
-                  <span v-if="segment.confidence !== null" class="text-dimmed">
+                  <span v-if="segment.confidence !== null && segment.confidence !== undefined" class="text-dimmed">
                     Confidence: {{ Math.round(segment.confidence * 100) }}%
                   </span>
                 </div>
@@ -1644,8 +1651,8 @@ const fullTranscript = computed(() =>
                 </span>
               </div>
               <MediaPlayerDock dock-id="transcript-player-dock" mode="page" />
-              <p v-if="player.state.error" class="text-sm text-error">
-                {{ player.state.error }}
+              <p v-if="player.state.value.error" class="text-sm text-error">
+                {{ player.state.value.error }}
               </p>
               <p v-if="playbackRangeError" class="text-sm text-error">
                 {{ playbackRangeError }}
@@ -1884,3 +1891,4 @@ const fullTranscript = computed(() =>
     </div>
   </UPage>
 </template>
+

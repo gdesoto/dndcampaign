@@ -78,7 +78,7 @@ const recapFileModel = computed({
         <UButton
           v-if="workflowMode"
           variant="ghost"
-          color="red"
+          color="error"
           :disabled="!hasRecap"
           :loading="recapDeleting"
           @click="emit('delete-recap')"
@@ -102,3 +102,4 @@ const recapFileModel = computed({
     </div>
   </UCard>
 </template>
+

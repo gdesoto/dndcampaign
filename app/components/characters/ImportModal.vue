@@ -128,9 +128,10 @@ const refreshImport = () => {
 
     <template v-if="!showRefreshButton" #footer>
       <div class="flex justify-end gap-3">
-        <UButton variant="ghost" color="gray" @click="close">Cancel</UButton>
+        <UButton variant="ghost" color="neutral" @click="close">Cancel</UButton>
         <UButton :loading="loading" @click="submitImport">Import</UButton>
       </div>
     </template>
   </UModal>
 </template>
+

@@ -39,7 +39,9 @@ const extractSpeakerLabel = (value: string) => {
 const extractSpeakerFromText = (value: string) => {
   const match = value.match(/^([A-Za-z][\w\s.'-]{0,30}):\s+(.*)$/)
   if (!match) return { speaker: null, text: value }
-  return { speaker: match[1].trim(), text: match[2].trim() }
+  const speaker = match[1]?.trim() || null
+  const text = match[2]?.trim() || value
+  return { speaker, text }
 }
 
 const normalizeText = (value: string) =>
@@ -68,7 +70,7 @@ const parseTimedTranscript = (content: string) => {
       continue
     }
 
-    const [startPart, rest] = rawLine.split('-->')
+    const [startPart = '', rest = ''] = rawLine.split('-->')
     if (!rest) {
       index += 1
       continue
@@ -81,7 +83,7 @@ const parseTimedTranscript = (content: string) => {
     index += 1
     const textLines: string[] = []
     while (index < lines.length) {
-      const line = lines[index]
+      const line = lines[index] ?? ''
       if (!line.trim()) {
         if (textLines.length) {
           index += 1
@@ -169,10 +171,21 @@ type RawSegment = {
   words?: RawWord[]
 }
 
-const extractSpeakerFromWords = (segment: RawSegment) =>
+type SegmentLike = RawSegment | TranscriptSegment
+
+const hasLegacyTimeFields = (segment: SegmentLike): segment is SegmentLike & { start?: number; end?: number } =>
+  'start' in segment || 'end' in segment
+
+const hasWords = (segment: SegmentLike): segment is RawSegment =>
+  Array.isArray((segment as RawSegment).words)
+
+const hasText = (segment: SegmentLike | null | undefined): segment is SegmentLike & { text: string } =>
+  !!segment && typeof segment.text === 'string'
+
+const extractSpeakerFromWords = (segment: { words?: RawWord[] }) =>
   segment.words?.find((word) => word?.speaker_id)?.speaker_id ?? null
 
-const extractTimesFromWords = (segment: RawSegment) => {
+const extractTimesFromWords = (segment: { words?: RawWord[] }) => {
   if (!segment.words?.length) return { startMs: null, endMs: null }
   const firstWord = segment.words[0]
   const lastWord = segment.words[segment.words.length - 1]
@@ -192,30 +205,40 @@ export const parseTranscriptSegments = (content: string): TranscriptSegment[] =>
   const trimmed = content.trim()
   if (isSegmentedTranscript(trimmed)) {
     const parsed = JSON.parse(trimmed) as SegmentedTranscriptPayload | RawSegment[]
-    const segments = Array.isArray(parsed) ? parsed : (parsed as SegmentedTranscriptPayload).segments
+    const segments: SegmentLike[] = Array.isArray(parsed) ? parsed : parsed.segments
     return segments
-      .filter((segment) => segment && typeof segment.text === 'string')
+      .filter(hasText)
       .map((segment, idx) => {
+        const fallbackStart =
+          hasLegacyTimeFields(segment) &&
+          typeof segment.start === 'number' &&
+          Number.isFinite(segment.start)
+            ? segment.start * 1000
+            : null
         let startMs =
           typeof segment.startMs === 'number' && Number.isFinite(segment.startMs)
             ? segment.startMs
-            : typeof segment.start === 'number' && Number.isFinite(segment.start)
-              ? segment.start * 1000
-              : null
+            : fallbackStart
+        const fallbackEnd =
+          hasLegacyTimeFields(segment) &&
+          typeof segment.end === 'number' &&
+          Number.isFinite(segment.end)
+            ? segment.end * 1000
+            : null
         let endMs =
           typeof segment.endMs === 'number' && Number.isFinite(segment.endMs)
             ? segment.endMs
-            : typeof segment.end === 'number' && Number.isFinite(segment.end)
-              ? segment.end * 1000
-              : null
+            : fallbackEnd
         if (startMs === null || endMs === null) {
-          const derived = extractTimesFromWords(segment)
+          const derived = hasWords(segment)
+            ? extractTimesFromWords(segment)
+            : { startMs: null, endMs: null }
           if (startMs === null) startMs = derived.startMs
           if (endMs === null) endMs = derived.endMs
         }
         const speaker =
           segment.speaker ??
-          extractSpeakerFromWords(segment) ??
+          (hasWords(segment) ? extractSpeakerFromWords(segment) : null) ??
           null
 
         return {
@@ -223,7 +246,7 @@ export const parseTranscriptSegments = (content: string): TranscriptSegment[] =>
           startMs,
           endMs,
           speaker,
-          text: normalizeText(segment.text || ''),
+          text: normalizeText(segment.text),
           confidence:
             typeof segment.confidence === 'number' && Number.isFinite(segment.confidence)
               ? segment.confidence

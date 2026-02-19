@@ -10,7 +10,7 @@ import type {
   SummarySuggestions,
 } from '#shared/schemas/summarization'
 import { n8nWebhookPayloadSchema } from '#shared/schemas/summarization'
-import type { Document, DocumentFormat } from '@prisma/client'
+import type { Document, DocumentFormat, Prisma } from '@prisma/client'
 
 export type StartSummarizationInput = {
   documentId: string
@@ -568,7 +568,7 @@ export class SummaryService {
         data: {
           status: 'FAILED',
           errorMessage: job.errorMessage || 'Summarization failed',
-          meta: payload.meta || job.meta || undefined,
+          meta: (payload.meta || job.meta || undefined) as Prisma.InputJsonValue | undefined,
         },
       })
       console.info('[summary] webhook failed', { trackingId: payload.trackingId, jobId: job.id })
@@ -580,7 +580,7 @@ export class SummaryService {
         where: { id: job.id },
         data: {
           status: 'PROCESSING',
-          meta: payload.meta || job.meta || undefined,
+          meta: (payload.meta || job.meta || undefined) as Prisma.InputJsonValue | undefined,
         },
       })
     }
@@ -599,8 +599,8 @@ export class SummaryService {
             entityType: entry.entityType,
             action: entry.action,
             status: 'PENDING',
-            match: entry.match || undefined,
-            payload: entry.payload,
+            match: (entry.match || undefined) as Prisma.InputJsonValue | undefined,
+            payload: entry.payload as Prisma.InputJsonValue,
           })),
         })
       }
@@ -627,7 +627,7 @@ export class SummaryService {
               source: 'SUMMARY_GENERATION_CALLBACK',
               sourceSummaryJobId: job.id,
               sourceTrackingId: job.trackingId,
-            },
+            } as Prisma.InputJsonValue,
           },
           update: {
             status: 'READY_FOR_REVIEW',
@@ -642,7 +642,7 @@ export class SummaryService {
               source: 'SUMMARY_GENERATION_CALLBACK',
               sourceSummaryJobId: job.id,
               sourceTrackingId: job.trackingId,
-            },
+            } as Prisma.InputJsonValue,
             errorMessage: null,
           },
         })
@@ -654,8 +654,8 @@ export class SummaryService {
             entityType: entry.entityType,
             action: entry.action,
             status: 'PENDING',
-            match: entry.match || undefined,
-            payload: entry.payload,
+            match: (entry.match || undefined) as Prisma.InputJsonValue | undefined,
+            payload: entry.payload as Prisma.InputJsonValue,
           })),
         })
       }
@@ -679,7 +679,7 @@ export class SummaryService {
       data: {
         status: 'READY_FOR_REVIEW',
         responseHash,
-        meta: nextMeta,
+        meta: nextMeta as Prisma.InputJsonValue,
       },
     })
   }

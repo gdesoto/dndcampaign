@@ -51,6 +51,7 @@ type TranscriptionJob = {
   status: string
   externalJobId?: string | null
   requestedFormats: string[]
+  tagAudioEvents?: boolean
   errorMessage?: string | null
   createdAt: string
   completedAt?: string | null
@@ -81,7 +82,7 @@ const { data: playbackUrl, pending: playbackPending } = await useAsyncData(
     const payload = await request<{ url: string }>(
       `/api/recordings/${recordingId.value}/playback-url`
     )
-    return payload.url
+    return payload?.url || ''
   }
 )
 
@@ -271,7 +272,10 @@ watch(
           artifact.format === 'SRT' &&
           !selectedVideoByArtifact[artifact.artifact.id]
         ) {
-          selectedVideoByArtifact[artifact.artifact.id] = videoOptions.value[0].value
+          const firstVideo = videoOptions.value[0]
+          if (firstVideo) {
+            selectedVideoByArtifact[artifact.artifact.id] = firstVideo.value
+          }
         }
       }
     }
@@ -372,7 +376,10 @@ const addAllGlossary = async () => {
       )
     )
   )
-  const terms = results.flat().flatMap(glossaryEntryToKeyterms)
+  const terms = results
+    .flat()
+    .filter((entry): entry is GlossaryEntry => Boolean(entry))
+    .flatMap(glossaryEntryToKeyterms)
   appendKeyterms(terms)
   selectedGlossaryIds.value = []
 }
@@ -387,24 +394,17 @@ const startTranscription = async () => {
       transcribeError.value = 'Select at least one output format.'
       return
     }
-    const numSpeakers =
-      transcribeForm.speakerConfigMode === 'numSpeakers'
-        ? Number(transcribeForm.numSpeakers)
-        : undefined
-    const diarizationThreshold =
-      transcribeForm.speakerConfigMode === 'diarizationThreshold'
-        ? Number(transcribeForm.diarizationThreshold)
-        : undefined
-
     if (transcribeForm.diarize && transcribeForm.speakerConfigMode === 'numSpeakers') {
-      if (!Number.isFinite(numSpeakers) || !Number.isInteger(numSpeakers) || numSpeakers < 1 || numSpeakers > 32) {
+      const speakerCount = Number(transcribeForm.numSpeakers)
+      if (!Number.isFinite(speakerCount) || !Number.isInteger(speakerCount) || speakerCount < 1 || speakerCount > 32) {
         transcribeError.value = 'Speakers must be an integer between 1 and 32.'
         return
       }
     }
 
     if (transcribeForm.diarize && transcribeForm.speakerConfigMode === 'diarizationThreshold') {
-      if (!Number.isFinite(diarizationThreshold) || diarizationThreshold < 0.1 || diarizationThreshold > 0.4) {
+      const threshold = Number(transcribeForm.diarizationThreshold)
+      if (!Number.isFinite(threshold) || threshold < 0.1 || threshold > 0.4) {
         transcribeError.value = 'Diarization threshold must be between 0.1 and 0.4.'
         return
       }
@@ -414,11 +414,11 @@ const startTranscription = async () => {
       formats,
       numSpeakers:
         transcribeForm.diarize && transcribeForm.speakerConfigMode === 'numSpeakers'
-          ? numSpeakers
+          ? Number(transcribeForm.numSpeakers)
           : undefined,
       diarizationThreshold:
         transcribeForm.diarize && transcribeForm.speakerConfigMode === 'diarizationThreshold'
-          ? diarizationThreshold
+          ? Number(transcribeForm.diarizationThreshold)
           : undefined,
       keyterms: parseKeyterms(transcribeForm.keyterms),
       diarize: transcribeForm.diarize,
@@ -565,7 +565,7 @@ const formatBytes = (value: number) => {
 
       <UCard v-else-if="error" class="text-center">
         <p class="text-sm text-error">Unable to load this recording.</p>
-        <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
+        <UButton class="mt-4" variant="outline" @click="() => refresh()">Try again</UButton>
       </UCard>
 
       <div v-else-if="recording" class="space-y-6">
@@ -735,7 +735,7 @@ const formatBytes = (value: number) => {
               </UButton>
               <UButton
                 variant="ghost"
-                color="red"
+                color="error"
                 :disabled="!recording?.vttArtifactId"
                 :loading="detachLoading"
                 @click="detachSubtitles"
@@ -939,7 +939,7 @@ const formatBytes = (value: number) => {
           </div>
           <template #footer>
             <div class="flex justify-end gap-3">
-              <UButton variant="ghost" color="gray" @click="transcribeModalOpen = false">
+              <UButton variant="ghost" color="neutral" @click="transcribeModalOpen = false">
                 Cancel
               </UButton>
               <UButton :loading="transcribeLoading" @click="startTranscription">
@@ -977,7 +977,7 @@ const formatBytes = (value: number) => {
         </div>
         <template #footer>
           <div class="flex justify-end gap-3">
-            <UButton variant="ghost" color="gray" @click="importModalOpen = false">
+            <UButton variant="ghost" color="neutral" @click="importModalOpen = false">
               Cancel
             </UButton>
             <UButton :loading="importLoading" @click="importTranscription">
@@ -990,3 +990,5 @@ const formatBytes = (value: number) => {
   </UModal>
   </UPage>
 </template>
+
+

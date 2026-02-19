@@ -219,12 +219,12 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
                   v-if="entry.type === 'PC' && entry.campaignCharacters?.length"
                   size="xs"
                   variant="outline"
-                  :to="`/characters/${entry.campaignCharacters[0].character.id}`"
+                  :to="`/characters/${entry.campaignCharacters?.[0]?.character.id || ''}`"
                 >
                   View character
                 </UButton>
                 <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="openEdit(entry)">Edit</UButton>
-                <UButton size="xs" color="red" variant="ghost" :disabled="!canWriteContent" @click="deleteEntry(entry)">Delete</UButton>
+                <UButton size="xs" color="error" variant="ghost" :disabled="!canWriteContent" @click="deleteEntry(entry)">Delete</UButton>
               </div>
             </div>
           </template>
@@ -282,3 +282,4 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
     </SharedEntityFormModal>
   </div>
 </template>
+

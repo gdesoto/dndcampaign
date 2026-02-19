@@ -19,12 +19,14 @@ type MilestoneSummary = {
   isComplete: boolean
 }
 
+type UiColor = 'error' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'neutral'
+
 const props = defineProps<{
   campaignId: string
   sessions: SessionSummary[]
   quests: QuestSummary[]
   milestones: MilestoneSummary[]
-  questStatusColor: (status: QuestSummary['status']) => string
+  questStatusColor: (status: QuestSummary['status']) => UiColor
 }>()
 
 const formatDate = (value?: string | null) => {

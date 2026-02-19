@@ -78,7 +78,7 @@ const updateSelectedFeatureIds = (value: string[]) => {
 
           <div v-else-if="error" class="space-y-3">
             <p class="text-sm text-error">Maps are not available for this public campaign.</p>
-            <UButton variant="outline" @click="refresh">Try again</UButton>
+            <UButton variant="outline" @click="() => refresh()">Try again</UButton>
           </div>
 
           <div v-else-if="!maps?.length" class="text-sm text-muted">No public maps available.</div>
@@ -106,7 +106,7 @@ const updateSelectedFeatureIds = (value: string[]) => {
 
             <UCard v-else-if="viewerError || !mapViewer" class="space-y-3">
               <p class="text-sm text-error">Unable to load the selected public map viewer.</p>
-              <UButton variant="outline" @click="refreshViewer">Try again</UButton>
+              <UButton variant="outline" @click="() => refreshViewer()">Try again</UButton>
             </UCard>
 
             <MapsViewer
@@ -123,3 +123,4 @@ const updateSelectedFeatureIds = (value: string[]) => {
     </UPage>
   </UMain>
 </template>
+

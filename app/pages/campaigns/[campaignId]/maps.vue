@@ -110,6 +110,9 @@ const importMap = async () => {
         body: formData,
       }
     )
+    if (!created) {
+      throw new Error('Unable to import map files.')
+    }
     importName.value = ''
     importPrimary.value = !hasImportedMaps.value
     importFiles.value = null
@@ -250,6 +253,9 @@ const previewReimport = async () => {
         body: formData,
       }
     )
+    if (!preview) {
+      throw new Error('Unable to generate re-import preview.')
+    }
     reimportPreview.value = preview
     applyStrategy.value = preview.availableStrategies[0] || 'replace_preserve_links'
     applyMapName.value = selectedMap.value.name
@@ -348,7 +354,7 @@ const applyReimport = async () => {
 
     <UCard v-else-if="error" class="text-center">
       <p class="text-sm text-error">Unable to load campaign maps.</p>
-      <UButton class="mt-3" variant="outline" @click="refresh">Retry</UButton>
+      <UButton class="mt-3" variant="outline" @click="() => refresh()">Retry</UButton>
     </UCard>
 
     <div v-else class="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
@@ -642,3 +648,4 @@ const applyReimport = async () => {
     </UModal>
   </div>
 </template>
+

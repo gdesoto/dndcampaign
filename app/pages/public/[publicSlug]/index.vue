@@ -42,7 +42,7 @@ const sections = computed(() => {
 
         <UCard v-else-if="error">
           <p class="text-sm text-error">This public campaign is unavailable.</p>
-          <UButton class="mt-3" variant="outline" @click="refresh">Try again</UButton>
+          <UButton class="mt-3" variant="outline" @click="() => refresh()">Try again</UButton>
         </UCard>
 
         <template v-else-if="overview">
@@ -76,3 +76,4 @@ const sections = computed(() => {
     </UPage>
   </UMain>
 </template>
+

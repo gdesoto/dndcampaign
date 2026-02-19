@@ -296,7 +296,7 @@ const deleteCharacter = async () => {
     <UCard v-if="pending" class="h-32 animate-pulse" />
     <UCard v-else-if="error" class="text-center">
       <p class="text-sm text-error">Unable to load character.</p>
-      <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
+      <UButton class="mt-4" variant="outline" @click="() => refresh()">Try again</UButton>
     </UCard>
 
     <div v-else-if="character" class="space-y-6">
@@ -316,7 +316,7 @@ const deleteCharacter = async () => {
             </div>
             <div class="flex flex-wrap gap-2">
               <UButton variant="outline" :disabled="!canEdit" @click="openImport">Import</UButton>
-              <UButton color="red" variant="ghost" :disabled="!canEdit" @click="deleteCharacter">Delete</UButton>
+              <UButton color="error" variant="ghost" :disabled="!canEdit" @click="deleteCharacter">Delete</UButton>
             </div>
           </div>
         </template>
@@ -592,3 +592,5 @@ const deleteCharacter = async () => {
     />
   </UPage>
 </template>
+
+

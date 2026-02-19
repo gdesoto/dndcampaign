@@ -9,7 +9,7 @@ const emit = defineEmits<{
   'update:modelValue': [value: MapFeatureType[]]
 }>()
 
-const layerOptions = [
+const layerOptions: Array<{ label: string; value: MapFeatureType }> = [
   { label: 'States', value: 'state' },
   { label: 'Markers', value: 'marker' },
   { label: 'Rivers', value: 'river' },
@@ -17,7 +17,7 @@ const layerOptions = [
   { label: 'Routes', value: 'route' },
   { label: 'Provinces', value: 'province' },
   { label: 'Cells', value: 'cell' },
-] as const
+]
 
 const localValue = computed({
   get: () => props.modelValue,

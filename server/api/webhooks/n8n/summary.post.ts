@@ -13,7 +13,7 @@ const extractSecret = (event: H3Event) => {
 
   const url = event.node.req.url || ''
   const match = url.match(/[?&]secret=([^&]+)/)
-  return match ? decodeURIComponent(match[1]) : ''
+  return match ? decodeURIComponent(match[1] || '') : ''
 }
 
 export default defineEventHandler(async (event) => {

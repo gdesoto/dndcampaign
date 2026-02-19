@@ -56,7 +56,7 @@ const filteredGlossary = computed(() => {
 
           <div v-else-if="error" class="space-y-3">
             <p class="text-sm text-error">Glossary is not available for this public campaign.</p>
-            <UButton variant="outline" @click="refresh">Try again</UButton>
+            <UButton variant="outline" @click="() => refresh()">Try again</UButton>
           </div>
 
           <div v-else-if="!filteredGlossary.length" class="text-sm text-muted">No glossary entries match this type.</div>
@@ -80,3 +80,4 @@ const filteredGlossary = computed(() => {
     </UPage>
   </UMain>
 </template>
+

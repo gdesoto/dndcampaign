@@ -63,7 +63,7 @@ const boolFromField = (value: string | undefined) =>
 
 const safeFilename = (value: string) => value.replace(/[^a-zA-Z0-9._-]/g, '_')
 
-const featureTypeFromDb = (value: CampaignMapFeatureType) => dbMapFeatureTypeToApi[value]
+const featureTypeFromDb = (value: CampaignMapFeatureType) => dbMapFeatureTypeToApi[value]!
 
 const parseMapCoordinates = (value: unknown): CampaignMapViewerDto['map']['mapCoordinates'] | undefined => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
@@ -200,7 +200,7 @@ export class MapService {
       description: feature.description || null,
       geometryType: feature.geometryType,
       geometryJson: feature.geometryJson,
-      propertiesJson: feature.propertiesJson || null,
+      propertiesJson: feature.propertiesJson ?? (null as unknown as Prisma.InputJsonValue),
       sourceRef: feature.sourceRef,
       isActive: !feature.removed,
       removed: feature.removed,
@@ -250,7 +250,7 @@ export class MapService {
           metadata: parsed.metadata,
           mapCoordinates: parsed.metadata.mapCoordinates,
           defaultActiveLayers: defaultMapLayerTypes,
-        },
+        } as Prisma.InputJsonValue,
       },
     })
 
@@ -424,7 +424,7 @@ export class MapService {
     }))
 
     const manifest = (map.rawManifestJson || {}) as Record<string, unknown>
-    const bounds =
+    const bounds: [[number, number], [number, number]] =
       Array.isArray(manifest.bounds) && manifest.bounds.length === 2
         ? (manifest.bounds as [[number, number], [number, number]])
         : [[-180, -85], [180, 85]]
@@ -484,7 +484,7 @@ export class MapService {
         ...(filter.types?.length
           ? {
               featureType: {
-                in: filter.types.map((entry) => mapFeatureTypeToDb[entry]),
+                in: filter.types.map((entry) => mapFeatureTypeToDb[entry]!),
               },
             }
           : {}),
@@ -782,7 +782,7 @@ export class MapService {
             metadata: parsed.metadata,
             mapCoordinates: parsed.metadata.mapCoordinates,
             defaultActiveLayers: defaultMapLayerTypes,
-          },
+          } as Prisma.InputJsonValue,
         },
       })
 
@@ -850,7 +850,6 @@ export class MapService {
     if (linkCreates.length) {
       await prisma.campaignMapGlossaryLink.createMany({
         data: linkCreates,
-        skipDuplicates: true,
       })
     }
 

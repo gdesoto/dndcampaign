@@ -76,8 +76,9 @@ const {
   data: profile,
   pending: profilePending,
   refresh: refreshProfile,
-} = await useAsyncData<AccountProfile>('account-profile', async () => {
+} = await useAsyncData<AccountProfile | null>('account-profile', async () => {
   const response = await account.getProfile()
+  if (!response) return null
   return response.profile
 })
 
@@ -87,6 +88,7 @@ const {
   refresh: refreshSessions,
 } = await useAsyncData('account-sessions', async () => {
   const response = await account.listSessions()
+  if (!response) return []
   return response.sessions
 })
 
@@ -168,7 +170,7 @@ const revokeOtherSessions = async () => {
   try {
     const response = await account.revokeOtherSessions()
     await refreshSessions()
-    revokeAction.success = `Revoked ${response.revokedSessions} other sessions.`
+    revokeAction.success = `Revoked ${response?.revokedSessions ?? 0} other sessions.`
   } catch (error) {
     revokeAction.error =
       (error as Error & { message?: string }).message || 'Unable to revoke other sessions.'
@@ -453,7 +455,7 @@ const runN8nTest = async () => {
                 <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Developer panel</p>
                 <h2 class="mt-1 text-lg font-semibold">Server runtime config</h2>
               </div>
-              <UButton size="sm" variant="outline" :loading="pending" @click="refresh">
+              <UButton size="sm" variant="outline" :loading="pending" @click="() => refresh()">
                 Refresh
               </UButton>
             </div>
@@ -466,7 +468,7 @@ const runN8nTest = async () => {
 
           <div v-else-if="error" class="space-y-3">
             <p class="text-sm text-error">Unable to load runtime config.</p>
-            <UButton size="sm" variant="outline" @click="refresh">Try again</UButton>
+            <UButton size="sm" variant="outline" @click="() => refresh()">Try again</UButton>
           </div>
 
           <div v-else class="space-y-3">
@@ -569,3 +571,4 @@ const runN8nTest = async () => {
     </UMain>
   </UPage>
 </template>
+

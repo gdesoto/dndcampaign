@@ -20,7 +20,8 @@ const srtToVtt = (input: string) => {
   let pendingPrefix = ''
 
   for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i].trim()
+    const currentLine = lines[i] ?? ''
+    const line = currentLine.trim()
     if (!line) {
       pendingPrefix = ''
       output.push('')
@@ -42,11 +43,11 @@ const srtToVtt = (input: string) => {
       continue
     }
     if (pendingPrefix) {
-      output.push(`${pendingPrefix} ${lines[i].trim()}`.trim())
+      output.push(`${pendingPrefix} ${currentLine.trim()}`.trim())
       pendingPrefix = ''
       continue
     }
-    output.push(lines[i])
+    output.push(currentLine)
   }
 
   return output.join('\n').replace(/\n{3,}/g, '\n\n')

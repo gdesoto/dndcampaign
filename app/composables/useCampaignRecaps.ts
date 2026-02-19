@@ -28,7 +28,7 @@ export const useCampaignRecaps = (
     () => recaps.value,
     (value) => {
       if (value?.length && !selectedRecapId.value) {
-        selectedRecapId.value = value[0].id
+        selectedRecapId.value = value[0]?.id || ''
       }
     },
     { immediate: true }
@@ -39,7 +39,9 @@ export const useCampaignRecaps = (
     recapLoading.value = true
     try {
       const payload = await request<{ url: string }>(`/api/recaps/${recapId}/playback-url`)
-      recapPlaybackUrl.value = payload.url
+      const playbackUrl = payload?.url
+      if (!playbackUrl) throw new Error('Unable to load recap playback URL.')
+      recapPlaybackUrl.value = playbackUrl
       selectedRecapId.value = recapId
       const recap = recaps.value?.find((item) => item.id === recapId)
       await player.playSource(
@@ -50,7 +52,7 @@ export const useCampaignRecaps = (
             ? `Session ${recap.session.sessionNumber ?? '-'} - ${formatDateTime(recap.createdAt)}`
             : undefined,
           kind: 'AUDIO',
-          src: payload.url,
+          src: playbackUrl,
         },
         { presentation: 'global' }
       )

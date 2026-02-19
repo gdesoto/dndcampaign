@@ -14,12 +14,14 @@ type SuggestionGroup = {
 
 type SessionSuggestion = SuggestionItem | null
 
+type UiColor = 'error' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'neutral'
+
 const props = defineProps<{
   selectedSuggestionJobId: string
   suggestionJobOptions: Array<{ label: string; value: string }>
   suggestionSending: boolean
   hasSummary: boolean
-  suggestionStatusColor: string
+  suggestionStatusColor: UiColor
   suggestionStatusLabel: string
   suggestionTrackingId?: string
   suggestionGroups: SuggestionGroup[]

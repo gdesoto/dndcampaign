@@ -1,5 +1,6 @@
 import { prisma } from '#server/db/prisma'
 import type { GlossaryType, QuestType } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 type ApplyResult = {
@@ -164,7 +165,7 @@ export class SummarySuggestionService {
         data: payloadOverride && hasRemainingSessionFields
           ? {
               status: 'PENDING',
-              payload: remainingPayload,
+              payload: remainingPayload as Prisma.InputJsonValue,
             }
           : {
               status: 'APPLIED',
@@ -191,7 +192,7 @@ export class SummarySuggestionService {
     if (payloadOverride) {
       await prisma.summarySuggestion.update({
         where: { id: suggestion.id },
-        data: { payload: payloadOverride },
+        data: { payload: payloadOverride as Prisma.InputJsonValue },
       })
     }
 

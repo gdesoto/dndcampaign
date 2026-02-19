@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import type { SessionRecordingItem } from '#shared/types/session-workflow'
+
+type UiColor = 'error' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'neutral'
+
 const route = useRoute()
 
 const props = defineProps<{
@@ -27,7 +31,7 @@ const props = defineProps<{
   playbackError: string
   playbackLoading: Record<string, boolean>
   playbackUrls: Record<string, string>
-  recordings: Array<{ id: string; kind: 'AUDIO' | 'VIDEO'; filename: string }> | null | undefined
+  recordings: SessionRecordingItem[] | null | undefined
   transcriptDocId?: string
   transcriptError: string
   transcriptImportError: string
@@ -44,7 +48,7 @@ const props = defineProps<{
   summaryJobOptions: Array<{ label: string; value: string }>
   summarySending: boolean
   hasTranscript: boolean
-  summaryStatusColor: string
+  summaryStatusColor: UiColor
   summaryStatusLabel: string
   summaryTrackingId?: string
   summaryPendingText: string
@@ -56,7 +60,7 @@ const props = defineProps<{
   selectedSuggestionJobId: string
   suggestionJobOptions: Array<{ label: string; value: string }>
   suggestionSending: boolean
-  suggestionStatusColor: string
+  suggestionStatusColor: UiColor
   suggestionStatusLabel: string
   suggestionTrackingId?: string
   suggestionGroups: Array<{

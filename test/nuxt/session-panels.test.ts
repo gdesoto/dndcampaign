@@ -7,7 +7,7 @@ import RecapPanel from '../../app/components/session/RecapPanel.vue'
 import TranscriptPanel from '../../app/components/session/TranscriptPanel.vue'
 
 const clickByText = async (wrapper: Awaited<ReturnType<typeof mountSuspended>>, text: string) => {
-  const button = wrapper.findAll('button').find((candidate) => candidate.text().trim() === text)
+  const button = wrapper.findAll('button').find((candidate: any) => candidate.text().trim() === text)
   expect(button, `Button not found: ${text}`).toBeDefined()
   await button!.trigger('click')
 }

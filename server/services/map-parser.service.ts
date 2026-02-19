@@ -32,7 +32,7 @@ export type ParsedAzgaarMap = {
   sourceFingerprint: string
   bounds: [[number, number], [number, number]]
   mapName?: string
-  metadata: Record<string, unknown>
+  metadata: Prisma.InputJsonObject
 }
 
 type AzgaarEntity = Record<string, unknown>
@@ -64,7 +64,7 @@ const stripLoneSurrogates = (value: string) =>
     .replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '')
 
 const sanitizeJsonValue = (value: unknown): Prisma.InputJsonValue => {
-  if (value === null) return null
+  if (value === null) return null as unknown as Prisma.InputJsonValue
   if (typeof value === 'string') return stripLoneSurrogates(value)
   if (typeof value === 'number' || typeof value === 'boolean') return value
   if (Array.isArray(value)) {
@@ -330,11 +330,11 @@ export const parseAzgaarFullJson = (payload: Buffer): ParsedAzgaarMap => {
         type: 'Polygon',
         coordinates: polygon,
       },
-      propertiesJson: {
+      propertiesJson: sanitizeJsonValue({
         form: state.form,
         formName: state.formName,
         fullName: state.fullName,
-      },
+      }),
       sourceRef: `pack.states[${id}]`,
       removed: Boolean(state.removed),
     })
@@ -360,9 +360,9 @@ export const parseAzgaarFullJson = (payload: Buffer): ParsedAzgaarMap => {
         type: 'Polygon',
         coordinates: polygon,
       },
-      propertiesJson: {
+      propertiesJson: sanitizeJsonValue({
         state: province.state,
-      },
+      }),
       sourceRef: `pack.provinces[${id}]`,
       removed: Boolean(province.removed),
     })
@@ -386,13 +386,13 @@ export const parseAzgaarFullJson = (payload: Buffer): ParsedAzgaarMap => {
         type: 'Point',
         coordinates: toLngLat(x, y),
       },
-      propertiesJson: {
+      propertiesJson: sanitizeJsonValue({
         state: burg.state,
         culture: burg.culture,
         population: burg.population,
         type: burg.type,
         capital: burg.capital,
-      },
+      }),
       sourceRef: `pack.burgs[${id}]`,
       removed: Boolean(burg.removed),
     })
@@ -420,11 +420,11 @@ export const parseAzgaarFullJson = (payload: Buffer): ParsedAzgaarMap => {
         type: 'Point',
         coordinates: toLngLat(x, y),
       },
-      propertiesJson: {
+      propertiesJson: sanitizeJsonValue({
         icon: marker.icon,
         type: marker.type,
         noteId: `marker${id}`,
-      },
+      }),
       sourceRef: `pack.markers[${id}]`,
       removed: Boolean(marker.removed),
     })
@@ -450,12 +450,12 @@ export const parseAzgaarFullJson = (payload: Buffer): ParsedAzgaarMap => {
         type: 'LineString',
         coordinates: line,
       },
-      propertiesJson: {
+      propertiesJson: sanitizeJsonValue({
         source: river.source,
         mouth: river.mouth,
         length: river.length,
         type: river.type,
-      },
+      }),
       sourceRef: `pack.rivers[${id}]`,
       removed: Boolean(river.removed),
     })
@@ -481,10 +481,10 @@ export const parseAzgaarFullJson = (payload: Buffer): ParsedAzgaarMap => {
         type: 'LineString',
         coordinates: line,
       },
-      propertiesJson: {
+      propertiesJson: sanitizeJsonValue({
         group: route.group,
         feature: route.feature,
-      },
+      }),
       sourceRef: `pack.routes[${id}]`,
       removed: Boolean(route.removed),
     })
@@ -517,13 +517,13 @@ export const parseAzgaarFullJson = (payload: Buffer): ParsedAzgaarMap => {
         type: 'Polygon',
         coordinates: [ring],
       },
-      propertiesJson: {
+      propertiesJson: sanitizeJsonValue({
         state: cell.state,
         province: cell.province,
         biome: cell.biome,
         burg: cell.burg,
         river: cell.r,
-      },
+      }),
       sourceRef: `pack.cells[${id}]`,
       removed: Boolean(cell.removed),
     })
@@ -542,11 +542,11 @@ export const parseAzgaarFullJson = (payload: Buffer): ParsedAzgaarMap => {
     sourceFingerprint,
     bounds,
     mapName: getString(json.info && isObject(json.info) ? json.info.mapName : undefined) || getString(json.settings && isObject(json.settings) ? json.settings.name : undefined),
-    metadata: {
+    metadata: sanitizeJsonValue({
       mapCoordinates: json.mapCoordinates,
       sourceSize: payload.byteLength,
       slug: slugify(getString(json.info && isObject(json.info) ? json.info.mapName : undefined) || 'imported-map'),
-    },
+    }) as Prisma.InputJsonObject,
   }
 }
 

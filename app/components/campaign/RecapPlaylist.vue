@@ -73,7 +73,7 @@ const emit = defineEmits<{
                 v-if="canDelete !== false"
                 size="xs"
                 variant="ghost"
-                color="red"
+                color="error"
                 :loading="deleting"
                 @click="emit('delete', recap.id)"
               >
@@ -114,3 +114,4 @@ const emit = defineEmits<{
     </div>
   </UCard>
 </template>
+

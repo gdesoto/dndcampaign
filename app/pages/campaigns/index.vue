@@ -46,6 +46,9 @@ const createCampaign = async () => {
         description: createForm.description || undefined,
       },
     })
+    if (!created) {
+      throw new Error('Unable to create campaign.')
+    }
     isCreateOpen.value = false
     await refresh()
     await navigateTo(`/campaigns/${created.id}`)

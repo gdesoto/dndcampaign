@@ -51,9 +51,10 @@ const {
         />
 
         <div class="flex justify-end">
-          <UButton variant="outline" @click="refresh">Refresh</UButton>
+          <UButton variant="outline" @click="() => refresh()">Refresh</UButton>
         </div>
       </div>
     </UPage>
   </UMain>
 </template>
+

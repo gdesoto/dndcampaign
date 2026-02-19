@@ -319,7 +319,7 @@ export default defineEventHandler(async (event) => {
         warnings: JSON.stringify(validation.warnings, null, 2),
         receivedKeys: JSON.stringify(Object.keys((response as Record<string, unknown>) || {})),
         zodValid: zodValid === null ? 'not-run' : String(zodValid),
-        zodIssues: zodIssues || undefined,
+        zodIssues: zodIssues || '',
       })
     }
 

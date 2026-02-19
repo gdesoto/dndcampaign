@@ -1,14 +1,10 @@
 <script setup lang="ts">
+import type { SessionRecordingItem } from '#shared/types/session-workflow'
+
 type SessionForm = {
   sessionNumber: string
   playedAt: string
   notes: string
-}
-
-type RecordingItem = {
-  id: string
-  kind: 'AUDIO' | 'VIDEO'
-  filename: string
 }
 
 type WorkflowStep = 'details' | 'recordings' | 'transcription' | 'summary' | 'suggestions' | 'recap'
@@ -29,7 +25,7 @@ const props = defineProps<{
   recapStatus: string
   transcriptDocId?: string
   summaryDocId?: string
-  recordings: RecordingItem[] | null | undefined
+  recordings: SessionRecordingItem[] | null | undefined
   selectedFile: File | null
   selectedKind: 'AUDIO' | 'VIDEO'
   isUploading: boolean

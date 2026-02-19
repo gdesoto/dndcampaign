@@ -66,7 +66,9 @@ export function useSessionRecordings(options: UseSessionRecordingsOptions) {
     playbackLoading[recordingId] = true
     try {
       const payload = await request<{ url: string }>(`/api/recordings/${recordingId}/playback-url`)
-      playbackUrls[recordingId] = payload.url
+      const playbackUrl = payload?.url
+      if (!playbackUrl) throw new Error('Unable to load recording playback URL.')
+      playbackUrls[recordingId] = playbackUrl
       const recording = options.recordings.value?.find((item) => item.id === recordingId)
       if (recording) {
         await player.playSource(
@@ -75,7 +77,7 @@ export function useSessionRecordings(options: UseSessionRecordingsOptions) {
             title: recording.filename,
             subtitle: recording.kind,
             kind: recording.kind,
-            src: payload.url,
+            src: playbackUrl,
           },
           { presentation: 'global' }
         )

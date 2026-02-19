@@ -16,16 +16,18 @@ export default defineEventHandler(async (event) => {
   const artifact = access.artifact
 
   const adapter = getStorageAdapter()
+  const getObjectInfo = adapter.getObjectInfo
+  const getObjectRange = adapter.getObjectRange
   const rangeHeader = String(getRequestHeader(event, 'range') || '')
-  const supportsRange = typeof adapter.getObjectRange === 'function'
-  const supportsInfo = typeof adapter.getObjectInfo === 'function'
+  const supportsRange = typeof getObjectRange === 'function'
+  const supportsInfo = typeof getObjectInfo === 'function'
 
   if (rangeHeader && supportsRange && supportsInfo) {
     const match = rangeHeader.match(/bytes=(\d*)-(\d*)/)
     if (match) {
       const startRaw = match[1]
       const endRaw = match[2]
-      const objectInfo = await adapter.getObjectInfo(artifact.storageKey)
+      const objectInfo = await getObjectInfo(artifact.storageKey)
       const size = objectInfo.size
 
       if (size != null) {
@@ -39,7 +41,7 @@ export default defineEventHandler(async (event) => {
         }
 
         if (Number.isFinite(start) && Number.isFinite(end) && start <= end) {
-          const { stream } = await adapter.getObjectRange(artifact.storageKey, {
+          const { stream } = await getObjectRange(artifact.storageKey, {
             start,
             end,
           })
@@ -47,7 +49,7 @@ export default defineEventHandler(async (event) => {
           setHeader(event, 'Content-Type', artifact.mimeType)
           setHeader(event, 'Accept-Ranges', 'bytes')
           setHeader(event, 'Content-Range', `bytes ${start}-${end}/${size}`)
-          setHeader(event, 'Content-Length', `${end - start + 1}`)
+          setHeader(event, 'Content-Length', end - start + 1)
           return sendStream(event, stream)
         }
       }
@@ -58,7 +60,7 @@ export default defineEventHandler(async (event) => {
   setHeader(event, 'Content-Type', artifact.mimeType)
   setHeader(event, 'Accept-Ranges', 'bytes')
   if (size != null) {
-    setHeader(event, 'Content-Length', `${size}`)
+    setHeader(event, 'Content-Length', size)
   }
   return sendStream(event, stream)
 })

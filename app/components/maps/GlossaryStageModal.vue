@@ -68,6 +68,9 @@ const loadStage = async () => {
         },
       }
     )
+    if (!response) {
+      throw new Error('No staging response returned.')
+    }
     items.value = response.items.map((item) => ({
       featureId: item.featureId,
       featureName: item.featureName,
@@ -131,6 +134,9 @@ const commit = async () => {
         },
       }
     )
+    if (!result) {
+      throw new Error('No commit response returned.')
+    }
     emit('committed', result)
     openModel.value = false
   } catch (error) {

@@ -28,7 +28,7 @@ watch(
   () => recaps.value,
   (value) => {
     if (value?.length && !selectedRecapId.value) {
-      selectedRecapId.value = value[0].id
+      selectedRecapId.value = value[0]?.id || ''
     }
   },
   { immediate: true }
@@ -77,7 +77,7 @@ const playRecap = async (recapId: string) => {
 
         <UCard v-else-if="error" class="space-y-3">
           <p class="text-sm text-error">Recaps are not available for this public campaign.</p>
-          <UButton variant="outline" @click="refresh">Try again</UButton>
+          <UButton variant="outline" @click="() => refresh()">Try again</UButton>
         </UCard>
 
         <CampaignRecapPlaylist
@@ -100,3 +100,4 @@ const playRecap = async (recapId: string) => {
     </UPage>
   </UMain>
 </template>
+

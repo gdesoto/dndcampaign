@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
   setHeader(event, 'Content-Disposition', `inline; filename="${result.filename}"`)
   setHeader(event, 'Cache-Control', 'no-store')
   if (result.stream.size != null) {
-    setHeader(event, 'Content-Length', `${result.stream.size}`)
+    setHeader(event, 'Content-Length', result.stream.size)
   }
   return sendStream(event, result.stream.stream)
 })

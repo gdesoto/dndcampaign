@@ -1,4 +1,5 @@
 import { prisma } from '#server/db/prisma'
+import type { Prisma } from '@prisma/client'
 import { createHash } from 'node:crypto'
 import { ofetch } from 'ofetch'
 import type { CharacterSection } from '#shared/schemas/character'
@@ -118,7 +119,7 @@ const mapDndBeyondToSheet = (payload: any) => {
     },
     hitPoints: {
       max: toNumber(data?.baseHitPoints),
-      current: toNumber(data?.baseHitPoints) - (toNumber(data?.removedHitPoints) || 0),
+      current: (toNumber(data?.baseHitPoints) ?? 0) - (toNumber(data?.removedHitPoints) || 0),
       temp: toNumber(data?.temporaryHitPoints),
     },
     abilityScores,
@@ -170,7 +171,7 @@ export class CharacterImportService {
       (section) => !locked.includes(section)
     )
 
-    let nextSheet = sheet
+    let nextSheet: Record<string, unknown> = sheet as Record<string, unknown>
     if (overwriteMode === 'SECTIONS') {
       const existing = (character.sheetJson as Record<string, unknown>) || {}
       nextSheet = { ...existing }
@@ -190,8 +191,8 @@ export class CharacterImportService {
       where: { id: character.id },
       data: {
         name,
-        sheetJson: nextSheet,
-        summaryJson: summary,
+        sheetJson: nextSheet as Prisma.InputJsonValue,
+        summaryJson: summary as Prisma.InputJsonValue,
         sourceProvider: 'DND_BEYOND',
         portraitUrl: portraitUrl ?? character.portraitUrl,
       },
@@ -213,8 +214,8 @@ export class CharacterImportService {
       data: {
         ownerId,
         name,
-        sheetJson: sheet,
-        summaryJson: summary,
+        sheetJson: sheet as Prisma.InputJsonValue,
+        summaryJson: summary as Prisma.InputJsonValue,
         portraitUrl,
         sourceProvider: 'DND_BEYOND',
         imports: {
@@ -222,7 +223,7 @@ export class CharacterImportService {
             provider: 'DND_BEYOND',
             externalId,
             sourceUrl: `https://www.dndbeyond.com/characters/${externalId}`,
-            rawJson,
+            rawJson: rawJson as Prisma.InputJsonValue,
             rawHash: hashJson(rawJson),
           },
         },
@@ -249,7 +250,7 @@ export class CharacterImportService {
         provider: 'DND_BEYOND',
         externalId,
         sourceUrl: `https://www.dndbeyond.com/characters/${externalId}`,
-        rawJson,
+        rawJson: rawJson as Prisma.InputJsonValue,
         rawHash: hashJson(rawJson),
         lastSyncedAt: new Date(),
         lastSyncStatus: 'SUCCESS',

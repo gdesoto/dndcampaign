@@ -1,4 +1,5 @@
 import { prisma } from '#server/db/prisma'
+import type { Prisma } from '@prisma/client'
 import type { CharacterSection } from '#shared/schemas/character'
 import { CharacterSyncService } from './character-sync.service'
 
@@ -145,8 +146,8 @@ export class CharacterService {
       data: {
         ownerId,
         name,
-        sheetJson: sheet,
-        summaryJson: summary,
+        sheetJson: sheet as Prisma.InputJsonValue,
+        summaryJson: summary as Prisma.InputJsonValue,
         sourceProvider: 'MANUAL',
       },
     })
@@ -165,8 +166,8 @@ export class CharacterService {
     const updated = await prisma.playerCharacter.update({
       where: { id: character.id },
       data: {
-        sheetJson: updatedSheet,
-        summaryJson: summary,
+        sheetJson: updatedSheet as Prisma.InputJsonValue,
+        summaryJson: summary as Prisma.InputJsonValue,
       },
     })
     await this.syncService.syncGlossaryForCharacter(updated.id, ownerId)
@@ -193,7 +194,7 @@ export class CharacterService {
         name,
         status: data.status ?? character.status,
         portraitUrl: data.portraitUrl ?? character.portraitUrl,
-        summaryJson: summary,
+        summaryJson: summary as Prisma.InputJsonValue,
       },
     })
     await this.syncService.syncGlossaryForCharacter(updated.id, ownerId)

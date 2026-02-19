@@ -140,7 +140,7 @@ const statusOptions = [
 
       <UCard v-else-if="error" class="text-center">
         <p class="text-sm text-error">Unable to load campaign characters.</p>
-        <UButton class="mt-4" variant="outline" @click="refresh">Try again</UButton>
+        <UButton class="mt-4" variant="outline" @click="() => refresh()">Try again</UButton>
       </UCard>
 
       <UCard v-else-if="!links?.length" class="text-center">
@@ -189,7 +189,7 @@ const statusOptions = [
                 :content="{ side: 'top', align: 'end' }"
                 :ui="{ content: 'w-72 p-3' }"
               >
-                <UButton size="xs" color="red" variant="ghost">Remove</UButton>
+                <UButton size="xs" color="error" variant="ghost">Remove</UButton>
                 <template #content="{ close }">
                   <div class="space-y-3">
                     <p class="text-sm text-muted">
@@ -217,9 +217,9 @@ const statusOptions = [
                 </template>
               </UPopover>
               <UTooltip v-else-if="canWriteContent && !link.character.isOwner" text="Only the character owner can remove this link.">
-                <UButton size="xs" color="red" variant="ghost" disabled>Remove</UButton>
+                <UButton size="xs" color="error" variant="ghost" disabled>Remove</UButton>
               </UTooltip>
-              <UButton v-else size="xs" color="red" variant="ghost" disabled>Remove</UButton>
+              <UButton v-else size="xs" color="error" variant="ghost" disabled>Remove</UButton>
             </div>
           </template>
         </UCard>
@@ -227,3 +227,5 @@ const statusOptions = [
     </div>
   </UPage>
 </template>
+
+

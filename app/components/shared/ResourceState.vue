@@ -1,12 +1,11 @@
 <script setup lang="ts">
 const props = withDefaults(defineProps<{
   pending: boolean
-  error?: unknown
+  error?: unknown | null
   empty?: boolean
   errorMessage?: string
   emptyMessage?: string
 }>(), {
-  error: null,
   empty: false,
   errorMessage: 'Unable to load data.',
   emptyMessage: 'No results yet.',

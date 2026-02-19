@@ -235,7 +235,7 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
                   </div>
                   <div class="flex gap-2">
                     <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="openEdit(quest)">Edit</UButton>
-                    <UButton size="xs" color="red" variant="ghost" :disabled="!canWriteContent" @click="deleteQuest(quest)">Delete</UButton>
+                    <UButton size="xs" color="error" variant="ghost" :disabled="!canWriteContent" @click="deleteQuest(quest)">Delete</UButton>
                   </div>
                 </div>
               </template>
@@ -279,7 +279,7 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
                   </div>
                   <div class="flex gap-2">
                     <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="openEdit(quest)">Edit</UButton>
-                    <UButton size="xs" color="red" variant="ghost" :disabled="!canWriteContent" @click="deleteQuest(quest)">Delete</UButton>
+                    <UButton size="xs" color="error" variant="ghost" :disabled="!canWriteContent" @click="deleteQuest(quest)">Delete</UButton>
                   </div>
                 </div>
               </template>
@@ -336,3 +336,4 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
     </SharedEntityFormModal>
   </div>
 </template>
+

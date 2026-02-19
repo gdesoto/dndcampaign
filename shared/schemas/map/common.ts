@@ -11,6 +11,7 @@ export const mapFeatureTypeValues = [
 ] as const
 
 export const mapFeatureTypeSchema = z.enum(mapFeatureTypeValues)
+export type MapFeatureType = z.infer<typeof mapFeatureTypeSchema>
 
 export const defaultMapLayerTypes = ['state', 'marker', 'river', 'burg', 'route'] as const
 
