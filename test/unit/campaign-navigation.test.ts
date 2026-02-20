@@ -33,7 +33,7 @@ describe('useCampaignNavigation', () => {
       'Campaigns',
       'Alpha Campaign',
       'Sessions',
-      'Session details',
+      'Session',
     ])
 
     route.path = '/campaigns/c1/milestones'
@@ -44,6 +44,9 @@ describe('useCampaignNavigation', () => {
 
     route.path = '/campaigns/c1/maps'
     expect(navigation.sectionTitle.value).toBe('Maps')
+
+    route.path = '/campaigns/c1/tools'
+    expect(navigation.sectionTitle.value).toBe('Tools')
 
     route.path = '/campaigns/c1/settings'
     expect(navigation.sectionTitle.value).toBe('Settings')

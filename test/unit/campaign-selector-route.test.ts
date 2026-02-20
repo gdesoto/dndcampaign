@@ -28,6 +28,12 @@ describe('resolveCampaignSelectorRoute', () => {
     )
   })
 
+  it('keeps tools section when switching campaigns', () => {
+    expect(resolveCampaignSelectorRoute('/campaigns/abc/tools', 'abc', 'xyz')).toBe(
+      '/campaigns/xyz/tools'
+    )
+  })
+
   it('falls back to target overview for unknown suffixes', () => {
     expect(resolveCampaignSelectorRoute('/campaigns/abc/unknown/path', 'abc', 'xyz')).toBe(
       '/campaigns/xyz'

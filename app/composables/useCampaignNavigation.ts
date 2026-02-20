@@ -49,6 +49,12 @@ export const useCampaignNavigation = (
         active: path.startsWith(`${base}/maps`),
       },
       {
+        label: 'Tools',
+        to: `${base}/tools`,
+        icon: 'i-lucide-wrench',
+        active: path.startsWith(`${base}/tools`),
+      },
+      {
         label: 'Glossary',
         to: `${base}/glossary`,
         icon: 'i-lucide-book-open-text',
@@ -74,6 +80,7 @@ export const useCampaignNavigation = (
     if (suffix.startsWith('/milestones')) return 'Milestones'
     if (suffix.startsWith('/glossary')) return 'Glossary'
     if (suffix.startsWith('/maps')) return 'Maps'
+    if (suffix.startsWith('/tools')) return 'Tools'
     if (suffix.startsWith('/settings')) return 'Settings'
     return 'Overview'
   }

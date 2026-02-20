@@ -4,6 +4,7 @@ const campaignSectionRoots = [
   '/milestones',
   '/glossary',
   '/maps',
+  '/tools',
   '/characters',
   '/settings',
 ] as const
