@@ -78,9 +78,9 @@ useSeoMeta({
       <UButton class="mt-4" variant="outline" @click="refreshCampaign">Try again</UButton>
     </UCard>
 
-    <UPage v-else-if="campaign" :ui="{ left: 'hidden lg:block lg:col-span-2', center: 'lg:col-span-8' }">
+    <UPage v-else-if="campaign" :ui="{ left: 'hidden lg:block lg:col-span-2 lg:self-start', center: 'lg:col-span-8' }">
       <template #left>
-        <div class="lg:sticky lg:top-28">
+        <div class="lg:sticky lg:top-28 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">
           <UCard :ui="{ body: 'p-3 md:p-4' }">
             <p class="mb-2 text-xs uppercase tracking-[0.25em] text-dimmed">Campaign menu</p>
             <UNavigationMenu
