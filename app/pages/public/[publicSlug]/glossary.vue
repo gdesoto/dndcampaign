@@ -72,7 +72,7 @@ const filteredGlossary = computed(() => {
                 <UBadge variant="subtle">{{ entry.type }}</UBadge>
               </div>
               <p v-if="entry.aliases" class="text-xs text-muted">Aliases: {{ entry.aliases }}</p>
-              <p class="mt-1 text-xs text-muted">{{ entry.description }}</p>
+              <p class="mt-1 text-xs whitespace-pre-line text-muted">{{ entry.description }}</p>
             </div>
           </div>
         </UCard>

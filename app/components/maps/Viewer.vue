@@ -431,8 +431,8 @@ onMounted(async () => {
         filter: burgFilter('capital'),
         paint: {
           'circle-radius': 5.3,
-          'circle-color': '#f7c25c',
-          'circle-stroke-color': '#2c231c',
+          'circle-color': '#ffffff',
+          'circle-stroke-color': '#2f241a',
           'circle-stroke-width': 1.2,
         },
       })

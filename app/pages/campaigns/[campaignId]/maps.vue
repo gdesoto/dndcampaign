@@ -205,6 +205,9 @@ const deleteMap = async (mapId: string) => {
 const activeLayers = ref<MapFeatureType[]>(['state', 'marker', 'river', 'burg', 'route'])
 const glossaryPointsOnly = ref(false)
 const selectedFeatureIds = ref<string[]>([])
+const layerModalOpen = ref(false)
+const mapSettingsModalOpen = ref(false)
+const reimportPanelOpen = ref(false)
 const selectedFeatureLabels = computed(() => {
   const byId = new Map((viewer.value?.features || []).map((feature) => [feature.id, feature]))
   return selectedFeatureIds.value
@@ -357,73 +360,201 @@ const applyReimport = async () => {
       <UButton class="mt-3" variant="outline" @click="() => refresh()">Retry</UButton>
     </UCard>
 
-    <div v-else class="grid gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
-      <div class="space-y-4">
-        <UCard>
-          <template #header>
-            <div class="flex items-center justify-between">
-              <h2 class="text-base font-semibold">Maps</h2>
-              <UBadge variant="subtle">{{ maps?.length || 0 }}</UBadge>
+    <div v-else class="space-y-4">
+      <UCard>
+        <template #header>
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-lg font-semibold">Map viewer</h2>
+            <div class="flex flex-wrap items-center gap-2">
+              <UCheckbox
+                v-model="glossaryPointsOnly"
+                label="Show glossary features only"
+                :disabled="!selectedMapId"
+              />
+              <UButton
+                size="sm"
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-filter"
+                :disabled="!selectedMapId"
+                title="Layers"
+                aria-label="Open map layer filters"
+                @click="layerModalOpen = true"
+              />
+              <UButton
+                size="sm"
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-settings-2"
+                :disabled="!selectedMap"
+                title="Map settings"
+                @click="mapSettingsModalOpen = true"
+              >
+                Map settings
+              </UButton>
+              <UButton
+                size="sm"
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-refresh-cw"
+                :disabled="!canWriteContent || !selectedMap"
+                :title="
+                  canWriteContent ? 'Re-import / update' : 'Read-only role cannot re-import maps'
+                "
+                @click="reimportPanelOpen = true"
+              >
+                Re-import / update
+              </UButton>
+              <UButton
+                size="sm"
+                :disabled="!canWriteContent || !selectedFeatureIds.length || !selectedMapId"
+                :title="canWriteContent ? undefined : 'Read-only role cannot stage glossary actions'"
+                @click="stageOpen = true"
+              >
+                Stage for glossary ({{ selectedFeatureIds.length }})
+              </UButton>
             </div>
+          </div>
+        </template>
+
+        <div v-if="viewerPending" class="space-y-2">
+          <USkeleton class="h-[420px] w-full" />
+        </div>
+        <div v-else-if="viewer">
+          <ClientOnly>
+            <MapsViewer
+              :key="`geojson-${selectedMapId}-${selectedMap?.importVersion || 0}`"
+              :viewer="viewer"
+              :svg-background-url="selectedMapHasSvg ? svgViewerUrl : ''"
+              :active-layers="activeLayers"
+              :selected-feature-ids="selectedFeatureIds"
+              :glossary-points-only="glossaryPointsOnly"
+              @update:selected-feature-ids="selectedFeatureIds = $event"
+            />
+          </ClientOnly>
+        </div>
+        <p v-else class="text-sm text-muted">Select a map to load the viewer.</p>
+
+        <UCard class="mt-4">
+          <template #header>
+            <h3 class="text-base font-semibold">Selection</h3>
           </template>
           <div class="space-y-2">
-            <div
-              v-for="map in maps || []"
-              :key="map.id"
-              class="theme-nav-link flex w-full items-center justify-between rounded-md px-3 py-2 text-left"
-              :class="selectedMapId === map.id ? 'ring-2 ring-primary/40' : ''"
-            >
-              <button
-                type="button"
-                class="min-w-0 flex-1 text-left"
-                @click="selectedMapId = map.id"
+            <div class="flex flex-wrap gap-2">
+              <UBadge
+                v-for="feature in selectedFeatureLabels"
+                :key="feature.id"
+                variant="subtle"
+                color="secondary"
               >
-                <span class="block text-sm font-semibold">{{ map.name }}</span>
-                <span class="block text-[11px] uppercase tracking-[0.2em] text-dimmed">
-                  v{{ map.importVersion }} · {{ map.status }}
-                </span>
-              </button>
-              <div class="flex items-center gap-2">
-                <UBadge v-if="map.isPrimary" color="success" variant="subtle">Primary</UBadge>
-                <UButton
-                  v-else
-                  size="xs"
-                  variant="ghost"
-                  color="neutral"
-                  :disabled="!canWriteContent"
-                  @click.stop="setPrimary(map.id)"
-                >
-                  Set primary
-                </UButton>
-                <UButton
-                  size="xs"
-                  variant="ghost"
-                  color="error"
-                  :disabled="!canWriteContent"
-                  :loading="deletingMapId === map.id"
-                  @click.stop="deleteMap(map.id)"
-                >
-                  Delete
-                </UButton>
-              </div>
+                {{ feature.name }} ({{ feature.type }})
+              </UBadge>
             </div>
-            <p v-if="!maps?.length" class="text-sm text-muted">No maps imported yet.</p>
-            <p v-if="deleteError" class="text-sm text-error">{{ deleteError }}</p>
+            <p v-if="!selectedFeatureLabels.length" class="text-sm text-muted">
+              Click features on the map to stage glossary actions.
+            </p>
             <UButton
-              v-if="hasImportedMaps"
-              class="mt-2 w-full"
+              v-if="selectedFeatureLabels.length"
+              size="sm"
+              variant="ghost"
               color="neutral"
-              variant="outline"
               :disabled="!canWriteContent"
-              @click="importModalOpen = true"
+              @click="selectedFeatureIds = []"
             >
-              Import another map
+              Clear selection
             </UButton>
           </div>
         </UCard>
+      </UCard>
 
+      <UAlert
+        v-if="stageResult"
+        color="success"
+        variant="subtle"
+        title="Glossary commit completed"
+        :description="`Created ${stageResult.created}, linked ${stageResult.linked}, merged ${stageResult.merged}, skipped ${stageResult.skipped}.`"
+      />
+
+      <UCard>
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h2 class="text-base font-semibold">Maps</h2>
+            <UBadge variant="subtle">{{ maps?.length || 0 }}</UBadge>
+          </div>
+        </template>
+        <div class="space-y-2">
+          <div
+            v-for="map in maps || []"
+            :key="map.id"
+            class="theme-nav-link flex w-full items-center justify-between rounded-md px-3 py-2 text-left"
+            :class="selectedMapId === map.id ? 'ring-2 ring-primary/40' : ''"
+          >
+            <button
+              type="button"
+              class="min-w-0 flex-1 text-left"
+              @click="selectedMapId = map.id"
+            >
+              <span class="block text-sm font-semibold">{{ map.name }}</span>
+              <span class="block text-[11px] uppercase tracking-[0.2em] text-dimmed">
+                v{{ map.importVersion }} · {{ map.status }}
+              </span>
+            </button>
+            <div class="flex items-center gap-2">
+              <UBadge v-if="map.isPrimary" color="success" variant="subtle">Primary</UBadge>
+              <UButton
+                v-else
+                size="xs"
+                variant="ghost"
+                color="neutral"
+                :disabled="!canWriteContent"
+                @click.stop="setPrimary(map.id)"
+              >
+                Set primary
+              </UButton>
+              <UButton
+                size="xs"
+                variant="ghost"
+                color="error"
+                :disabled="!canWriteContent"
+                :loading="deletingMapId === map.id"
+                @click.stop="deleteMap(map.id)"
+              >
+                Delete
+              </UButton>
+            </div>
+          </div>
+          <p v-if="!maps?.length" class="text-sm text-muted">No maps imported yet.</p>
+          <p v-if="deleteError" class="text-sm text-error">{{ deleteError }}</p>
+          <UButton
+            v-if="hasImportedMaps"
+            class="mt-2 w-full"
+            color="neutral"
+            variant="outline"
+            :disabled="!canWriteContent"
+            @click="importModalOpen = true"
+          >
+            Import another map
+          </UButton>
+        </div>
+      </UCard>
+    </div>
+
+    <UModal
+      v-model:open="layerModalOpen"
+      title="Viewer layers"
+      description="Show or hide map feature layers in the viewer."
+    >
+      <template #content>
         <MapsLayerPanel v-model="activeLayers" />
+      </template>
+    </UModal>
 
+    <UModal
+      v-model:open="mapSettingsModalOpen"
+      title="Map settings"
+      description="Edit the selected map name and status."
+    >
+      <template #content>
         <UCard>
           <template #header>
             <h3 class="text-base font-semibold">Map settings</h3>
@@ -458,81 +589,15 @@ const applyReimport = async () => {
           </div>
           <p v-else class="text-sm text-muted">Choose a map to edit settings.</p>
         </UCard>
-      </div>
+      </template>
+    </UModal>
 
-      <div class="space-y-4">
-        <UCard>
-          <template #header>
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <h2 class="text-lg font-semibold">Map viewer</h2>
-              <div class="flex flex-wrap items-center gap-2">
-                <UCheckbox
-                  v-model="glossaryPointsOnly"
-                  label="Show glossary features only"
-                  :disabled="!selectedMapId"
-                />
-                <UButton
-                  size="sm"
-                  :disabled="!canWriteContent || !selectedFeatureIds.length || !selectedMapId"
-                  :title="canWriteContent ? undefined : 'Read-only role cannot stage glossary actions'"
-                  @click="stageOpen = true"
-                >
-                  Stage for glossary ({{ selectedFeatureIds.length }})
-                </UButton>
-              </div>
-            </div>
-          </template>
-
-          <div v-if="viewerPending" class="space-y-2">
-            <USkeleton class="h-[420px] w-full" />
-          </div>
-          <div v-else-if="viewer">
-            <ClientOnly>
-              <MapsViewer
-                :key="`geojson-${selectedMapId}-${selectedMap?.importVersion || 0}`"
-                :viewer="viewer"
-                :svg-background-url="selectedMapHasSvg ? svgViewerUrl : ''"
-                :active-layers="activeLayers"
-                :selected-feature-ids="selectedFeatureIds"
-                :glossary-points-only="glossaryPointsOnly"
-                @update:selected-feature-ids="selectedFeatureIds = $event"
-              />
-            </ClientOnly>
-          </div>
-          <p v-else class="text-sm text-muted">Select a map to load the viewer.</p>
-        </UCard>
-
-        <UCard>
-          <template #header>
-            <h3 class="text-base font-semibold">Selection</h3>
-          </template>
-          <div class="space-y-2">
-            <div class="flex flex-wrap gap-2">
-              <UBadge
-                v-for="feature in selectedFeatureLabels"
-                :key="feature.id"
-                variant="subtle"
-                color="secondary"
-              >
-                {{ feature.name }} ({{ feature.type }})
-              </UBadge>
-            </div>
-            <p v-if="!selectedFeatureLabels.length" class="text-sm text-muted">
-              Click features on the map to stage glossary actions.
-            </p>
-            <UButton
-              v-if="selectedFeatureLabels.length"
-              size="sm"
-              variant="ghost"
-              color="neutral"
-              :disabled="!canWriteContent"
-              @click="selectedFeatureIds = []"
-            >
-              Clear selection
-            </UButton>
-          </div>
-        </UCard>
-
+    <UModal
+      v-model:open="reimportPanelOpen"
+      title="Re-import / update"
+      description="Upload replacement files, preview map diffs, and then apply a strategy."
+    >
+      <template #content>
         <UCard>
           <template #header>
             <h3 class="text-base font-semibold">Re-import / update</h3>
@@ -554,16 +619,8 @@ const applyReimport = async () => {
             </div>
           </div>
         </UCard>
-
-        <UAlert
-          v-if="stageResult"
-          color="success"
-          variant="subtle"
-          title="Glossary commit completed"
-          :description="`Created ${stageResult.created}, linked ${stageResult.linked}, merged ${stageResult.merged}, skipped ${stageResult.skipped}.`"
-        />
-      </div>
-    </div>
+      </template>
+    </UModal>
 
     <MapsGlossaryStageModal
       v-model:open="stageOpen"

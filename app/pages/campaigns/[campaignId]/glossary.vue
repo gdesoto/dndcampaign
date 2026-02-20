@@ -228,7 +228,7 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
               </div>
             </div>
           </template>
-          <p class="text-sm text-default">{{ entry.description }}</p>
+          <p class="text-sm whitespace-pre-line text-default">{{ entry.description }}</p>
           <div class="mt-4 space-y-2">
             <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Linked sessions</p>
             <div v-if="entry.sessions.length" class="flex flex-wrap gap-2">
