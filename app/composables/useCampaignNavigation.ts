@@ -48,7 +48,7 @@ export const useCampaignNavigation = (
       return [
         ...rootItems,
         { label: 'Sessions', to: `/campaigns/${campaignId.value}/sessions` },
-        { label: 'Session details' },
+        { label: 'Session' },
       ]
     }
     return [...rootItems, { label: sectionTitle.value }]

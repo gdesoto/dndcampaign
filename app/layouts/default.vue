@@ -71,6 +71,17 @@ const profileMenuItems = computed(() => [
     { label: 'Logout', icon: 'i-lucide-log-out', onSelect: () => logout() },
   ],
 ])
+
+const compactAccountMenuItems = computed(() => [
+  [
+    {
+      label: `Theme: ${colorModeLabel.value}`,
+      icon: 'i-heroicons-moon',
+      onSelect: () => toggleColorMode(),
+    },
+  ],
+  ...profileMenuItems.value,
+])
 </script>
 
 <template>
@@ -95,7 +106,6 @@ const profileMenuItems = computed(() => [
         </template>
       <template #default>
         <div class="flex w-full items-center justify-center gap-4">
-          <UNavigationMenu class="w-full justify-center" :items="topNavItems" />
           <USelectMenu
             v-if="loggedIn && showCampaignSelect"
             v-model="selectedCampaignId"
@@ -104,27 +114,42 @@ const profileMenuItems = computed(() => [
             :items="campaignOptions"
             placeholder="Select campaign"
             size="sm"
-            class="w-52"
+            icon="i-lucide-sword"
+            class="w-60 shrink-0"
           />
+          <UNavigationMenu class="min-w-0 flex-1 justify-center" :items="topNavItems" />
         </div>
       </template>
         <template #right>
-          <div class="theme-text-muted flex flex-wrap items-center gap-3 text-xs">
-            <UButton size="sm" color="secondary" variant="ghost" class="theme-pill" @click="toggleColorMode">
-              <UIcon name="i-heroicons-moon" class="h-4 w-4" />
-              <ClientOnly>
-                <span class="ml-2 uppercase tracking-[0.3em]">{{ colorModeLabel }}</span>
-                <template #fallback>
-                  <span class="ml-2 uppercase tracking-[0.3em]">System</span>
-                </template>
-              </ClientOnly>
-            </UButton>
-            <UDropdownMenu v-if="loggedIn" :items="profileMenuItems">
-              <UButton size="sm" color="primary" variant="ghost" class="theme-pill">
-                <UIcon name="i-heroicons-user-circle" class="h-4 w-4" />
-                <span class="ml-2 hidden uppercase tracking-[0.3em] md:inline">Profile</span>
-              </UButton>
-            </UDropdownMenu>
+          <div class="theme-text-muted flex items-center gap-3 text-xs">
+            <template v-if="loggedIn">
+              <div class="hidden md:flex items-center gap-3">
+                <UButton size="sm" color="secondary" variant="ghost" class="theme-pill" @click="toggleColorMode">
+                  <UIcon name="i-heroicons-moon" class="h-4 w-4" />
+                  <ClientOnly>
+                    <span class="ml-2 hidden uppercase tracking-[0.3em] xl:inline">{{ colorModeLabel }}</span>
+                    <template #fallback>
+                      <span class="ml-2 hidden uppercase tracking-[0.3em] xl:inline">System</span>
+                    </template>
+                  </ClientOnly>
+                </UButton>
+                <UDropdownMenu :items="profileMenuItems">
+                  <UButton size="sm" color="primary" variant="ghost" class="theme-pill">
+                    <UIcon name="i-heroicons-user-circle" class="h-4 w-4" />
+                    <span class="ml-2 hidden uppercase tracking-[0.3em] lg:inline">Profile</span>
+                  </UButton>
+                </UDropdownMenu>
+              </div>
+
+              <div class="md:hidden">
+                <UDropdownMenu :items="compactAccountMenuItems">
+                  <UButton size="sm" color="primary" variant="ghost" class="theme-pill" aria-label="Open account menu">
+                    <UIcon name="i-lucide-ellipsis" class="h-4 w-4" />
+                  </UButton>
+                </UDropdownMenu>
+              </div>
+            </template>
+
             <template v-else>
               <UButton size="sm" color="primary" variant="ghost" class="theme-pill" to="/login">
                 Login
@@ -133,6 +158,36 @@ const profileMenuItems = computed(() => [
                 Register
               </UButton>
             </template>
+          </div>
+        </template>
+        <template #body>
+          <div class="space-y-4">
+            <USelectMenu
+              v-if="loggedIn && showCampaignSelect"
+              v-model="selectedCampaignId"
+              value-key="id"
+              label-key="label"
+              :items="campaignOptions"
+              placeholder="Select campaign"
+              size="sm"
+              icon="i-lucide-sword"
+              class="w-full"
+            />
+
+            <UNavigationMenu :items="topNavItems" orientation="vertical" class="-mx-2.5" />
+
+            <div v-if="loggedIn" class="space-y-2 border-t border-default pt-3">
+              <UButton size="sm" color="secondary" variant="ghost" block class="theme-pill" @click="toggleColorMode">
+                <UIcon name="i-heroicons-moon" class="h-4 w-4" />
+                <span class="ml-2 uppercase tracking-[0.2em]">Theme: {{ colorModeLabel }}</span>
+              </UButton>
+              <UButton size="sm" color="primary" variant="ghost" to="/settings" block class="theme-pill">
+                Settings
+              </UButton>
+              <UButton size="sm" color="primary" variant="ghost" block class="theme-pill" @click="logout">
+                Logout
+              </UButton>
+            </div>
           </div>
         </template>
       </UHeader>
