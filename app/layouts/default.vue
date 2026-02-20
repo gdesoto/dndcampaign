@@ -166,7 +166,12 @@ const compactAccountMenuItems = computed(() => [
                 <UTooltip text="Theme">
                   <UDropdownMenu :items="themeMenuItems">
                     <UButton size="lg" color="neutral" variant="subtle" class="theme-pill" aria-label="Theme selector">
-                      <UIcon :name="themeIcon" class="h-5 w-5" />
+                      <ClientOnly>
+                        <UIcon :name="themeIcon" class="h-5 w-5" />
+                        <template #fallback>
+                          <UIcon name="i-lucide-monitor" class="h-5 w-5" />
+                        </template>
+                      </ClientOnly>
                     </UButton>
                   </UDropdownMenu>
                 </UTooltip>
