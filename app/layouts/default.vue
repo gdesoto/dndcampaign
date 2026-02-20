@@ -4,15 +4,18 @@ const currentUser = computed(
   () => (user.value as { email?: string; systemRole?: 'USER' | 'SYSTEM_ADMIN' } | null) || null
 )
 const colorMode = useColorMode()
+type ThemePreference = 'system' | 'light' | 'dark'
 const colorModeLabel = computed(() => {
   if (colorMode.preference === 'system') return 'System'
   return colorMode.preference === 'dark' ? 'Dark' : 'Light'
 })
-const toggleColorMode = () => {
-  const order = ['system', 'light', 'dark']
-  const current = colorMode.preference || 'system'
-  const next = order[(order.indexOf(current) + 1) % order.length]
-  colorMode.preference = next as typeof colorMode.preference
+const themeIcon = computed(() => {
+  if (colorMode.preference === 'light') return 'i-lucide-sun'
+  if (colorMode.preference === 'dark') return 'i-lucide-moon'
+  return colorMode.value === 'dark' ? 'i-lucide-moon' : 'i-lucide-sun'
+})
+const setColorMode = (preference: ThemePreference) => {
+  colorMode.preference = preference as typeof colorMode.preference
 }
 const route = useRoute()
 const router = useRouter()
@@ -72,12 +75,48 @@ const profileMenuItems = computed(() => [
   ],
 ])
 
+const themeMenuItems = computed(() => [
+  [
+    {
+      label: 'System',
+      icon: colorMode.preference === 'system' ? 'i-lucide-check' : 'i-lucide-monitor',
+      onSelect: () => setColorMode('system'),
+    },
+    {
+      label: 'Light',
+      icon: colorMode.preference === 'light' ? 'i-lucide-check' : 'i-lucide-sun',
+      onSelect: () => setColorMode('light'),
+    },
+    {
+      label: 'Dark',
+      icon: colorMode.preference === 'dark' ? 'i-lucide-check' : 'i-lucide-moon',
+      onSelect: () => setColorMode('dark'),
+    },
+  ],
+])
+
 const compactAccountMenuItems = computed(() => [
   [
     {
-      label: `Theme: ${colorModeLabel.value}`,
-      icon: 'i-heroicons-moon',
-      onSelect: () => toggleColorMode(),
+      label: 'System',
+      icon: colorMode.preference === 'system' ? 'i-lucide-check' : 'i-lucide-monitor',
+      onSelect: () => setColorMode('system'),
+    },
+    {
+      label: 'Light',
+      icon: colorMode.preference === 'light' ? 'i-lucide-check' : 'i-lucide-sun',
+      onSelect: () => setColorMode('light'),
+    },
+    {
+      label: 'Dark',
+      icon: colorMode.preference === 'dark' ? 'i-lucide-check' : 'i-lucide-moon',
+      onSelect: () => setColorMode('dark'),
+    },
+  ],
+  [
+    {
+      label: `Current: ${colorModeLabel.value}`,
+      type: 'label',
     },
   ],
   ...profileMenuItems.value,
@@ -123,22 +162,22 @@ const compactAccountMenuItems = computed(() => [
         <template #right>
           <div class="theme-text-muted flex items-center gap-3 text-xs">
             <template v-if="loggedIn">
-              <div class="hidden md:flex items-center gap-3">
-                <UButton size="sm" color="secondary" variant="ghost" class="theme-pill" @click="toggleColorMode">
-                  <UIcon name="i-heroicons-moon" class="h-4 w-4" />
-                  <ClientOnly>
-                    <span class="ml-2 hidden uppercase tracking-[0.3em] xl:inline">{{ colorModeLabel }}</span>
-                    <template #fallback>
-                      <span class="ml-2 hidden uppercase tracking-[0.3em] xl:inline">System</span>
-                    </template>
-                  </ClientOnly>
-                </UButton>
-                <UDropdownMenu :items="profileMenuItems">
-                  <UButton size="sm" color="primary" variant="ghost" class="theme-pill">
-                    <UIcon name="i-heroicons-user-circle" class="h-4 w-4" />
-                    <span class="ml-2 hidden uppercase tracking-[0.3em] lg:inline">Profile</span>
-                  </UButton>
-                </UDropdownMenu>
+              <div class="hidden md:flex items-center gap-2">
+                <UTooltip text="Theme">
+                  <UDropdownMenu :items="themeMenuItems">
+                    <UButton size="lg" color="neutral" variant="subtle" class="theme-pill" aria-label="Theme selector">
+                      <UIcon :name="themeIcon" class="h-5 w-5" />
+                    </UButton>
+                  </UDropdownMenu>
+                </UTooltip>
+
+                <UTooltip text="Profile">
+                  <UDropdownMenu :items="profileMenuItems">
+                    <UButton size="lg" color="neutral" variant="subtle" class="theme-pill" aria-label="Profile menu">
+                      <UIcon name="i-heroicons-user-circle" class="h-5 w-5" />
+                    </UButton>
+                  </UDropdownMenu>
+                </UTooltip>
               </div>
 
               <div class="md:hidden">
@@ -177,10 +216,18 @@ const compactAccountMenuItems = computed(() => [
             <UNavigationMenu :items="topNavItems" orientation="vertical" class="-mx-2.5" />
 
             <div v-if="loggedIn" class="space-y-2 border-t border-default pt-3">
-              <UButton size="sm" color="secondary" variant="ghost" block class="theme-pill" @click="toggleColorMode">
-                <UIcon name="i-heroicons-moon" class="h-4 w-4" />
-                <span class="ml-2 uppercase tracking-[0.2em]">Theme: {{ colorModeLabel }}</span>
-              </UButton>
+              <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Theme</p>
+              <div class="grid grid-cols-3 gap-2">
+                <UButton size="sm" color="neutral" variant="subtle" class="theme-pill" @click="setColorMode('system')">
+                  System
+                </UButton>
+                <UButton size="sm" color="neutral" variant="subtle" class="theme-pill" @click="setColorMode('light')">
+                  Light
+                </UButton>
+                <UButton size="sm" color="neutral" variant="subtle" class="theme-pill" @click="setColorMode('dark')">
+                  Dark
+                </UButton>
+              </div>
               <UButton size="sm" color="primary" variant="ghost" to="/settings" block class="theme-pill">
                 Settings
               </UButton>
@@ -192,12 +239,8 @@ const compactAccountMenuItems = computed(() => [
         </template>
       </UHeader>
 
-      <UMain>
-        <div class="mx-auto max-w-7xl px-6 pb-16 pt-24">
-          <div class="px-2 py-6">
-            <slot />
-          </div>
-        </div>
+      <UMain class="w-full px-4 pb-16 pt-24 sm:px-6 lg:px-8">
+        <slot />
       </UMain>
     </div>
   </div>

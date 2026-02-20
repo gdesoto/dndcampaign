@@ -4,18 +4,64 @@ import type { CampaignShell } from '#shared/types/campaign-workflow'
 export const useCampaignNavigation = (
   route: ReturnType<typeof useRoute>,
   campaignId: Ref<string>,
-  campaign: Ref<CampaignShell | null | undefined>
+  campaign: Ref<CampaignShell | null | undefined>,
+  sessionTitle?: Ref<string | undefined>
 ) => {
-  const navItems = computed(() => [
-    { label: 'Overview', to: `/campaigns/${campaignId.value}`, icon: 'i-lucide-layout-dashboard' },
-    { label: 'Sessions', to: `/campaigns/${campaignId.value}/sessions`, icon: 'i-lucide-calendar-days' },
-    { label: 'Characters', to: `/campaigns/${campaignId.value}/characters`, icon: 'i-lucide-users' },
-    { label: 'Quests', to: `/campaigns/${campaignId.value}/quests`, icon: 'i-lucide-scroll-text' },
-    { label: 'Milestones', to: `/campaigns/${campaignId.value}/milestones`, icon: 'i-lucide-flag' },
-    { label: 'Maps', to: `/campaigns/${campaignId.value}/maps`, icon: 'i-lucide-map' },
-    { label: 'Glossary', to: `/campaigns/${campaignId.value}/glossary`, icon: 'i-lucide-book-open-text' },
-    { label: 'Settings', to: `/campaigns/${campaignId.value}/settings`, icon: 'i-lucide-settings' },
-  ])
+  const navItems = computed(() => {
+    const base = `/campaigns/${campaignId.value}`
+    const path = route.path
+
+    return [
+      {
+        label: 'Overview',
+        to: base,
+        icon: 'i-lucide-layout-dashboard',
+        active: path === base,
+      },
+      {
+        label: 'Sessions',
+        to: `${base}/sessions`,
+        icon: 'i-lucide-calendar-days',
+        active: path.startsWith(`${base}/sessions`),
+      },
+      {
+        label: 'Characters',
+        to: `${base}/characters`,
+        icon: 'i-lucide-users',
+        active: path.startsWith(`${base}/characters`),
+      },
+      {
+        label: 'Quests',
+        to: `${base}/quests`,
+        icon: 'i-lucide-scroll-text',
+        active: path.startsWith(`${base}/quests`),
+      },
+      {
+        label: 'Milestones',
+        to: `${base}/milestones`,
+        icon: 'i-lucide-flag',
+        active: path.startsWith(`${base}/milestones`),
+      },
+      {
+        label: 'Maps',
+        to: `${base}/maps`,
+        icon: 'i-lucide-map',
+        active: path.startsWith(`${base}/maps`),
+      },
+      {
+        label: 'Glossary',
+        to: `${base}/glossary`,
+        icon: 'i-lucide-book-open-text',
+        active: path.startsWith(`${base}/glossary`),
+      },
+      {
+        label: 'Settings',
+        to: `${base}/settings`,
+        icon: 'i-lucide-settings',
+        active: path.startsWith(`${base}/settings`),
+      },
+    ]
+  })
 
   const sectionFromPath = (path: string) => {
     const campaignBase = `/campaigns/${campaignId.value}`
@@ -48,7 +94,7 @@ export const useCampaignNavigation = (
       return [
         ...rootItems,
         { label: 'Sessions', to: `/campaigns/${campaignId.value}/sessions` },
-        { label: 'Session' },
+        { label: sessionTitle?.value || 'Session' },
       ]
     }
     return [...rootItems, { label: sectionTitle.value }]
