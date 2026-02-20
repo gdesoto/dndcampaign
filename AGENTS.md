@@ -16,8 +16,8 @@ DND Campaign is a Nuxt 4 web app for running tabletop campaigns. It manages camp
 - Server imports: use `#server/...` and `#shared/...` aliases in server code.
 
 ## Nuxt + Nuxt UI Tools
-- When unsure about component APIs or available props, consult the Nuxt UI docs (UPage, UPageHeader, UMain, UCard, etc.).
-- Use Nuxt docs for config/runtime questions and module behavior.
+- When unsure about component APIs or available props, consult the Nuxt UI mcp tool docs (UPage, UPageHeader, UCard, UTabs, UNavigation, etc.).
+- Use Nuxt mcp tool docs for config/runtime questions and module behavior.
 - Favor Nuxt UI primitives for layout and consistent styling before custom markup.
 - For `app/app.config.ts` theme overrides, only use keys shown in the Nuxt UI component docs (e.g., `defaultVariants`, `slots`, `variants`, `compoundVariants`).
 - Always verify component config keys with the Nuxt UI tool before adding/changing `ui.*` entries (e.g., `dropdownMenu`, not `dropdown`).
@@ -26,7 +26,7 @@ DND Campaign is a Nuxt 4 web app for running tabletop campaigns. It manages camp
 - TypeScript first; prefer explicit types for API payloads and service inputs.
 - Keep server logic in `server/services`, thin handlers in `server/api`.
 - Use Nuxt UI components for layout and controls; theme overrides live in `app/app.config.ts`.
-- Prefer `UPage`, `UPageHeader`, `UMain`, and `UCard` for page structure.
+- Prefer `UPage`, `UPageHeader`, and `UCard` for page structure.
 - Keep Tailwind classes consistent.
 - Diagnose and fix root causes before adding workarounds; document the cause if a workaround is unavoidable.
 

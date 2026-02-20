@@ -26,7 +26,7 @@ Guidelines:
 - Use clear, domain-driven names (for example, `CampaignSessionTimeline.vue`).
 
 ## Component Development Standards
-- Use Nuxt UI components as defaults (`UPage`, `UPageHeader`, `UMain`, `UCard`, `UForm`, `UButton`, etc.).
+- Use Nuxt UI components as defaults (`UPage`, `UPageHeader`, `UTabs`, `UCard`, `UForm`, `UButton`, etc.).
 - Build small, single-purpose components with explicit props and emits.
 - Prefer `script setup lang="ts"` with strongly typed props and events.
 - Avoid overly large components; split when responsibilities diverge.
