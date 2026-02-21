@@ -46,7 +46,7 @@ const {
   error: calendarError,
   refresh: refreshCalendarView,
 } = await useAsyncData(
-  () => `campaign-calendar-view-${campaignId.value}-${selectedYear.value || 'auto'}-${selectedMonth.value || 'auto'}`,
+  () => `campaign-calendar-view-${campaignId.value}`,
   () =>
     calendarApi.getCalendarView(campaignId.value, {
       year: selectedYear.value || undefined,
@@ -82,6 +82,13 @@ const selectedMonthMeta = computed(() => calendarView.value?.selectedMonth || nu
 const selectedDayEvents = computed(() =>
   (calendarView.value?.events || []).filter((event) => event.day === selectedDay.value),
 )
+const selectedDayRanges = computed(() => {
+  const month = selectedMonthMeta.value
+  if (!month) return []
+  return allRangesWithSession.value.filter((range) =>
+    rangeIntersectsDay(range, { year: month.year, month: month.month, day: selectedDay.value }),
+  )
+})
 const yearMonthLabel = computed(() => {
   const meta = selectedMonthMeta.value
   if (!meta) return ''
@@ -92,6 +99,34 @@ const daysInMonth = computed(() => {
   const month = selectedMonthMeta.value
   if (!month) return []
   return Array.from({ length: month.length }, (_, index) => index + 1)
+})
+
+const weekdayNames = computed(() => calendarView.value?.config?.weekdays.map((weekday) => weekday.name) || [])
+const weekdayCount = computed(() => Math.max(1, weekdayNames.value.length))
+const calendarGridStyle = computed(() => ({
+  gridTemplateColumns: `repeat(${weekdayCount.value}, minmax(0, 1fr))`,
+}))
+
+const mod = (value: number, base: number) => ((value % base) + base) % base
+
+const monthStartOffset = computed(() => {
+  const config = calendarView.value?.config
+  const month = selectedMonthMeta.value
+  if (!config || !month) return 0
+
+  const yearLength = config.months.reduce((sum, entry) => sum + entry.length, 0)
+  const yearDelta = month.year - config.startingYear
+  const daysFromYears = yearDelta * yearLength
+  const daysBeforeMonth = config.months
+    .slice(0, Math.max(0, month.month - 1))
+    .reduce((sum, entry) => sum + entry.length, 0)
+
+  return mod(config.firstWeekdayIndex + daysFromYears + daysBeforeMonth, weekdayCount.value)
+})
+
+const monthCells = computed(() => {
+  const leadingEmptyCells = Array.from({ length: monthStartOffset.value }, () => null as number | null)
+  return [...leadingEmptyCells, ...daysInMonth.value]
 })
 
 const currentDate = computed(() => calendarView.value?.currentDate || null)
@@ -113,6 +148,57 @@ const allRangesWithSession = computed(() =>
     session: sessionLookup.value.get(range.sessionId) || null,
   })),
 )
+
+type CalendarDate = { year: number, month: number, day: number }
+
+const compareDate = (left: CalendarDate, right: CalendarDate) => {
+  if (left.year !== right.year) return left.year - right.year
+  if (left.month !== right.month) return left.month - right.month
+  return left.day - right.day
+}
+
+const rangeIntersectsDay = (range: {
+  startYear: number
+  startMonth: number
+  startDay: number
+  endYear: number
+  endMonth: number
+  endDay: number
+}, date: CalendarDate) => {
+  const start = { year: range.startYear, month: range.startMonth, day: range.startDay }
+  const end = { year: range.endYear, month: range.endMonth, day: range.endDay }
+  return compareDate(start, date) <= 0 && compareDate(end, date) >= 0
+}
+
+const rangesInSelectedMonth = computed(() => {
+  const month = selectedMonthMeta.value
+  if (!month) return []
+
+  const monthStart: CalendarDate = { year: month.year, month: month.month, day: 1 }
+  const monthEnd: CalendarDate = { year: month.year, month: month.month, day: month.length }
+
+  return allRangesWithSession.value.filter((range) => {
+    const start: CalendarDate = { year: range.startYear, month: range.startMonth, day: range.startDay }
+    const end: CalendarDate = { year: range.endYear, month: range.endMonth, day: range.endDay }
+    return compareDate(end, monthStart) >= 0 && compareDate(start, monthEnd) <= 0
+  })
+})
+
+const dayRangeCountMap = computed(() => {
+  const map = new Map<number, number>()
+  const month = selectedMonthMeta.value
+  if (!month) return map
+
+  for (let day = 1; day <= month.length; day += 1) {
+    const count = rangesInSelectedMonth.value.filter((range) =>
+      rangeIntersectsDay(range, { year: month.year, month: month.month, day }),
+    ).length
+    if (count > 0) {
+      map.set(day, count)
+    }
+  }
+  return map
+})
 
 const eventModalOpen = ref(false)
 const eventMode = ref<'create' | 'edit'>('create')
@@ -176,6 +262,13 @@ const refreshAll = async () => {
   await Promise.all([refreshCalendarView(), refreshSessionRanges(), refreshSessions()])
 }
 
+const isInitialLoading = computed(() => {
+  const calendarLoading = calendarPending.value && !calendarView.value
+  const rangesLoading = sessionRangesPending.value && !sessionRanges.value
+  const sessionsLoading = sessionsPending.value && !sessions.value
+  return calendarLoading || rangesLoading || sessionsLoading
+})
+
 const clampSelectedDay = () => {
   const month = selectedMonthMeta.value
   if (!month) return
@@ -224,6 +317,24 @@ const shiftMonth = (direction: -1 | 1) => {
     return
   }
   selectedMonth.value = next
+}
+
+const jumpToDate = (date: CalendarDate) => {
+  selectedYear.value = date.year
+  selectedMonth.value = date.month
+  selectedDay.value = date.day
+}
+
+const jumpToRangeStart = (range: {
+  startYear: number
+  startMonth: number
+  startDay: number
+}) => {
+  jumpToDate({
+    year: range.startYear,
+    month: range.startMonth,
+    day: range.startDay,
+  })
 }
 
 const openCreateEvent = () => {
@@ -422,7 +533,7 @@ const removeRange = async () => {
     />
 
     <SharedResourceState
-      :pending="calendarPending || sessionRangesPending || sessionsPending"
+      :pending="isInitialLoading"
       :error="calendarError || sessionRangesError || sessionsError"
       :empty="false"
       error-message="Unable to load calendar view."
@@ -447,7 +558,7 @@ const removeRange = async () => {
         </UButton>
       </UCard>
 
-      <div v-else class="grid gap-4 xl:grid-cols-[2fr_1fr]">
+      <div v-else class="space-y-4">
         <UCard>
           <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
@@ -462,33 +573,46 @@ const removeRange = async () => {
             </div>
           </template>
 
-          <div class="grid grid-cols-7 gap-2">
-            <button
-              v-for="day in daysInMonth"
-              :key="`day-${day}`"
-              type="button"
-              class="rounded-md border px-2 py-2 text-sm text-left transition"
-              :class="[
-                selectedDay === day ? 'border-primary bg-primary/10' : 'border-default hover:bg-muted/40',
-                currentDate && currentDate.day === day && currentDate.month === selectedMonthMeta?.month && currentDate.year === selectedMonthMeta?.year
-                  ? 'ring-1 ring-primary'
-                  : '',
-              ]"
-              @click="selectedDay = day"
+          <div class="grid gap-2" :style="calendarGridStyle">
+            <div
+              v-for="(weekday, index) in weekdayNames"
+              :key="`weekday-label-${index}`"
+              class="rounded-md border border-default bg-muted/30 px-2 py-1 text-xs font-medium uppercase tracking-wide text-muted"
             >
-              <div class="font-semibold">{{ day }}</div>
-              <div class="mt-1 text-[11px] text-muted">
-                {{
-                  (calendarView?.events || []).some((event) => event.day === day)
-                    ? 'Event'
-                    : ''
-                }}
-              </div>
-            </button>
+              {{ weekday }}
+            </div>
+            <template v-for="(cellDay, index) in monthCells" :key="`month-cell-${index}`">
+              <div
+                v-if="cellDay === null"
+                class="min-h-24 rounded-md border border-transparent px-2 py-2"
+              />
+              <button
+                v-else
+                type="button"
+                class="min-h-24 rounded-md border px-2 py-2 text-sm text-left transition flex flex-col items-start justify-start"
+                :class="[
+                  selectedDay === cellDay ? 'border-primary bg-primary/10' : 'border-default hover:bg-muted/40',
+                  currentDate && currentDate.day === cellDay && currentDate.month === selectedMonthMeta?.month && currentDate.year === selectedMonthMeta?.year
+                    ? 'ring-1 ring-primary'
+                    : '',
+                ]"
+                @click="selectedDay = cellDay"
+              >
+                <div class="font-semibold">{{ cellDay }}</div>
+                <div class="mt-1 flex flex-col items-start gap-1 text-[11px] text-muted">
+                  <span v-if="dayRangeCountMap.get(cellDay)">
+                    {{ dayRangeCountMap.get(cellDay) }} session{{ dayRangeCountMap.get(cellDay)! > 1 ? 's' : '' }}
+                  </span>
+                  <span v-if="(calendarView?.events || []).some((event) => event.day === cellDay)">
+                    Event
+                  </span>
+                </div>
+              </button>
+            </template>
           </div>
         </UCard>
 
-        <div class="space-y-4">
+        <div class="grid gap-4 xl:grid-cols-2">
           <UCard>
             <template #header>
               <div class="flex items-center justify-between gap-2">
@@ -506,10 +630,23 @@ const removeRange = async () => {
 
             <p v-if="eventAction.error" class="mb-2 text-sm text-error">{{ eventAction.error }}</p>
 
-            <div v-if="!selectedDayEvents.length" class="text-sm text-muted">
-              No events for this day.
+            <div v-if="!selectedDayRanges.length && !selectedDayEvents.length" class="text-sm text-muted">
+              No events or session ranges for this day.
             </div>
             <div v-else class="space-y-2">
+              <div
+                v-for="range in selectedDayRanges"
+                :key="`selected-day-range-${range.id}`"
+                class="rounded-md border border-default p-3"
+              >
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <p class="text-xs uppercase tracking-wide text-muted">Session range</p>
+                    <p class="text-sm font-semibold">{{ range.session?.title || `Session ${range.sessionId}` }}</p>
+                  </div>
+                  <UButton size="xs" variant="outline" @click="jumpToRangeStart(range)">Go to start</UButton>
+                </div>
+              </div>
               <div
                 v-for="event in selectedDayEvents"
                 :key="event.id"
@@ -584,7 +721,7 @@ const removeRange = async () => {
 
       <UCard v-if="isCalendarEnabled" class="mt-4">
         <template #header>
-          <h3 class="font-semibold">Session date ranges</h3>
+          <h3 class="font-semibold">Session ranges</h3>
         </template>
 
         <div class="grid gap-4 xl:grid-cols-[1.1fr_1fr]">
@@ -652,7 +789,7 @@ const removeRange = async () => {
           </div>
 
           <div class="space-y-2">
-            <p class="text-sm text-muted">Existing ranges</p>
+            <p class="text-sm text-muted">Session ranges</p>
             <div v-if="!allRangesWithSession.length" class="text-sm text-muted">No session ranges configured.</div>
             <div v-else class="space-y-2">
               <div
@@ -667,18 +804,27 @@ const removeRange = async () => {
                     </p>
                     <p class="text-xs text-muted">
                       {{ range.startYear }}-{{ range.startMonth }}-{{ range.startDay }}
-                      →
+                      <span class="px-2">→</span>
                       {{ range.endYear }}-{{ range.endMonth }}-{{ range.endDay }}
                     </p>
                   </div>
-                  <UButton
-                    v-if="canEditCalendar"
-                    size="xs"
-                    variant="outline"
-                    @click="loadRangeForSession(range.sessionId)"
-                  >
-                    Edit
-                  </UButton>
+                  <div class="flex items-center gap-2">
+                    <UButton
+                      size="xs"
+                      variant="outline"
+                      @click="jumpToRangeStart(range)"
+                    >
+                      Go to start
+                    </UButton>
+                    <UButton
+                      v-if="canEditCalendar"
+                      size="xs"
+                      variant="outline"
+                      @click="loadRangeForSession(range.sessionId)"
+                    >
+                      Edit
+                    </UButton>
+                  </div>
                 </div>
               </div>
             </div>
