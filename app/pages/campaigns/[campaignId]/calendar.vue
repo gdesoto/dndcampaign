@@ -200,6 +200,14 @@ const dayRangeCountMap = computed(() => {
   return map
 })
 
+const dayEventCountMap = computed(() => {
+  const map = new Map<number, number>()
+  for (const event of calendarView.value?.events || []) {
+    map.set(event.day, (map.get(event.day) || 0) + 1)
+  }
+  return map
+})
+
 const eventModalOpen = ref(false)
 const eventMode = ref<'create' | 'edit'>('create')
 const eventForm = reactive({
@@ -599,12 +607,15 @@ const removeRange = async () => {
                 @click="selectedDay = cellDay"
               >
                 <div class="font-semibold">{{ cellDay }}</div>
-                <div class="mt-1 flex flex-col items-start gap-1 text-[11px] text-muted">
-                  <span v-if="dayRangeCountMap.get(cellDay)">
-                    {{ dayRangeCountMap.get(cellDay) }} session{{ dayRangeCountMap.get(cellDay)! > 1 ? 's' : '' }}
+                <div class="mt-1 flex flex-col items-start gap-1 text-[11px]">
+                  <span v-if="dayRangeCountMap.get(cellDay)" class="text-primary">
+                    {{ dayRangeCountMap.get(cellDay) }} Session{{ dayRangeCountMap.get(cellDay)! > 1 ? 's' : '' }}
                   </span>
-                  <span v-if="(calendarView?.events || []).some((event) => event.day === cellDay)">
-                    Event
+                  <span
+                    v-if="dayEventCountMap.get(cellDay)"
+                    class="text-secondary"
+                  >
+                    {{ dayEventCountMap.get(cellDay) }} Event{{ dayEventCountMap.get(cellDay)! > 1 ? 's' : '' }}
                   </span>
                 </div>
               </button>
