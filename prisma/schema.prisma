@@ -53,6 +53,7 @@ model User {
   documentVersions DocumentVersion[]
   playerCharacters PlayerCharacter[]
   adminAuditActions AdminAuditLog[] @relation("AdminAuditActor")
+  calendarEventsCreated CampaignCalendarEvent[]
 
   @@index([email])
 }
@@ -117,6 +118,9 @@ model Campaign {
   invites       CampaignInvite[]
   publicAccess  CampaignPublicAccess?
   activityLogs  ActivityLog[]
+  calendarConfig CampaignCalendarConfig?
+  calendarEvents CampaignCalendarEvent[]
+  sessionCalendarRanges SessionCalendarRange[]
 
   @@index([ownerId])
 }
@@ -196,8 +200,70 @@ model Session {
   documents     Document[]
   recap         RecapRecording?
   summaryJobs   SummaryJob[]
+  calendarRange SessionCalendarRange?
 
   @@index([campaignId])
+  @@unique([id, campaignId])
+}
+
+model CampaignCalendarConfig {
+  id                String   @id @default(uuid())
+  campaignId         String   @unique
+  campaign           Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  isEnabled          Boolean  @default(false)
+  name               String
+  startingYear       Int
+  firstWeekdayIndex  Int
+  currentYear        Int
+  currentMonth       Int
+  currentDay         Int
+  weekdaysJson       Json
+  monthsJson         Json
+  moonsJson          Json
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([campaignId, isEnabled])
+}
+
+model SessionCalendarRange {
+  id         String   @id @default(uuid())
+  sessionId  String   @unique
+  campaignId String
+  session    Session  @relation(fields: [sessionId, campaignId], references: [id, campaignId], onDelete: Cascade)
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  startYear  Int
+  startMonth Int
+  startDay   Int
+  endYear    Int
+  endMonth   Int
+  endDay     Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([campaignId])
+  @@unique([sessionId, campaignId])
+  @@index([campaignId, startYear, startMonth, startDay])
+  @@index([campaignId, endYear, endMonth, endDay])
+}
+
+model CampaignCalendarEvent {
+  id              String   @id @default(uuid())
+  campaignId      String
+  campaign        Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  year            Int
+  month           Int
+  day             Int
+  title           String
+  description     String?
+  createdByUserId String
+  createdByUser   User     @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([campaignId, year, month, day])
+  @@index([campaignId, createdAt])
+  @@index([createdByUserId])
 }
 
 enum GlossaryType {
