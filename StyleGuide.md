@@ -32,6 +32,11 @@ Guidelines:
 - Avoid overly large components; split when responsibilities diverge.
 - Do not mutate props directly; derive local state through refs/computed values.
 
+### Shared Confirmation Pattern
+- Use `app/components/shared/ConfirmActionPopover.vue` for destructive-action confirmations before creating inline `UPopover` confirms or using `window.confirm`.
+- Prefer component props to customize trigger and confirmation behavior (`message`, trigger label/icon/color/variant/size, confirm/cancel labels/colors/sizes, and loading states).
+- For icon-only triggers, set `triggerAriaLabel` and `:triggerShowLabel="false"` for accessibility and consistent behavior.
+
 ### Props and Events
 - Type all props and emitted events explicitly.
 - Keep prop APIs minimal and stable.

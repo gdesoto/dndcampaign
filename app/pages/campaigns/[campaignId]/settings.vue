@@ -394,33 +394,23 @@ const copyPublicUrl = async () => {
                       :loading="memberAction.roleSavingMemberId === member.id"
                       @update:model-value="(value) => updateMemberRole(member.id, value as 'COLLABORATOR' | 'VIEWER')"
                     />
-                    <UPopover :content="{ side: 'left', align: 'end' }" :ui="{ content: 'w-72 p-3' }">
-                      <UButton
-                        size="xs"
-                        variant="ghost"
-                        color="error"
-                        icon="i-lucide-user-minus"
-                        aria-label="Remove member"
-                      />
-                      <template #content="{ close }">
-                        <div class="space-y-3">
-                          <p class="text-sm text-muted">
-                            Remove {{ member.user.name }} from this campaign?
-                          </p>
-                          <div class="flex justify-end gap-2">
-                            <UButton size="xs" variant="ghost" color="neutral" @click="close">Cancel</UButton>
-                            <UButton
-                              size="xs"
-                              color="error"
-                              :loading="memberAction.removeSavingMemberId === member.id"
-                              @click="removeMember(member.id, close)"
-                            >
-                              Remove
-                            </UButton>
-                          </div>
-                        </div>
+                    <SharedConfirmActionPopover
+                      side="left"
+                      align="end"
+                      content-class="w-72 p-3"
+                      trigger-aria-label="Remove member"
+                      trigger-icon="i-lucide-user-minus"
+                      :trigger-show-label="false"
+                      confirm-label="Remove"
+                      :confirm-loading="memberAction.removeSavingMemberId === member.id"
+                      @confirm="({ close }) => removeMember(member.id, close)"
+                    >
+                      <template #content>
+                        <p class="text-sm text-muted">
+                          Remove {{ member.user.name }} from this campaign?
+                        </p>
                       </template>
-                    </UPopover>
+                    </SharedConfirmActionPopover>
                   </template>
                 </div>
               </div>

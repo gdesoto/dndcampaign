@@ -177,12 +177,6 @@ const deletingMapId = ref('')
 const deleteMap = async (mapId: string) => {
   if (!canWriteContent.value) return
   deleteError.value = ''
-  const target = (maps.value || []).find((entry) => entry.id === mapId)
-  if (!target) return
-  const confirmed = window.confirm(
-    `Delete map "${target.name}"? This removes its imported files, features, and map glossary links.`
-  )
-  if (!confirmed) return
 
   deletingMapId.value = mapId
   try {
@@ -199,6 +193,13 @@ const deleteMap = async (mapId: string) => {
     deleteError.value = (error as Error).message || 'Unable to delete map.'
   } finally {
     deletingMapId.value = ''
+  }
+}
+
+const deleteMapWithClose = async (mapId: string, close: () => void) => {
+  await deleteMap(mapId)
+  if (!deleteError.value) {
+    close()
   }
 }
 
@@ -511,16 +512,18 @@ const applyReimport = async () => {
               >
                 Set primary
               </UButton>
-              <UButton
-                size="xs"
-                variant="ghost"
-                color="error"
+              <SharedConfirmActionPopover
+                :message='`Delete map "${map.name}"? This removes its imported files, features, and map glossary links.`'
+                trigger-label="Delete"
+                trigger-size="xs"
+                trigger-variant="ghost"
+                trigger-color="error"
+                confirm-label="Delete map"
+                confirm-icon="i-lucide-trash-2"
+                :confirm-loading="deletingMapId === map.id"
                 :disabled="!canWriteContent"
-                :loading="deletingMapId === map.id"
-                @click.stop="deleteMap(map.id)"
-              >
-                Delete
-              </UButton>
+                @confirm="({ close }) => deleteMapWithClose(map.id, close)"
+              />
             </div>
           </div>
           <p v-if="!maps?.length" class="text-sm text-muted">No maps imported yet.</p>
@@ -575,15 +578,17 @@ const applyReimport = async () => {
             </UFormField>
             <div class="flex items-center gap-2">
               <UButton :loading="savingMap" :disabled="!canWriteContent" @click="saveMapMeta">Save map</UButton>
-              <UButton
-                color="error"
-                variant="ghost"
-                :disabled="!canWriteContent"
-                :loading="deletingMapId === selectedMap.id"
-                @click="deleteMap(selectedMap.id)"
-              >
-                Delete map
-              </UButton>
+              <SharedConfirmActionPopover
+                :message='`Delete map "${selectedMap?.name || "selected map"}"? This removes its imported files, features, and map glossary links.`'
+                trigger-label="Delete map"
+                trigger-variant="ghost"
+                trigger-color="error"
+                confirm-label="Delete map"
+                confirm-icon="i-lucide-trash-2"
+                :confirm-loading="deletingMapId === selectedMapId"
+                :disabled="!canWriteContent || !selectedMapId"
+                @confirm="({ close }) => deleteMapWithClose(selectedMapId, close)"
+              />
               <p v-if="mapSaveError" class="text-sm text-error">{{ mapSaveError }}</p>
             </div>
           </div>

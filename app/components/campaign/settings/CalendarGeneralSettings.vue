@@ -339,42 +339,66 @@ onMounted(() => {
               <UButton size="xs" variant="outline" :disabled="!canEdit" @click="addWeekday">Add weekday</UButton>
             </div>
           </template>
-          <div class="space-y-2">
-            <div
-              v-for="(weekday, index) in draft.weekdays"
-              :key="`weekday-${index}`"
-              class="grid gap-2 sm:grid-cols-[1fr_auto_auto_auto_auto]"
-            >
-              <UInput v-model="weekday.name" :disabled="!canEdit" />
-              <UButton
-                size="xs"
-                variant="outline"
-                :disabled="!canEdit || index === 0"
-                @click="moveItem(draft.weekdays, index, -1)"
-              >
-                Up
-              </UButton>
-              <UButton
-                size="xs"
-                variant="outline"
-                :disabled="!canEdit || index === draft.weekdays.length - 1"
-                @click="moveItem(draft.weekdays, index, 1)"
-              >
-                Down
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :loading="state.generatingKey === `weekday-${index}`"
-                :disabled="!canEdit"
-                @click="generateName('weekday', index)"
-              >
-                Generate
-              </UButton>
-              <UButton size="xs" color="error" variant="ghost" :disabled="!canEdit || draft.weekdays.length <= 1" @click="removeWeekday(index)">
-                Remove
-              </UButton>
-            </div>
+          <div class="overflow-x-auto">
+            <table class="w-full border-separate border-spacing-y-2">
+              <colgroup>
+                <col>
+                <col class="w-px">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th class="pb-1 text-left text-xs uppercase tracking-wide text-muted font-medium">Name</th>
+                  <th class="w-px pb-1 text-left text-xs uppercase tracking-wide text-muted font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(weekday, index) in draft.weekdays" :key="`weekday-${index}`" class="align-middle">
+                  <td class="pr-2">
+                    <UInput v-model="weekday.name" :disabled="!canEdit" />
+                  </td>
+                  <td class="whitespace-nowrap">
+                    <div class="inline-flex items-center gap-2">
+                      <UButton
+                        size="md"
+                        variant="outline"
+                        icon="i-lucide-chevron-up"
+                        aria-label="Move weekday up"
+                        :disabled="!canEdit || index === 0"
+                        @click="moveItem(draft.weekdays, index, -1)"
+                      />
+                      <UButton
+                        size="md"
+                        variant="outline"
+                        icon="i-lucide-chevron-down"
+                        aria-label="Move weekday down"
+                        :disabled="!canEdit || index === draft.weekdays.length - 1"
+                        @click="moveItem(draft.weekdays, index, 1)"
+                      />
+                      <UButton
+                        size="xs"
+                        variant="soft"
+                        :loading="state.generatingKey === `weekday-${index}`"
+                        :disabled="!canEdit"
+                        @click="generateName('weekday', index)"
+                      >
+                        Generate
+                      </UButton>
+                      <SharedConfirmActionPopover
+                        message="Remove this weekday?"
+                        confirm-label="Remove"
+                        confirm-icon="i-lucide-trash-2"
+                        trigger-aria-label="Remove weekday"
+                        trigger-icon="i-lucide-trash-2"
+                        :trigger-show-label="false"
+                        trigger-size="md"
+                        :disabled="!canEdit || draft.weekdays.length <= 1"
+                        @confirm="({ close }) => { removeWeekday(index); close() }"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </UCard>
 
@@ -385,43 +409,71 @@ onMounted(() => {
               <UButton size="xs" variant="outline" :disabled="!canEdit" @click="addMonth">Add month</UButton>
             </div>
           </template>
-          <div class="space-y-2">
-            <div
-              v-for="(month, index) in draft.months"
-              :key="`month-${index}`"
-              class="grid gap-2 sm:grid-cols-[1fr_110px_auto_auto_auto_auto]"
-            >
-              <UInput v-model="month.name" :disabled="!canEdit" />
-              <UInput v-model.number="month.length" type="number" min="1" max="999" :disabled="!canEdit" />
-              <UButton
-                size="xs"
-                variant="outline"
-                :disabled="!canEdit || index === 0"
-                @click="moveItem(draft.months, index, -1)"
-              >
-                Up
-              </UButton>
-              <UButton
-                size="xs"
-                variant="outline"
-                :disabled="!canEdit || index === draft.months.length - 1"
-                @click="moveItem(draft.months, index, 1)"
-              >
-                Down
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :loading="state.generatingKey === `month-${index}`"
-                :disabled="!canEdit"
-                @click="generateName('month', index)"
-              >
-                Generate
-              </UButton>
-              <UButton size="xs" color="error" variant="ghost" :disabled="!canEdit || draft.months.length <= 1" @click="removeMonth(index)">
-                Remove
-              </UButton>
-            </div>
+          <div class="overflow-x-auto">
+            <table class="w-full border-separate border-spacing-y-2">
+              <colgroup>
+                <col>
+                <col class="w-24">
+                <col class="w-px">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th class="pb-1 text-left text-xs uppercase tracking-wide text-muted font-medium">Name</th>
+                  <th class="pb-1 text-left text-xs uppercase tracking-wide text-muted font-medium">Length</th>
+                  <th class="w-px pb-1 text-left text-xs uppercase tracking-wide text-muted font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(month, index) in draft.months" :key="`month-${index}`" class="align-middle">
+                  <td class="pr-2">
+                    <UInput v-model="month.name" :disabled="!canEdit" />
+                  </td>
+                  <td class="pr-2">
+                    <UInput v-model.number="month.length" type="number" min="1" max="999" :disabled="!canEdit" />
+                  </td>
+                  <td class="whitespace-nowrap">
+                    <div class="inline-flex items-center gap-2">
+                      <UButton
+                        size="md"
+                        variant="outline"
+                        icon="i-lucide-chevron-up"
+                        aria-label="Move month up"
+                        :disabled="!canEdit || index === 0"
+                        @click="moveItem(draft.months, index, -1)"
+                      />
+                      <UButton
+                        size="md"
+                        variant="outline"
+                        icon="i-lucide-chevron-down"
+                        aria-label="Move month down"
+                        :disabled="!canEdit || index === draft.months.length - 1"
+                        @click="moveItem(draft.months, index, 1)"
+                      />
+                      <UButton
+                        size="xs"
+                        variant="soft"
+                        :loading="state.generatingKey === `month-${index}`"
+                        :disabled="!canEdit"
+                        @click="generateName('month', index)"
+                      >
+                        Generate
+                      </UButton>
+                      <SharedConfirmActionPopover
+                        message="Remove this month?"
+                        confirm-label="Remove"
+                        confirm-icon="i-lucide-trash-2"
+                        trigger-aria-label="Remove month"
+                        trigger-icon="i-lucide-trash-2"
+                        :trigger-show-label="false"
+                        trigger-size="md"
+                        :disabled="!canEdit || draft.months.length <= 1"
+                        @confirm="({ close }) => { removeMonth(index); close() }"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </UCard>
       </div>
@@ -436,26 +488,60 @@ onMounted(() => {
         <div v-if="!draft.moons.length" class="text-sm text-muted">
           No moons configured.
         </div>
-        <div v-else class="space-y-2">
-          <div
-            v-for="(moon, index) in draft.moons"
-            :key="`moon-${index}`"
-            class="grid gap-2 sm:grid-cols-[1fr_130px_130px_auto_auto]"
-          >
-            <UInput v-model="moon.name" :disabled="!canEdit" />
-            <UInput v-model.number="moon.cycleLength" type="number" min="1" max="9999" :disabled="!canEdit" />
-            <UInput v-model.number="moon.phaseOffset" type="number" min="0" max="9999" :disabled="!canEdit" />
-            <UButton
-              size="xs"
-              variant="soft"
-              :loading="state.generatingKey === `moon-${index}`"
-              :disabled="!canEdit"
-              @click="generateName('moon', index)"
-            >
-              Generate
-            </UButton>
-            <UButton size="xs" color="error" variant="ghost" :disabled="!canEdit" @click="removeMoon(index)">Remove</UButton>
-          </div>
+        <div v-else class="overflow-x-auto">
+          <table class="w-full border-separate border-spacing-y-2">
+            <colgroup>
+              <col>
+              <col class="w-28">
+              <col class="w-28">
+              <col class="w-px">
+            </colgroup>
+            <thead>
+              <tr>
+                <th class="pb-1 text-left text-xs uppercase tracking-wide text-muted font-medium">Name</th>
+                <th class="pb-1 text-left text-xs uppercase tracking-wide text-muted font-medium">Cycle length</th>
+                <th class="pb-1 text-left text-xs uppercase tracking-wide text-muted font-medium">Phase offset</th>
+                <th class="w-px pb-1 text-left text-xs uppercase tracking-wide text-muted font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(moon, index) in draft.moons" :key="`moon-${index}`" class="align-middle">
+                <td class="pr-2">
+                  <UInput v-model="moon.name" :disabled="!canEdit" />
+                </td>
+                <td class="pr-2">
+                  <UInput v-model.number="moon.cycleLength" type="number" min="1" max="9999" :disabled="!canEdit" />
+                </td>
+                <td class="pr-2">
+                  <UInput v-model.number="moon.phaseOffset" type="number" min="0" max="9999" :disabled="!canEdit" />
+                </td>
+                <td class="whitespace-nowrap">
+                  <div class="inline-flex items-center gap-2">
+                    <UButton
+                      size="xs"
+                      variant="soft"
+                      :loading="state.generatingKey === `moon-${index}`"
+                      :disabled="!canEdit"
+                      @click="generateName('moon', index)"
+                    >
+                      Generate
+                    </UButton>
+                    <SharedConfirmActionPopover
+                      message="Remove this moon?"
+                      confirm-label="Remove"
+                      confirm-icon="i-lucide-trash-2"
+                      trigger-aria-label="Remove moon"
+                      trigger-icon="i-lucide-trash-2"
+                      :trigger-show-label="false"
+                      trigger-size="md"
+                      :disabled="!canEdit"
+                      @confirm="({ close }) => { removeMoon(index); close() }"
+                    />
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </UCard>
 

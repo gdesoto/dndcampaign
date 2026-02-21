@@ -514,18 +514,29 @@ const deleteCharacter = async () => {
                       :disabled="!canEdit"
                       @update:model-value="(value) => updateCampaignLink(link, value as CampaignLink['status'])"
                     />
-                    <UPopover :content="{ side: 'left', align: 'end' }" :ui="{ content: 'w-64 p-3' }">
-                      <UTooltip text="Remove link" :content="{ side: 'left' }">
-                        <UButton
-                          size="xs"
-                          variant="ghost"
-                          color="error"
-                          icon="i-lucide-trash-2"
-                          :disabled="!canEdit"
-                          aria-label="Remove campaign link"
-                        />
-                      </UTooltip>
-                      <template #content="{ close }">
+                    <SharedConfirmActionPopover
+                      message="Remove campaign link?"
+                      side="left"
+                      align="end"
+                      content-class="w-64 p-3"
+                      confirm-label="Remove"
+                      confirm-icon="i-lucide-trash-2"
+                      :disabled="!canEdit"
+                      @confirm="({ close }) => removeFromCampaignWithClose(link, close)"
+                    >
+                      <template #trigger>
+                        <UTooltip text="Remove link" :content="{ side: 'left' }">
+                          <UButton
+                            size="xs"
+                            variant="ghost"
+                            color="error"
+                            icon="i-lucide-trash-2"
+                            :disabled="!canEdit"
+                            aria-label="Remove campaign link"
+                          />
+                        </UTooltip>
+                      </template>
+                      <template #content>
                         <div class="space-y-3">
                           <p class="text-sm text-muted">
                             Remove {{ character?.name || 'this character' }} from
@@ -538,23 +549,9 @@ const deleteCharacter = async () => {
                             title="Shared access warning"
                             :description="`Up to ${link.accessImpact.impactedUserCount} non-owner member(s) may lose access after removal.`"
                           />
-                          <div class="flex justify-end gap-2">
-                            <UButton size="xs" variant="ghost" color="neutral" @click="close">
-                              Cancel
-                            </UButton>
-                            <UButton
-                              size="xs"
-                              color="error"
-                              icon="i-lucide-trash-2"
-                              :disabled="!canEdit"
-                              @click="removeFromCampaignWithClose(link, close)"
-                            >
-                              Remove
-                            </UButton>
-                          </div>
                         </div>
                       </template>
-                    </UPopover>
+                    </SharedConfirmActionPopover>
                   </div>
                 </div>
               </div>

@@ -184,13 +184,18 @@ const statusOptions = [
                 :disabled="!canWriteContent"
                 @update:model-value="(value) => updateStatus(link, value as CharacterLink['status'])"
               />
-              <UPopover
+              <SharedConfirmActionPopover
                 v-if="canWriteContent && link.character.isOwner"
-                :content="{ side: 'top', align: 'end' }"
-                :ui="{ content: 'w-72 p-3' }"
+                message="Remove character link?"
+                content-class="w-72 p-3"
+                confirm-label="Remove"
+                confirm-icon="i-lucide-trash-2"
+                @confirm="({ close }) => removeLinkWithClose(link, close)"
               >
-                <UButton size="xs" color="error" variant="ghost">Remove</UButton>
-                <template #content="{ close }">
+                <template #trigger>
+                  <UButton size="xs" color="error" variant="ghost">Remove</UButton>
+                </template>
+                <template #content>
                   <div class="space-y-3">
                     <p class="text-sm text-muted">
                       Remove {{ link.character.name }} from this campaign?
@@ -202,20 +207,9 @@ const statusOptions = [
                       title="Shared access warning"
                       :description="`Up to ${link.accessImpact.impactedUserCount} non-owner member(s) may lose access to this character after removal.`"
                     />
-                    <div class="flex justify-end gap-2">
-                      <UButton size="xs" variant="ghost" color="neutral" @click="close">Cancel</UButton>
-                      <UButton
-                        size="xs"
-                        color="error"
-                        icon="i-lucide-trash-2"
-                        @click="removeLinkWithClose(link, close)"
-                      >
-                        Remove
-                      </UButton>
-                    </div>
                   </div>
                 </template>
-              </UPopover>
+              </SharedConfirmActionPopover>
               <UTooltip v-else-if="canWriteContent && !link.character.isOwner" text="Only the character owner can remove this link.">
                 <UButton size="xs" color="error" variant="ghost" disabled>Remove</UButton>
               </UTooltip>
