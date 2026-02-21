@@ -225,6 +225,10 @@ export function createSessionCalendarRangeSchema(months: Array<{ length: number 
   })
 }
 
+export function deriveYearLengthFromMonths(months: Array<{ length: number }>) {
+  return months.reduce((sum, month) => sum + month.length, 0)
+}
+
 function compareCalendarDates(
   left: { year: number, month: number, day: number },
   right: { year: number, month: number, day: number },

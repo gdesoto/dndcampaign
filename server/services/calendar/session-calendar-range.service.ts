@@ -57,8 +57,8 @@ const normalizeRangeInput = (input: SessionCalendarRangeInput): SessionCalendarR
 
 export class SessionCalendarRangeService {
   async listRanges(campaignId: string, userId: string): Promise<ServiceResult<SessionCalendarRangeDto[]>> {
-    const campaign = await prisma.campaign.findFirst({
-      where: { id: campaignId, ...buildCampaignWhereForPermission(userId, 'campaign.read') },
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId },
       select: { id: true },
     })
     if (!campaign) {
@@ -66,7 +66,20 @@ export class SessionCalendarRangeService {
         ok: false,
         statusCode: 404,
         code: 'NOT_FOUND',
-        message: 'Campaign not found or access denied.',
+        message: 'Campaign not found.',
+      }
+    }
+
+    const campaignAccess = await prisma.campaign.findFirst({
+      where: { id: campaignId, ...buildCampaignWhereForPermission(userId, 'campaign.read') },
+      select: { id: true },
+    })
+    if (!campaignAccess) {
+      return {
+        ok: false,
+        statusCode: 403,
+        code: 'FORBIDDEN',
+        message: 'You do not have permission for this action.',
       }
     }
 
@@ -82,11 +95,8 @@ export class SessionCalendarRangeService {
     userId: string,
     input: SessionCalendarRangeInput,
   ): Promise<ServiceResult<SessionCalendarRangeDto>> {
-    const session = await prisma.session.findFirst({
-      where: {
-        id: sessionId,
-        campaign: buildCampaignWhereForPermission(userId, 'campaign.update'),
-      },
+    const session = await prisma.session.findUnique({
+      where: { id: sessionId },
       select: {
         id: true,
         campaignId: true,
@@ -98,7 +108,23 @@ export class SessionCalendarRangeService {
         ok: false,
         statusCode: 404,
         code: 'SESSION_NOT_FOUND',
-        message: 'Session not found or access denied.',
+        message: 'Session not found.',
+      }
+    }
+
+    const campaignAccess = await prisma.campaign.findFirst({
+      where: {
+        id: session.campaignId,
+        ...buildCampaignWhereForPermission(userId, 'campaign.update'),
+      },
+      select: { id: true },
+    })
+    if (!campaignAccess) {
+      return {
+        ok: false,
+        statusCode: 403,
+        code: 'FORBIDDEN',
+        message: 'You do not have permission for this action.',
       }
     }
 
@@ -158,11 +184,8 @@ export class SessionCalendarRangeService {
   }
 
   async deleteRange(sessionId: string, userId: string): Promise<ServiceResult<{ deleted: true }>> {
-    const session = await prisma.session.findFirst({
-      where: {
-        id: sessionId,
-        campaign: buildCampaignWhereForPermission(userId, 'campaign.update'),
-      },
+    const session = await prisma.session.findUnique({
+      where: { id: sessionId },
       select: { id: true },
     })
 
@@ -171,7 +194,23 @@ export class SessionCalendarRangeService {
         ok: false,
         statusCode: 404,
         code: 'SESSION_NOT_FOUND',
-        message: 'Session not found or access denied.',
+        message: 'Session not found.',
+      }
+    }
+
+    const campaignAccess = await prisma.session.findFirst({
+      where: {
+        id: sessionId,
+        campaign: buildCampaignWhereForPermission(userId, 'campaign.update'),
+      },
+      select: { id: true },
+    })
+    if (!campaignAccess) {
+      return {
+        ok: false,
+        statusCode: 403,
+        code: 'FORBIDDEN',
+        message: 'You do not have permission for this action.',
       }
     }
 

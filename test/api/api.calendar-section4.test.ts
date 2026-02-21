@@ -226,7 +226,7 @@ describe('calendar section 4 API routes', () => {
         startDay: 11,
       }),
     })
-    expect(viewerRangeUpsert.status).toBe(404)
+    expect(viewerRangeUpsert.status).toBe(403)
 
     const createEvent = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar-events`, {
       method: 'POST',

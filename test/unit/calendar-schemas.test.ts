@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   calendarConfigUpsertSchema,
   createSessionCalendarRangeSchema,
+  deriveYearLengthFromMonths,
 } from '../../shared/schemas/calendar'
 
 describe('calendar schemas', () => {
@@ -82,5 +83,15 @@ describe('calendar schemas', () => {
     })
 
     expect(parsed.success).toBe(true)
+  })
+
+  it('derives year length from configured month lengths', () => {
+    expect(
+      deriveYearLengthFromMonths([
+        { length: 30 },
+        { length: 35 },
+        { length: 28 },
+      ]),
+    ).toBe(93)
   })
 })

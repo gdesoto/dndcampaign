@@ -32,6 +32,9 @@ const canManageMembers = computed(() =>
 const canManagePublic = computed(() =>
   Boolean(campaignAccess.value?.permissions.includes('campaign.public.manage'))
 )
+const canManageCalendar = computed(() =>
+  Boolean(campaignAccess.value?.permissions.includes('campaign.update'))
+)
 
 const membership = useCampaignMembership()
 const publicAccessApi = useCampaignPublicAccess()
@@ -43,7 +46,7 @@ const tabs = [
   { label: 'Danger Zone', value: 'danger' },
 ]
 
-const activeTab = ref<SettingsTab>('members')
+const activeTab = ref<SettingsTab>('general')
 
 const {
   data: memberData,
@@ -321,12 +324,11 @@ const copyPublicUrl = async () => {
       <UTabs v-model="activeTab" :items="tabs" :content="false" />
     </UCard>
 
-    <UCard v-if="activeTab === 'general'">
-      <template #header>
-        <h2 class="text-lg font-semibold">General</h2>
-      </template>
-      <p class="text-sm text-muted">General campaign settings are scheduled for a later milestone.</p>
-    </UCard>
+    <CampaignSettingsCalendarGeneralSettings
+      v-if="activeTab === 'general'"
+      :campaign-id="campaignId"
+      :can-edit="canManageCalendar"
+    />
 
     <div v-else-if="activeTab === 'members'" class="space-y-6">
       <UAlert
