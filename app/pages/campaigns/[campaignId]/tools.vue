@@ -1,12 +1,25 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'default' })
 
+type ToolTab = {
+  value: 'dice-roller' | 'encounter-builder' | 'dungeon-map-generator'
+  label: string
+}
+
 type ToolPlaceholder = {
-  id: 'encounter-builder' | 'dungeon-map-generator' | 'fantasy-calendar'
+  id: 'encounter-builder' | 'dungeon-map-generator'
   title: string
   description: string
   icon: string
 }
+
+const activeTab = ref<ToolTab['value']>('dice-roller')
+
+const toolTabs: ToolTab[] = [
+  { value: 'dice-roller', label: 'Dice Roller' },
+  { value: 'encounter-builder', label: 'Encounter Builder' },
+  { value: 'dungeon-map-generator', label: 'Dungeon Map Generator' },
+]
 
 const tools: ToolPlaceholder[] = [
   {
@@ -21,13 +34,11 @@ const tools: ToolPlaceholder[] = [
     description: 'Placeholder for generating dungeon layouts and export options.',
     icon: 'i-lucide-map-plus',
   },
-  {
-    id: 'fantasy-calendar',
-    title: 'Fantasy Calendar',
-    description: 'Placeholder for in-world dates, events, and timeline tracking.',
-    icon: 'i-lucide-calendar-cog',
-  },
 ]
+
+const activePlaceholder = computed(() =>
+  tools.find((tool) => tool.id === activeTab.value) || null,
+)
 </script>
 
 <template>
@@ -40,24 +51,30 @@ const tools: ToolPlaceholder[] = [
       </p>
     </div>
 
-    <div class="grid gap-4 md:grid-cols-2">
-      <CampaignToolsDiceRoller />
-      <UCard
-        v-for="tool in tools"
-        :key="tool.id"
-        :ui="{ body: 'p-5' }"
-      >
-        <div class="flex items-start gap-3">
-          <div class="rounded-md border border-default p-2 text-primary">
-            <UIcon :name="tool.icon" class="h-5 w-5" />
-          </div>
-          <div class="min-w-0 space-y-2">
-            <h2 class="text-base font-semibold">{{ tool.title }}</h2>
-            <p class="text-sm text-muted">{{ tool.description }}</p>
-            <UBadge color="neutral" variant="subtle">Coming soon</UBadge>
-          </div>
+    <UCard>
+      <UTabs v-model="activeTab" :items="toolTabs" :content="false" />
+    </UCard>
+
+    <CampaignToolsDiceRoller v-if="activeTab === 'dice-roller'" />
+
+    <UCard
+      v-else-if="activePlaceholder"
+      :ui="{ body: 'p-5' }"
+    >
+      <div class="flex items-start gap-3">
+        <div class="rounded-md border border-default p-2 text-primary">
+          <UIcon :name="activePlaceholder.icon" class="h-5 w-5" />
         </div>
-      </UCard>
-    </div>
+        <div class="min-w-0 space-y-2">
+          <h2 class="text-base font-semibold">{{ activePlaceholder.title }}</h2>
+          <p class="text-sm text-muted">{{ activePlaceholder.description }}</p>
+          <UBadge color="neutral" variant="subtle">Coming soon</UBadge>
+        </div>
+      </div>
+    </UCard>
+
+    <UCard v-else :ui="{ body: 'p-5' }">
+      <div class="text-sm text-muted">Tool not found.</div>
+    </UCard>
   </div>
 </template>

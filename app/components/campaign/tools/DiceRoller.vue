@@ -7,6 +7,10 @@ type DiceHistoryItem = {
   result: RollResult
   rolledAt: string
   mode: 'notation' | 'd20'
+  reroll: {
+    kind: 'notation' | 'advantage' | 'disadvantage'
+    expression: string
+  }
 }
 
 const notation = ref('1d20')
@@ -42,12 +46,18 @@ const dieTypeOptions = [
   { label: 'd100', value: 100 },
 ]
 
-const toHistoryItem = (label: string, result: RollResult, mode: DiceHistoryItem['mode']) => ({
+const toHistoryItem = (
+  label: string,
+  result: RollResult,
+  mode: DiceHistoryItem['mode'],
+  reroll: DiceHistoryItem['reroll'],
+) => ({
   id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
   label,
   result,
   rolledAt: new Date().toISOString(),
   mode,
+  reroll,
 })
 
 const pushHistory = (item: DiceHistoryItem) => {
@@ -65,7 +75,12 @@ const rollNotation = (value = notation.value) => {
   notationError.value = ''
   try {
     const result = rollDiceExpression(value)
-    pushHistory(toHistoryItem(value, result, 'notation'))
+    pushHistory(
+      toHistoryItem(value, result, 'notation', {
+        kind: 'notation',
+        expression: value,
+      }),
+    )
     notation.value = value
   } catch (error) {
     notationError.value = (error as Error).message || 'Unable to roll notation.'
@@ -80,15 +95,6 @@ const builderExpression = computed(
 const builderModifierLabel = computed(() => formatSigned(builderModifier.value))
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
-
-const addDie = (sides: number) => {
-  if (builderSides.value === sides) {
-    builderCount.value = clamp(builderCount.value + 1, 1, 100)
-    return
-  }
-  builderSides.value = sides
-  builderCount.value = 1
-}
 
 const incrementBuilderCount = () => {
   builderCount.value = clamp(builderCount.value + 1, 1, 100)
@@ -106,22 +112,17 @@ const decrementBuilderModifier = () => {
   builderModifier.value = clamp(builderModifier.value - 1, -99, 99)
 }
 
-const rollFromBuilder = () => {
-  notationError.value = ''
-  const count = Math.min(Math.max(Math.floor(builderCount.value || 1), 1), 100)
-  builderCount.value = count
-  const expression = `${count}d${builderSides.value}${formatModifierSuffix(builderModifier.value)}`
-  if (builderMode.value === 'normal') {
+const rollWithMode = (expression: string, mode: 'normal' | 'advantage' | 'disadvantage') => {
+  if (mode === 'normal') {
     rollNotation(expression)
     return
   }
-
   const first = rollDiceExpression(expression)
   const second = rollDiceExpression(expression)
   const firstValue = first.total
   const secondValue = second.total
   const selected =
-    builderMode.value === 'advantage'
+    mode === 'advantage'
       ? firstValue >= secondValue
         ? first
         : second
@@ -131,14 +132,31 @@ const rollFromBuilder = () => {
 
   pushHistory(
     toHistoryItem(
-      `${expression} ${builderMode.value} [${firstValue}, ${secondValue}]`,
+      `${expression} ${mode} [${firstValue}, ${secondValue}]`,
       {
         ...selected,
-        notation: `${expression} (${builderMode.value})`,
+        notation: `${expression} (${mode})`,
       },
-      'notation'
-    )
+      'notation',
+      {
+        kind: mode,
+        expression,
+      },
+    ),
   )
+}
+
+const rollFromBuilder = () => {
+  notationError.value = ''
+  const count = Math.min(Math.max(Math.floor(builderCount.value || 1), 1), 100)
+  builderCount.value = count
+  const expression = `${count}d${builderSides.value}${formatModifierSuffix(builderModifier.value)}`
+  rollWithMode(expression, builderMode.value)
+}
+
+const rerollHistoryItem = (item: DiceHistoryItem) => {
+  notationError.value = ''
+  rollWithMode(item.reroll.expression, item.reroll.kind === 'notation' ? 'normal' : item.reroll.kind)
 }
 
 const formatTerm = (term: RolledTerm) => {
@@ -163,182 +181,181 @@ const resetBuilder = () => {
 </script>
 
 <template>
-  <UCard :ui="{ body: 'p-5 md:p-6' }">
-    <div class="space-y-5">
-      <div class="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p class="text-xs uppercase tracking-[0.25em] text-dimmed">Dice Roller</p>
-          <h2 class="mt-1 text-xl font-semibold">Roll checks and damage quickly</h2>
-          <h3 class="mt-2 text-muted">Build a Roll</h3>
-        </div>
-        <UButton
-          color="neutral"
-          variant="soft"
-          icon="i-lucide-trash-2"
-          :disabled="!history.length"
-          @click="clearHistory"
-        >
-          Clear history
-        </UButton>
-      </div>
+  <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
+    <UCard :ui="{ body: 'p-5 md:p-6' }">
+      <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_180px] lg:items-start">
+        <div class="space-y-5">
+          <div>
+            <p class="text-xs uppercase tracking-[0.25em] text-dimmed">Dice Roller</p>
+            <h2 class="mt-1 text-xl font-semibold">Roll checks and damage quickly</h2>
+            <h3 class="mt-2 text-muted">Build a Roll</h3>
+          </div>
 
-      <div class="grid gap-4 sm:grid-cols-2">
-        <div class="space-y-2">
-          <p class="text-sm text-muted">How many dice</p>
-          <div class="flex items-center gap-2">
-            <UButton
-              color="neutral"
-              variant="outline"
-              size="lg"
-              icon="i-lucide-minus"
-              aria-label="Decrease dice count"
-              @click="decrementBuilderCount"
-            />
-            <div class="min-w-20 rounded-md border border-default px-4 py-2 text-center font-medium">
-              {{ builderCount }}
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="space-y-2">
+              <p class="text-sm text-muted">How many dice</p>
+              <div class="flex items-center gap-2">
+                <UButton
+                  color="neutral"
+                  variant="outline"
+                  size="lg"
+                  icon="i-lucide-minus"
+                  aria-label="Decrease dice count"
+                  @click="decrementBuilderCount"
+                />
+                <div class="min-w-20 rounded-md border border-default px-4 py-2 text-center font-medium">
+                  {{ builderCount }}
+                </div>
+                <UButton
+                  color="neutral"
+                  variant="outline"
+                  size="lg"
+                  icon="i-lucide-plus"
+                  aria-label="Increase dice count"
+                  @click="incrementBuilderCount"
+                />
+              </div>
             </div>
+            <div class="space-y-2">
+              <p class="text-sm text-muted">Modifier</p>
+              <div class="flex items-center gap-2">
+                <UButton
+                  color="neutral"
+                  variant="outline"
+                  size="lg"
+                  icon="i-lucide-minus"
+                  aria-label="Decrease roll modifier"
+                  @click="decrementBuilderModifier"
+                />
+                <div class="min-w-20 rounded-md border border-default px-4 py-2 text-center font-medium">
+                  {{ builderModifierLabel }}
+                </div>
+                <UButton
+                  color="neutral"
+                  variant="outline"
+                  size="lg"
+                  icon="i-lucide-plus"
+                  aria-label="Increase roll modifier"
+                  @click="incrementBuilderModifier"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <p class="text-sm text-muted">Die type</p>
+            <div class="flex flex-wrap gap-2">
+              <UButton
+                v-for="die in dieTypeOptions"
+                :key="die.value"
+                :color="builderSides === die.value ? 'primary' : 'neutral'"
+                :variant="builderSides === die.value ? 'solid' : 'outline'"
+                size="lg"
+                @click="builderSides = die.value"
+              >
+                {{ die.label }}
+              </UButton>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <p class="text-sm text-muted">Roll mode</p>
+            <div class="flex flex-wrap gap-2">
+              <UButton
+                :color="builderMode === 'normal' ? 'primary' : 'neutral'"
+                :variant="builderMode === 'normal' ? 'solid' : 'outline'"
+                size="lg"
+                @click="builderMode = 'normal'"
+              >
+                Normal
+              </UButton>
+              <UButton
+                :color="builderMode === 'advantage' ? 'primary' : 'neutral'"
+                :variant="builderMode === 'advantage' ? 'solid' : 'outline'"
+                size="lg"
+                @click="builderMode = 'advantage'"
+              >
+                Advantage
+              </UButton>
+              <UButton
+                :color="builderMode === 'disadvantage' ? 'primary' : 'neutral'"
+                :variant="builderMode === 'disadvantage' ? 'solid' : 'outline'"
+                size="lg"
+                @click="builderMode = 'disadvantage'"
+              >
+                Disadvantage
+              </UButton>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <UButton size="lg" icon="i-lucide-dice-5" @click="rollFromBuilder">Roll {{ builderExpression }}</UButton>
+            <UButton size="lg" color="neutral" variant="outline" icon="i-lucide-rotate-ccw" @click="resetBuilder">
+              Reset
+            </UButton>
+            <UBadge color="neutral" variant="subtle">Expression: {{ builderExpression }}</UBadge>
+          </div>
+          <div class="space-y-3">
             <UButton
               color="neutral"
-              variant="outline"
-              size="lg"
-              icon="i-lucide-plus"
-              aria-label="Increase dice count"
-              @click="incrementBuilderCount"
+              variant="ghost"
+              size="sm"
+              :icon="advancedOpen ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+              @click="advancedOpen = !advancedOpen"
+            >
+              {{ advancedOpen ? 'Hide advanced notation' : 'Advanced: type notation' }}
+            </UButton>
+            <div v-if="advancedOpen" class="space-y-2 rounded-md border border-default p-3">
+              <UFormField label="Notation expression" name="notation" help="Examples: d20+5, 2d6+3, 4d8-2">
+                <UInput
+                  v-model="notation"
+                  placeholder="e.g. 2d6+3"
+                  @keydown.enter.prevent="rollNotation()"
+                />
+              </UFormField>
+              <UButton color="neutral" variant="outline" @click="rollNotation()">Roll notation</UButton>
+            </div>
+            <UAlert
+              v-if="notationError"
+              color="error"
+              variant="subtle"
+              title="Invalid notation"
+              :description="notationError"
             />
           </div>
         </div>
-        <div class="space-y-2">
-          <p class="text-sm text-muted">Modifier</p>
-          <div class="flex items-center gap-2">
+
+        <div class="space-y-2 lg:sticky lg:top-6">
+          <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Quick Roll</p>
+          <div class="flex flex-col gap-2">
             <UButton
+              v-for="preset in presetNotations"
+              :key="preset"
               color="neutral"
               variant="outline"
-              size="lg"
-              icon="i-lucide-minus"
-              aria-label="Decrease roll modifier"
-              @click="decrementBuilderModifier"
-            />
-            <div class="min-w-20 rounded-md border border-default px-4 py-2 text-center font-medium">
-              {{ builderModifierLabel }}
-            </div>
-            <UButton
-              color="neutral"
-              variant="outline"
-              size="lg"
-              icon="i-lucide-plus"
-              aria-label="Increase roll modifier"
-              @click="incrementBuilderModifier"
-            />
+              size="sm"
+              class="w-full justify-center"
+              @click="rollNotation(preset)"
+            >
+              Roll {{ preset }}
+            </UButton>
           </div>
         </div>
       </div>
-      <div class="space-y-2">
-        <p class="text-sm text-muted">Die type</p>
-        <div class="flex flex-wrap gap-2">
-          <UButton
-            v-for="die in dieTypeOptions"
-            :key="die.value"
-            :color="builderSides === die.value ? 'primary' : 'neutral'"
-            :variant="builderSides === die.value ? 'solid' : 'outline'"
-            size="lg"
-            @click="builderSides = die.value"
-          >
-            {{ die.label }}
-          </UButton>
-        </div>
-      </div>
-      <div class="space-y-2">
-        <p class="text-sm text-muted">Roll mode</p>
-        <div class="flex flex-wrap gap-2">
-          <UButton
-            :color="builderMode === 'normal' ? 'primary' : 'neutral'"
-            :variant="builderMode === 'normal' ? 'solid' : 'outline'"
-            size="lg"
-            @click="builderMode = 'normal'"
-          >
-            Normal
-          </UButton>
-          <UButton
-            :color="builderMode === 'advantage' ? 'primary' : 'neutral'"
-            :variant="builderMode === 'advantage' ? 'solid' : 'outline'"
-            size="lg"
-            @click="builderMode = 'advantage'"
-          >
-            Advantage
-          </UButton>
-          <UButton
-            :color="builderMode === 'disadvantage' ? 'primary' : 'neutral'"
-            :variant="builderMode === 'disadvantage' ? 'solid' : 'outline'"
-            size="lg"
-            @click="builderMode = 'disadvantage'"
-          >
-            Disadvantage
-          </UButton>
-        </div>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <UButton size="lg" icon="i-lucide-dice-5" @click="rollFromBuilder">Roll {{ builderExpression }}</UButton>
-        <UButton size="lg" color="neutral" variant="outline" icon="i-lucide-rotate-ccw" @click="resetBuilder">
-          Reset
-        </UButton>
-        <UBadge color="neutral" variant="subtle">Expression: {{ builderExpression }}</UBadge>
-      </div>
-      <div class="space-y-2">
-        <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Quick add</p>
-        <div class="flex flex-wrap gap-2">
-          <UButton
-            v-for="die in dieTypeOptions"
-            :key="`add-${die.value}`"
-            color="neutral"
-            variant="soft"
-            size="sm"
-            @click="addDie(die.value)"
-          >
-            +{{ die.label }}
-          </UButton>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          <UButton
-            v-for="preset in presetNotations"
-            :key="preset"
-            color="neutral"
-            variant="outline"
-            size="sm"
-            @click="rollNotation(preset)"
-          >
-            Roll {{ preset }}
-          </UButton>
-        </div>
-      </div>
-      <UButton
-        color="neutral"
-        variant="ghost"
-        size="sm"
-        :icon="advancedOpen ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
-        @click="advancedOpen = !advancedOpen"
-      >
-        {{ advancedOpen ? 'Hide advanced notation' : 'Advanced: type notation' }}
-      </UButton>
-      <div v-if="advancedOpen" class="space-y-2 rounded-md border border-default p-3">
-        <UFormField label="Notation expression" name="notation" help="Examples: d20+5, 2d6+3, 4d8-2">
-          <UInput
-            v-model="notation"
-            placeholder="e.g. 2d6+3"
-            @keydown.enter.prevent="rollNotation()"
-          />
-        </UFormField>
-        <UButton color="neutral" variant="outline" @click="rollNotation()">Roll notation</UButton>
-      </div>
-      <UAlert
-        v-if="notationError"
-        color="error"
-        variant="subtle"
-        title="Invalid notation"
-        :description="notationError"
-      />
+    </UCard>
 
-      <div class="space-y-2">
-        <p class="text-xs uppercase tracking-[0.2em] text-dimmed">History</p>
+    <UCard :ui="{ body: 'p-4' }">
+        <template #header>
+          <div class="flex items-center justify-between gap-2">
+            <p class="text-xs uppercase tracking-[0.2em] text-dimmed">History</p>
+            <UButton
+              color="neutral"
+              variant="soft"
+              icon="i-lucide-trash-2"
+              :disabled="!history.length"
+              @click="clearHistory"
+            >
+              Clear
+            </UButton>
+          </div>
+        </template>
         <div v-if="history.length" class="space-y-2">
           <UCard
             v-for="item in history"
@@ -368,12 +385,11 @@ const resetBuilder = () => {
                     Total {{ item.result.total }}
                   </UBadge>
                   <UButton
-                    v-if="item.mode === 'notation'"
                     color="neutral"
                     variant="ghost"
                     size="xs"
                     icon="i-lucide-redo-2"
-                    @click="rollNotation(item.result.notation)"
+                    @click="rerollHistoryItem(item)"
                   >
                     Reroll
                   </UButton>
@@ -393,7 +409,6 @@ const resetBuilder = () => {
           </UCard>
         </div>
         <p v-else class="text-sm text-muted">No rolls yet. Build a roll to get started.</p>
-      </div>
-    </div>
-  </UCard>
+    </UCard>
+  </div>
 </template>
