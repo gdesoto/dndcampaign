@@ -1,9 +1,9 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'default' })
-
-import type { EncounterSummary, EncounterTemplate } from '#shared/types/encounter'
+import type { EncounterSummary } from '#shared/types/encounter'
 import type { EncounterCreateInput } from '#shared/schemas/encounter'
 import type { CampaignCalendarConfigDto } from '~/composables/useCampaignCalendar'
+
+definePageMeta({ layout: 'default' })
 
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'default' })
-
-import type { EncounterCombatant, EncounterDetail, EncounterSummaryReport } from '#shared/types/encounter'
+import type { EncounterCombatant, EncounterSummaryReport } from '#shared/types/encounter'
 import type { CampaignCalendarConfigDto } from '~/composables/useCampaignCalendar'
+
+definePageMeta({ layout: 'default' })
 
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
@@ -200,12 +200,12 @@ const withAction = async (action: () => Promise<unknown>) => {
 
 const refreshPreservingUiState = async () => {
   const previousActiveId = activeCombatant.value?.id || preferredActiveCombatantId.value
-  const previousScrollY = process.client ? window.scrollY : 0
+  const previousScrollY = import.meta.client ? window.scrollY : 0
 
   await Promise.all([refresh(), refreshSummary()])
   await nextTick()
 
-  if (process.client) {
+  if (import.meta.client) {
     window.scrollTo({
       top: previousScrollY,
       behavior: 'auto',
@@ -1099,7 +1099,7 @@ await refreshSummary()
           <USelect v-model="combatantForm.sourceType" :items="sourceTypeOptions" />
         </UFormField>
       </div>
-      <UFormField label="Stat block" v-if="combatantForm.sourceType !== 'CUSTOM'">
+      <UFormField v-if="combatantForm.sourceType !== 'CUSTOM'" label="Stat block">
         <USelect v-model="combatantForm.sourceStatBlockId" :items="statBlockOptions" />
       </UFormField>
       <div class="grid gap-3 md:grid-cols-3">
