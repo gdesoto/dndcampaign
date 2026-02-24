@@ -53,8 +53,9 @@ describe('useCampaignActivityItems', () => {
       { id: 'm1', title: 'Milestone', isComplete: true, completedAt: '2026-01-30T00:00:00.000Z' },
       { id: 'm2', title: 'Milestone 2', isComplete: false, createdAt: '2026-01-29T00:00:00.000Z' },
     ])
+    const activityLogs = ref([])
 
-    const { activityItems } = useCampaignActivityItems(campaign, recaps, sessions, quests, milestones)
+    const { activityItems } = useCampaignActivityItems(campaign, activityLogs, recaps, sessions, quests, milestones)
     const items = activityItems.value
 
     expect(items).toHaveLength(6)

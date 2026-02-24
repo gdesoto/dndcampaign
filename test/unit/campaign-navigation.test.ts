@@ -27,6 +27,9 @@ describe('useCampaignNavigation', () => {
     route.path = '/campaigns/c1/sessions'
     expect(navigation.sectionTitle.value).toBe('Sessions')
 
+    route.path = '/campaigns/c1/encounters'
+    expect(navigation.sectionTitle.value).toBe('Encounters')
+
     route.path = '/campaigns/c1/sessions/s1/summary'
     expect(navigation.sectionTitle.value).toBe('Session details')
     expect(navigation.breadcrumbItems.value.map((item) => item.label)).toEqual([
@@ -50,6 +53,15 @@ describe('useCampaignNavigation', () => {
 
     route.path = '/campaigns/c1/settings'
     expect(navigation.sectionTitle.value).toBe('Settings')
+
+    route.path = '/campaigns/c1/encounters/e1'
+    expect(navigation.sectionTitle.value).toBe('Encounters')
+    expect(navigation.breadcrumbItems.value.map((item) => item.label)).toEqual([
+      'Campaigns',
+      'Alpha Campaign',
+      'Encounters',
+      'Encounter',
+    ])
 
     route.path = '/campaigns/c1/unknown'
     expect(navigation.sectionTitle.value).toBe('Overview')

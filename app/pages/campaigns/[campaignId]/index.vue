@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type {
+  CampaignActivityLogItem,
   CampaignMilestoneSummary,
   CampaignOverviewDetail,
   CampaignQuestSummary,
@@ -34,6 +35,10 @@ const { data: milestones } = await useAsyncData(
   () => `campaign-milestones-${campaignId.value}`,
   () => request<CampaignMilestoneSummary[]>(`/api/campaigns/${campaignId.value}/milestones`)
 )
+const { data: activityLogs } = await useAsyncData(
+  () => `campaign-activity-${campaignId.value}`,
+  () => request<CampaignActivityLogItem[]>(`/api/campaigns/${campaignId.value}/activity`),
+)
 
 const formatDate = (value?: string | null) => {
   if (!value) return 'Unscheduled'
@@ -62,7 +67,7 @@ const {
   recentMilestones,
   questStatusColor,
 } = useCampaignOverviewMetrics(sessions, quests, milestones)
-const { activityItems } = useCampaignActivityItems(campaign, recaps, sessions, quests, milestones)
+const { activityItems } = useCampaignActivityItems(campaign, activityLogs, recaps, sessions, quests, milestones)
 
 const statusDraft = ref('')
 const isSaving = ref(false)

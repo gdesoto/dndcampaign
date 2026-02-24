@@ -28,6 +28,12 @@ describe('resolveCampaignSelectorRoute', () => {
     )
   })
 
+  it('keeps encounters section when switching campaigns', () => {
+    expect(resolveCampaignSelectorRoute('/campaigns/abc/encounters/enc-1', 'abc', 'xyz')).toBe(
+      '/campaigns/xyz/encounters'
+    )
+  })
+
   it('keeps tools section when switching campaigns', () => {
     expect(resolveCampaignSelectorRoute('/campaigns/abc/tools', 'abc', 'xyz')).toBe(
       '/campaigns/xyz/tools'

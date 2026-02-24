@@ -52,3 +52,10 @@ export type CampaignActivityItem = {
   title: string
   description: string
 }
+
+export type CampaignActivityLogItem = {
+  id: string
+  action: string
+  summary?: string | null
+  createdAt: string
+}

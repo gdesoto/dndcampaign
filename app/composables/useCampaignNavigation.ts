@@ -25,6 +25,12 @@ export const useCampaignNavigation = (
         active: path.startsWith(`${base}/sessions`),
       },
       {
+        label: 'Encounters',
+        to: `${base}/encounters`,
+        icon: 'i-lucide-swords',
+        active: path.startsWith(`${base}/encounters`),
+      },
+      {
         label: 'Characters',
         to: `${base}/characters`,
         icon: 'i-lucide-users',
@@ -80,6 +86,7 @@ export const useCampaignNavigation = (
     const suffix = path.startsWith(campaignBase) ? path.slice(campaignBase.length) : ''
     if (suffix === '' || suffix === '/') return 'Overview'
     if (suffix.startsWith('/characters')) return 'Characters'
+    if (suffix.startsWith('/encounters')) return 'Encounters'
     if (suffix.startsWith('/sessions/')) return 'Session details'
     if (suffix.startsWith('/sessions')) return 'Sessions'
     if (suffix.startsWith('/quests')) return 'Quests'
@@ -109,6 +116,13 @@ export const useCampaignNavigation = (
         ...rootItems,
         { label: 'Sessions', to: `/campaigns/${campaignId.value}/sessions` },
         { label: sessionTitle?.value || 'Session' },
+      ]
+    }
+    if (path.includes(`/campaigns/${campaignId.value}/encounters/`)) {
+      return [
+        ...rootItems,
+        { label: 'Encounters', to: `/campaigns/${campaignId.value}/encounters` },
+        { label: 'Encounter' },
       ]
     }
     return [...rootItems, { label: sectionTitle.value }]

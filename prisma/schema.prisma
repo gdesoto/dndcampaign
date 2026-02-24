@@ -54,6 +54,10 @@ model User {
   playerCharacters PlayerCharacter[]
   adminAuditActions AdminAuditLog[] @relation("AdminAuditActor")
   calendarEventsCreated CampaignCalendarEvent[]
+  encountersCreated CampaignEncounter[]
+  encounterEventsCreated EncounterEvent[]
+  encounterTemplatesCreated EncounterTemplate[]
+  encounterStatBlocksCreated EncounterStatBlock[]
 
   @@index([email])
 }
@@ -121,6 +125,9 @@ model Campaign {
   calendarConfig CampaignCalendarConfig?
   calendarEvents CampaignCalendarEvent[]
   sessionCalendarRanges SessionCalendarRange[]
+  encounters    CampaignEncounter[]
+  encounterTemplates EncounterTemplate[]
+  encounterStatBlocks EncounterStatBlock[]
 
   @@index([ownerId])
 }
@@ -201,6 +208,7 @@ model Session {
   recap         RecapRecording?
   summaryJobs   SummaryJob[]
   calendarRange SessionCalendarRange?
+  encounters    CampaignEncounter[]
 
   @@index([campaignId])
   @@unique([id, campaignId])
@@ -264,6 +272,206 @@ model CampaignCalendarEvent {
   @@index([campaignId, year, month, day])
   @@index([campaignId, createdAt])
   @@index([createdByUserId])
+}
+
+enum EncounterStatus {
+  PLANNED
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ABANDONED
+}
+
+enum EncounterType {
+  COMBAT
+  SOCIAL
+  SKILL_CHALLENGE
+  CHASE
+  HAZARD
+}
+
+enum EncounterVisibility {
+  DM_ONLY
+  SHARED
+}
+
+enum EncounterSide {
+  ALLY
+  ENEMY
+  NEUTRAL
+}
+
+enum EncounterSourceType {
+  CAMPAIGN_CHARACTER
+  PLAYER_CHARACTER
+  GLOSSARY_ENTRY
+  CUSTOM
+}
+
+enum ConditionTickTiming {
+  TURN_START
+  TURN_END
+  ROUND_END
+}
+
+enum EncounterEventType {
+  ENCOUNTER
+  TURN
+  HP
+  CONDITION
+  NOTE
+  SYSTEM
+}
+
+model CampaignEncounter {
+  id               String              @id @default(uuid())
+  campaignId       String
+  campaign         Campaign            @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  sessionId        String?
+  session          Session?            @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  name             String
+  type             EncounterType       @default(COMBAT)
+  status           EncounterStatus     @default(PLANNED)
+  visibility       EncounterVisibility @default(SHARED)
+  notes            String?
+  calendarYear     Int?
+  calendarMonth    Int?
+  calendarDay      Int?
+  currentRound     Int                @default(1)
+  currentTurnIndex Int                @default(0)
+  createdByUserId  String
+  createdByUser    User               @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  combatants       EncounterCombatant[]
+  events           EncounterEvent[]
+
+  @@index([campaignId, createdAt])
+  @@index([campaignId, status, updatedAt])
+  @@index([sessionId])
+  @@index([createdByUserId])
+}
+
+model EncounterCombatant {
+  id                 String              @id @default(uuid())
+  encounterId        String
+  encounter          CampaignEncounter   @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  name               String
+  side               EncounterSide       @default(ENEMY)
+  sourceType         EncounterSourceType @default(CUSTOM)
+  sourceCampaignCharacterId String?
+  sourcePlayerCharacterId String?
+  sourceGlossaryEntryId String?
+  sourceStatBlockId  String?
+  initiative         Int?
+  sortOrder          Int
+  maxHp              Int?
+  currentHp          Int?
+  tempHp             Int                 @default(0)
+  armorClass         Int?
+  speed              Int?
+  isConcentrating    Boolean             @default(false)
+  deathSaveSuccesses Int                 @default(0)
+  deathSaveFailures  Int                 @default(0)
+  isDefeated         Boolean             @default(false)
+  isHidden           Boolean             @default(false)
+  notes              String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  conditions         EncounterCondition[]
+
+  @@index([encounterId, sortOrder])
+  @@index([encounterId, initiative])
+  @@index([sourceStatBlockId])
+  @@unique([encounterId, sortOrder])
+}
+
+model EncounterCondition {
+  id               String            @id @default(uuid())
+  combatantId      String
+  combatant        EncounterCombatant @relation(fields: [combatantId], references: [id], onDelete: Cascade)
+  name             String
+  duration         Int?
+  remaining        Int?
+  tickTiming       ConditionTickTiming @default(TURN_END)
+  source           String?
+  notes            String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([combatantId, createdAt])
+}
+
+model EncounterEvent {
+  id              String            @id @default(uuid())
+  encounterId     String
+  encounter       CampaignEncounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  eventType       EncounterEventType
+  summary         String
+  payload         Json?
+  createdByUserId String?
+  createdByUser   User?             @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime          @default(now())
+
+  @@index([encounterId, createdAt])
+  @@index([eventType, createdAt])
+  @@index([createdByUserId])
+}
+
+model EncounterTemplate {
+  id              String                     @id @default(uuid())
+  campaignId      String
+  campaign        Campaign                   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  name            String
+  type            EncounterType              @default(COMBAT)
+  notes           String?
+  createdByUserId String
+  createdByUser   User                       @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+  combatants      EncounterTemplateCombatant[]
+
+  @@index([campaignId, createdAt])
+  @@index([createdByUserId])
+}
+
+model EncounterTemplateCombatant {
+  id                String              @id @default(uuid())
+  templateId        String
+  template          EncounterTemplate   @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  name              String
+  side              EncounterSide       @default(ENEMY)
+  sourceType        EncounterSourceType @default(CUSTOM)
+  sourceStatBlockId String?
+  maxHp             Int?
+  armorClass        Int?
+  speed             Int?
+  quantity          Int                 @default(1)
+  sortOrder         Int
+  notes             String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([templateId, sortOrder])
+  @@unique([templateId, sortOrder])
+}
+
+model EncounterStatBlock {
+  id              String    @id @default(uuid())
+  campaignId      String
+  campaign        Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  name            String
+  challengeRating String?
+  statBlockJson   Json
+  notes           String?
+  createdByUserId String
+  createdByUser   User      @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([campaignId, createdAt])
+  @@index([createdByUserId])
+  @@unique([campaignId, name])
 }
 
 enum GlossaryType {

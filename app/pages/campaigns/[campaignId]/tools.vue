@@ -7,13 +7,15 @@ type ToolTab = {
 }
 
 type ToolPlaceholder = {
-  id: 'encounter-builder' | 'dungeon-map-generator'
+  id: 'dungeon-map-generator'
   title: string
   description: string
   icon: string
 }
 
 const activeTab = ref<ToolTab['value']>('dice-roller')
+const route = useRoute()
+const campaignId = computed(() => route.params.campaignId as string)
 
 const toolTabs: ToolTab[] = [
   { value: 'dice-roller', label: 'Dice Roller' },
@@ -22,12 +24,6 @@ const toolTabs: ToolTab[] = [
 ]
 
 const tools: ToolPlaceholder[] = [
-  {
-    id: 'encounter-builder',
-    title: 'Encounter Builder',
-    description: 'Placeholder for encounter planning, balancing, and initiative setup.',
-    icon: 'i-lucide-swords',
-  },
   {
     id: 'dungeon-map-generator',
     title: 'Dungeon Map Generator',
@@ -47,7 +43,7 @@ const activePlaceholder = computed(() =>
       <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Tools</p>
       <h1 class="mt-2 text-2xl font-semibold">Campaign tools</h1>
       <p class="mt-3 max-w-3xl text-sm text-muted">
-        Utilities for session prep and table management. These sections are placeholders for upcoming features.
+        Utilities for session prep and table management.
       </p>
     </div>
 
@@ -56,6 +52,17 @@ const activePlaceholder = computed(() =>
     </UCard>
 
     <CampaignToolsDiceRoller v-if="activeTab === 'dice-roller'" />
+    <UCard v-else-if="activeTab === 'encounter-builder'" :ui="{ body: 'p-5' }">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div class="space-y-2">
+          <h2 class="text-base font-semibold">Encounter Builder</h2>
+          <p class="max-w-2xl text-sm text-muted">
+            Encounter planning and live runtime tracking now live in the campaign Encounters section.
+          </p>
+        </div>
+        <UButton :to="`/campaigns/${campaignId}/encounters`">Open Encounters</UButton>
+      </div>
+    </UCard>
 
     <UCard
       v-else-if="activePlaceholder"

@@ -1,6 +1,7 @@
 import { computed, type Ref } from 'vue'
 import type {
   CampaignActivityItem,
+  CampaignActivityLogItem,
   CampaignMilestoneSummary,
   CampaignQuestSummary,
   CampaignRecapItem,
@@ -9,6 +10,7 @@ import type {
 
 export const useCampaignActivityItems = (
   campaign: Ref<CampaignOverviewDetail | null | undefined>,
+  activityLogs: Ref<CampaignActivityLogItem[] | null | undefined>,
   recaps: Ref<CampaignRecapItem[] | null | undefined>,
   sessions: Ref<CampaignSessionSummary[] | null | undefined>,
   quests: Ref<CampaignQuestSummary[] | null | undefined>,
@@ -20,6 +22,19 @@ export const useCampaignActivityItems = (
   }
 
   const activityItems = computed<CampaignActivityItem[]>(() => {
+    const logs = activityLogs.value || []
+    if (logs.length) {
+      return logs.slice(0, 6).map((entry) => ({
+        id: `activity-log-${entry.id}`,
+        date: entry.createdAt,
+        title: String(entry.action || 'campaign activity')
+          .replace(/_/g, ' ')
+          .toLowerCase()
+          .replace(/\b\w/g, (c) => c.toUpperCase()),
+        description: entry.summary || `Campaign activity at ${formatDateTime(entry.createdAt)}.`,
+      }))
+    }
+
     const items: CampaignActivityItem[] = []
 
     if (campaign.value?.updatedAt) {
