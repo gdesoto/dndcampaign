@@ -1,9 +1,37 @@
 import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
+import path from 'node:path'
 
-const prisma = new PrismaClient()
+const databaseUrl = process.env.DATABASE_URL
+
+if (!databaseUrl) {
+  throw new Error('DATABASE_URL is required to run prisma seed.')
+}
+
+const toSqlitePath = (url) => {
+  if (!url.startsWith('file:')) {
+    return url
+  }
+
+  const rawPath = url.slice('file:'.length)
+  const isWindowsAbsolute = /^[A-Za-z]:[\\/]/.test(rawPath)
+  const isUnixAbsolute = rawPath.startsWith('/')
+  if (isWindowsAbsolute || isUnixAbsolute) {
+    return rawPath
+  }
+
+  return path.resolve(process.cwd(), 'prisma', rawPath)
+}
+
+const adapter = new PrismaBetterSqlite3(
+  { url: toSqlitePath(databaseUrl) },
+  { timestampFormat: 'unixepoch-ms' }
+)
+
+const prisma = new PrismaClient({ adapter })
 const hash = new Hash(new Scrypt())
 
 const email = process.env.SEED_USER_EMAIL || 'dm@example.com'

@@ -1,12 +1,12 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
+import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
 import { ofetch } from 'ofetch'
-import { PrismaClient } from '@prisma/client'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
-import { getApiTestBaseUrl, getApiTestDatabaseUrl } from '../scripts/api-test-context.mjs'
 
-const prisma = new PrismaClient({ datasourceUrl: getApiTestDatabaseUrl() })
+const prisma = createApiTestPrismaClient()
 const hash = new Hash(new Scrypt())
 const baseUrl = getApiTestBaseUrl()
 
@@ -109,3 +109,10 @@ describe('auth + campaigns API', () => {
     expect(payload.data.name).toBe('API Created Campaign')
   })
 })
+
+
+
+
+
+
+

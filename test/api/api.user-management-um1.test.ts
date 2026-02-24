@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { PrismaClient } from '@prisma/client'
-import { getApiTestBaseUrl, getApiTestDatabaseUrl } from '../scripts/api-test-context.mjs'
+import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
+import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
 
-const prisma = new PrismaClient({ datasourceUrl: getApiTestDatabaseUrl() })
+const prisma = createApiTestPrismaClient()
 
 const registerUser = {
   name: 'UM1 Tester',
@@ -216,3 +216,10 @@ describe('user management UM-1', () => {
     expect((userAfter?.lastLoginAt?.getTime() || 0) >= (userBefore?.lastLoginAt?.getTime() || 0)).toBe(true)
   })
 })
+
+
+
+
+
+
+
