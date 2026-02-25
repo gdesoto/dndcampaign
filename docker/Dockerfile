@@ -10,6 +10,8 @@ RUN corepack enable \
 
 FROM base AS build
 ENV NODE_ENV=development
+ARG DATABASE_URL=file:/tmp/prisma-build.db
+ENV DATABASE_URL=${DATABASE_URL}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
