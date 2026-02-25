@@ -31,6 +31,12 @@ export const useCampaignNavigation = (
         active: path.startsWith(`${base}/encounters`),
       },
       {
+        label: 'Dungeons',
+        to: `${base}/dungeons`,
+        icon: 'i-lucide-castle',
+        active: path.startsWith(`${base}/dungeons`),
+      },
+      {
         label: 'Characters',
         to: `${base}/characters`,
         icon: 'i-lucide-users',
@@ -86,6 +92,7 @@ export const useCampaignNavigation = (
     const suffix = path.startsWith(campaignBase) ? path.slice(campaignBase.length) : ''
     if (suffix === '' || suffix === '/') return 'Overview'
     if (suffix.startsWith('/characters')) return 'Characters'
+    if (suffix.startsWith('/dungeons')) return 'Dungeons'
     if (suffix.startsWith('/encounters')) return 'Encounters'
     if (suffix.startsWith('/sessions/')) return 'Session details'
     if (suffix.startsWith('/sessions')) return 'Sessions'

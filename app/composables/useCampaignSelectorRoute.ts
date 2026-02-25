@@ -1,6 +1,7 @@
 const campaignSectionRoots = [
   '/sessions',
   '/encounters',
+  '/dungeons',
   '/quests',
   '/milestones',
   '/glossary',

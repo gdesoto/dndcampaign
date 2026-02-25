@@ -30,6 +30,9 @@ describe('useCampaignNavigation', () => {
     route.path = '/campaigns/c1/encounters'
     expect(navigation.sectionTitle.value).toBe('Encounters')
 
+    route.path = '/campaigns/c1/dungeons'
+    expect(navigation.sectionTitle.value).toBe('Dungeons')
+
     route.path = '/campaigns/c1/sessions/s1/summary'
     expect(navigation.sectionTitle.value).toBe('Session details')
     expect(navigation.breadcrumbItems.value.map((item) => item.label)).toEqual([

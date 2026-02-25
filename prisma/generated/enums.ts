@@ -47,6 +47,52 @@ export const EncounterStatus = {
 export type EncounterStatus = (typeof EncounterStatus)[keyof typeof EncounterStatus]
 
 
+export const CampaignDungeonStatus = {
+  DRAFT: 'DRAFT',
+  READY: 'READY',
+  ARCHIVED: 'ARCHIVED'
+} as const
+
+export type CampaignDungeonStatus = (typeof CampaignDungeonStatus)[keyof typeof CampaignDungeonStatus]
+
+
+export const CampaignDungeonGridType = {
+  SQUARE: 'SQUARE'
+} as const
+
+export type CampaignDungeonGridType = (typeof CampaignDungeonGridType)[keyof typeof CampaignDungeonGridType]
+
+
+export const CampaignDungeonRoomState = {
+  UNSEEN: 'UNSEEN',
+  EXPLORED: 'EXPLORED',
+  CLEARED: 'CLEARED',
+  CONTESTED: 'CONTESTED'
+} as const
+
+export type CampaignDungeonRoomState = (typeof CampaignDungeonRoomState)[keyof typeof CampaignDungeonRoomState]
+
+
+export const CampaignDungeonLinkType = {
+  SESSION: 'SESSION',
+  QUEST: 'QUEST',
+  MILESTONE: 'MILESTONE',
+  GLOSSARY: 'GLOSSARY',
+  ENCOUNTER: 'ENCOUNTER'
+} as const
+
+export type CampaignDungeonLinkType = (typeof CampaignDungeonLinkType)[keyof typeof CampaignDungeonLinkType]
+
+
+export const CampaignDungeonSnapshotType = {
+  AUTO: 'AUTO',
+  MANUAL: 'MANUAL',
+  PRE_REGENERATE: 'PRE_REGENERATE'
+} as const
+
+export type CampaignDungeonSnapshotType = (typeof CampaignDungeonSnapshotType)[keyof typeof CampaignDungeonSnapshotType]
+
+
 export const EncounterType = {
   COMBAT: 'COMBAT',
   SOCIAL: 'SOCIAL',

@@ -58,6 +58,8 @@ model User {
   encounterEventsCreated EncounterEvent[]
   encounterTemplatesCreated EncounterTemplate[]
   encounterStatBlocksCreated EncounterStatBlock[]
+  dungeonsCreated CampaignDungeon[]
+  dungeonSnapshotsCreated CampaignDungeonSnapshot[]
 
   @@index([email])
 }
@@ -128,6 +130,7 @@ model Campaign {
   encounters    CampaignEncounter[]
   encounterTemplates EncounterTemplate[]
   encounterStatBlocks EncounterStatBlock[]
+  dungeons      CampaignDungeon[]
 
   @@index([ownerId])
 }
@@ -280,6 +283,37 @@ enum EncounterStatus {
   PAUSED
   COMPLETED
   ABANDONED
+}
+
+enum CampaignDungeonStatus {
+  DRAFT
+  READY
+  ARCHIVED
+}
+
+enum CampaignDungeonGridType {
+  SQUARE
+}
+
+enum CampaignDungeonRoomState {
+  UNSEEN
+  EXPLORED
+  CLEARED
+  CONTESTED
+}
+
+enum CampaignDungeonLinkType {
+  SESSION
+  QUEST
+  MILESTONE
+  GLOSSARY
+  ENCOUNTER
+}
+
+enum CampaignDungeonSnapshotType {
+  AUTO
+  MANUAL
+  PRE_REGENERATE
 }
 
 enum EncounterType {
@@ -472,6 +506,85 @@ model EncounterStatBlock {
   @@index([campaignId, createdAt])
   @@index([createdByUserId])
   @@unique([campaignId, name])
+}
+
+model CampaignDungeon {
+  id               String                   @id @default(uuid())
+  campaignId       String
+  campaign         Campaign                 @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  name             String
+  status           CampaignDungeonStatus    @default(DRAFT)
+  theme            String
+  seed             String
+  gridType         CampaignDungeonGridType  @default(SQUARE)
+  generatorVersion String
+  configJson       Json
+  mapJson          Json
+  playerViewJson   Json?
+  createdByUserId  String
+  createdByUser    User                     @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  rooms            CampaignDungeonRoom[]
+  links            CampaignDungeonLink[]
+  snapshots        CampaignDungeonSnapshot[]
+
+  @@index([campaignId, updatedAt])
+  @@index([campaignId, status, updatedAt])
+  @@index([createdByUserId])
+}
+
+model CampaignDungeonRoom {
+  id          String                  @id @default(uuid())
+  dungeonId   String
+  dungeon     CampaignDungeon         @relation(fields: [dungeonId], references: [id], onDelete: Cascade)
+  roomNumber  Int
+  name        String
+  description String?
+  gmNotes     String?
+  playerNotes String?
+  readAloud   String?
+  tagsJson    Json?
+  boundsJson  Json?
+  state       CampaignDungeonRoomState @default(UNSEEN)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  links       CampaignDungeonLink[]
+
+  @@index([dungeonId, roomNumber])
+  @@unique([dungeonId, roomNumber])
+}
+
+model CampaignDungeonLink {
+  id        String                 @id @default(uuid())
+  dungeonId String
+  dungeon   CampaignDungeon        @relation(fields: [dungeonId], references: [id], onDelete: Cascade)
+  roomId    String?
+  room      CampaignDungeonRoom?   @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  linkType  CampaignDungeonLinkType
+  targetId  String
+  createdAt DateTime               @default(now())
+
+  @@index([dungeonId, createdAt])
+  @@index([roomId])
+  @@index([linkType, targetId])
+}
+
+model CampaignDungeonSnapshot {
+  id               String                     @id @default(uuid())
+  dungeonId        String
+  dungeon          CampaignDungeon            @relation(fields: [dungeonId], references: [id], onDelete: Cascade)
+  snapshotType     CampaignDungeonSnapshotType
+  seed             String
+  generatorVersion String
+  configJson       Json
+  mapJson          Json
+  createdByUserId  String
+  createdByUser    User                       @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdAt        DateTime                   @default(now())
+
+  @@index([dungeonId, createdAt])
+  @@index([createdByUserId])
 }
 
 enum GlossaryType {

@@ -69,6 +69,10 @@ export const ModelName = {
   EncounterTemplate: 'EncounterTemplate',
   EncounterTemplateCombatant: 'EncounterTemplateCombatant',
   EncounterStatBlock: 'EncounterStatBlock',
+  CampaignDungeon: 'CampaignDungeon',
+  CampaignDungeonRoom: 'CampaignDungeonRoom',
+  CampaignDungeonLink: 'CampaignDungeonLink',
+  CampaignDungeonSnapshot: 'CampaignDungeonSnapshot',
   GlossaryEntry: 'GlossaryEntry',
   CampaignMap: 'CampaignMap',
   CampaignMapFile: 'CampaignMapFile',
@@ -414,6 +418,72 @@ export const EncounterStatBlockScalarFieldEnum = {
 } as const
 
 export type EncounterStatBlockScalarFieldEnum = (typeof EncounterStatBlockScalarFieldEnum)[keyof typeof EncounterStatBlockScalarFieldEnum]
+
+
+export const CampaignDungeonScalarFieldEnum = {
+  id: 'id',
+  campaignId: 'campaignId',
+  name: 'name',
+  status: 'status',
+  theme: 'theme',
+  seed: 'seed',
+  gridType: 'gridType',
+  generatorVersion: 'generatorVersion',
+  configJson: 'configJson',
+  mapJson: 'mapJson',
+  playerViewJson: 'playerViewJson',
+  createdByUserId: 'createdByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CampaignDungeonScalarFieldEnum = (typeof CampaignDungeonScalarFieldEnum)[keyof typeof CampaignDungeonScalarFieldEnum]
+
+
+export const CampaignDungeonRoomScalarFieldEnum = {
+  id: 'id',
+  dungeonId: 'dungeonId',
+  roomNumber: 'roomNumber',
+  name: 'name',
+  description: 'description',
+  gmNotes: 'gmNotes',
+  playerNotes: 'playerNotes',
+  readAloud: 'readAloud',
+  tagsJson: 'tagsJson',
+  boundsJson: 'boundsJson',
+  state: 'state',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CampaignDungeonRoomScalarFieldEnum = (typeof CampaignDungeonRoomScalarFieldEnum)[keyof typeof CampaignDungeonRoomScalarFieldEnum]
+
+
+export const CampaignDungeonLinkScalarFieldEnum = {
+  id: 'id',
+  dungeonId: 'dungeonId',
+  roomId: 'roomId',
+  linkType: 'linkType',
+  targetId: 'targetId',
+  createdAt: 'createdAt'
+} as const
+
+export type CampaignDungeonLinkScalarFieldEnum = (typeof CampaignDungeonLinkScalarFieldEnum)[keyof typeof CampaignDungeonLinkScalarFieldEnum]
+
+
+export const CampaignDungeonSnapshotScalarFieldEnum = {
+  id: 'id',
+  dungeonId: 'dungeonId',
+  snapshotType: 'snapshotType',
+  seed: 'seed',
+  generatorVersion: 'generatorVersion',
+  configJson: 'configJson',
+  mapJson: 'mapJson',
+  createdByUserId: 'createdByUserId',
+  createdAt: 'createdAt'
+} as const
+
+export type CampaignDungeonSnapshotScalarFieldEnum = (typeof CampaignDungeonSnapshotScalarFieldEnum)[keyof typeof CampaignDungeonSnapshotScalarFieldEnum]
 
 
 export const GlossaryEntryScalarFieldEnum = {

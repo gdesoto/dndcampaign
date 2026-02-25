@@ -34,6 +34,12 @@ describe('resolveCampaignSelectorRoute', () => {
     )
   })
 
+  it('keeps dungeons section when switching campaigns', () => {
+    expect(resolveCampaignSelectorRoute('/campaigns/abc/dungeons/d-1', 'abc', 'xyz')).toBe(
+      '/campaigns/xyz/dungeons'
+    )
+  })
+
   it('keeps tools section when switching campaigns', () => {
     expect(resolveCampaignSelectorRoute('/campaigns/abc/tools', 'abc', 'xyz')).toBe(
       '/campaigns/xyz/tools'

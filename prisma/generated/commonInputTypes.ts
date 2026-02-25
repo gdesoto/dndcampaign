@@ -450,6 +450,91 @@ export type EnumEncounterEventTypeWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumEncounterEventTypeFilter<$PrismaModel>
 }
 
+export type EnumCampaignDungeonStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignDungeonStatus | Prisma.EnumCampaignDungeonStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignDungeonStatus[]
+  notIn?: $Enums.CampaignDungeonStatus[]
+  not?: Prisma.NestedEnumCampaignDungeonStatusFilter<$PrismaModel> | $Enums.CampaignDungeonStatus
+}
+
+export type EnumCampaignDungeonGridTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignDungeonGridType | Prisma.EnumCampaignDungeonGridTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignDungeonGridType[]
+  notIn?: $Enums.CampaignDungeonGridType[]
+  not?: Prisma.NestedEnumCampaignDungeonGridTypeFilter<$PrismaModel> | $Enums.CampaignDungeonGridType
+}
+
+export type EnumCampaignDungeonStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignDungeonStatus | Prisma.EnumCampaignDungeonStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignDungeonStatus[]
+  notIn?: $Enums.CampaignDungeonStatus[]
+  not?: Prisma.NestedEnumCampaignDungeonStatusWithAggregatesFilter<$PrismaModel> | $Enums.CampaignDungeonStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCampaignDungeonStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCampaignDungeonStatusFilter<$PrismaModel>
+}
+
+export type EnumCampaignDungeonGridTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignDungeonGridType | Prisma.EnumCampaignDungeonGridTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignDungeonGridType[]
+  notIn?: $Enums.CampaignDungeonGridType[]
+  not?: Prisma.NestedEnumCampaignDungeonGridTypeWithAggregatesFilter<$PrismaModel> | $Enums.CampaignDungeonGridType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCampaignDungeonGridTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCampaignDungeonGridTypeFilter<$PrismaModel>
+}
+
+export type EnumCampaignDungeonRoomStateFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignDungeonRoomState | Prisma.EnumCampaignDungeonRoomStateFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignDungeonRoomState[]
+  notIn?: $Enums.CampaignDungeonRoomState[]
+  not?: Prisma.NestedEnumCampaignDungeonRoomStateFilter<$PrismaModel> | $Enums.CampaignDungeonRoomState
+}
+
+export type EnumCampaignDungeonRoomStateWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignDungeonRoomState | Prisma.EnumCampaignDungeonRoomStateFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignDungeonRoomState[]
+  notIn?: $Enums.CampaignDungeonRoomState[]
+  not?: Prisma.NestedEnumCampaignDungeonRoomStateWithAggregatesFilter<$PrismaModel> | $Enums.CampaignDungeonRoomState
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCampaignDungeonRoomStateFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCampaignDungeonRoomStateFilter<$PrismaModel>
+}
+
+export type EnumCampaignDungeonLinkTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignDungeonLinkType | Prisma.EnumCampaignDungeonLinkTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignDungeonLinkType[]
+  notIn?: $Enums.CampaignDungeonLinkType[]
+  not?: Prisma.NestedEnumCampaignDungeonLinkTypeFilter<$PrismaModel> | $Enums.CampaignDungeonLinkType
+}
+
+export type EnumCampaignDungeonLinkTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignDungeonLinkType | Prisma.EnumCampaignDungeonLinkTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignDungeonLinkType[]
+  notIn?: $Enums.CampaignDungeonLinkType[]
+  not?: Prisma.NestedEnumCampaignDungeonLinkTypeWithAggregatesFilter<$PrismaModel> | $Enums.CampaignDungeonLinkType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCampaignDungeonLinkTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCampaignDungeonLinkTypeFilter<$PrismaModel>
+}
+
+export type EnumCampaignDungeonSnapshotTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignDungeonSnapshotType | Prisma.EnumCampaignDungeonSnapshotTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignDungeonSnapshotType[]
+  notIn?: $Enums.CampaignDungeonSnapshotType[]
+  not?: Prisma.NestedEnumCampaignDungeonSnapshotTypeFilter<$PrismaModel> | $Enums.CampaignDungeonSnapshotType
+}
+
+export type EnumCampaignDungeonSnapshotTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignDungeonSnapshotType | Prisma.EnumCampaignDungeonSnapshotTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignDungeonSnapshotType[]
+  notIn?: $Enums.CampaignDungeonSnapshotType[]
+  not?: Prisma.NestedEnumCampaignDungeonSnapshotTypeWithAggregatesFilter<$PrismaModel> | $Enums.CampaignDungeonSnapshotType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCampaignDungeonSnapshotTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCampaignDungeonSnapshotTypeFilter<$PrismaModel>
+}
+
 export type EnumGlossaryTypeFilter<$PrismaModel = never> = {
   equals?: $Enums.GlossaryType | Prisma.EnumGlossaryTypeFieldRefInput<$PrismaModel>
   in?: $Enums.GlossaryType[]
@@ -1282,6 +1367,91 @@ export type NestedEnumEncounterEventTypeWithAggregatesFilter<$PrismaModel = neve
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumEncounterEventTypeFilter<$PrismaModel>
   _max?: Prisma.NestedEnumEncounterEventTypeFilter<$PrismaModel>
+}
+
+export type NestedEnumCampaignDungeonStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignDungeonStatus | Prisma.EnumCampaignDungeonStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignDungeonStatus[]
+  notIn?: $Enums.CampaignDungeonStatus[]
+  not?: Prisma.NestedEnumCampaignDungeonStatusFilter<$PrismaModel> | $Enums.CampaignDungeonStatus
+}
+
+export type NestedEnumCampaignDungeonGridTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignDungeonGridType | Prisma.EnumCampaignDungeonGridTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignDungeonGridType[]
+  notIn?: $Enums.CampaignDungeonGridType[]
+  not?: Prisma.NestedEnumCampaignDungeonGridTypeFilter<$PrismaModel> | $Enums.CampaignDungeonGridType
+}
+
+export type NestedEnumCampaignDungeonStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignDungeonStatus | Prisma.EnumCampaignDungeonStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignDungeonStatus[]
+  notIn?: $Enums.CampaignDungeonStatus[]
+  not?: Prisma.NestedEnumCampaignDungeonStatusWithAggregatesFilter<$PrismaModel> | $Enums.CampaignDungeonStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCampaignDungeonStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCampaignDungeonStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumCampaignDungeonGridTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignDungeonGridType | Prisma.EnumCampaignDungeonGridTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignDungeonGridType[]
+  notIn?: $Enums.CampaignDungeonGridType[]
+  not?: Prisma.NestedEnumCampaignDungeonGridTypeWithAggregatesFilter<$PrismaModel> | $Enums.CampaignDungeonGridType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCampaignDungeonGridTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCampaignDungeonGridTypeFilter<$PrismaModel>
+}
+
+export type NestedEnumCampaignDungeonRoomStateFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignDungeonRoomState | Prisma.EnumCampaignDungeonRoomStateFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignDungeonRoomState[]
+  notIn?: $Enums.CampaignDungeonRoomState[]
+  not?: Prisma.NestedEnumCampaignDungeonRoomStateFilter<$PrismaModel> | $Enums.CampaignDungeonRoomState
+}
+
+export type NestedEnumCampaignDungeonRoomStateWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignDungeonRoomState | Prisma.EnumCampaignDungeonRoomStateFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignDungeonRoomState[]
+  notIn?: $Enums.CampaignDungeonRoomState[]
+  not?: Prisma.NestedEnumCampaignDungeonRoomStateWithAggregatesFilter<$PrismaModel> | $Enums.CampaignDungeonRoomState
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCampaignDungeonRoomStateFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCampaignDungeonRoomStateFilter<$PrismaModel>
+}
+
+export type NestedEnumCampaignDungeonLinkTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignDungeonLinkType | Prisma.EnumCampaignDungeonLinkTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignDungeonLinkType[]
+  notIn?: $Enums.CampaignDungeonLinkType[]
+  not?: Prisma.NestedEnumCampaignDungeonLinkTypeFilter<$PrismaModel> | $Enums.CampaignDungeonLinkType
+}
+
+export type NestedEnumCampaignDungeonLinkTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignDungeonLinkType | Prisma.EnumCampaignDungeonLinkTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignDungeonLinkType[]
+  notIn?: $Enums.CampaignDungeonLinkType[]
+  not?: Prisma.NestedEnumCampaignDungeonLinkTypeWithAggregatesFilter<$PrismaModel> | $Enums.CampaignDungeonLinkType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCampaignDungeonLinkTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCampaignDungeonLinkTypeFilter<$PrismaModel>
+}
+
+export type NestedEnumCampaignDungeonSnapshotTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignDungeonSnapshotType | Prisma.EnumCampaignDungeonSnapshotTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignDungeonSnapshotType[]
+  notIn?: $Enums.CampaignDungeonSnapshotType[]
+  not?: Prisma.NestedEnumCampaignDungeonSnapshotTypeFilter<$PrismaModel> | $Enums.CampaignDungeonSnapshotType
+}
+
+export type NestedEnumCampaignDungeonSnapshotTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignDungeonSnapshotType | Prisma.EnumCampaignDungeonSnapshotTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignDungeonSnapshotType[]
+  notIn?: $Enums.CampaignDungeonSnapshotType[]
+  not?: Prisma.NestedEnumCampaignDungeonSnapshotTypeWithAggregatesFilter<$PrismaModel> | $Enums.CampaignDungeonSnapshotType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCampaignDungeonSnapshotTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCampaignDungeonSnapshotTypeFilter<$PrismaModel>
 }
 
 export type NestedEnumGlossaryTypeFilter<$PrismaModel = never> = {

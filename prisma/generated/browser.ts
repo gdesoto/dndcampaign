@@ -108,6 +108,26 @@ export type EncounterTemplateCombatant = Prisma.EncounterTemplateCombatantModel
  */
 export type EncounterStatBlock = Prisma.EncounterStatBlockModel
 /**
+ * Model CampaignDungeon
+ * 
+ */
+export type CampaignDungeon = Prisma.CampaignDungeonModel
+/**
+ * Model CampaignDungeonRoom
+ * 
+ */
+export type CampaignDungeonRoom = Prisma.CampaignDungeonRoomModel
+/**
+ * Model CampaignDungeonLink
+ * 
+ */
+export type CampaignDungeonLink = Prisma.CampaignDungeonLinkModel
+/**
+ * Model CampaignDungeonSnapshot
+ * 
+ */
+export type CampaignDungeonSnapshot = Prisma.CampaignDungeonSnapshotModel
+/**
  * Model GlossaryEntry
  * 
  */

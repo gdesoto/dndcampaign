@@ -402,6 +402,10 @@ export const ModelName = {
   EncounterTemplate: 'EncounterTemplate',
   EncounterTemplateCombatant: 'EncounterTemplateCombatant',
   EncounterStatBlock: 'EncounterStatBlock',
+  CampaignDungeon: 'CampaignDungeon',
+  CampaignDungeonRoom: 'CampaignDungeonRoom',
+  CampaignDungeonLink: 'CampaignDungeonLink',
+  CampaignDungeonSnapshot: 'CampaignDungeonSnapshot',
   GlossaryEntry: 'GlossaryEntry',
   CampaignMap: 'CampaignMap',
   CampaignMapFile: 'CampaignMapFile',
@@ -438,7 +442,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "activityLog" | "adminAuditLog" | "campaign" | "campaignPublicAccess" | "campaignMember" | "campaignInvite" | "session" | "campaignCalendarConfig" | "sessionCalendarRange" | "campaignCalendarEvent" | "campaignEncounter" | "encounterCombatant" | "encounterCondition" | "encounterEvent" | "encounterTemplate" | "encounterTemplateCombatant" | "encounterStatBlock" | "glossaryEntry" | "campaignMap" | "campaignMapFile" | "campaignMapFeature" | "campaignMapGlossaryLink" | "glossarySessionLink" | "artifact" | "recording" | "transcriptionJob" | "transcriptionArtifact" | "recapRecording" | "quest" | "milestone" | "document" | "documentVersion" | "summaryJob" | "summarySuggestion" | "playerCharacter" | "campaignCharacter" | "characterImport" | "characterImportSettings"
+    modelProps: "user" | "activityLog" | "adminAuditLog" | "campaign" | "campaignPublicAccess" | "campaignMember" | "campaignInvite" | "session" | "campaignCalendarConfig" | "sessionCalendarRange" | "campaignCalendarEvent" | "campaignEncounter" | "encounterCombatant" | "encounterCondition" | "encounterEvent" | "encounterTemplate" | "encounterTemplateCombatant" | "encounterStatBlock" | "campaignDungeon" | "campaignDungeonRoom" | "campaignDungeonLink" | "campaignDungeonSnapshot" | "glossaryEntry" | "campaignMap" | "campaignMapFile" | "campaignMapFeature" | "campaignMapGlossaryLink" | "glossarySessionLink" | "artifact" | "recording" | "transcriptionJob" | "transcriptionArtifact" | "recapRecording" | "quest" | "milestone" | "document" | "documentVersion" | "summaryJob" | "summarySuggestion" | "playerCharacter" | "campaignCharacter" | "characterImport" | "characterImportSettings"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1771,6 +1775,302 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.EncounterStatBlockCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.EncounterStatBlockCountAggregateOutputType> | number
+        }
+      }
+    }
+    CampaignDungeon: {
+      payload: Prisma.$CampaignDungeonPayload<ExtArgs>
+      fields: Prisma.CampaignDungeonFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CampaignDungeonFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CampaignDungeonFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonPayload>
+        }
+        findFirst: {
+          args: Prisma.CampaignDungeonFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CampaignDungeonFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonPayload>
+        }
+        findMany: {
+          args: Prisma.CampaignDungeonFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonPayload>[]
+        }
+        create: {
+          args: Prisma.CampaignDungeonCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonPayload>
+        }
+        createMany: {
+          args: Prisma.CampaignDungeonCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CampaignDungeonCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonPayload>[]
+        }
+        delete: {
+          args: Prisma.CampaignDungeonDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonPayload>
+        }
+        update: {
+          args: Prisma.CampaignDungeonUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonPayload>
+        }
+        deleteMany: {
+          args: Prisma.CampaignDungeonDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CampaignDungeonUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CampaignDungeonUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonPayload>[]
+        }
+        upsert: {
+          args: Prisma.CampaignDungeonUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonPayload>
+        }
+        aggregate: {
+          args: Prisma.CampaignDungeonAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCampaignDungeon>
+        }
+        groupBy: {
+          args: Prisma.CampaignDungeonGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CampaignDungeonGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CampaignDungeonCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CampaignDungeonCountAggregateOutputType> | number
+        }
+      }
+    }
+    CampaignDungeonRoom: {
+      payload: Prisma.$CampaignDungeonRoomPayload<ExtArgs>
+      fields: Prisma.CampaignDungeonRoomFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CampaignDungeonRoomFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonRoomPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CampaignDungeonRoomFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonRoomPayload>
+        }
+        findFirst: {
+          args: Prisma.CampaignDungeonRoomFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonRoomPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CampaignDungeonRoomFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonRoomPayload>
+        }
+        findMany: {
+          args: Prisma.CampaignDungeonRoomFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonRoomPayload>[]
+        }
+        create: {
+          args: Prisma.CampaignDungeonRoomCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonRoomPayload>
+        }
+        createMany: {
+          args: Prisma.CampaignDungeonRoomCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CampaignDungeonRoomCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonRoomPayload>[]
+        }
+        delete: {
+          args: Prisma.CampaignDungeonRoomDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonRoomPayload>
+        }
+        update: {
+          args: Prisma.CampaignDungeonRoomUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonRoomPayload>
+        }
+        deleteMany: {
+          args: Prisma.CampaignDungeonRoomDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CampaignDungeonRoomUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CampaignDungeonRoomUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonRoomPayload>[]
+        }
+        upsert: {
+          args: Prisma.CampaignDungeonRoomUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonRoomPayload>
+        }
+        aggregate: {
+          args: Prisma.CampaignDungeonRoomAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCampaignDungeonRoom>
+        }
+        groupBy: {
+          args: Prisma.CampaignDungeonRoomGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CampaignDungeonRoomGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CampaignDungeonRoomCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CampaignDungeonRoomCountAggregateOutputType> | number
+        }
+      }
+    }
+    CampaignDungeonLink: {
+      payload: Prisma.$CampaignDungeonLinkPayload<ExtArgs>
+      fields: Prisma.CampaignDungeonLinkFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CampaignDungeonLinkFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonLinkPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CampaignDungeonLinkFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonLinkPayload>
+        }
+        findFirst: {
+          args: Prisma.CampaignDungeonLinkFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonLinkPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CampaignDungeonLinkFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonLinkPayload>
+        }
+        findMany: {
+          args: Prisma.CampaignDungeonLinkFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonLinkPayload>[]
+        }
+        create: {
+          args: Prisma.CampaignDungeonLinkCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonLinkPayload>
+        }
+        createMany: {
+          args: Prisma.CampaignDungeonLinkCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CampaignDungeonLinkCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonLinkPayload>[]
+        }
+        delete: {
+          args: Prisma.CampaignDungeonLinkDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonLinkPayload>
+        }
+        update: {
+          args: Prisma.CampaignDungeonLinkUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonLinkPayload>
+        }
+        deleteMany: {
+          args: Prisma.CampaignDungeonLinkDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CampaignDungeonLinkUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CampaignDungeonLinkUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonLinkPayload>[]
+        }
+        upsert: {
+          args: Prisma.CampaignDungeonLinkUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonLinkPayload>
+        }
+        aggregate: {
+          args: Prisma.CampaignDungeonLinkAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCampaignDungeonLink>
+        }
+        groupBy: {
+          args: Prisma.CampaignDungeonLinkGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CampaignDungeonLinkGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CampaignDungeonLinkCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CampaignDungeonLinkCountAggregateOutputType> | number
+        }
+      }
+    }
+    CampaignDungeonSnapshot: {
+      payload: Prisma.$CampaignDungeonSnapshotPayload<ExtArgs>
+      fields: Prisma.CampaignDungeonSnapshotFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CampaignDungeonSnapshotFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonSnapshotPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CampaignDungeonSnapshotFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonSnapshotPayload>
+        }
+        findFirst: {
+          args: Prisma.CampaignDungeonSnapshotFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonSnapshotPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CampaignDungeonSnapshotFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonSnapshotPayload>
+        }
+        findMany: {
+          args: Prisma.CampaignDungeonSnapshotFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonSnapshotPayload>[]
+        }
+        create: {
+          args: Prisma.CampaignDungeonSnapshotCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonSnapshotPayload>
+        }
+        createMany: {
+          args: Prisma.CampaignDungeonSnapshotCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CampaignDungeonSnapshotCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonSnapshotPayload>[]
+        }
+        delete: {
+          args: Prisma.CampaignDungeonSnapshotDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonSnapshotPayload>
+        }
+        update: {
+          args: Prisma.CampaignDungeonSnapshotUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonSnapshotPayload>
+        }
+        deleteMany: {
+          args: Prisma.CampaignDungeonSnapshotDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CampaignDungeonSnapshotUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CampaignDungeonSnapshotUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonSnapshotPayload>[]
+        }
+        upsert: {
+          args: Prisma.CampaignDungeonSnapshotUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignDungeonSnapshotPayload>
+        }
+        aggregate: {
+          args: Prisma.CampaignDungeonSnapshotAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCampaignDungeonSnapshot>
+        }
+        groupBy: {
+          args: Prisma.CampaignDungeonSnapshotGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CampaignDungeonSnapshotGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CampaignDungeonSnapshotCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CampaignDungeonSnapshotCountAggregateOutputType> | number
         }
       }
     }
@@ -3675,6 +3975,72 @@ export const EncounterStatBlockScalarFieldEnum = {
 export type EncounterStatBlockScalarFieldEnum = (typeof EncounterStatBlockScalarFieldEnum)[keyof typeof EncounterStatBlockScalarFieldEnum]
 
 
+export const CampaignDungeonScalarFieldEnum = {
+  id: 'id',
+  campaignId: 'campaignId',
+  name: 'name',
+  status: 'status',
+  theme: 'theme',
+  seed: 'seed',
+  gridType: 'gridType',
+  generatorVersion: 'generatorVersion',
+  configJson: 'configJson',
+  mapJson: 'mapJson',
+  playerViewJson: 'playerViewJson',
+  createdByUserId: 'createdByUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CampaignDungeonScalarFieldEnum = (typeof CampaignDungeonScalarFieldEnum)[keyof typeof CampaignDungeonScalarFieldEnum]
+
+
+export const CampaignDungeonRoomScalarFieldEnum = {
+  id: 'id',
+  dungeonId: 'dungeonId',
+  roomNumber: 'roomNumber',
+  name: 'name',
+  description: 'description',
+  gmNotes: 'gmNotes',
+  playerNotes: 'playerNotes',
+  readAloud: 'readAloud',
+  tagsJson: 'tagsJson',
+  boundsJson: 'boundsJson',
+  state: 'state',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CampaignDungeonRoomScalarFieldEnum = (typeof CampaignDungeonRoomScalarFieldEnum)[keyof typeof CampaignDungeonRoomScalarFieldEnum]
+
+
+export const CampaignDungeonLinkScalarFieldEnum = {
+  id: 'id',
+  dungeonId: 'dungeonId',
+  roomId: 'roomId',
+  linkType: 'linkType',
+  targetId: 'targetId',
+  createdAt: 'createdAt'
+} as const
+
+export type CampaignDungeonLinkScalarFieldEnum = (typeof CampaignDungeonLinkScalarFieldEnum)[keyof typeof CampaignDungeonLinkScalarFieldEnum]
+
+
+export const CampaignDungeonSnapshotScalarFieldEnum = {
+  id: 'id',
+  dungeonId: 'dungeonId',
+  snapshotType: 'snapshotType',
+  seed: 'seed',
+  generatorVersion: 'generatorVersion',
+  configJson: 'configJson',
+  mapJson: 'mapJson',
+  createdByUserId: 'createdByUserId',
+  createdAt: 'createdAt'
+} as const
+
+export type CampaignDungeonSnapshotScalarFieldEnum = (typeof CampaignDungeonSnapshotScalarFieldEnum)[keyof typeof CampaignDungeonSnapshotScalarFieldEnum]
+
+
 export const GlossaryEntryScalarFieldEnum = {
   id: 'id',
   campaignId: 'campaignId',
@@ -4176,6 +4542,41 @@ export type EnumEncounterEventTypeFieldRefInput<$PrismaModel> = FieldRefInputTyp
 
 
 /**
+ * Reference to a field of type 'CampaignDungeonStatus'
+ */
+export type EnumCampaignDungeonStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CampaignDungeonStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'CampaignDungeonGridType'
+ */
+export type EnumCampaignDungeonGridTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CampaignDungeonGridType'>
+    
+
+
+/**
+ * Reference to a field of type 'CampaignDungeonRoomState'
+ */
+export type EnumCampaignDungeonRoomStateFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CampaignDungeonRoomState'>
+    
+
+
+/**
+ * Reference to a field of type 'CampaignDungeonLinkType'
+ */
+export type EnumCampaignDungeonLinkTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CampaignDungeonLinkType'>
+    
+
+
+/**
+ * Reference to a field of type 'CampaignDungeonSnapshotType'
+ */
+export type EnumCampaignDungeonSnapshotTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CampaignDungeonSnapshotType'>
+    
+
+
+/**
  * Reference to a field of type 'GlossaryType'
  */
 export type EnumGlossaryTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'GlossaryType'>
@@ -4469,6 +4870,10 @@ export type GlobalOmitConfig = {
   encounterTemplate?: Prisma.EncounterTemplateOmit
   encounterTemplateCombatant?: Prisma.EncounterTemplateCombatantOmit
   encounterStatBlock?: Prisma.EncounterStatBlockOmit
+  campaignDungeon?: Prisma.CampaignDungeonOmit
+  campaignDungeonRoom?: Prisma.CampaignDungeonRoomOmit
+  campaignDungeonLink?: Prisma.CampaignDungeonLinkOmit
+  campaignDungeonSnapshot?: Prisma.CampaignDungeonSnapshotOmit
   glossaryEntry?: Prisma.GlossaryEntryOmit
   campaignMap?: Prisma.CampaignMapOmit
   campaignMapFile?: Prisma.CampaignMapFileOmit
