@@ -1,13 +1,8 @@
+import { defineConfig, env } from 'prisma/config'
 import 'dotenv/config'
 import path from 'node:path'
 
-const databaseUrl = process.env.DATABASE_URL
-
-if (!databaseUrl) {
-  throw new Error('DATABASE_URL is required for Prisma CLI commands.')
-}
-
-const normalizeDatasourceUrl = (url) => {
+const normalizeDatasourceUrl = (url: string) => {
   if (!url.startsWith('file:')) {
     return url
   }
@@ -25,12 +20,13 @@ const normalizeDatasourceUrl = (url) => {
   return `file:${resolvedPath.replace(/\\/g, '/')}`
 }
 
-export default {
+export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {
     path: 'prisma/migrations',
+    seed: 'tsx ./prisma/seed.ts',
   },
   datasource: {
-    url: normalizeDatasourceUrl(databaseUrl),
+    url: normalizeDatasourceUrl(env('DATABASE_URL')),
   },
-}
+})

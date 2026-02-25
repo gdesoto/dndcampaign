@@ -1,5 +1,5 @@
 import { prisma } from '#server/db/prisma'
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '#server/db/prisma-client'
 
 type AdminAuditLogInput = {
   actorUserId: string
@@ -24,3 +24,4 @@ export class AdminAuditService {
     })
   }
 }
+

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { Readable } from 'node:stream'
 import { prisma } from '#server/db/prisma'
 import { getStorageAdapter } from '#server/services/storage/storage.factory'
-import type { StorageProvider } from '@prisma/client'
+import type { StorageProvider } from '#server/db/prisma-client'
 
 type CreateArtifactInput = {
   ownerId: string
@@ -87,4 +87,5 @@ export class ArtifactService {
     return `${campaignPart}/${input.ownerId}/${randomUUID()}-${safeName}`
   }
 }
+
 

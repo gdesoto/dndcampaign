@@ -1,5 +1,5 @@
 import { prisma } from '#server/db/prisma'
-import type { DocumentFormat, DocumentSource, DocumentType } from '@prisma/client'
+import type { DocumentFormat, DocumentSource, DocumentType } from '#server/db/prisma-client'
 
 type CreateDocumentInput = {
   campaignId: string
@@ -124,3 +124,4 @@ export class DocumentService {
     })
   }
 }
+

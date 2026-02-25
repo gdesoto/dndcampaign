@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from './generated/client'
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
@@ -282,3 +282,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect()
   })
+

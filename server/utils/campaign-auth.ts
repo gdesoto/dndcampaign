@@ -1,5 +1,5 @@
 import type { H3Event } from 'h3'
-import type { CampaignRole, Prisma } from '@prisma/client'
+import type { CampaignRole, Prisma } from '#server/db/prisma-client'
 import { prisma } from '#server/db/prisma'
 import type { ApiResponse } from '#server/utils/http'
 import { fail } from '#server/utils/http'
@@ -215,3 +215,4 @@ export const getPublicCampaignAccess = async (
 
   return { exists: true, access }
 }
+

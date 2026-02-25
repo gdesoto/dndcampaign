@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { Prisma } from '@prisma/client'
+import { Prisma } from '#server/db/prisma-client'
 import { prisma } from '#server/db/prisma'
 import type { ServiceResult } from '#server/services/auth.service'
 import { defaultMapLayerTypes, type MapFeatureType } from '#shared/schemas/map'
@@ -841,3 +841,4 @@ export class CampaignPublicAccessService {
     }
   }
 }
+

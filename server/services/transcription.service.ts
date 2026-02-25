@@ -7,7 +7,7 @@ import type {
   TranscriptionArtifactFormat,
   TranscriptionJob,
   TranscriptionStatus,
-} from '@prisma/client'
+} from '#server/db/prisma-client'
 
 type StartTranscriptionInput = {
   recordingId: string
@@ -511,3 +511,4 @@ const normalizeResponsePayload = (
       content: format.content,
     })) || [],
 })
+

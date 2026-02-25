@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { prisma } from '#server/db/prisma'
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '#server/db/prisma-client'
 import type { ServiceResult } from '#server/services/auth.service'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 import { ActivityLogService } from '#server/services/activity-log.service'
@@ -516,3 +516,4 @@ export const toEncounterStatBlockDto = (row: {
   createdAt: row.createdAt.toISOString(),
   updatedAt: row.updatedAt.toISOString(),
 })
+

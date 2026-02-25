@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '../../prisma/generated/client'
 import { getApiTestDatabaseUrl } from './api-test-context.mjs'
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url))

@@ -1,4 +1,4 @@
-import type { GlossaryType } from '@prisma/client'
+import type { GlossaryType } from '#server/db/prisma-client'
 
 export const buildGlossaryConflictCandidates = (
   entries: Array<{ id: string; type: GlossaryType; name: string; normalizedName: string; sourceMapFeatureId: string | null }>,
@@ -52,3 +52,4 @@ export const buildGlossaryConflictCandidates = (
   }
   return candidates.sort((a, b) => b.confidence - a.confidence).slice(0, 3)
 }
+
