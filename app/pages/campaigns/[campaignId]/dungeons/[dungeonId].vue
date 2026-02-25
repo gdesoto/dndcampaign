@@ -27,6 +27,16 @@ const selectedRoomId = ref<string | null>(null)
 const selectedDoorId = ref<string | null>(null)
 const activeDetailsTab = ref<'rooms' | 'corridors' | 'doors' | 'traps' | 'encounters' | 'treasure' | 'zones'>('rooms')
 const showPlayerSafe = ref(false)
+const dungeonThemeOptions = [
+  { label: 'Ruins', value: 'ruins' },
+  { label: 'Cavern', value: 'cavern' },
+  { label: 'Sewer', value: 'sewer' },
+  { label: 'Crypt', value: 'crypt' },
+  { label: 'Custom', value: 'custom' },
+] as const
+type DungeonThemeOption = (typeof dungeonThemeOptions)[number]['value']
+const selectedThemeOption = ref<DungeonThemeOption>('ruins')
+const customTheme = ref('')
 
 const {
   data: dungeon,
@@ -111,23 +121,41 @@ watch(
     configDraft.layout = { ...value.config.layout }
     configDraft.doors = { ...value.config.doors }
     configDraft.content = { ...value.config.content }
+    if (['ruins', 'cavern', 'sewer', 'crypt'].includes(value.theme)) {
+      selectedThemeOption.value = value.theme as DungeonThemeOption
+      customTheme.value = ''
+    } else {
+      selectedThemeOption.value = 'custom'
+      customTheme.value = value.theme
+    }
   },
   { immediate: true },
 )
 
+const resolveTheme = () =>
+  selectedThemeOption.value === 'custom'
+    ? customTheme.value.trim()
+    : selectedThemeOption.value
+
 const saveSettings = async () => {
   if (!canWriteContent.value) return
+  const resolvedTheme = resolveTheme()
+  if (!resolvedTheme) {
+    actionError.value = 'Custom theme is required.'
+    return
+  }
   isSaving.value = true
   actionError.value = ''
   try {
+    editState.theme = resolvedTheme
     await dungeonApi.updateDungeon(campaignId.value, dungeonId.value, {
       name: editState.name,
-      theme: editState.theme,
+      theme: resolvedTheme,
       seed: editState.seed,
       status: editState.status,
       config: {
         ...configDraft,
-        theme: editState.theme,
+        theme: resolvedTheme,
       },
     })
     await refresh()
@@ -140,14 +168,20 @@ const saveSettings = async () => {
 
 const generate = async () => {
   if (!canWriteContent.value) return
+  const resolvedTheme = resolveTheme()
+  if (!resolvedTheme) {
+    actionError.value = 'Custom theme is required.'
+    return
+  }
   isGenerating.value = true
   actionError.value = ''
   try {
+    editState.theme = resolvedTheme
     await dungeonApi.generateDungeon(campaignId.value, dungeonId.value, {
       seed: editState.seed,
       config: {
         ...configDraft,
-        theme: editState.theme,
+        theme: resolvedTheme,
       },
     })
     await refresh()
@@ -623,11 +657,11 @@ onBeforeUnmount(() => {
       description="Secret rooms and secret doors are hidden in this view."
     />
 
-    <UCard v-if="pending" :ui="{ body: 'p-6' }">
+    <UCard v-if="pending && !dungeon" :ui="{ body: 'p-6' }">
       <p class="text-sm text-muted">Loading dungeon...</p>
     </UCard>
 
-    <UCard v-else-if="error" :ui="{ body: 'p-6' }">
+    <UCard v-else-if="error && !dungeon" :ui="{ body: 'p-6' }">
       <p class="text-sm text-error">Unable to load dungeon.</p>
       <UButton class="mt-3" variant="outline" @click="() => refresh()">Try again</UButton>
     </UCard>
@@ -635,7 +669,7 @@ onBeforeUnmount(() => {
     <template v-else-if="dungeon">
       <UPage :ui="{ left: 'hidden xl:block xl:col-span-3', center: 'xl:col-span-6', right: 'xl:col-span-3' }">
         <template #left>
-          <div class="space-y-4 lg:sticky lg:top-28">
+          <div class="space-y-4">
             <UCard :ui="{ body: 'p-4 space-y-3' }">
               <h3 class="text-sm font-semibold">Generator Settings</h3>
               <div class="grid grid-cols-3 gap-2">
@@ -647,7 +681,17 @@ onBeforeUnmount(() => {
                 <UInput v-model="editState.name" :disabled="!canWriteContent" />
               </UFormField>
               <UFormField label="Theme">
-                <UInput v-model="editState.theme" :disabled="!canWriteContent" />
+                <USelect
+                  v-model="selectedThemeOption"
+                  :disabled="!canWriteContent"
+                  :items="dungeonThemeOptions"
+                />
+                <p class="mt-1 text-xs text-muted">
+                  Theme influences generated map appearance and flavor text.
+                </p>
+              </UFormField>
+              <UFormField v-if="selectedThemeOption === 'custom'" label="Custom theme">
+                <UInput v-model="customTheme" :disabled="!canWriteContent" placeholder="volcanic forge" />
               </UFormField>
               <UFormField label="Seed">
                 <UInput v-model="editState.seed" :disabled="!canWriteContent" />
@@ -688,11 +732,35 @@ onBeforeUnmount(() => {
                 </UFormField>
               </div>
               <div class="grid grid-cols-2 gap-2">
+                <UFormField label="Corridor layout">
+                  <USelect
+                    v-model="configDraft.layout.corridorStyle"
+                    :disabled="!canWriteContent"
+                    :items="[
+                      { label: 'Straight', value: 'STRAIGHT' },
+                      { label: 'Winding', value: 'WINDING' },
+                      { label: 'Mixed', value: 'MIXED' }
+                    ]"
+                  />
+                </UFormField>
+                <UFormField label="Connectivity">
+                  <UInput v-model.number="configDraft.layout.connectivityStrictness" type="number" step="0.05" :disabled="!canWriteContent" />
+                </UFormField>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
                 <UFormField label="Trap density">
                   <UInput v-model.number="configDraft.content.trapDensity" type="number" step="0.01" :disabled="!canWriteContent" />
                 </UFormField>
                 <UFormField label="Encounter density">
                   <UInput v-model.number="configDraft.content.encounterDensity" type="number" step="0.01" :disabled="!canWriteContent" />
+                </UFormField>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <UFormField label="Secret room chance">
+                  <UInput v-model.number="configDraft.layout.secretRoomChance" type="number" step="0.01" :disabled="!canWriteContent" />
+                </UFormField>
+                <UFormField label="Secret door chance">
+                  <UInput v-model.number="configDraft.doors.secretDoorChance" type="number" step="0.01" :disabled="!canWriteContent" />
                 </UFormField>
               </div>
               <div class="flex flex-wrap gap-2">
@@ -749,6 +817,42 @@ onBeforeUnmount(() => {
             v-model:selected-room-id="selectedRoomId"
             :map="displayedMap || dungeon.map"
           />
+
+          <UCard :ui="{ body: 'p-4' }">
+            <h3 class="text-sm font-semibold">Map Legend</h3>
+            <div class="mt-3 grid gap-3 md:grid-cols-2">
+              <div class="space-y-2 text-sm">
+                <p class="font-medium">Geometry</p>
+                <div class="flex items-center gap-2 text-xs text-muted">
+                  <span class="inline-block h-3 w-6 rounded-sm border border-[#88714d] bg-[#c6a979]/80" />
+                  Corridor (line connecting rooms)
+                </div>
+                <div class="flex items-center gap-2 text-xs text-muted">
+                  <span class="inline-block h-3 w-6 rounded-sm border border-[#94a3b8] bg-[rgba(226,210,178,0.5)]" />
+                  Room (selected room outline is highlighted)
+                </div>
+              </div>
+              <div class="space-y-2 text-sm">
+                <p class="font-medium">Markers</p>
+                <div class="flex items-center gap-2 text-xs text-muted">
+                  <span class="inline-block h-3 w-3 rounded-full bg-[#10b981]" />
+                  Standard door
+                </div>
+                <div class="flex items-center gap-2 text-xs text-muted">
+                  <span class="inline-block h-3 w-3 rounded-full bg-[#ef4444]" />
+                  Locked door
+                </div>
+                <div class="flex items-center gap-2 text-xs text-muted">
+                  <span class="inline-block h-3 w-3 rounded-full bg-[#f59e0b]" />
+                  Secret door
+                </div>
+                <div class="flex items-center gap-2 text-xs text-muted">
+                  <span class="inline-block h-0 w-0 border-l-[6px] border-r-[6px] border-b-[10px] border-l-transparent border-r-transparent border-b-[#f97316]" />
+                  Trap marker
+                </div>
+              </div>
+            </div>
+          </UCard>
         </div>
 
         <template #right>

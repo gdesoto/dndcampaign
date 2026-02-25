@@ -12,13 +12,16 @@ const emit = defineEmits<{
 }>()
 
 const containerRef = ref<HTMLElement | null>(null)
+const miniMapRef = ref<SVGSVGElement | null>(null)
 const zoom = ref(1)
 const panX = ref(0)
 const panY = ref(0)
 const dragging = ref(false)
+const minimapDragging = ref(false)
 const dragStart = ref({ x: 0, y: 0 })
 const panStart = ref({ x: 0, y: 0 })
 const viewport = reactive({ width: 1, height: 1 })
+const ZOOM_MAX = 4
 
 let observer: ResizeObserver | null = null
 
@@ -29,8 +32,10 @@ onMounted(() => {
     if (!rect) return
     viewport.width = Math.max(1, rect.width)
     viewport.height = Math.max(1, rect.height)
+    if (!dragging.value) fitMap()
   })
   observer.observe(containerRef.value)
+  fitMap()
 })
 
 onBeforeUnmount(() => {
@@ -41,15 +46,20 @@ onBeforeUnmount(() => {
 watch(
   () => props.map,
   () => {
-    zoom.value = 1
-    panX.value = 0
-    panY.value = 0
+    fitMap()
   },
   { deep: false },
 )
 
 const worldWidth = computed(() => props.map.width * props.map.cellSize)
 const worldHeight = computed(() => props.map.height * props.map.cellSize)
+const fitZoom = computed(() =>
+  Math.min(
+    viewport.width / Math.max(1, worldWidth.value),
+    viewport.height / Math.max(1, worldHeight.value),
+  ),
+)
+const minZoom = computed(() => Math.max(0.05, fitZoom.value * 0.5))
 
 const minimapScale = computed(() => {
   const maxSide = Math.max(worldWidth.value, worldHeight.value, 1)
@@ -64,14 +74,74 @@ const viewportWorld = computed(() => {
   return { x, y, width, height }
 })
 
-const changeZoom = (delta: number) => {
-  const next = Math.max(0.35, Math.min(3, zoom.value + delta))
-  zoom.value = Number(next.toFixed(2))
+const clampZoom = (next: number) =>
+  Math.max(minZoom.value, Math.min(ZOOM_MAX, Number(next.toFixed(3))))
+
+const clampPan = (nextX: number, nextY: number, currentZoom = zoom.value) => {
+  const scaledWidth = worldWidth.value * currentZoom
+  const scaledHeight = worldHeight.value * currentZoom
+  const minX = Math.min(0, viewport.width - scaledWidth)
+  const minY = Math.min(0, viewport.height - scaledHeight)
+  const maxX = scaledWidth <= viewport.width ? (viewport.width - scaledWidth) / 2 : 0
+  const maxY = scaledHeight <= viewport.height ? (viewport.height - scaledHeight) / 2 : 0
+  return {
+    x: Math.min(maxX, Math.max(minX, nextX)),
+    y: Math.min(maxY, Math.max(minY, nextY)),
+  }
+}
+
+const setPan = (nextX: number, nextY: number, currentZoom = zoom.value) => {
+  const clamped = clampPan(nextX, nextY, currentZoom)
+  panX.value = clamped.x
+  panY.value = clamped.y
+}
+
+const centerMap = () => {
+  setPan(
+    (viewport.width - worldWidth.value * zoom.value) / 2,
+    (viewport.height - worldHeight.value * zoom.value) / 2,
+  )
+}
+
+const fitMap = () => {
+  zoom.value = clampZoom(fitZoom.value)
+  centerMap()
+}
+
+const applyZoom = (nextZoom: number, clientX?: number, clientY?: number) => {
+  const targetZoom = clampZoom(nextZoom)
+  if (targetZoom === zoom.value) return
+  if (!containerRef.value || clientX === undefined || clientY === undefined) {
+    zoom.value = targetZoom
+    centerMap()
+    return
+  }
+
+  const bounds = containerRef.value.getBoundingClientRect()
+  const anchorX = clientX - bounds.left
+  const anchorY = clientY - bounds.top
+  const worldX = (anchorX - panX.value) / zoom.value
+  const worldY = (anchorY - panY.value) / zoom.value
+  zoom.value = targetZoom
+  setPan(anchorX - worldX * targetZoom, anchorY - worldY * targetZoom, targetZoom)
+}
+
+const changeZoom = (delta: number, clientX?: number, clientY?: number) => {
+  applyZoom(zoom.value + delta, clientX, clientY)
+}
+
+const zoomAroundCenter = (delta: number) => {
+  if (!containerRef.value) {
+    changeZoom(delta)
+    return
+  }
+  const bounds = containerRef.value.getBoundingClientRect()
+  changeZoom(delta, bounds.left + (bounds.width / 2), bounds.top + (bounds.height / 2))
 }
 
 const onWheel = (event: WheelEvent) => {
   event.preventDefault()
-  changeZoom(event.deltaY > 0 ? -0.1 : 0.1)
+  changeZoom(event.deltaY > 0 ? -0.1 : 0.1, event.clientX, event.clientY)
 }
 
 const beginDrag = (event: PointerEvent) => {
@@ -82,17 +152,46 @@ const beginDrag = (event: PointerEvent) => {
 
 const onDrag = (event: PointerEvent) => {
   if (!dragging.value) return
-  panX.value = panStart.value.x + (event.clientX - dragStart.value.x)
-  panY.value = panStart.value.y + (event.clientY - dragStart.value.y)
+  setPan(
+    panStart.value.x + (event.clientX - dragStart.value.x),
+    panStart.value.y + (event.clientY - dragStart.value.y),
+  )
 }
 
 const endDrag = () => {
   dragging.value = false
 }
 
-const centerMap = () => {
-  panX.value = (viewport.width - worldWidth.value * zoom.value) / 2
-  panY.value = (viewport.height - worldHeight.value * zoom.value) / 2
+const moveViewportToWorldPoint = (worldX: number, worldY: number) => {
+  setPan(
+    viewport.width / 2 - worldX * zoom.value,
+    viewport.height / 2 - worldY * zoom.value,
+  )
+}
+
+const onMinimapPointerDown = (event: PointerEvent) => {
+  if (!miniMapRef.value) return
+  event.preventDefault()
+  event.stopPropagation()
+  minimapDragging.value = true
+  const bounds = miniMapRef.value.getBoundingClientRect()
+  const localX = Math.min(180, Math.max(0, event.clientX - bounds.left))
+  const localY = Math.min(180, Math.max(0, event.clientY - bounds.top))
+  moveViewportToWorldPoint(localX / minimapScale.value, localY / minimapScale.value)
+}
+
+const onMinimapPointerMove = (event: PointerEvent) => {
+  if (!minimapDragging.value || !miniMapRef.value) return
+  event.preventDefault()
+  event.stopPropagation()
+  const bounds = miniMapRef.value.getBoundingClientRect()
+  const localX = Math.min(180, Math.max(0, event.clientX - bounds.left))
+  const localY = Math.min(180, Math.max(0, event.clientY - bounds.top))
+  moveViewportToWorldPoint(localX / minimapScale.value, localY / minimapScale.value)
+}
+
+const onMinimapPointerUp = () => {
+  minimapDragging.value = false
 }
 
 const selectRoom = (roomId: string) => {
@@ -100,6 +199,9 @@ const selectRoom = (roomId: string) => {
 }
 
 const roomStroke = (roomId: string) => (props.selectedRoomId === roomId ? 'var(--ui-primary)' : '#94a3b8')
+const corridorOuterWidth = computed(() => Math.max(8, Math.floor(props.map.cellSize * 1.05)))
+const corridorInnerWidth = computed(() => Math.max(5, Math.floor(props.map.cellSize * 0.68)))
+const pointToPixel = (value: number) => (value + 0.5) * props.map.cellSize
 const trapPoints = computed(() =>
   props.map.traps
     .map((trap) => {
@@ -124,15 +226,16 @@ const labeledRooms = computed(() => (props.showLabels === false ? [] : props.map
         Zoom {{ Math.round(zoom * 100) }}% • {{ map.width }}x{{ map.height }} cells
       </p>
       <div class="flex items-center gap-1">
-        <UButton size="xs" variant="ghost" icon="i-lucide-minus" @click="changeZoom(-0.1)" />
-        <UButton size="xs" variant="ghost" icon="i-lucide-plus" @click="changeZoom(0.1)" />
+        <UButton size="xs" variant="ghost" icon="i-lucide-minus" @click="zoomAroundCenter(-0.1)" />
+        <UButton size="xs" variant="ghost" icon="i-lucide-plus" @click="zoomAroundCenter(0.1)" />
         <UButton size="xs" variant="ghost" icon="i-lucide-locate-fixed" @click="centerMap">Center</UButton>
+        <UButton size="xs" variant="ghost" icon="i-lucide-expand" @click="fitMap">Fit</UButton>
       </div>
     </div>
 
     <div
       ref="containerRef"
-      class="relative h-[540px] touch-none overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(148,163,184,0.12),_transparent_55%)]"
+      class="relative h-[540px] touch-none overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(154,125,88,0.25),_rgba(38,30,21,0.7)_68%)]"
       @wheel="onWheel"
       @pointerdown="beginDrag"
       @pointermove="onDrag"
@@ -146,9 +249,9 @@ const labeledRooms = computed(() => (props.showLabels === false ? [] : props.map
         aria-label="Dungeon map"
       >
         <g :transform="`translate(${panX} ${panY}) scale(${zoom})`">
-          <rect x="0" y="0" :width="worldWidth" :height="worldHeight" fill="#0f172a" />
+          <rect x="0" y="0" :width="worldWidth" :height="worldHeight" fill="#1f1b16" />
 
-          <g stroke="#1e293b" stroke-width="1">
+          <g stroke="rgba(245, 222, 179, 0.12)" stroke-width="1">
             <line
               v-for="x in map.width"
               :key="`vx-${x}`"
@@ -170,13 +273,24 @@ const labeledRooms = computed(() => (props.showLabels === false ? [] : props.map
           <polyline
             v-for="corridor in map.corridors"
             :key="corridor.id"
-            :points="corridor.points.map((point) => `${point.x * map.cellSize} ${point.y * map.cellSize}`).join(' ')"
+            :points="corridor.points.map((point) => `${pointToPixel(point.x)} ${pointToPixel(point.y)}`).join(' ')"
             fill="none"
-            stroke="#22d3ee"
-            stroke-width="6"
+            stroke="#88714d"
+            :stroke-width="corridorOuterWidth"
             stroke-linecap="round"
             stroke-linejoin="round"
-            opacity="0.7"
+            opacity="0.75"
+          />
+          <polyline
+            v-for="corridor in map.corridors"
+            :key="`inner-${corridor.id}`"
+            :points="corridor.points.map((point) => `${pointToPixel(point.x)} ${pointToPixel(point.y)}`).join(' ')"
+            fill="none"
+            stroke="#c6a979"
+            :stroke-width="corridorInnerWidth"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            opacity="0.85"
           />
 
           <line
@@ -198,7 +312,7 @@ const labeledRooms = computed(() => (props.showLabels === false ? [] : props.map
               :y="room.y * map.cellSize"
               :width="room.width * map.cellSize"
               :height="room.height * map.cellSize"
-              :fill="room.isSecret ? 'rgba(248,113,113,0.2)' : 'rgba(203,213,225,0.18)'"
+              :fill="room.isSecret ? 'rgba(220, 38, 38, 0.18)' : 'rgba(226, 210, 178, 0.5)'"
               :stroke="roomStroke(room.id)"
               stroke-width="2"
               class="cursor-pointer transition-all duration-150"
@@ -211,7 +325,7 @@ const labeledRooms = computed(() => (props.showLabels === false ? [] : props.map
             :key="`label-${room.id}`"
             :x="(room.x + Math.floor(room.width / 2)) * map.cellSize"
             :y="(room.y + Math.floor(room.height / 2)) * map.cellSize"
-            fill="#e2e8f0"
+            fill="#f5f0e6"
             font-size="12"
             text-anchor="middle"
             dominant-baseline="middle"
@@ -222,8 +336,8 @@ const labeledRooms = computed(() => (props.showLabels === false ? [] : props.map
           <circle
             v-for="door in map.doors"
             :key="door.id"
-            :cx="door.x * map.cellSize"
-            :cy="door.y * map.cellSize"
+            :cx="pointToPixel(door.x)"
+            :cy="pointToPixel(door.y)"
             r="5"
             :fill="door.isSecret ? '#f59e0b' : (door.isLocked ? '#ef4444' : '#10b981')"
           />
@@ -237,8 +351,17 @@ const labeledRooms = computed(() => (props.showLabels === false ? [] : props.map
         </g>
       </svg>
 
-      <div class="pointer-events-none absolute bottom-3 right-3 rounded-md border border-default bg-default/90 p-2 backdrop-blur">
-        <svg :width="180" :height="180" class="block">
+      <div class="absolute bottom-3 right-3 rounded-md border border-default bg-default/90 p-2 backdrop-blur">
+        <svg
+          ref="miniMapRef"
+          :width="180"
+          :height="180"
+          class="block cursor-crosshair"
+          @pointerdown="onMinimapPointerDown"
+          @pointermove="onMinimapPointerMove"
+          @pointerup="onMinimapPointerUp"
+          @pointerleave="onMinimapPointerUp"
+        >
           <rect
             x="0"
             y="0"

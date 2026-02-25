@@ -15,6 +15,16 @@ const isCreating = ref(false)
 const isImporting = ref(false)
 const createError = ref('')
 const importError = ref('')
+const seedPattern = /^[A-Za-z0-9][A-Za-z0-9_-]{2,79}$/
+const dungeonThemeOptions = [
+  { label: 'Ruins', value: 'ruins' },
+  { label: 'Cavern', value: 'cavern' },
+  { label: 'Sewer', value: 'sewer' },
+  { label: 'Crypt', value: 'crypt' },
+  { label: 'Custom', value: 'custom' },
+] as const
+const selectedThemeOption = ref<(typeof dungeonThemeOptions)[number]['value']>('ruins')
+const customTheme = ref('')
 const form = reactive<DungeonCreateInput>({
   name: '',
   theme: 'ruins',
@@ -34,11 +44,28 @@ const {
   () => `dungeons-${campaignId.value}`,
   () => dungeonApi.listDungeons(campaignId.value),
 )
+const canCreateDungeon = computed(() =>
+  !!form.name.trim()
+  && (selectedThemeOption.value !== 'custom' || !!customTheme.value.trim()),
+)
+const normalizedSeed = computed(() => form.seed?.trim() || '')
+const seedValidationMessage = computed(() => {
+  if (!normalizedSeed.value) return ''
+  if (seedPattern.test(normalizedSeed.value)) return ''
+  return 'Use 3-80 characters: letters, numbers, hyphen, or underscore.'
+})
+
+const generateSeedSuggestion = () => {
+  const value = Math.random().toString(36).slice(2, 10)
+  form.seed = `dungeon-${value}`
+}
 
 const resetForm = () => {
   form.name = ''
   form.theme = 'ruins'
   form.seed = undefined
+  selectedThemeOption.value = 'ruins'
+  customTheme.value = ''
 }
 
 const openCreate = () => {
@@ -61,11 +88,27 @@ const createDungeon = async () => {
   isCreating.value = true
   createError.value = ''
 
+  const normalizedTheme = selectedThemeOption.value === 'custom'
+    ? customTheme.value.trim()
+    : selectedThemeOption.value
+
+  if (!normalizedTheme) {
+    createError.value = 'Custom theme is required.'
+    isCreating.value = false
+    return
+  }
+
+  if (normalizedSeed.value && !seedPattern.test(normalizedSeed.value)) {
+    createError.value = seedValidationMessage.value
+    isCreating.value = false
+    return
+  }
+
   try {
     const created = await dungeonApi.createDungeon(campaignId.value, {
       name: form.name,
-      theme: form.theme,
-      seed: form.seed || undefined,
+      theme: normalizedTheme,
+      seed: normalizedSeed.value || undefined,
     })
     if (!created) {
       throw new Error('Dungeon creation returned an empty response.')
@@ -196,10 +239,33 @@ const importDungeon = async () => {
             <UInput v-model="form.name" placeholder="Ancient catacombs" />
           </UFormField>
           <UFormField label="Theme" required>
-            <UInput v-model="form.theme" placeholder="ruins" />
+            <USelect
+              v-model="selectedThemeOption"
+              :items="dungeonThemeOptions"
+            />
+            <p class="mt-1 text-xs text-muted">
+              Theme influences the dungeon's generated style and content flavor.
+            </p>
+          </UFormField>
+          <UFormField v-if="selectedThemeOption === 'custom'" label="Custom theme" required>
+            <UInput
+              v-model="customTheme"
+              placeholder="volcanic forge"
+            />
           </UFormField>
           <UFormField label="Seed (optional)">
-            <UInput v-model="form.seed" placeholder="leave blank for auto-seed" />
+            <div class="space-y-2">
+              <UInput v-model="form.seed" placeholder="e.g. crypt-2026-03-14" />
+              <div class="flex items-center justify-between gap-2">
+                <p class="text-xs text-muted">
+                  Same seed + same settings = same dungeon. Leave blank to auto-generate.
+                </p>
+                <UButton size="xs" variant="outline" @click="generateSeedSuggestion">
+                  Generate seed
+                </UButton>
+              </div>
+              <p v-if="seedValidationMessage" class="text-xs text-warning">{{ seedValidationMessage }}</p>
+            </div>
           </UFormField>
           <p v-if="createError" class="text-sm text-error">{{ createError }}</p>
         </div>
@@ -207,7 +273,7 @@ const importDungeon = async () => {
       <template #footer>
         <div class="flex justify-end gap-2">
           <UButton variant="ghost" @click="isCreateOpen = false">Cancel</UButton>
-          <UButton :loading="isCreating" :disabled="!form.name.trim()" @click="createDungeon">Create</UButton>
+          <UButton :loading="isCreating" :disabled="!canCreateDungeon" @click="createDungeon">Create</UButton>
         </div>
       </template>
     </UModal>

@@ -37,18 +37,29 @@ const withDungeonAccess = async (
 const toSvg = (map: DungeonMapData, options: Pick<DungeonExportInput, 'includeGrid' | 'includeLabels'>) => {
   const worldWidth = map.width * map.cellSize
   const worldHeight = map.height * map.cellSize
+  const pointToPixel = (value: number) => (value + 0.5) * map.cellSize
+  const corridorOuterWidth = Math.max(8, Math.floor(map.cellSize * 1.05))
+  const corridorInnerWidth = Math.max(5, Math.floor(map.cellSize * 0.68))
   const gridSvg = options.includeGrid
-    ? `<g stroke="#1e293b" stroke-width="1">${Array.from({ length: map.width }, (_, index) =>
+    ? `<g stroke="rgba(245, 222, 179, 0.12)" stroke-width="1">${Array.from({ length: map.width }, (_, index) =>
       `<line x1="${(index + 1) * map.cellSize}" y1="0" x2="${(index + 1) * map.cellSize}" y2="${worldHeight}" />`).join('')}
 ${Array.from({ length: map.height }, (_, index) =>
       `<line x1="0" y1="${(index + 1) * map.cellSize}" x2="${worldWidth}" y2="${(index + 1) * map.cellSize}" />`).join('')}</g>`
     : ''
-  const corridorSvg = map.corridors
+  const corridorOuterSvg = map.corridors
     .map(
       (corridor) =>
         `<polyline points="${corridor.points
-          .map((point) => `${point.x * map.cellSize},${point.y * map.cellSize}`)
-          .join(' ')}" fill="none" stroke="#22d3ee" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity="0.7" />`,
+          .map((point) => `${pointToPixel(point.x)},${pointToPixel(point.y)}`)
+          .join(' ')}" fill="none" stroke="#88714d" stroke-width="${corridorOuterWidth}" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />`,
+    )
+    .join('\n')
+  const corridorInnerSvg = map.corridors
+    .map(
+      (corridor) =>
+        `<polyline points="${corridor.points
+          .map((point) => `${pointToPixel(point.x)},${pointToPixel(point.y)}`)
+          .join(' ')}" fill="none" stroke="#c6a979" stroke-width="${corridorInnerWidth}" stroke-linecap="round" stroke-linejoin="round" opacity="0.85" />`,
     )
     .join('\n')
   const roomsSvg = map.rooms
@@ -56,13 +67,13 @@ ${Array.from({ length: map.height }, (_, index) =>
       (room) =>
         `<rect x="${room.x * map.cellSize}" y="${room.y * map.cellSize}" width="${room.width * map.cellSize}" height="${
           room.height * map.cellSize
-        }" fill="${room.isSecret ? 'rgba(248,113,113,0.2)' : 'rgba(203,213,225,0.18)'}" stroke="#94a3b8" stroke-width="2" />`,
+        }" fill="${room.isSecret ? 'rgba(220, 38, 38, 0.18)' : 'rgba(226, 210, 178, 0.5)'}" stroke="#94a3b8" stroke-width="2" />`,
     )
     .join('\n')
   const doorsSvg = map.doors
     .map(
       (door) =>
-        `<circle cx="${door.x * map.cellSize}" cy="${door.y * map.cellSize}" r="5" fill="${
+        `<circle cx="${pointToPixel(door.x)}" cy="${pointToPixel(door.y)}" r="5" fill="${
           door.isSecret ? '#f59e0b' : door.isLocked ? '#ef4444' : '#10b981'
         }" />`,
     )
@@ -71,16 +82,17 @@ ${Array.from({ length: map.height }, (_, index) =>
     ? map.rooms
       .map(
         (room) =>
-          `<text x="${(room.x + Math.floor(room.width / 2)) * map.cellSize}" y="${(room.y + Math.floor(room.height / 2)) * map.cellSize}" fill="#e2e8f0" font-size="12" text-anchor="middle" dominant-baseline="middle">R${room.roomNumber}</text>`,
+          `<text x="${(room.x + Math.floor(room.width / 2)) * map.cellSize}" y="${(room.y + Math.floor(room.height / 2)) * map.cellSize}" fill="#f5f0e6" font-size="12" text-anchor="middle" dominant-baseline="middle">R${room.roomNumber}</text>`,
       )
       .join('\n')
     : ''
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${worldWidth}" height="${worldHeight}" viewBox="0 0 ${worldWidth} ${worldHeight}">
-  <rect x="0" y="0" width="${worldWidth}" height="${worldHeight}" fill="#0f172a"/>
+  <rect x="0" y="0" width="${worldWidth}" height="${worldHeight}" fill="#1f1b16"/>
   ${gridSvg}
-  ${corridorSvg}
+  ${corridorOuterSvg}
+  ${corridorInnerSvg}
   ${roomsSvg}
   ${doorsSvg}
   ${labelsSvg}
