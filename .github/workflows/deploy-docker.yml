@@ -13,9 +13,32 @@ permissions:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: file:/tmp/dndcampaign-ci.db
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Prisma validate
+        run: npx prisma validate
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: API tests
+        run: yarn test:api
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3

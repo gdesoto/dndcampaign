@@ -1,5 +1,5 @@
 import { prisma } from '#server/db/prisma'
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '#server/db/prisma-client'
 import type { CharacterSection } from '#shared/schemas/character'
 import { CharacterSyncService } from './character-sync.service'
 
@@ -201,3 +201,4 @@ export class CharacterService {
     return updated
   }
 }
+

@@ -30,7 +30,7 @@ export function createTestDbContext({
   const dbDir = resolve(rootDir, 'storage', 'db')
   const dbFile = `${prefix}-${process.pid}-${Date.now()}.db`
   const dbPath = resolve(dbDir, dbFile)
-  const dbUrl = `file:../storage/db/${dbFile}`
+  const dbUrl = `file:${dbPath.replace(/\\/g, '/')}`
 
   const env = {
     ...process.env,

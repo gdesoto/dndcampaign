@@ -1,5 +1,5 @@
 import { prisma } from '#server/db/prisma'
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '#server/db/prisma-client'
 import { computeCharacterSummary } from './character.service'
 
 const buildGlossaryDescription = (sheetJson: Record<string, unknown>) => {
@@ -123,3 +123,4 @@ export class CharacterSyncService {
     })
   }
 }
+

@@ -1,5 +1,5 @@
 import { prisma } from '#server/db/prisma'
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '#server/db/prisma-client'
 import { createHash } from 'node:crypto'
 import { ofetch } from 'ofetch'
 import type { CharacterSection } from '#shared/schemas/character'
@@ -315,3 +315,4 @@ const getSectionValue = (sheet: Record<string, unknown>, section: CharacterSecti
       return sheet[sectionToKey(section)]
   }
 }
+

@@ -1,6 +1,6 @@
 import { prisma } from '#server/db/prisma'
 import { ArtifactService } from './artifact.service'
-import type { RecordingKind } from '@prisma/client'
+import type { RecordingKind } from '#server/db/prisma-client'
 import type { Readable } from 'node:stream'
 
 type CreateRecordingInput = {
@@ -103,4 +103,5 @@ export class RecordingService {
     })
   }
 }
+
 

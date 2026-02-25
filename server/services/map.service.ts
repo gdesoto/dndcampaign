@@ -5,7 +5,7 @@ import type {
   CampaignMapGlossaryLinkType,
   GlossaryType,
   Prisma,
-} from '@prisma/client'
+} from '#server/db/prisma-client'
 import { prisma } from '#server/db/prisma'
 import { getStorageAdapter } from '#server/services/storage/storage.factory'
 import {
@@ -867,3 +867,4 @@ export class MapService {
     return withCounts ? toSummary(withCounts as never) : null
   }
 }
+

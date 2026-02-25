@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import type { CampaignRole } from '@prisma/client'
+import type { CampaignRole } from '#server/db/prisma-client'
 import { prisma } from '#server/db/prisma'
 import type { ServiceResult } from '#server/services/auth.service'
 import type {
@@ -841,3 +841,4 @@ export class CampaignMembershipService {
     }
   }
 }
+

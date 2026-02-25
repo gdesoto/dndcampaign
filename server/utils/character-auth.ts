@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '#server/db/prisma-client'
 import { prisma } from '#server/db/prisma'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
@@ -117,3 +117,4 @@ export const resolveCharacterAccess = async (
     ownerId: character.ownerId,
   }
 }
+

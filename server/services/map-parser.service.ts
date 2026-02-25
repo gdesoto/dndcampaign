@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '#server/db/prisma-client'
 import type { MapFeatureType } from '#shared/types/api/map'
 
 export type UploadedMapFile = {
@@ -587,3 +587,4 @@ export const buildFeatureDiff = (
 
   return { added, removed, changed }
 }
+

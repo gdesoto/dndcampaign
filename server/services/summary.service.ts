@@ -10,7 +10,7 @@ import type {
   SummarySuggestions,
 } from '#shared/schemas/summarization'
 import { n8nWebhookPayloadSchema } from '#shared/schemas/summarization'
-import type { Document, DocumentFormat, Prisma } from '@prisma/client'
+import type { Document, DocumentFormat, Prisma } from '#server/db/prisma-client'
 
 export type StartSummarizationInput = {
   documentId: string
@@ -778,3 +778,4 @@ export class SummaryService {
     })
   }
 }
+

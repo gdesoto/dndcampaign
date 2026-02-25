@@ -3,7 +3,7 @@ import Busboy from 'busboy'
 import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { RecordingService } from '#server/services/recording.service'
-import type { RecordingKind } from '@prisma/client'
+import type { RecordingKind } from '#server/db/prisma-client'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 const MAX_BYTES = 2 * 1024 * 1024 * 1024
@@ -171,6 +171,7 @@ export default defineEventHandler(async (event) => {
 
   return ok(recording)
 })
+
 
 
 

@@ -1,5 +1,5 @@
 import { prisma } from '#server/db/prisma'
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '#server/db/prisma-client'
 import type { ServiceResult } from '#server/services/auth.service'
 import type {
   EncounterStatBlock,
@@ -108,3 +108,4 @@ export class EncounterStatBlockService {
     return { ok: true, data: { deleted: true } }
   }
 }
+

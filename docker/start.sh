@@ -5,6 +5,12 @@ if [ -z "${NUXT_STORAGE_LOCAL_ROOT:-}" ] && [ -n "${STORAGE_LOCAL_ROOT:-}" ]; th
   export NUXT_STORAGE_LOCAL_ROOT="$STORAGE_LOCAL_ROOT"
 fi
 
+# Default container envs (runtime overrides still take precedence).
+: "${NUXT_STORAGE_LOCAL_ROOT:=/data/storage}"
+: "${DATABASE_URL:=file:/data/db/app.db}"
+: "${RUN_MIGRATIONS:=1}"
+export NUXT_STORAGE_LOCAL_ROOT DATABASE_URL RUN_MIGRATIONS
+
 if [ -z "${NUXT_STORAGE_PROVIDER:-}" ] && [ -n "${STORAGE_PROVIDER_DEFAULT:-}" ]; then
   export NUXT_STORAGE_PROVIDER="$STORAGE_PROVIDER_DEFAULT"
 fi
@@ -21,8 +27,8 @@ if [ -z "${NUXT_ELEVENLABS_WEBHOOK_ID:-}" ] && [ -n "${ELEVENLABS_WEBHOOK_ID:-}"
   export NUXT_ELEVENLABS_WEBHOOK_ID="$ELEVENLABS_WEBHOOK_ID"
 fi
 
-if [ -n "${STORAGE_LOCAL_ROOT:-}" ]; then
-  mkdir -p "$STORAGE_LOCAL_ROOT"
+if [ -n "${NUXT_STORAGE_LOCAL_ROOT:-}" ]; then
+  mkdir -p "$NUXT_STORAGE_LOCAL_ROOT"
 fi
 
 if [ -n "${DATABASE_URL:-}" ]; then

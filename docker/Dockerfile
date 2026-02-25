@@ -19,10 +19,14 @@ FROM base AS runtime
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV NITRO_PORT=3000
+ENV NUXT_STORAGE_LOCAL_ROOT=/data/storage
+ENV DATABASE_URL=file:/data/db/app.db
+ENV RUN_MIGRATIONS=1
 WORKDIR /app
 COPY --from=build /app/.output ./.output
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/prisma ./prisma
+COPY --from=build /app/prisma.config.ts ./prisma.config.ts
 COPY --from=build /app/package.json ./package.json
 COPY docker/start.sh /app/start.sh
 RUN chmod +x /app/start.sh

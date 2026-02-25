@@ -1,5 +1,5 @@
 import { prisma } from '#server/db/prisma'
-import type { GlossaryType, QuestType, Prisma  } from '@prisma/client'
+import type { GlossaryType, QuestType, Prisma  } from '#server/db/prisma-client'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 type ApplyResult = {
@@ -411,3 +411,4 @@ export class SummarySuggestionService {
     return { suggestionId: suggestion.id, status: 'DISCARDED', entityType: suggestion.entityType }
   }
 }
+
