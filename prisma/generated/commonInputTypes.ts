@@ -236,6 +236,57 @@ export type EnumCampaignInviteStatusWithAggregatesFilter<$PrismaModel = never> =
   _max?: Prisma.NestedEnumCampaignInviteStatusFilter<$PrismaModel>
 }
 
+export type EnumCampaignRequestTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignRequestType | Prisma.EnumCampaignRequestTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignRequestType[]
+  notIn?: $Enums.CampaignRequestType[]
+  not?: Prisma.NestedEnumCampaignRequestTypeFilter<$PrismaModel> | $Enums.CampaignRequestType
+}
+
+export type EnumCampaignRequestVisibilityFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignRequestVisibility | Prisma.EnumCampaignRequestVisibilityFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignRequestVisibility[]
+  notIn?: $Enums.CampaignRequestVisibility[]
+  not?: Prisma.NestedEnumCampaignRequestVisibilityFilter<$PrismaModel> | $Enums.CampaignRequestVisibility
+}
+
+export type EnumCampaignRequestStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignRequestStatus | Prisma.EnumCampaignRequestStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignRequestStatus[]
+  notIn?: $Enums.CampaignRequestStatus[]
+  not?: Prisma.NestedEnumCampaignRequestStatusFilter<$PrismaModel> | $Enums.CampaignRequestStatus
+}
+
+export type EnumCampaignRequestTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignRequestType | Prisma.EnumCampaignRequestTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignRequestType[]
+  notIn?: $Enums.CampaignRequestType[]
+  not?: Prisma.NestedEnumCampaignRequestTypeWithAggregatesFilter<$PrismaModel> | $Enums.CampaignRequestType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCampaignRequestTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCampaignRequestTypeFilter<$PrismaModel>
+}
+
+export type EnumCampaignRequestVisibilityWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignRequestVisibility | Prisma.EnumCampaignRequestVisibilityFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignRequestVisibility[]
+  notIn?: $Enums.CampaignRequestVisibility[]
+  not?: Prisma.NestedEnumCampaignRequestVisibilityWithAggregatesFilter<$PrismaModel> | $Enums.CampaignRequestVisibility
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCampaignRequestVisibilityFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCampaignRequestVisibilityFilter<$PrismaModel>
+}
+
+export type EnumCampaignRequestStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignRequestStatus | Prisma.EnumCampaignRequestStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignRequestStatus[]
+  notIn?: $Enums.CampaignRequestStatus[]
+  not?: Prisma.NestedEnumCampaignRequestStatusWithAggregatesFilter<$PrismaModel> | $Enums.CampaignRequestStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCampaignRequestStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCampaignRequestStatusFilter<$PrismaModel>
+}
+
 export type IntNullableFilter<$PrismaModel = never> = {
   equals?: number | Prisma.IntFieldRefInput<$PrismaModel> | null
   in?: number[] | null
@@ -1175,6 +1226,57 @@ export type NestedEnumCampaignInviteStatusWithAggregatesFilter<$PrismaModel = ne
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumCampaignInviteStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumCampaignInviteStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumCampaignRequestTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignRequestType | Prisma.EnumCampaignRequestTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignRequestType[]
+  notIn?: $Enums.CampaignRequestType[]
+  not?: Prisma.NestedEnumCampaignRequestTypeFilter<$PrismaModel> | $Enums.CampaignRequestType
+}
+
+export type NestedEnumCampaignRequestVisibilityFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignRequestVisibility | Prisma.EnumCampaignRequestVisibilityFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignRequestVisibility[]
+  notIn?: $Enums.CampaignRequestVisibility[]
+  not?: Prisma.NestedEnumCampaignRequestVisibilityFilter<$PrismaModel> | $Enums.CampaignRequestVisibility
+}
+
+export type NestedEnumCampaignRequestStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignRequestStatus | Prisma.EnumCampaignRequestStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignRequestStatus[]
+  notIn?: $Enums.CampaignRequestStatus[]
+  not?: Prisma.NestedEnumCampaignRequestStatusFilter<$PrismaModel> | $Enums.CampaignRequestStatus
+}
+
+export type NestedEnumCampaignRequestTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignRequestType | Prisma.EnumCampaignRequestTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignRequestType[]
+  notIn?: $Enums.CampaignRequestType[]
+  not?: Prisma.NestedEnumCampaignRequestTypeWithAggregatesFilter<$PrismaModel> | $Enums.CampaignRequestType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCampaignRequestTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCampaignRequestTypeFilter<$PrismaModel>
+}
+
+export type NestedEnumCampaignRequestVisibilityWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignRequestVisibility | Prisma.EnumCampaignRequestVisibilityFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignRequestVisibility[]
+  notIn?: $Enums.CampaignRequestVisibility[]
+  not?: Prisma.NestedEnumCampaignRequestVisibilityWithAggregatesFilter<$PrismaModel> | $Enums.CampaignRequestVisibility
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCampaignRequestVisibilityFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCampaignRequestVisibilityFilter<$PrismaModel>
+}
+
+export type NestedEnumCampaignRequestStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignRequestStatus | Prisma.EnumCampaignRequestStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignRequestStatus[]
+  notIn?: $Enums.CampaignRequestStatus[]
+  not?: Prisma.NestedEnumCampaignRequestStatusWithAggregatesFilter<$PrismaModel> | $Enums.CampaignRequestStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCampaignRequestStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCampaignRequestStatusFilter<$PrismaModel>
 }
 
 export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {

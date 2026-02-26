@@ -45,6 +45,11 @@ export type ResolvedCampaignAccess = {
   permissions: CampaignPermission[]
 }
 
+export type CampaignDmAccessSubject = Pick<ResolvedCampaignAccess, 'role' | 'hasDmAccess'>
+
+export const hasCampaignDmAccess = (access: CampaignDmAccessSubject) =>
+  access.role === 'OWNER' || Boolean(access.hasDmAccess)
+
 type CampaignAccessResolution = {
   exists: boolean
   access: ResolvedCampaignAccess | null

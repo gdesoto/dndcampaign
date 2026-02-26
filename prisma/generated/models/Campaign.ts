@@ -242,6 +242,8 @@ export type CampaignWhereInput = {
   encounterTemplates?: Prisma.EncounterTemplateListRelationFilter
   encounterStatBlocks?: Prisma.EncounterStatBlockListRelationFilter
   dungeons?: Prisma.CampaignDungeonListRelationFilter
+  requests?: Prisma.CampaignRequestListRelationFilter
+  requestVotes?: Prisma.CampaignRequestVoteListRelationFilter
 }
 
 export type CampaignOrderByWithRelationInput = {
@@ -275,6 +277,8 @@ export type CampaignOrderByWithRelationInput = {
   encounterTemplates?: Prisma.EncounterTemplateOrderByRelationAggregateInput
   encounterStatBlocks?: Prisma.EncounterStatBlockOrderByRelationAggregateInput
   dungeons?: Prisma.CampaignDungeonOrderByRelationAggregateInput
+  requests?: Prisma.CampaignRequestOrderByRelationAggregateInput
+  requestVotes?: Prisma.CampaignRequestVoteOrderByRelationAggregateInput
 }
 
 export type CampaignWhereUniqueInput = Prisma.AtLeast<{
@@ -311,6 +315,8 @@ export type CampaignWhereUniqueInput = Prisma.AtLeast<{
   encounterTemplates?: Prisma.EncounterTemplateListRelationFilter
   encounterStatBlocks?: Prisma.EncounterStatBlockListRelationFilter
   dungeons?: Prisma.CampaignDungeonListRelationFilter
+  requests?: Prisma.CampaignRequestListRelationFilter
+  requestVotes?: Prisma.CampaignRequestVoteListRelationFilter
 }, "id">
 
 export type CampaignOrderByWithAggregationInput = {
@@ -375,6 +381,8 @@ export type CampaignCreateInput = {
   encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUncheckedCreateInput = {
@@ -407,6 +415,8 @@ export type CampaignUncheckedCreateInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUpdateInput = {
@@ -439,6 +449,8 @@ export type CampaignUpdateInput = {
   encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateInput = {
@@ -471,6 +483,8 @@ export type CampaignUncheckedUpdateInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignCreateManyInput = {
@@ -668,6 +682,34 @@ export type CampaignUpdateOneRequiredWithoutInvitesNestedInput = {
   upsert?: Prisma.CampaignUpsertWithoutInvitesInput
   connect?: Prisma.CampaignWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.CampaignUpdateToOneWithWhereWithoutInvitesInput, Prisma.CampaignUpdateWithoutInvitesInput>, Prisma.CampaignUncheckedUpdateWithoutInvitesInput>
+}
+
+export type CampaignCreateNestedOneWithoutRequestsInput = {
+  create?: Prisma.XOR<Prisma.CampaignCreateWithoutRequestsInput, Prisma.CampaignUncheckedCreateWithoutRequestsInput>
+  connectOrCreate?: Prisma.CampaignCreateOrConnectWithoutRequestsInput
+  connect?: Prisma.CampaignWhereUniqueInput
+}
+
+export type CampaignUpdateOneRequiredWithoutRequestsNestedInput = {
+  create?: Prisma.XOR<Prisma.CampaignCreateWithoutRequestsInput, Prisma.CampaignUncheckedCreateWithoutRequestsInput>
+  connectOrCreate?: Prisma.CampaignCreateOrConnectWithoutRequestsInput
+  upsert?: Prisma.CampaignUpsertWithoutRequestsInput
+  connect?: Prisma.CampaignWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CampaignUpdateToOneWithWhereWithoutRequestsInput, Prisma.CampaignUpdateWithoutRequestsInput>, Prisma.CampaignUncheckedUpdateWithoutRequestsInput>
+}
+
+export type CampaignCreateNestedOneWithoutRequestVotesInput = {
+  create?: Prisma.XOR<Prisma.CampaignCreateWithoutRequestVotesInput, Prisma.CampaignUncheckedCreateWithoutRequestVotesInput>
+  connectOrCreate?: Prisma.CampaignCreateOrConnectWithoutRequestVotesInput
+  connect?: Prisma.CampaignWhereUniqueInput
+}
+
+export type CampaignUpdateOneRequiredWithoutRequestVotesNestedInput = {
+  create?: Prisma.XOR<Prisma.CampaignCreateWithoutRequestVotesInput, Prisma.CampaignUncheckedCreateWithoutRequestVotesInput>
+  connectOrCreate?: Prisma.CampaignCreateOrConnectWithoutRequestVotesInput
+  upsert?: Prisma.CampaignUpsertWithoutRequestVotesInput
+  connect?: Prisma.CampaignWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CampaignUpdateToOneWithWhereWithoutRequestVotesInput, Prisma.CampaignUpdateWithoutRequestVotesInput>, Prisma.CampaignUncheckedUpdateWithoutRequestVotesInput>
 }
 
 export type CampaignCreateNestedOneWithoutSessionsInput = {
@@ -909,6 +951,8 @@ export type CampaignCreateWithoutOwnerInput = {
   encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUncheckedCreateWithoutOwnerInput = {
@@ -940,6 +984,8 @@ export type CampaignUncheckedCreateWithoutOwnerInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignCreateOrConnectWithoutOwnerInput = {
@@ -1012,6 +1058,8 @@ export type CampaignCreateWithoutActivityLogsInput = {
   encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUncheckedCreateWithoutActivityLogsInput = {
@@ -1043,6 +1091,8 @@ export type CampaignUncheckedCreateWithoutActivityLogsInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignCreateOrConnectWithoutActivityLogsInput = {
@@ -1090,6 +1140,8 @@ export type CampaignUpdateWithoutActivityLogsInput = {
   encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateWithoutActivityLogsInput = {
@@ -1121,6 +1173,8 @@ export type CampaignUncheckedUpdateWithoutActivityLogsInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignCreateWithoutPublicAccessInput = {
@@ -1152,6 +1206,8 @@ export type CampaignCreateWithoutPublicAccessInput = {
   encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUncheckedCreateWithoutPublicAccessInput = {
@@ -1183,6 +1239,8 @@ export type CampaignUncheckedCreateWithoutPublicAccessInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignCreateOrConnectWithoutPublicAccessInput = {
@@ -1230,6 +1288,8 @@ export type CampaignUpdateWithoutPublicAccessInput = {
   encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateWithoutPublicAccessInput = {
@@ -1261,6 +1321,8 @@ export type CampaignUncheckedUpdateWithoutPublicAccessInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignCreateWithoutMembersInput = {
@@ -1292,6 +1354,8 @@ export type CampaignCreateWithoutMembersInput = {
   encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUncheckedCreateWithoutMembersInput = {
@@ -1323,6 +1387,8 @@ export type CampaignUncheckedCreateWithoutMembersInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignCreateOrConnectWithoutMembersInput = {
@@ -1370,6 +1436,8 @@ export type CampaignUpdateWithoutMembersInput = {
   encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateWithoutMembersInput = {
@@ -1401,6 +1469,8 @@ export type CampaignUncheckedUpdateWithoutMembersInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignCreateWithoutInvitesInput = {
@@ -1432,6 +1502,8 @@ export type CampaignCreateWithoutInvitesInput = {
   encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUncheckedCreateWithoutInvitesInput = {
@@ -1463,6 +1535,8 @@ export type CampaignUncheckedCreateWithoutInvitesInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignCreateOrConnectWithoutInvitesInput = {
@@ -1510,6 +1584,8 @@ export type CampaignUpdateWithoutInvitesInput = {
   encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateWithoutInvitesInput = {
@@ -1541,6 +1617,304 @@ export type CampaignUncheckedUpdateWithoutInvitesInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
+}
+
+export type CampaignCreateWithoutRequestsInput = {
+  id?: string
+  name: string
+  system?: string
+  isArchived?: boolean
+  dungeonMasterName?: string | null
+  description?: string | null
+  currentStatus?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  owner: Prisma.UserCreateNestedOneWithoutCampaignsInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutCampaignInput
+  glossary?: Prisma.GlossaryEntryCreateNestedManyWithoutCampaignInput
+  quests?: Prisma.QuestCreateNestedManyWithoutCampaignInput
+  milestones?: Prisma.MilestoneCreateNestedManyWithoutCampaignInput
+  documents?: Prisma.DocumentCreateNestedManyWithoutCampaignInput
+  characters?: Prisma.CampaignCharacterCreateNestedManyWithoutCampaignInput
+  summaryJobs?: Prisma.SummaryJobCreateNestedManyWithoutCampaignInput
+  maps?: Prisma.CampaignMapCreateNestedManyWithoutCampaignInput
+  members?: Prisma.CampaignMemberCreateNestedManyWithoutCampaignInput
+  invites?: Prisma.CampaignInviteCreateNestedManyWithoutCampaignInput
+  publicAccess?: Prisma.CampaignPublicAccessCreateNestedOneWithoutCampaignInput
+  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutCampaignInput
+  calendarConfig?: Prisma.CampaignCalendarConfigCreateNestedOneWithoutCampaignInput
+  calendarEvents?: Prisma.CampaignCalendarEventCreateNestedManyWithoutCampaignInput
+  sessionCalendarRanges?: Prisma.SessionCalendarRangeCreateNestedManyWithoutCampaignInput
+  encounters?: Prisma.CampaignEncounterCreateNestedManyWithoutCampaignInput
+  encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
+  encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
+  dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
+}
+
+export type CampaignUncheckedCreateWithoutRequestsInput = {
+  id?: string
+  ownerId: string
+  name: string
+  system?: string
+  isArchived?: boolean
+  dungeonMasterName?: string | null
+  description?: string | null
+  currentStatus?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutCampaignInput
+  glossary?: Prisma.GlossaryEntryUncheckedCreateNestedManyWithoutCampaignInput
+  quests?: Prisma.QuestUncheckedCreateNestedManyWithoutCampaignInput
+  milestones?: Prisma.MilestoneUncheckedCreateNestedManyWithoutCampaignInput
+  documents?: Prisma.DocumentUncheckedCreateNestedManyWithoutCampaignInput
+  characters?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutCampaignInput
+  summaryJobs?: Prisma.SummaryJobUncheckedCreateNestedManyWithoutCampaignInput
+  maps?: Prisma.CampaignMapUncheckedCreateNestedManyWithoutCampaignInput
+  members?: Prisma.CampaignMemberUncheckedCreateNestedManyWithoutCampaignInput
+  invites?: Prisma.CampaignInviteUncheckedCreateNestedManyWithoutCampaignInput
+  publicAccess?: Prisma.CampaignPublicAccessUncheckedCreateNestedOneWithoutCampaignInput
+  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutCampaignInput
+  calendarConfig?: Prisma.CampaignCalendarConfigUncheckedCreateNestedOneWithoutCampaignInput
+  calendarEvents?: Prisma.CampaignCalendarEventUncheckedCreateNestedManyWithoutCampaignInput
+  sessionCalendarRanges?: Prisma.SessionCalendarRangeUncheckedCreateNestedManyWithoutCampaignInput
+  encounters?: Prisma.CampaignEncounterUncheckedCreateNestedManyWithoutCampaignInput
+  encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
+  encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
+  dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
+}
+
+export type CampaignCreateOrConnectWithoutRequestsInput = {
+  where: Prisma.CampaignWhereUniqueInput
+  create: Prisma.XOR<Prisma.CampaignCreateWithoutRequestsInput, Prisma.CampaignUncheckedCreateWithoutRequestsInput>
+}
+
+export type CampaignUpsertWithoutRequestsInput = {
+  update: Prisma.XOR<Prisma.CampaignUpdateWithoutRequestsInput, Prisma.CampaignUncheckedUpdateWithoutRequestsInput>
+  create: Prisma.XOR<Prisma.CampaignCreateWithoutRequestsInput, Prisma.CampaignUncheckedCreateWithoutRequestsInput>
+  where?: Prisma.CampaignWhereInput
+}
+
+export type CampaignUpdateToOneWithWhereWithoutRequestsInput = {
+  where?: Prisma.CampaignWhereInput
+  data: Prisma.XOR<Prisma.CampaignUpdateWithoutRequestsInput, Prisma.CampaignUncheckedUpdateWithoutRequestsInput>
+}
+
+export type CampaignUpdateWithoutRequestsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  system?: Prisma.StringFieldUpdateOperationsInput | string
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  dungeonMasterName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  owner?: Prisma.UserUpdateOneRequiredWithoutCampaignsNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutCampaignNestedInput
+  glossary?: Prisma.GlossaryEntryUpdateManyWithoutCampaignNestedInput
+  quests?: Prisma.QuestUpdateManyWithoutCampaignNestedInput
+  milestones?: Prisma.MilestoneUpdateManyWithoutCampaignNestedInput
+  documents?: Prisma.DocumentUpdateManyWithoutCampaignNestedInput
+  characters?: Prisma.CampaignCharacterUpdateManyWithoutCampaignNestedInput
+  summaryJobs?: Prisma.SummaryJobUpdateManyWithoutCampaignNestedInput
+  maps?: Prisma.CampaignMapUpdateManyWithoutCampaignNestedInput
+  members?: Prisma.CampaignMemberUpdateManyWithoutCampaignNestedInput
+  invites?: Prisma.CampaignInviteUpdateManyWithoutCampaignNestedInput
+  publicAccess?: Prisma.CampaignPublicAccessUpdateOneWithoutCampaignNestedInput
+  activityLogs?: Prisma.ActivityLogUpdateManyWithoutCampaignNestedInput
+  calendarConfig?: Prisma.CampaignCalendarConfigUpdateOneWithoutCampaignNestedInput
+  calendarEvents?: Prisma.CampaignCalendarEventUpdateManyWithoutCampaignNestedInput
+  sessionCalendarRanges?: Prisma.SessionCalendarRangeUpdateManyWithoutCampaignNestedInput
+  encounters?: Prisma.CampaignEncounterUpdateManyWithoutCampaignNestedInput
+  encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
+  encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
+  dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
+}
+
+export type CampaignUncheckedUpdateWithoutRequestsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  system?: Prisma.StringFieldUpdateOperationsInput | string
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  dungeonMasterName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutCampaignNestedInput
+  glossary?: Prisma.GlossaryEntryUncheckedUpdateManyWithoutCampaignNestedInput
+  quests?: Prisma.QuestUncheckedUpdateManyWithoutCampaignNestedInput
+  milestones?: Prisma.MilestoneUncheckedUpdateManyWithoutCampaignNestedInput
+  documents?: Prisma.DocumentUncheckedUpdateManyWithoutCampaignNestedInput
+  characters?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutCampaignNestedInput
+  summaryJobs?: Prisma.SummaryJobUncheckedUpdateManyWithoutCampaignNestedInput
+  maps?: Prisma.CampaignMapUncheckedUpdateManyWithoutCampaignNestedInput
+  members?: Prisma.CampaignMemberUncheckedUpdateManyWithoutCampaignNestedInput
+  invites?: Prisma.CampaignInviteUncheckedUpdateManyWithoutCampaignNestedInput
+  publicAccess?: Prisma.CampaignPublicAccessUncheckedUpdateOneWithoutCampaignNestedInput
+  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutCampaignNestedInput
+  calendarConfig?: Prisma.CampaignCalendarConfigUncheckedUpdateOneWithoutCampaignNestedInput
+  calendarEvents?: Prisma.CampaignCalendarEventUncheckedUpdateManyWithoutCampaignNestedInput
+  sessionCalendarRanges?: Prisma.SessionCalendarRangeUncheckedUpdateManyWithoutCampaignNestedInput
+  encounters?: Prisma.CampaignEncounterUncheckedUpdateManyWithoutCampaignNestedInput
+  encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
+  encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
+  dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
+}
+
+export type CampaignCreateWithoutRequestVotesInput = {
+  id?: string
+  name: string
+  system?: string
+  isArchived?: boolean
+  dungeonMasterName?: string | null
+  description?: string | null
+  currentStatus?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  owner: Prisma.UserCreateNestedOneWithoutCampaignsInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutCampaignInput
+  glossary?: Prisma.GlossaryEntryCreateNestedManyWithoutCampaignInput
+  quests?: Prisma.QuestCreateNestedManyWithoutCampaignInput
+  milestones?: Prisma.MilestoneCreateNestedManyWithoutCampaignInput
+  documents?: Prisma.DocumentCreateNestedManyWithoutCampaignInput
+  characters?: Prisma.CampaignCharacterCreateNestedManyWithoutCampaignInput
+  summaryJobs?: Prisma.SummaryJobCreateNestedManyWithoutCampaignInput
+  maps?: Prisma.CampaignMapCreateNestedManyWithoutCampaignInput
+  members?: Prisma.CampaignMemberCreateNestedManyWithoutCampaignInput
+  invites?: Prisma.CampaignInviteCreateNestedManyWithoutCampaignInput
+  publicAccess?: Prisma.CampaignPublicAccessCreateNestedOneWithoutCampaignInput
+  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutCampaignInput
+  calendarConfig?: Prisma.CampaignCalendarConfigCreateNestedOneWithoutCampaignInput
+  calendarEvents?: Prisma.CampaignCalendarEventCreateNestedManyWithoutCampaignInput
+  sessionCalendarRanges?: Prisma.SessionCalendarRangeCreateNestedManyWithoutCampaignInput
+  encounters?: Prisma.CampaignEncounterCreateNestedManyWithoutCampaignInput
+  encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
+  encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
+  dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+}
+
+export type CampaignUncheckedCreateWithoutRequestVotesInput = {
+  id?: string
+  ownerId: string
+  name: string
+  system?: string
+  isArchived?: boolean
+  dungeonMasterName?: string | null
+  description?: string | null
+  currentStatus?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutCampaignInput
+  glossary?: Prisma.GlossaryEntryUncheckedCreateNestedManyWithoutCampaignInput
+  quests?: Prisma.QuestUncheckedCreateNestedManyWithoutCampaignInput
+  milestones?: Prisma.MilestoneUncheckedCreateNestedManyWithoutCampaignInput
+  documents?: Prisma.DocumentUncheckedCreateNestedManyWithoutCampaignInput
+  characters?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutCampaignInput
+  summaryJobs?: Prisma.SummaryJobUncheckedCreateNestedManyWithoutCampaignInput
+  maps?: Prisma.CampaignMapUncheckedCreateNestedManyWithoutCampaignInput
+  members?: Prisma.CampaignMemberUncheckedCreateNestedManyWithoutCampaignInput
+  invites?: Prisma.CampaignInviteUncheckedCreateNestedManyWithoutCampaignInput
+  publicAccess?: Prisma.CampaignPublicAccessUncheckedCreateNestedOneWithoutCampaignInput
+  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutCampaignInput
+  calendarConfig?: Prisma.CampaignCalendarConfigUncheckedCreateNestedOneWithoutCampaignInput
+  calendarEvents?: Prisma.CampaignCalendarEventUncheckedCreateNestedManyWithoutCampaignInput
+  sessionCalendarRanges?: Prisma.SessionCalendarRangeUncheckedCreateNestedManyWithoutCampaignInput
+  encounters?: Prisma.CampaignEncounterUncheckedCreateNestedManyWithoutCampaignInput
+  encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
+  encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
+  dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+}
+
+export type CampaignCreateOrConnectWithoutRequestVotesInput = {
+  where: Prisma.CampaignWhereUniqueInput
+  create: Prisma.XOR<Prisma.CampaignCreateWithoutRequestVotesInput, Prisma.CampaignUncheckedCreateWithoutRequestVotesInput>
+}
+
+export type CampaignUpsertWithoutRequestVotesInput = {
+  update: Prisma.XOR<Prisma.CampaignUpdateWithoutRequestVotesInput, Prisma.CampaignUncheckedUpdateWithoutRequestVotesInput>
+  create: Prisma.XOR<Prisma.CampaignCreateWithoutRequestVotesInput, Prisma.CampaignUncheckedCreateWithoutRequestVotesInput>
+  where?: Prisma.CampaignWhereInput
+}
+
+export type CampaignUpdateToOneWithWhereWithoutRequestVotesInput = {
+  where?: Prisma.CampaignWhereInput
+  data: Prisma.XOR<Prisma.CampaignUpdateWithoutRequestVotesInput, Prisma.CampaignUncheckedUpdateWithoutRequestVotesInput>
+}
+
+export type CampaignUpdateWithoutRequestVotesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  system?: Prisma.StringFieldUpdateOperationsInput | string
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  dungeonMasterName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  owner?: Prisma.UserUpdateOneRequiredWithoutCampaignsNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutCampaignNestedInput
+  glossary?: Prisma.GlossaryEntryUpdateManyWithoutCampaignNestedInput
+  quests?: Prisma.QuestUpdateManyWithoutCampaignNestedInput
+  milestones?: Prisma.MilestoneUpdateManyWithoutCampaignNestedInput
+  documents?: Prisma.DocumentUpdateManyWithoutCampaignNestedInput
+  characters?: Prisma.CampaignCharacterUpdateManyWithoutCampaignNestedInput
+  summaryJobs?: Prisma.SummaryJobUpdateManyWithoutCampaignNestedInput
+  maps?: Prisma.CampaignMapUpdateManyWithoutCampaignNestedInput
+  members?: Prisma.CampaignMemberUpdateManyWithoutCampaignNestedInput
+  invites?: Prisma.CampaignInviteUpdateManyWithoutCampaignNestedInput
+  publicAccess?: Prisma.CampaignPublicAccessUpdateOneWithoutCampaignNestedInput
+  activityLogs?: Prisma.ActivityLogUpdateManyWithoutCampaignNestedInput
+  calendarConfig?: Prisma.CampaignCalendarConfigUpdateOneWithoutCampaignNestedInput
+  calendarEvents?: Prisma.CampaignCalendarEventUpdateManyWithoutCampaignNestedInput
+  sessionCalendarRanges?: Prisma.SessionCalendarRangeUpdateManyWithoutCampaignNestedInput
+  encounters?: Prisma.CampaignEncounterUpdateManyWithoutCampaignNestedInput
+  encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
+  encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
+  dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+}
+
+export type CampaignUncheckedUpdateWithoutRequestVotesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  system?: Prisma.StringFieldUpdateOperationsInput | string
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  dungeonMasterName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  currentStatus?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutCampaignNestedInput
+  glossary?: Prisma.GlossaryEntryUncheckedUpdateManyWithoutCampaignNestedInput
+  quests?: Prisma.QuestUncheckedUpdateManyWithoutCampaignNestedInput
+  milestones?: Prisma.MilestoneUncheckedUpdateManyWithoutCampaignNestedInput
+  documents?: Prisma.DocumentUncheckedUpdateManyWithoutCampaignNestedInput
+  characters?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutCampaignNestedInput
+  summaryJobs?: Prisma.SummaryJobUncheckedUpdateManyWithoutCampaignNestedInput
+  maps?: Prisma.CampaignMapUncheckedUpdateManyWithoutCampaignNestedInput
+  members?: Prisma.CampaignMemberUncheckedUpdateManyWithoutCampaignNestedInput
+  invites?: Prisma.CampaignInviteUncheckedUpdateManyWithoutCampaignNestedInput
+  publicAccess?: Prisma.CampaignPublicAccessUncheckedUpdateOneWithoutCampaignNestedInput
+  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutCampaignNestedInput
+  calendarConfig?: Prisma.CampaignCalendarConfigUncheckedUpdateOneWithoutCampaignNestedInput
+  calendarEvents?: Prisma.CampaignCalendarEventUncheckedUpdateManyWithoutCampaignNestedInput
+  sessionCalendarRanges?: Prisma.SessionCalendarRangeUncheckedUpdateManyWithoutCampaignNestedInput
+  encounters?: Prisma.CampaignEncounterUncheckedUpdateManyWithoutCampaignNestedInput
+  encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
+  encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
+  dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignCreateWithoutSessionsInput = {
@@ -1572,6 +1946,8 @@ export type CampaignCreateWithoutSessionsInput = {
   encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUncheckedCreateWithoutSessionsInput = {
@@ -1603,6 +1979,8 @@ export type CampaignUncheckedCreateWithoutSessionsInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignCreateOrConnectWithoutSessionsInput = {
@@ -1650,6 +2028,8 @@ export type CampaignUpdateWithoutSessionsInput = {
   encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateWithoutSessionsInput = {
@@ -1681,6 +2061,8 @@ export type CampaignUncheckedUpdateWithoutSessionsInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignCreateWithoutCalendarConfigInput = {
@@ -1712,6 +2094,8 @@ export type CampaignCreateWithoutCalendarConfigInput = {
   encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUncheckedCreateWithoutCalendarConfigInput = {
@@ -1743,6 +2127,8 @@ export type CampaignUncheckedCreateWithoutCalendarConfigInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignCreateOrConnectWithoutCalendarConfigInput = {
@@ -1790,6 +2176,8 @@ export type CampaignUpdateWithoutCalendarConfigInput = {
   encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateWithoutCalendarConfigInput = {
@@ -1821,6 +2209,8 @@ export type CampaignUncheckedUpdateWithoutCalendarConfigInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignCreateWithoutSessionCalendarRangesInput = {
@@ -1852,6 +2242,8 @@ export type CampaignCreateWithoutSessionCalendarRangesInput = {
   encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUncheckedCreateWithoutSessionCalendarRangesInput = {
@@ -1883,6 +2275,8 @@ export type CampaignUncheckedCreateWithoutSessionCalendarRangesInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignCreateOrConnectWithoutSessionCalendarRangesInput = {
@@ -1930,6 +2324,8 @@ export type CampaignUpdateWithoutSessionCalendarRangesInput = {
   encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateWithoutSessionCalendarRangesInput = {
@@ -1961,6 +2357,8 @@ export type CampaignUncheckedUpdateWithoutSessionCalendarRangesInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignCreateWithoutCalendarEventsInput = {
@@ -1992,6 +2390,8 @@ export type CampaignCreateWithoutCalendarEventsInput = {
   encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUncheckedCreateWithoutCalendarEventsInput = {
@@ -2023,6 +2423,8 @@ export type CampaignUncheckedCreateWithoutCalendarEventsInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignCreateOrConnectWithoutCalendarEventsInput = {
@@ -2070,6 +2472,8 @@ export type CampaignUpdateWithoutCalendarEventsInput = {
   encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateWithoutCalendarEventsInput = {
@@ -2101,6 +2505,8 @@ export type CampaignUncheckedUpdateWithoutCalendarEventsInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignCreateWithoutEncountersInput = {
@@ -2132,6 +2538,8 @@ export type CampaignCreateWithoutEncountersInput = {
   encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUncheckedCreateWithoutEncountersInput = {
@@ -2163,6 +2571,8 @@ export type CampaignUncheckedCreateWithoutEncountersInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignCreateOrConnectWithoutEncountersInput = {
@@ -2210,6 +2620,8 @@ export type CampaignUpdateWithoutEncountersInput = {
   encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateWithoutEncountersInput = {
@@ -2241,6 +2653,8 @@ export type CampaignUncheckedUpdateWithoutEncountersInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignCreateWithoutEncounterTemplatesInput = {
@@ -2272,6 +2686,8 @@ export type CampaignCreateWithoutEncounterTemplatesInput = {
   encounters?: Prisma.CampaignEncounterCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUncheckedCreateWithoutEncounterTemplatesInput = {
@@ -2303,6 +2719,8 @@ export type CampaignUncheckedCreateWithoutEncounterTemplatesInput = {
   encounters?: Prisma.CampaignEncounterUncheckedCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignCreateOrConnectWithoutEncounterTemplatesInput = {
@@ -2350,6 +2768,8 @@ export type CampaignUpdateWithoutEncounterTemplatesInput = {
   encounters?: Prisma.CampaignEncounterUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateWithoutEncounterTemplatesInput = {
@@ -2381,6 +2801,8 @@ export type CampaignUncheckedUpdateWithoutEncounterTemplatesInput = {
   encounters?: Prisma.CampaignEncounterUncheckedUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignCreateWithoutEncounterStatBlocksInput = {
@@ -2412,6 +2834,8 @@ export type CampaignCreateWithoutEncounterStatBlocksInput = {
   encounters?: Prisma.CampaignEncounterCreateNestedManyWithoutCampaignInput
   encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUncheckedCreateWithoutEncounterStatBlocksInput = {
@@ -2443,6 +2867,8 @@ export type CampaignUncheckedCreateWithoutEncounterStatBlocksInput = {
   encounters?: Prisma.CampaignEncounterUncheckedCreateNestedManyWithoutCampaignInput
   encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignCreateOrConnectWithoutEncounterStatBlocksInput = {
@@ -2490,6 +2916,8 @@ export type CampaignUpdateWithoutEncounterStatBlocksInput = {
   encounters?: Prisma.CampaignEncounterUpdateManyWithoutCampaignNestedInput
   encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateWithoutEncounterStatBlocksInput = {
@@ -2521,6 +2949,8 @@ export type CampaignUncheckedUpdateWithoutEncounterStatBlocksInput = {
   encounters?: Prisma.CampaignEncounterUncheckedUpdateManyWithoutCampaignNestedInput
   encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignCreateWithoutDungeonsInput = {
@@ -2552,6 +2982,8 @@ export type CampaignCreateWithoutDungeonsInput = {
   encounters?: Prisma.CampaignEncounterCreateNestedManyWithoutCampaignInput
   encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUncheckedCreateWithoutDungeonsInput = {
@@ -2583,6 +3015,8 @@ export type CampaignUncheckedCreateWithoutDungeonsInput = {
   encounters?: Prisma.CampaignEncounterUncheckedCreateNestedManyWithoutCampaignInput
   encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignCreateOrConnectWithoutDungeonsInput = {
@@ -2630,6 +3064,8 @@ export type CampaignUpdateWithoutDungeonsInput = {
   encounters?: Prisma.CampaignEncounterUpdateManyWithoutCampaignNestedInput
   encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateWithoutDungeonsInput = {
@@ -2661,6 +3097,8 @@ export type CampaignUncheckedUpdateWithoutDungeonsInput = {
   encounters?: Prisma.CampaignEncounterUncheckedUpdateManyWithoutCampaignNestedInput
   encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignCreateWithoutGlossaryInput = {
@@ -2692,6 +3130,8 @@ export type CampaignCreateWithoutGlossaryInput = {
   encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUncheckedCreateWithoutGlossaryInput = {
@@ -2723,6 +3163,8 @@ export type CampaignUncheckedCreateWithoutGlossaryInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignCreateOrConnectWithoutGlossaryInput = {
@@ -2770,6 +3212,8 @@ export type CampaignUpdateWithoutGlossaryInput = {
   encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateWithoutGlossaryInput = {
@@ -2801,6 +3245,8 @@ export type CampaignUncheckedUpdateWithoutGlossaryInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignCreateWithoutMapsInput = {
@@ -2832,6 +3278,8 @@ export type CampaignCreateWithoutMapsInput = {
   encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUncheckedCreateWithoutMapsInput = {
@@ -2863,6 +3311,8 @@ export type CampaignUncheckedCreateWithoutMapsInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignCreateOrConnectWithoutMapsInput = {
@@ -2910,6 +3360,8 @@ export type CampaignUpdateWithoutMapsInput = {
   encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateWithoutMapsInput = {
@@ -2941,6 +3393,8 @@ export type CampaignUncheckedUpdateWithoutMapsInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignCreateWithoutQuestsInput = {
@@ -2972,6 +3426,8 @@ export type CampaignCreateWithoutQuestsInput = {
   encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUncheckedCreateWithoutQuestsInput = {
@@ -3003,6 +3459,8 @@ export type CampaignUncheckedCreateWithoutQuestsInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignCreateOrConnectWithoutQuestsInput = {
@@ -3050,6 +3508,8 @@ export type CampaignUpdateWithoutQuestsInput = {
   encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateWithoutQuestsInput = {
@@ -3081,6 +3541,8 @@ export type CampaignUncheckedUpdateWithoutQuestsInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignCreateWithoutMilestonesInput = {
@@ -3112,6 +3574,8 @@ export type CampaignCreateWithoutMilestonesInput = {
   encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUncheckedCreateWithoutMilestonesInput = {
@@ -3143,6 +3607,8 @@ export type CampaignUncheckedCreateWithoutMilestonesInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignCreateOrConnectWithoutMilestonesInput = {
@@ -3190,6 +3656,8 @@ export type CampaignUpdateWithoutMilestonesInput = {
   encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateWithoutMilestonesInput = {
@@ -3221,6 +3689,8 @@ export type CampaignUncheckedUpdateWithoutMilestonesInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignCreateWithoutDocumentsInput = {
@@ -3252,6 +3722,8 @@ export type CampaignCreateWithoutDocumentsInput = {
   encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUncheckedCreateWithoutDocumentsInput = {
@@ -3283,6 +3755,8 @@ export type CampaignUncheckedCreateWithoutDocumentsInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignCreateOrConnectWithoutDocumentsInput = {
@@ -3330,6 +3804,8 @@ export type CampaignUpdateWithoutDocumentsInput = {
   encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateWithoutDocumentsInput = {
@@ -3361,6 +3837,8 @@ export type CampaignUncheckedUpdateWithoutDocumentsInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignCreateWithoutSummaryJobsInput = {
@@ -3392,6 +3870,8 @@ export type CampaignCreateWithoutSummaryJobsInput = {
   encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUncheckedCreateWithoutSummaryJobsInput = {
@@ -3423,6 +3903,8 @@ export type CampaignUncheckedCreateWithoutSummaryJobsInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignCreateOrConnectWithoutSummaryJobsInput = {
@@ -3470,6 +3952,8 @@ export type CampaignUpdateWithoutSummaryJobsInput = {
   encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateWithoutSummaryJobsInput = {
@@ -3501,6 +3985,8 @@ export type CampaignUncheckedUpdateWithoutSummaryJobsInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignCreateWithoutCharactersInput = {
@@ -3532,6 +4018,8 @@ export type CampaignCreateWithoutCharactersInput = {
   encounterTemplates?: Prisma.EncounterTemplateCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignUncheckedCreateWithoutCharactersInput = {
@@ -3563,6 +4051,8 @@ export type CampaignUncheckedCreateWithoutCharactersInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCampaignInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCampaignInput
   dungeons?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCampaignInput
+  requests?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCampaignInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutCampaignInput
 }
 
 export type CampaignCreateOrConnectWithoutCharactersInput = {
@@ -3610,6 +4100,8 @@ export type CampaignUpdateWithoutCharactersInput = {
   encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateWithoutCharactersInput = {
@@ -3641,6 +4133,8 @@ export type CampaignUncheckedUpdateWithoutCharactersInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignCreateManyOwnerInput = {
@@ -3684,6 +4178,8 @@ export type CampaignUpdateWithoutOwnerInput = {
   encounterTemplates?: Prisma.EncounterTemplateUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateWithoutOwnerInput = {
@@ -3715,6 +4211,8 @@ export type CampaignUncheckedUpdateWithoutOwnerInput = {
   encounterTemplates?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCampaignNestedInput
   encounterStatBlocks?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCampaignNestedInput
   dungeons?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCampaignNestedInput
+  requests?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCampaignNestedInput
+  requestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutCampaignNestedInput
 }
 
 export type CampaignUncheckedUpdateManyWithoutOwnerInput = {
@@ -3752,6 +4250,8 @@ export type CampaignCountOutputType = {
   encounterTemplates: number
   encounterStatBlocks: number
   dungeons: number
+  requests: number
+  requestVotes: number
 }
 
 export type CampaignCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -3772,6 +4272,8 @@ export type CampaignCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensio
   encounterTemplates?: boolean | CampaignCountOutputTypeCountEncounterTemplatesArgs
   encounterStatBlocks?: boolean | CampaignCountOutputTypeCountEncounterStatBlocksArgs
   dungeons?: boolean | CampaignCountOutputTypeCountDungeonsArgs
+  requests?: boolean | CampaignCountOutputTypeCountRequestsArgs
+  requestVotes?: boolean | CampaignCountOutputTypeCountRequestVotesArgs
 }
 
 /**
@@ -3903,6 +4405,20 @@ export type CampaignCountOutputTypeCountDungeonsArgs<ExtArgs extends runtime.Typ
   where?: Prisma.CampaignDungeonWhereInput
 }
 
+/**
+ * CampaignCountOutputType without action
+ */
+export type CampaignCountOutputTypeCountRequestsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CampaignRequestWhereInput
+}
+
+/**
+ * CampaignCountOutputType without action
+ */
+export type CampaignCountOutputTypeCountRequestVotesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CampaignRequestVoteWhereInput
+}
+
 
 export type CampaignSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -3935,6 +4451,8 @@ export type CampaignSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   encounterTemplates?: boolean | Prisma.Campaign$encounterTemplatesArgs<ExtArgs>
   encounterStatBlocks?: boolean | Prisma.Campaign$encounterStatBlocksArgs<ExtArgs>
   dungeons?: boolean | Prisma.Campaign$dungeonsArgs<ExtArgs>
+  requests?: boolean | Prisma.Campaign$requestsArgs<ExtArgs>
+  requestVotes?: boolean | Prisma.Campaign$requestVotesArgs<ExtArgs>
   _count?: boolean | Prisma.CampaignCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["campaign"]>
 
@@ -4001,6 +4519,8 @@ export type CampaignInclude<ExtArgs extends runtime.Types.Extensions.InternalArg
   encounterTemplates?: boolean | Prisma.Campaign$encounterTemplatesArgs<ExtArgs>
   encounterStatBlocks?: boolean | Prisma.Campaign$encounterStatBlocksArgs<ExtArgs>
   dungeons?: boolean | Prisma.Campaign$dungeonsArgs<ExtArgs>
+  requests?: boolean | Prisma.Campaign$requestsArgs<ExtArgs>
+  requestVotes?: boolean | Prisma.Campaign$requestVotesArgs<ExtArgs>
   _count?: boolean | Prisma.CampaignCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CampaignIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -4033,6 +4553,8 @@ export type $CampaignPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     encounterTemplates: Prisma.$EncounterTemplatePayload<ExtArgs>[]
     encounterStatBlocks: Prisma.$EncounterStatBlockPayload<ExtArgs>[]
     dungeons: Prisma.$CampaignDungeonPayload<ExtArgs>[]
+    requests: Prisma.$CampaignRequestPayload<ExtArgs>[]
+    requestVotes: Prisma.$CampaignRequestVotePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -4459,6 +4981,8 @@ export interface Prisma__CampaignClient<T, Null = never, ExtArgs extends runtime
   encounterTemplates<T extends Prisma.Campaign$encounterTemplatesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Campaign$encounterTemplatesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EncounterTemplatePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   encounterStatBlocks<T extends Prisma.Campaign$encounterStatBlocksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Campaign$encounterStatBlocksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EncounterStatBlockPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   dungeons<T extends Prisma.Campaign$dungeonsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Campaign$dungeonsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignDungeonPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  requests<T extends Prisma.Campaign$requestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Campaign$requestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  requestVotes<T extends Prisma.Campaign$requestVotesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Campaign$requestVotesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignRequestVotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -5335,6 +5859,54 @@ export type Campaign$dungeonsArgs<ExtArgs extends runtime.Types.Extensions.Inter
   take?: number
   skip?: number
   distinct?: Prisma.CampaignDungeonScalarFieldEnum | Prisma.CampaignDungeonScalarFieldEnum[]
+}
+
+/**
+ * Campaign.requests
+ */
+export type Campaign$requestsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CampaignRequest
+   */
+  select?: Prisma.CampaignRequestSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CampaignRequest
+   */
+  omit?: Prisma.CampaignRequestOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CampaignRequestInclude<ExtArgs> | null
+  where?: Prisma.CampaignRequestWhereInput
+  orderBy?: Prisma.CampaignRequestOrderByWithRelationInput | Prisma.CampaignRequestOrderByWithRelationInput[]
+  cursor?: Prisma.CampaignRequestWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CampaignRequestScalarFieldEnum | Prisma.CampaignRequestScalarFieldEnum[]
+}
+
+/**
+ * Campaign.requestVotes
+ */
+export type Campaign$requestVotesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CampaignRequestVote
+   */
+  select?: Prisma.CampaignRequestVoteSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CampaignRequestVote
+   */
+  omit?: Prisma.CampaignRequestVoteOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CampaignRequestVoteInclude<ExtArgs> | null
+  where?: Prisma.CampaignRequestVoteWhereInput
+  orderBy?: Prisma.CampaignRequestVoteOrderByWithRelationInput | Prisma.CampaignRequestVoteOrderByWithRelationInput[]
+  cursor?: Prisma.CampaignRequestVoteWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CampaignRequestVoteScalarFieldEnum | Prisma.CampaignRequestVoteScalarFieldEnum[]
 }
 
 /**

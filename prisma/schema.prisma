@@ -31,6 +31,23 @@ enum CampaignInviteStatus {
   EXPIRED
 }
 
+enum CampaignRequestType {
+  ITEM
+  PLOT_POINT
+}
+
+enum CampaignRequestVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum CampaignRequestStatus {
+  PENDING
+  APPROVED
+  DENIED
+  CANCELED
+}
+
 model User {
   id           String     @id @default(uuid())
   email        String     @unique
@@ -60,6 +77,9 @@ model User {
   encounterStatBlocksCreated EncounterStatBlock[]
   dungeonsCreated CampaignDungeon[]
   dungeonSnapshotsCreated CampaignDungeonSnapshot[]
+  campaignRequestsCreated CampaignRequest[] @relation("CampaignRequestCreatedBy")
+  campaignRequestsDecided CampaignRequest[] @relation("CampaignRequestDecidedBy")
+  campaignRequestVotes CampaignRequestVote[]
 
   @@index([email])
 }
@@ -131,6 +151,8 @@ model Campaign {
   encounterTemplates EncounterTemplate[]
   encounterStatBlocks EncounterStatBlock[]
   dungeons      CampaignDungeon[]
+  requests      CampaignRequest[]
+  requestVotes  CampaignRequestVote[]
 
   @@index([ownerId])
 }
@@ -193,6 +215,45 @@ model CampaignInvite {
   @@index([campaignId, status])
   @@index([email, status])
   @@index([expiresAt])
+}
+
+model CampaignRequest {
+  id             String                   @id @default(uuid())
+  campaignId     String
+  campaign       Campaign                 @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  createdByUserId String
+  createdByUser  User                     @relation("CampaignRequestCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  type           CampaignRequestType
+  visibility     CampaignRequestVisibility
+  title          String
+  description    String
+  status         CampaignRequestStatus    @default(PENDING)
+  decisionNote   String?
+  decidedByUserId String?
+  decidedByUser  User?                    @relation("CampaignRequestDecidedBy", fields: [decidedByUserId], references: [id], onDelete: SetNull)
+  decidedAt      DateTime?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  votes          CampaignRequestVote[]
+
+  @@index([campaignId, visibility, status, createdAt])
+  @@index([campaignId, createdByUserId, createdAt])
+  @@index([campaignId, status, decidedAt])
+}
+
+model CampaignRequestVote {
+  id               String          @id @default(uuid())
+  campaignRequestId String
+  campaignRequest  CampaignRequest @relation(fields: [campaignRequestId], references: [id], onDelete: Cascade)
+  campaignId       String
+  campaign         Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime        @default(now())
+
+  @@unique([campaignRequestId, userId])
+  @@index([campaignRequestId, createdAt])
+  @@index([campaignId, userId, createdAt])
 }
 
 model Session {

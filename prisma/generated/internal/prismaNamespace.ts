@@ -391,6 +391,8 @@ export const ModelName = {
   CampaignPublicAccess: 'CampaignPublicAccess',
   CampaignMember: 'CampaignMember',
   CampaignInvite: 'CampaignInvite',
+  CampaignRequest: 'CampaignRequest',
+  CampaignRequestVote: 'CampaignRequestVote',
   Session: 'Session',
   CampaignCalendarConfig: 'CampaignCalendarConfig',
   SessionCalendarRange: 'SessionCalendarRange',
@@ -442,7 +444,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "activityLog" | "adminAuditLog" | "campaign" | "campaignPublicAccess" | "campaignMember" | "campaignInvite" | "session" | "campaignCalendarConfig" | "sessionCalendarRange" | "campaignCalendarEvent" | "campaignEncounter" | "encounterCombatant" | "encounterCondition" | "encounterEvent" | "encounterTemplate" | "encounterTemplateCombatant" | "encounterStatBlock" | "campaignDungeon" | "campaignDungeonRoom" | "campaignDungeonLink" | "campaignDungeonSnapshot" | "glossaryEntry" | "campaignMap" | "campaignMapFile" | "campaignMapFeature" | "campaignMapGlossaryLink" | "glossarySessionLink" | "artifact" | "recording" | "transcriptionJob" | "transcriptionArtifact" | "recapRecording" | "quest" | "milestone" | "document" | "documentVersion" | "summaryJob" | "summarySuggestion" | "playerCharacter" | "campaignCharacter" | "characterImport" | "characterImportSettings"
+    modelProps: "user" | "activityLog" | "adminAuditLog" | "campaign" | "campaignPublicAccess" | "campaignMember" | "campaignInvite" | "campaignRequest" | "campaignRequestVote" | "session" | "campaignCalendarConfig" | "sessionCalendarRange" | "campaignCalendarEvent" | "campaignEncounter" | "encounterCombatant" | "encounterCondition" | "encounterEvent" | "encounterTemplate" | "encounterTemplateCombatant" | "encounterStatBlock" | "campaignDungeon" | "campaignDungeonRoom" | "campaignDungeonLink" | "campaignDungeonSnapshot" | "glossaryEntry" | "campaignMap" | "campaignMapFile" | "campaignMapFeature" | "campaignMapGlossaryLink" | "glossarySessionLink" | "artifact" | "recording" | "transcriptionJob" | "transcriptionArtifact" | "recapRecording" | "quest" | "milestone" | "document" | "documentVersion" | "summaryJob" | "summarySuggestion" | "playerCharacter" | "campaignCharacter" | "characterImport" | "characterImportSettings"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -961,6 +963,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.CampaignInviteCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.CampaignInviteCountAggregateOutputType> | number
+        }
+      }
+    }
+    CampaignRequest: {
+      payload: Prisma.$CampaignRequestPayload<ExtArgs>
+      fields: Prisma.CampaignRequestFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CampaignRequestFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CampaignRequestFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestPayload>
+        }
+        findFirst: {
+          args: Prisma.CampaignRequestFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CampaignRequestFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestPayload>
+        }
+        findMany: {
+          args: Prisma.CampaignRequestFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestPayload>[]
+        }
+        create: {
+          args: Prisma.CampaignRequestCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestPayload>
+        }
+        createMany: {
+          args: Prisma.CampaignRequestCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CampaignRequestCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestPayload>[]
+        }
+        delete: {
+          args: Prisma.CampaignRequestDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestPayload>
+        }
+        update: {
+          args: Prisma.CampaignRequestUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestPayload>
+        }
+        deleteMany: {
+          args: Prisma.CampaignRequestDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CampaignRequestUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CampaignRequestUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestPayload>[]
+        }
+        upsert: {
+          args: Prisma.CampaignRequestUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestPayload>
+        }
+        aggregate: {
+          args: Prisma.CampaignRequestAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCampaignRequest>
+        }
+        groupBy: {
+          args: Prisma.CampaignRequestGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CampaignRequestGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CampaignRequestCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CampaignRequestCountAggregateOutputType> | number
+        }
+      }
+    }
+    CampaignRequestVote: {
+      payload: Prisma.$CampaignRequestVotePayload<ExtArgs>
+      fields: Prisma.CampaignRequestVoteFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CampaignRequestVoteFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestVotePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CampaignRequestVoteFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestVotePayload>
+        }
+        findFirst: {
+          args: Prisma.CampaignRequestVoteFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestVotePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CampaignRequestVoteFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestVotePayload>
+        }
+        findMany: {
+          args: Prisma.CampaignRequestVoteFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestVotePayload>[]
+        }
+        create: {
+          args: Prisma.CampaignRequestVoteCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestVotePayload>
+        }
+        createMany: {
+          args: Prisma.CampaignRequestVoteCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CampaignRequestVoteCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestVotePayload>[]
+        }
+        delete: {
+          args: Prisma.CampaignRequestVoteDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestVotePayload>
+        }
+        update: {
+          args: Prisma.CampaignRequestVoteUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestVotePayload>
+        }
+        deleteMany: {
+          args: Prisma.CampaignRequestVoteDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CampaignRequestVoteUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CampaignRequestVoteUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestVotePayload>[]
+        }
+        upsert: {
+          args: Prisma.CampaignRequestVoteUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignRequestVotePayload>
+        }
+        aggregate: {
+          args: Prisma.CampaignRequestVoteAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCampaignRequestVote>
+        }
+        groupBy: {
+          args: Prisma.CampaignRequestVoteGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CampaignRequestVoteGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CampaignRequestVoteCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CampaignRequestVoteCountAggregateOutputType> | number
         }
       }
     }
@@ -3778,6 +3928,36 @@ export const CampaignInviteScalarFieldEnum = {
 export type CampaignInviteScalarFieldEnum = (typeof CampaignInviteScalarFieldEnum)[keyof typeof CampaignInviteScalarFieldEnum]
 
 
+export const CampaignRequestScalarFieldEnum = {
+  id: 'id',
+  campaignId: 'campaignId',
+  createdByUserId: 'createdByUserId',
+  type: 'type',
+  visibility: 'visibility',
+  title: 'title',
+  description: 'description',
+  status: 'status',
+  decisionNote: 'decisionNote',
+  decidedByUserId: 'decidedByUserId',
+  decidedAt: 'decidedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CampaignRequestScalarFieldEnum = (typeof CampaignRequestScalarFieldEnum)[keyof typeof CampaignRequestScalarFieldEnum]
+
+
+export const CampaignRequestVoteScalarFieldEnum = {
+  id: 'id',
+  campaignRequestId: 'campaignRequestId',
+  campaignId: 'campaignId',
+  userId: 'userId',
+  createdAt: 'createdAt'
+} as const
+
+export type CampaignRequestVoteScalarFieldEnum = (typeof CampaignRequestVoteScalarFieldEnum)[keyof typeof CampaignRequestVoteScalarFieldEnum]
+
+
 export const SessionScalarFieldEnum = {
   id: 'id',
   campaignId: 'campaignId',
@@ -4487,6 +4667,27 @@ export type EnumCampaignInviteStatusFieldRefInput<$PrismaModel> = FieldRefInputT
 
 
 /**
+ * Reference to a field of type 'CampaignRequestType'
+ */
+export type EnumCampaignRequestTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CampaignRequestType'>
+    
+
+
+/**
+ * Reference to a field of type 'CampaignRequestVisibility'
+ */
+export type EnumCampaignRequestVisibilityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CampaignRequestVisibility'>
+    
+
+
+/**
+ * Reference to a field of type 'CampaignRequestStatus'
+ */
+export type EnumCampaignRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CampaignRequestStatus'>
+    
+
+
+/**
  * Reference to a field of type 'Int'
  */
 export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
@@ -4860,6 +5061,8 @@ export type GlobalOmitConfig = {
   campaignPublicAccess?: Prisma.CampaignPublicAccessOmit
   campaignMember?: Prisma.CampaignMemberOmit
   campaignInvite?: Prisma.CampaignInviteOmit
+  campaignRequest?: Prisma.CampaignRequestOmit
+  campaignRequestVote?: Prisma.CampaignRequestVoteOmit
   session?: Prisma.SessionOmit
   campaignCalendarConfig?: Prisma.CampaignCalendarConfigOmit
   sessionCalendarRange?: Prisma.SessionCalendarRangeOmit

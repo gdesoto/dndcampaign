@@ -75,6 +75,16 @@ export type CampaignMember = Prisma.CampaignMemberModel
  */
 export type CampaignInvite = Prisma.CampaignInviteModel
 /**
+ * Model CampaignRequest
+ * 
+ */
+export type CampaignRequest = Prisma.CampaignRequestModel
+/**
+ * Model CampaignRequestVote
+ * 
+ */
+export type CampaignRequestVote = Prisma.CampaignRequestVoteModel
+/**
  * Model Session
  * 
  */

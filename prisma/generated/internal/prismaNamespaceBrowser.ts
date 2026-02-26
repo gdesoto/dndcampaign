@@ -58,6 +58,8 @@ export const ModelName = {
   CampaignPublicAccess: 'CampaignPublicAccess',
   CampaignMember: 'CampaignMember',
   CampaignInvite: 'CampaignInvite',
+  CampaignRequest: 'CampaignRequest',
+  CampaignRequestVote: 'CampaignRequestVote',
   Session: 'Session',
   CampaignCalendarConfig: 'CampaignCalendarConfig',
   SessionCalendarRange: 'SessionCalendarRange',
@@ -221,6 +223,36 @@ export const CampaignInviteScalarFieldEnum = {
 } as const
 
 export type CampaignInviteScalarFieldEnum = (typeof CampaignInviteScalarFieldEnum)[keyof typeof CampaignInviteScalarFieldEnum]
+
+
+export const CampaignRequestScalarFieldEnum = {
+  id: 'id',
+  campaignId: 'campaignId',
+  createdByUserId: 'createdByUserId',
+  type: 'type',
+  visibility: 'visibility',
+  title: 'title',
+  description: 'description',
+  status: 'status',
+  decisionNote: 'decisionNote',
+  decidedByUserId: 'decidedByUserId',
+  decidedAt: 'decidedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CampaignRequestScalarFieldEnum = (typeof CampaignRequestScalarFieldEnum)[keyof typeof CampaignRequestScalarFieldEnum]
+
+
+export const CampaignRequestVoteScalarFieldEnum = {
+  id: 'id',
+  campaignRequestId: 'campaignRequestId',
+  campaignId: 'campaignId',
+  userId: 'userId',
+  createdAt: 'createdAt'
+} as const
+
+export type CampaignRequestVoteScalarFieldEnum = (typeof CampaignRequestVoteScalarFieldEnum)[keyof typeof CampaignRequestVoteScalarFieldEnum]
 
 
 export const SessionScalarFieldEnum = {

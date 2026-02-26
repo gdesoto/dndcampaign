@@ -36,6 +36,32 @@ export const CampaignInviteStatus = {
 export type CampaignInviteStatus = (typeof CampaignInviteStatus)[keyof typeof CampaignInviteStatus]
 
 
+export const CampaignRequestType = {
+  ITEM: 'ITEM',
+  PLOT_POINT: 'PLOT_POINT'
+} as const
+
+export type CampaignRequestType = (typeof CampaignRequestType)[keyof typeof CampaignRequestType]
+
+
+export const CampaignRequestVisibility = {
+  PRIVATE: 'PRIVATE',
+  PUBLIC: 'PUBLIC'
+} as const
+
+export type CampaignRequestVisibility = (typeof CampaignRequestVisibility)[keyof typeof CampaignRequestVisibility]
+
+
+export const CampaignRequestStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  DENIED: 'DENIED',
+  CANCELED: 'CANCELED'
+} as const
+
+export type CampaignRequestStatus = (typeof CampaignRequestStatus)[keyof typeof CampaignRequestStatus]
+
+
 export const EncounterStatus = {
   PLANNED: 'PLANNED',
   ACTIVE: 'ACTIVE',

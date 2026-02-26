@@ -61,6 +61,12 @@ export const useCampaignNavigation = (
         active: path.startsWith(`${base}/maps`),
       },
       {
+        label: 'Requests',
+        to: `${base}/requests`,
+        icon: 'i-lucide-message-square-share',
+        active: path.startsWith(`${base}/requests`),
+      },
+      {
         label: 'Calendar',
         to: `${base}/calendar`,
         icon: 'i-lucide-calendar-range',
@@ -100,6 +106,7 @@ export const useCampaignNavigation = (
     if (suffix.startsWith('/milestones')) return 'Milestones'
     if (suffix.startsWith('/glossary')) return 'Glossary'
     if (suffix.startsWith('/maps')) return 'Maps'
+    if (suffix.startsWith('/requests')) return 'Requests'
     if (suffix.startsWith('/calendar')) return 'Calendar'
     if (suffix.startsWith('/tools')) return 'Tools'
     if (suffix.startsWith('/settings')) return 'Settings'
