@@ -11,6 +11,7 @@ type CampaignPublicAccessOwnerDto = {
   showQuests: boolean
   showMilestones: boolean
   showMaps: boolean
+  showJournal: boolean
   updatedAt: string
 }
 
@@ -24,6 +25,7 @@ type CampaignPublicAccessUpdateInput = Partial<{
   showQuests: boolean
   showMilestones: boolean
   showMaps: boolean
+  showJournal: boolean
 }>
 
 export const useCampaignPublicAccess = () => {
@@ -62,6 +64,7 @@ export const useCampaignPublicAccess = () => {
         showQuests: boolean
         showMilestones: boolean
         showMaps: boolean
+        showJournal: boolean
       }
     }>(`/api/public/campaigns/${publicSlug}`)
 

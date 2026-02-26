@@ -228,6 +228,7 @@ export type GlossaryEntryWhereInput = {
   sourceMap?: Prisma.XOR<Prisma.CampaignMapNullableScalarRelationFilter, Prisma.CampaignMapWhereInput> | null
   sourceMapFeature?: Prisma.XOR<Prisma.CampaignMapFeatureNullableScalarRelationFilter, Prisma.CampaignMapFeatureWhereInput> | null
   mapLinks?: Prisma.CampaignMapGlossaryLinkListRelationFilter
+  journalTags?: Prisma.CampaignJournalTagListRelationFilter
 }
 
 export type GlossaryEntryOrderByWithRelationInput = {
@@ -247,6 +248,7 @@ export type GlossaryEntryOrderByWithRelationInput = {
   sourceMap?: Prisma.CampaignMapOrderByWithRelationInput
   sourceMapFeature?: Prisma.CampaignMapFeatureOrderByWithRelationInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkOrderByRelationAggregateInput
+  journalTags?: Prisma.CampaignJournalTagOrderByRelationAggregateInput
 }
 
 export type GlossaryEntryWhereUniqueInput = Prisma.AtLeast<{
@@ -269,6 +271,7 @@ export type GlossaryEntryWhereUniqueInput = Prisma.AtLeast<{
   sourceMap?: Prisma.XOR<Prisma.CampaignMapNullableScalarRelationFilter, Prisma.CampaignMapWhereInput> | null
   sourceMapFeature?: Prisma.XOR<Prisma.CampaignMapFeatureNullableScalarRelationFilter, Prisma.CampaignMapFeatureWhereInput> | null
   mapLinks?: Prisma.CampaignMapGlossaryLinkListRelationFilter
+  journalTags?: Prisma.CampaignJournalTagListRelationFilter
 }, "id">
 
 export type GlossaryEntryOrderByWithAggregationInput = {
@@ -317,6 +320,7 @@ export type GlossaryEntryCreateInput = {
   sourceMap?: Prisma.CampaignMapCreateNestedOneWithoutSourceGlossaryEntriesInput
   sourceMapFeature?: Prisma.CampaignMapFeatureCreateNestedOneWithoutSourceGlossaryEntriesInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkCreateNestedManyWithoutGlossaryEntryInput
+  journalTags?: Prisma.CampaignJournalTagCreateNestedManyWithoutGlossaryEntryInput
 }
 
 export type GlossaryEntryUncheckedCreateInput = {
@@ -333,6 +337,7 @@ export type GlossaryEntryUncheckedCreateInput = {
   sessions?: Prisma.GlossarySessionLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
   campaignCharacters?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutGlossaryEntryInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
+  journalTags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutGlossaryEntryInput
 }
 
 export type GlossaryEntryUpdateInput = {
@@ -349,6 +354,7 @@ export type GlossaryEntryUpdateInput = {
   sourceMap?: Prisma.CampaignMapUpdateOneWithoutSourceGlossaryEntriesNestedInput
   sourceMapFeature?: Prisma.CampaignMapFeatureUpdateOneWithoutSourceGlossaryEntriesNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUpdateManyWithoutGlossaryEntryNestedInput
+  journalTags?: Prisma.CampaignJournalTagUpdateManyWithoutGlossaryEntryNestedInput
 }
 
 export type GlossaryEntryUncheckedUpdateInput = {
@@ -365,6 +371,7 @@ export type GlossaryEntryUncheckedUpdateInput = {
   sessions?: Prisma.GlossarySessionLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   campaignCharacters?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
+  journalTags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutGlossaryEntryNestedInput
 }
 
 export type GlossaryEntryCreateManyInput = {
@@ -413,6 +420,11 @@ export type GlossaryEntryOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type GlossaryEntryNullableScalarRelationFilter = {
+  is?: Prisma.GlossaryEntryWhereInput | null
+  isNot?: Prisma.GlossaryEntryWhereInput | null
+}
+
 export type GlossaryEntryCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   campaignId?: Prisma.SortOrder
@@ -457,11 +469,6 @@ export type GlossaryEntryScalarRelationFilter = {
   isNot?: Prisma.GlossaryEntryWhereInput
 }
 
-export type GlossaryEntryNullableScalarRelationFilter = {
-  is?: Prisma.GlossaryEntryWhereInput | null
-  isNot?: Prisma.GlossaryEntryWhereInput | null
-}
-
 export type GlossaryEntryCreateNestedManyWithoutCampaignInput = {
   create?: Prisma.XOR<Prisma.GlossaryEntryCreateWithoutCampaignInput, Prisma.GlossaryEntryUncheckedCreateWithoutCampaignInput> | Prisma.GlossaryEntryCreateWithoutCampaignInput[] | Prisma.GlossaryEntryUncheckedCreateWithoutCampaignInput[]
   connectOrCreate?: Prisma.GlossaryEntryCreateOrConnectWithoutCampaignInput | Prisma.GlossaryEntryCreateOrConnectWithoutCampaignInput[]
@@ -502,6 +509,22 @@ export type GlossaryEntryUncheckedUpdateManyWithoutCampaignNestedInput = {
   update?: Prisma.GlossaryEntryUpdateWithWhereUniqueWithoutCampaignInput | Prisma.GlossaryEntryUpdateWithWhereUniqueWithoutCampaignInput[]
   updateMany?: Prisma.GlossaryEntryUpdateManyWithWhereWithoutCampaignInput | Prisma.GlossaryEntryUpdateManyWithWhereWithoutCampaignInput[]
   deleteMany?: Prisma.GlossaryEntryScalarWhereInput | Prisma.GlossaryEntryScalarWhereInput[]
+}
+
+export type GlossaryEntryCreateNestedOneWithoutJournalTagsInput = {
+  create?: Prisma.XOR<Prisma.GlossaryEntryCreateWithoutJournalTagsInput, Prisma.GlossaryEntryUncheckedCreateWithoutJournalTagsInput>
+  connectOrCreate?: Prisma.GlossaryEntryCreateOrConnectWithoutJournalTagsInput
+  connect?: Prisma.GlossaryEntryWhereUniqueInput
+}
+
+export type GlossaryEntryUpdateOneWithoutJournalTagsNestedInput = {
+  create?: Prisma.XOR<Prisma.GlossaryEntryCreateWithoutJournalTagsInput, Prisma.GlossaryEntryUncheckedCreateWithoutJournalTagsInput>
+  connectOrCreate?: Prisma.GlossaryEntryCreateOrConnectWithoutJournalTagsInput
+  upsert?: Prisma.GlossaryEntryUpsertWithoutJournalTagsInput
+  disconnect?: Prisma.GlossaryEntryWhereInput | boolean
+  delete?: Prisma.GlossaryEntryWhereInput | boolean
+  connect?: Prisma.GlossaryEntryWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.GlossaryEntryUpdateToOneWithWhereWithoutJournalTagsInput, Prisma.GlossaryEntryUpdateWithoutJournalTagsInput>, Prisma.GlossaryEntryUncheckedUpdateWithoutJournalTagsInput>
 }
 
 export type EnumGlossaryTypeFieldUpdateOperationsInput = {
@@ -649,6 +672,7 @@ export type GlossaryEntryCreateWithoutCampaignInput = {
   sourceMap?: Prisma.CampaignMapCreateNestedOneWithoutSourceGlossaryEntriesInput
   sourceMapFeature?: Prisma.CampaignMapFeatureCreateNestedOneWithoutSourceGlossaryEntriesInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkCreateNestedManyWithoutGlossaryEntryInput
+  journalTags?: Prisma.CampaignJournalTagCreateNestedManyWithoutGlossaryEntryInput
 }
 
 export type GlossaryEntryUncheckedCreateWithoutCampaignInput = {
@@ -664,6 +688,7 @@ export type GlossaryEntryUncheckedCreateWithoutCampaignInput = {
   sessions?: Prisma.GlossarySessionLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
   campaignCharacters?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutGlossaryEntryInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
+  journalTags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutGlossaryEntryInput
 }
 
 export type GlossaryEntryCreateOrConnectWithoutCampaignInput = {
@@ -707,6 +732,86 @@ export type GlossaryEntryScalarWhereInput = {
   sourceMapFeatureId?: Prisma.StringNullableFilter<"GlossaryEntry"> | string | null
 }
 
+export type GlossaryEntryCreateWithoutJournalTagsInput = {
+  id?: string
+  type: $Enums.GlossaryType
+  name: string
+  aliases?: string | null
+  description: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  campaign: Prisma.CampaignCreateNestedOneWithoutGlossaryInput
+  sessions?: Prisma.GlossarySessionLinkCreateNestedManyWithoutGlossaryEntryInput
+  campaignCharacters?: Prisma.CampaignCharacterCreateNestedManyWithoutGlossaryEntryInput
+  sourceMap?: Prisma.CampaignMapCreateNestedOneWithoutSourceGlossaryEntriesInput
+  sourceMapFeature?: Prisma.CampaignMapFeatureCreateNestedOneWithoutSourceGlossaryEntriesInput
+  mapLinks?: Prisma.CampaignMapGlossaryLinkCreateNestedManyWithoutGlossaryEntryInput
+}
+
+export type GlossaryEntryUncheckedCreateWithoutJournalTagsInput = {
+  id?: string
+  campaignId: string
+  type: $Enums.GlossaryType
+  name: string
+  aliases?: string | null
+  description: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sourceMapId?: string | null
+  sourceMapFeatureId?: string | null
+  sessions?: Prisma.GlossarySessionLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
+  campaignCharacters?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutGlossaryEntryInput
+  mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
+}
+
+export type GlossaryEntryCreateOrConnectWithoutJournalTagsInput = {
+  where: Prisma.GlossaryEntryWhereUniqueInput
+  create: Prisma.XOR<Prisma.GlossaryEntryCreateWithoutJournalTagsInput, Prisma.GlossaryEntryUncheckedCreateWithoutJournalTagsInput>
+}
+
+export type GlossaryEntryUpsertWithoutJournalTagsInput = {
+  update: Prisma.XOR<Prisma.GlossaryEntryUpdateWithoutJournalTagsInput, Prisma.GlossaryEntryUncheckedUpdateWithoutJournalTagsInput>
+  create: Prisma.XOR<Prisma.GlossaryEntryCreateWithoutJournalTagsInput, Prisma.GlossaryEntryUncheckedCreateWithoutJournalTagsInput>
+  where?: Prisma.GlossaryEntryWhereInput
+}
+
+export type GlossaryEntryUpdateToOneWithWhereWithoutJournalTagsInput = {
+  where?: Prisma.GlossaryEntryWhereInput
+  data: Prisma.XOR<Prisma.GlossaryEntryUpdateWithoutJournalTagsInput, Prisma.GlossaryEntryUncheckedUpdateWithoutJournalTagsInput>
+}
+
+export type GlossaryEntryUpdateWithoutJournalTagsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumGlossaryTypeFieldUpdateOperationsInput | $Enums.GlossaryType
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  aliases?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  campaign?: Prisma.CampaignUpdateOneRequiredWithoutGlossaryNestedInput
+  sessions?: Prisma.GlossarySessionLinkUpdateManyWithoutGlossaryEntryNestedInput
+  campaignCharacters?: Prisma.CampaignCharacterUpdateManyWithoutGlossaryEntryNestedInput
+  sourceMap?: Prisma.CampaignMapUpdateOneWithoutSourceGlossaryEntriesNestedInput
+  sourceMapFeature?: Prisma.CampaignMapFeatureUpdateOneWithoutSourceGlossaryEntriesNestedInput
+  mapLinks?: Prisma.CampaignMapGlossaryLinkUpdateManyWithoutGlossaryEntryNestedInput
+}
+
+export type GlossaryEntryUncheckedUpdateWithoutJournalTagsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  campaignId?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumGlossaryTypeFieldUpdateOperationsInput | $Enums.GlossaryType
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  aliases?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sourceMapId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceMapFeatureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessions?: Prisma.GlossarySessionLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
+  campaignCharacters?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutGlossaryEntryNestedInput
+  mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
+}
+
 export type GlossaryEntryCreateWithoutSourceMapInput = {
   id?: string
   type: $Enums.GlossaryType
@@ -720,6 +825,7 @@ export type GlossaryEntryCreateWithoutSourceMapInput = {
   campaignCharacters?: Prisma.CampaignCharacterCreateNestedManyWithoutGlossaryEntryInput
   sourceMapFeature?: Prisma.CampaignMapFeatureCreateNestedOneWithoutSourceGlossaryEntriesInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkCreateNestedManyWithoutGlossaryEntryInput
+  journalTags?: Prisma.CampaignJournalTagCreateNestedManyWithoutGlossaryEntryInput
 }
 
 export type GlossaryEntryUncheckedCreateWithoutSourceMapInput = {
@@ -735,6 +841,7 @@ export type GlossaryEntryUncheckedCreateWithoutSourceMapInput = {
   sessions?: Prisma.GlossarySessionLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
   campaignCharacters?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutGlossaryEntryInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
+  journalTags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutGlossaryEntryInput
 }
 
 export type GlossaryEntryCreateOrConnectWithoutSourceMapInput = {
@@ -775,6 +882,7 @@ export type GlossaryEntryCreateWithoutSourceMapFeatureInput = {
   campaignCharacters?: Prisma.CampaignCharacterCreateNestedManyWithoutGlossaryEntryInput
   sourceMap?: Prisma.CampaignMapCreateNestedOneWithoutSourceGlossaryEntriesInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkCreateNestedManyWithoutGlossaryEntryInput
+  journalTags?: Prisma.CampaignJournalTagCreateNestedManyWithoutGlossaryEntryInput
 }
 
 export type GlossaryEntryUncheckedCreateWithoutSourceMapFeatureInput = {
@@ -790,6 +898,7 @@ export type GlossaryEntryUncheckedCreateWithoutSourceMapFeatureInput = {
   sessions?: Prisma.GlossarySessionLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
   campaignCharacters?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutGlossaryEntryInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
+  journalTags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutGlossaryEntryInput
 }
 
 export type GlossaryEntryCreateOrConnectWithoutSourceMapFeatureInput = {
@@ -830,6 +939,7 @@ export type GlossaryEntryCreateWithoutMapLinksInput = {
   campaignCharacters?: Prisma.CampaignCharacterCreateNestedManyWithoutGlossaryEntryInput
   sourceMap?: Prisma.CampaignMapCreateNestedOneWithoutSourceGlossaryEntriesInput
   sourceMapFeature?: Prisma.CampaignMapFeatureCreateNestedOneWithoutSourceGlossaryEntriesInput
+  journalTags?: Prisma.CampaignJournalTagCreateNestedManyWithoutGlossaryEntryInput
 }
 
 export type GlossaryEntryUncheckedCreateWithoutMapLinksInput = {
@@ -845,6 +955,7 @@ export type GlossaryEntryUncheckedCreateWithoutMapLinksInput = {
   sourceMapFeatureId?: string | null
   sessions?: Prisma.GlossarySessionLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
   campaignCharacters?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutGlossaryEntryInput
+  journalTags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutGlossaryEntryInput
 }
 
 export type GlossaryEntryCreateOrConnectWithoutMapLinksInput = {
@@ -876,6 +987,7 @@ export type GlossaryEntryUpdateWithoutMapLinksInput = {
   campaignCharacters?: Prisma.CampaignCharacterUpdateManyWithoutGlossaryEntryNestedInput
   sourceMap?: Prisma.CampaignMapUpdateOneWithoutSourceGlossaryEntriesNestedInput
   sourceMapFeature?: Prisma.CampaignMapFeatureUpdateOneWithoutSourceGlossaryEntriesNestedInput
+  journalTags?: Prisma.CampaignJournalTagUpdateManyWithoutGlossaryEntryNestedInput
 }
 
 export type GlossaryEntryUncheckedUpdateWithoutMapLinksInput = {
@@ -891,6 +1003,7 @@ export type GlossaryEntryUncheckedUpdateWithoutMapLinksInput = {
   sourceMapFeatureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sessions?: Prisma.GlossarySessionLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   campaignCharacters?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutGlossaryEntryNestedInput
+  journalTags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutGlossaryEntryNestedInput
 }
 
 export type GlossaryEntryCreateWithoutSessionsInput = {
@@ -906,6 +1019,7 @@ export type GlossaryEntryCreateWithoutSessionsInput = {
   sourceMap?: Prisma.CampaignMapCreateNestedOneWithoutSourceGlossaryEntriesInput
   sourceMapFeature?: Prisma.CampaignMapFeatureCreateNestedOneWithoutSourceGlossaryEntriesInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkCreateNestedManyWithoutGlossaryEntryInput
+  journalTags?: Prisma.CampaignJournalTagCreateNestedManyWithoutGlossaryEntryInput
 }
 
 export type GlossaryEntryUncheckedCreateWithoutSessionsInput = {
@@ -921,6 +1035,7 @@ export type GlossaryEntryUncheckedCreateWithoutSessionsInput = {
   sourceMapFeatureId?: string | null
   campaignCharacters?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutGlossaryEntryInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
+  journalTags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutGlossaryEntryInput
 }
 
 export type GlossaryEntryCreateOrConnectWithoutSessionsInput = {
@@ -952,6 +1067,7 @@ export type GlossaryEntryUpdateWithoutSessionsInput = {
   sourceMap?: Prisma.CampaignMapUpdateOneWithoutSourceGlossaryEntriesNestedInput
   sourceMapFeature?: Prisma.CampaignMapFeatureUpdateOneWithoutSourceGlossaryEntriesNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUpdateManyWithoutGlossaryEntryNestedInput
+  journalTags?: Prisma.CampaignJournalTagUpdateManyWithoutGlossaryEntryNestedInput
 }
 
 export type GlossaryEntryUncheckedUpdateWithoutSessionsInput = {
@@ -967,6 +1083,7 @@ export type GlossaryEntryUncheckedUpdateWithoutSessionsInput = {
   sourceMapFeatureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   campaignCharacters?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
+  journalTags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutGlossaryEntryNestedInput
 }
 
 export type GlossaryEntryCreateWithoutCampaignCharactersInput = {
@@ -982,6 +1099,7 @@ export type GlossaryEntryCreateWithoutCampaignCharactersInput = {
   sourceMap?: Prisma.CampaignMapCreateNestedOneWithoutSourceGlossaryEntriesInput
   sourceMapFeature?: Prisma.CampaignMapFeatureCreateNestedOneWithoutSourceGlossaryEntriesInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkCreateNestedManyWithoutGlossaryEntryInput
+  journalTags?: Prisma.CampaignJournalTagCreateNestedManyWithoutGlossaryEntryInput
 }
 
 export type GlossaryEntryUncheckedCreateWithoutCampaignCharactersInput = {
@@ -997,6 +1115,7 @@ export type GlossaryEntryUncheckedCreateWithoutCampaignCharactersInput = {
   sourceMapFeatureId?: string | null
   sessions?: Prisma.GlossarySessionLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
+  journalTags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutGlossaryEntryInput
 }
 
 export type GlossaryEntryCreateOrConnectWithoutCampaignCharactersInput = {
@@ -1028,6 +1147,7 @@ export type GlossaryEntryUpdateWithoutCampaignCharactersInput = {
   sourceMap?: Prisma.CampaignMapUpdateOneWithoutSourceGlossaryEntriesNestedInput
   sourceMapFeature?: Prisma.CampaignMapFeatureUpdateOneWithoutSourceGlossaryEntriesNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUpdateManyWithoutGlossaryEntryNestedInput
+  journalTags?: Prisma.CampaignJournalTagUpdateManyWithoutGlossaryEntryNestedInput
 }
 
 export type GlossaryEntryUncheckedUpdateWithoutCampaignCharactersInput = {
@@ -1043,6 +1163,7 @@ export type GlossaryEntryUncheckedUpdateWithoutCampaignCharactersInput = {
   sourceMapFeatureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sessions?: Prisma.GlossarySessionLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
+  journalTags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutGlossaryEntryNestedInput
 }
 
 export type GlossaryEntryCreateManyCampaignInput = {
@@ -1070,6 +1191,7 @@ export type GlossaryEntryUpdateWithoutCampaignInput = {
   sourceMap?: Prisma.CampaignMapUpdateOneWithoutSourceGlossaryEntriesNestedInput
   sourceMapFeature?: Prisma.CampaignMapFeatureUpdateOneWithoutSourceGlossaryEntriesNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUpdateManyWithoutGlossaryEntryNestedInput
+  journalTags?: Prisma.CampaignJournalTagUpdateManyWithoutGlossaryEntryNestedInput
 }
 
 export type GlossaryEntryUncheckedUpdateWithoutCampaignInput = {
@@ -1085,6 +1207,7 @@ export type GlossaryEntryUncheckedUpdateWithoutCampaignInput = {
   sessions?: Prisma.GlossarySessionLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   campaignCharacters?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
+  journalTags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutGlossaryEntryNestedInput
 }
 
 export type GlossaryEntryUncheckedUpdateManyWithoutCampaignInput = {
@@ -1124,6 +1247,7 @@ export type GlossaryEntryUpdateWithoutSourceMapInput = {
   campaignCharacters?: Prisma.CampaignCharacterUpdateManyWithoutGlossaryEntryNestedInput
   sourceMapFeature?: Prisma.CampaignMapFeatureUpdateOneWithoutSourceGlossaryEntriesNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUpdateManyWithoutGlossaryEntryNestedInput
+  journalTags?: Prisma.CampaignJournalTagUpdateManyWithoutGlossaryEntryNestedInput
 }
 
 export type GlossaryEntryUncheckedUpdateWithoutSourceMapInput = {
@@ -1139,6 +1263,7 @@ export type GlossaryEntryUncheckedUpdateWithoutSourceMapInput = {
   sessions?: Prisma.GlossarySessionLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   campaignCharacters?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
+  journalTags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutGlossaryEntryNestedInput
 }
 
 export type GlossaryEntryUncheckedUpdateManyWithoutSourceMapInput = {
@@ -1178,6 +1303,7 @@ export type GlossaryEntryUpdateWithoutSourceMapFeatureInput = {
   campaignCharacters?: Prisma.CampaignCharacterUpdateManyWithoutGlossaryEntryNestedInput
   sourceMap?: Prisma.CampaignMapUpdateOneWithoutSourceGlossaryEntriesNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUpdateManyWithoutGlossaryEntryNestedInput
+  journalTags?: Prisma.CampaignJournalTagUpdateManyWithoutGlossaryEntryNestedInput
 }
 
 export type GlossaryEntryUncheckedUpdateWithoutSourceMapFeatureInput = {
@@ -1193,6 +1319,7 @@ export type GlossaryEntryUncheckedUpdateWithoutSourceMapFeatureInput = {
   sessions?: Prisma.GlossarySessionLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   campaignCharacters?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
+  journalTags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutGlossaryEntryNestedInput
 }
 
 export type GlossaryEntryUncheckedUpdateManyWithoutSourceMapFeatureInput = {
@@ -1216,12 +1343,14 @@ export type GlossaryEntryCountOutputType = {
   sessions: number
   campaignCharacters: number
   mapLinks: number
+  journalTags: number
 }
 
 export type GlossaryEntryCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sessions?: boolean | GlossaryEntryCountOutputTypeCountSessionsArgs
   campaignCharacters?: boolean | GlossaryEntryCountOutputTypeCountCampaignCharactersArgs
   mapLinks?: boolean | GlossaryEntryCountOutputTypeCountMapLinksArgs
+  journalTags?: boolean | GlossaryEntryCountOutputTypeCountJournalTagsArgs
 }
 
 /**
@@ -1255,6 +1384,13 @@ export type GlossaryEntryCountOutputTypeCountMapLinksArgs<ExtArgs extends runtim
   where?: Prisma.CampaignMapGlossaryLinkWhereInput
 }
 
+/**
+ * GlossaryEntryCountOutputType without action
+ */
+export type GlossaryEntryCountOutputTypeCountJournalTagsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CampaignJournalTagWhereInput
+}
+
 
 export type GlossaryEntrySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1273,6 +1409,7 @@ export type GlossaryEntrySelect<ExtArgs extends runtime.Types.Extensions.Interna
   sourceMap?: boolean | Prisma.GlossaryEntry$sourceMapArgs<ExtArgs>
   sourceMapFeature?: boolean | Prisma.GlossaryEntry$sourceMapFeatureArgs<ExtArgs>
   mapLinks?: boolean | Prisma.GlossaryEntry$mapLinksArgs<ExtArgs>
+  journalTags?: boolean | Prisma.GlossaryEntry$journalTagsArgs<ExtArgs>
   _count?: boolean | Prisma.GlossaryEntryCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["glossaryEntry"]>
 
@@ -1329,6 +1466,7 @@ export type GlossaryEntryInclude<ExtArgs extends runtime.Types.Extensions.Intern
   sourceMap?: boolean | Prisma.GlossaryEntry$sourceMapArgs<ExtArgs>
   sourceMapFeature?: boolean | Prisma.GlossaryEntry$sourceMapFeatureArgs<ExtArgs>
   mapLinks?: boolean | Prisma.GlossaryEntry$mapLinksArgs<ExtArgs>
+  journalTags?: boolean | Prisma.GlossaryEntry$journalTagsArgs<ExtArgs>
   _count?: boolean | Prisma.GlossaryEntryCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type GlossaryEntryIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1351,6 +1489,7 @@ export type $GlossaryEntryPayload<ExtArgs extends runtime.Types.Extensions.Inter
     sourceMap: Prisma.$CampaignMapPayload<ExtArgs> | null
     sourceMapFeature: Prisma.$CampaignMapFeaturePayload<ExtArgs> | null
     mapLinks: Prisma.$CampaignMapGlossaryLinkPayload<ExtArgs>[]
+    journalTags: Prisma.$CampaignJournalTagPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1763,6 +1902,7 @@ export interface Prisma__GlossaryEntryClient<T, Null = never, ExtArgs extends ru
   sourceMap<T extends Prisma.GlossaryEntry$sourceMapArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.GlossaryEntry$sourceMapArgs<ExtArgs>>): Prisma.Prisma__CampaignMapClient<runtime.Types.Result.GetResult<Prisma.$CampaignMapPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   sourceMapFeature<T extends Prisma.GlossaryEntry$sourceMapFeatureArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.GlossaryEntry$sourceMapFeatureArgs<ExtArgs>>): Prisma.Prisma__CampaignMapFeatureClient<runtime.Types.Result.GetResult<Prisma.$CampaignMapFeaturePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   mapLinks<T extends Prisma.GlossaryEntry$mapLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.GlossaryEntry$mapLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignMapGlossaryLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  journalTags<T extends Prisma.GlossaryEntry$journalTagsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.GlossaryEntry$journalTagsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignJournalTagPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2303,6 +2443,30 @@ export type GlossaryEntry$mapLinksArgs<ExtArgs extends runtime.Types.Extensions.
   take?: number
   skip?: number
   distinct?: Prisma.CampaignMapGlossaryLinkScalarFieldEnum | Prisma.CampaignMapGlossaryLinkScalarFieldEnum[]
+}
+
+/**
+ * GlossaryEntry.journalTags
+ */
+export type GlossaryEntry$journalTagsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CampaignJournalTag
+   */
+  select?: Prisma.CampaignJournalTagSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CampaignJournalTag
+   */
+  omit?: Prisma.CampaignJournalTagOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CampaignJournalTagInclude<ExtArgs> | null
+  where?: Prisma.CampaignJournalTagWhereInput
+  orderBy?: Prisma.CampaignJournalTagOrderByWithRelationInput | Prisma.CampaignJournalTagOrderByWithRelationInput[]
+  cursor?: Prisma.CampaignJournalTagWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CampaignJournalTagScalarFieldEnum | Prisma.CampaignJournalTagScalarFieldEnum[]
 }
 
 /**

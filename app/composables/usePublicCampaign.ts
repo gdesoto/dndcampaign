@@ -36,8 +36,58 @@ export const usePublicCampaign = () => {
         showQuests: boolean
         showMilestones: boolean
         showMaps: boolean
+        showJournal: boolean
       }
     }>(`/api/public/campaigns/${publicSlug}`)
+
+  const getJournalEntries = (
+    publicSlug: string,
+    input?: { search?: string; tag?: string; sessionId?: string; page?: number; pageSize?: number }
+  ) => {
+    const query = new URLSearchParams()
+    if (input?.search) query.set('search', input.search)
+    if (input?.tag) query.set('tag', input.tag)
+    if (input?.sessionId) query.set('sessionId', input.sessionId)
+    if (typeof input?.page === 'number') query.set('page', String(input.page))
+    if (typeof input?.pageSize === 'number') query.set('pageSize', String(input.pageSize))
+    const suffix = query.toString()
+    return request<{
+      items: Array<{
+        id: string
+        campaignId: string
+        authorUserId: string
+        authorName: string
+        title: string
+        contentMarkdown: string
+        visibility: 'CAMPAIGN'
+        sessions: Array<{
+          sessionId: string
+          title: string
+          sessionNumber: number | null
+        }>
+        tags: Array<{
+          id: string
+          tagType: 'CUSTOM' | 'GLOSSARY'
+          displayLabel: string
+          normalizedLabel: string
+          glossaryEntryId: string | null
+          glossaryEntryName: string | null
+          isOrphanedGlossaryTag: boolean
+        }>
+        createdAt: string
+        updatedAt: string
+        canView: true
+        canEdit: false
+        canDelete: false
+      }>
+      pagination: {
+        page: number
+        pageSize: number
+        total: number
+        totalPages: number
+      }
+    }>(`/api/public/campaigns/${publicSlug}/journal-entries${suffix ? `?${suffix}` : ''}`)
+  }
 
   const getCharacters = (publicSlug: string) =>
     request<
@@ -154,5 +204,6 @@ export const usePublicCampaign = () => {
     getMaps,
     getMapViewer,
     getMapSvgUrl,
+    getJournalEntries,
   }
 }

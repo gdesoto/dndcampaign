@@ -25,6 +25,7 @@ const sections = computed(() => {
     { key: 'showQuests', label: 'Quests', to: `${base}/quests` },
     { key: 'showMilestones', label: 'Milestones', to: `${base}/milestones` },
     { key: 'showMaps', label: 'Maps', to: `${base}/maps` },
+    { key: 'showJournal', label: 'Journal', to: `${base}/journal` },
   ] as const
 
   return all.filter((section) => overview.value?.sections[section.key])

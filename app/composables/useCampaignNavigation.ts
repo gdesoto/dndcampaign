@@ -61,6 +61,12 @@ export const useCampaignNavigation = (
         active: path.startsWith(`${base}/maps`),
       },
       {
+        label: 'Journal',
+        to: `${base}/journal`,
+        icon: 'i-lucide-notebook-tabs',
+        active: path.startsWith(`${base}/journal`),
+      },
+      {
         label: 'Requests',
         to: `${base}/requests`,
         icon: 'i-lucide-message-square-share',
@@ -106,6 +112,7 @@ export const useCampaignNavigation = (
     if (suffix.startsWith('/milestones')) return 'Milestones'
     if (suffix.startsWith('/glossary')) return 'Glossary'
     if (suffix.startsWith('/maps')) return 'Maps'
+    if (suffix.startsWith('/journal')) return 'Journal'
     if (suffix.startsWith('/requests')) return 'Requests'
     if (suffix.startsWith('/calendar')) return 'Calendar'
     if (suffix.startsWith('/tools')) return 'Tools'

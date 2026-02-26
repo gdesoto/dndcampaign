@@ -250,6 +250,7 @@ export type UserWhereInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestListRelationFilter
   campaignRequestsDecided?: Prisma.CampaignRequestListRelationFilter
   campaignRequestVotes?: Prisma.CampaignRequestVoteListRelationFilter
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -284,6 +285,7 @@ export type UserOrderByWithRelationInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestOrderByRelationAggregateInput
   campaignRequestsDecided?: Prisma.CampaignRequestOrderByRelationAggregateInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteOrderByRelationAggregateInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -321,6 +323,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   campaignRequestsCreated?: Prisma.CampaignRequestListRelationFilter
   campaignRequestsDecided?: Prisma.CampaignRequestListRelationFilter
   campaignRequestVotes?: Prisma.CampaignRequestVoteListRelationFilter
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -389,6 +392,7 @@ export type UserCreateInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -423,6 +427,7 @@ export type UserUncheckedCreateInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUpdateInput = {
@@ -457,6 +462,7 @@ export type UserUpdateInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -491,6 +497,7 @@ export type UserUncheckedUpdateInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -771,6 +778,20 @@ export type UserUpdateOneRequiredWithoutCampaignRequestVotesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutCampaignRequestVotesInput, Prisma.UserUpdateWithoutCampaignRequestVotesInput>, Prisma.UserUncheckedUpdateWithoutCampaignRequestVotesInput>
 }
 
+export type UserCreateNestedOneWithoutJournalEntriesAuthoredInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutJournalEntriesAuthoredInput, Prisma.UserUncheckedCreateWithoutJournalEntriesAuthoredInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutJournalEntriesAuthoredInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutJournalEntriesAuthoredNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutJournalEntriesAuthoredInput, Prisma.UserUncheckedCreateWithoutJournalEntriesAuthoredInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutJournalEntriesAuthoredInput
+  upsert?: Prisma.UserUpsertWithoutJournalEntriesAuthoredInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutJournalEntriesAuthoredInput, Prisma.UserUpdateWithoutJournalEntriesAuthoredInput>, Prisma.UserUncheckedUpdateWithoutJournalEntriesAuthoredInput>
+}
+
 export type UserCreateNestedOneWithoutCalendarEventsCreatedInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutCalendarEventsCreatedInput, Prisma.UserUncheckedCreateWithoutCalendarEventsCreatedInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutCalendarEventsCreatedInput
@@ -932,6 +953,7 @@ export type UserCreateWithoutActivityActionsInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUncheckedCreateWithoutActivityActionsInput = {
@@ -965,6 +987,7 @@ export type UserUncheckedCreateWithoutActivityActionsInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserCreateOrConnectWithoutActivityActionsInput = {
@@ -1014,6 +1037,7 @@ export type UserUpdateWithoutActivityActionsInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutActivityActionsInput = {
@@ -1047,6 +1071,7 @@ export type UserUncheckedUpdateWithoutActivityActionsInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserCreateWithoutAdminAuditActionsInput = {
@@ -1080,6 +1105,7 @@ export type UserCreateWithoutAdminAuditActionsInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUncheckedCreateWithoutAdminAuditActionsInput = {
@@ -1113,6 +1139,7 @@ export type UserUncheckedCreateWithoutAdminAuditActionsInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserCreateOrConnectWithoutAdminAuditActionsInput = {
@@ -1162,6 +1189,7 @@ export type UserUpdateWithoutAdminAuditActionsInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAdminAuditActionsInput = {
@@ -1195,6 +1223,7 @@ export type UserUncheckedUpdateWithoutAdminAuditActionsInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserCreateWithoutCampaignsInput = {
@@ -1228,6 +1257,7 @@ export type UserCreateWithoutCampaignsInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUncheckedCreateWithoutCampaignsInput = {
@@ -1261,6 +1291,7 @@ export type UserUncheckedCreateWithoutCampaignsInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserCreateOrConnectWithoutCampaignsInput = {
@@ -1310,6 +1341,7 @@ export type UserUpdateWithoutCampaignsInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCampaignsInput = {
@@ -1343,6 +1375,7 @@ export type UserUncheckedUpdateWithoutCampaignsInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserCreateWithoutCampaignPublicAccessUpdatesInput = {
@@ -1376,6 +1409,7 @@ export type UserCreateWithoutCampaignPublicAccessUpdatesInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUncheckedCreateWithoutCampaignPublicAccessUpdatesInput = {
@@ -1409,6 +1443,7 @@ export type UserUncheckedCreateWithoutCampaignPublicAccessUpdatesInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserCreateOrConnectWithoutCampaignPublicAccessUpdatesInput = {
@@ -1458,6 +1493,7 @@ export type UserUpdateWithoutCampaignPublicAccessUpdatesInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCampaignPublicAccessUpdatesInput = {
@@ -1491,6 +1527,7 @@ export type UserUncheckedUpdateWithoutCampaignPublicAccessUpdatesInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserCreateWithoutCampaignMembershipsInput = {
@@ -1524,6 +1561,7 @@ export type UserCreateWithoutCampaignMembershipsInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUncheckedCreateWithoutCampaignMembershipsInput = {
@@ -1557,6 +1595,7 @@ export type UserUncheckedCreateWithoutCampaignMembershipsInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserCreateOrConnectWithoutCampaignMembershipsInput = {
@@ -1595,6 +1634,7 @@ export type UserCreateWithoutCampaignMembershipInvitesSentInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUncheckedCreateWithoutCampaignMembershipInvitesSentInput = {
@@ -1628,6 +1668,7 @@ export type UserUncheckedCreateWithoutCampaignMembershipInvitesSentInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserCreateOrConnectWithoutCampaignMembershipInvitesSentInput = {
@@ -1677,6 +1718,7 @@ export type UserUpdateWithoutCampaignMembershipsInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCampaignMembershipsInput = {
@@ -1710,6 +1752,7 @@ export type UserUncheckedUpdateWithoutCampaignMembershipsInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUpsertWithoutCampaignMembershipInvitesSentInput = {
@@ -1754,6 +1797,7 @@ export type UserUpdateWithoutCampaignMembershipInvitesSentInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCampaignMembershipInvitesSentInput = {
@@ -1787,6 +1831,7 @@ export type UserUncheckedUpdateWithoutCampaignMembershipInvitesSentInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserCreateWithoutCampaignInvitesSentInput = {
@@ -1820,6 +1865,7 @@ export type UserCreateWithoutCampaignInvitesSentInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUncheckedCreateWithoutCampaignInvitesSentInput = {
@@ -1853,6 +1899,7 @@ export type UserUncheckedCreateWithoutCampaignInvitesSentInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserCreateOrConnectWithoutCampaignInvitesSentInput = {
@@ -1891,6 +1938,7 @@ export type UserCreateWithoutCampaignInvitesAcceptedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUncheckedCreateWithoutCampaignInvitesAcceptedInput = {
@@ -1924,6 +1972,7 @@ export type UserUncheckedCreateWithoutCampaignInvitesAcceptedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserCreateOrConnectWithoutCampaignInvitesAcceptedInput = {
@@ -1973,6 +2022,7 @@ export type UserUpdateWithoutCampaignInvitesSentInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCampaignInvitesSentInput = {
@@ -2006,6 +2056,7 @@ export type UserUncheckedUpdateWithoutCampaignInvitesSentInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUpsertWithoutCampaignInvitesAcceptedInput = {
@@ -2050,6 +2101,7 @@ export type UserUpdateWithoutCampaignInvitesAcceptedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCampaignInvitesAcceptedInput = {
@@ -2083,6 +2135,7 @@ export type UserUncheckedUpdateWithoutCampaignInvitesAcceptedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserCreateWithoutCampaignRequestsCreatedInput = {
@@ -2116,6 +2169,7 @@ export type UserCreateWithoutCampaignRequestsCreatedInput = {
   dungeonSnapshotsCreated?: Prisma.CampaignDungeonSnapshotCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUncheckedCreateWithoutCampaignRequestsCreatedInput = {
@@ -2149,6 +2203,7 @@ export type UserUncheckedCreateWithoutCampaignRequestsCreatedInput = {
   dungeonSnapshotsCreated?: Prisma.CampaignDungeonSnapshotUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserCreateOrConnectWithoutCampaignRequestsCreatedInput = {
@@ -2187,6 +2242,7 @@ export type UserCreateWithoutCampaignRequestsDecidedInput = {
   dungeonSnapshotsCreated?: Prisma.CampaignDungeonSnapshotCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUncheckedCreateWithoutCampaignRequestsDecidedInput = {
@@ -2220,6 +2276,7 @@ export type UserUncheckedCreateWithoutCampaignRequestsDecidedInput = {
   dungeonSnapshotsCreated?: Prisma.CampaignDungeonSnapshotUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserCreateOrConnectWithoutCampaignRequestsDecidedInput = {
@@ -2269,6 +2326,7 @@ export type UserUpdateWithoutCampaignRequestsCreatedInput = {
   dungeonSnapshotsCreated?: Prisma.CampaignDungeonSnapshotUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCampaignRequestsCreatedInput = {
@@ -2302,6 +2360,7 @@ export type UserUncheckedUpdateWithoutCampaignRequestsCreatedInput = {
   dungeonSnapshotsCreated?: Prisma.CampaignDungeonSnapshotUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUpsertWithoutCampaignRequestsDecidedInput = {
@@ -2346,6 +2405,7 @@ export type UserUpdateWithoutCampaignRequestsDecidedInput = {
   dungeonSnapshotsCreated?: Prisma.CampaignDungeonSnapshotUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCampaignRequestsDecidedInput = {
@@ -2379,6 +2439,7 @@ export type UserUncheckedUpdateWithoutCampaignRequestsDecidedInput = {
   dungeonSnapshotsCreated?: Prisma.CampaignDungeonSnapshotUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserCreateWithoutCampaignRequestVotesInput = {
@@ -2412,6 +2473,7 @@ export type UserCreateWithoutCampaignRequestVotesInput = {
   dungeonSnapshotsCreated?: Prisma.CampaignDungeonSnapshotCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUncheckedCreateWithoutCampaignRequestVotesInput = {
@@ -2445,6 +2507,7 @@ export type UserUncheckedCreateWithoutCampaignRequestVotesInput = {
   dungeonSnapshotsCreated?: Prisma.CampaignDungeonSnapshotUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserCreateOrConnectWithoutCampaignRequestVotesInput = {
@@ -2494,6 +2557,7 @@ export type UserUpdateWithoutCampaignRequestVotesInput = {
   dungeonSnapshotsCreated?: Prisma.CampaignDungeonSnapshotUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCampaignRequestVotesInput = {
@@ -2527,6 +2591,159 @@ export type UserUncheckedUpdateWithoutCampaignRequestVotesInput = {
   dungeonSnapshotsCreated?: Prisma.CampaignDungeonSnapshotUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
+}
+
+export type UserCreateWithoutJournalEntriesAuthoredInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  name: string
+  systemRole?: $Enums.UserSystemRole
+  isActive?: boolean
+  lastLoginAt?: Date | string | null
+  avatarUrl?: string | null
+  deletedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  campaigns?: Prisma.CampaignCreateNestedManyWithoutOwnerInput
+  campaignMemberships?: Prisma.CampaignMemberCreateNestedManyWithoutUserInput
+  campaignMembershipInvitesSent?: Prisma.CampaignMemberCreateNestedManyWithoutInvitedByUserInput
+  campaignInvitesSent?: Prisma.CampaignInviteCreateNestedManyWithoutInvitedByUserInput
+  campaignInvitesAccepted?: Prisma.CampaignInviteCreateNestedManyWithoutAcceptedByUserInput
+  campaignPublicAccessUpdates?: Prisma.CampaignPublicAccessCreateNestedManyWithoutUpdatedByUserInput
+  activityActions?: Prisma.ActivityLogCreateNestedManyWithoutActorUserInput
+  documentVersions?: Prisma.DocumentVersionCreateNestedManyWithoutCreatedByUserInput
+  playerCharacters?: Prisma.PlayerCharacterCreateNestedManyWithoutOwnerInput
+  adminAuditActions?: Prisma.AdminAuditLogCreateNestedManyWithoutActorUserInput
+  calendarEventsCreated?: Prisma.CampaignCalendarEventCreateNestedManyWithoutCreatedByUserInput
+  encountersCreated?: Prisma.CampaignEncounterCreateNestedManyWithoutCreatedByUserInput
+  encounterEventsCreated?: Prisma.EncounterEventCreateNestedManyWithoutCreatedByUserInput
+  encounterTemplatesCreated?: Prisma.EncounterTemplateCreateNestedManyWithoutCreatedByUserInput
+  encounterStatBlocksCreated?: Prisma.EncounterStatBlockCreateNestedManyWithoutCreatedByUserInput
+  dungeonsCreated?: Prisma.CampaignDungeonCreateNestedManyWithoutCreatedByUserInput
+  dungeonSnapshotsCreated?: Prisma.CampaignDungeonSnapshotCreateNestedManyWithoutCreatedByUserInput
+  campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
+  campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
+  campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutJournalEntriesAuthoredInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  name: string
+  systemRole?: $Enums.UserSystemRole
+  isActive?: boolean
+  lastLoginAt?: Date | string | null
+  avatarUrl?: string | null
+  deletedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutOwnerInput
+  campaignMemberships?: Prisma.CampaignMemberUncheckedCreateNestedManyWithoutUserInput
+  campaignMembershipInvitesSent?: Prisma.CampaignMemberUncheckedCreateNestedManyWithoutInvitedByUserInput
+  campaignInvitesSent?: Prisma.CampaignInviteUncheckedCreateNestedManyWithoutInvitedByUserInput
+  campaignInvitesAccepted?: Prisma.CampaignInviteUncheckedCreateNestedManyWithoutAcceptedByUserInput
+  campaignPublicAccessUpdates?: Prisma.CampaignPublicAccessUncheckedCreateNestedManyWithoutUpdatedByUserInput
+  activityActions?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutActorUserInput
+  documentVersions?: Prisma.DocumentVersionUncheckedCreateNestedManyWithoutCreatedByUserInput
+  playerCharacters?: Prisma.PlayerCharacterUncheckedCreateNestedManyWithoutOwnerInput
+  adminAuditActions?: Prisma.AdminAuditLogUncheckedCreateNestedManyWithoutActorUserInput
+  calendarEventsCreated?: Prisma.CampaignCalendarEventUncheckedCreateNestedManyWithoutCreatedByUserInput
+  encountersCreated?: Prisma.CampaignEncounterUncheckedCreateNestedManyWithoutCreatedByUserInput
+  encounterEventsCreated?: Prisma.EncounterEventUncheckedCreateNestedManyWithoutCreatedByUserInput
+  encounterTemplatesCreated?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCreatedByUserInput
+  encounterStatBlocksCreated?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCreatedByUserInput
+  dungeonsCreated?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCreatedByUserInput
+  dungeonSnapshotsCreated?: Prisma.CampaignDungeonSnapshotUncheckedCreateNestedManyWithoutCreatedByUserInput
+  campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
+  campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
+  campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutJournalEntriesAuthoredInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutJournalEntriesAuthoredInput, Prisma.UserUncheckedCreateWithoutJournalEntriesAuthoredInput>
+}
+
+export type UserUpsertWithoutJournalEntriesAuthoredInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutJournalEntriesAuthoredInput, Prisma.UserUncheckedUpdateWithoutJournalEntriesAuthoredInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutJournalEntriesAuthoredInput, Prisma.UserUncheckedCreateWithoutJournalEntriesAuthoredInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutJournalEntriesAuthoredInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutJournalEntriesAuthoredInput, Prisma.UserUncheckedUpdateWithoutJournalEntriesAuthoredInput>
+}
+
+export type UserUpdateWithoutJournalEntriesAuthoredInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  systemRole?: Prisma.EnumUserSystemRoleFieldUpdateOperationsInput | $Enums.UserSystemRole
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  campaigns?: Prisma.CampaignUpdateManyWithoutOwnerNestedInput
+  campaignMemberships?: Prisma.CampaignMemberUpdateManyWithoutUserNestedInput
+  campaignMembershipInvitesSent?: Prisma.CampaignMemberUpdateManyWithoutInvitedByUserNestedInput
+  campaignInvitesSent?: Prisma.CampaignInviteUpdateManyWithoutInvitedByUserNestedInput
+  campaignInvitesAccepted?: Prisma.CampaignInviteUpdateManyWithoutAcceptedByUserNestedInput
+  campaignPublicAccessUpdates?: Prisma.CampaignPublicAccessUpdateManyWithoutUpdatedByUserNestedInput
+  activityActions?: Prisma.ActivityLogUpdateManyWithoutActorUserNestedInput
+  documentVersions?: Prisma.DocumentVersionUpdateManyWithoutCreatedByUserNestedInput
+  playerCharacters?: Prisma.PlayerCharacterUpdateManyWithoutOwnerNestedInput
+  adminAuditActions?: Prisma.AdminAuditLogUpdateManyWithoutActorUserNestedInput
+  calendarEventsCreated?: Prisma.CampaignCalendarEventUpdateManyWithoutCreatedByUserNestedInput
+  encountersCreated?: Prisma.CampaignEncounterUpdateManyWithoutCreatedByUserNestedInput
+  encounterEventsCreated?: Prisma.EncounterEventUpdateManyWithoutCreatedByUserNestedInput
+  encounterTemplatesCreated?: Prisma.EncounterTemplateUpdateManyWithoutCreatedByUserNestedInput
+  encounterStatBlocksCreated?: Prisma.EncounterStatBlockUpdateManyWithoutCreatedByUserNestedInput
+  dungeonsCreated?: Prisma.CampaignDungeonUpdateManyWithoutCreatedByUserNestedInput
+  dungeonSnapshotsCreated?: Prisma.CampaignDungeonSnapshotUpdateManyWithoutCreatedByUserNestedInput
+  campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
+  campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
+  campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutJournalEntriesAuthoredInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  systemRole?: Prisma.EnumUserSystemRoleFieldUpdateOperationsInput | $Enums.UserSystemRole
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutOwnerNestedInput
+  campaignMemberships?: Prisma.CampaignMemberUncheckedUpdateManyWithoutUserNestedInput
+  campaignMembershipInvitesSent?: Prisma.CampaignMemberUncheckedUpdateManyWithoutInvitedByUserNestedInput
+  campaignInvitesSent?: Prisma.CampaignInviteUncheckedUpdateManyWithoutInvitedByUserNestedInput
+  campaignInvitesAccepted?: Prisma.CampaignInviteUncheckedUpdateManyWithoutAcceptedByUserNestedInput
+  campaignPublicAccessUpdates?: Prisma.CampaignPublicAccessUncheckedUpdateManyWithoutUpdatedByUserNestedInput
+  activityActions?: Prisma.ActivityLogUncheckedUpdateManyWithoutActorUserNestedInput
+  documentVersions?: Prisma.DocumentVersionUncheckedUpdateManyWithoutCreatedByUserNestedInput
+  playerCharacters?: Prisma.PlayerCharacterUncheckedUpdateManyWithoutOwnerNestedInput
+  adminAuditActions?: Prisma.AdminAuditLogUncheckedUpdateManyWithoutActorUserNestedInput
+  calendarEventsCreated?: Prisma.CampaignCalendarEventUncheckedUpdateManyWithoutCreatedByUserNestedInput
+  encountersCreated?: Prisma.CampaignEncounterUncheckedUpdateManyWithoutCreatedByUserNestedInput
+  encounterEventsCreated?: Prisma.EncounterEventUncheckedUpdateManyWithoutCreatedByUserNestedInput
+  encounterTemplatesCreated?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCreatedByUserNestedInput
+  encounterStatBlocksCreated?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCreatedByUserNestedInput
+  dungeonsCreated?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCreatedByUserNestedInput
+  dungeonSnapshotsCreated?: Prisma.CampaignDungeonSnapshotUncheckedUpdateManyWithoutCreatedByUserNestedInput
+  campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
+  campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
+  campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutCalendarEventsCreatedInput = {
@@ -2560,6 +2777,7 @@ export type UserCreateWithoutCalendarEventsCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUncheckedCreateWithoutCalendarEventsCreatedInput = {
@@ -2593,6 +2811,7 @@ export type UserUncheckedCreateWithoutCalendarEventsCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserCreateOrConnectWithoutCalendarEventsCreatedInput = {
@@ -2642,6 +2861,7 @@ export type UserUpdateWithoutCalendarEventsCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCalendarEventsCreatedInput = {
@@ -2675,6 +2895,7 @@ export type UserUncheckedUpdateWithoutCalendarEventsCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserCreateWithoutEncountersCreatedInput = {
@@ -2708,6 +2929,7 @@ export type UserCreateWithoutEncountersCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUncheckedCreateWithoutEncountersCreatedInput = {
@@ -2741,6 +2963,7 @@ export type UserUncheckedCreateWithoutEncountersCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserCreateOrConnectWithoutEncountersCreatedInput = {
@@ -2790,6 +3013,7 @@ export type UserUpdateWithoutEncountersCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutEncountersCreatedInput = {
@@ -2823,6 +3047,7 @@ export type UserUncheckedUpdateWithoutEncountersCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserCreateWithoutEncounterEventsCreatedInput = {
@@ -2856,6 +3081,7 @@ export type UserCreateWithoutEncounterEventsCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUncheckedCreateWithoutEncounterEventsCreatedInput = {
@@ -2889,6 +3115,7 @@ export type UserUncheckedCreateWithoutEncounterEventsCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserCreateOrConnectWithoutEncounterEventsCreatedInput = {
@@ -2938,6 +3165,7 @@ export type UserUpdateWithoutEncounterEventsCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutEncounterEventsCreatedInput = {
@@ -2971,6 +3199,7 @@ export type UserUncheckedUpdateWithoutEncounterEventsCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserCreateWithoutEncounterTemplatesCreatedInput = {
@@ -3004,6 +3233,7 @@ export type UserCreateWithoutEncounterTemplatesCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUncheckedCreateWithoutEncounterTemplatesCreatedInput = {
@@ -3037,6 +3267,7 @@ export type UserUncheckedCreateWithoutEncounterTemplatesCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserCreateOrConnectWithoutEncounterTemplatesCreatedInput = {
@@ -3086,6 +3317,7 @@ export type UserUpdateWithoutEncounterTemplatesCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutEncounterTemplatesCreatedInput = {
@@ -3119,6 +3351,7 @@ export type UserUncheckedUpdateWithoutEncounterTemplatesCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserCreateWithoutEncounterStatBlocksCreatedInput = {
@@ -3152,6 +3385,7 @@ export type UserCreateWithoutEncounterStatBlocksCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUncheckedCreateWithoutEncounterStatBlocksCreatedInput = {
@@ -3185,6 +3419,7 @@ export type UserUncheckedCreateWithoutEncounterStatBlocksCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserCreateOrConnectWithoutEncounterStatBlocksCreatedInput = {
@@ -3234,6 +3469,7 @@ export type UserUpdateWithoutEncounterStatBlocksCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutEncounterStatBlocksCreatedInput = {
@@ -3267,6 +3503,7 @@ export type UserUncheckedUpdateWithoutEncounterStatBlocksCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserCreateWithoutDungeonsCreatedInput = {
@@ -3300,6 +3537,7 @@ export type UserCreateWithoutDungeonsCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUncheckedCreateWithoutDungeonsCreatedInput = {
@@ -3333,6 +3571,7 @@ export type UserUncheckedCreateWithoutDungeonsCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserCreateOrConnectWithoutDungeonsCreatedInput = {
@@ -3382,6 +3621,7 @@ export type UserUpdateWithoutDungeonsCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutDungeonsCreatedInput = {
@@ -3415,6 +3655,7 @@ export type UserUncheckedUpdateWithoutDungeonsCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserCreateWithoutDungeonSnapshotsCreatedInput = {
@@ -3448,6 +3689,7 @@ export type UserCreateWithoutDungeonSnapshotsCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUncheckedCreateWithoutDungeonSnapshotsCreatedInput = {
@@ -3481,6 +3723,7 @@ export type UserUncheckedCreateWithoutDungeonSnapshotsCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserCreateOrConnectWithoutDungeonSnapshotsCreatedInput = {
@@ -3530,6 +3773,7 @@ export type UserUpdateWithoutDungeonSnapshotsCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutDungeonSnapshotsCreatedInput = {
@@ -3563,6 +3807,7 @@ export type UserUncheckedUpdateWithoutDungeonSnapshotsCreatedInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserCreateWithoutDocumentVersionsInput = {
@@ -3596,6 +3841,7 @@ export type UserCreateWithoutDocumentVersionsInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUncheckedCreateWithoutDocumentVersionsInput = {
@@ -3629,6 +3875,7 @@ export type UserUncheckedCreateWithoutDocumentVersionsInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserCreateOrConnectWithoutDocumentVersionsInput = {
@@ -3678,6 +3925,7 @@ export type UserUpdateWithoutDocumentVersionsInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutDocumentVersionsInput = {
@@ -3711,6 +3959,7 @@ export type UserUncheckedUpdateWithoutDocumentVersionsInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserCreateWithoutPlayerCharactersInput = {
@@ -3744,6 +3993,7 @@ export type UserCreateWithoutPlayerCharactersInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserUncheckedCreateWithoutPlayerCharactersInput = {
@@ -3777,6 +4027,7 @@ export type UserUncheckedCreateWithoutPlayerCharactersInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
 }
 
 export type UserCreateOrConnectWithoutPlayerCharactersInput = {
@@ -3826,6 +4077,7 @@ export type UserUpdateWithoutPlayerCharactersInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPlayerCharactersInput = {
@@ -3859,6 +4111,7 @@ export type UserUncheckedUpdateWithoutPlayerCharactersInput = {
   campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
   campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
   campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
 }
 
 
@@ -3887,6 +4140,7 @@ export type UserCountOutputType = {
   campaignRequestsCreated: number
   campaignRequestsDecided: number
   campaignRequestVotes: number
+  journalEntriesAuthored: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -3910,6 +4164,7 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   campaignRequestsCreated?: boolean | UserCountOutputTypeCountCampaignRequestsCreatedArgs
   campaignRequestsDecided?: boolean | UserCountOutputTypeCountCampaignRequestsDecidedArgs
   campaignRequestVotes?: boolean | UserCountOutputTypeCountCampaignRequestVotesArgs
+  journalEntriesAuthored?: boolean | UserCountOutputTypeCountJournalEntriesAuthoredArgs
 }
 
 /**
@@ -4062,6 +4317,13 @@ export type UserCountOutputTypeCountCampaignRequestVotesArgs<ExtArgs extends run
   where?: Prisma.CampaignRequestVoteWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountJournalEntriesAuthoredArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CampaignJournalEntryWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -4095,6 +4357,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   campaignRequestsCreated?: boolean | Prisma.User$campaignRequestsCreatedArgs<ExtArgs>
   campaignRequestsDecided?: boolean | Prisma.User$campaignRequestsDecidedArgs<ExtArgs>
   campaignRequestVotes?: boolean | Prisma.User$campaignRequestVotesArgs<ExtArgs>
+  journalEntriesAuthored?: boolean | Prisma.User$journalEntriesAuthoredArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -4162,6 +4425,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   campaignRequestsCreated?: boolean | Prisma.User$campaignRequestsCreatedArgs<ExtArgs>
   campaignRequestsDecided?: boolean | Prisma.User$campaignRequestsDecidedArgs<ExtArgs>
   campaignRequestVotes?: boolean | Prisma.User$campaignRequestVotesArgs<ExtArgs>
+  journalEntriesAuthored?: boolean | Prisma.User$journalEntriesAuthoredArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -4190,6 +4454,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     campaignRequestsCreated: Prisma.$CampaignRequestPayload<ExtArgs>[]
     campaignRequestsDecided: Prisma.$CampaignRequestPayload<ExtArgs>[]
     campaignRequestVotes: Prisma.$CampaignRequestVotePayload<ExtArgs>[]
+    journalEntriesAuthored: Prisma.$CampaignJournalEntryPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -4617,6 +4882,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   campaignRequestsCreated<T extends Prisma.User$campaignRequestsCreatedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$campaignRequestsCreatedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   campaignRequestsDecided<T extends Prisma.User$campaignRequestsDecidedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$campaignRequestsDecidedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   campaignRequestVotes<T extends Prisma.User$campaignRequestVotesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$campaignRequestVotesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignRequestVotePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  journalEntriesAuthored<T extends Prisma.User$journalEntriesAuthoredArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$journalEntriesAuthoredArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignJournalEntryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -5520,6 +5786,30 @@ export type User$campaignRequestVotesArgs<ExtArgs extends runtime.Types.Extensio
   take?: number
   skip?: number
   distinct?: Prisma.CampaignRequestVoteScalarFieldEnum | Prisma.CampaignRequestVoteScalarFieldEnum[]
+}
+
+/**
+ * User.journalEntriesAuthored
+ */
+export type User$journalEntriesAuthoredArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CampaignJournalEntry
+   */
+  select?: Prisma.CampaignJournalEntrySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CampaignJournalEntry
+   */
+  omit?: Prisma.CampaignJournalEntryOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CampaignJournalEntryInclude<ExtArgs> | null
+  where?: Prisma.CampaignJournalEntryWhereInput
+  orderBy?: Prisma.CampaignJournalEntryOrderByWithRelationInput | Prisma.CampaignJournalEntryOrderByWithRelationInput[]
+  cursor?: Prisma.CampaignJournalEntryWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CampaignJournalEntryScalarFieldEnum | Prisma.CampaignJournalEntryScalarFieldEnum[]
 }
 
 /**

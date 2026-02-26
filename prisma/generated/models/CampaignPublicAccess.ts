@@ -36,6 +36,7 @@ export type CampaignPublicAccessMinAggregateOutputType = {
   showQuests: boolean | null
   showMilestones: boolean | null
   showMaps: boolean | null
+  showJournal: boolean | null
   updatedByUserId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -53,6 +54,7 @@ export type CampaignPublicAccessMaxAggregateOutputType = {
   showQuests: boolean | null
   showMilestones: boolean | null
   showMaps: boolean | null
+  showJournal: boolean | null
   updatedByUserId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -70,6 +72,7 @@ export type CampaignPublicAccessCountAggregateOutputType = {
   showQuests: number
   showMilestones: number
   showMaps: number
+  showJournal: number
   updatedByUserId: number
   createdAt: number
   updatedAt: number
@@ -89,6 +92,7 @@ export type CampaignPublicAccessMinAggregateInputType = {
   showQuests?: true
   showMilestones?: true
   showMaps?: true
+  showJournal?: true
   updatedByUserId?: true
   createdAt?: true
   updatedAt?: true
@@ -106,6 +110,7 @@ export type CampaignPublicAccessMaxAggregateInputType = {
   showQuests?: true
   showMilestones?: true
   showMaps?: true
+  showJournal?: true
   updatedByUserId?: true
   createdAt?: true
   updatedAt?: true
@@ -123,6 +128,7 @@ export type CampaignPublicAccessCountAggregateInputType = {
   showQuests?: true
   showMilestones?: true
   showMaps?: true
+  showJournal?: true
   updatedByUserId?: true
   createdAt?: true
   updatedAt?: true
@@ -213,6 +219,7 @@ export type CampaignPublicAccessGroupByOutputType = {
   showQuests: boolean
   showMilestones: boolean
   showMaps: boolean
+  showJournal: boolean
   updatedByUserId: string
   createdAt: Date
   updatedAt: Date
@@ -251,6 +258,7 @@ export type CampaignPublicAccessWhereInput = {
   showQuests?: Prisma.BoolFilter<"CampaignPublicAccess"> | boolean
   showMilestones?: Prisma.BoolFilter<"CampaignPublicAccess"> | boolean
   showMaps?: Prisma.BoolFilter<"CampaignPublicAccess"> | boolean
+  showJournal?: Prisma.BoolFilter<"CampaignPublicAccess"> | boolean
   updatedByUserId?: Prisma.StringFilter<"CampaignPublicAccess"> | string
   createdAt?: Prisma.DateTimeFilter<"CampaignPublicAccess"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CampaignPublicAccess"> | Date | string
@@ -270,6 +278,7 @@ export type CampaignPublicAccessOrderByWithRelationInput = {
   showQuests?: Prisma.SortOrder
   showMilestones?: Prisma.SortOrder
   showMaps?: Prisma.SortOrder
+  showJournal?: Prisma.SortOrder
   updatedByUserId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -292,6 +301,7 @@ export type CampaignPublicAccessWhereUniqueInput = Prisma.AtLeast<{
   showQuests?: Prisma.BoolFilter<"CampaignPublicAccess"> | boolean
   showMilestones?: Prisma.BoolFilter<"CampaignPublicAccess"> | boolean
   showMaps?: Prisma.BoolFilter<"CampaignPublicAccess"> | boolean
+  showJournal?: Prisma.BoolFilter<"CampaignPublicAccess"> | boolean
   updatedByUserId?: Prisma.StringFilter<"CampaignPublicAccess"> | string
   createdAt?: Prisma.DateTimeFilter<"CampaignPublicAccess"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CampaignPublicAccess"> | Date | string
@@ -311,6 +321,7 @@ export type CampaignPublicAccessOrderByWithAggregationInput = {
   showQuests?: Prisma.SortOrder
   showMilestones?: Prisma.SortOrder
   showMaps?: Prisma.SortOrder
+  showJournal?: Prisma.SortOrder
   updatedByUserId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -334,6 +345,7 @@ export type CampaignPublicAccessScalarWhereWithAggregatesInput = {
   showQuests?: Prisma.BoolWithAggregatesFilter<"CampaignPublicAccess"> | boolean
   showMilestones?: Prisma.BoolWithAggregatesFilter<"CampaignPublicAccess"> | boolean
   showMaps?: Prisma.BoolWithAggregatesFilter<"CampaignPublicAccess"> | boolean
+  showJournal?: Prisma.BoolWithAggregatesFilter<"CampaignPublicAccess"> | boolean
   updatedByUserId?: Prisma.StringWithAggregatesFilter<"CampaignPublicAccess"> | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"CampaignPublicAccess"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"CampaignPublicAccess"> | Date | string
@@ -350,6 +362,7 @@ export type CampaignPublicAccessCreateInput = {
   showQuests?: boolean
   showMilestones?: boolean
   showMaps?: boolean
+  showJournal?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   campaign: Prisma.CampaignCreateNestedOneWithoutPublicAccessInput
@@ -368,6 +381,7 @@ export type CampaignPublicAccessUncheckedCreateInput = {
   showQuests?: boolean
   showMilestones?: boolean
   showMaps?: boolean
+  showJournal?: boolean
   updatedByUserId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -384,6 +398,7 @@ export type CampaignPublicAccessUpdateInput = {
   showQuests?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showMilestones?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showMaps?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  showJournal?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   campaign?: Prisma.CampaignUpdateOneRequiredWithoutPublicAccessNestedInput
@@ -402,6 +417,7 @@ export type CampaignPublicAccessUncheckedUpdateInput = {
   showQuests?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showMilestones?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showMaps?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  showJournal?: Prisma.BoolFieldUpdateOperationsInput | boolean
   updatedByUserId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -419,6 +435,7 @@ export type CampaignPublicAccessCreateManyInput = {
   showQuests?: boolean
   showMilestones?: boolean
   showMaps?: boolean
+  showJournal?: boolean
   updatedByUserId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -435,6 +452,7 @@ export type CampaignPublicAccessUpdateManyMutationInput = {
   showQuests?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showMilestones?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showMaps?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  showJournal?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -451,6 +469,7 @@ export type CampaignPublicAccessUncheckedUpdateManyInput = {
   showQuests?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showMilestones?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showMaps?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  showJournal?: Prisma.BoolFieldUpdateOperationsInput | boolean
   updatedByUserId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -483,6 +502,7 @@ export type CampaignPublicAccessCountOrderByAggregateInput = {
   showQuests?: Prisma.SortOrder
   showMilestones?: Prisma.SortOrder
   showMaps?: Prisma.SortOrder
+  showJournal?: Prisma.SortOrder
   updatedByUserId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -500,6 +520,7 @@ export type CampaignPublicAccessMaxOrderByAggregateInput = {
   showQuests?: Prisma.SortOrder
   showMilestones?: Prisma.SortOrder
   showMaps?: Prisma.SortOrder
+  showJournal?: Prisma.SortOrder
   updatedByUserId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -517,6 +538,7 @@ export type CampaignPublicAccessMinOrderByAggregateInput = {
   showQuests?: Prisma.SortOrder
   showMilestones?: Prisma.SortOrder
   showMaps?: Prisma.SortOrder
+  showJournal?: Prisma.SortOrder
   updatedByUserId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -607,6 +629,7 @@ export type CampaignPublicAccessCreateWithoutUpdatedByUserInput = {
   showQuests?: boolean
   showMilestones?: boolean
   showMaps?: boolean
+  showJournal?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   campaign: Prisma.CampaignCreateNestedOneWithoutPublicAccessInput
@@ -624,6 +647,7 @@ export type CampaignPublicAccessUncheckedCreateWithoutUpdatedByUserInput = {
   showQuests?: boolean
   showMilestones?: boolean
   showMaps?: boolean
+  showJournal?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -668,6 +692,7 @@ export type CampaignPublicAccessScalarWhereInput = {
   showQuests?: Prisma.BoolFilter<"CampaignPublicAccess"> | boolean
   showMilestones?: Prisma.BoolFilter<"CampaignPublicAccess"> | boolean
   showMaps?: Prisma.BoolFilter<"CampaignPublicAccess"> | boolean
+  showJournal?: Prisma.BoolFilter<"CampaignPublicAccess"> | boolean
   updatedByUserId?: Prisma.StringFilter<"CampaignPublicAccess"> | string
   createdAt?: Prisma.DateTimeFilter<"CampaignPublicAccess"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CampaignPublicAccess"> | Date | string
@@ -684,6 +709,7 @@ export type CampaignPublicAccessCreateWithoutCampaignInput = {
   showQuests?: boolean
   showMilestones?: boolean
   showMaps?: boolean
+  showJournal?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   updatedByUser: Prisma.UserCreateNestedOneWithoutCampaignPublicAccessUpdatesInput
@@ -700,6 +726,7 @@ export type CampaignPublicAccessUncheckedCreateWithoutCampaignInput = {
   showQuests?: boolean
   showMilestones?: boolean
   showMaps?: boolean
+  showJournal?: boolean
   updatedByUserId: string
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -732,6 +759,7 @@ export type CampaignPublicAccessUpdateWithoutCampaignInput = {
   showQuests?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showMilestones?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showMaps?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  showJournal?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedByUser?: Prisma.UserUpdateOneRequiredWithoutCampaignPublicAccessUpdatesNestedInput
@@ -748,6 +776,7 @@ export type CampaignPublicAccessUncheckedUpdateWithoutCampaignInput = {
   showQuests?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showMilestones?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showMaps?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  showJournal?: Prisma.BoolFieldUpdateOperationsInput | boolean
   updatedByUserId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -765,6 +794,7 @@ export type CampaignPublicAccessCreateManyUpdatedByUserInput = {
   showQuests?: boolean
   showMilestones?: boolean
   showMaps?: boolean
+  showJournal?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -780,6 +810,7 @@ export type CampaignPublicAccessUpdateWithoutUpdatedByUserInput = {
   showQuests?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showMilestones?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showMaps?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  showJournal?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   campaign?: Prisma.CampaignUpdateOneRequiredWithoutPublicAccessNestedInput
@@ -797,6 +828,7 @@ export type CampaignPublicAccessUncheckedUpdateWithoutUpdatedByUserInput = {
   showQuests?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showMilestones?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showMaps?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  showJournal?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -813,6 +845,7 @@ export type CampaignPublicAccessUncheckedUpdateManyWithoutUpdatedByUserInput = {
   showQuests?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showMilestones?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showMaps?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  showJournal?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -831,6 +864,7 @@ export type CampaignPublicAccessSelect<ExtArgs extends runtime.Types.Extensions.
   showQuests?: boolean
   showMilestones?: boolean
   showMaps?: boolean
+  showJournal?: boolean
   updatedByUserId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -850,6 +884,7 @@ export type CampaignPublicAccessSelectCreateManyAndReturn<ExtArgs extends runtim
   showQuests?: boolean
   showMilestones?: boolean
   showMaps?: boolean
+  showJournal?: boolean
   updatedByUserId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -869,6 +904,7 @@ export type CampaignPublicAccessSelectUpdateManyAndReturn<ExtArgs extends runtim
   showQuests?: boolean
   showMilestones?: boolean
   showMaps?: boolean
+  showJournal?: boolean
   updatedByUserId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -888,12 +924,13 @@ export type CampaignPublicAccessSelectScalar = {
   showQuests?: boolean
   showMilestones?: boolean
   showMaps?: boolean
+  showJournal?: boolean
   updatedByUserId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type CampaignPublicAccessOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"campaignId" | "isEnabled" | "isListed" | "publicSlug" | "showCharacters" | "showRecaps" | "showSessions" | "showGlossary" | "showQuests" | "showMilestones" | "showMaps" | "updatedByUserId" | "createdAt" | "updatedAt", ExtArgs["result"]["campaignPublicAccess"]>
+export type CampaignPublicAccessOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"campaignId" | "isEnabled" | "isListed" | "publicSlug" | "showCharacters" | "showRecaps" | "showSessions" | "showGlossary" | "showQuests" | "showMilestones" | "showMaps" | "showJournal" | "updatedByUserId" | "createdAt" | "updatedAt", ExtArgs["result"]["campaignPublicAccess"]>
 export type CampaignPublicAccessInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   campaign?: boolean | Prisma.CampaignDefaultArgs<ExtArgs>
   updatedByUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -925,6 +962,7 @@ export type $CampaignPublicAccessPayload<ExtArgs extends runtime.Types.Extension
     showQuests: boolean
     showMilestones: boolean
     showMaps: boolean
+    showJournal: boolean
     updatedByUserId: string
     createdAt: Date
     updatedAt: Date
@@ -1364,6 +1402,7 @@ export interface CampaignPublicAccessFieldRefs {
   readonly showQuests: Prisma.FieldRef<"CampaignPublicAccess", 'Boolean'>
   readonly showMilestones: Prisma.FieldRef<"CampaignPublicAccess", 'Boolean'>
   readonly showMaps: Prisma.FieldRef<"CampaignPublicAccess", 'Boolean'>
+  readonly showJournal: Prisma.FieldRef<"CampaignPublicAccess", 'Boolean'>
   readonly updatedByUserId: Prisma.FieldRef<"CampaignPublicAccess", 'String'>
   readonly createdAt: Prisma.FieldRef<"CampaignPublicAccess", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"CampaignPublicAccess", 'DateTime'>

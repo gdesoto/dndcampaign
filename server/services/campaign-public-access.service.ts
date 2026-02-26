@@ -11,6 +11,13 @@ import type {
   CampaignPublicOverviewDto,
   PublicCampaignDirectoryItem,
 } from '#shared/schemas/campaign-public-access'
+import type { PublicCampaignJournalListQueryInput } from '#shared/schemas/campaign-journal'
+import {
+  campaignJournalListDefaultPage,
+  campaignJournalListDefaultPageSize,
+} from '#shared/schemas/campaign-journal'
+import { normalizeJournalTagLabel } from '#shared/utils/campaign-journal-tags'
+import type { CampaignJournalListResponse } from '#shared/types/campaign-journal'
 import { ActivityLogService } from '#server/services/activity-log.service'
 
 const PUBLIC_SLUG_BYTE_LENGTH = 16
@@ -28,6 +35,7 @@ type CampaignPublicAccessRecord = {
   showQuests: boolean
   showMilestones: boolean
   showMaps: boolean
+  showJournal: boolean
   updatedAt: Date
 }
 
@@ -58,6 +66,7 @@ const sectionToFlag: Record<CampaignPublicAccessSection, keyof CampaignPublicAcc
   quests: 'showQuests',
   milestones: 'showMilestones',
   maps: 'showMaps',
+  journal: 'showJournal',
 }
 
 const toOwnerDto = (record: CampaignPublicAccessRecord): CampaignPublicAccessOwnerDto => ({
@@ -73,6 +82,7 @@ const toOwnerDto = (record: CampaignPublicAccessRecord): CampaignPublicAccessOwn
   showQuests: record.showQuests,
   showMilestones: record.showMilestones,
   showMaps: record.showMaps,
+  showJournal: record.showJournal,
   updatedAt: record.updatedAt.toISOString(),
 })
 
@@ -244,6 +254,7 @@ export class CampaignPublicAccessService {
               showQuests: existing.showQuests,
               showMilestones: existing.showMilestones,
               showMaps: existing.showMaps,
+              showJournal: existing.showJournal,
               publicSlug: existing.publicSlug,
             }
           : null,
@@ -257,6 +268,7 @@ export class CampaignPublicAccessService {
           showQuests: updated.showQuests,
           showMilestones: updated.showMilestones,
           showMaps: updated.showMaps,
+          showJournal: updated.showJournal,
           publicSlug: updated.publicSlug,
         },
       },
@@ -392,6 +404,158 @@ export class CampaignPublicAccessService {
           showQuests: resolved.access.showQuests,
           showMilestones: resolved.access.showMilestones,
           showMaps: resolved.access.showMaps,
+          showJournal: resolved.access.showJournal,
+        },
+      },
+    }
+  }
+
+  async getPublicJournalEntries(
+    publicSlug: string,
+    query: PublicCampaignJournalListQueryInput
+  ): Promise<ServiceResult<CampaignJournalListResponse>> {
+    const resolved = await this.resolvePublicAccess(publicSlug, 'journal')
+    if (!resolved.ok) return resolved
+
+    const page = query.page || campaignJournalListDefaultPage
+    const pageSize = query.pageSize || campaignJournalListDefaultPageSize
+    const normalizedTag = query.tag ? normalizeJournalTagLabel(query.tag) : undefined
+
+    const where: Prisma.CampaignJournalEntryWhereInput = {
+      campaignId: resolved.campaignId,
+      visibility: 'CAMPAIGN',
+      ...(query.sessionId
+        ? {
+            sessionLinks: {
+              some: {
+                sessionId: query.sessionId,
+              },
+            },
+          }
+        : {}),
+      ...(normalizedTag
+        ? {
+            tags: {
+              some: {
+                normalizedLabel: normalizedTag,
+              },
+            },
+          }
+        : {}),
+      ...(query.search
+        ? {
+            OR: [
+              { title: { contains: query.search } },
+              { contentMarkdown: { contains: query.search } },
+              { tags: { some: { displayLabel: { contains: query.search } } } },
+            ],
+          }
+        : {}),
+    }
+
+    const [total, rows] = await prisma.$transaction([
+      prisma.campaignJournalEntry.count({ where }),
+      prisma.campaignJournalEntry.findMany({
+        where,
+        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          authorUser: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          tags: {
+            include: {
+              glossaryEntry: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+            orderBy: [{ tagType: 'asc' }, { displayLabel: 'asc' }],
+          },
+          sessionLinks: {
+            include: {
+              session: {
+                select: {
+                  id: true,
+                  title: true,
+                  sessionNumber: true,
+                },
+              },
+            },
+            orderBy: [{ createdAt: 'asc' }],
+          },
+        },
+      }),
+    ])
+
+    return {
+      ok: true,
+      data: {
+        items: rows.map((row) => ({
+          id: row.id,
+          campaignId: row.campaignId,
+          authorUserId: row.authorUserId,
+          authorName: row.authorUser.name,
+          title: row.title,
+          contentMarkdown: row.contentMarkdown,
+          visibility: row.visibility,
+          sessions: row.sessionLinks.map((link) => ({
+            sessionId: link.session.id,
+            title: link.session.title,
+            sessionNumber: link.session.sessionNumber,
+          })),
+          tags: row.tags.map((tag) => {
+            if (tag.tagType === 'CUSTOM') {
+              return {
+                id: tag.id,
+                tagType: 'CUSTOM' as const,
+                displayLabel: tag.displayLabel,
+                normalizedLabel: tag.normalizedLabel,
+                glossaryEntryId: null,
+                glossaryEntryName: null,
+                isOrphanedGlossaryTag: false as const,
+              }
+            }
+
+            if (tag.glossaryEntryId && tag.glossaryEntry) {
+              return {
+                id: tag.id,
+                tagType: 'GLOSSARY' as const,
+                displayLabel: tag.displayLabel,
+                normalizedLabel: tag.normalizedLabel,
+                glossaryEntryId: tag.glossaryEntry.id,
+                glossaryEntryName: tag.glossaryEntry.name,
+                isOrphanedGlossaryTag: false as const,
+              }
+            }
+
+            return {
+              id: tag.id,
+              tagType: 'GLOSSARY' as const,
+              displayLabel: tag.displayLabel,
+              normalizedLabel: tag.normalizedLabel,
+              glossaryEntryId: null,
+              glossaryEntryName: null,
+              isOrphanedGlossaryTag: true as const,
+            }
+          }),
+          createdAt: row.createdAt.toISOString(),
+          updatedAt: row.updatedAt.toISOString(),
+          canView: true,
+          canEdit: false,
+          canDelete: false,
+        })),
+        pagination: {
+          page,
+          pageSize,
+          total,
+          totalPages: Math.max(1, Math.ceil(total / pageSize)),
         },
       },
     }

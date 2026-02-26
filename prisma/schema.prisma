@@ -48,55 +48,67 @@ enum CampaignRequestStatus {
   CANCELED
 }
 
+enum CampaignJournalVisibility {
+  MYSELF
+  DM
+  CAMPAIGN
+}
+
+enum CampaignJournalTagType {
+  CUSTOM
+  GLOSSARY
+}
+
 model User {
-  id           String     @id @default(uuid())
-  email        String     @unique
-  passwordHash String?
-  name         String
-  systemRole   UserSystemRole @default(USER)
-  isActive     Boolean    @default(true)
-  lastLoginAt  DateTime?
-  avatarUrl    String?
-  deletedAt    DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  campaigns    Campaign[]
-  campaignMemberships CampaignMember[] @relation("CampaignMemberUser")
-  campaignMembershipInvitesSent CampaignMember[] @relation("CampaignMemberInviter")
-  campaignInvitesSent CampaignInvite[] @relation("CampaignInviteInviter")
-  campaignInvitesAccepted CampaignInvite[] @relation("CampaignInviteAccepter")
-  campaignPublicAccessUpdates CampaignPublicAccess[]
-  activityActions ActivityLog[] @relation("ActivityActor")
-  documentVersions DocumentVersion[]
-  playerCharacters PlayerCharacter[]
-  adminAuditActions AdminAuditLog[] @relation("AdminAuditActor")
-  calendarEventsCreated CampaignCalendarEvent[]
-  encountersCreated CampaignEncounter[]
-  encounterEventsCreated EncounterEvent[]
-  encounterTemplatesCreated EncounterTemplate[]
-  encounterStatBlocksCreated EncounterStatBlock[]
-  dungeonsCreated CampaignDungeon[]
-  dungeonSnapshotsCreated CampaignDungeonSnapshot[]
-  campaignRequestsCreated CampaignRequest[] @relation("CampaignRequestCreatedBy")
-  campaignRequestsDecided CampaignRequest[] @relation("CampaignRequestDecidedBy")
-  campaignRequestVotes CampaignRequestVote[]
+  id                            String                    @id @default(uuid())
+  email                         String                    @unique
+  passwordHash                  String?
+  name                          String
+  systemRole                    UserSystemRole            @default(USER)
+  isActive                      Boolean                   @default(true)
+  lastLoginAt                   DateTime?
+  avatarUrl                     String?
+  deletedAt                     DateTime?
+  createdAt                     DateTime                  @default(now())
+  updatedAt                     DateTime                  @updatedAt
+  campaigns                     Campaign[]
+  campaignMemberships           CampaignMember[]          @relation("CampaignMemberUser")
+  campaignMembershipInvitesSent CampaignMember[]          @relation("CampaignMemberInviter")
+  campaignInvitesSent           CampaignInvite[]          @relation("CampaignInviteInviter")
+  campaignInvitesAccepted       CampaignInvite[]          @relation("CampaignInviteAccepter")
+  campaignPublicAccessUpdates   CampaignPublicAccess[]
+  activityActions               ActivityLog[]             @relation("ActivityActor")
+  documentVersions              DocumentVersion[]
+  playerCharacters              PlayerCharacter[]
+  adminAuditActions             AdminAuditLog[]           @relation("AdminAuditActor")
+  calendarEventsCreated         CampaignCalendarEvent[]
+  encountersCreated             CampaignEncounter[]
+  encounterEventsCreated        EncounterEvent[]
+  encounterTemplatesCreated     EncounterTemplate[]
+  encounterStatBlocksCreated    EncounterStatBlock[]
+  dungeonsCreated               CampaignDungeon[]
+  dungeonSnapshotsCreated       CampaignDungeonSnapshot[]
+  campaignRequestsCreated       CampaignRequest[]         @relation("CampaignRequestCreatedBy")
+  campaignRequestsDecided       CampaignRequest[]         @relation("CampaignRequestDecidedBy")
+  campaignRequestVotes          CampaignRequestVote[]
+  journalEntriesAuthored        CampaignJournalEntry[]    @relation("CampaignJournalEntryAuthor")
 
   @@index([email])
 }
 
 model ActivityLog {
-  id         String    @id @default(uuid())
+  id          String    @id @default(uuid())
   actorUserId String?
-  actorUser  User?     @relation("ActivityActor", fields: [actorUserId], references: [id], onDelete: SetNull)
-  campaignId String?
-  campaign   Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  scope      String
-  action     String
-  targetType String?
-  targetId   String?
-  summary    String?
-  metadata   Json?
-  createdAt  DateTime  @default(now())
+  actorUser   User?     @relation("ActivityActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  campaignId  String?
+  campaign    Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  scope       String
+  action      String
+  targetType  String?
+  targetId    String?
+  summary     String?
+  metadata    Json?
+  createdAt   DateTime  @default(now())
 
   @@index([createdAt])
   @@index([actorUserId, createdAt])
@@ -105,15 +117,15 @@ model ActivityLog {
 }
 
 model AdminAuditLog {
-  id         String   @id @default(uuid())
+  id          String   @id @default(uuid())
   actorUserId String
-  actorUser  User     @relation("AdminAuditActor", fields: [actorUserId], references: [id], onDelete: Restrict)
-  action     String
-  targetType String
-  targetId   String?
-  summary    String?
-  metadata   Json?
-  createdAt  DateTime @default(now())
+  actorUser   User     @relation("AdminAuditActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  action      String
+  targetType  String
+  targetId    String?
+  summary     String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
 
   @@index([actorUserId, createdAt])
   @@index([targetType, createdAt])
@@ -121,59 +133,63 @@ model AdminAuditLog {
 }
 
 model Campaign {
-  id            String   @id @default(uuid())
-  ownerId       String
-  owner         User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  name          String
-  system        String   @default("D&D 5e")
-  isArchived    Boolean  @default(false)
-  dungeonMasterName String?
-  description   String?
-  currentStatus String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  sessions      Session[]
-  glossary      GlossaryEntry[]
-  quests        Quest[]
-  milestones    Milestone[]
-  documents     Document[]
-  characters    CampaignCharacter[]
-  summaryJobs   SummaryJob[]
-  maps          CampaignMap[]
-  members       CampaignMember[]
-  invites       CampaignInvite[]
-  publicAccess  CampaignPublicAccess?
-  activityLogs  ActivityLog[]
-  calendarConfig CampaignCalendarConfig?
-  calendarEvents CampaignCalendarEvent[]
-  sessionCalendarRanges SessionCalendarRange[]
-  encounters    CampaignEncounter[]
-  encounterTemplates EncounterTemplate[]
-  encounterStatBlocks EncounterStatBlock[]
-  dungeons      CampaignDungeon[]
-  requests      CampaignRequest[]
-  requestVotes  CampaignRequestVote[]
+  id                       String                            @id @default(uuid())
+  ownerId                  String
+  owner                    User                              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name                     String
+  system                   String                            @default("D&D 5e")
+  isArchived               Boolean                           @default(false)
+  dungeonMasterName        String?
+  description              String?
+  currentStatus            String?
+  createdAt                DateTime                          @default(now())
+  updatedAt                DateTime                          @updatedAt
+  sessions                 Session[]
+  glossary                 GlossaryEntry[]
+  quests                   Quest[]
+  milestones               Milestone[]
+  documents                Document[]
+  characters               CampaignCharacter[]
+  summaryJobs              SummaryJob[]
+  maps                     CampaignMap[]
+  members                  CampaignMember[]
+  invites                  CampaignInvite[]
+  publicAccess             CampaignPublicAccess?
+  activityLogs             ActivityLog[]
+  calendarConfig           CampaignCalendarConfig?
+  calendarEvents           CampaignCalendarEvent[]
+  sessionCalendarRanges    SessionCalendarRange[]
+  encounters               CampaignEncounter[]
+  encounterTemplates       EncounterTemplate[]
+  encounterStatBlocks      EncounterStatBlock[]
+  dungeons                 CampaignDungeon[]
+  requests                 CampaignRequest[]
+  requestVotes             CampaignRequestVote[]
+  journalEntries           CampaignJournalEntry[]
+  journalTags              CampaignJournalTag[]
+  journalEntrySessionLinks CampaignJournalEntrySessionLink[]
 
   @@index([ownerId])
 }
 
 model CampaignPublicAccess {
-  campaignId       String   @id
-  campaign         Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  isEnabled        Boolean  @default(false)
-  isListed         Boolean  @default(false)
-  publicSlug       String   @unique
-  showCharacters   Boolean  @default(false)
-  showRecaps       Boolean  @default(false)
-  showSessions     Boolean  @default(false)
-  showGlossary     Boolean  @default(false)
-  showQuests       Boolean  @default(false)
-  showMilestones   Boolean  @default(false)
-  showMaps         Boolean  @default(false)
-  updatedByUserId  String
-  updatedByUser    User     @relation(fields: [updatedByUserId], references: [id], onDelete: Restrict)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  campaignId      String   @id
+  campaign        Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  isEnabled       Boolean  @default(false)
+  isListed        Boolean  @default(false)
+  publicSlug      String   @unique
+  showCharacters  Boolean  @default(false)
+  showRecaps      Boolean  @default(false)
+  showSessions    Boolean  @default(false)
+  showGlossary    Boolean  @default(false)
+  showQuests      Boolean  @default(false)
+  showMilestones  Boolean  @default(false)
+  showMaps        Boolean  @default(false)
+  showJournal     Boolean  @default(false)
+  updatedByUserId String
+  updatedByUser   User     @relation(fields: [updatedByUserId], references: [id], onDelete: Restrict)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([isEnabled])
 }
@@ -197,20 +213,20 @@ model CampaignMember {
 }
 
 model CampaignInvite {
-  id              String             @id @default(uuid())
-  campaignId      String
-  campaign        Campaign           @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  email           String
-  role            CampaignRole
-  tokenHash       String             @unique
-  status          CampaignInviteStatus @default(PENDING)
-  expiresAt       DateTime
-  invitedByUserId String
-  invitedByUser   User               @relation("CampaignInviteInviter", fields: [invitedByUserId], references: [id], onDelete: Restrict)
+  id               String               @id @default(uuid())
+  campaignId       String
+  campaign         Campaign             @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  email            String
+  role             CampaignRole
+  tokenHash        String               @unique
+  status           CampaignInviteStatus @default(PENDING)
+  expiresAt        DateTime
+  invitedByUserId  String
+  invitedByUser    User                 @relation("CampaignInviteInviter", fields: [invitedByUserId], references: [id], onDelete: Restrict)
   acceptedByUserId String?
-  acceptedByUser  User?              @relation("CampaignInviteAccepter", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
+  acceptedByUser   User?                @relation("CampaignInviteAccepter", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
 
   @@index([campaignId, status])
   @@index([email, status])
@@ -218,23 +234,23 @@ model CampaignInvite {
 }
 
 model CampaignRequest {
-  id             String                   @id @default(uuid())
-  campaignId     String
-  campaign       Campaign                 @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  id              String                    @id @default(uuid())
+  campaignId      String
+  campaign        Campaign                  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   createdByUserId String
-  createdByUser  User                     @relation("CampaignRequestCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
-  type           CampaignRequestType
-  visibility     CampaignRequestVisibility
-  title          String
-  description    String
-  status         CampaignRequestStatus    @default(PENDING)
-  decisionNote   String?
+  createdByUser   User                      @relation("CampaignRequestCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  type            CampaignRequestType
+  visibility      CampaignRequestVisibility
+  title           String
+  description     String
+  status          CampaignRequestStatus     @default(PENDING)
+  decisionNote    String?
   decidedByUserId String?
-  decidedByUser  User?                    @relation("CampaignRequestDecidedBy", fields: [decidedByUserId], references: [id], onDelete: SetNull)
-  decidedAt      DateTime?
-  createdAt      DateTime                 @default(now())
-  updatedAt      DateTime                 @updatedAt
-  votes          CampaignRequestVote[]
+  decidedByUser   User?                     @relation("CampaignRequestDecidedBy", fields: [decidedByUserId], references: [id], onDelete: SetNull)
+  decidedAt       DateTime?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  votes           CampaignRequestVote[]
 
   @@index([campaignId, visibility, status, createdAt])
   @@index([campaignId, createdByUserId, createdAt])
@@ -242,59 +258,113 @@ model CampaignRequest {
 }
 
 model CampaignRequestVote {
-  id               String          @id @default(uuid())
+  id                String          @id @default(uuid())
   campaignRequestId String
-  campaignRequest  CampaignRequest @relation(fields: [campaignRequestId], references: [id], onDelete: Cascade)
-  campaignId       String
-  campaign         Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  userId           String
-  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt        DateTime        @default(now())
+  campaignRequest   CampaignRequest @relation(fields: [campaignRequestId], references: [id], onDelete: Cascade)
+  campaignId        String
+  campaign          Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime        @default(now())
 
   @@unique([campaignRequestId, userId])
   @@index([campaignRequestId, createdAt])
   @@index([campaignId, userId, createdAt])
 }
 
-model Session {
-  id            String   @id @default(uuid())
-  campaignId    String
-  campaign      Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  title         String
-  sessionNumber Int?
-  playedAt      DateTime?
-  guestDungeonMasterName String?
-  notes         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  glossaryLinks GlossarySessionLink[]
-  recordings    Recording[]
-  documents     Document[]
-  recap         RecapRecording?
-  summaryJobs   SummaryJob[]
-  calendarRange SessionCalendarRange?
-  encounters    CampaignEncounter[]
+model CampaignJournalEntry {
+  id              String                            @id @default(uuid())
+  campaignId      String
+  campaign        Campaign                          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  authorUserId    String
+  authorUser      User                              @relation("CampaignJournalEntryAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+  title           String
+  contentMarkdown String
+  visibility      CampaignJournalVisibility         @default(MYSELF)
+  createdAt       DateTime                          @default(now())
+  updatedAt       DateTime                          @updatedAt
+  tags            CampaignJournalTag[]
+  sessionLinks    CampaignJournalEntrySessionLink[]
 
-  @@index([campaignId])
+  @@index([campaignId, visibility, createdAt])
+  @@index([campaignId, authorUserId, createdAt])
+  @@index([campaignId, createdAt])
+}
+
+model CampaignJournalTag {
+  id                     String                 @id @default(uuid())
+  campaignJournalEntryId String
+  entry                  CampaignJournalEntry   @relation(fields: [campaignJournalEntryId], references: [id], onDelete: Cascade)
+  campaignId             String
+  campaign               Campaign               @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  tagType                CampaignJournalTagType
+  normalizedLabel        String
+  displayLabel           String
+  glossaryEntryId        String?
+  glossaryEntry          GlossaryEntry?         @relation(fields: [glossaryEntryId], references: [id], onDelete: SetNull)
+  createdAt              DateTime               @default(now())
+
+  @@unique([campaignJournalEntryId, tagType, normalizedLabel])
+  @@index([campaignId, normalizedLabel])
+  @@index([campaignJournalEntryId, tagType])
+  @@index([campaignId, glossaryEntryId])
+}
+
+model CampaignJournalEntrySessionLink {
+  id                     String               @id @default(uuid())
+  campaignJournalEntryId String
+  entry                  CampaignJournalEntry @relation(fields: [campaignJournalEntryId], references: [id], onDelete: Cascade)
+  sessionId              String
+  campaignId             String
+  session                Session              @relation(fields: [sessionId, campaignId], references: [id, campaignId], onDelete: Cascade)
+  campaign               Campaign             @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  createdAt              DateTime             @default(now())
+
+  @@unique([campaignJournalEntryId, sessionId])
+  @@index([campaignId, sessionId])
+  @@index([campaignJournalEntryId, createdAt])
+}
+
+model Session {
+  id                     String                            @id @default(uuid())
+  campaignId             String
+  campaign               Campaign                          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  title                  String
+  sessionNumber          Int?
+  playedAt               DateTime?
+  guestDungeonMasterName String?
+  notes                  String?
+  createdAt              DateTime                          @default(now())
+  updatedAt              DateTime                          @updatedAt
+  glossaryLinks          GlossarySessionLink[]
+  recordings             Recording[]
+  documents              Document[]
+  recap                  RecapRecording?
+  summaryJobs            SummaryJob[]
+  calendarRange          SessionCalendarRange?
+  encounters             CampaignEncounter[]
+  journalEntryLinks      CampaignJournalEntrySessionLink[]
+
   @@unique([id, campaignId])
+  @@index([campaignId])
 }
 
 model CampaignCalendarConfig {
   id                String   @id @default(uuid())
-  campaignId         String   @unique
-  campaign           Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  isEnabled          Boolean  @default(false)
-  name               String
-  startingYear       Int
-  firstWeekdayIndex  Int
-  currentYear        Int
-  currentMonth       Int
-  currentDay         Int
-  weekdaysJson       Json
-  monthsJson         Json
-  moonsJson          Json
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  campaignId        String   @unique
+  campaign          Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  isEnabled         Boolean  @default(false)
+  name              String
+  startingYear      Int
+  firstWeekdayIndex Int
+  currentYear       Int
+  currentMonth      Int
+  currentDay        Int
+  weekdaysJson      Json
+  monthsJson        Json
+  moonsJson         Json
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@index([campaignId, isEnabled])
 }
@@ -314,8 +384,8 @@ model SessionCalendarRange {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  @@index([campaignId])
   @@unique([sessionId, campaignId])
+  @@index([campaignId])
   @@index([campaignId, startYear, startMonth, startDay])
   @@index([campaignId, endYear, endMonth, endDay])
 }
@@ -420,25 +490,25 @@ enum EncounterEventType {
 }
 
 model CampaignEncounter {
-  id               String              @id @default(uuid())
+  id               String               @id @default(uuid())
   campaignId       String
-  campaign         Campaign            @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaign         Campaign             @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   sessionId        String?
-  session          Session?            @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  session          Session?             @relation(fields: [sessionId], references: [id], onDelete: SetNull)
   name             String
-  type             EncounterType       @default(COMBAT)
-  status           EncounterStatus     @default(PLANNED)
-  visibility       EncounterVisibility @default(SHARED)
+  type             EncounterType        @default(COMBAT)
+  status           EncounterStatus      @default(PLANNED)
+  visibility       EncounterVisibility  @default(SHARED)
   notes            String?
   calendarYear     Int?
   calendarMonth    Int?
   calendarDay      Int?
-  currentRound     Int                @default(1)
-  currentTurnIndex Int                @default(0)
+  currentRound     Int                  @default(1)
+  currentTurnIndex Int                  @default(0)
   createdByUserId  String
-  createdByUser    User               @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  createdByUser    User                 @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
   combatants       EncounterCombatant[]
   events           EncounterEvent[]
 
@@ -449,65 +519,65 @@ model CampaignEncounter {
 }
 
 model EncounterCombatant {
-  id                 String              @id @default(uuid())
-  encounterId        String
-  encounter          CampaignEncounter   @relation(fields: [encounterId], references: [id], onDelete: Cascade)
-  name               String
-  side               EncounterSide       @default(ENEMY)
-  sourceType         EncounterSourceType @default(CUSTOM)
+  id                        String               @id @default(uuid())
+  encounterId               String
+  encounter                 CampaignEncounter    @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  name                      String
+  side                      EncounterSide        @default(ENEMY)
+  sourceType                EncounterSourceType  @default(CUSTOM)
   sourceCampaignCharacterId String?
-  sourcePlayerCharacterId String?
-  sourceGlossaryEntryId String?
-  sourceStatBlockId  String?
-  initiative         Int?
-  sortOrder          Int
-  maxHp              Int?
-  currentHp          Int?
-  tempHp             Int                 @default(0)
-  armorClass         Int?
-  speed              Int?
-  isConcentrating    Boolean             @default(false)
-  deathSaveSuccesses Int                 @default(0)
-  deathSaveFailures  Int                 @default(0)
-  isDefeated         Boolean             @default(false)
-  isHidden           Boolean             @default(false)
-  notes              String?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  conditions         EncounterCondition[]
+  sourcePlayerCharacterId   String?
+  sourceGlossaryEntryId     String?
+  sourceStatBlockId         String?
+  initiative                Int?
+  sortOrder                 Int
+  maxHp                     Int?
+  currentHp                 Int?
+  tempHp                    Int                  @default(0)
+  armorClass                Int?
+  speed                     Int?
+  isConcentrating           Boolean              @default(false)
+  deathSaveSuccesses        Int                  @default(0)
+  deathSaveFailures         Int                  @default(0)
+  isDefeated                Boolean              @default(false)
+  isHidden                  Boolean              @default(false)
+  notes                     String?
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
+  conditions                EncounterCondition[]
 
+  @@unique([encounterId, sortOrder])
   @@index([encounterId, sortOrder])
   @@index([encounterId, initiative])
   @@index([sourceStatBlockId])
-  @@unique([encounterId, sortOrder])
 }
 
 model EncounterCondition {
-  id               String            @id @default(uuid())
-  combatantId      String
-  combatant        EncounterCombatant @relation(fields: [combatantId], references: [id], onDelete: Cascade)
-  name             String
-  duration         Int?
-  remaining        Int?
-  tickTiming       ConditionTickTiming @default(TURN_END)
-  source           String?
-  notes            String?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  id          String              @id @default(uuid())
+  combatantId String
+  combatant   EncounterCombatant  @relation(fields: [combatantId], references: [id], onDelete: Cascade)
+  name        String
+  duration    Int?
+  remaining   Int?
+  tickTiming  ConditionTickTiming @default(TURN_END)
+  source      String?
+  notes       String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
 
   @@index([combatantId, createdAt])
 }
 
 model EncounterEvent {
-  id              String            @id @default(uuid())
+  id              String             @id @default(uuid())
   encounterId     String
-  encounter       CampaignEncounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  encounter       CampaignEncounter  @relation(fields: [encounterId], references: [id], onDelete: Cascade)
   eventType       EncounterEventType
   summary         String
   payload         Json?
   createdByUserId String?
-  createdByUser   User?             @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
-  createdAt       DateTime          @default(now())
+  createdByUser   User?              @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime           @default(now())
 
   @@index([encounterId, createdAt])
   @@index([eventType, createdAt])
@@ -515,16 +585,16 @@ model EncounterEvent {
 }
 
 model EncounterTemplate {
-  id              String                     @id @default(uuid())
+  id              String                       @id @default(uuid())
   campaignId      String
-  campaign        Campaign                   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaign        Campaign                     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   name            String
-  type            EncounterType              @default(COMBAT)
+  type            EncounterType                @default(COMBAT)
   notes           String?
   createdByUserId String
-  createdByUser   User                       @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
-  createdAt       DateTime                   @default(now())
-  updatedAt       DateTime                   @updatedAt
+  createdByUser   User                         @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdAt       DateTime                     @default(now())
+  updatedAt       DateTime                     @updatedAt
   combatants      EncounterTemplateCombatant[]
 
   @@index([campaignId, createdAt])
@@ -548,45 +618,45 @@ model EncounterTemplateCombatant {
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
 
-  @@index([templateId, sortOrder])
   @@unique([templateId, sortOrder])
+  @@index([templateId, sortOrder])
 }
 
 model EncounterStatBlock {
-  id              String    @id @default(uuid())
+  id              String   @id @default(uuid())
   campaignId      String
-  campaign        Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaign        Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   name            String
   challengeRating String?
   statBlockJson   Json
   notes           String?
   createdByUserId String
-  createdByUser   User      @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdByUser   User     @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
+  @@unique([campaignId, name])
   @@index([campaignId, createdAt])
   @@index([createdByUserId])
-  @@unique([campaignId, name])
 }
 
 model CampaignDungeon {
-  id               String                   @id @default(uuid())
+  id               String                    @id @default(uuid())
   campaignId       String
-  campaign         Campaign                 @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaign         Campaign                  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   name             String
-  status           CampaignDungeonStatus    @default(DRAFT)
+  status           CampaignDungeonStatus     @default(DRAFT)
   theme            String
   seed             String
-  gridType         CampaignDungeonGridType  @default(SQUARE)
+  gridType         CampaignDungeonGridType   @default(SQUARE)
   generatorVersion String
   configJson       Json
   mapJson          Json
   playerViewJson   Json?
   createdByUserId  String
-  createdByUser    User                     @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
-  createdAt        DateTime                 @default(now())
-  updatedAt        DateTime                 @updatedAt
+  createdByUser    User                      @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
   rooms            CampaignDungeonRoom[]
   links            CampaignDungeonLink[]
   snapshots        CampaignDungeonSnapshot[]
@@ -597,9 +667,9 @@ model CampaignDungeon {
 }
 
 model CampaignDungeonRoom {
-  id          String                  @id @default(uuid())
+  id          String                   @id @default(uuid())
   dungeonId   String
-  dungeon     CampaignDungeon         @relation(fields: [dungeonId], references: [id], onDelete: Cascade)
+  dungeon     CampaignDungeon          @relation(fields: [dungeonId], references: [id], onDelete: Cascade)
   roomNumber  Int
   name        String
   description String?
@@ -609,23 +679,23 @@ model CampaignDungeonRoom {
   tagsJson    Json?
   boundsJson  Json?
   state       CampaignDungeonRoomState @default(UNSEEN)
-  createdAt   DateTime                @default(now())
-  updatedAt   DateTime                @updatedAt
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
   links       CampaignDungeonLink[]
 
-  @@index([dungeonId, roomNumber])
   @@unique([dungeonId, roomNumber])
+  @@index([dungeonId, roomNumber])
 }
 
 model CampaignDungeonLink {
-  id        String                 @id @default(uuid())
+  id        String                  @id @default(uuid())
   dungeonId String
-  dungeon   CampaignDungeon        @relation(fields: [dungeonId], references: [id], onDelete: Cascade)
+  dungeon   CampaignDungeon         @relation(fields: [dungeonId], references: [id], onDelete: Cascade)
   roomId    String?
-  room      CampaignDungeonRoom?   @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  room      CampaignDungeonRoom?    @relation(fields: [roomId], references: [id], onDelete: SetNull)
   linkType  CampaignDungeonLinkType
   targetId  String
-  createdAt DateTime               @default(now())
+  createdAt DateTime                @default(now())
 
   @@index([dungeonId, createdAt])
   @@index([roomId])
@@ -633,17 +703,17 @@ model CampaignDungeonLink {
 }
 
 model CampaignDungeonSnapshot {
-  id               String                     @id @default(uuid())
+  id               String                      @id @default(uuid())
   dungeonId        String
-  dungeon          CampaignDungeon            @relation(fields: [dungeonId], references: [id], onDelete: Cascade)
+  dungeon          CampaignDungeon             @relation(fields: [dungeonId], references: [id], onDelete: Cascade)
   snapshotType     CampaignDungeonSnapshotType
   seed             String
   generatorVersion String
   configJson       Json
   mapJson          Json
   createdByUserId  String
-  createdByUser    User                       @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
-  createdAt        DateTime                   @default(now())
+  createdByUser    User                        @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdAt        DateTime                    @default(now())
 
   @@index([dungeonId, createdAt])
   @@index([createdByUserId])
@@ -657,22 +727,23 @@ enum GlossaryType {
 }
 
 model GlossaryEntry {
-  id          String   @id @default(uuid())
-  campaignId  String
-  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  type        GlossaryType
-  name        String
-  aliases     String?
-  description String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  sessions    GlossarySessionLink[]
+  id                 String                    @id @default(uuid())
+  campaignId         String
+  campaign           Campaign                  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  type               GlossaryType
+  name               String
+  aliases            String?
+  description        String
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  sessions           GlossarySessionLink[]
   campaignCharacters CampaignCharacter[]
-  sourceMapId String?
+  sourceMapId        String?
   sourceMapFeatureId String?
-  sourceMap   CampaignMap? @relation("GlossaryEntrySourceMap", fields: [sourceMapId], references: [id], onDelete: SetNull)
-  sourceMapFeature CampaignMapFeature? @relation("GlossaryEntrySourceFeature", fields: [sourceMapFeatureId], references: [id], onDelete: SetNull)
-  mapLinks    CampaignMapGlossaryLink[]
+  sourceMap          CampaignMap?              @relation("GlossaryEntrySourceMap", fields: [sourceMapId], references: [id], onDelete: SetNull)
+  sourceMapFeature   CampaignMapFeature?       @relation("GlossaryEntrySourceFeature", fields: [sourceMapFeatureId], references: [id], onDelete: SetNull)
+  mapLinks           CampaignMapGlossaryLink[]
+  journalTags        CampaignJournalTag[]
 
   @@index([campaignId, type])
   @@index([sourceMapId])
@@ -713,83 +784,83 @@ enum CampaignMapGlossaryLinkType {
 }
 
 model CampaignMap {
-  id                String               @id @default(uuid())
-  campaignId        String
-  campaign          Campaign             @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  name              String
-  slug              String
-  isPrimary         Boolean              @default(false)
-  status            CampaignMapStatus    @default(ACTIVE)
-  sourceType        CampaignMapSourceType @default(AZGAAR_FULL_JSON)
-  createdById       String
-  rawManifestJson   Json?
-  importVersion     Int                  @default(1)
-  sourceFingerprint String
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-  files             CampaignMapFile[]
-  features          CampaignMapFeature[]
-  glossaryLinks     CampaignMapGlossaryLink[]
-  sourceGlossaryEntries GlossaryEntry[]  @relation("GlossaryEntrySourceMap")
+  id                    String                    @id @default(uuid())
+  campaignId            String
+  campaign              Campaign                  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  name                  String
+  slug                  String
+  isPrimary             Boolean                   @default(false)
+  status                CampaignMapStatus         @default(ACTIVE)
+  sourceType            CampaignMapSourceType     @default(AZGAAR_FULL_JSON)
+  createdById           String
+  rawManifestJson       Json?
+  importVersion         Int                       @default(1)
+  sourceFingerprint     String
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+  files                 CampaignMapFile[]
+  features              CampaignMapFeature[]
+  glossaryLinks         CampaignMapGlossaryLink[]
+  sourceGlossaryEntries GlossaryEntry[]           @relation("GlossaryEntrySourceMap")
 
+  @@unique([campaignId, slug])
   @@index([campaignId])
   @@index([campaignId, isPrimary])
-  @@unique([campaignId, slug])
 }
 
 model CampaignMapFile {
-  id              String             @id @default(uuid())
+  id              String              @id @default(uuid())
   campaignMapId   String
-  campaignMap     CampaignMap        @relation(fields: [campaignMapId], references: [id], onDelete: Cascade)
+  campaignMap     CampaignMap         @relation(fields: [campaignMapId], references: [id], onDelete: Cascade)
   kind            CampaignMapFileKind
   storageProvider StorageProvider
   storageKey      String
   contentType     String
   sizeBytes       Int
   checksum        String?
-  createdAt       DateTime           @default(now())
+  createdAt       DateTime            @default(now())
 
   @@index([campaignMapId])
   @@index([kind])
 }
 
 model CampaignMapFeature {
-  id             String                @id @default(uuid())
-  campaignMapId  String
-  campaignMap    CampaignMap           @relation(fields: [campaignMapId], references: [id], onDelete: Cascade)
-  externalId     String
-  featureType    CampaignMapFeatureType
-  name           String
-  displayName    String
-  normalizedName String
-  description    String?
-  geometryType   String
-  geometryJson   Json
-  propertiesJson Json?
-  sourceRef      String
-  isActive       Boolean               @default(true)
-  removed        Boolean               @default(false)
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
-  glossaryLinks  CampaignMapGlossaryLink[]
-  sourceGlossaryEntries GlossaryEntry[] @relation("GlossaryEntrySourceFeature")
+  id                    String                    @id @default(uuid())
+  campaignMapId         String
+  campaignMap           CampaignMap               @relation(fields: [campaignMapId], references: [id], onDelete: Cascade)
+  externalId            String
+  featureType           CampaignMapFeatureType
+  name                  String
+  displayName           String
+  normalizedName        String
+  description           String?
+  geometryType          String
+  geometryJson          Json
+  propertiesJson        Json?
+  sourceRef             String
+  isActive              Boolean                   @default(true)
+  removed               Boolean                   @default(false)
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+  glossaryLinks         CampaignMapGlossaryLink[]
+  sourceGlossaryEntries GlossaryEntry[]           @relation("GlossaryEntrySourceFeature")
 
+  @@unique([campaignMapId, featureType, externalId])
   @@index([campaignMapId])
   @@index([campaignMapId, featureType])
   @@index([campaignMapId, normalizedName])
-  @@unique([campaignMapId, featureType, externalId])
 }
 
 model CampaignMapGlossaryLink {
-  id             String                    @id @default(uuid())
-  campaignMapId  String
-  campaignMap    CampaignMap               @relation(fields: [campaignMapId], references: [id], onDelete: Cascade)
-  mapFeatureId   String
-  mapFeature     CampaignMapFeature        @relation(fields: [mapFeatureId], references: [id], onDelete: Cascade)
+  id              String                      @id @default(uuid())
+  campaignMapId   String
+  campaignMap     CampaignMap                 @relation(fields: [campaignMapId], references: [id], onDelete: Cascade)
+  mapFeatureId    String
+  mapFeature      CampaignMapFeature          @relation(fields: [mapFeatureId], references: [id], onDelete: Cascade)
   glossaryEntryId String
-  glossaryEntry  GlossaryEntry             @relation(fields: [glossaryEntryId], references: [id], onDelete: Cascade)
-  linkType       CampaignMapGlossaryLinkType
-  createdAt      DateTime                  @default(now())
+  glossaryEntry   GlossaryEntry               @relation(fields: [glossaryEntryId], references: [id], onDelete: Cascade)
+  linkType        CampaignMapGlossaryLinkType
+  createdAt       DateTime                    @default(now())
 
   @@unique([mapFeatureId, glossaryEntryId])
   @@index([campaignMapId])
@@ -797,12 +868,12 @@ model CampaignMapGlossaryLink {
 }
 
 model GlossarySessionLink {
-  id             String        @id @default(uuid())
+  id              String        @id @default(uuid())
   glossaryEntryId String
-  sessionId      String
-  glossaryEntry  GlossaryEntry @relation(fields: [glossaryEntryId], references: [id], onDelete: Cascade)
-  session        Session       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  createdAt      DateTime      @default(now())
+  sessionId       String
+  glossaryEntry   GlossaryEntry @relation(fields: [glossaryEntryId], references: [id], onDelete: Cascade)
+  session         Session       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
 
   @@unique([glossaryEntryId, sessionId])
   @@index([sessionId])
@@ -855,44 +926,44 @@ enum TranscriptionArtifactFormat {
 }
 
 model Artifact {
-  id            String          @id @default(uuid())
-  ownerId       String
-  campaignId    String?
-  provider      StorageProvider
-  storageKey    String
-  mimeType      String
-  byteSize      Int
-  checksumSha256 String?
-  label         String?
-  meta          String?
-  createdAt     DateTime        @default(now())
-  recordings    Recording[]     @relation("RecordingMedia")
-  vttRecordings Recording[]     @relation("RecordingVtt")
-  recapRecordings RecapRecording[]
+  id                     String                  @id @default(uuid())
+  ownerId                String
+  campaignId             String?
+  provider               StorageProvider
+  storageKey             String
+  mimeType               String
+  byteSize               Int
+  checksumSha256         String?
+  label                  String?
+  meta                   String?
+  createdAt              DateTime                @default(now())
+  recordings             Recording[]             @relation("RecordingMedia")
+  vttRecordings          Recording[]             @relation("RecordingVtt")
+  recapRecordings        RecapRecording[]
   transcriptionArtifacts TranscriptionArtifact[]
-  characterPortraits PlayerCharacter[] @relation("CharacterPortrait")
+  characterPortraits     PlayerCharacter[]       @relation("CharacterPortrait")
 
+  @@unique([provider, storageKey])
   @@index([ownerId])
   @@index([campaignId])
-  @@unique([provider, storageKey])
 }
 
 model Recording {
-  id              String       @id @default(uuid())
-  sessionId       String
-  session         Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  kind            RecordingKind
-  filename        String
-  mimeType        String
-  byteSize        Int
-  durationSeconds Int?
-  artifactId      String
-  artifact        Artifact     @relation("RecordingMedia", fields: [artifactId], references: [id], onDelete: Restrict)
-  vttArtifactId   String?
-  vttArtifact     Artifact?    @relation("RecordingVtt", fields: [vttArtifactId], references: [id], onDelete: SetNull)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  documents       Document[]
+  id                String             @id @default(uuid())
+  sessionId         String
+  session           Session            @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  kind              RecordingKind
+  filename          String
+  mimeType          String
+  byteSize          Int
+  durationSeconds   Int?
+  artifactId        String
+  artifact          Artifact           @relation("RecordingMedia", fields: [artifactId], references: [id], onDelete: Restrict)
+  vttArtifactId     String?
+  vttArtifact       Artifact?          @relation("RecordingVtt", fields: [vttArtifactId], references: [id], onDelete: SetNull)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  documents         Document[]
   transcriptionJobs TranscriptionJob[]
 
   @@index([sessionId])
@@ -901,24 +972,24 @@ model Recording {
 }
 
 model TranscriptionJob {
-  id               String                @id @default(uuid())
+  id               String                  @id @default(uuid())
   recordingId      String
-  recording        Recording             @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  recording        Recording               @relation(fields: [recordingId], references: [id], onDelete: Cascade)
   provider         TranscriptionProvider
   status           TranscriptionStatus
   requestId        String?
-  externalJobId    String?              @unique
+  externalJobId    String?                 @unique
   modelId          String?
   languageCode     String?
   numSpeakers      Int?
-  diarize          Boolean               @default(true)
-  tagAudioEvents   Boolean               @default(false)
+  diarize          Boolean                 @default(true)
+  tagAudioEvents   Boolean                 @default(false)
   requestedFormats String?
   keyterms         String?
   errorMessage     String?
   completedAt      DateTime?
-  createdAt        DateTime              @default(now())
-  updatedAt        DateTime              @updatedAt
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
   artifacts        TranscriptionArtifact[]
 
   @@index([recordingId])
@@ -926,30 +997,30 @@ model TranscriptionJob {
 }
 
 model TranscriptionArtifact {
-  id                 String                     @id @default(uuid())
+  id                 String                      @id @default(uuid())
   transcriptionJobId String
-  transcriptionJob   TranscriptionJob           @relation(fields: [transcriptionJobId], references: [id], onDelete: Cascade)
+  transcriptionJob   TranscriptionJob            @relation(fields: [transcriptionJobId], references: [id], onDelete: Cascade)
   artifactId         String
-  artifact           Artifact                   @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  artifact           Artifact                    @relation(fields: [artifactId], references: [id], onDelete: Cascade)
   format             TranscriptionArtifactFormat
-  createdAt          DateTime                   @default(now())
+  createdAt          DateTime                    @default(now())
 
   @@unique([transcriptionJobId, format])
   @@index([artifactId])
 }
 
 model RecapRecording {
-  id              String       @id @default(uuid())
-  sessionId       String       @unique
-  session         Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  id              String   @id @default(uuid())
+  sessionId       String   @unique
+  session         Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   filename        String
   mimeType        String
   byteSize        Int
   durationSeconds Int?
   artifactId      String
-  artifact        Artifact     @relation(fields: [artifactId], references: [id], onDelete: Restrict)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  artifact        Artifact @relation(fields: [artifactId], references: [id], onDelete: Restrict)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([sessionId])
   @@index([artifactId])
@@ -972,15 +1043,15 @@ model Quest {
 }
 
 model Milestone {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   campaignId  String
-  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaign    Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   title       String
   description String?
-  isComplete  Boolean  @default(false)
+  isComplete  Boolean   @default(false)
   completedAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([campaignId])
 }
@@ -1047,70 +1118,70 @@ enum SummarySuggestionStatus {
 }
 
 model Document {
-  id               String          @id @default(uuid())
-  campaignId       String
-  campaign         Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  sessionId        String?
-  session          Session?        @relation(fields: [sessionId], references: [id], onDelete: SetNull)
-  recordingId      String?
-  recording        Recording?      @relation(fields: [recordingId], references: [id], onDelete: SetNull)
-  type             DocumentType
-  title            String
-  currentVersionId String?       @unique
-  currentVersion   DocumentVersion? @relation("CurrentVersion", fields: [currentVersionId], references: [id])
-  versions         DocumentVersion[] @relation("DocumentVersions")
-  summaryJobsAsTranscript SummaryJob[] @relation("SummaryJobTranscript")
-  summaryJobsAsSummary   SummaryJob[] @relation("SummaryJobSummary")
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  id                      String            @id @default(uuid())
+  campaignId              String
+  campaign                Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  sessionId               String?
+  session                 Session?          @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  recordingId             String?
+  recording               Recording?        @relation(fields: [recordingId], references: [id], onDelete: SetNull)
+  type                    DocumentType
+  title                   String
+  currentVersionId        String?           @unique
+  currentVersion          DocumentVersion?  @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+  versions                DocumentVersion[] @relation("DocumentVersions")
+  summaryJobsAsTranscript SummaryJob[]      @relation("SummaryJobTranscript")
+  summaryJobsAsSummary    SummaryJob[]      @relation("SummaryJobSummary")
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
 
+  @@unique([sessionId, type])
   @@index([campaignId])
   @@index([sessionId])
   @@index([recordingId])
-  @@unique([sessionId, type])
 }
 
 model DocumentVersion {
-  id             String         @id @default(uuid())
-  documentId     String
-  document       Document       @relation("DocumentVersions", fields: [documentId], references: [id], onDelete: Cascade)
-  currentForDocument Document?  @relation("CurrentVersion")
-  versionNumber  Int
-  content        String
-  format         DocumentFormat @default(MARKDOWN)
-  source         DocumentSource @default(USER_EDIT)
-  createdByUserId String?
-  createdByUser  User?          @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
-  createdAt      DateTime       @default(now())
+  id                 String         @id @default(uuid())
+  documentId         String
+  document           Document       @relation("DocumentVersions", fields: [documentId], references: [id], onDelete: Cascade)
+  currentForDocument Document?      @relation("CurrentVersion")
+  versionNumber      Int
+  content            String
+  format             DocumentFormat @default(MARKDOWN)
+  source             DocumentSource @default(USER_EDIT)
+  createdByUserId    String?
+  createdByUser      User?          @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt          DateTime       @default(now())
 
   @@unique([documentId, versionNumber])
   @@index([createdByUserId])
 }
 
 model SummaryJob {
-  id               String          @id @default(uuid())
-  campaignId       String
-  sessionId        String
-  documentId       String
+  id                String           @id @default(uuid())
+  campaignId        String
+  sessionId         String
+  documentId        String
   summaryDocumentId String?
-  trackingId       String          @unique
-  status           SummaryJobStatus
-  mode             SummaryJobMode
-  kind             SummaryJobKind  @default(SUMMARY_GENERATION)
-  promptProfile    String?
-  webhookUrl       String?
-  requestHash      String?
-  responseHash     String?
-  errorMessage     String?
-  meta             Json?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  trackingId        String           @unique
+  status            SummaryJobStatus
+  mode              SummaryJobMode
+  kind              SummaryJobKind   @default(SUMMARY_GENERATION)
+  promptProfile     String?
+  webhookUrl        String?
+  requestHash       String?
+  responseHash      String?
+  errorMessage      String?
+  meta              Json?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
-  campaign         Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  session          Session         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  document         Document        @relation("SummaryJobTranscript", fields: [documentId], references: [id], onDelete: Cascade)
-  summaryDocument  Document?       @relation("SummaryJobSummary", fields: [summaryDocumentId], references: [id], onDelete: SetNull)
-  suggestions      SummarySuggestion[]
+  campaign        Campaign            @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  session         Session             @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  document        Document            @relation("SummaryJobTranscript", fields: [documentId], references: [id], onDelete: Cascade)
+  summaryDocument Document?           @relation("SummaryJobSummary", fields: [summaryDocumentId], references: [id], onDelete: SetNull)
+  suggestions     SummarySuggestion[]
 
   @@index([campaignId])
   @@index([sessionId])
@@ -1121,17 +1192,17 @@ model SummaryJob {
 }
 
 model SummarySuggestion {
-  id            String                    @id @default(uuid())
-  summaryJobId  String
-  entityType    SummarySuggestionEntityType
-  action        SummarySuggestionAction
-  status        SummarySuggestionStatus   @default(PENDING)
-  match         Json?
-  payload       Json
-  createdAt     DateTime                  @default(now())
-  updatedAt     DateTime                  @updatedAt
+  id           String                      @id @default(uuid())
+  summaryJobId String
+  entityType   SummarySuggestionEntityType
+  action       SummarySuggestionAction
+  status       SummarySuggestionStatus     @default(PENDING)
+  match        Json?
+  payload      Json
+  createdAt    DateTime                    @default(now())
+  updatedAt    DateTime                    @updatedAt
 
-  summaryJob    SummaryJob                @relation(fields: [summaryJobId], references: [id], onDelete: Cascade)
+  summaryJob SummaryJob @relation(fields: [summaryJobId], references: [id], onDelete: Cascade)
 
   @@index([summaryJobId])
   @@index([status])
@@ -1153,40 +1224,40 @@ enum CharacterOverwriteMode {
 }
 
 model PlayerCharacter {
-  id                String   @id @default(uuid())
-  ownerId           String
-  owner             User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  name              String
-  status            String?
-  portraitUrl       String?
+  id                 String                   @id @default(uuid())
+  ownerId            String
+  owner              User                     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name               String
+  status             String?
+  portraitUrl        String?
   portraitArtifactId String?
-  portraitArtifact  Artifact? @relation("CharacterPortrait", fields: [portraitArtifactId], references: [id], onDelete: SetNull)
-  sheetJson         Json
-  summaryJson       Json
-  sourceProvider    CharacterSourceProvider @default(MANUAL)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  campaignLinks     CampaignCharacter[]
-  imports           CharacterImport[]
-  importSettings    CharacterImportSettings?
+  portraitArtifact   Artifact?                @relation("CharacterPortrait", fields: [portraitArtifactId], references: [id], onDelete: SetNull)
+  sheetJson          Json
+  summaryJson        Json
+  sourceProvider     CharacterSourceProvider  @default(MANUAL)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  campaignLinks      CampaignCharacter[]
+  imports            CharacterImport[]
+  importSettings     CharacterImportSettings?
 
   @@index([ownerId])
   @@index([name])
 }
 
 model CampaignCharacter {
-  id          String   @id @default(uuid())
-  campaignId  String
-  characterId String
-  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  character   PlayerCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  id              String                  @id @default(uuid())
+  campaignId      String
+  characterId     String
+  campaign        Campaign                @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  character       PlayerCharacter         @relation(fields: [characterId], references: [id], onDelete: Cascade)
   glossaryEntryId String?
-  glossaryEntry GlossaryEntry? @relation(fields: [glossaryEntryId], references: [id], onDelete: SetNull)
-  status      CharacterCampaignStatus @default(ACTIVE)
-  roleLabel   String?
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  glossaryEntry   GlossaryEntry?          @relation(fields: [glossaryEntryId], references: [id], onDelete: SetNull)
+  status          CharacterCampaignStatus @default(ACTIVE)
+  roleLabel       String?
+  notes           String?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
 
   @@unique([campaignId, characterId])
   @@index([campaignId, status])
@@ -1195,17 +1266,17 @@ model CampaignCharacter {
 }
 
 model CharacterImport {
-  id             String   @id @default(uuid())
-  characterId    String
-  character      PlayerCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
-  provider       CharacterSourceProvider
-  externalId     String?
-  sourceUrl      String?
-  rawJson        Json
-  rawHash        String
-  importedAt     DateTime @default(now())
-  lastSyncedAt   DateTime?
-  lastSyncStatus String?
+  id              String                  @id @default(uuid())
+  characterId     String
+  character       PlayerCharacter         @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  provider        CharacterSourceProvider
+  externalId      String?
+  sourceUrl       String?
+  rawJson         Json
+  rawHash         String
+  importedAt      DateTime                @default(now())
+  lastSyncedAt    DateTime?
+  lastSyncStatus  String?
   lastSyncMessage String?
 
   @@index([characterId])
@@ -1213,10 +1284,10 @@ model CharacterImport {
 }
 
 model CharacterImportSettings {
-  characterId          String   @id
-  character            PlayerCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  characterId          String                 @id
+  character            PlayerCharacter        @relation(fields: [characterId], references: [id], onDelete: Cascade)
   lockedSections       Json?
   defaultOverwriteMode CharacterOverwriteMode @default(SECTIONS)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
 }

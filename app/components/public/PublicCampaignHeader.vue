@@ -14,6 +14,7 @@ type PublicOverview = {
     showQuests: boolean
     showMilestones: boolean
     showMaps: boolean
+    showJournal: boolean
   }
 }
 
@@ -34,6 +35,7 @@ const sectionLinks = computed(() => {
     { key: 'showQuests', label: 'Quests', to: `${base}/quests` },
     { key: 'showMilestones', label: 'Milestones', to: `${base}/milestones` },
     { key: 'showMaps', label: 'Maps', to: `${base}/maps` },
+    { key: 'showJournal', label: 'Journal', to: `${base}/journal` },
   ] as const
 
   return sections.filter((section) => props.overview.sections[section.key]).map((section) => ({

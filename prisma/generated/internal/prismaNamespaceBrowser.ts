@@ -60,6 +60,9 @@ export const ModelName = {
   CampaignInvite: 'CampaignInvite',
   CampaignRequest: 'CampaignRequest',
   CampaignRequestVote: 'CampaignRequestVote',
+  CampaignJournalEntry: 'CampaignJournalEntry',
+  CampaignJournalTag: 'CampaignJournalTag',
+  CampaignJournalEntrySessionLink: 'CampaignJournalEntrySessionLink',
   Session: 'Session',
   CampaignCalendarConfig: 'CampaignCalendarConfig',
   SessionCalendarRange: 'SessionCalendarRange',
@@ -186,6 +189,7 @@ export const CampaignPublicAccessScalarFieldEnum = {
   showQuests: 'showQuests',
   showMilestones: 'showMilestones',
   showMaps: 'showMaps',
+  showJournal: 'showJournal',
   updatedByUserId: 'updatedByUserId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -253,6 +257,45 @@ export const CampaignRequestVoteScalarFieldEnum = {
 } as const
 
 export type CampaignRequestVoteScalarFieldEnum = (typeof CampaignRequestVoteScalarFieldEnum)[keyof typeof CampaignRequestVoteScalarFieldEnum]
+
+
+export const CampaignJournalEntryScalarFieldEnum = {
+  id: 'id',
+  campaignId: 'campaignId',
+  authorUserId: 'authorUserId',
+  title: 'title',
+  contentMarkdown: 'contentMarkdown',
+  visibility: 'visibility',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CampaignJournalEntryScalarFieldEnum = (typeof CampaignJournalEntryScalarFieldEnum)[keyof typeof CampaignJournalEntryScalarFieldEnum]
+
+
+export const CampaignJournalTagScalarFieldEnum = {
+  id: 'id',
+  campaignJournalEntryId: 'campaignJournalEntryId',
+  campaignId: 'campaignId',
+  tagType: 'tagType',
+  normalizedLabel: 'normalizedLabel',
+  displayLabel: 'displayLabel',
+  glossaryEntryId: 'glossaryEntryId',
+  createdAt: 'createdAt'
+} as const
+
+export type CampaignJournalTagScalarFieldEnum = (typeof CampaignJournalTagScalarFieldEnum)[keyof typeof CampaignJournalTagScalarFieldEnum]
+
+
+export const CampaignJournalEntrySessionLinkScalarFieldEnum = {
+  id: 'id',
+  campaignJournalEntryId: 'campaignJournalEntryId',
+  sessionId: 'sessionId',
+  campaignId: 'campaignId',
+  createdAt: 'createdAt'
+} as const
+
+export type CampaignJournalEntrySessionLinkScalarFieldEnum = (typeof CampaignJournalEntrySessionLinkScalarFieldEnum)[keyof typeof CampaignJournalEntrySessionLinkScalarFieldEnum]
 
 
 export const SessionScalarFieldEnum = {

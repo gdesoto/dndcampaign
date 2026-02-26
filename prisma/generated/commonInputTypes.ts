@@ -287,6 +287,40 @@ export type EnumCampaignRequestStatusWithAggregatesFilter<$PrismaModel = never> 
   _max?: Prisma.NestedEnumCampaignRequestStatusFilter<$PrismaModel>
 }
 
+export type EnumCampaignJournalVisibilityFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignJournalVisibility | Prisma.EnumCampaignJournalVisibilityFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignJournalVisibility[]
+  notIn?: $Enums.CampaignJournalVisibility[]
+  not?: Prisma.NestedEnumCampaignJournalVisibilityFilter<$PrismaModel> | $Enums.CampaignJournalVisibility
+}
+
+export type EnumCampaignJournalVisibilityWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignJournalVisibility | Prisma.EnumCampaignJournalVisibilityFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignJournalVisibility[]
+  notIn?: $Enums.CampaignJournalVisibility[]
+  not?: Prisma.NestedEnumCampaignJournalVisibilityWithAggregatesFilter<$PrismaModel> | $Enums.CampaignJournalVisibility
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCampaignJournalVisibilityFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCampaignJournalVisibilityFilter<$PrismaModel>
+}
+
+export type EnumCampaignJournalTagTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignJournalTagType | Prisma.EnumCampaignJournalTagTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignJournalTagType[]
+  notIn?: $Enums.CampaignJournalTagType[]
+  not?: Prisma.NestedEnumCampaignJournalTagTypeFilter<$PrismaModel> | $Enums.CampaignJournalTagType
+}
+
+export type EnumCampaignJournalTagTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignJournalTagType | Prisma.EnumCampaignJournalTagTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignJournalTagType[]
+  notIn?: $Enums.CampaignJournalTagType[]
+  not?: Prisma.NestedEnumCampaignJournalTagTypeWithAggregatesFilter<$PrismaModel> | $Enums.CampaignJournalTagType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCampaignJournalTagTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCampaignJournalTagTypeFilter<$PrismaModel>
+}
+
 export type IntNullableFilter<$PrismaModel = never> = {
   equals?: number | Prisma.IntFieldRefInput<$PrismaModel> | null
   in?: number[] | null
@@ -1277,6 +1311,40 @@ export type NestedEnumCampaignRequestStatusWithAggregatesFilter<$PrismaModel = n
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumCampaignRequestStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumCampaignRequestStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumCampaignJournalVisibilityFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignJournalVisibility | Prisma.EnumCampaignJournalVisibilityFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignJournalVisibility[]
+  notIn?: $Enums.CampaignJournalVisibility[]
+  not?: Prisma.NestedEnumCampaignJournalVisibilityFilter<$PrismaModel> | $Enums.CampaignJournalVisibility
+}
+
+export type NestedEnumCampaignJournalVisibilityWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignJournalVisibility | Prisma.EnumCampaignJournalVisibilityFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignJournalVisibility[]
+  notIn?: $Enums.CampaignJournalVisibility[]
+  not?: Prisma.NestedEnumCampaignJournalVisibilityWithAggregatesFilter<$PrismaModel> | $Enums.CampaignJournalVisibility
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCampaignJournalVisibilityFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCampaignJournalVisibilityFilter<$PrismaModel>
+}
+
+export type NestedEnumCampaignJournalTagTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignJournalTagType | Prisma.EnumCampaignJournalTagTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignJournalTagType[]
+  notIn?: $Enums.CampaignJournalTagType[]
+  not?: Prisma.NestedEnumCampaignJournalTagTypeFilter<$PrismaModel> | $Enums.CampaignJournalTagType
+}
+
+export type NestedEnumCampaignJournalTagTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CampaignJournalTagType | Prisma.EnumCampaignJournalTagTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CampaignJournalTagType[]
+  notIn?: $Enums.CampaignJournalTagType[]
+  not?: Prisma.NestedEnumCampaignJournalTagTypeWithAggregatesFilter<$PrismaModel> | $Enums.CampaignJournalTagType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCampaignJournalTagTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCampaignJournalTagTypeFilter<$PrismaModel>
 }
 
 export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {

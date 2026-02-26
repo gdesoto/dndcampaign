@@ -85,6 +85,21 @@ export type CampaignRequest = Prisma.CampaignRequestModel
  */
 export type CampaignRequestVote = Prisma.CampaignRequestVoteModel
 /**
+ * Model CampaignJournalEntry
+ * 
+ */
+export type CampaignJournalEntry = Prisma.CampaignJournalEntryModel
+/**
+ * Model CampaignJournalTag
+ * 
+ */
+export type CampaignJournalTag = Prisma.CampaignJournalTagModel
+/**
+ * Model CampaignJournalEntrySessionLink
+ * 
+ */
+export type CampaignJournalEntrySessionLink = Prisma.CampaignJournalEntrySessionLinkModel
+/**
  * Model Session
  * 
  */

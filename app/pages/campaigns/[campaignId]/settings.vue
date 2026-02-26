@@ -274,6 +274,7 @@ type PublicAccessToggleField =
   | 'showQuests'
   | 'showMilestones'
   | 'showMaps'
+  | 'showJournal'
 
 const savePublicAccess = async (payload: Parameters<typeof publicAccessApi.updateSettings>[1]) => {
   publicAction.error = ''
@@ -598,6 +599,13 @@ const copyPublicUrl = async () => {
                   label="Maps"
                   :loading="publicAction.saving"
                   @update:model-value="(value) => updatePublicToggle('showMaps', value)"
+                />
+                <USwitch
+                  :model-value="publicAccessData.showJournal"
+                  label="Journal"
+                  description="Only CAMPAIGN visibility entries are eligible for public view."
+                  :loading="publicAction.saving"
+                  @update:model-value="(value) => updatePublicToggle('showJournal', value)"
                 />
               </div>
             </div>

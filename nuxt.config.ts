@@ -15,6 +15,18 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
     '@nuxtjs/mdc'
   ],
+  mdc: {
+    remarkPlugins: {
+      'remark-gfm': {
+        src: 'remark-gfm'
+      }
+    },
+    rehypePlugins: {
+      'rehype-sanitize': {
+        src: 'rehype-sanitize'
+      }
+    }
+  },
   colorMode: {
     preference: 'system',
     fallback: 'dark',

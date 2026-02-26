@@ -8,6 +8,7 @@ export const campaignPublicAccessSections = [
   'quests',
   'milestones',
   'maps',
+  'journal',
 ] as const
 
 export type CampaignPublicAccessSection = (typeof campaignPublicAccessSections)[number]
@@ -20,6 +21,7 @@ export const campaignPublicAccessMatrixSchema = z.object({
   showQuests: z.boolean(),
   showMilestones: z.boolean(),
   showMaps: z.boolean(),
+  showJournal: z.boolean(),
 })
 
 export const campaignPublicAccessUpdateSchema = z.object({
@@ -32,6 +34,7 @@ export const campaignPublicAccessUpdateSchema = z.object({
   showQuests: z.boolean().optional(),
   showMilestones: z.boolean().optional(),
   showMaps: z.boolean().optional(),
+  showJournal: z.boolean().optional(),
 })
 
 export const campaignPublicAccessOwnerDtoSchema = z.object({
@@ -47,6 +50,7 @@ export const campaignPublicAccessOwnerDtoSchema = z.object({
   showQuests: z.boolean(),
   showMilestones: z.boolean(),
   showMaps: z.boolean(),
+  showJournal: z.boolean(),
   updatedAt: z.string().datetime(),
 })
 

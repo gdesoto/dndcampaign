@@ -62,6 +62,23 @@ export const CampaignRequestStatus = {
 export type CampaignRequestStatus = (typeof CampaignRequestStatus)[keyof typeof CampaignRequestStatus]
 
 
+export const CampaignJournalVisibility = {
+  MYSELF: 'MYSELF',
+  DM: 'DM',
+  CAMPAIGN: 'CAMPAIGN'
+} as const
+
+export type CampaignJournalVisibility = (typeof CampaignJournalVisibility)[keyof typeof CampaignJournalVisibility]
+
+
+export const CampaignJournalTagType = {
+  CUSTOM: 'CUSTOM',
+  GLOSSARY: 'GLOSSARY'
+} as const
+
+export type CampaignJournalTagType = (typeof CampaignJournalTagType)[keyof typeof CampaignJournalTagType]
+
+
 export const EncounterStatus = {
   PLANNED: 'PLANNED',
   ACTIVE: 'ACTIVE',
