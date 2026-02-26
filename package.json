@@ -37,6 +37,7 @@
     "@nuxt/icon": "2.2.1",
     "@nuxt/image": "2.0.0",
     "@nuxt/ui": "^4.4.0",
+    "@nuxtjs/mdc": "0.20.1",
     "@pinia/nuxt": "0.11.3",
     "@prisma/adapter-better-sqlite3": "7.4.1",
     "@prisma/client": "7.4.1",

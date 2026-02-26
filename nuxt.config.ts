@@ -12,7 +12,8 @@ export default defineNuxtConfig({
     '@nuxt/ui',
     '@pinia/nuxt',
     'nuxt-auth-utils',
-    '@nuxt/eslint'
+    '@nuxt/eslint',
+    '@nuxtjs/mdc'
   ],
   colorMode: {
     preference: 'system',
