@@ -27,14 +27,14 @@ const selectedRoomId = ref<string | null>(null)
 const selectedDoorId = ref<string | null>(null)
 const activeDetailsTab = ref<'rooms' | 'corridors' | 'doors' | 'traps' | 'encounters' | 'treasure' | 'zones'>('rooms')
 const showPlayerSafe = ref(false)
+type DungeonThemeOption = 'ruins' | 'cavern' | 'sewer' | 'crypt' | 'custom'
 const dungeonThemeOptions = [
   { label: 'Ruins', value: 'ruins' },
   { label: 'Cavern', value: 'cavern' },
   { label: 'Sewer', value: 'sewer' },
   { label: 'Crypt', value: 'crypt' },
   { label: 'Custom', value: 'custom' },
-] as const
-type DungeonThemeOption = (typeof dungeonThemeOptions)[number]['value']
+]
 const selectedThemeOption = ref<DungeonThemeOption>('ruins')
 const customTheme = ref('')
 

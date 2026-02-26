@@ -16,14 +16,15 @@ const isImporting = ref(false)
 const createError = ref('')
 const importError = ref('')
 const seedPattern = /^[A-Za-z0-9][A-Za-z0-9_-]{2,79}$/
+type DungeonThemeOption = 'ruins' | 'cavern' | 'sewer' | 'crypt' | 'custom'
 const dungeonThemeOptions = [
   { label: 'Ruins', value: 'ruins' },
   { label: 'Cavern', value: 'cavern' },
   { label: 'Sewer', value: 'sewer' },
   { label: 'Crypt', value: 'crypt' },
   { label: 'Custom', value: 'custom' },
-] as const
-const selectedThemeOption = ref<(typeof dungeonThemeOptions)[number]['value']>('ruins')
+]
+const selectedThemeOption = ref<DungeonThemeOption>('ruins')
 const customTheme = ref('')
 const form = reactive<DungeonCreateInput>({
   name: '',
