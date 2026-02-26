@@ -5,6 +5,7 @@ type CampaignMemberRow = {
   id: string
   userId: string
   role: CampaignMemberRole
+  hasDmAccess: boolean
   createdAt: string
   updatedAt: string
   user: {
@@ -56,7 +57,7 @@ export const useCampaignMembership = () => {
   const updateMemberRole = async (
     campaignId: string,
     memberId: string,
-    payload: { role: CampaignManageableRole }
+    payload: { role?: CampaignManageableRole; hasDmAccess?: boolean }
   ) =>
     request<{ member: CampaignMemberRow }>(`/api/campaigns/${campaignId}/members/${memberId}`, {
       method: 'PATCH',
@@ -103,6 +104,7 @@ export const useCampaignMembership = () => {
           campaignId: string
           campaignName: string
           role: CampaignMemberRole
+          hasDmAccess: boolean
         }
       | { status: 'WRONG_ACCOUNT' }
       | { status: 'INVITE_NOT_FOUND' }

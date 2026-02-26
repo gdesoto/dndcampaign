@@ -2,7 +2,7 @@ import { ok, fail } from '#server/utils/http'
 import { readValidatedBodySafe } from '#server/utils/validate'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
 import { CampaignMembershipService } from '#server/services/campaign-membership.service'
-import { campaignMemberRoleUpdateSchema } from '#shared/schemas/campaign-membership'
+import { campaignMemberUpdateSchema } from '#shared/schemas/campaign-membership'
 
 const membershipService = new CampaignMembershipService()
 
@@ -18,12 +18,12 @@ export default defineEventHandler(async (event) => {
     return authz.response
   }
 
-  const parsed = await readValidatedBodySafe(event, campaignMemberRoleUpdateSchema)
+  const parsed = await readValidatedBodySafe(event, campaignMemberUpdateSchema)
   if (!parsed.success) {
     return fail(event, 400, 'VALIDATION_ERROR', 'Invalid member update payload', parsed.fieldErrors)
   }
 
-  const result = await membershipService.updateMemberRole(campaignId, memberId, authz.session.user.id, parsed.data)
+  const result = await membershipService.updateMember(campaignId, memberId, authz.session.user.id, parsed.data)
   if (!result.ok) {
     return fail(event, result.statusCode, result.code, result.message, result.fields)
   }

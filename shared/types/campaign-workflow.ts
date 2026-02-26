@@ -8,6 +8,7 @@ export type CampaignShell = {
 export type CampaignAccess = {
   campaignId: string
   role: 'OWNER' | 'COLLABORATOR' | 'VIEWER'
+  hasDmAccess: boolean
   permissions: Array<
     | 'campaign.read'
     | 'campaign.update'

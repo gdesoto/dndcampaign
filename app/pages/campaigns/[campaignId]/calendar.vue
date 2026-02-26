@@ -26,6 +26,7 @@ type CampaignPermission =
 
 type CampaignAccess = {
   role: 'OWNER' | 'COLLABORATOR' | 'VIEWER'
+  hasDmAccess: boolean
   permissions: CampaignPermission[]
 } | null
 

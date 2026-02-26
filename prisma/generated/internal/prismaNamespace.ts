@@ -3752,6 +3752,7 @@ export const CampaignMemberScalarFieldEnum = {
   campaignId: 'campaignId',
   userId: 'userId',
   role: 'role',
+  hasDmAccess: 'hasDmAccess',
   invitedByUserId: 'invitedByUserId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

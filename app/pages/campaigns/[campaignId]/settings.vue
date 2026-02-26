@@ -17,6 +17,7 @@ type CampaignPermission =
 
 type CampaignAccess = {
   role: 'OWNER' | 'COLLABORATOR' | 'VIEWER'
+  hasDmAccess: boolean
   permissions: CampaignPermission[]
 } | null
 
@@ -102,6 +103,7 @@ const inviteAction = reactive({
 
 const memberAction = reactive({
   roleSavingMemberId: '',
+  dmAccessSavingMemberId: '',
   removeSavingMemberId: '',
   error: '',
   success: '',
@@ -186,6 +188,22 @@ const updateMemberRole = async (memberId: string, role: 'COLLABORATOR' | 'VIEWER
     memberAction.error = (error as Error & { message?: string }).message || 'Unable to update member role.'
   } finally {
     memberAction.roleSavingMemberId = ''
+  }
+}
+
+const updateMemberDmAccess = async (memberId: string, hasDmAccess: boolean) => {
+  memberAction.error = ''
+  memberAction.success = ''
+  memberAction.dmAccessSavingMemberId = memberId
+
+  try {
+    await membership.updateMemberRole(campaignId.value, memberId, { hasDmAccess })
+    memberAction.success = 'DM access updated.'
+    await refreshMembers()
+  } catch (error) {
+    memberAction.error = (error as Error & { message?: string }).message || 'Unable to update DM access.'
+  } finally {
+    memberAction.dmAccessSavingMemberId = ''
   }
 }
 
@@ -383,9 +401,16 @@ const copyPublicUrl = async () => {
                   <p class="text-xs text-muted">{{ member.user.email }}</p>
                   <p class="text-xs text-muted">Joined: {{ formatDateTime(member.createdAt) }}</p>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center justify-end gap-2">
                   <UBadge v-if="member.role === 'OWNER'" color="primary" variant="subtle">Owner</UBadge>
                   <template v-else>
+                    <USwitch
+                      :model-value="member.hasDmAccess"
+                      :loading="memberAction.dmAccessSavingMemberId === member.id"
+                      size="sm"
+                      label="DM access"
+                      @update:model-value="(value) => updateMemberDmAccess(member.id, value)"
+                    />
                     <USelect
                       :items="roleOptions"
                       :model-value="member.role"

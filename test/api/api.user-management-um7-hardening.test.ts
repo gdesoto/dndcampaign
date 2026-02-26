@@ -294,6 +294,19 @@ describe('user management UM-7 hardening, audit, and release readiness', () => {
     )
     expect(roleUpdateRes.status).toBe(200)
 
+    const dmAccessUpdateRes = await fetch(
+      `${baseUrl}/api/campaigns/${campaignId}/members/${viewerMemberId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          cookie: cookies.owner,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ hasDmAccess: true }),
+      }
+    )
+    expect(dmAccessUpdateRes.status).toBe(200)
+
     const publicUpdateRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public-access`, {
       method: 'PATCH',
       headers: {

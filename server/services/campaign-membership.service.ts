@@ -4,7 +4,7 @@ import { prisma } from '#server/db/prisma'
 import type { ServiceResult } from '#server/services/auth.service'
 import type {
   CampaignInviteCreateInput,
-  CampaignMemberRoleUpdateInput,
+  CampaignMemberUpdateInput,
   CampaignOwnerTransferInput,
 } from '#shared/schemas/campaign-membership'
 import { ActivityLogService } from '#server/services/activity-log.service'
@@ -32,6 +32,7 @@ type CampaignMemberRow = {
   id: string
   userId: string
   role: CampaignRole
+  hasDmAccess: boolean
   createdAt: string
   updatedAt: string
   user: {
@@ -67,6 +68,7 @@ export type CampaignInviteInspection =
       campaignId: string
       campaignName: string
       role: CampaignRole
+      hasDmAccess: boolean
     }
   | {
       status: 'WRONG_ACCOUNT'
@@ -85,6 +87,7 @@ const toMemberRow = (member: {
   id: string
   userId: string
   role: CampaignRole
+  hasDmAccess: boolean
   createdAt: Date
   updatedAt: Date
   user: {
@@ -97,6 +100,7 @@ const toMemberRow = (member: {
   id: member.id,
   userId: member.userId,
   role: member.role,
+  hasDmAccess: member.role === 'OWNER' ? true : member.hasDmAccess,
   createdAt: member.createdAt.toISOString(),
   updatedAt: member.updatedAt.toISOString(),
   user: {
@@ -171,6 +175,7 @@ export class CampaignMembershipService {
       },
       select: {
         role: true,
+        hasDmAccess: true,
       },
     })
 
@@ -182,6 +187,7 @@ export class CampaignMembershipService {
           campaignId: invite.campaign.id,
           campaignName: invite.campaign.name,
           role: existingMember.role,
+          hasDmAccess: existingMember.role === 'OWNER' ? true : existingMember.hasDmAccess,
         },
       }
     }
@@ -506,11 +512,13 @@ export class CampaignMembershipService {
         },
         update: {
           role: invite.role,
+          hasDmAccess: false,
         },
         create: {
           campaignId: invite.campaignId,
           userId,
           role: invite.role,
+          hasDmAccess: false,
           invitedByUserId: invite.invitedByUserId,
         },
       })
@@ -550,11 +558,11 @@ export class CampaignMembershipService {
     }
   }
 
-  async updateMemberRole(
+  async updateMember(
     campaignId: string,
     memberId: string,
     actorUserId: string,
-    input: CampaignMemberRoleUpdateInput
+    input: CampaignMemberUpdateInput
   ): Promise<ServiceResult<CampaignMemberRow>> {
     const member = await prisma.campaignMember.findFirst({
       where: {
@@ -600,9 +608,21 @@ export class CampaignMembershipService {
       }
     }
 
+    const updateData: {
+      role?: CampaignRole
+      hasDmAccess?: boolean
+    } = {}
+
+    if (input.role !== undefined) {
+      updateData.role = input.role
+    }
+    if (input.hasDmAccess !== undefined) {
+      updateData.hasDmAccess = input.hasDmAccess
+    }
+
     const updated = await prisma.campaignMember.update({
       where: { id: member.id },
-      data: { role: input.role },
+      data: updateData,
       include: {
         user: {
           select: {
@@ -622,11 +642,13 @@ export class CampaignMembershipService {
       action: 'CAMPAIGN_MEMBER_ROLE_UPDATED',
       targetType: 'CAMPAIGN_MEMBER',
       targetId: member.id,
-      summary: 'Updated campaign member role.',
+      summary: 'Updated campaign member settings.',
       metadata: {
         memberUserId: member.userId,
         previousRole: member.role,
         nextRole: updated.role,
+        previousHasDmAccess: member.hasDmAccess,
+        nextHasDmAccess: updated.hasDmAccess,
       },
     })
 
@@ -797,6 +819,7 @@ export class CampaignMembershipService {
           campaignId,
           userId: ownerUserId,
           role: 'COLLABORATOR',
+          hasDmAccess: false,
           invitedByUserId: ownerUserId,
         },
       })
@@ -805,6 +828,7 @@ export class CampaignMembershipService {
         where: { id: targetMember.id },
         data: {
           role: 'OWNER',
+          hasDmAccess: true,
         },
         select: {
           id: true,

@@ -163,6 +163,7 @@ model CampaignMember {
   userId          String
   user            User         @relation("CampaignMemberUser", fields: [userId], references: [id], onDelete: Cascade)
   role            CampaignRole
+  hasDmAccess     Boolean      @default(false)
   invitedByUserId String
   invitedByUser   User         @relation("CampaignMemberInviter", fields: [invitedByUserId], references: [id], onDelete: Restrict)
   createdAt       DateTime     @default(now())

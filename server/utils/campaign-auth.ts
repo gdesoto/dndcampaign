@@ -41,6 +41,7 @@ const hasRolePermission = (role: CampaignRole, permission: CampaignPermission) =
 export type ResolvedCampaignAccess = {
   campaignId: string
   role: CampaignRole
+  hasDmAccess: boolean
   permissions: CampaignPermission[]
 }
 
@@ -108,7 +109,7 @@ export const resolveCampaignAccess = async (
       ownerId: true,
       members: {
         where: { userId },
-        select: { role: true },
+        select: { role: true, hasDmAccess: true },
         take: 1,
       },
     },
@@ -138,6 +139,7 @@ export const resolveCampaignAccess = async (
   access: {
       campaignId: campaign.id,
       role,
+      hasDmAccess: role === 'OWNER' ? true : Boolean(campaign.members[0]?.hasDmAccess),
       permissions,
     },
   }

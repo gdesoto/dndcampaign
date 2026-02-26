@@ -105,6 +105,10 @@ describe('user management UM-4 membership and invite flows', () => {
     expect(ownerRes.status).toBe(200)
     const ownerPayload = await ownerRes.json()
     expect(ownerPayload.data.members.length).toBeGreaterThanOrEqual(2)
+    const ownerMember = ownerPayload.data.members.find(
+      (member: { role: string }) => member.role === 'OWNER'
+    )
+    expect(ownerMember?.hasDmAccess).toBe(true)
 
     const collaboratorRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/members`, {
       headers: { cookie: cookies.collaborator },
@@ -302,6 +306,32 @@ describe('user management UM-4 membership and invite flows', () => {
     })
 
     expect(updateRoleRes.status).toBe(200)
+    const updateRolePayload = await updateRoleRes.json()
+    expect(updateRolePayload.data.member.role).toBe('VIEWER')
+
+    const updateDmAccessRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/members/${collaboratorMember?.id}`, {
+      method: 'PATCH',
+      headers: {
+        cookie: cookies.owner,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ hasDmAccess: true }),
+    })
+
+    expect(updateDmAccessRes.status).toBe(200)
+    const updateDmAccessPayload = await updateDmAccessRes.json()
+    expect(updateDmAccessPayload.data.member.hasDmAccess).toBe(true)
+
+    const invalidUpdateRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/members/${collaboratorMember?.id}`, {
+      method: 'PATCH',
+      headers: {
+        cookie: cookies.owner,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({}),
+    })
+
+    expect(invalidUpdateRes.status).toBe(400)
 
     const deleteRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/members/${collaboratorMember?.id}`, {
       method: 'DELETE',
@@ -376,11 +406,12 @@ describe('user management UM-4 membership and invite flows', () => {
           userId: userIds.invitee,
         },
       },
-      select: { role: true },
+      select: { role: true, hasDmAccess: true },
     })
 
     expect(ownerMember?.role).toBe('COLLABORATOR')
     expect(inviteeOwnerMember?.role).toBe('OWNER')
+    expect(inviteeOwnerMember?.hasDmAccess).toBe(true)
 
     const oldOwnerManageRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/members`, {
       headers: { cookie: cookies.owner },
