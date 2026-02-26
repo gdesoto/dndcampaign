@@ -100,6 +100,11 @@ export type CampaignJournalTag = Prisma.CampaignJournalTagModel
  */
 export type CampaignJournalEntrySessionLink = Prisma.CampaignJournalEntrySessionLinkModel
 /**
+ * Model CampaignJournalEntryTransferHistory
+ * 
+ */
+export type CampaignJournalEntryTransferHistory = Prisma.CampaignJournalEntryTransferHistoryModel
+/**
  * Model Session
  * 
  */

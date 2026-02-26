@@ -424,6 +424,7 @@ export class CampaignPublicAccessService {
     const where: Prisma.CampaignJournalEntryWhereInput = {
       campaignId: resolved.campaignId,
       visibility: 'CAMPAIGN',
+      isArchived: false,
       ...(query.sessionId
         ? {
             sessionLinks: {
@@ -505,6 +506,9 @@ export class CampaignPublicAccessService {
           title: row.title,
           contentMarkdown: row.contentMarkdown,
           visibility: row.visibility,
+          isDiscoverable: row.isDiscoverable,
+          discoveredAt: row.discoveredAt?.toISOString() || null,
+          isArchived: row.isArchived,
           sessions: row.sessionLinks.map((link) => ({
             sessionId: link.session.id,
             title: link.session.title,

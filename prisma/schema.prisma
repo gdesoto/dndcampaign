@@ -92,6 +92,12 @@ model User {
   campaignRequestsDecided       CampaignRequest[]         @relation("CampaignRequestDecidedBy")
   campaignRequestVotes          CampaignRequestVote[]
   journalEntriesAuthored        CampaignJournalEntry[]    @relation("CampaignJournalEntryAuthor")
+  journalEntriesHeld            CampaignJournalEntry[]    @relation("CampaignJournalEntryHolder")
+  journalEntriesDiscovered      CampaignJournalEntry[]    @relation("CampaignJournalEntryDiscoveredBy")
+  journalEntriesArchived        CampaignJournalEntry[]    @relation("CampaignJournalEntryArchivedBy")
+  journalEntryTransferActions   CampaignJournalEntryTransferHistory[] @relation("CampaignJournalEntryTransferActor")
+  journalEntryTransferFrom      CampaignJournalEntryTransferHistory[] @relation("CampaignJournalEntryTransferFromHolder")
+  journalEntryTransferTo        CampaignJournalEntryTransferHistory[] @relation("CampaignJournalEntryTransferToHolder")
 
   @@index([email])
 }
@@ -168,6 +174,7 @@ model Campaign {
   journalEntries           CampaignJournalEntry[]
   journalTags              CampaignJournalTag[]
   journalEntrySessionLinks CampaignJournalEntrySessionLink[]
+  journalEntryTransfers    CampaignJournalEntryTransferHistory[]
 
   @@index([ownerId])
 }
@@ -273,22 +280,36 @@ model CampaignRequestVote {
 }
 
 model CampaignJournalEntry {
-  id              String                            @id @default(uuid())
-  campaignId      String
-  campaign        Campaign                          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  authorUserId    String
-  authorUser      User                              @relation("CampaignJournalEntryAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
-  title           String
-  contentMarkdown String
-  visibility      CampaignJournalVisibility         @default(MYSELF)
-  createdAt       DateTime                          @default(now())
-  updatedAt       DateTime                          @updatedAt
-  tags            CampaignJournalTag[]
-  sessionLinks    CampaignJournalEntrySessionLink[]
+  id               String                            @id @default(uuid())
+  campaignId       String
+  campaign         Campaign                          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  authorUserId     String
+  authorUser       User                              @relation("CampaignJournalEntryAuthor", fields: [authorUserId], references: [id], onDelete: Restrict)
+  holderUserId     String?
+  holderUser       User?                             @relation("CampaignJournalEntryHolder", fields: [holderUserId], references: [id], onDelete: SetNull)
+  discoveredByUserId String?
+  discoveredByUser User?                             @relation("CampaignJournalEntryDiscoveredBy", fields: [discoveredByUserId], references: [id], onDelete: SetNull)
+  archivedByUserId String?
+  archivedByUser   User?                             @relation("CampaignJournalEntryArchivedBy", fields: [archivedByUserId], references: [id], onDelete: SetNull)
+  title            String
+  contentMarkdown  String
+  visibility       CampaignJournalVisibility         @default(MYSELF)
+  isDiscoverable   Boolean                           @default(false)
+  discoveredAt     DateTime?
+  isArchived       Boolean                           @default(false)
+  archivedAt       DateTime?
+  createdAt        DateTime                          @default(now())
+  updatedAt        DateTime                          @updatedAt
+  tags             CampaignJournalTag[]
+  sessionLinks     CampaignJournalEntrySessionLink[]
+  transferHistory  CampaignJournalEntryTransferHistory[]
 
   @@index([campaignId, visibility, createdAt])
   @@index([campaignId, authorUserId, createdAt])
   @@index([campaignId, createdAt])
+  @@index([campaignId, isDiscoverable, updatedAt])
+  @@index([campaignId, holderUserId, updatedAt])
+  @@index([campaignId, isArchived, updatedAt])
 }
 
 model CampaignJournalTag {
@@ -323,6 +344,25 @@ model CampaignJournalEntrySessionLink {
   @@unique([campaignJournalEntryId, sessionId])
   @@index([campaignId, sessionId])
   @@index([campaignJournalEntryId, createdAt])
+}
+
+model CampaignJournalEntryTransferHistory {
+  id                     String               @id @default(uuid())
+  campaignJournalEntryId String
+  entry                  CampaignJournalEntry @relation(fields: [campaignJournalEntryId], references: [id], onDelete: Cascade)
+  campaignId             String
+  campaign               Campaign             @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  fromHolderUserId       String?
+  fromHolderUser         User?                @relation("CampaignJournalEntryTransferFromHolder", fields: [fromHolderUserId], references: [id], onDelete: SetNull)
+  toHolderUserId         String?
+  toHolderUser           User?                @relation("CampaignJournalEntryTransferToHolder", fields: [toHolderUserId], references: [id], onDelete: SetNull)
+  actorUserId            String
+  actorUser              User                 @relation("CampaignJournalEntryTransferActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  action                 String
+  createdAt              DateTime             @default(now())
+
+  @@index([campaignJournalEntryId, createdAt])
+  @@index([campaignId, createdAt])
 }
 
 model Session {

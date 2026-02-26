@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
-import JournalPage from '../../app/pages/campaigns/[campaignId]/journal.vue'
+import JournalPage from '../../app/pages/campaigns/[campaignId]/journal/index.vue'
 
 const mockListEntries = vi.fn()
 const mockListTags = vi.fn()
 const mockCreateEntry = vi.fn()
 const mockUpdateEntry = vi.fn()
 const mockDeleteEntry = vi.fn()
+const mockListNotifications = vi.fn()
+const mockListMemberOptions = vi.fn()
 const mockRequest = vi.fn()
 const mockToastAdd = vi.fn()
 
@@ -29,6 +31,8 @@ vi.mock('~/composables/useCampaignJournal', () => ({
     createEntry: mockCreateEntry,
     updateEntry: mockUpdateEntry,
     deleteEntry: mockDeleteEntry,
+    listNotifications: mockListNotifications,
+    listMemberOptions: mockListMemberOptions,
   }),
 }))
 
@@ -68,7 +72,7 @@ describe('campaign journal page', () => {
       emits: ['update:modelValue'],
       template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
     },
-    USelectMenu: {
+    UInputMenu: {
       props: ['modelValue'],
       emits: ['update:modelValue'],
       template: '<div><slot /></div>',
@@ -104,6 +108,18 @@ describe('campaign journal page', () => {
       }
       return []
     })
+    mockListNotifications.mockResolvedValue({
+      items: [],
+      pagination: {
+        page: 1,
+        pageSize: 8,
+        total: 0,
+        totalPages: 1,
+      },
+    })
+    mockListMemberOptions.mockResolvedValue({
+      items: [],
+    })
   })
 
   it('hides DM tab for non-DM members and renders journal list content', async () => {
@@ -126,6 +142,10 @@ describe('campaign journal page', () => {
     expect(wrapper.text()).not.toContain('DM-visible')
     expect(wrapper.text()).toContain('Journal Entry One')
     expect(wrapper.text()).toContain('Open')
+    expect(wrapper.text()).toContain('Recent Journal Notifications')
+    expect(wrapper.text()).toContain('Discoverable only')
+    expect(wrapper.text()).toContain('Held by me')
+    expect(wrapper.text()).toContain('Include archived')
     expect(mockListEntries).toHaveBeenCalled()
   })
 

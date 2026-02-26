@@ -28,9 +28,16 @@ export type CampaignJournalEntryMinAggregateOutputType = {
   id: string | null
   campaignId: string | null
   authorUserId: string | null
+  holderUserId: string | null
+  discoveredByUserId: string | null
+  archivedByUserId: string | null
   title: string | null
   contentMarkdown: string | null
   visibility: $Enums.CampaignJournalVisibility | null
+  isDiscoverable: boolean | null
+  discoveredAt: Date | null
+  isArchived: boolean | null
+  archivedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -39,9 +46,16 @@ export type CampaignJournalEntryMaxAggregateOutputType = {
   id: string | null
   campaignId: string | null
   authorUserId: string | null
+  holderUserId: string | null
+  discoveredByUserId: string | null
+  archivedByUserId: string | null
   title: string | null
   contentMarkdown: string | null
   visibility: $Enums.CampaignJournalVisibility | null
+  isDiscoverable: boolean | null
+  discoveredAt: Date | null
+  isArchived: boolean | null
+  archivedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -50,9 +64,16 @@ export type CampaignJournalEntryCountAggregateOutputType = {
   id: number
   campaignId: number
   authorUserId: number
+  holderUserId: number
+  discoveredByUserId: number
+  archivedByUserId: number
   title: number
   contentMarkdown: number
   visibility: number
+  isDiscoverable: number
+  discoveredAt: number
+  isArchived: number
+  archivedAt: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -63,9 +84,16 @@ export type CampaignJournalEntryMinAggregateInputType = {
   id?: true
   campaignId?: true
   authorUserId?: true
+  holderUserId?: true
+  discoveredByUserId?: true
+  archivedByUserId?: true
   title?: true
   contentMarkdown?: true
   visibility?: true
+  isDiscoverable?: true
+  discoveredAt?: true
+  isArchived?: true
+  archivedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -74,9 +102,16 @@ export type CampaignJournalEntryMaxAggregateInputType = {
   id?: true
   campaignId?: true
   authorUserId?: true
+  holderUserId?: true
+  discoveredByUserId?: true
+  archivedByUserId?: true
   title?: true
   contentMarkdown?: true
   visibility?: true
+  isDiscoverable?: true
+  discoveredAt?: true
+  isArchived?: true
+  archivedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -85,9 +120,16 @@ export type CampaignJournalEntryCountAggregateInputType = {
   id?: true
   campaignId?: true
   authorUserId?: true
+  holderUserId?: true
+  discoveredByUserId?: true
+  archivedByUserId?: true
   title?: true
   contentMarkdown?: true
   visibility?: true
+  isDiscoverable?: true
+  discoveredAt?: true
+  isArchived?: true
+  archivedAt?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -169,9 +211,16 @@ export type CampaignJournalEntryGroupByOutputType = {
   id: string
   campaignId: string
   authorUserId: string
+  holderUserId: string | null
+  discoveredByUserId: string | null
+  archivedByUserId: string | null
   title: string
   contentMarkdown: string
   visibility: $Enums.CampaignJournalVisibility
+  isDiscoverable: boolean
+  discoveredAt: Date | null
+  isArchived: boolean
+  archivedAt: Date | null
   createdAt: Date
   updatedAt: Date
   _count: CampaignJournalEntryCountAggregateOutputType | null
@@ -201,30 +250,52 @@ export type CampaignJournalEntryWhereInput = {
   id?: Prisma.StringFilter<"CampaignJournalEntry"> | string
   campaignId?: Prisma.StringFilter<"CampaignJournalEntry"> | string
   authorUserId?: Prisma.StringFilter<"CampaignJournalEntry"> | string
+  holderUserId?: Prisma.StringNullableFilter<"CampaignJournalEntry"> | string | null
+  discoveredByUserId?: Prisma.StringNullableFilter<"CampaignJournalEntry"> | string | null
+  archivedByUserId?: Prisma.StringNullableFilter<"CampaignJournalEntry"> | string | null
   title?: Prisma.StringFilter<"CampaignJournalEntry"> | string
   contentMarkdown?: Prisma.StringFilter<"CampaignJournalEntry"> | string
   visibility?: Prisma.EnumCampaignJournalVisibilityFilter<"CampaignJournalEntry"> | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFilter<"CampaignJournalEntry"> | boolean
+  discoveredAt?: Prisma.DateTimeNullableFilter<"CampaignJournalEntry"> | Date | string | null
+  isArchived?: Prisma.BoolFilter<"CampaignJournalEntry"> | boolean
+  archivedAt?: Prisma.DateTimeNullableFilter<"CampaignJournalEntry"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"CampaignJournalEntry"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CampaignJournalEntry"> | Date | string
   campaign?: Prisma.XOR<Prisma.CampaignScalarRelationFilter, Prisma.CampaignWhereInput>
   authorUser?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  holderUser?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
+  discoveredByUser?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
+  archivedByUser?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   tags?: Prisma.CampaignJournalTagListRelationFilter
   sessionLinks?: Prisma.CampaignJournalEntrySessionLinkListRelationFilter
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryListRelationFilter
 }
 
 export type CampaignJournalEntryOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   campaignId?: Prisma.SortOrder
   authorUserId?: Prisma.SortOrder
+  holderUserId?: Prisma.SortOrderInput | Prisma.SortOrder
+  discoveredByUserId?: Prisma.SortOrderInput | Prisma.SortOrder
+  archivedByUserId?: Prisma.SortOrderInput | Prisma.SortOrder
   title?: Prisma.SortOrder
   contentMarkdown?: Prisma.SortOrder
   visibility?: Prisma.SortOrder
+  isDiscoverable?: Prisma.SortOrder
+  discoveredAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  isArchived?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   campaign?: Prisma.CampaignOrderByWithRelationInput
   authorUser?: Prisma.UserOrderByWithRelationInput
+  holderUser?: Prisma.UserOrderByWithRelationInput
+  discoveredByUser?: Prisma.UserOrderByWithRelationInput
+  archivedByUser?: Prisma.UserOrderByWithRelationInput
   tags?: Prisma.CampaignJournalTagOrderByRelationAggregateInput
   sessionLinks?: Prisma.CampaignJournalEntrySessionLinkOrderByRelationAggregateInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryOrderByRelationAggregateInput
 }
 
 export type CampaignJournalEntryWhereUniqueInput = Prisma.AtLeast<{
@@ -234,24 +305,42 @@ export type CampaignJournalEntryWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.CampaignJournalEntryWhereInput | Prisma.CampaignJournalEntryWhereInput[]
   campaignId?: Prisma.StringFilter<"CampaignJournalEntry"> | string
   authorUserId?: Prisma.StringFilter<"CampaignJournalEntry"> | string
+  holderUserId?: Prisma.StringNullableFilter<"CampaignJournalEntry"> | string | null
+  discoveredByUserId?: Prisma.StringNullableFilter<"CampaignJournalEntry"> | string | null
+  archivedByUserId?: Prisma.StringNullableFilter<"CampaignJournalEntry"> | string | null
   title?: Prisma.StringFilter<"CampaignJournalEntry"> | string
   contentMarkdown?: Prisma.StringFilter<"CampaignJournalEntry"> | string
   visibility?: Prisma.EnumCampaignJournalVisibilityFilter<"CampaignJournalEntry"> | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFilter<"CampaignJournalEntry"> | boolean
+  discoveredAt?: Prisma.DateTimeNullableFilter<"CampaignJournalEntry"> | Date | string | null
+  isArchived?: Prisma.BoolFilter<"CampaignJournalEntry"> | boolean
+  archivedAt?: Prisma.DateTimeNullableFilter<"CampaignJournalEntry"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"CampaignJournalEntry"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CampaignJournalEntry"> | Date | string
   campaign?: Prisma.XOR<Prisma.CampaignScalarRelationFilter, Prisma.CampaignWhereInput>
   authorUser?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  holderUser?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
+  discoveredByUser?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
+  archivedByUser?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   tags?: Prisma.CampaignJournalTagListRelationFilter
   sessionLinks?: Prisma.CampaignJournalEntrySessionLinkListRelationFilter
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryListRelationFilter
 }, "id">
 
 export type CampaignJournalEntryOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   campaignId?: Prisma.SortOrder
   authorUserId?: Prisma.SortOrder
+  holderUserId?: Prisma.SortOrderInput | Prisma.SortOrder
+  discoveredByUserId?: Prisma.SortOrderInput | Prisma.SortOrder
+  archivedByUserId?: Prisma.SortOrderInput | Prisma.SortOrder
   title?: Prisma.SortOrder
   contentMarkdown?: Prisma.SortOrder
   visibility?: Prisma.SortOrder
+  isDiscoverable?: Prisma.SortOrder
+  discoveredAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  isArchived?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.CampaignJournalEntryCountOrderByAggregateInput
@@ -266,9 +355,16 @@ export type CampaignJournalEntryScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"CampaignJournalEntry"> | string
   campaignId?: Prisma.StringWithAggregatesFilter<"CampaignJournalEntry"> | string
   authorUserId?: Prisma.StringWithAggregatesFilter<"CampaignJournalEntry"> | string
+  holderUserId?: Prisma.StringNullableWithAggregatesFilter<"CampaignJournalEntry"> | string | null
+  discoveredByUserId?: Prisma.StringNullableWithAggregatesFilter<"CampaignJournalEntry"> | string | null
+  archivedByUserId?: Prisma.StringNullableWithAggregatesFilter<"CampaignJournalEntry"> | string | null
   title?: Prisma.StringWithAggregatesFilter<"CampaignJournalEntry"> | string
   contentMarkdown?: Prisma.StringWithAggregatesFilter<"CampaignJournalEntry"> | string
   visibility?: Prisma.EnumCampaignJournalVisibilityWithAggregatesFilter<"CampaignJournalEntry"> | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolWithAggregatesFilter<"CampaignJournalEntry"> | boolean
+  discoveredAt?: Prisma.DateTimeNullableWithAggregatesFilter<"CampaignJournalEntry"> | Date | string | null
+  isArchived?: Prisma.BoolWithAggregatesFilter<"CampaignJournalEntry"> | boolean
+  archivedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"CampaignJournalEntry"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"CampaignJournalEntry"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"CampaignJournalEntry"> | Date | string
 }
@@ -278,25 +374,41 @@ export type CampaignJournalEntryCreateInput = {
   title: string
   contentMarkdown: string
   visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   campaign: Prisma.CampaignCreateNestedOneWithoutJournalEntriesInput
   authorUser: Prisma.UserCreateNestedOneWithoutJournalEntriesAuthoredInput
+  holderUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesHeldInput
+  discoveredByUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesDiscoveredInput
+  archivedByUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesArchivedInput
   tags?: Prisma.CampaignJournalTagCreateNestedManyWithoutEntryInput
   sessionLinks?: Prisma.CampaignJournalEntrySessionLinkCreateNestedManyWithoutEntryInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutEntryInput
 }
 
 export type CampaignJournalEntryUncheckedCreateInput = {
   id?: string
   campaignId: string
   authorUserId: string
+  holderUserId?: string | null
+  discoveredByUserId?: string | null
+  archivedByUserId?: string | null
   title: string
   contentMarkdown: string
   visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   tags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutEntryInput
   sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedCreateNestedManyWithoutEntryInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutEntryInput
 }
 
 export type CampaignJournalEntryUpdateInput = {
@@ -304,34 +416,57 @@ export type CampaignJournalEntryUpdateInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
   visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   campaign?: Prisma.CampaignUpdateOneRequiredWithoutJournalEntriesNestedInput
   authorUser?: Prisma.UserUpdateOneRequiredWithoutJournalEntriesAuthoredNestedInput
+  holderUser?: Prisma.UserUpdateOneWithoutJournalEntriesHeldNestedInput
+  discoveredByUser?: Prisma.UserUpdateOneWithoutJournalEntriesDiscoveredNestedInput
+  archivedByUser?: Prisma.UserUpdateOneWithoutJournalEntriesArchivedNestedInput
   tags?: Prisma.CampaignJournalTagUpdateManyWithoutEntryNestedInput
   sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUpdateManyWithoutEntryNestedInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutEntryNestedInput
 }
 
 export type CampaignJournalEntryUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   campaignId?: Prisma.StringFieldUpdateOperationsInput | string
   authorUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  holderUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discoveredByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  archivedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
   visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutEntryNestedInput
   sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedUpdateManyWithoutEntryNestedInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutEntryNestedInput
 }
 
 export type CampaignJournalEntryCreateManyInput = {
   id?: string
   campaignId: string
   authorUserId: string
+  holderUserId?: string | null
+  discoveredByUserId?: string | null
+  archivedByUserId?: string | null
   title: string
   contentMarkdown: string
   visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -341,6 +476,10 @@ export type CampaignJournalEntryUpdateManyMutationInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
   visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -349,9 +488,16 @@ export type CampaignJournalEntryUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   campaignId?: Prisma.StringFieldUpdateOperationsInput | string
   authorUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  holderUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discoveredByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  archivedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
   visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -370,9 +516,16 @@ export type CampaignJournalEntryCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   campaignId?: Prisma.SortOrder
   authorUserId?: Prisma.SortOrder
+  holderUserId?: Prisma.SortOrder
+  discoveredByUserId?: Prisma.SortOrder
+  archivedByUserId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   contentMarkdown?: Prisma.SortOrder
   visibility?: Prisma.SortOrder
+  isDiscoverable?: Prisma.SortOrder
+  discoveredAt?: Prisma.SortOrder
+  isArchived?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -381,9 +534,16 @@ export type CampaignJournalEntryMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   campaignId?: Prisma.SortOrder
   authorUserId?: Prisma.SortOrder
+  holderUserId?: Prisma.SortOrder
+  discoveredByUserId?: Prisma.SortOrder
+  archivedByUserId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   contentMarkdown?: Prisma.SortOrder
   visibility?: Prisma.SortOrder
+  isDiscoverable?: Prisma.SortOrder
+  discoveredAt?: Prisma.SortOrder
+  isArchived?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -392,9 +552,16 @@ export type CampaignJournalEntryMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   campaignId?: Prisma.SortOrder
   authorUserId?: Prisma.SortOrder
+  holderUserId?: Prisma.SortOrder
+  discoveredByUserId?: Prisma.SortOrder
+  archivedByUserId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   contentMarkdown?: Prisma.SortOrder
   visibility?: Prisma.SortOrder
+  isDiscoverable?: Prisma.SortOrder
+  discoveredAt?: Prisma.SortOrder
+  isArchived?: Prisma.SortOrder
+  archivedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -411,10 +578,52 @@ export type CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput = {
   connect?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
 }
 
+export type CampaignJournalEntryCreateNestedManyWithoutHolderUserInput = {
+  create?: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutHolderUserInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutHolderUserInput> | Prisma.CampaignJournalEntryCreateWithoutHolderUserInput[] | Prisma.CampaignJournalEntryUncheckedCreateWithoutHolderUserInput[]
+  connectOrCreate?: Prisma.CampaignJournalEntryCreateOrConnectWithoutHolderUserInput | Prisma.CampaignJournalEntryCreateOrConnectWithoutHolderUserInput[]
+  createMany?: Prisma.CampaignJournalEntryCreateManyHolderUserInputEnvelope
+  connect?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+}
+
+export type CampaignJournalEntryCreateNestedManyWithoutDiscoveredByUserInput = {
+  create?: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutDiscoveredByUserInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutDiscoveredByUserInput> | Prisma.CampaignJournalEntryCreateWithoutDiscoveredByUserInput[] | Prisma.CampaignJournalEntryUncheckedCreateWithoutDiscoveredByUserInput[]
+  connectOrCreate?: Prisma.CampaignJournalEntryCreateOrConnectWithoutDiscoveredByUserInput | Prisma.CampaignJournalEntryCreateOrConnectWithoutDiscoveredByUserInput[]
+  createMany?: Prisma.CampaignJournalEntryCreateManyDiscoveredByUserInputEnvelope
+  connect?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+}
+
+export type CampaignJournalEntryCreateNestedManyWithoutArchivedByUserInput = {
+  create?: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutArchivedByUserInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutArchivedByUserInput> | Prisma.CampaignJournalEntryCreateWithoutArchivedByUserInput[] | Prisma.CampaignJournalEntryUncheckedCreateWithoutArchivedByUserInput[]
+  connectOrCreate?: Prisma.CampaignJournalEntryCreateOrConnectWithoutArchivedByUserInput | Prisma.CampaignJournalEntryCreateOrConnectWithoutArchivedByUserInput[]
+  createMany?: Prisma.CampaignJournalEntryCreateManyArchivedByUserInputEnvelope
+  connect?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+}
+
 export type CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput = {
   create?: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutAuthorUserInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutAuthorUserInput> | Prisma.CampaignJournalEntryCreateWithoutAuthorUserInput[] | Prisma.CampaignJournalEntryUncheckedCreateWithoutAuthorUserInput[]
   connectOrCreate?: Prisma.CampaignJournalEntryCreateOrConnectWithoutAuthorUserInput | Prisma.CampaignJournalEntryCreateOrConnectWithoutAuthorUserInput[]
   createMany?: Prisma.CampaignJournalEntryCreateManyAuthorUserInputEnvelope
+  connect?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+}
+
+export type CampaignJournalEntryUncheckedCreateNestedManyWithoutHolderUserInput = {
+  create?: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutHolderUserInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutHolderUserInput> | Prisma.CampaignJournalEntryCreateWithoutHolderUserInput[] | Prisma.CampaignJournalEntryUncheckedCreateWithoutHolderUserInput[]
+  connectOrCreate?: Prisma.CampaignJournalEntryCreateOrConnectWithoutHolderUserInput | Prisma.CampaignJournalEntryCreateOrConnectWithoutHolderUserInput[]
+  createMany?: Prisma.CampaignJournalEntryCreateManyHolderUserInputEnvelope
+  connect?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+}
+
+export type CampaignJournalEntryUncheckedCreateNestedManyWithoutDiscoveredByUserInput = {
+  create?: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutDiscoveredByUserInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutDiscoveredByUserInput> | Prisma.CampaignJournalEntryCreateWithoutDiscoveredByUserInput[] | Prisma.CampaignJournalEntryUncheckedCreateWithoutDiscoveredByUserInput[]
+  connectOrCreate?: Prisma.CampaignJournalEntryCreateOrConnectWithoutDiscoveredByUserInput | Prisma.CampaignJournalEntryCreateOrConnectWithoutDiscoveredByUserInput[]
+  createMany?: Prisma.CampaignJournalEntryCreateManyDiscoveredByUserInputEnvelope
+  connect?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+}
+
+export type CampaignJournalEntryUncheckedCreateNestedManyWithoutArchivedByUserInput = {
+  create?: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutArchivedByUserInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutArchivedByUserInput> | Prisma.CampaignJournalEntryCreateWithoutArchivedByUserInput[] | Prisma.CampaignJournalEntryUncheckedCreateWithoutArchivedByUserInput[]
+  connectOrCreate?: Prisma.CampaignJournalEntryCreateOrConnectWithoutArchivedByUserInput | Prisma.CampaignJournalEntryCreateOrConnectWithoutArchivedByUserInput[]
+  createMany?: Prisma.CampaignJournalEntryCreateManyArchivedByUserInputEnvelope
   connect?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
 }
 
@@ -432,6 +641,48 @@ export type CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput = {
   deleteMany?: Prisma.CampaignJournalEntryScalarWhereInput | Prisma.CampaignJournalEntryScalarWhereInput[]
 }
 
+export type CampaignJournalEntryUpdateManyWithoutHolderUserNestedInput = {
+  create?: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutHolderUserInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutHolderUserInput> | Prisma.CampaignJournalEntryCreateWithoutHolderUserInput[] | Prisma.CampaignJournalEntryUncheckedCreateWithoutHolderUserInput[]
+  connectOrCreate?: Prisma.CampaignJournalEntryCreateOrConnectWithoutHolderUserInput | Prisma.CampaignJournalEntryCreateOrConnectWithoutHolderUserInput[]
+  upsert?: Prisma.CampaignJournalEntryUpsertWithWhereUniqueWithoutHolderUserInput | Prisma.CampaignJournalEntryUpsertWithWhereUniqueWithoutHolderUserInput[]
+  createMany?: Prisma.CampaignJournalEntryCreateManyHolderUserInputEnvelope
+  set?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  disconnect?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  delete?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  connect?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  update?: Prisma.CampaignJournalEntryUpdateWithWhereUniqueWithoutHolderUserInput | Prisma.CampaignJournalEntryUpdateWithWhereUniqueWithoutHolderUserInput[]
+  updateMany?: Prisma.CampaignJournalEntryUpdateManyWithWhereWithoutHolderUserInput | Prisma.CampaignJournalEntryUpdateManyWithWhereWithoutHolderUserInput[]
+  deleteMany?: Prisma.CampaignJournalEntryScalarWhereInput | Prisma.CampaignJournalEntryScalarWhereInput[]
+}
+
+export type CampaignJournalEntryUpdateManyWithoutDiscoveredByUserNestedInput = {
+  create?: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutDiscoveredByUserInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutDiscoveredByUserInput> | Prisma.CampaignJournalEntryCreateWithoutDiscoveredByUserInput[] | Prisma.CampaignJournalEntryUncheckedCreateWithoutDiscoveredByUserInput[]
+  connectOrCreate?: Prisma.CampaignJournalEntryCreateOrConnectWithoutDiscoveredByUserInput | Prisma.CampaignJournalEntryCreateOrConnectWithoutDiscoveredByUserInput[]
+  upsert?: Prisma.CampaignJournalEntryUpsertWithWhereUniqueWithoutDiscoveredByUserInput | Prisma.CampaignJournalEntryUpsertWithWhereUniqueWithoutDiscoveredByUserInput[]
+  createMany?: Prisma.CampaignJournalEntryCreateManyDiscoveredByUserInputEnvelope
+  set?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  disconnect?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  delete?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  connect?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  update?: Prisma.CampaignJournalEntryUpdateWithWhereUniqueWithoutDiscoveredByUserInput | Prisma.CampaignJournalEntryUpdateWithWhereUniqueWithoutDiscoveredByUserInput[]
+  updateMany?: Prisma.CampaignJournalEntryUpdateManyWithWhereWithoutDiscoveredByUserInput | Prisma.CampaignJournalEntryUpdateManyWithWhereWithoutDiscoveredByUserInput[]
+  deleteMany?: Prisma.CampaignJournalEntryScalarWhereInput | Prisma.CampaignJournalEntryScalarWhereInput[]
+}
+
+export type CampaignJournalEntryUpdateManyWithoutArchivedByUserNestedInput = {
+  create?: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutArchivedByUserInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutArchivedByUserInput> | Prisma.CampaignJournalEntryCreateWithoutArchivedByUserInput[] | Prisma.CampaignJournalEntryUncheckedCreateWithoutArchivedByUserInput[]
+  connectOrCreate?: Prisma.CampaignJournalEntryCreateOrConnectWithoutArchivedByUserInput | Prisma.CampaignJournalEntryCreateOrConnectWithoutArchivedByUserInput[]
+  upsert?: Prisma.CampaignJournalEntryUpsertWithWhereUniqueWithoutArchivedByUserInput | Prisma.CampaignJournalEntryUpsertWithWhereUniqueWithoutArchivedByUserInput[]
+  createMany?: Prisma.CampaignJournalEntryCreateManyArchivedByUserInputEnvelope
+  set?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  disconnect?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  delete?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  connect?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  update?: Prisma.CampaignJournalEntryUpdateWithWhereUniqueWithoutArchivedByUserInput | Prisma.CampaignJournalEntryUpdateWithWhereUniqueWithoutArchivedByUserInput[]
+  updateMany?: Prisma.CampaignJournalEntryUpdateManyWithWhereWithoutArchivedByUserInput | Prisma.CampaignJournalEntryUpdateManyWithWhereWithoutArchivedByUserInput[]
+  deleteMany?: Prisma.CampaignJournalEntryScalarWhereInput | Prisma.CampaignJournalEntryScalarWhereInput[]
+}
+
 export type CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput = {
   create?: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutAuthorUserInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutAuthorUserInput> | Prisma.CampaignJournalEntryCreateWithoutAuthorUserInput[] | Prisma.CampaignJournalEntryUncheckedCreateWithoutAuthorUserInput[]
   connectOrCreate?: Prisma.CampaignJournalEntryCreateOrConnectWithoutAuthorUserInput | Prisma.CampaignJournalEntryCreateOrConnectWithoutAuthorUserInput[]
@@ -443,6 +694,48 @@ export type CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput 
   connect?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
   update?: Prisma.CampaignJournalEntryUpdateWithWhereUniqueWithoutAuthorUserInput | Prisma.CampaignJournalEntryUpdateWithWhereUniqueWithoutAuthorUserInput[]
   updateMany?: Prisma.CampaignJournalEntryUpdateManyWithWhereWithoutAuthorUserInput | Prisma.CampaignJournalEntryUpdateManyWithWhereWithoutAuthorUserInput[]
+  deleteMany?: Prisma.CampaignJournalEntryScalarWhereInput | Prisma.CampaignJournalEntryScalarWhereInput[]
+}
+
+export type CampaignJournalEntryUncheckedUpdateManyWithoutHolderUserNestedInput = {
+  create?: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutHolderUserInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutHolderUserInput> | Prisma.CampaignJournalEntryCreateWithoutHolderUserInput[] | Prisma.CampaignJournalEntryUncheckedCreateWithoutHolderUserInput[]
+  connectOrCreate?: Prisma.CampaignJournalEntryCreateOrConnectWithoutHolderUserInput | Prisma.CampaignJournalEntryCreateOrConnectWithoutHolderUserInput[]
+  upsert?: Prisma.CampaignJournalEntryUpsertWithWhereUniqueWithoutHolderUserInput | Prisma.CampaignJournalEntryUpsertWithWhereUniqueWithoutHolderUserInput[]
+  createMany?: Prisma.CampaignJournalEntryCreateManyHolderUserInputEnvelope
+  set?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  disconnect?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  delete?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  connect?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  update?: Prisma.CampaignJournalEntryUpdateWithWhereUniqueWithoutHolderUserInput | Prisma.CampaignJournalEntryUpdateWithWhereUniqueWithoutHolderUserInput[]
+  updateMany?: Prisma.CampaignJournalEntryUpdateManyWithWhereWithoutHolderUserInput | Prisma.CampaignJournalEntryUpdateManyWithWhereWithoutHolderUserInput[]
+  deleteMany?: Prisma.CampaignJournalEntryScalarWhereInput | Prisma.CampaignJournalEntryScalarWhereInput[]
+}
+
+export type CampaignJournalEntryUncheckedUpdateManyWithoutDiscoveredByUserNestedInput = {
+  create?: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutDiscoveredByUserInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutDiscoveredByUserInput> | Prisma.CampaignJournalEntryCreateWithoutDiscoveredByUserInput[] | Prisma.CampaignJournalEntryUncheckedCreateWithoutDiscoveredByUserInput[]
+  connectOrCreate?: Prisma.CampaignJournalEntryCreateOrConnectWithoutDiscoveredByUserInput | Prisma.CampaignJournalEntryCreateOrConnectWithoutDiscoveredByUserInput[]
+  upsert?: Prisma.CampaignJournalEntryUpsertWithWhereUniqueWithoutDiscoveredByUserInput | Prisma.CampaignJournalEntryUpsertWithWhereUniqueWithoutDiscoveredByUserInput[]
+  createMany?: Prisma.CampaignJournalEntryCreateManyDiscoveredByUserInputEnvelope
+  set?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  disconnect?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  delete?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  connect?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  update?: Prisma.CampaignJournalEntryUpdateWithWhereUniqueWithoutDiscoveredByUserInput | Prisma.CampaignJournalEntryUpdateWithWhereUniqueWithoutDiscoveredByUserInput[]
+  updateMany?: Prisma.CampaignJournalEntryUpdateManyWithWhereWithoutDiscoveredByUserInput | Prisma.CampaignJournalEntryUpdateManyWithWhereWithoutDiscoveredByUserInput[]
+  deleteMany?: Prisma.CampaignJournalEntryScalarWhereInput | Prisma.CampaignJournalEntryScalarWhereInput[]
+}
+
+export type CampaignJournalEntryUncheckedUpdateManyWithoutArchivedByUserNestedInput = {
+  create?: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutArchivedByUserInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutArchivedByUserInput> | Prisma.CampaignJournalEntryCreateWithoutArchivedByUserInput[] | Prisma.CampaignJournalEntryUncheckedCreateWithoutArchivedByUserInput[]
+  connectOrCreate?: Prisma.CampaignJournalEntryCreateOrConnectWithoutArchivedByUserInput | Prisma.CampaignJournalEntryCreateOrConnectWithoutArchivedByUserInput[]
+  upsert?: Prisma.CampaignJournalEntryUpsertWithWhereUniqueWithoutArchivedByUserInput | Prisma.CampaignJournalEntryUpsertWithWhereUniqueWithoutArchivedByUserInput[]
+  createMany?: Prisma.CampaignJournalEntryCreateManyArchivedByUserInputEnvelope
+  set?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  disconnect?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  delete?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  connect?: Prisma.CampaignJournalEntryWhereUniqueInput | Prisma.CampaignJournalEntryWhereUniqueInput[]
+  update?: Prisma.CampaignJournalEntryUpdateWithWhereUniqueWithoutArchivedByUserInput | Prisma.CampaignJournalEntryUpdateWithWhereUniqueWithoutArchivedByUserInput[]
+  updateMany?: Prisma.CampaignJournalEntryUpdateManyWithWhereWithoutArchivedByUserInput | Prisma.CampaignJournalEntryUpdateManyWithWhereWithoutArchivedByUserInput[]
   deleteMany?: Prisma.CampaignJournalEntryScalarWhereInput | Prisma.CampaignJournalEntryScalarWhereInput[]
 }
 
@@ -520,28 +813,58 @@ export type CampaignJournalEntryUpdateOneRequiredWithoutSessionLinksNestedInput 
   update?: Prisma.XOR<Prisma.XOR<Prisma.CampaignJournalEntryUpdateToOneWithWhereWithoutSessionLinksInput, Prisma.CampaignJournalEntryUpdateWithoutSessionLinksInput>, Prisma.CampaignJournalEntryUncheckedUpdateWithoutSessionLinksInput>
 }
 
+export type CampaignJournalEntryCreateNestedOneWithoutTransferHistoryInput = {
+  create?: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutTransferHistoryInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutTransferHistoryInput>
+  connectOrCreate?: Prisma.CampaignJournalEntryCreateOrConnectWithoutTransferHistoryInput
+  connect?: Prisma.CampaignJournalEntryWhereUniqueInput
+}
+
+export type CampaignJournalEntryUpdateOneRequiredWithoutTransferHistoryNestedInput = {
+  create?: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutTransferHistoryInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutTransferHistoryInput>
+  connectOrCreate?: Prisma.CampaignJournalEntryCreateOrConnectWithoutTransferHistoryInput
+  upsert?: Prisma.CampaignJournalEntryUpsertWithoutTransferHistoryInput
+  connect?: Prisma.CampaignJournalEntryWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CampaignJournalEntryUpdateToOneWithWhereWithoutTransferHistoryInput, Prisma.CampaignJournalEntryUpdateWithoutTransferHistoryInput>, Prisma.CampaignJournalEntryUncheckedUpdateWithoutTransferHistoryInput>
+}
+
 export type CampaignJournalEntryCreateWithoutAuthorUserInput = {
   id?: string
   title: string
   contentMarkdown: string
   visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   campaign: Prisma.CampaignCreateNestedOneWithoutJournalEntriesInput
+  holderUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesHeldInput
+  discoveredByUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesDiscoveredInput
+  archivedByUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesArchivedInput
   tags?: Prisma.CampaignJournalTagCreateNestedManyWithoutEntryInput
   sessionLinks?: Prisma.CampaignJournalEntrySessionLinkCreateNestedManyWithoutEntryInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutEntryInput
 }
 
 export type CampaignJournalEntryUncheckedCreateWithoutAuthorUserInput = {
   id?: string
   campaignId: string
+  holderUserId?: string | null
+  discoveredByUserId?: string | null
+  archivedByUserId?: string | null
   title: string
   contentMarkdown: string
   visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   tags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutEntryInput
   sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedCreateNestedManyWithoutEntryInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutEntryInput
 }
 
 export type CampaignJournalEntryCreateOrConnectWithoutAuthorUserInput = {
@@ -551,6 +874,153 @@ export type CampaignJournalEntryCreateOrConnectWithoutAuthorUserInput = {
 
 export type CampaignJournalEntryCreateManyAuthorUserInputEnvelope = {
   data: Prisma.CampaignJournalEntryCreateManyAuthorUserInput | Prisma.CampaignJournalEntryCreateManyAuthorUserInput[]
+}
+
+export type CampaignJournalEntryCreateWithoutHolderUserInput = {
+  id?: string
+  title: string
+  contentMarkdown: string
+  visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  campaign: Prisma.CampaignCreateNestedOneWithoutJournalEntriesInput
+  authorUser: Prisma.UserCreateNestedOneWithoutJournalEntriesAuthoredInput
+  discoveredByUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesDiscoveredInput
+  archivedByUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesArchivedInput
+  tags?: Prisma.CampaignJournalTagCreateNestedManyWithoutEntryInput
+  sessionLinks?: Prisma.CampaignJournalEntrySessionLinkCreateNestedManyWithoutEntryInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutEntryInput
+}
+
+export type CampaignJournalEntryUncheckedCreateWithoutHolderUserInput = {
+  id?: string
+  campaignId: string
+  authorUserId: string
+  discoveredByUserId?: string | null
+  archivedByUserId?: string | null
+  title: string
+  contentMarkdown: string
+  visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  tags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutEntryInput
+  sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedCreateNestedManyWithoutEntryInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutEntryInput
+}
+
+export type CampaignJournalEntryCreateOrConnectWithoutHolderUserInput = {
+  where: Prisma.CampaignJournalEntryWhereUniqueInput
+  create: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutHolderUserInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutHolderUserInput>
+}
+
+export type CampaignJournalEntryCreateManyHolderUserInputEnvelope = {
+  data: Prisma.CampaignJournalEntryCreateManyHolderUserInput | Prisma.CampaignJournalEntryCreateManyHolderUserInput[]
+}
+
+export type CampaignJournalEntryCreateWithoutDiscoveredByUserInput = {
+  id?: string
+  title: string
+  contentMarkdown: string
+  visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  campaign: Prisma.CampaignCreateNestedOneWithoutJournalEntriesInput
+  authorUser: Prisma.UserCreateNestedOneWithoutJournalEntriesAuthoredInput
+  holderUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesHeldInput
+  archivedByUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesArchivedInput
+  tags?: Prisma.CampaignJournalTagCreateNestedManyWithoutEntryInput
+  sessionLinks?: Prisma.CampaignJournalEntrySessionLinkCreateNestedManyWithoutEntryInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutEntryInput
+}
+
+export type CampaignJournalEntryUncheckedCreateWithoutDiscoveredByUserInput = {
+  id?: string
+  campaignId: string
+  authorUserId: string
+  holderUserId?: string | null
+  archivedByUserId?: string | null
+  title: string
+  contentMarkdown: string
+  visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  tags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutEntryInput
+  sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedCreateNestedManyWithoutEntryInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutEntryInput
+}
+
+export type CampaignJournalEntryCreateOrConnectWithoutDiscoveredByUserInput = {
+  where: Prisma.CampaignJournalEntryWhereUniqueInput
+  create: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutDiscoveredByUserInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutDiscoveredByUserInput>
+}
+
+export type CampaignJournalEntryCreateManyDiscoveredByUserInputEnvelope = {
+  data: Prisma.CampaignJournalEntryCreateManyDiscoveredByUserInput | Prisma.CampaignJournalEntryCreateManyDiscoveredByUserInput[]
+}
+
+export type CampaignJournalEntryCreateWithoutArchivedByUserInput = {
+  id?: string
+  title: string
+  contentMarkdown: string
+  visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  campaign: Prisma.CampaignCreateNestedOneWithoutJournalEntriesInput
+  authorUser: Prisma.UserCreateNestedOneWithoutJournalEntriesAuthoredInput
+  holderUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesHeldInput
+  discoveredByUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesDiscoveredInput
+  tags?: Prisma.CampaignJournalTagCreateNestedManyWithoutEntryInput
+  sessionLinks?: Prisma.CampaignJournalEntrySessionLinkCreateNestedManyWithoutEntryInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutEntryInput
+}
+
+export type CampaignJournalEntryUncheckedCreateWithoutArchivedByUserInput = {
+  id?: string
+  campaignId: string
+  authorUserId: string
+  holderUserId?: string | null
+  discoveredByUserId?: string | null
+  title: string
+  contentMarkdown: string
+  visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  tags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutEntryInput
+  sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedCreateNestedManyWithoutEntryInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutEntryInput
+}
+
+export type CampaignJournalEntryCreateOrConnectWithoutArchivedByUserInput = {
+  where: Prisma.CampaignJournalEntryWhereUniqueInput
+  create: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutArchivedByUserInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutArchivedByUserInput>
+}
+
+export type CampaignJournalEntryCreateManyArchivedByUserInputEnvelope = {
+  data: Prisma.CampaignJournalEntryCreateManyArchivedByUserInput | Prisma.CampaignJournalEntryCreateManyArchivedByUserInput[]
 }
 
 export type CampaignJournalEntryUpsertWithWhereUniqueWithoutAuthorUserInput = {
@@ -576,11 +1046,66 @@ export type CampaignJournalEntryScalarWhereInput = {
   id?: Prisma.StringFilter<"CampaignJournalEntry"> | string
   campaignId?: Prisma.StringFilter<"CampaignJournalEntry"> | string
   authorUserId?: Prisma.StringFilter<"CampaignJournalEntry"> | string
+  holderUserId?: Prisma.StringNullableFilter<"CampaignJournalEntry"> | string | null
+  discoveredByUserId?: Prisma.StringNullableFilter<"CampaignJournalEntry"> | string | null
+  archivedByUserId?: Prisma.StringNullableFilter<"CampaignJournalEntry"> | string | null
   title?: Prisma.StringFilter<"CampaignJournalEntry"> | string
   contentMarkdown?: Prisma.StringFilter<"CampaignJournalEntry"> | string
   visibility?: Prisma.EnumCampaignJournalVisibilityFilter<"CampaignJournalEntry"> | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFilter<"CampaignJournalEntry"> | boolean
+  discoveredAt?: Prisma.DateTimeNullableFilter<"CampaignJournalEntry"> | Date | string | null
+  isArchived?: Prisma.BoolFilter<"CampaignJournalEntry"> | boolean
+  archivedAt?: Prisma.DateTimeNullableFilter<"CampaignJournalEntry"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"CampaignJournalEntry"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"CampaignJournalEntry"> | Date | string
+}
+
+export type CampaignJournalEntryUpsertWithWhereUniqueWithoutHolderUserInput = {
+  where: Prisma.CampaignJournalEntryWhereUniqueInput
+  update: Prisma.XOR<Prisma.CampaignJournalEntryUpdateWithoutHolderUserInput, Prisma.CampaignJournalEntryUncheckedUpdateWithoutHolderUserInput>
+  create: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutHolderUserInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutHolderUserInput>
+}
+
+export type CampaignJournalEntryUpdateWithWhereUniqueWithoutHolderUserInput = {
+  where: Prisma.CampaignJournalEntryWhereUniqueInput
+  data: Prisma.XOR<Prisma.CampaignJournalEntryUpdateWithoutHolderUserInput, Prisma.CampaignJournalEntryUncheckedUpdateWithoutHolderUserInput>
+}
+
+export type CampaignJournalEntryUpdateManyWithWhereWithoutHolderUserInput = {
+  where: Prisma.CampaignJournalEntryScalarWhereInput
+  data: Prisma.XOR<Prisma.CampaignJournalEntryUpdateManyMutationInput, Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutHolderUserInput>
+}
+
+export type CampaignJournalEntryUpsertWithWhereUniqueWithoutDiscoveredByUserInput = {
+  where: Prisma.CampaignJournalEntryWhereUniqueInput
+  update: Prisma.XOR<Prisma.CampaignJournalEntryUpdateWithoutDiscoveredByUserInput, Prisma.CampaignJournalEntryUncheckedUpdateWithoutDiscoveredByUserInput>
+  create: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutDiscoveredByUserInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutDiscoveredByUserInput>
+}
+
+export type CampaignJournalEntryUpdateWithWhereUniqueWithoutDiscoveredByUserInput = {
+  where: Prisma.CampaignJournalEntryWhereUniqueInput
+  data: Prisma.XOR<Prisma.CampaignJournalEntryUpdateWithoutDiscoveredByUserInput, Prisma.CampaignJournalEntryUncheckedUpdateWithoutDiscoveredByUserInput>
+}
+
+export type CampaignJournalEntryUpdateManyWithWhereWithoutDiscoveredByUserInput = {
+  where: Prisma.CampaignJournalEntryScalarWhereInput
+  data: Prisma.XOR<Prisma.CampaignJournalEntryUpdateManyMutationInput, Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutDiscoveredByUserInput>
+}
+
+export type CampaignJournalEntryUpsertWithWhereUniqueWithoutArchivedByUserInput = {
+  where: Prisma.CampaignJournalEntryWhereUniqueInput
+  update: Prisma.XOR<Prisma.CampaignJournalEntryUpdateWithoutArchivedByUserInput, Prisma.CampaignJournalEntryUncheckedUpdateWithoutArchivedByUserInput>
+  create: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutArchivedByUserInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutArchivedByUserInput>
+}
+
+export type CampaignJournalEntryUpdateWithWhereUniqueWithoutArchivedByUserInput = {
+  where: Prisma.CampaignJournalEntryWhereUniqueInput
+  data: Prisma.XOR<Prisma.CampaignJournalEntryUpdateWithoutArchivedByUserInput, Prisma.CampaignJournalEntryUncheckedUpdateWithoutArchivedByUserInput>
+}
+
+export type CampaignJournalEntryUpdateManyWithWhereWithoutArchivedByUserInput = {
+  where: Prisma.CampaignJournalEntryScalarWhereInput
+  data: Prisma.XOR<Prisma.CampaignJournalEntryUpdateManyMutationInput, Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutArchivedByUserInput>
 }
 
 export type CampaignJournalEntryCreateWithoutCampaignInput = {
@@ -588,23 +1113,39 @@ export type CampaignJournalEntryCreateWithoutCampaignInput = {
   title: string
   contentMarkdown: string
   visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   authorUser: Prisma.UserCreateNestedOneWithoutJournalEntriesAuthoredInput
+  holderUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesHeldInput
+  discoveredByUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesDiscoveredInput
+  archivedByUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesArchivedInput
   tags?: Prisma.CampaignJournalTagCreateNestedManyWithoutEntryInput
   sessionLinks?: Prisma.CampaignJournalEntrySessionLinkCreateNestedManyWithoutEntryInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutEntryInput
 }
 
 export type CampaignJournalEntryUncheckedCreateWithoutCampaignInput = {
   id?: string
   authorUserId: string
+  holderUserId?: string | null
+  discoveredByUserId?: string | null
+  archivedByUserId?: string | null
   title: string
   contentMarkdown: string
   visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   tags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutEntryInput
   sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedCreateNestedManyWithoutEntryInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutEntryInput
 }
 
 export type CampaignJournalEntryCreateOrConnectWithoutCampaignInput = {
@@ -637,23 +1178,39 @@ export type CampaignJournalEntryCreateWithoutTagsInput = {
   title: string
   contentMarkdown: string
   visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   campaign: Prisma.CampaignCreateNestedOneWithoutJournalEntriesInput
   authorUser: Prisma.UserCreateNestedOneWithoutJournalEntriesAuthoredInput
+  holderUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesHeldInput
+  discoveredByUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesDiscoveredInput
+  archivedByUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesArchivedInput
   sessionLinks?: Prisma.CampaignJournalEntrySessionLinkCreateNestedManyWithoutEntryInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutEntryInput
 }
 
 export type CampaignJournalEntryUncheckedCreateWithoutTagsInput = {
   id?: string
   campaignId: string
   authorUserId: string
+  holderUserId?: string | null
+  discoveredByUserId?: string | null
+  archivedByUserId?: string | null
   title: string
   contentMarkdown: string
   visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedCreateNestedManyWithoutEntryInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutEntryInput
 }
 
 export type CampaignJournalEntryCreateOrConnectWithoutTagsInput = {
@@ -677,23 +1234,39 @@ export type CampaignJournalEntryUpdateWithoutTagsInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
   visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   campaign?: Prisma.CampaignUpdateOneRequiredWithoutJournalEntriesNestedInput
   authorUser?: Prisma.UserUpdateOneRequiredWithoutJournalEntriesAuthoredNestedInput
+  holderUser?: Prisma.UserUpdateOneWithoutJournalEntriesHeldNestedInput
+  discoveredByUser?: Prisma.UserUpdateOneWithoutJournalEntriesDiscoveredNestedInput
+  archivedByUser?: Prisma.UserUpdateOneWithoutJournalEntriesArchivedNestedInput
   sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUpdateManyWithoutEntryNestedInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutEntryNestedInput
 }
 
 export type CampaignJournalEntryUncheckedUpdateWithoutTagsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   campaignId?: Prisma.StringFieldUpdateOperationsInput | string
   authorUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  holderUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discoveredByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  archivedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
   visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedUpdateManyWithoutEntryNestedInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutEntryNestedInput
 }
 
 export type CampaignJournalEntryCreateWithoutSessionLinksInput = {
@@ -701,23 +1274,39 @@ export type CampaignJournalEntryCreateWithoutSessionLinksInput = {
   title: string
   contentMarkdown: string
   visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   campaign: Prisma.CampaignCreateNestedOneWithoutJournalEntriesInput
   authorUser: Prisma.UserCreateNestedOneWithoutJournalEntriesAuthoredInput
+  holderUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesHeldInput
+  discoveredByUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesDiscoveredInput
+  archivedByUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesArchivedInput
   tags?: Prisma.CampaignJournalTagCreateNestedManyWithoutEntryInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutEntryInput
 }
 
 export type CampaignJournalEntryUncheckedCreateWithoutSessionLinksInput = {
   id?: string
   campaignId: string
   authorUserId: string
+  holderUserId?: string | null
+  discoveredByUserId?: string | null
+  archivedByUserId?: string | null
   title: string
   contentMarkdown: string
   visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   tags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutEntryInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutEntryInput
 }
 
 export type CampaignJournalEntryCreateOrConnectWithoutSessionLinksInput = {
@@ -741,31 +1330,201 @@ export type CampaignJournalEntryUpdateWithoutSessionLinksInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
   visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   campaign?: Prisma.CampaignUpdateOneRequiredWithoutJournalEntriesNestedInput
   authorUser?: Prisma.UserUpdateOneRequiredWithoutJournalEntriesAuthoredNestedInput
+  holderUser?: Prisma.UserUpdateOneWithoutJournalEntriesHeldNestedInput
+  discoveredByUser?: Prisma.UserUpdateOneWithoutJournalEntriesDiscoveredNestedInput
+  archivedByUser?: Prisma.UserUpdateOneWithoutJournalEntriesArchivedNestedInput
   tags?: Prisma.CampaignJournalTagUpdateManyWithoutEntryNestedInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutEntryNestedInput
 }
 
 export type CampaignJournalEntryUncheckedUpdateWithoutSessionLinksInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   campaignId?: Prisma.StringFieldUpdateOperationsInput | string
   authorUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  holderUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discoveredByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  archivedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
   visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutEntryNestedInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutEntryNestedInput
+}
+
+export type CampaignJournalEntryCreateWithoutTransferHistoryInput = {
+  id?: string
+  title: string
+  contentMarkdown: string
+  visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  campaign: Prisma.CampaignCreateNestedOneWithoutJournalEntriesInput
+  authorUser: Prisma.UserCreateNestedOneWithoutJournalEntriesAuthoredInput
+  holderUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesHeldInput
+  discoveredByUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesDiscoveredInput
+  archivedByUser?: Prisma.UserCreateNestedOneWithoutJournalEntriesArchivedInput
+  tags?: Prisma.CampaignJournalTagCreateNestedManyWithoutEntryInput
+  sessionLinks?: Prisma.CampaignJournalEntrySessionLinkCreateNestedManyWithoutEntryInput
+}
+
+export type CampaignJournalEntryUncheckedCreateWithoutTransferHistoryInput = {
+  id?: string
+  campaignId: string
+  authorUserId: string
+  holderUserId?: string | null
+  discoveredByUserId?: string | null
+  archivedByUserId?: string | null
+  title: string
+  contentMarkdown: string
+  visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  tags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutEntryInput
+  sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedCreateNestedManyWithoutEntryInput
+}
+
+export type CampaignJournalEntryCreateOrConnectWithoutTransferHistoryInput = {
+  where: Prisma.CampaignJournalEntryWhereUniqueInput
+  create: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutTransferHistoryInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutTransferHistoryInput>
+}
+
+export type CampaignJournalEntryUpsertWithoutTransferHistoryInput = {
+  update: Prisma.XOR<Prisma.CampaignJournalEntryUpdateWithoutTransferHistoryInput, Prisma.CampaignJournalEntryUncheckedUpdateWithoutTransferHistoryInput>
+  create: Prisma.XOR<Prisma.CampaignJournalEntryCreateWithoutTransferHistoryInput, Prisma.CampaignJournalEntryUncheckedCreateWithoutTransferHistoryInput>
+  where?: Prisma.CampaignJournalEntryWhereInput
+}
+
+export type CampaignJournalEntryUpdateToOneWithWhereWithoutTransferHistoryInput = {
+  where?: Prisma.CampaignJournalEntryWhereInput
+  data: Prisma.XOR<Prisma.CampaignJournalEntryUpdateWithoutTransferHistoryInput, Prisma.CampaignJournalEntryUncheckedUpdateWithoutTransferHistoryInput>
+}
+
+export type CampaignJournalEntryUpdateWithoutTransferHistoryInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
+  visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  campaign?: Prisma.CampaignUpdateOneRequiredWithoutJournalEntriesNestedInput
+  authorUser?: Prisma.UserUpdateOneRequiredWithoutJournalEntriesAuthoredNestedInput
+  holderUser?: Prisma.UserUpdateOneWithoutJournalEntriesHeldNestedInput
+  discoveredByUser?: Prisma.UserUpdateOneWithoutJournalEntriesDiscoveredNestedInput
+  archivedByUser?: Prisma.UserUpdateOneWithoutJournalEntriesArchivedNestedInput
+  tags?: Prisma.CampaignJournalTagUpdateManyWithoutEntryNestedInput
+  sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUpdateManyWithoutEntryNestedInput
+}
+
+export type CampaignJournalEntryUncheckedUpdateWithoutTransferHistoryInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  campaignId?: Prisma.StringFieldUpdateOperationsInput | string
+  authorUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  holderUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discoveredByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  archivedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
+  visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutEntryNestedInput
+  sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedUpdateManyWithoutEntryNestedInput
 }
 
 export type CampaignJournalEntryCreateManyAuthorUserInput = {
   id?: string
   campaignId: string
+  holderUserId?: string | null
+  discoveredByUserId?: string | null
+  archivedByUserId?: string | null
   title: string
   contentMarkdown: string
   visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type CampaignJournalEntryCreateManyHolderUserInput = {
+  id?: string
+  campaignId: string
+  authorUserId: string
+  discoveredByUserId?: string | null
+  archivedByUserId?: string | null
+  title: string
+  contentMarkdown: string
+  visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type CampaignJournalEntryCreateManyDiscoveredByUserInput = {
+  id?: string
+  campaignId: string
+  authorUserId: string
+  holderUserId?: string | null
+  archivedByUserId?: string | null
+  title: string
+  contentMarkdown: string
+  visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type CampaignJournalEntryCreateManyArchivedByUserInput = {
+  id?: string
+  campaignId: string
+  authorUserId: string
+  holderUserId?: string | null
+  discoveredByUserId?: string | null
+  title: string
+  contentMarkdown: string
+  visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -775,31 +1534,225 @@ export type CampaignJournalEntryUpdateWithoutAuthorUserInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
   visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   campaign?: Prisma.CampaignUpdateOneRequiredWithoutJournalEntriesNestedInput
+  holderUser?: Prisma.UserUpdateOneWithoutJournalEntriesHeldNestedInput
+  discoveredByUser?: Prisma.UserUpdateOneWithoutJournalEntriesDiscoveredNestedInput
+  archivedByUser?: Prisma.UserUpdateOneWithoutJournalEntriesArchivedNestedInput
   tags?: Prisma.CampaignJournalTagUpdateManyWithoutEntryNestedInput
   sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUpdateManyWithoutEntryNestedInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutEntryNestedInput
 }
 
 export type CampaignJournalEntryUncheckedUpdateWithoutAuthorUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   campaignId?: Prisma.StringFieldUpdateOperationsInput | string
+  holderUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discoveredByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  archivedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
   visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutEntryNestedInput
   sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedUpdateManyWithoutEntryNestedInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutEntryNestedInput
 }
 
 export type CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   campaignId?: Prisma.StringFieldUpdateOperationsInput | string
+  holderUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discoveredByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  archivedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
   visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type CampaignJournalEntryUpdateWithoutHolderUserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
+  visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  campaign?: Prisma.CampaignUpdateOneRequiredWithoutJournalEntriesNestedInput
+  authorUser?: Prisma.UserUpdateOneRequiredWithoutJournalEntriesAuthoredNestedInput
+  discoveredByUser?: Prisma.UserUpdateOneWithoutJournalEntriesDiscoveredNestedInput
+  archivedByUser?: Prisma.UserUpdateOneWithoutJournalEntriesArchivedNestedInput
+  tags?: Prisma.CampaignJournalTagUpdateManyWithoutEntryNestedInput
+  sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUpdateManyWithoutEntryNestedInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutEntryNestedInput
+}
+
+export type CampaignJournalEntryUncheckedUpdateWithoutHolderUserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  campaignId?: Prisma.StringFieldUpdateOperationsInput | string
+  authorUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  discoveredByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  archivedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
+  visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutEntryNestedInput
+  sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedUpdateManyWithoutEntryNestedInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutEntryNestedInput
+}
+
+export type CampaignJournalEntryUncheckedUpdateManyWithoutHolderUserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  campaignId?: Prisma.StringFieldUpdateOperationsInput | string
+  authorUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  discoveredByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  archivedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
+  visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type CampaignJournalEntryUpdateWithoutDiscoveredByUserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
+  visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  campaign?: Prisma.CampaignUpdateOneRequiredWithoutJournalEntriesNestedInput
+  authorUser?: Prisma.UserUpdateOneRequiredWithoutJournalEntriesAuthoredNestedInput
+  holderUser?: Prisma.UserUpdateOneWithoutJournalEntriesHeldNestedInput
+  archivedByUser?: Prisma.UserUpdateOneWithoutJournalEntriesArchivedNestedInput
+  tags?: Prisma.CampaignJournalTagUpdateManyWithoutEntryNestedInput
+  sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUpdateManyWithoutEntryNestedInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutEntryNestedInput
+}
+
+export type CampaignJournalEntryUncheckedUpdateWithoutDiscoveredByUserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  campaignId?: Prisma.StringFieldUpdateOperationsInput | string
+  authorUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  holderUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  archivedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
+  visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutEntryNestedInput
+  sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedUpdateManyWithoutEntryNestedInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutEntryNestedInput
+}
+
+export type CampaignJournalEntryUncheckedUpdateManyWithoutDiscoveredByUserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  campaignId?: Prisma.StringFieldUpdateOperationsInput | string
+  authorUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  holderUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  archivedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
+  visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type CampaignJournalEntryUpdateWithoutArchivedByUserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
+  visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  campaign?: Prisma.CampaignUpdateOneRequiredWithoutJournalEntriesNestedInput
+  authorUser?: Prisma.UserUpdateOneRequiredWithoutJournalEntriesAuthoredNestedInput
+  holderUser?: Prisma.UserUpdateOneWithoutJournalEntriesHeldNestedInput
+  discoveredByUser?: Prisma.UserUpdateOneWithoutJournalEntriesDiscoveredNestedInput
+  tags?: Prisma.CampaignJournalTagUpdateManyWithoutEntryNestedInput
+  sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUpdateManyWithoutEntryNestedInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutEntryNestedInput
+}
+
+export type CampaignJournalEntryUncheckedUpdateWithoutArchivedByUserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  campaignId?: Prisma.StringFieldUpdateOperationsInput | string
+  authorUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  holderUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discoveredByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
+  visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutEntryNestedInput
+  sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedUpdateManyWithoutEntryNestedInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutEntryNestedInput
+}
+
+export type CampaignJournalEntryUncheckedUpdateManyWithoutArchivedByUserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  campaignId?: Prisma.StringFieldUpdateOperationsInput | string
+  authorUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  holderUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discoveredByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
+  visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -807,9 +1760,16 @@ export type CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserInput = {
 export type CampaignJournalEntryCreateManyCampaignInput = {
   id?: string
   authorUserId: string
+  holderUserId?: string | null
+  discoveredByUserId?: string | null
+  archivedByUserId?: string | null
   title: string
   contentMarkdown: string
   visibility?: $Enums.CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: Date | string | null
+  isArchived?: boolean
+  archivedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -819,31 +1779,54 @@ export type CampaignJournalEntryUpdateWithoutCampaignInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
   visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   authorUser?: Prisma.UserUpdateOneRequiredWithoutJournalEntriesAuthoredNestedInput
+  holderUser?: Prisma.UserUpdateOneWithoutJournalEntriesHeldNestedInput
+  discoveredByUser?: Prisma.UserUpdateOneWithoutJournalEntriesDiscoveredNestedInput
+  archivedByUser?: Prisma.UserUpdateOneWithoutJournalEntriesArchivedNestedInput
   tags?: Prisma.CampaignJournalTagUpdateManyWithoutEntryNestedInput
   sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUpdateManyWithoutEntryNestedInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutEntryNestedInput
 }
 
 export type CampaignJournalEntryUncheckedUpdateWithoutCampaignInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   authorUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  holderUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discoveredByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  archivedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
   visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutEntryNestedInput
   sessionLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedUpdateManyWithoutEntryNestedInput
+  transferHistory?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutEntryNestedInput
 }
 
 export type CampaignJournalEntryUncheckedUpdateManyWithoutCampaignInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   authorUserId?: Prisma.StringFieldUpdateOperationsInput | string
+  holderUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  discoveredByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  archivedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   contentMarkdown?: Prisma.StringFieldUpdateOperationsInput | string
   visibility?: Prisma.EnumCampaignJournalVisibilityFieldUpdateOperationsInput | $Enums.CampaignJournalVisibility
+  isDiscoverable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  discoveredAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isArchived?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  archivedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -856,11 +1839,13 @@ export type CampaignJournalEntryUncheckedUpdateManyWithoutCampaignInput = {
 export type CampaignJournalEntryCountOutputType = {
   tags: number
   sessionLinks: number
+  transferHistory: number
 }
 
 export type CampaignJournalEntryCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   tags?: boolean | CampaignJournalEntryCountOutputTypeCountTagsArgs
   sessionLinks?: boolean | CampaignJournalEntryCountOutputTypeCountSessionLinksArgs
+  transferHistory?: boolean | CampaignJournalEntryCountOutputTypeCountTransferHistoryArgs
 }
 
 /**
@@ -887,20 +1872,38 @@ export type CampaignJournalEntryCountOutputTypeCountSessionLinksArgs<ExtArgs ext
   where?: Prisma.CampaignJournalEntrySessionLinkWhereInput
 }
 
+/**
+ * CampaignJournalEntryCountOutputType without action
+ */
+export type CampaignJournalEntryCountOutputTypeCountTransferHistoryArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CampaignJournalEntryTransferHistoryWhereInput
+}
+
 
 export type CampaignJournalEntrySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   campaignId?: boolean
   authorUserId?: boolean
+  holderUserId?: boolean
+  discoveredByUserId?: boolean
+  archivedByUserId?: boolean
   title?: boolean
   contentMarkdown?: boolean
   visibility?: boolean
+  isDiscoverable?: boolean
+  discoveredAt?: boolean
+  isArchived?: boolean
+  archivedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   campaign?: boolean | Prisma.CampaignDefaultArgs<ExtArgs>
   authorUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  holderUser?: boolean | Prisma.CampaignJournalEntry$holderUserArgs<ExtArgs>
+  discoveredByUser?: boolean | Prisma.CampaignJournalEntry$discoveredByUserArgs<ExtArgs>
+  archivedByUser?: boolean | Prisma.CampaignJournalEntry$archivedByUserArgs<ExtArgs>
   tags?: boolean | Prisma.CampaignJournalEntry$tagsArgs<ExtArgs>
   sessionLinks?: boolean | Prisma.CampaignJournalEntry$sessionLinksArgs<ExtArgs>
+  transferHistory?: boolean | Prisma.CampaignJournalEntry$transferHistoryArgs<ExtArgs>
   _count?: boolean | Prisma.CampaignJournalEntryCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["campaignJournalEntry"]>
 
@@ -908,54 +1911,91 @@ export type CampaignJournalEntrySelectCreateManyAndReturn<ExtArgs extends runtim
   id?: boolean
   campaignId?: boolean
   authorUserId?: boolean
+  holderUserId?: boolean
+  discoveredByUserId?: boolean
+  archivedByUserId?: boolean
   title?: boolean
   contentMarkdown?: boolean
   visibility?: boolean
+  isDiscoverable?: boolean
+  discoveredAt?: boolean
+  isArchived?: boolean
+  archivedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   campaign?: boolean | Prisma.CampaignDefaultArgs<ExtArgs>
   authorUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  holderUser?: boolean | Prisma.CampaignJournalEntry$holderUserArgs<ExtArgs>
+  discoveredByUser?: boolean | Prisma.CampaignJournalEntry$discoveredByUserArgs<ExtArgs>
+  archivedByUser?: boolean | Prisma.CampaignJournalEntry$archivedByUserArgs<ExtArgs>
 }, ExtArgs["result"]["campaignJournalEntry"]>
 
 export type CampaignJournalEntrySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   campaignId?: boolean
   authorUserId?: boolean
+  holderUserId?: boolean
+  discoveredByUserId?: boolean
+  archivedByUserId?: boolean
   title?: boolean
   contentMarkdown?: boolean
   visibility?: boolean
+  isDiscoverable?: boolean
+  discoveredAt?: boolean
+  isArchived?: boolean
+  archivedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   campaign?: boolean | Prisma.CampaignDefaultArgs<ExtArgs>
   authorUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  holderUser?: boolean | Prisma.CampaignJournalEntry$holderUserArgs<ExtArgs>
+  discoveredByUser?: boolean | Prisma.CampaignJournalEntry$discoveredByUserArgs<ExtArgs>
+  archivedByUser?: boolean | Prisma.CampaignJournalEntry$archivedByUserArgs<ExtArgs>
 }, ExtArgs["result"]["campaignJournalEntry"]>
 
 export type CampaignJournalEntrySelectScalar = {
   id?: boolean
   campaignId?: boolean
   authorUserId?: boolean
+  holderUserId?: boolean
+  discoveredByUserId?: boolean
+  archivedByUserId?: boolean
   title?: boolean
   contentMarkdown?: boolean
   visibility?: boolean
+  isDiscoverable?: boolean
+  discoveredAt?: boolean
+  isArchived?: boolean
+  archivedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type CampaignJournalEntryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "campaignId" | "authorUserId" | "title" | "contentMarkdown" | "visibility" | "createdAt" | "updatedAt", ExtArgs["result"]["campaignJournalEntry"]>
+export type CampaignJournalEntryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "campaignId" | "authorUserId" | "holderUserId" | "discoveredByUserId" | "archivedByUserId" | "title" | "contentMarkdown" | "visibility" | "isDiscoverable" | "discoveredAt" | "isArchived" | "archivedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["campaignJournalEntry"]>
 export type CampaignJournalEntryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   campaign?: boolean | Prisma.CampaignDefaultArgs<ExtArgs>
   authorUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  holderUser?: boolean | Prisma.CampaignJournalEntry$holderUserArgs<ExtArgs>
+  discoveredByUser?: boolean | Prisma.CampaignJournalEntry$discoveredByUserArgs<ExtArgs>
+  archivedByUser?: boolean | Prisma.CampaignJournalEntry$archivedByUserArgs<ExtArgs>
   tags?: boolean | Prisma.CampaignJournalEntry$tagsArgs<ExtArgs>
   sessionLinks?: boolean | Prisma.CampaignJournalEntry$sessionLinksArgs<ExtArgs>
+  transferHistory?: boolean | Prisma.CampaignJournalEntry$transferHistoryArgs<ExtArgs>
   _count?: boolean | Prisma.CampaignJournalEntryCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CampaignJournalEntryIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   campaign?: boolean | Prisma.CampaignDefaultArgs<ExtArgs>
   authorUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  holderUser?: boolean | Prisma.CampaignJournalEntry$holderUserArgs<ExtArgs>
+  discoveredByUser?: boolean | Prisma.CampaignJournalEntry$discoveredByUserArgs<ExtArgs>
+  archivedByUser?: boolean | Prisma.CampaignJournalEntry$archivedByUserArgs<ExtArgs>
 }
 export type CampaignJournalEntryIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   campaign?: boolean | Prisma.CampaignDefaultArgs<ExtArgs>
   authorUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  holderUser?: boolean | Prisma.CampaignJournalEntry$holderUserArgs<ExtArgs>
+  discoveredByUser?: boolean | Prisma.CampaignJournalEntry$discoveredByUserArgs<ExtArgs>
+  archivedByUser?: boolean | Prisma.CampaignJournalEntry$archivedByUserArgs<ExtArgs>
 }
 
 export type $CampaignJournalEntryPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -963,16 +2003,27 @@ export type $CampaignJournalEntryPayload<ExtArgs extends runtime.Types.Extension
   objects: {
     campaign: Prisma.$CampaignPayload<ExtArgs>
     authorUser: Prisma.$UserPayload<ExtArgs>
+    holderUser: Prisma.$UserPayload<ExtArgs> | null
+    discoveredByUser: Prisma.$UserPayload<ExtArgs> | null
+    archivedByUser: Prisma.$UserPayload<ExtArgs> | null
     tags: Prisma.$CampaignJournalTagPayload<ExtArgs>[]
     sessionLinks: Prisma.$CampaignJournalEntrySessionLinkPayload<ExtArgs>[]
+    transferHistory: Prisma.$CampaignJournalEntryTransferHistoryPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     campaignId: string
     authorUserId: string
+    holderUserId: string | null
+    discoveredByUserId: string | null
+    archivedByUserId: string | null
     title: string
     contentMarkdown: string
     visibility: $Enums.CampaignJournalVisibility
+    isDiscoverable: boolean
+    discoveredAt: Date | null
+    isArchived: boolean
+    archivedAt: Date | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["campaignJournalEntry"]>
@@ -1371,8 +2422,12 @@ export interface Prisma__CampaignJournalEntryClient<T, Null = never, ExtArgs ext
   readonly [Symbol.toStringTag]: "PrismaPromise"
   campaign<T extends Prisma.CampaignDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CampaignDefaultArgs<ExtArgs>>): Prisma.Prisma__CampaignClient<runtime.Types.Result.GetResult<Prisma.$CampaignPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   authorUser<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  holderUser<T extends Prisma.CampaignJournalEntry$holderUserArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CampaignJournalEntry$holderUserArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  discoveredByUser<T extends Prisma.CampaignJournalEntry$discoveredByUserArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CampaignJournalEntry$discoveredByUserArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  archivedByUser<T extends Prisma.CampaignJournalEntry$archivedByUserArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CampaignJournalEntry$archivedByUserArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   tags<T extends Prisma.CampaignJournalEntry$tagsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CampaignJournalEntry$tagsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignJournalTagPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   sessionLinks<T extends Prisma.CampaignJournalEntry$sessionLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CampaignJournalEntry$sessionLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignJournalEntrySessionLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  transferHistory<T extends Prisma.CampaignJournalEntry$transferHistoryArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CampaignJournalEntry$transferHistoryArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignJournalEntryTransferHistoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1405,9 +2460,16 @@ export interface CampaignJournalEntryFieldRefs {
   readonly id: Prisma.FieldRef<"CampaignJournalEntry", 'String'>
   readonly campaignId: Prisma.FieldRef<"CampaignJournalEntry", 'String'>
   readonly authorUserId: Prisma.FieldRef<"CampaignJournalEntry", 'String'>
+  readonly holderUserId: Prisma.FieldRef<"CampaignJournalEntry", 'String'>
+  readonly discoveredByUserId: Prisma.FieldRef<"CampaignJournalEntry", 'String'>
+  readonly archivedByUserId: Prisma.FieldRef<"CampaignJournalEntry", 'String'>
   readonly title: Prisma.FieldRef<"CampaignJournalEntry", 'String'>
   readonly contentMarkdown: Prisma.FieldRef<"CampaignJournalEntry", 'String'>
   readonly visibility: Prisma.FieldRef<"CampaignJournalEntry", 'CampaignJournalVisibility'>
+  readonly isDiscoverable: Prisma.FieldRef<"CampaignJournalEntry", 'Boolean'>
+  readonly discoveredAt: Prisma.FieldRef<"CampaignJournalEntry", 'DateTime'>
+  readonly isArchived: Prisma.FieldRef<"CampaignJournalEntry", 'Boolean'>
+  readonly archivedAt: Prisma.FieldRef<"CampaignJournalEntry", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"CampaignJournalEntry", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"CampaignJournalEntry", 'DateTime'>
 }
@@ -1804,6 +2866,63 @@ export type CampaignJournalEntryDeleteManyArgs<ExtArgs extends runtime.Types.Ext
 }
 
 /**
+ * CampaignJournalEntry.holderUser
+ */
+export type CampaignJournalEntry$holderUserArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the User
+   */
+  select?: Prisma.UserSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the User
+   */
+  omit?: Prisma.UserOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserInclude<ExtArgs> | null
+  where?: Prisma.UserWhereInput
+}
+
+/**
+ * CampaignJournalEntry.discoveredByUser
+ */
+export type CampaignJournalEntry$discoveredByUserArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the User
+   */
+  select?: Prisma.UserSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the User
+   */
+  omit?: Prisma.UserOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserInclude<ExtArgs> | null
+  where?: Prisma.UserWhereInput
+}
+
+/**
+ * CampaignJournalEntry.archivedByUser
+ */
+export type CampaignJournalEntry$archivedByUserArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the User
+   */
+  select?: Prisma.UserSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the User
+   */
+  omit?: Prisma.UserOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserInclude<ExtArgs> | null
+  where?: Prisma.UserWhereInput
+}
+
+/**
  * CampaignJournalEntry.tags
  */
 export type CampaignJournalEntry$tagsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1849,6 +2968,30 @@ export type CampaignJournalEntry$sessionLinksArgs<ExtArgs extends runtime.Types.
   take?: number
   skip?: number
   distinct?: Prisma.CampaignJournalEntrySessionLinkScalarFieldEnum | Prisma.CampaignJournalEntrySessionLinkScalarFieldEnum[]
+}
+
+/**
+ * CampaignJournalEntry.transferHistory
+ */
+export type CampaignJournalEntry$transferHistoryArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CampaignJournalEntryTransferHistory
+   */
+  select?: Prisma.CampaignJournalEntryTransferHistorySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CampaignJournalEntryTransferHistory
+   */
+  omit?: Prisma.CampaignJournalEntryTransferHistoryOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CampaignJournalEntryTransferHistoryInclude<ExtArgs> | null
+  where?: Prisma.CampaignJournalEntryTransferHistoryWhereInput
+  orderBy?: Prisma.CampaignJournalEntryTransferHistoryOrderByWithRelationInput | Prisma.CampaignJournalEntryTransferHistoryOrderByWithRelationInput[]
+  cursor?: Prisma.CampaignJournalEntryTransferHistoryWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CampaignJournalEntryTransferHistoryScalarFieldEnum | Prisma.CampaignJournalEntryTransferHistoryScalarFieldEnum[]
 }
 
 /**

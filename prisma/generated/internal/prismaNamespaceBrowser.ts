@@ -63,6 +63,7 @@ export const ModelName = {
   CampaignJournalEntry: 'CampaignJournalEntry',
   CampaignJournalTag: 'CampaignJournalTag',
   CampaignJournalEntrySessionLink: 'CampaignJournalEntrySessionLink',
+  CampaignJournalEntryTransferHistory: 'CampaignJournalEntryTransferHistory',
   Session: 'Session',
   CampaignCalendarConfig: 'CampaignCalendarConfig',
   SessionCalendarRange: 'SessionCalendarRange',
@@ -263,9 +264,16 @@ export const CampaignJournalEntryScalarFieldEnum = {
   id: 'id',
   campaignId: 'campaignId',
   authorUserId: 'authorUserId',
+  holderUserId: 'holderUserId',
+  discoveredByUserId: 'discoveredByUserId',
+  archivedByUserId: 'archivedByUserId',
   title: 'title',
   contentMarkdown: 'contentMarkdown',
   visibility: 'visibility',
+  isDiscoverable: 'isDiscoverable',
+  discoveredAt: 'discoveredAt',
+  isArchived: 'isArchived',
+  archivedAt: 'archivedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -296,6 +304,20 @@ export const CampaignJournalEntrySessionLinkScalarFieldEnum = {
 } as const
 
 export type CampaignJournalEntrySessionLinkScalarFieldEnum = (typeof CampaignJournalEntrySessionLinkScalarFieldEnum)[keyof typeof CampaignJournalEntrySessionLinkScalarFieldEnum]
+
+
+export const CampaignJournalEntryTransferHistoryScalarFieldEnum = {
+  id: 'id',
+  campaignJournalEntryId: 'campaignJournalEntryId',
+  campaignId: 'campaignId',
+  fromHolderUserId: 'fromHolderUserId',
+  toHolderUserId: 'toHolderUserId',
+  actorUserId: 'actorUserId',
+  action: 'action',
+  createdAt: 'createdAt'
+} as const
+
+export type CampaignJournalEntryTransferHistoryScalarFieldEnum = (typeof CampaignJournalEntryTransferHistoryScalarFieldEnum)[keyof typeof CampaignJournalEntryTransferHistoryScalarFieldEnum]
 
 
 export const SessionScalarFieldEnum = {

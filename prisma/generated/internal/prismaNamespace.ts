@@ -396,6 +396,7 @@ export const ModelName = {
   CampaignJournalEntry: 'CampaignJournalEntry',
   CampaignJournalTag: 'CampaignJournalTag',
   CampaignJournalEntrySessionLink: 'CampaignJournalEntrySessionLink',
+  CampaignJournalEntryTransferHistory: 'CampaignJournalEntryTransferHistory',
   Session: 'Session',
   CampaignCalendarConfig: 'CampaignCalendarConfig',
   SessionCalendarRange: 'SessionCalendarRange',
@@ -447,7 +448,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "activityLog" | "adminAuditLog" | "campaign" | "campaignPublicAccess" | "campaignMember" | "campaignInvite" | "campaignRequest" | "campaignRequestVote" | "campaignJournalEntry" | "campaignJournalTag" | "campaignJournalEntrySessionLink" | "session" | "campaignCalendarConfig" | "sessionCalendarRange" | "campaignCalendarEvent" | "campaignEncounter" | "encounterCombatant" | "encounterCondition" | "encounterEvent" | "encounterTemplate" | "encounterTemplateCombatant" | "encounterStatBlock" | "campaignDungeon" | "campaignDungeonRoom" | "campaignDungeonLink" | "campaignDungeonSnapshot" | "glossaryEntry" | "campaignMap" | "campaignMapFile" | "campaignMapFeature" | "campaignMapGlossaryLink" | "glossarySessionLink" | "artifact" | "recording" | "transcriptionJob" | "transcriptionArtifact" | "recapRecording" | "quest" | "milestone" | "document" | "documentVersion" | "summaryJob" | "summarySuggestion" | "playerCharacter" | "campaignCharacter" | "characterImport" | "characterImportSettings"
+    modelProps: "user" | "activityLog" | "adminAuditLog" | "campaign" | "campaignPublicAccess" | "campaignMember" | "campaignInvite" | "campaignRequest" | "campaignRequestVote" | "campaignJournalEntry" | "campaignJournalTag" | "campaignJournalEntrySessionLink" | "campaignJournalEntryTransferHistory" | "session" | "campaignCalendarConfig" | "sessionCalendarRange" | "campaignCalendarEvent" | "campaignEncounter" | "encounterCombatant" | "encounterCondition" | "encounterEvent" | "encounterTemplate" | "encounterTemplateCombatant" | "encounterStatBlock" | "campaignDungeon" | "campaignDungeonRoom" | "campaignDungeonLink" | "campaignDungeonSnapshot" | "glossaryEntry" | "campaignMap" | "campaignMapFile" | "campaignMapFeature" | "campaignMapGlossaryLink" | "glossarySessionLink" | "artifact" | "recording" | "transcriptionJob" | "transcriptionArtifact" | "recapRecording" | "quest" | "milestone" | "document" | "documentVersion" | "summaryJob" | "summarySuggestion" | "playerCharacter" | "campaignCharacter" | "characterImport" | "characterImportSettings"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1336,6 +1337,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.CampaignJournalEntrySessionLinkCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.CampaignJournalEntrySessionLinkCountAggregateOutputType> | number
+        }
+      }
+    }
+    CampaignJournalEntryTransferHistory: {
+      payload: Prisma.$CampaignJournalEntryTransferHistoryPayload<ExtArgs>
+      fields: Prisma.CampaignJournalEntryTransferHistoryFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CampaignJournalEntryTransferHistoryFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignJournalEntryTransferHistoryPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CampaignJournalEntryTransferHistoryFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignJournalEntryTransferHistoryPayload>
+        }
+        findFirst: {
+          args: Prisma.CampaignJournalEntryTransferHistoryFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignJournalEntryTransferHistoryPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CampaignJournalEntryTransferHistoryFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignJournalEntryTransferHistoryPayload>
+        }
+        findMany: {
+          args: Prisma.CampaignJournalEntryTransferHistoryFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignJournalEntryTransferHistoryPayload>[]
+        }
+        create: {
+          args: Prisma.CampaignJournalEntryTransferHistoryCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignJournalEntryTransferHistoryPayload>
+        }
+        createMany: {
+          args: Prisma.CampaignJournalEntryTransferHistoryCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CampaignJournalEntryTransferHistoryCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignJournalEntryTransferHistoryPayload>[]
+        }
+        delete: {
+          args: Prisma.CampaignJournalEntryTransferHistoryDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignJournalEntryTransferHistoryPayload>
+        }
+        update: {
+          args: Prisma.CampaignJournalEntryTransferHistoryUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignJournalEntryTransferHistoryPayload>
+        }
+        deleteMany: {
+          args: Prisma.CampaignJournalEntryTransferHistoryDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CampaignJournalEntryTransferHistoryUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CampaignJournalEntryTransferHistoryUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignJournalEntryTransferHistoryPayload>[]
+        }
+        upsert: {
+          args: Prisma.CampaignJournalEntryTransferHistoryUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CampaignJournalEntryTransferHistoryPayload>
+        }
+        aggregate: {
+          args: Prisma.CampaignJournalEntryTransferHistoryAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCampaignJournalEntryTransferHistory>
+        }
+        groupBy: {
+          args: Prisma.CampaignJournalEntryTransferHistoryGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CampaignJournalEntryTransferHistoryGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CampaignJournalEntryTransferHistoryCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CampaignJournalEntryTransferHistoryCountAggregateOutputType> | number
         }
       }
     }
@@ -4188,9 +4263,16 @@ export const CampaignJournalEntryScalarFieldEnum = {
   id: 'id',
   campaignId: 'campaignId',
   authorUserId: 'authorUserId',
+  holderUserId: 'holderUserId',
+  discoveredByUserId: 'discoveredByUserId',
+  archivedByUserId: 'archivedByUserId',
   title: 'title',
   contentMarkdown: 'contentMarkdown',
   visibility: 'visibility',
+  isDiscoverable: 'isDiscoverable',
+  discoveredAt: 'discoveredAt',
+  isArchived: 'isArchived',
+  archivedAt: 'archivedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -4221,6 +4303,20 @@ export const CampaignJournalEntrySessionLinkScalarFieldEnum = {
 } as const
 
 export type CampaignJournalEntrySessionLinkScalarFieldEnum = (typeof CampaignJournalEntrySessionLinkScalarFieldEnum)[keyof typeof CampaignJournalEntrySessionLinkScalarFieldEnum]
+
+
+export const CampaignJournalEntryTransferHistoryScalarFieldEnum = {
+  id: 'id',
+  campaignJournalEntryId: 'campaignJournalEntryId',
+  campaignId: 'campaignId',
+  fromHolderUserId: 'fromHolderUserId',
+  toHolderUserId: 'toHolderUserId',
+  actorUserId: 'actorUserId',
+  action: 'action',
+  createdAt: 'createdAt'
+} as const
+
+export type CampaignJournalEntryTransferHistoryScalarFieldEnum = (typeof CampaignJournalEntryTransferHistoryScalarFieldEnum)[keyof typeof CampaignJournalEntryTransferHistoryScalarFieldEnum]
 
 
 export const SessionScalarFieldEnum = {
@@ -5345,6 +5441,7 @@ export type GlobalOmitConfig = {
   campaignJournalEntry?: Prisma.CampaignJournalEntryOmit
   campaignJournalTag?: Prisma.CampaignJournalTagOmit
   campaignJournalEntrySessionLink?: Prisma.CampaignJournalEntrySessionLinkOmit
+  campaignJournalEntryTransferHistory?: Prisma.CampaignJournalEntryTransferHistoryOmit
   session?: Prisma.SessionOmit
   campaignCalendarConfig?: Prisma.CampaignCalendarConfigOmit
   sessionCalendarRange?: Prisma.SessionCalendarRangeOmit

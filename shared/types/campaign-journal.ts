@@ -1,5 +1,13 @@
 export type CampaignJournalVisibility = 'MYSELF' | 'DM' | 'CAMPAIGN'
 export type CampaignJournalTagType = 'CUSTOM' | 'GLOSSARY'
+export type CampaignJournalDiscoverableVisibility = 'DM' | 'CAMPAIGN'
+export type CampaignJournalTransferHistoryAction =
+  | 'DISCOVERED'
+  | 'TRANSFERRED'
+  | 'UNASSIGNED'
+  | 'ARCHIVED'
+  | 'UNARCHIVED'
+export type CampaignJournalNotificationType = 'DISCOVERED' | 'TRANSFERRED' | 'ARCHIVED' | 'UNARCHIVED'
 
 export type CampaignJournalEntryCapabilities = {
   canView: boolean
@@ -53,9 +61,19 @@ export type CampaignJournalEntryListItem = CampaignJournalEntryCapabilities & {
   campaignId: string
   authorUserId: string
   authorName: string
+  holderUserId?: string | null
+  holderUserName?: string | null
   title: string
   contentMarkdown: string
   visibility: CampaignJournalVisibility
+  isDiscoverable?: boolean
+  discoveredAt?: string | null
+  discoveredByUserId?: string | null
+  discoveredByUserName?: string | null
+  isArchived?: boolean
+  archivedAt?: string | null
+  archivedByUserId?: string | null
+  archivedByUserName?: string | null
   sessions: CampaignJournalSessionLinkSummary[]
   tags: CampaignJournalTag[]
   createdAt: string
@@ -97,4 +115,47 @@ export type CampaignJournalTagSuggestion = {
   normalizedLabel: string
   glossaryEntryId: string | null
   glossaryEntryName: string | null
+}
+
+export type CampaignJournalTransferHistoryItem = {
+  id: string
+  campaignJournalEntryId: string
+  campaignId: string
+  fromHolderUserId: string | null
+  fromHolderUserName: string | null
+  toHolderUserId: string | null
+  toHolderUserName: string | null
+  actorUserId: string
+  actorUserName: string
+  action: CampaignJournalTransferHistoryAction
+  createdAt: string
+}
+
+export type CampaignJournalHistoryResponse = {
+  items: CampaignJournalTransferHistoryItem[]
+  pagination: CampaignJournalListPagination
+}
+
+export type CampaignJournalNotificationItem = {
+  id: string
+  campaignId: string
+  entryId: string
+  type: CampaignJournalNotificationType
+  title: string
+  message: string
+  actorUserId: string | null
+  actorUserName: string | null
+  createdAt: string
+}
+
+export type CampaignJournalNotificationListResponse = {
+  items: CampaignJournalNotificationItem[]
+  pagination: CampaignJournalListPagination
+}
+
+export type CampaignJournalMemberOption = {
+  userId: string
+  name: string
+  role: 'OWNER' | 'COLLABORATOR' | 'VIEWER'
+  hasDmAccess: boolean
 }
