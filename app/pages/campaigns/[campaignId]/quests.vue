@@ -1,5 +1,6 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'default' })
+import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
+definePageMeta({ layout: 'dashboard' })
 
 type QuestItem = {
   id: string
@@ -177,50 +178,58 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
 </script>
 
 <template>
-  <div class="space-y-8">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <div>
-        <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Quests</p>
-        <h1 class="mt-2 text-2xl font-semibold">Quest tracker</h1>
-      </div>
-      <UButton size="lg" :disabled="!canWriteContent" @click="openCreate">New quest</UButton>
-    </div>
-    <UAlert
-      v-if="!canWriteContent"
-      color="warning"
-      variant="subtle"
-      title="Read-only access"
-      description="Your role can view quests but cannot change them."
-    />
-
-    <SharedResourceState
-      :pending="pending"
-      :error="error"
-      :empty="!quests?.length"
-      error-message="Unable to load quests."
-      empty-message="No quests yet."
-      @retry="refresh"
+  <div class="space-y-6">
+    <CampaignListTemplate
+      headline="Quests"
+      title="Quest tracker"
+      description="Track active, on-hold, completed, and failed quest progress."
+      action-label="New quest"
+      action-icon="i-lucide-plus"
+      :action-disabled="!canWriteContent"
+      @action="openCreate"
     >
-      <template #loading>
-        <div class="grid gap-4 sm:grid-cols-2">
-          <UCard v-for="i in 3" :key="i" class="h-32 animate-pulse" />
-        </div>
-      </template>
-      <template #emptyActions>
-        <UButton variant="outline" :disabled="!canWriteContent" @click="openCreate">Create your first quest</UButton>
+      <template #notice>
+        <UAlert
+          v-if="!canWriteContent"
+          color="warning"
+          variant="subtle"
+          title="Read-only access"
+          description="Your role can view quests but cannot change them."
+        />
       </template>
 
-      <div v-if="quests?.length" class="space-y-6">
-        <div class="grid gap-4 md:grid-cols-2">
-          <UFormField label="Filter by type" name="typeFilter">
-            <USelect v-model="selectedTypeFilter" :items="typeFilterOptions" />
-          </UFormField>
-          <UFormField label="Filter by status" name="statusFilter">
-            <USelect v-model="selectedStatusFilter" :items="statusFilterOptions" />
-          </UFormField>
-        </div>
+      <template #filters>
+        <UCard>
+          <div class="grid gap-4 md:grid-cols-2">
+            <UFormField label="Filter by type" name="typeFilter">
+              <USelect v-model="selectedTypeFilter" :items="typeFilterOptions" />
+            </UFormField>
+            <UFormField label="Filter by status" name="statusFilter">
+              <USelect v-model="selectedStatusFilter" :items="statusFilterOptions" />
+            </UFormField>
+          </div>
+        </UCard>
+      </template>
 
-        <section class="space-y-3">
+      <SharedResourceState
+        :pending="pending"
+        :error="error"
+        :empty="!quests?.length"
+        error-message="Unable to load quests."
+        empty-message="No quests yet."
+        @retry="refresh"
+      >
+        <template #loading>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <UCard v-for="i in 3" :key="i" class="h-32 animate-pulse" />
+          </div>
+        </template>
+        <template #emptyActions>
+          <UButton variant="outline" :disabled="!canWriteContent" @click="openCreate">Create your first quest</UButton>
+        </template>
+
+        <div v-if="quests?.length" class="space-y-6">
+          <section class="space-y-3">
           <div class="flex items-center justify-between">
             <h2 class="text-base font-semibold">Active and on hold quests</h2>
             <span class="text-xs text-muted">{{ primaryQuests.length }} shown</span>
@@ -262,9 +271,9 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
           <UCard v-else>
             <p class="text-sm text-muted">No active or on-hold quests match the current filters.</p>
           </UCard>
-        </section>
+          </section>
 
-        <section class="space-y-3">
+          <section class="space-y-3">
           <div class="flex items-center justify-between">
             <h2 class="text-base font-semibold">Completed and failed quests</h2>
             <span class="text-xs text-muted">{{ closedQuests.length }} shown</span>
@@ -306,9 +315,10 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
           <UCard v-else>
             <p class="text-sm text-muted">No completed or failed quests match the current filters.</p>
           </UCard>
-        </section>
-      </div>
-    </SharedResourceState>
+          </section>
+        </div>
+      </SharedResourceState>
+    </CampaignListTemplate>
 
     <SharedEntityFormModal
       v-model:open="isEditOpen"
@@ -336,3 +346,4 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
     </SharedEntityFormModal>
   </div>
 </template>
+

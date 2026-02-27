@@ -117,6 +117,8 @@ export const useCampaignNavigation = (
     if (suffix.startsWith('/calendar')) return 'Calendar'
     if (suffix.startsWith('/tools')) return 'Tools'
     if (suffix.startsWith('/settings')) return 'Settings'
+    if (suffix.startsWith('/documents')) return 'Document'
+    if (suffix.startsWith('/recordings')) return 'Recording'
     return 'Overview'
   }
 
@@ -133,10 +135,21 @@ export const useCampaignNavigation = (
       return rootItems
     }
     if (path.includes(`/campaigns/${campaignId.value}/sessions/`)) {
+      const sessionPrefix = `/campaigns/${campaignId.value}/sessions/`
+      const stepSegment = path.startsWith(sessionPrefix)
+        ? path.slice(sessionPrefix.length).split('/')[1]
+        : undefined
+      const stepLabel = stepSegment
+        ? stepSegment
+          .split('-')
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(' ')
+        : ''
       return [
         ...rootItems,
         { label: 'Sessions', to: `/campaigns/${campaignId.value}/sessions` },
         { label: sessionTitle?.value || 'Session' },
+        ...(stepLabel ? [{ label: stepLabel }] : []),
       ]
     }
     if (path.includes(`/campaigns/${campaignId.value}/encounters/`)) {
@@ -144,6 +157,34 @@ export const useCampaignNavigation = (
         ...rootItems,
         { label: 'Encounters', to: `/campaigns/${campaignId.value}/encounters` },
         { label: 'Encounter' },
+      ]
+    }
+    if (path.includes(`/campaigns/${campaignId.value}/dungeons/`)) {
+      return [
+        ...rootItems,
+        { label: 'Dungeons', to: `/campaigns/${campaignId.value}/dungeons` },
+        { label: 'Dungeon' },
+      ]
+    }
+    if (path.includes(`/campaigns/${campaignId.value}/journal/`)) {
+      return [
+        ...rootItems,
+        { label: 'Journal', to: `/campaigns/${campaignId.value}/journal` },
+        { label: 'Entry' },
+      ]
+    }
+    if (path.includes(`/campaigns/${campaignId.value}/recordings/`)) {
+      return [
+        ...rootItems,
+        { label: 'Sessions', to: `/campaigns/${campaignId.value}/sessions` },
+        { label: 'Recording' },
+      ]
+    }
+    if (path.includes(`/campaigns/${campaignId.value}/documents/`)) {
+      return [
+        ...rootItems,
+        { label: 'Sessions', to: `/campaigns/${campaignId.value}/sessions` },
+        { label: 'Document' },
       ]
     }
     return [...rootItems, { label: sectionTitle.value }]

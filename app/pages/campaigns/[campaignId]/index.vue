@@ -6,6 +6,7 @@ import type {
   CampaignQuestSummary,
   CampaignSessionSummary,
 } from '#shared/types/campaign-overview'
+import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
@@ -68,6 +69,14 @@ const {
   questStatusColor,
 } = useCampaignOverviewMetrics(sessions, quests, milestones)
 const { activityItems } = useCampaignActivityItems(campaign, activityLogs, recaps, sessions, quests, milestones)
+const overviewDescription = computed(() => {
+  const details = [
+    campaign.value?.system || 'System not set',
+    campaign.value?.dungeonMasterName ? `DM: ${campaign.value.dungeonMasterName}` : '',
+  ].filter(Boolean)
+
+  return details.join(' • ')
+})
 
 const statusDraft = ref('')
 const isSaving = ref(false)
@@ -168,7 +177,21 @@ const saveCampaign = async () => {
 </script>
 
 <template>
-  <div class="space-y-8 theme-reveal">
+  <CampaignListTemplate
+    headline="Campaign"
+    title="Overview"
+    :description="overviewDescription"
+  >
+    <template #notice>
+      <UAlert
+        v-if="!canWriteContent"
+        color="warning"
+        variant="subtle"
+        title="Read-only access"
+        description="Your role can view this campaign overview but cannot edit campaign details."
+      />
+    </template>
+
     <div v-if="pending" class="space-y-4">
       <UCard class="h-28 animate-pulse" />
       <UCard class="h-40 animate-pulse" />
@@ -186,14 +209,6 @@ const saveCampaign = async () => {
         :description="campaign.description"
         @edit="openEdit"
       />
-      <UAlert
-        v-if="!canWriteContent"
-        color="warning"
-        variant="subtle"
-        title="Read-only access"
-        description="Your role can view this campaign overview but cannot edit campaign details."
-      />
-
       <CampaignKpiGrid
         :last-session-number="latestSession?.sessionNumber ?? '-'"
         :last-session-date-label="latestSession ? formatDate(latestSession.playedAt || latestSession.createdAt) : 'No sessions yet.'"
@@ -249,5 +264,5 @@ const saveCampaign = async () => {
       @update:form="Object.assign(editForm, $event)"
       @save="saveCampaign"
     />
-  </div>
+  </CampaignListTemplate>
 </template>

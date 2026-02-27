@@ -5,7 +5,8 @@ import {
   parseTranscriptSegments,
   segmentsToPlainText,
 } from '#shared/utils/transcript'
-definePageMeta({ layout: 'default' })
+import CampaignDetailTemplate from '~/components/campaign/templates/CampaignDetailTemplate.vue'
+definePageMeta({ layout: 'dashboard' })
 
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
@@ -244,6 +245,14 @@ const sessionDungeonMasterLabel = computed(() =>
   || session.value?.campaign?.dungeonMasterName
   || 'None'
 )
+const sessionHeaderDescription = computed(() => {
+  if (!session.value) return 'Manage recordings, transcript, summary, and recap for this session.'
+  const details = [
+    session.value.sessionNumber ? `Session ${session.value.sessionNumber}` : 'Session',
+    session.value.playedAt ? new Date(session.value.playedAt).toLocaleDateString() : 'Unscheduled',
+  ]
+  return details.join(' • ')
+})
 
 const recordingsCount = computed(() => recordings.value?.length || 0)
 const recapStatus = computed(() => (recap.value ? 'Attached' : 'Missing'))
@@ -440,7 +449,13 @@ const attachTranscriptToVideo = async () => {
 </script>
 
 <template>
-  <div class="space-y-8 theme-reveal">
+  <CampaignDetailTemplate
+    :back-to="`/campaigns/${campaignId}/sessions`"
+    back-label="Back to sessions"
+    headline="Session Workspace"
+    :title="session?.title || 'Session details'"
+    :description="sessionHeaderDescription"
+  >
     <div v-if="pending" class="grid gap-4">
       <UCard class="h-28 animate-pulse" />
       <UCard class="h-40 animate-pulse" />
@@ -588,5 +603,6 @@ const attachTranscriptToVideo = async () => {
       @update:form="Object.assign(form, $event)"
       @save="saveSession"
     />
-  </div>
+  </CampaignDetailTemplate>
 </template>
+

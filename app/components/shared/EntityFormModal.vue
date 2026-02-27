@@ -38,7 +38,7 @@ const onSubmit = () => {
 </script>
 
 <template>
-  <UModal v-model:open="openModel">
+  <UModal v-model:open="openModel" scrollable>
     <template #content>
       <UCard>
         <template #header>

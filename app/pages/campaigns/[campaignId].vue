@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'dashboard' })
 
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
@@ -28,11 +28,11 @@ const {
 
 const activeSessionTitle = computed(() => sessionHeader.value?.title || undefined)
 
-const { navItems, sectionTitle, breadcrumbItems } = useCampaignNavigation(
+const { sectionTitle } = useCampaignNavigation(
   route,
   campaignId,
   campaign,
-  activeSessionTitle
+  activeSessionTitle,
 )
 
 provide('campaignAccess', access)
@@ -41,17 +41,6 @@ provide('campaignCanWriteContent', canWriteContent)
 const sessionDateLabel = computed(() => {
   if (!sessionHeader.value?.playedAt) return 'Unscheduled'
   return new Date(sessionHeader.value.playedAt).toLocaleDateString()
-})
-
-const campaignHeaderHeadline = computed(() => 'Campaign')
-
-const campaignHeaderDescription = computed(() => {
-  const details = [
-    campaign.value?.system || 'System not set',
-    campaign.value?.dungeonMasterName ? `DM: ${campaign.value.dungeonMasterName}` : '',
-  ].filter(Boolean)
-
-  return details.join(' • ')
 })
 
 useSeoMeta({
@@ -78,52 +67,17 @@ useSeoMeta({
       <UButton class="mt-4" variant="outline" @click="refreshCampaign">Try again</UButton>
     </UCard>
 
-    <UPage v-else-if="campaign" :ui="{ left: 'hidden lg:block lg:col-span-2 lg:self-start', center: 'lg:col-span-8' }">
-      <template #left>
-        <div class="lg:sticky lg:top-28 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto">
-          <UCard :ui="{ body: 'p-3 md:p-4' }">
-            <p class="mb-2 text-xs uppercase tracking-[0.25em] text-dimmed">Campaign menu</p>
-            <UNavigationMenu
-              :items="navItems"
-              orientation="vertical"
-              class="data-[orientation=vertical]:w-full"
-              :ui="{ linkLabel: 'whitespace-nowrap' }"
-            />
-          </UCard>
-        </div>
-      </template>
+    <div v-else-if="campaign" class="space-y-4">
+      <SessionHeaderCard
+        v-if="isSessionDetailRoute && sessionHeader"
+        :session-number="sessionHeader.sessionNumber"
+        :title="sessionHeader.title"
+        :session-date-label="sessionDateLabel"
+        :show-edit="false"
+        :sticky="false"
+      />
 
-      <div class="space-y-4">
-        <UPageHeader
-          :headline="campaignHeaderHeadline"
-          :title="campaign.name"
-          :description="campaignHeaderDescription"
-        >
-          <template #default>
-            <UBreadcrumb :items="breadcrumbItems" />
-          </template>
-        </UPageHeader>
-
-        <SessionHeaderCard
-          v-if="isSessionDetailRoute && sessionHeader"
-          :session-number="sessionHeader.sessionNumber"
-          :title="sessionHeader.title"
-          :session-date-label="sessionDateLabel"
-          :show-edit="false"
-          :sticky="false"
-        />
-
-        <UCard class="lg:hidden" :ui="{ body: 'p-3 md:p-4' }">
-          <UNavigationMenu
-            :items="navItems"
-            orientation="vertical"
-            class="data-[orientation=vertical]:w-full"
-            :ui="{ linkLabel: 'whitespace-nowrap' }"
-          />
-        </UCard>
-
-        <NuxtPage />
-      </div>
-    </UPage>
+      <NuxtPage />
+    </div>
   </div>
 </template>

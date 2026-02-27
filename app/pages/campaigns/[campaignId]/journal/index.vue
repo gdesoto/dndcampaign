@@ -13,8 +13,10 @@ import type {
 } from '#shared/types/campaign-journal'
 import { extractJournalTagCandidatesFromMarkdown } from '#shared/utils/campaign-journal-tags'
 import type { CampaignAccess } from '#shared/types/campaign-workflow'
+import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
+import JournalEntryFormFields from '~/components/campaign/journal/JournalEntryFormFields.vue'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'dashboard' })
 
 type JournalTab = 'mine' | 'campaign' | 'dm'
 type EditorTab = 'write' | 'preview'
@@ -249,13 +251,6 @@ const visibilityItems = computed(() => {
   ]
 })
 
-const formSessionIds = computed({
-  get: () => form.sessionIds || [],
-  set: (value: string[]) => {
-    form.sessionIds = value
-  },
-})
-
 const resetForm = () => {
   form.title = ''
   form.contentMarkdown = ''
@@ -443,27 +438,27 @@ const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value
 </script>
 
 <template>
-  <div class="space-y-8">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <div>
-        <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Journal</p>
-        <h1 class="mt-2 text-2xl font-semibold">Campaign journal</h1>
-      </div>
-      <UButton size="lg" icon="i-lucide-plus" :disabled="!canWriteContent" @click="openCreate">
-        New entry
-      </UButton>
-    </div>
+  <div class="space-y-6">
+    <CampaignListTemplate
+      headline="Journal"
+      title="Campaign journal"
+      description="Track notes, discoveries, and tagged session details."
+      action-label="New entry"
+      action-icon="i-lucide-plus"
+      :action-disabled="!canWriteContent"
+      @action="openCreate"
+    >
+      <template #notice>
+        <UAlert
+          v-if="!canWriteContent"
+          color="warning"
+          variant="subtle"
+          title="Read-only role"
+          description="Your role can view entries but cannot create new entries."
+        />
+      </template>
 
-    <UAlert
-      v-if="!canWriteContent"
-      color="warning"
-      variant="subtle"
-      title="Read-only role"
-      description="Your role can view entries but cannot create new entries."
-    />
-
-    <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
-      <div class="space-y-6">
+      <template #filters>
         <UCard>
           <UTabs v-model="selectedTab" :items="visibleTabItems" :content="false" />
           <div class="mt-4 grid gap-3 md:grid-cols-4">
@@ -496,149 +491,151 @@ const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value
             <UCheckbox v-model="filterArchivedOnly" label="Archived only" />
           </div>
         </UCard>
+      </template>
 
-        <SharedResourceState
-          :pending="showLoadingState"
-          :error="error || listError"
-          :empty="isEmpty"
-          error-message="Unable to load journal entries."
-          empty-message="No entries in this view."
-          @retry="refresh"
-        >
-          <template #loading>
-            <div class="grid gap-4 sm:grid-cols-2">
-              <UCard v-for="i in 4" :key="i" class="h-40 animate-pulse" />
-            </div>
-          </template>
-          <template #emptyActions>
-            <UButton variant="outline" :disabled="!canWriteContent" @click="openCreate">
-              Create first entry
-            </UButton>
-          </template>
-
-          <div class="grid gap-4 sm:grid-cols-2">
-            <SharedListItemCard
-              v-for="entry in entries"
-              :key="entry.id"
-            >
-              <template #header>
-                <div class="flex items-start justify-between gap-3">
-                  <div class="space-y-1">
-                    <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Journal entry</p>
-                    <NuxtLink
-                      class="text-base font-semibold text-primary hover:underline"
-                      :to="`/campaigns/${campaignId}/journal/${entry.id}`"
-                    >
-                      {{ entry.title }}
-                    </NuxtLink>
-                    <p class="text-xs text-muted">By {{ entry.authorName }}</p>
-                  </div>
-                  <UBadge :color="visibilityColor(entry.visibility)" variant="soft" size="sm">
-                    {{ visibilityLabelMap[entry.visibility] }}
-                  </UBadge>
-                </div>
-              </template>
-
-              <div class="prose prose-sm mt-2 max-h-32 max-w-none overflow-hidden">
-                <MDC :value="entry.contentMarkdown || '_No content._'" tag="article" />
-              </div>
-
-              <div class="mt-3 flex flex-wrap gap-2">
-                <UBadge v-if="entry.isDiscoverable" color="info" variant="soft" size="sm">Discoverable</UBadge>
-                <UBadge v-if="entry.holderUserName" color="neutral" variant="soft" size="sm">Holder: {{ entry.holderUserName }}</UBadge>
-                <UBadge v-if="entry.isArchived" color="warning" variant="soft" size="sm">Archived</UBadge>
-              </div>
-
-              <div v-if="entry.sessions.length" class="mt-3 flex flex-wrap gap-2">
-                <UBadge
-                  v-for="session in entry.sessions"
-                  :key="session.sessionId"
-                  color="neutral"
-                  variant="soft"
-                  size="sm"
-                >
-                  {{ session.sessionNumber ? `S${session.sessionNumber}` : 'Session' }}: {{ session.title }}
-                </UBadge>
-              </div>
-
-              <div v-if="entry.tags.length" class="mt-3 flex flex-wrap gap-2">
-                <UBadge
-                  v-for="tag in entry.tags"
-                  :key="tag.id"
-                  variant="outline"
-                  size="sm"
-                >
-                  {{ tag.tagType === 'CUSTOM' ? '#' : '[[' }}{{ tag.displayLabel }}{{ tag.tagType === 'CUSTOM' ? '' : ']]' }}
-                </UBadge>
-              </div>
-
-              <div class="mt-3 text-xs text-muted">
-                Updated {{ new Date(entry.updatedAt).toLocaleString() }}
-              </div>
-
-              <div class="mt-4 flex flex-wrap gap-2">
-                <UButton
-                  size="xs"
-                  variant="outline"
-                  @click="openEntry(entry.id)"
-                >
-                  Open
-                </UButton>
-                <UButton
-                  v-if="entry.canEdit"
-                  size="xs"
-                  variant="outline"
-                  @click="openEdit(entry)"
-                >
-                  Edit
-                </UButton>
-                <SharedConfirmActionPopover
-                  v-if="entry.canDelete"
-                  trigger-label="Delete"
-                  trigger-color="error"
-                  trigger-variant="ghost"
-                  trigger-size="xs"
-                  trigger-icon="i-lucide-trash-2"
-                  trigger-aria-label="Delete journal entry"
-                  confirm-label="Delete"
-                  confirm-color="error"
-                  :confirm-loading="Boolean(actionLoadingByEntryId[entry.id])"
-                  :message="`Delete '${entry.title}'? This action cannot be undone.`"
-                  @confirm="({ close }) => { deleteEntry(entry); close() }"
-                />
-              </div>
-            </SharedListItemCard>
-          </div>
-        </SharedResourceState>
-      </div>
-
-      <UCard class="overflow-hidden lg:sticky lg:top-6 lg:max-h-[calc(100vh-1.5rem)]">
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h2 class="text-base font-semibold">Recent Notifications</h2>
-            <UButton variant="ghost" size="xs" icon="i-lucide-refresh-cw" :loading="notificationsPending" @click="() => refreshNotifications()">
-              Refresh
-            </UButton>
-          </div>
-        </template>
-        <div v-if="notificationsPending" class="text-sm text-muted">Loading notifications...</div>
-        <div v-else-if="!(notificationsResponse?.items.length)" class="text-sm text-muted">No recent discovery or transfer notifications.</div>
-        <div v-else class="max-h-[24rem] space-y-2 overflow-y-auto pr-1 lg:max-h-[calc(100vh-8.5rem)]">
-          <div
-            v-for="item in notificationsResponse.items"
-            :key="item.id"
-            class="rounded border border-default p-2 text-sm"
-          >
-            <div class="flex items-center justify-between gap-2">
-              <p class="break-words font-medium">{{ item.title }}</p>
-              <UBadge size="xs" variant="soft">{{ item.type }}</UBadge>
-            </div>
-            <p class="break-words text-muted">{{ item.message }}</p>
-            <p class="mt-1 text-xs text-muted">{{ new Date(item.createdAt).toLocaleString() }}</p>
-          </div>
+      <SharedResourceState
+        :pending="showLoadingState"
+        :error="error || listError"
+        :empty="isEmpty"
+        error-message="Unable to load journal entries."
+        empty-message="No entries in this view."
+        @retry="refresh"
+      >
+      <template #loading>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <UCard v-for="i in 4" :key="i" class="h-40 animate-pulse" />
         </div>
-      </UCard>
-    </div>
+      </template>
+      <template #emptyActions>
+        <UButton variant="outline" :disabled="!canWriteContent" @click="openCreate">
+          Create first entry
+        </UButton>
+      </template>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <SharedListItemCard
+          v-for="entry in entries"
+          :key="entry.id"
+        >
+          <template #header>
+            <div class="flex items-start justify-between gap-3">
+              <div class="space-y-1">
+                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Journal entry</p>
+                <NuxtLink
+                  class="text-base font-semibold text-primary hover:underline"
+                  :to="`/campaigns/${campaignId}/journal/${entry.id}`"
+                >
+                  {{ entry.title }}
+                </NuxtLink>
+                <p class="text-xs text-muted">By {{ entry.authorName }}</p>
+              </div>
+              <UBadge :color="visibilityColor(entry.visibility)" variant="soft" size="sm">
+                {{ visibilityLabelMap[entry.visibility] }}
+              </UBadge>
+            </div>
+          </template>
+
+          <div class="prose prose-sm max-h-32 max-w-none overflow-hidden">
+            <MDC :value="entry.contentMarkdown || '_No content._'" tag="article" />
+          </div>
+
+          <div class="mt-3 flex flex-wrap gap-2">
+            <UBadge v-if="entry.isDiscoverable" color="info" variant="soft" size="sm">Discoverable</UBadge>
+            <UBadge v-if="entry.holderUserName" color="neutral" variant="soft" size="sm">Holder: {{ entry.holderUserName }}</UBadge>
+            <UBadge v-if="entry.isArchived" color="warning" variant="soft" size="sm">Archived</UBadge>
+          </div>
+
+          <div v-if="entry.sessions.length" class="mt-3 flex flex-wrap gap-2">
+            <UBadge
+              v-for="session in entry.sessions"
+              :key="session.sessionId"
+              color="neutral"
+              variant="soft"
+              size="sm"
+            >
+              {{ session.sessionNumber ? `S${session.sessionNumber}` : 'Session' }}: {{ session.title }}
+            </UBadge>
+          </div>
+
+          <div v-if="entry.tags.length" class="mt-3 flex flex-wrap gap-2">
+            <UBadge
+              v-for="tag in entry.tags"
+              :key="tag.id"
+              variant="outline"
+              size="sm"
+            >
+              {{ tag.tagType === 'CUSTOM' ? '#' : '[[' }}{{ tag.displayLabel }}{{ tag.tagType === 'CUSTOM' ? '' : ']]' }}
+            </UBadge>
+          </div>
+
+          <div class="mt-3 text-xs text-muted">
+            Updated {{ new Date(entry.updatedAt).toLocaleString() }}
+          </div>
+
+          <div class="mt-4 flex flex-wrap gap-2">
+            <UButton
+              size="xs"
+              variant="outline"
+              @click="openEntry(entry.id)"
+            >
+              Open
+            </UButton>
+            <UButton
+              v-if="entry.canEdit"
+              size="xs"
+              variant="outline"
+              @click="openEdit(entry)"
+            >
+              Edit
+            </UButton>
+            <SharedConfirmActionPopover
+              v-if="entry.canDelete"
+              trigger-label="Delete"
+              trigger-color="error"
+              trigger-variant="ghost"
+              trigger-size="xs"
+              trigger-icon="i-lucide-trash-2"
+              trigger-aria-label="Delete journal entry"
+              confirm-label="Delete"
+              confirm-color="error"
+              :confirm-loading="Boolean(actionLoadingByEntryId[entry.id])"
+              :message="`Delete '${entry.title}'? This action cannot be undone.`"
+              @confirm="({ close }) => { deleteEntry(entry); close() }"
+            />
+          </div>
+        </SharedListItemCard>
+      </div>
+      </SharedResourceState>
+
+      <template #aside>
+        <UCard class="overflow-hidden lg:sticky lg:top-6 lg:max-h-[calc(100vh-1.5rem)]">
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h2 class="text-base font-semibold">Recent Notifications</h2>
+              <UButton variant="ghost" size="xs" icon="i-lucide-refresh-cw" :loading="notificationsPending" @click="() => refreshNotifications()">
+                Refresh
+              </UButton>
+            </div>
+          </template>
+          <div v-if="notificationsPending" class="text-sm text-muted">Loading notifications...</div>
+          <div v-else-if="!(notificationsResponse?.items.length)" class="text-sm text-muted">No recent discovery or transfer notifications.</div>
+          <div v-else class="max-h-[24rem] space-y-2 overflow-y-auto pr-1 lg:max-h-[calc(100vh-8.5rem)]">
+            <div
+              v-for="item in notificationsResponse.items"
+              :key="item.id"
+              class="rounded border border-default p-2 text-sm"
+            >
+              <div class="flex items-center justify-between gap-2">
+                <p class="break-words font-medium">{{ item.title }}</p>
+                <UBadge size="xs" variant="soft">{{ item.type }}</UBadge>
+              </div>
+              <p class="break-words text-muted">{{ item.message }}</p>
+              <p class="mt-1 text-xs text-muted">{{ new Date(item.createdAt).toLocaleString() }}</p>
+            </div>
+          </div>
+        </UCard>
+      </template>
+    </CampaignListTemplate>
 
     <SharedEntityFormModal
       v-model:open="isCreateOpen"
@@ -649,95 +646,31 @@ const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value
       submit-label="Create entry"
       @submit="saveCreate"
     >
-      <UFormField label="Title" name="title" required>
-        <UInput v-model="form.title" />
-      </UFormField>
-      <UFormField label="Visibility" name="visibility" required>
-        <USelect
-          v-model="form.visibility"
-          class="w-full"
-          :items="visibilityItems"
-        />
-      </UFormField>
-      <UFormField label="Linked sessions" name="sessionIds">
-        <UInputMenu
-          v-model="formSessionIds"
-          class="w-full min-w-0"
-          multiple
-          value-key="id"
-          label-key="label"
-          :items="sessionItems"
-          placeholder="Select sessions"
-        />
-      </UFormField>
-
-      <div v-if="canManageDiscoverables" class="mb-3 space-y-3">
-        <p class="text-sm font-semibold">DM Options</p>
-        <UCheckbox v-model="formDiscoverable" label="Mark as discoverable" />
-        <template v-if="formDiscoverable">
-          <UFormField label="Initial holder" name="holderUserId">
-            <USelect
-              v-model="formHolderUserId"
-              class="w-full"
-              :items="[{ label: 'Unassigned', value: UNASSIGNED_HOLDER_VALUE }, ...memberItems]"
-              placeholder="Assign holder"
-            />
-          </UFormField>
-        </template>
-      </div>
-
-      <UFormField label="Entry markdown" name="contentMarkdown" required>
-        <UTabs
-          v-model="editorTab"
-          :items="[
-            { label: 'Write', value: 'write' },
-            { label: 'Preview', value: 'preview' },
-          ]"
-          :content="false"
-        />
-        <div class="mt-3 rounded-md border border-default p-3">
-          <UTextarea
-            v-if="editorTab === 'write'"
-            v-model="form.contentMarkdown"
-            :rows="12"
-            placeholder="Use markdown with #tags and [[Glossary Name]] mentions."
-          />
-          <div v-else class="prose prose-sm max-w-none">
-            <MDC :value="form.contentMarkdown || '_No content yet._'" tag="article" />
-          </div>
-        </div>
-        <p class="mt-2 text-xs text-muted">
-          Tag syntax: `#custom-tag` and `[[Glossary Name]]`
-        </p>
-      </UFormField>
-
-      <UAlert
-        v-if="unresolvedGlossaryMentions.length"
-        color="warning"
-        variant="subtle"
-        title="Unresolved glossary mentions"
-        :description="`No glossary entry matched: ${unresolvedGlossaryMentions.join(', ')}`"
+      <JournalEntryFormFields
+        :title="form.title"
+        :visibility="form.visibility"
+        :visibility-items="visibilityItems"
+        :session-ids="form.sessionIds || []"
+        :session-items="sessionItems"
+        :content-markdown="form.contentMarkdown"
+        :editor-tab="editorTab"
+        :can-manage-discoverables="canManageDiscoverables"
+        :discoverable="formDiscoverable"
+        :holder-user-id="formHolderUserId"
+        :member-items="memberItems"
+        :unassigned-holder-value="UNASSIGNED_HOLDER_VALUE"
+        :unresolved-glossary-mentions="unresolvedGlossaryMentions"
+        :extracted-custom-tags="extractedCandidates.customTags"
+        :extracted-glossary-mentions="extractedCandidates.glossaryMentions"
+        :show-tag-insights="true"
+        @update:title="form.title = $event"
+        @update:visibility="form.visibility = $event"
+        @update:session-ids="form.sessionIds = $event"
+        @update:content-markdown="form.contentMarkdown = $event"
+        @update:editor-tab="editorTab = $event"
+        @update:discoverable="formDiscoverable = $event"
+        @update:holder-user-id="formHolderUserId = $event"
       />
-
-      <div
-        v-if="extractedCandidates.customTags.length || extractedCandidates.glossaryMentions.length"
-        class="space-y-2"
-      >
-        <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Extracted tags</p>
-        <div class="flex flex-wrap gap-2">
-          <UBadge v-for="tag in extractedCandidates.customTags" :key="`custom-${tag}`" color="neutral" variant="soft">
-            #{{ tag }}
-          </UBadge>
-          <UBadge
-            v-for="mention in extractedCandidates.glossaryMentions"
-            :key="`mention-${mention}`"
-            color="primary"
-            variant="soft"
-          >
-            [[{{ mention }}]]
-          </UBadge>
-        </div>
-      </div>
     </SharedEntityFormModal>
 
     <SharedEntityFormModal
@@ -749,66 +682,32 @@ const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value
       submit-label="Save changes"
       @submit="saveEdit"
     >
-      <UFormField label="Title" name="title" required>
-        <UInput v-model="form.title" :disabled="Boolean(editTarget?.isDiscoverable && !canManageDiscoverables)" />
-      </UFormField>
-      <UFormField label="Visibility" name="visibility" required>
-        <USelect
-          v-model="form.visibility"
-          class="w-full"
-          :items="visibilityItems"
-        />
-      </UFormField>
-
-      <div v-if="canManageDiscoverables || editTarget?.isDiscoverable" class="mb-3 space-y-3">
-        <p class="text-sm font-semibold">DM Options</p>
-        <UCheckbox v-if="canManageDiscoverables" v-model="formDiscoverable" label="Mark as discoverable" />
-        <template v-if="formDiscoverable">
-          <UFormField v-if="canManageDiscoverables" label="Holder" name="holderUserId">
-            <USelect
-              v-model="formHolderUserId"
-              class="w-full"
-              :items="[{ label: 'Unassigned', value: UNASSIGNED_HOLDER_VALUE }, ...memberItems]"
-              placeholder="Assign holder"
-            />
-          </UFormField>
-        </template>
-      </div>
-
-      <UFormField label="Linked sessions" name="sessionIds">
-        <UInputMenu
-          v-model="formSessionIds"
-          class="w-full min-w-0"
-          multiple
-          value-key="id"
-          label-key="label"
-          :items="sessionItems"
-          placeholder="Select sessions"
-          :disabled="Boolean(editTarget?.isDiscoverable && !canManageDiscoverables)"
-        />
-      </UFormField>
-      <UFormField label="Entry markdown" name="contentMarkdown" required>
-        <UTabs
-          v-model="editorTab"
-          :items="[
-            { label: 'Write', value: 'write' },
-            { label: 'Preview', value: 'preview' },
-          ]"
-          :content="false"
-        />
-        <div class="mt-3 rounded-md border border-default p-3">
-          <UTextarea
-            v-if="editorTab === 'write'"
-            v-model="form.contentMarkdown"
-            :rows="12"
-            placeholder="Use markdown with #tags and [[Glossary Name]] mentions."
-            :disabled="Boolean(editTarget?.isDiscoverable && !canManageDiscoverables)"
-          />
-          <div v-else class="prose prose-sm max-w-none">
-            <MDC :value="form.contentMarkdown || '_No content yet._'" tag="article" />
-          </div>
-        </div>
-      </UFormField>
+      <JournalEntryFormFields
+        :title="form.title"
+        :title-disabled="Boolean(editTarget?.isDiscoverable && !canManageDiscoverables)"
+        :visibility="form.visibility"
+        :visibility-items="visibilityItems"
+        :session-ids="form.sessionIds || []"
+        :session-items="sessionItems"
+        :session-disabled="Boolean(editTarget?.isDiscoverable && !canManageDiscoverables)"
+        :content-markdown="form.contentMarkdown"
+        :markdown-disabled="Boolean(editTarget?.isDiscoverable && !canManageDiscoverables)"
+        :editor-tab="editorTab"
+        :can-manage-discoverables="canManageDiscoverables"
+        :discoverable="formDiscoverable"
+        :holder-user-id="formHolderUserId"
+        :member-items="memberItems"
+        :unassigned-holder-value="UNASSIGNED_HOLDER_VALUE"
+        :show-tag-insights="false"
+        @update:title="form.title = $event"
+        @update:visibility="form.visibility = $event"
+        @update:session-ids="form.sessionIds = $event"
+        @update:content-markdown="form.contentMarkdown = $event"
+        @update:editor-tab="editorTab = $event"
+        @update:discoverable="formDiscoverable = $event"
+        @update:holder-user-id="formHolderUserId = $event"
+      />
     </SharedEntityFormModal>
   </div>
 </template>
+

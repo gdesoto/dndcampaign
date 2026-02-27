@@ -2,8 +2,9 @@
 import type { EncounterSummary } from '#shared/types/encounter'
 import type { EncounterCreateInput } from '#shared/schemas/encounter'
 import type { CampaignCalendarConfigDto } from '~/composables/useCampaignCalendar'
+import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'dashboard' })
 
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
@@ -373,29 +374,32 @@ const statBlockOptions = computed(() =>
 </script>
 
 <template>
-  <div class="space-y-6">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Encounters</p>
-        <h1 class="mt-2 text-2xl font-semibold">Encounter tracker</h1>
-      </div>
-      <UButton :disabled="!canWriteContent" @click="openCreate">New encounter</UButton>
-    </div>
+  <CampaignListTemplate
+    headline="Campaign Tool"
+    title="Encounter tracker"
+    description="Track, run, and reuse encounter setups."
+    action-label="New encounter"
+    :action-disabled="!canWriteContent"
+    @action="openCreate"
+  >
+    <template #notice>
+      <UAlert
+        v-if="!canWriteContent"
+        color="warning"
+        variant="subtle"
+        title="Read-only access"
+        description="Your role can view encounter data but cannot create or edit encounters."
+      />
+    </template>
 
-    <UAlert
-      v-if="!canWriteContent"
-      color="warning"
-      variant="subtle"
-      title="Read-only access"
-      description="Your role can view encounter data but cannot create or edit encounters."
-    />
-
-    <EncounterListFilters
-      :status="filters.status"
-      :type="filters.type"
-      @update:status="filters.status = $event"
-      @update:type="filters.type = $event"
-    />
+    <template #filters>
+      <EncounterListFilters
+        :status="filters.status"
+        :type="filters.type"
+        @update:status="filters.status = $event"
+        @update:type="filters.type = $event"
+      />
+    </template>
 
     <SharedResourceState
       :pending="pending"
@@ -638,5 +642,6 @@ const statBlockOptions = computed(() =>
         </div>
       </UCard>
     </SharedEntityFormModal>
-  </div>
+  </CampaignListTemplate>
 </template>
+

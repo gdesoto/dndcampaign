@@ -1,5 +1,6 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'default' })
+import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
+definePageMeta({ layout: 'dashboard' })
 
 type SessionItem = {
   id: string
@@ -154,84 +155,92 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
 </script>
 
 <template>
-  <div class="space-y-8">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <div>
-        <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Glossary</p>
-        <h1 class="mt-2 text-2xl font-semibold">World index</h1>
-      </div>
-      <UButton size="lg" :disabled="!canWriteContent" @click="openCreate">New entry</UButton>
-    </div>
-    <UAlert
-      v-if="!canWriteContent"
-      color="warning"
-      variant="subtle"
-      title="Read-only access"
-      description="Your role can view glossary entries but cannot edit them."
-    />
-
-    <div class="flex flex-wrap items-center gap-3">
-      <div class="flex gap-2">
-        <UButton
-          v-for="type in types"
-          :key="type.value"
-          size="sm"
-          :variant="activeType === type.value ? 'solid' : 'outline'"
-          @click="activeType = type.value as typeof activeType"
-        >
-          {{ type.label }}
-        </UButton>
-      </div>
-      <UInput v-model="search" placeholder="Search names, aliases, description..." class="min-w-[240px]" />
-    </div>
-
-    <SharedResourceState
-      :pending="pending"
-      :error="error"
-      :empty="!entries?.length"
-      error-message="Unable to load glossary entries."
-      empty-message="No entries yet."
-      @retry="refresh"
+  <div class="space-y-6">
+    <CampaignListTemplate
+      headline="Glossary"
+      title="World index"
+      description="Track campaign entities, aliases, and linked sessions."
+      action-label="New entry"
+      action-icon="i-lucide-plus"
+      :action-disabled="!canWriteContent"
+      @action="openCreate"
     >
-      <template #loading>
-        <div class="grid gap-4 sm:grid-cols-2">
-          <UCard v-for="i in 3" :key="i" class="h-32 animate-pulse" />
-        </div>
-      </template>
-      <template #emptyActions>
-        <UButton variant="outline" :disabled="!canWriteContent" @click="openCreate">Create your first entry</UButton>
+      <template #notice>
+        <UAlert
+          v-if="!canWriteContent"
+          color="warning"
+          variant="subtle"
+          title="Read-only access"
+          description="Your role can view glossary entries but cannot edit them."
+        />
       </template>
 
-      <div class="grid gap-4 sm:grid-cols-2">
-        <SharedListItemCard
-          v-for="entry in entries"
-          :key="entry.id"
-        >
-          <template #header>
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">{{ entry.type }}</p>
-                <h3 class="text-lg font-semibold">{{ entry.name }}</h3>
-                <p v-if="entry.aliases" class="text-xs text-muted">Aliases: {{ entry.aliases }}</p>
-              </div>
-              <div class="flex gap-2">
-                <UButton
-                  v-if="entry.type === 'PC' && entry.campaignCharacters?.length"
-                  size="xs"
-                  variant="outline"
-                  :to="`/characters/${entry.campaignCharacters?.[0]?.character.id || ''}`"
-                >
-                  View character
-                </UButton>
-                <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="openEdit(entry)">Edit</UButton>
-                <UButton size="xs" color="error" variant="ghost" :disabled="!canWriteContent" @click="deleteEntry(entry)">Delete</UButton>
-              </div>
+      <template #filters>
+        <UCard>
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="flex gap-2">
+              <UButton
+                v-for="type in types"
+                :key="type.value"
+                size="sm"
+                :variant="activeType === type.value ? 'solid' : 'outline'"
+                @click="activeType = type.value as typeof activeType"
+              >
+                {{ type.label }}
+              </UButton>
             </div>
-          </template>
-          <p class="text-sm whitespace-pre-line text-default">{{ entry.description }}</p>
-          <div class="mt-4 space-y-2">
-            <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Linked sessions</p>
-            <div v-if="entry.sessions.length" class="flex flex-wrap gap-2">
+            <UInput v-model="search" placeholder="Search names, aliases, description..." class="min-w-[240px]" />
+          </div>
+        </UCard>
+      </template>
+
+      <SharedResourceState
+        :pending="pending"
+        :error="error"
+        :empty="!entries?.length"
+        error-message="Unable to load glossary entries."
+        empty-message="No entries yet."
+        @retry="refresh"
+      >
+        <template #loading>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <UCard v-for="i in 3" :key="i" class="h-32 animate-pulse" />
+          </div>
+        </template>
+        <template #emptyActions>
+          <UButton variant="outline" :disabled="!canWriteContent" @click="openCreate">Create your first entry</UButton>
+        </template>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <SharedListItemCard
+            v-for="entry in entries"
+            :key="entry.id"
+          >
+            <template #header>
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="text-xs uppercase tracking-[0.2em] text-dimmed">{{ entry.type }}</p>
+                  <h3 class="text-lg font-semibold">{{ entry.name }}</h3>
+                  <p v-if="entry.aliases" class="text-xs text-muted">Aliases: {{ entry.aliases }}</p>
+                </div>
+                <div class="flex gap-2">
+                  <UButton
+                    v-if="entry.type === 'PC' && entry.campaignCharacters?.length"
+                    size="xs"
+                    variant="outline"
+                    :to="`/characters/${entry.campaignCharacters?.[0]?.character.id || ''}`"
+                  >
+                    View character
+                  </UButton>
+                  <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="openEdit(entry)">Edit</UButton>
+                  <UButton size="xs" color="error" variant="ghost" :disabled="!canWriteContent" @click="deleteEntry(entry)">Delete</UButton>
+                </div>
+              </div>
+            </template>
+            <p class="text-sm whitespace-pre-line text-default">{{ entry.description }}</p>
+            <div class="mt-4 space-y-2">
+              <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Linked sessions</p>
+              <div v-if="entry.sessions.length" class="flex flex-wrap gap-2">
                 <UButton
                   v-for="link in entry.sessions"
                   :key="link.id"
@@ -242,21 +251,22 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
                 >
                 {{ link.session.title }}
               </UButton>
+              </div>
+              <div v-else class="text-xs text-muted">No sessions linked yet.</div>
+              <div class="flex gap-2">
+                <USelect
+                  :items="(sessions || []).map((session) => ({ label: session.title, value: session.id }))"
+                  placeholder="Link a session..."
+                  :disabled="!canWriteContent"
+                  :model-value="''"
+                  @update:model-value="(value) => linkSession(entry, value as string)"
+                />
+              </div>
             </div>
-            <div v-else class="text-xs text-muted">No sessions linked yet.</div>
-            <div class="flex gap-2">
-              <USelect
-                :items="(sessions || []).map((session) => ({ label: session.title, value: session.id }))"
-                placeholder="Link a session..."
-                :disabled="!canWriteContent"
-                :model-value="''"
-                @update:model-value="(value) => linkSession(entry, value as string)"
-              />
-            </div>
-          </div>
-        </SharedListItemCard>
-      </div>
-    </SharedResourceState>
+          </SharedListItemCard>
+        </div>
+      </SharedResourceState>
+    </CampaignListTemplate>
 
     <SharedEntityFormModal
       v-model:open="isEditOpen"
@@ -282,3 +292,4 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
     </SharedEntityFormModal>
   </div>
 </template>
+

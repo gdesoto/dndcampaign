@@ -5,8 +5,10 @@ import type {
 } from '#shared/schemas/campaign-journal'
 import { extractJournalTagCandidatesFromMarkdown } from '#shared/utils/campaign-journal-tags'
 import type { CampaignAccess } from '#shared/types/campaign-workflow'
+import CampaignDetailTemplate from '~/components/campaign/templates/CampaignDetailTemplate.vue'
+import CampaignEditorTemplate from '~/components/campaign/templates/CampaignEditorTemplate.vue'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'dashboard' })
 
 type SessionOption = {
   id: string
@@ -290,14 +292,6 @@ const toggleArchive = async () => {
 
 <template>
   <div class="space-y-6">
-    <UButton
-      variant="outline"
-      icon="i-lucide-arrow-left"
-      :to="`/campaigns/${campaignId}/journal`"
-    >
-      Back to journal
-    </UButton>
-
     <SharedResourceState
       :pending="pending"
       :error="error"
@@ -310,12 +304,14 @@ const toggleArchive = async () => {
         <UCard class="h-40 animate-pulse" />
       </template>
 
-      <UPageHeader
-        :title="entry?.title || 'Journal entry'"
+      <CampaignDetailTemplate
+        :back-to="`/campaigns/${campaignId}/journal`"
+        back-label="Back to journal"
         headline="Journal"
+        :title="entry?.title || 'Journal entry'"
         :description="entry ? `By ${entry.authorName}` : ''"
       >
-        <template #right>
+        <template #actions>
           <div class="flex items-center gap-2">
             <UButton
               v-if="entry?.canEdit"
@@ -342,9 +338,7 @@ const toggleArchive = async () => {
             />
           </div>
         </template>
-      </UPageHeader>
 
-      <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
         <UCard class="lg:min-h-[28rem]">
           <template #header>
             <h3 class="text-sm font-semibold uppercase tracking-[0.2em] text-dimmed">Entry</h3>
@@ -354,7 +348,7 @@ const toggleArchive = async () => {
           </div>
         </UCard>
 
-        <div class="space-y-6">
+        <template #aside>
           <UCard>
             <template #header>
               <h3 class="text-sm font-semibold">Details</h3>
@@ -448,8 +442,8 @@ const toggleArchive = async () => {
               </div>
             </div>
           </UCard>
-        </div>
-      </div>
+        </template>
+      </CampaignDetailTemplate>
     </SharedResourceState>
 
     <SharedEntityFormModal
@@ -484,26 +478,14 @@ const toggleArchive = async () => {
         />
       </UFormField>
       <UFormField label="Entry markdown" name="contentMarkdown" required>
-        <UTabs
-          v-model="editorTab"
-          :items="[
-            { label: 'Write', value: 'write' },
-            { label: 'Preview', value: 'preview' },
-          ]"
-          :content="false"
+        <CampaignEditorTemplate
+          :model-value="form.contentMarkdown || ''"
+          :tab="editorTab"
+          :disabled="Boolean(entry?.isDiscoverable && !canManageDiscoverables)"
+          placeholder="Use markdown with #tags and [[Glossary Name]] mentions."
+          @update:model-value="form.contentMarkdown = $event"
+          @update:tab="editorTab = $event"
         />
-        <div class="mt-3 rounded-md border border-default p-3">
-          <UTextarea
-            v-if="editorTab === 'write'"
-            v-model="form.contentMarkdown"
-            :rows="12"
-            placeholder="Use markdown with #tags and [[Glossary Name]] mentions."
-            :disabled="Boolean(entry?.isDiscoverable && !canManageDiscoverables)"
-          />
-          <div v-else class="prose prose-sm max-w-none">
-            <MDC :value="form.contentMarkdown || '_No content yet._'" tag="article" />
-          </div>
-        </div>
       </UFormField>
 
       <UAlert
@@ -516,3 +498,4 @@ const toggleArchive = async () => {
     </SharedEntityFormModal>
   </div>
 </template>
+

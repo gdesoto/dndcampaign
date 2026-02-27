@@ -6,8 +6,9 @@ import {
   type TranscriptSegment,
 } from '#shared/utils/transcript'
 import { getFirstNameTerm } from '#shared/utils/name'
+import CampaignDetailTemplate from '~/components/campaign/templates/CampaignDetailTemplate.vue'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'dashboard' })
 
 type DocumentVersionDetail = {
   id: string
@@ -1067,30 +1068,20 @@ const fullTranscript = computed(() =>
 </script>
 
 <template>
-  <UPage>
-    <div class="space-y-8">
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p class="text-xs uppercase tracking-[0.3em] text-dimmed">
-            Document
-          </p>
-          <h1 class="mt-2 text-2xl font-semibold">
-            {{ document?.title || 'Document editor' }}
-          </h1>
-        </div>
-        <div class="flex flex-wrap gap-3">
-          <UButton
-            v-if="document?.sessionId"
-            variant="outline"
-            :to="returnTo || `/campaigns/${campaignId}/sessions/${document.sessionId}`"
-          >
-            Back to session
-          </UButton>
-          <UButton variant="outline" :to="`/campaigns/${campaignId}/sessions`">
-            All sessions
-          </UButton>
-        </div>
-      </div>
+  <CampaignDetailTemplate
+    :back-to="document?.sessionId ? (returnTo || `/campaigns/${campaignId}/sessions/${document.sessionId}`) : `/campaigns/${campaignId}/sessions`"
+    back-label="Back to session"
+    headline="Session Asset"
+    :title="document?.title || 'Document editor'"
+    :description="document?.type === 'TRANSCRIPT'
+      ? 'Transcript editor with synchronized playback tools.'
+      : 'Markdown-first session document editor with version history.'"
+  >
+    <template #actions>
+      <UButton variant="outline" :to="`/campaigns/${campaignId}/sessions`">
+        All sessions
+      </UButton>
+    </template>
 
       <div v-if="pending" class="grid gap-4">
         <UCard class="h-32 animate-pulse" />
@@ -1885,6 +1876,6 @@ const fullTranscript = computed(() =>
           </div>
         </UCard>
       </div>
-    </div>
-  </UPage>
+  </CampaignDetailTemplate>
 </template>
+

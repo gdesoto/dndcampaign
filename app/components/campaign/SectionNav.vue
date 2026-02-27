@@ -17,7 +17,7 @@ defineProps<{
 </script>
 
 <template>
-  <UCard :ui="{ body: 'p-3 md:p-4' }" class="theme-workspace-bar">
+  <UCard :ui="{ body: 'p-3 md:p-4' }">
     <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
       <div class="overflow-x-auto pb-1 md:overflow-visible md:pb-0">
         <UBreadcrumb

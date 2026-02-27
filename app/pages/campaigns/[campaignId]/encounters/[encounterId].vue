@@ -2,7 +2,7 @@
 import type { EncounterCombatant, EncounterSummaryReport } from '#shared/types/encounter'
 import type { CampaignCalendarConfigDto } from '~/composables/useCampaignCalendar'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'dashboard' })
 
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
@@ -1127,3 +1127,4 @@ await refreshSummary()
     </SharedEntityFormModal>
   </div>
 </template>
+

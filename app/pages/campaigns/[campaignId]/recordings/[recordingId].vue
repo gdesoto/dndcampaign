@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { getFirstNameTerm } from '#shared/utils/name'
+import CampaignDetailTemplate from '~/components/campaign/templates/CampaignDetailTemplate.vue'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'dashboard' })
 
 type RecordingDetail = {
   id: string
@@ -535,28 +536,18 @@ const formatBytes = (value: number) => {
 </script>
 
 <template>
-  <UPage>
-    <div class="space-y-8">
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p class="text-xs uppercase tracking-[0.3em] text-dimmed">
-            Recording
-          </p>
-          <h1 class="mt-2 text-2xl font-semibold">{{ recording?.filename || 'Recording detail' }}</h1>
-        </div>
-        <div class="flex flex-wrap gap-3">
-          <UButton
-            v-if="recording"
-            variant="outline"
-            :to="`/campaigns/${campaignId}/sessions/${recording.sessionId}`"
-          >
-            Back to session
-          </UButton>
-          <UButton variant="outline" :to="`/campaigns/${campaignId}/sessions`">
-            All sessions
-          </UButton>
-        </div>
-      </div>
+  <CampaignDetailTemplate
+    :back-to="recording ? `/campaigns/${campaignId}/sessions/${recording.sessionId}` : `/campaigns/${campaignId}/sessions`"
+    back-label="Back to session"
+    headline="Session Asset"
+    :title="recording?.filename || 'Recording detail'"
+    :description="recording ? `${recording.kind} recording • ${formatBytes(recording.byteSize)}` : 'Recording detail and transcription workflow.'"
+  >
+    <template #actions>
+      <UButton variant="outline" :to="`/campaigns/${campaignId}/sessions`">
+        All sessions
+      </UButton>
+    </template>
 
       <div v-if="pending" class="grid gap-4">
         <UCard  class="h-32 animate-pulse" />
@@ -810,7 +801,6 @@ const formatBytes = (value: number) => {
           </div>
         </UCard>
       </div>
-    </div>
 
   <UModal v-model:open="transcribeModalOpen">
       <template #title>
@@ -988,6 +978,7 @@ const formatBytes = (value: number) => {
       </UCard>
     </template>
   </UModal>
-  </UPage>
+  </CampaignDetailTemplate>
 </template>
+
 

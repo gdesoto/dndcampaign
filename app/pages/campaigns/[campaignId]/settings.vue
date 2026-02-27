@@ -1,5 +1,6 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'default' })
+import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
+definePageMeta({ layout: 'dashboard' })
 
 type CampaignPermission =
   | 'campaign.read'
@@ -334,32 +335,34 @@ const copyPublicUrl = async () => {
 
 <template>
   <div class="space-y-6">
-    <div>
-      <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Settings</p>
-      <h1 class="mt-2 text-2xl font-semibold">Campaign settings</h1>
-    </div>
+    <CampaignListTemplate
+      headline="Settings"
+      title="Campaign settings"
+      description="Manage campaign rules, members, public access, and ownership actions."
+    >
+      <template #filters>
+        <UCard>
+          <UTabs v-model="activeTab" :items="tabs" :content="false" />
+        </UCard>
+      </template>
 
-    <UCard>
-      <UTabs v-model="activeTab" :items="tabs" :content="false" />
-    </UCard>
-
-    <CampaignSettingsCalendarGeneralSettings
-      v-if="activeTab === 'general'"
-      :campaign-id="campaignId"
-      :can-edit="canManageCalendar"
-    />
-
-    <div v-else-if="activeTab === 'members'" class="space-y-6">
-      <UAlert
-        v-if="!canManageMembers"
-        color="warning"
-        variant="subtle"
-        title="Owner access required"
-        description="Only campaign owners can manage members and invites in this release."
+      <CampaignSettingsCalendarGeneralSettings
+        v-if="activeTab === 'general'"
+        :campaign-id="campaignId"
+        :can-edit="canManageCalendar"
       />
 
-      <template v-else>
-        <UCard>
+      <div v-else-if="activeTab === 'members'" class="space-y-6">
+        <UAlert
+          v-if="!canManageMembers"
+          color="warning"
+          variant="subtle"
+          title="Owner access required"
+          description="Only campaign owners can manage members and invites in this release."
+        />
+
+        <template v-else>
+          <UCard>
           <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -442,9 +445,9 @@ const copyPublicUrl = async () => {
               </div>
             </div>
           </div>
-        </UCard>
+          </UCard>
 
-        <UCard>
+          <UCard>
           <template #header>
             <h3 class="text-base font-semibold">Invite member</h3>
           </template>
@@ -463,9 +466,9 @@ const copyPublicUrl = async () => {
             <p class="mt-1 break-all text-sm">{{ inviteAction.link }}</p>
             <UButton size="xs" class="mt-2" variant="outline" @click="copyInviteLink">Copy link</UButton>
           </div>
-        </UCard>
+          </UCard>
 
-        <UCard>
+          <UCard>
           <template #header>
             <h3 class="text-base font-semibold">Pending invites</h3>
           </template>
@@ -491,21 +494,21 @@ const copyPublicUrl = async () => {
               </div>
             </div>
           </div>
-        </UCard>
-      </template>
-    </div>
+          </UCard>
+        </template>
+      </div>
 
-    <div v-else-if="activeTab === 'public'" class="space-y-6">
-      <UAlert
-        v-if="!canManagePublic"
-        color="warning"
-        variant="subtle"
-        title="Owner access required"
-        description="Only campaign owners can manage public sharing settings."
-      />
+      <div v-else-if="activeTab === 'public'" class="space-y-6">
+        <UAlert
+          v-if="!canManagePublic"
+          color="warning"
+          variant="subtle"
+          title="Owner access required"
+          description="Only campaign owners can manage public sharing settings."
+        />
 
-      <template v-else>
-        <UCard>
+        <template v-else>
+          <UCard>
           <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -630,16 +633,17 @@ const copyPublicUrl = async () => {
             <p v-if="publicAction.success" class="text-sm text-success">{{ publicAction.success }}</p>
             <p v-if="publicAction.error" class="text-sm text-error">{{ publicAction.error }}</p>
           </div>
-        </UCard>
-      </template>
-    </div>
+          </UCard>
+        </template>
+      </div>
 
-    <UCard v-else>
-      <template #header>
-        <h2 class="text-lg font-semibold">Danger Zone</h2>
-      </template>
-      <p class="text-sm text-muted">Additional destructive campaign actions will be added in a later milestone.</p>
-    </UCard>
+      <UCard v-else>
+        <template #header>
+          <h2 class="text-lg font-semibold">Danger Zone</h2>
+        </template>
+        <p class="text-sm text-muted">Additional destructive campaign actions will be added in a later milestone.</p>
+      </UCard>
+    </CampaignListTemplate>
 
     <UModal
       v-model:open="transferModalOpen"
@@ -683,3 +687,4 @@ const copyPublicUrl = async () => {
     </UModal>
   </div>
 </template>
+

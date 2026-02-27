@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useCampaignCalendar } from '~/composables/useCampaignCalendar'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'dashboard' })
 
 type SessionItem = {
   id: string
@@ -873,4 +873,5 @@ const removeRange = async () => {
     </SharedEntityFormModal>
   </div>
 </template>
+
 

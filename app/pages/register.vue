@@ -2,7 +2,7 @@
 import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 
-definePageMeta({ layout: 'bare' })
+definePageMeta({ layout: 'auth' })
 
 const schema = z
   .object({
@@ -84,3 +84,4 @@ const onSubmit = async (event: FormSubmitEvent<RegisterSchema>) => {
     </UCard>
   </div>
 </template>
+

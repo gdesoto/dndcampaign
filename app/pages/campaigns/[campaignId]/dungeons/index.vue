@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { DungeonCreateInput, DungeonImportInput } from '#shared/schemas/dungeon'
 import type { CampaignDungeonSummary } from '#shared/types/dungeon'
+import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'dashboard' })
 
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
@@ -154,40 +155,35 @@ const importDungeon = async () => {
 </script>
 
 <template>
-  <div class="space-y-6">
-    <UPageHeader
-      title="Dungeons"
-      description="Generate and manage campaign dungeon maps."
-      headline="Campaign Tool"
-    >
-      <template #right>
-        <div class="flex items-center gap-2">
-          <UButton
-            icon="i-lucide-file-up"
-            variant="outline"
-            :disabled="!canWriteContent"
-            @click="openImport"
-          >
-            Import JSON
-          </UButton>
-          <UButton
-            icon="i-lucide-plus"
-            :disabled="!canWriteContent"
-            @click="openCreate"
-          >
-            New dungeon
-          </UButton>
-        </div>
-      </template>
-    </UPageHeader>
+  <CampaignListTemplate
+    headline="Campaign Tool"
+    title="Dungeons"
+    description="Generate and manage campaign dungeon maps."
+    action-label="New dungeon"
+    action-icon="i-lucide-plus"
+    :action-disabled="!canWriteContent"
+    @action="openCreate"
+  >
+    <template #actions>
+      <UButton
+        icon="i-lucide-file-up"
+        variant="outline"
+        :disabled="!canWriteContent"
+        @click="openImport"
+      >
+        Import JSON
+      </UButton>
+    </template>
 
-    <UAlert
-      v-if="!canWriteContent"
-      color="warning"
-      variant="subtle"
-      title="Read-only access"
-      description="Your role can view dungeons but cannot create or edit them."
-    />
+    <template #notice>
+      <UAlert
+        v-if="!canWriteContent"
+        color="warning"
+        variant="subtle"
+        title="Read-only access"
+        description="Your role can view dungeons but cannot create or edit them."
+      />
+    </template>
 
     <UCard v-if="pending" :ui="{ body: 'p-6' }">
       <p class="text-sm text-muted">Loading dungeons...</p>
@@ -304,5 +300,6 @@ const importDungeon = async () => {
         </div>
       </template>
     </UModal>
-  </div>
+  </CampaignListTemplate>
 </template>
+

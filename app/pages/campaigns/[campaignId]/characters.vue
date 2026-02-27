@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'dashboard' })
 
 type CharacterLink = {
   id: string
@@ -221,4 +221,5 @@ const statusOptions = [
     </div>
   </UPage>
 </template>
+
 

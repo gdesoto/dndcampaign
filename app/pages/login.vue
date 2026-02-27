@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'bare' })
+definePageMeta({ layout: 'auth' })
 
 const form = reactive({
   email: '',
@@ -60,4 +60,5 @@ const onSubmit = async () => {
     </UCard>
   </div>
 </template>
+
 

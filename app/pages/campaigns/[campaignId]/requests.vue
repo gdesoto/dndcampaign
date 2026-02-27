@@ -13,7 +13,7 @@ import type {
   CampaignRequestVisibility,
 } from '#shared/types/campaign-requests'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'dashboard' })
 
 type RequestTab = 'public' | 'mine' | 'pending' | 'decided' | 'moderation'
 
@@ -479,3 +479,4 @@ const decideRequest = async (requestId: string, decision: CampaignRequestDecisio
     </SharedEntityFormModal>
   </div>
 </template>
+

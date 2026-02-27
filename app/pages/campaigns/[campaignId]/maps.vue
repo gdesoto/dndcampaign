@@ -7,8 +7,9 @@ import type {
   MapReimportStrategy,
   MapFeatureType,
 } from '#shared/types/api/map'
+import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'dashboard' })
 
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
@@ -310,25 +311,27 @@ const applyReimport = async () => {
 
 <template>
   <div class="space-y-6">
-    <UAlert
-      v-if="!canWriteContent"
-      color="warning"
-      variant="subtle"
-      title="Read-only access"
-      description="Your role can view maps but cannot import, edit, or delete them."
-    />
+    <CampaignListTemplate
+      headline="Maps"
+      title="Import and explore maps"
+      description="Import Azgaar exports, review features, and stage glossary links."
+    >
+      <template #actions>
+        <UBadge v-if="selectedMap" color="primary" variant="subtle">
+          Active map: {{ selectedMap.name }}
+        </UBadge>
+      </template>
+      <template #notice>
+        <UAlert
+          v-if="!canWriteContent"
+          color="warning"
+          variant="subtle"
+          title="Read-only access"
+          description="Your role can view maps but cannot import, edit, or delete them."
+        />
+      </template>
 
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Campaign maps</p>
-        <h1 class="mt-1 text-2xl font-semibold">Import and explore maps</h1>
-      </div>
-      <UBadge v-if="selectedMap" color="primary" variant="subtle">
-        Active map: {{ selectedMap.name }}
-      </UBadge>
-    </div>
-
-    <UCard v-if="!hasImportedMaps && canWriteContent">
+      <UCard v-if="!hasImportedMaps && canWriteContent">
       <template #header>
         <h2 class="text-lg font-semibold">Import Azgaar export</h2>
       </template>
@@ -344,24 +347,24 @@ const applyReimport = async () => {
         @update:files="importFiles = $event"
         @submit="importMap"
       />
-    </UCard>
-    <UCard v-else-if="!hasImportedMaps && !pending && !error">
-      <p class="text-sm text-muted">
-        No maps are available yet. Your role is read-only, so only owners and collaborators can import maps.
-      </p>
-    </UCard>
+      </UCard>
+      <UCard v-else-if="!hasImportedMaps && !pending && !error">
+        <p class="text-sm text-muted">
+          No maps are available yet. Your role is read-only, so only owners and collaborators can import maps.
+        </p>
+      </UCard>
 
-    <div v-if="pending" class="space-y-3">
-      <USkeleton class="h-24 w-full" />
-      <USkeleton class="h-[420px] w-full" />
-    </div>
+      <div v-if="pending" class="space-y-3">
+        <USkeleton class="h-24 w-full" />
+        <USkeleton class="h-[420px] w-full" />
+      </div>
 
-    <UCard v-else-if="error" class="text-center">
-      <p class="text-sm text-error">Unable to load campaign maps.</p>
-      <UButton class="mt-3" variant="outline" @click="() => refresh()">Retry</UButton>
-    </UCard>
+      <UCard v-else-if="error" class="text-center">
+        <p class="text-sm text-error">Unable to load campaign maps.</p>
+        <UButton class="mt-3" variant="outline" @click="() => refresh()">Retry</UButton>
+      </UCard>
 
-    <div v-else class="space-y-4">
+      <div v-else class="space-y-4">
       <UCard>
         <template #header>
           <div class="flex flex-wrap items-center justify-between gap-2">
@@ -487,7 +490,7 @@ const applyReimport = async () => {
           <div
             v-for="map in maps || []"
             :key="map.id"
-            class="theme-nav-link flex w-full items-center justify-between rounded-md px-3 py-2 text-left"
+            class="flex w-full items-center justify-between rounded-md border border-default bg-elevated/50 px-3 py-2 text-left transition-colors hover:bg-elevated/70"
             :class="selectedMapId === map.id ? 'ring-2 ring-primary/40' : ''"
           >
             <button
@@ -540,7 +543,8 @@ const applyReimport = async () => {
           </UButton>
         </div>
       </UCard>
-    </div>
+      </div>
+    </CampaignListTemplate>
 
     <UModal
       v-model:open="layerModalOpen"
@@ -710,3 +714,4 @@ const applyReimport = async () => {
     </UModal>
   </div>
 </template>
+

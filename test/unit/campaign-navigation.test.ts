@@ -40,6 +40,7 @@ describe('useCampaignNavigation', () => {
       'Alpha Campaign',
       'Sessions',
       'Session',
+      'Summary',
     ])
 
     route.path = '/campaigns/c1/milestones'
@@ -64,6 +65,24 @@ describe('useCampaignNavigation', () => {
       'Alpha Campaign',
       'Encounters',
       'Encounter',
+    ])
+
+    route.path = '/campaigns/c1/dungeons/d1'
+    expect(navigation.sectionTitle.value).toBe('Dungeons')
+    expect(navigation.breadcrumbItems.value.map((item) => item.label)).toEqual([
+      'Campaigns',
+      'Alpha Campaign',
+      'Dungeons',
+      'Dungeon',
+    ])
+
+    route.path = '/campaigns/c1/journal/j1'
+    expect(navigation.sectionTitle.value).toBe('Journal')
+    expect(navigation.breadcrumbItems.value.map((item) => item.label)).toEqual([
+      'Campaigns',
+      'Alpha Campaign',
+      'Journal',
+      'Entry',
     ])
 
     route.path = '/campaigns/c1/unknown'

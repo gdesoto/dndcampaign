@@ -2,7 +2,7 @@
 import type { CampaignDungeonLink, CampaignDungeonRegenerateScope, CampaignDungeonRoom } from '#shared/types/dungeon'
 import type { DungeonGeneratorConfigInput, DungeonMapPatchActionInput } from '#shared/schemas/dungeon'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'dashboard' })
 
 const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
@@ -1189,3 +1189,4 @@ onBeforeUnmount(() => {
     </template>
   </div>
 </template>
+
