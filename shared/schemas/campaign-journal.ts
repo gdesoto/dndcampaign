@@ -67,7 +67,7 @@ export const campaignJournalTagInputSchema = z.discriminatedUnion('type', [
 
 export const campaignJournalCreateSchema = z.object({
   title: z.string().trim().min(1).max(160),
-  contentMarkdown: z.string().trim().min(1).max(20000),
+  contentMarkdown: z.string().max(20000),
   visibility: campaignJournalVisibilitySchema,
   sessionIds: z.array(z.string().uuid()).max(100).optional(),
   tags: z.array(campaignJournalTagInputSchema).max(200).optional(),
@@ -76,7 +76,7 @@ export const campaignJournalCreateSchema = z.object({
 export const campaignJournalUpdateSchema = z
   .object({
     title: z.string().trim().min(1).max(160).optional(),
-    contentMarkdown: z.string().trim().min(1).max(20000).optional(),
+    contentMarkdown: z.string().max(20000).optional(),
     visibility: campaignJournalVisibilitySchema.optional(),
     sessionIds: z.array(z.string().uuid()).max(100).optional(),
     tags: z.array(campaignJournalTagInputSchema).max(200).optional(),

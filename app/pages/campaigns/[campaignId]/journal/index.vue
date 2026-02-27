@@ -323,22 +323,26 @@ const saveCreate = async () => {
   try {
     const payload: CampaignJournalCreateInput = {
       title: form.title,
-      contentMarkdown: form.contentMarkdown,
+      contentMarkdown: '',
       visibility: formDiscoverable.value
         ? (form.visibility === 'CAMPAIGN' ? 'CAMPAIGN' : 'DM')
         : form.visibility,
       sessionIds: form.sessionIds || [],
     }
     const created = await journalApi.createEntry(campaignId.value, payload)
+    if (!created?.id) {
+      throw new Error('Created journal entry response was missing an id')
+    }
     if (formDiscoverable.value && canManageDiscoverables.value && created?.id) {
       await applyDiscoverableState(created.id)
     }
     isCreateOpen.value = false
     resetForm()
     await Promise.all([refresh(), refreshTags(), refreshNotifications()])
+    await navigateTo(`/campaigns/${campaignId.value}/journal/${created.id}`)
     toast.add({
       title: 'Entry created',
-      description: 'Journal entry saved successfully.',
+      description: 'Entry created. Continue writing on the entry page.',
       color: 'success',
       icon: 'i-lucide-check',
     })
@@ -374,7 +378,6 @@ const saveEdit = async () => {
         }
       : {
           title: form.title,
-          contentMarkdown: form.contentMarkdown,
           visibility: formDiscoverable.value
             ? (form.visibility === 'CAMPAIGN' ? 'CAMPAIGN' : 'DM')
             : form.visibility,
@@ -640,7 +643,7 @@ const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value
     <SharedEntityFormModal
       v-model:open="isCreateOpen"
       title="Create journal entry"
-      description="Write markdown notes and control entry visibility."
+      description="Set title and visibility. Write markdown on the entry page."
       :saving="isSaving"
       :error="actionError"
       submit-label="Create entry"
@@ -659,6 +662,7 @@ const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value
         :holder-user-id="formHolderUserId"
         :member-items="memberItems"
         :unassigned-holder-value="UNASSIGNED_HOLDER_VALUE"
+        :show-markdown="false"
         :unresolved-glossary-mentions="unresolvedGlossaryMentions"
         :extracted-custom-tags="extractedCandidates.customTags"
         :extracted-glossary-mentions="extractedCandidates.glossaryMentions"
@@ -666,8 +670,6 @@ const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value
         @update:title="form.title = $event"
         @update:visibility="form.visibility = $event"
         @update:session-ids="form.sessionIds = $event"
-        @update:content-markdown="form.contentMarkdown = $event"
-        @update:editor-tab="editorTab = $event"
         @update:discoverable="formDiscoverable = $event"
         @update:holder-user-id="formHolderUserId = $event"
       />
@@ -676,7 +678,7 @@ const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value
     <SharedEntityFormModal
       v-model:open="isEditOpen"
       title="Edit journal entry"
-      description="Update markdown, visibility, and linked sessions."
+      description="Update title, visibility, and linked sessions."
       :saving="isSaving"
       :error="actionError"
       submit-label="Save changes"
@@ -698,16 +700,14 @@ const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value
         :holder-user-id="formHolderUserId"
         :member-items="memberItems"
         :unassigned-holder-value="UNASSIGNED_HOLDER_VALUE"
+        :show-markdown="false"
         :show-tag-insights="false"
         @update:title="form.title = $event"
         @update:visibility="form.visibility = $event"
         @update:session-ids="form.sessionIds = $event"
-        @update:content-markdown="form.contentMarkdown = $event"
-        @update:editor-tab="editorTab = $event"
         @update:discoverable="formDiscoverable = $event"
         @update:holder-user-id="formHolderUserId = $event"
       />
     </SharedEntityFormModal>
   </div>
 </template>
-

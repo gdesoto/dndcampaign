@@ -3,7 +3,7 @@ import type {
   CampaignJournalUpdateInput,
   CampaignJournalVisibilityInput,
 } from '#shared/schemas/campaign-journal'
-import { extractJournalTagCandidatesFromMarkdown } from '#shared/utils/campaign-journal-tags'
+import { campaignJournalListMaxPageSize } from '#shared/schemas/campaign-journal'
 import type { CampaignAccess } from '#shared/types/campaign-workflow'
 import CampaignDetailTemplate from '~/components/campaign/templates/CampaignDetailTemplate.vue'
 import CampaignEditorTemplate from '~/components/campaign/templates/CampaignEditorTemplate.vue'
@@ -59,6 +59,11 @@ const { data: glossaryEntries } = await useAsyncData(
   () => request<GlossaryLite[]>(`/api/campaigns/${campaignId.value}/glossary`),
 )
 
+const { data: tagsResponse } = await useAsyncData(
+  () => `journal-detail-tags-${campaignId.value}`,
+  () => journalApi.listTags(campaignId.value, { page: 1, pageSize: campaignJournalListMaxPageSize }),
+)
+
 const { data: membersResponse } = await useAsyncData(
   () => `journal-detail-member-options-${campaignId.value}`,
   async () => {
@@ -92,8 +97,10 @@ const visibilityColor = (visibility: CampaignJournalVisibilityInput) => {
 
 const isEditOpen = ref(false)
 const isSaving = ref(false)
+const isSavingDocument = ref(false)
 const actionError = ref('')
 const editorTab = ref<'write' | 'preview'>('write')
+const documentMode = ref<'preview' | 'edit'>('preview')
 
 const form = reactive<CampaignJournalUpdateInput>({
   title: '',
@@ -125,6 +132,30 @@ const memberItems = computed(() =>
   })),
 )
 
+const tagSuggestions = computed(() =>
+  Array.from(
+    new Set(
+      (tagsResponse.value?.items || [])
+        .filter((tag) => tag.tagType === 'CUSTOM')
+        .map((tag) => tag.displayLabel.trim())
+        .filter((label) => label.length > 0),
+    ),
+  ),
+)
+
+const glossarySuggestions = computed(() => {
+  const fromGlossary = (glossaryEntries.value || [])
+    .map((entry) => entry.name.trim())
+    .filter((name) => name.length > 0)
+
+  const fromTags = (tagsResponse.value?.items || [])
+    .filter((tag) => tag.tagType === 'GLOSSARY')
+    .map((tag) => tag.displayLabel.trim())
+    .filter((label) => label.length > 0)
+
+  return Array.from(new Set([...fromGlossary, ...fromTags]))
+})
+
 const visibilityItems = computed(() =>
   entry.value?.isDiscoverable
     ? [
@@ -142,25 +173,13 @@ const openEdit = () => {
   if (!entry.value?.canEdit) return
   actionError.value = ''
   form.title = entry.value.title
-  form.contentMarkdown = entry.value.contentMarkdown
   form.visibility = entry.value.visibility
   form.sessionIds = entry.value.sessions.map((session) => session.sessionId)
-  editorTab.value = 'write'
   isEditOpen.value = true
 }
 
-const glossaryNameSet = computed(() =>
-  new Set((glossaryEntries.value || []).map((item) => item.name.trim().toLowerCase())),
-)
-
-const extractedCandidates = computed(() =>
-  extractJournalTagCandidatesFromMarkdown(form.contentMarkdown || ''),
-)
-
-const unresolvedGlossaryMentions = computed(() =>
-  extractedCandidates.value.glossaryMentions.filter(
-    (mention) => !glossaryNameSet.value.has(mention.trim().toLowerCase()),
-  ),
+const canEditDocumentContent = computed(() =>
+  Boolean(entry.value?.canEdit && (!entry.value?.isDiscoverable || canManageDiscoverables.value)),
 )
 
 const saveEdit = async () => {
@@ -175,7 +194,6 @@ const saveEdit = async () => {
         }
       : {
           title: form.title,
-          contentMarkdown: form.contentMarkdown,
           visibility: form.visibility,
           sessionIds: form.sessionIds || [],
         })
@@ -229,9 +247,42 @@ const transferVisibility = ref<'DM' | 'CAMPAIGN'>('DM')
 const actionLoading = ref(false)
 
 watch(entry, (value) => {
+  form.contentMarkdown = value?.contentMarkdown || ''
   holderUserId.value = value?.holderUserId || UNASSIGNED_HOLDER_VALUE
   transferVisibility.value = value?.visibility === 'CAMPAIGN' ? 'CAMPAIGN' : 'DM'
+  const canEditContent = Boolean(value?.canEdit && (!value?.isDiscoverable || canManageDiscoverables.value))
+  const isBlank = !value?.contentMarkdown?.trim().length
+  documentMode.value = isBlank && canEditContent ? 'edit' : 'preview'
 }, { immediate: true })
+
+const saveDocument = async () => {
+  if (!entry.value || !canEditDocumentContent.value) return
+  isSavingDocument.value = true
+  actionError.value = ''
+  try {
+    await journalApi.updateEntry(campaignId.value, entryId.value, {
+      contentMarkdown: form.contentMarkdown || '',
+    })
+    await refresh()
+    documentMode.value = 'preview'
+    toast.add({
+      title: 'Entry saved',
+      description: 'Journal markdown updated.',
+      color: 'success',
+      icon: 'i-lucide-check',
+    })
+  } catch (cause) {
+    actionError.value = (cause as Error).message || 'Unable to save entry markdown.'
+    toast.add({
+      title: 'Save failed',
+      description: actionError.value,
+      color: 'error',
+      icon: 'i-lucide-alert-circle',
+    })
+  } finally {
+    isSavingDocument.value = false
+  }
+}
 
 const refreshEntryData = async () => {
   await Promise.all([refresh(), refreshHistory()])
@@ -317,10 +368,10 @@ const toggleArchive = async () => {
               v-if="entry?.canEdit"
               size="sm"
               variant="outline"
-              icon="i-lucide-pencil"
+              icon="i-lucide-settings-2"
               @click="openEdit"
             >
-              Edit
+              Settings
             </UButton>
             <SharedConfirmActionPopover
               v-if="entry?.canDelete"
@@ -339,11 +390,55 @@ const toggleArchive = async () => {
           </div>
         </template>
 
-        <UCard class="lg:min-h-[28rem]">
+        <UCard class="flex min-h-[28rem] flex-col lg:min-h-[28rem]" :ui="{ body: 'flex-1 min-h-0' }">
           <template #header>
-            <h3 class="text-sm font-semibold uppercase tracking-[0.2em] text-dimmed">Entry</h3>
+            <div class="flex items-center justify-between gap-3">
+              <h3 class="text-sm font-semibold uppercase tracking-[0.2em] text-dimmed">Entry</h3>
+              <div class="flex items-center gap-2">
+                <UButton
+                  v-if="documentMode === 'edit' && canEditDocumentContent"
+                  size="sm"
+                  color="primary"
+                  :loading="isSavingDocument"
+                  @click="saveDocument"
+                >
+                  Save Journal
+                </UButton>
+                <UButton
+                  size="sm"
+                  :variant="documentMode === 'edit' ? 'solid' : 'outline'"
+                  :disabled="!canEditDocumentContent"
+                  @click="documentMode = 'edit'"
+                >
+                  Edit
+                </UButton>
+                <UButton
+                  size="sm"
+                  :variant="documentMode === 'preview' ? 'solid' : 'outline'"
+                  @click="documentMode = 'preview'"
+                >
+                  Preview
+                </UButton>
+              </div>
+            </div>
           </template>
-          <div class="prose prose-sm max-w-none">
+          <div v-if="documentMode === 'edit'" class="space-y-3">
+            <CampaignEditorTemplate
+              :model-value="form.contentMarkdown || ''"
+              :tab="editorTab"
+              :show-tabs="false"
+              :disabled="!canEditDocumentContent"
+              :enable-autocomplete="true"
+              :tag-suggestions="tagSuggestions"
+              :glossary-suggestions="glossarySuggestions"
+              placeholder="Use markdown with #tags and [[Glossary Name]] mentions."
+              @update:model-value="form.contentMarkdown = $event"
+            />
+            <p class="text-xs text-muted">
+              Tip: use <code>#customTag</code> for custom tags and <code>[[Glossary Name]]</code> to link glossary terms.
+            </p>
+          </div>
+          <div v-else class="prose prose-sm h-full max-w-none overflow-y-auto">
             <MDC :value="entry?.contentMarkdown || '_No content._'" tag="article" />
           </div>
         </UCard>
@@ -449,7 +544,7 @@ const toggleArchive = async () => {
     <SharedEntityFormModal
       v-model:open="isEditOpen"
       title="Edit journal entry"
-      description="Update markdown, visibility, and linked sessions."
+      description="Update title, visibility, and linked sessions."
       :saving="isSaving"
       :error="actionError"
       submit-label="Save changes"
@@ -477,24 +572,6 @@ const toggleArchive = async () => {
           :disabled="Boolean(entry?.isDiscoverable && !canManageDiscoverables)"
         />
       </UFormField>
-      <UFormField label="Entry markdown" name="contentMarkdown" required>
-        <CampaignEditorTemplate
-          :model-value="form.contentMarkdown || ''"
-          :tab="editorTab"
-          :disabled="Boolean(entry?.isDiscoverable && !canManageDiscoverables)"
-          placeholder="Use markdown with #tags and [[Glossary Name]] mentions."
-          @update:model-value="form.contentMarkdown = $event"
-          @update:tab="editorTab = $event"
-        />
-      </UFormField>
-
-      <UAlert
-        v-if="unresolvedGlossaryMentions.length"
-        color="warning"
-        variant="subtle"
-        title="Unresolved glossary mentions"
-        :description="`No glossary entry matched: ${unresolvedGlossaryMentions.join(', ')}`"
-      />
     </SharedEntityFormModal>
   </div>
 </template>

@@ -82,50 +82,51 @@
 }
 
 :root {
-  --ui-bg: #0e0c0a;
-  --ui-bg-elevated: #16130f;
-  --ui-bg-accented: #1e1a14;
-  --ui-bg-muted: #26211a;
+  --ui-bg: #0c0d10;
+  --ui-bg-elevated: #232b38;
+  --ui-bg-accented: #1b1f26;
+  --ui-bg-muted: #252b34;
 
-  --ui-border: #3a3020;
-  --ui-border-accented: #7a5c28;
-  --ui-border-muted: #26211a;
+  --ui-border: #403729;
+  --ui-border-accented: #8b6a33;
+  --ui-border-muted: #2a3039;
 
-  --ui-text: #e8dcc8;
-  --ui-text-muted: #a08f75;
-  --ui-text-dimmed: #5a4e3a;
-  --ui-text-highlighted: #f5efe4;
+  --ui-text: #ece2d2;
+  --ui-text-muted: #b8aa90;
+  --ui-text-dimmed: #7e715d;
+  --ui-text-highlighted: #fff6e8;
 
-  --ui-primary: var(--color-primary-500);
+  --ui-primary: var(--color-primary-400);
   --ui-radius: 0.25rem;
 
   /* Compatibility tokens for pre-v2 theme classes */
   --theme-font-display: var(--font-display);
   --theme-bg:
-    radial-gradient(900px 700px at 80% 20%, rgb(122 92 40 / 24%), transparent 60%),
-    radial-gradient(800px 600px at 10% 0%, rgb(201 150 58 / 14%), transparent 55%),
-    #0e0c0a;
+    radial-gradient(920px 720px at 84% 18%, rgb(161 115 45 / 28%), transparent 62%),
+    radial-gradient(860px 620px at 8% 0%, rgb(54 95 117 / 20%), transparent 56%),
+    radial-gradient(900px 680px at 52% 100%, rgb(128 52 35 / 14%), transparent 62%),
+    #0c0d10;
   --theme-text: var(--ui-text);
   --theme-text-muted: var(--ui-text-muted);
   --theme-text-soft: var(--ui-text-highlighted);
-  --theme-card-bg: linear-gradient(160deg, rgb(22 19 15 / 92%) 0%, rgb(14 12 10 / 95%) 100%);
-  --theme-card-border: rgb(122 92 40 / 35%);
-  --theme-card-shadow: 0 16px 40px rgb(10 8 6 / 55%);
-  --theme-panel-bg: rgb(255 255 255 / 2%);
-  --theme-panel-border: rgb(122 92 40 / 30%);
-  --theme-header-bg: rgb(10 8 6 / 90%);
-  --theme-header-border: rgb(122 92 40 / 30%);
-  --theme-nav-link-bg: rgb(255 255 255 / 2%);
-  --theme-nav-link-bg-hover: rgb(255 255 255 / 5%);
-  --theme-nav-link-border: rgb(122 92 40 / 30%);
+  --theme-card-bg: linear-gradient(160deg, rgb(24 20 16 / 92%) 0%, rgb(16 18 22 / 95%) 100%);
+  --theme-card-border: rgb(158 121 59 / 36%);
+  --theme-card-shadow: 0 18px 44px rgb(8 8 10 / 58%);
+  --theme-panel-bg: rgb(170 196 222 / 4%);
+  --theme-panel-border: rgb(145 115 60 / 30%);
+  --theme-header-bg: rgb(12 12 14 / 88%);
+  --theme-header-border: rgb(145 115 60 / 34%);
+  --theme-nav-link-bg: rgb(170 196 222 / 4%);
+  --theme-nav-link-bg-hover: rgb(170 196 222 / 10%);
+  --theme-nav-link-border: rgb(122 97 55 / 32%);
   --theme-accent: var(--ui-primary);
   --theme-seal-bg: radial-gradient(circle at 35% 35%, #c9963a 0%, #a97a28 45%, #5a3e18 100%);
   --theme-overlay-noise-image: none;
   --theme-overlay-noise-opacity: 0;
   --theme-overlay-pattern:
-    repeating-radial-gradient(circle at 30% 20%, rgb(255 255 255 / 5%) 0, rgb(255 255 255 / 5%) 1px, transparent 1px, transparent 22px),
-    repeating-radial-gradient(circle at 70% 60%, rgb(255 255 255 / 3%) 0, rgb(255 255 255 / 3%) 1px, transparent 1px, transparent 18px);
-  --theme-overlay-pattern-opacity: 0.35;
+    repeating-radial-gradient(circle at 30% 20%, rgb(201 150 58 / 8%) 0, rgb(201 150 58 / 8%) 1px, transparent 1px, transparent 22px),
+    repeating-radial-gradient(circle at 72% 62%, rgb(124 167 191 / 7%) 0, rgb(124 167 191 / 7%) 1px, transparent 1px, transparent 18px);
+  --theme-overlay-pattern-opacity: 0.42;
 }
 
 .light {

@@ -76,16 +76,16 @@ export default defineAppConfig({
         footer: `${cardSectionPadding} border-t border-[var(--ui-border)] flex gap-2 justify-end`,
       },
       defaultVariants: {
-        variant: 'outline',
+        variant: 'subtle',
       },
     },
 
     tabs: {
       slots: {
         root: 'flex flex-col',
-        list: 'flex border-b border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] px-6',
-        trigger:
-          'grow justify-center rounded-none font-display text-[11px] tracking-[0.1em] uppercase text-[var(--ui-text-dimmed)] px-3.5 py-2.5 border-b-2 border-transparent -mb-px transition-all cursor-pointer hover:text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-accented)]/60 data-[state=active]:rounded-none data-[state=active]:text-primary data-[state=active]:bg-[var(--ui-bg-accented)] data-[state=active]:border-primary-500',
+        list: 'flex border-b border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-0', // px-6
+        trigger: // grow justify-center
+          'rounded-none font-display text-[11px] tracking-[0.1em] uppercase text-[var(--ui-text-dimmed)] px-3.5 py-2.5 border-b-2 border-transparent -mb-px transition-all cursor-pointer hover:text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-accented)]/60 data-[state=active]:rounded-none data-[state=active]:text-primary data-[state=active]:bg-[var(--ui-bg-accented)] data-[state=active]:border-primary-500',
         indicator: 'hidden',
         label: 'truncate text-inherit',
         content: 'outline-none',

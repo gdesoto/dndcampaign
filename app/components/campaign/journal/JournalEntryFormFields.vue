@@ -25,6 +25,7 @@ withDefaults(defineProps<{
   extractedCustomTags?: string[]
   extractedGlossaryMentions?: string[]
   showTagInsights?: boolean
+  showMarkdown?: boolean
 }>(), {
   titleDisabled: false,
   sessionDisabled: false,
@@ -34,6 +35,7 @@ withDefaults(defineProps<{
   extractedCustomTags: () => [],
   extractedGlossaryMentions: () => [],
   showTagInsights: true,
+  showMarkdown: true,
 })
 
 const emit = defineEmits<{
@@ -100,7 +102,7 @@ const emit = defineEmits<{
     </template>
   </div>
 
-  <UFormField label="Entry markdown" name="contentMarkdown" required>
+  <UFormField v-if="showMarkdown" label="Entry markdown" name="contentMarkdown" required>
     <CampaignEditorTemplate
       :model-value="contentMarkdown"
       :tab="editorTab"
@@ -115,7 +117,7 @@ const emit = defineEmits<{
     </p>
   </UFormField>
 
-  <template v-if="showTagInsights">
+  <template v-if="showMarkdown && showTagInsights">
     <UAlert
       v-if="unresolvedGlossaryMentions.length"
       color="warning"
