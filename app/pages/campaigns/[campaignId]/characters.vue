@@ -13,6 +13,23 @@ type CharacterLink = {
       level?: number
       classes?: string[]
       race?: string
+      hp?: number
+      ac?: number
+      passivePerception?: number
+      portraitUrl?: string
+    }
+    sheetJson?: {
+      basics?: {
+        playerName?: string
+      }
+      abilityScores?: {
+        str?: number
+        dex?: number
+        con?: number
+        int?: number
+        wis?: number
+        cha?: number
+      }
     }
   }
   accessImpact?: {
@@ -92,6 +109,55 @@ const statusOptions = [
   { label: 'Active', value: 'ACTIVE' },
   { label: 'Inactive', value: 'INACTIVE' },
 ]
+
+type AbilityKey = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha'
+
+const abilityOrder: Array<{ key: AbilityKey, label: string }> = [
+  { key: 'str', label: 'STR' },
+  { key: 'dex', label: 'DEX' },
+  { key: 'con', label: 'CON' },
+  { key: 'int', label: 'INT' },
+  { key: 'wis', label: 'WIS' },
+  { key: 'cha', label: 'CHA' },
+]
+
+const subtitleFor = (link: CharacterLink) => {
+  const race = link.character.summaryJson?.race
+  const classes = link.character.summaryJson?.classes?.join(' · ')
+  if (race && classes) return `${race} · ${classes}`
+  return race || classes || 'Adventurer'
+}
+
+const ownerLineFor = (link: CharacterLink) => {
+  const playerName = link.character.sheetJson?.basics?.playerName
+  return playerName ? `Played by ${playerName}` : 'Campaign character'
+}
+
+const initialsFor = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('')
+
+const abilityScoreFor = (link: CharacterLink, key: AbilityKey) =>
+  link.character.sheetJson?.abilityScores?.[key]
+
+const abilityModFor = (score?: number) => {
+  if (typeof score !== 'number') return null
+  const modifier = Math.floor((score - 10) / 2)
+  return modifier >= 0 ? `+${modifier}` : String(modifier)
+}
+
+const hpFor = (link: CharacterLink) => link.character.summaryJson?.hp
+const acFor = (link: CharacterLink) => link.character.summaryJson?.ac
+const initiativeFor = (link: CharacterLink) => {
+  const dex = abilityScoreFor(link, 'dex')
+  if (typeof dex !== 'number') return null
+  const modifier = Math.floor((dex - 10) / 2)
+  return modifier >= 0 ? `+${modifier}` : String(modifier)
+}
 </script>
 
 <template>
@@ -156,24 +222,90 @@ const statusOptions = [
       </UCard>
 
       <div v-else class="grid gap-4 md:grid-cols-2">
-        <UCard v-for="link in links" :key="link.id">
-          <template #header>
-            <div class="flex items-center justify-between gap-3">
-              <div>
-                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">PC</p>
-                <h3 class="text-lg font-semibold">{{ link.character.name }}</h3>
+        <UCard
+          v-for="link in links"
+          :key="link.id"
+          :ui="{
+            root: 'overflow-hidden',
+            header: 'before:block before:h-[4px] before:bg-gradient-to-r before:from-primary-700 before:via-primary-500 before:to-primary-700',
+          }"
+        >
+          <div class="space-y-4">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-start gap-3">
+                <UAvatar
+                  :src="link.character.summaryJson?.portraitUrl"
+                  :alt="link.character.name"
+                  size="xl"
+                  :text="initialsFor(link.character.name)"
+                  class="border border-[var(--ui-border-accented)]/70"
+                />
+                <div class="space-y-1">
+                  <h3 class="font-display text-lg tracking-[0.02em] uppercase text-[var(--ui-text-highlighted)]">
+                    {{ link.character.name }}
+                  </h3>
+                  <p class="text-sm italic text-[var(--ui-text-muted)]">{{ subtitleFor(link) }}</p>
+                  <p class="text-xs text-[var(--ui-text-dimmed)]">{{ ownerLineFor(link) }}</p>
+                  <div class="flex flex-wrap items-center gap-2 pt-1">
+                    <UBadge
+                      :color="link.status === 'ACTIVE' ? 'primary' : 'neutral'"
+                      variant="outline"
+                    >
+                      {{ link.status === 'ACTIVE' ? 'Active' : 'Inactive' }}
+                    </UBadge>
+                    <UBadge
+                      v-if="link.character.summaryJson?.level"
+                      color="neutral"
+                      variant="outline"
+                    >
+                      Level {{ link.character.summaryJson.level }}
+                    </UBadge>
+                  </div>
+                </div>
               </div>
-              <UButton size="xs" variant="outline" :to="`/characters/${link.character.id}`">
-                Open
-              </UButton>
+              <UButton
+                size="xs"
+                variant="outline"
+                icon="i-lucide-star"
+                :to="`/characters/${link.character.id}`"
+                aria-label="Open character sheet"
+              />
             </div>
-          </template>
-          <div class="space-y-2 text-sm">
-            <p v-if="link.character.summaryJson?.classes?.length">
-              Class: {{ link.character.summaryJson.classes.join(', ') }}
-            </p>
-            <p v-if="link.character.summaryJson?.level">Level: {{ link.character.summaryJson.level }}</p>
-            <p v-if="link.character.summaryJson?.race">Race: {{ link.character.summaryJson.race }}</p>
+
+            <div class="space-y-2">
+              <div class="flex items-end justify-between gap-2">
+                <p class="font-display text-[10px] uppercase tracking-[0.2em] text-[var(--ui-text-dimmed)]">
+                  Hit Points
+                </p>
+                <p class="font-display text-sm text-[var(--ui-text-highlighted)]">
+                  {{ hpFor(link) ?? '—' }}
+                </p>
+              </div>
+              <div class="h-2 rounded-sm border border-[var(--ui-border)] bg-[var(--ui-bg-muted)]/60 p-[1px]">
+                <div
+                  class="h-full rounded-[2px] bg-success-500/80"
+                  :style="{ width: typeof hpFor(link) === 'number' ? '100%' : '35%' }"
+                />
+              </div>
+              <div class="flex flex-wrap items-center justify-between gap-2 text-sm text-[var(--ui-text-muted)]">
+                <p>AC {{ acFor(link) ?? '—' }}</p>
+                <p>Initiative {{ initiativeFor(link) ?? '—' }}</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+              <div
+                v-for="ability in abilityOrder"
+                :key="ability.key"
+                class="rounded border border-[var(--ui-border)] bg-[var(--ui-bg-accented)]/45 px-2 py-2 text-center"
+              >
+                <p class="font-display text-[11px] text-[var(--ui-text-highlighted)]">
+                  {{ abilityScoreFor(link, ability.key) ?? '—' }}
+                </p>
+                <p class="text-[11px] text-primary-500">{{ abilityModFor(abilityScoreFor(link, ability.key)) ?? '—' }}</p>
+                <p class="text-[10px] uppercase tracking-[0.14em] text-[var(--ui-text-dimmed)]">{{ ability.label }}</p>
+              </div>
+            </div>
           </div>
           <template #footer>
             <div class="flex flex-wrap items-center justify-between gap-2">

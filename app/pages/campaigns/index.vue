@@ -6,6 +6,7 @@ type CampaignSummary = {
   name: string
   system: string
   description?: string | null
+  dungeonMasterName?: string | null
   currentStatus?: string | null
   updatedAt: string
 }
@@ -25,6 +26,16 @@ const createForm = reactive({
 })
 const createError = ref('')
 const isCreating = ref(false)
+
+const formatUpdatedAt = (value: string) =>
+  new Intl.DateTimeFormat(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date(value))
+
+const systemLabelFor = (campaign: CampaignSummary) => campaign.system || 'Custom System'
+const dmLabelFor = (campaign: CampaignSummary) => campaign.dungeonMasterName || 'Unassigned'
 
 const openCreate = () => {
   createError.value = ''
@@ -94,18 +105,41 @@ const createCampaign = async () => {
             v-for="campaign in campaigns"
             :key="campaign.id"
             :to="`/campaigns/${campaign.id}`"
-            class="group"
+            class="group block h-full"
           >
-            <SharedListItemCard class="group-hover:shadow-lg">
+            <SharedListItemCard
+              class="h-full transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-lg"
+              :ui="{
+                root: 'h-full overflow-hidden',
+                header: 'before:block before:h-[4px] before:bg-gradient-to-r before:from-primary-700 before:via-primary-500 before:to-primary-700',
+                body: 'space-y-4',
+              }"
+            >
               <template #header>
-                <div class="space-y-1">
-                  <p class="text-xs uppercase tracking-[0.2em] text-dimmed">{{ campaign.system }}</p>
-                  <h3 class="text-lg font-semibold">{{ campaign.name }}</h3>
+                <div class="flex items-start justify-between gap-3">
+                  <div class="space-y-1">
+                    <p class="font-display text-[10px] uppercase tracking-[0.18em] text-[var(--ui-text-dimmed)]">
+                      {{ systemLabelFor(campaign) }}
+                    </p>
+                    <h3 class="font-display text-lg uppercase tracking-[0.02em] text-[var(--ui-text-highlighted)]">
+                      {{ campaign.name }}
+                    </h3>
+                  </div>
+                  <UIcon
+                    name="i-lucide-arrow-up-right"
+                    class="mt-0.5 size-4 text-[var(--ui-text-dimmed)] transition-colors group-hover:text-primary-500"
+                  />
                 </div>
               </template>
-              <p class="text-sm text-default">
+              <p class="line-clamp-3 min-h-[4.5rem] text-sm text-[var(--ui-text-muted)]">
                 {{ campaign.description || 'No description yet.' }}
               </p>
+              <div class="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--ui-border)] pt-3">
+                <UBadge color="primary" variant="outline">DM: {{ dmLabelFor(campaign) }}</UBadge>
+                <p class="text-xs text-[var(--ui-text-dimmed)]">
+                  Updated {{ formatUpdatedAt(campaign.updatedAt) }}
+                </p>
+              </div>
             </SharedListItemCard>
           </NuxtLink>
         </div>
