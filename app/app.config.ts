@@ -67,7 +67,7 @@ export default defineAppConfig({
 
     card: {
       slots: {
-        root: 'bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-md overflow-hidden transition-colors hover:border-[var(--ui-border-accented)] relative group chronicler-card',
+        root: 'bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-md overflow-hidden transition-colors hover:border-[var(--ui-border-accented)] relative group dmvault-card',
         //header: 'px-4 py-2.5 border-b border-[var(--ui-border)] flex items-center justify-between',
         header: `${cardSectionPadding} border-b border-[var(--ui-border)] flex items-center justify-between [&>*]:w-full`,
         //body: 'p-4',

@@ -256,7 +256,7 @@ body {
 }
 
 /* DM Vault v2 utility classes */
-.chronicler-card::before {
+.dmvault-card::before {
   content: "";
   position: absolute;
   inset: 0 0 auto 0;
@@ -266,7 +266,7 @@ body {
   transition: opacity 0.2s;
 }
 
-.chronicler-card:hover::before {
+.dmvault-card:hover::before {
   opacity: 1;
 }
 
