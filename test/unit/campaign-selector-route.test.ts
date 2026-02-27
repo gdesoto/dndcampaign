@@ -40,9 +40,9 @@ describe('resolveCampaignSelectorRoute', () => {
     )
   })
 
-  it('keeps tools section when switching campaigns', () => {
-    expect(resolveCampaignSelectorRoute('/campaigns/abc/tools', 'abc', 'xyz')).toBe(
-      '/campaigns/xyz/tools'
+  it('keeps dice roller section when switching campaigns', () => {
+    expect(resolveCampaignSelectorRoute('/campaigns/abc/dice-roller', 'abc', 'xyz')).toBe(
+      '/campaigns/xyz/dice-roller'
     )
   })
 

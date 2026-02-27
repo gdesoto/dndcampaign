@@ -8,7 +8,7 @@ const campaignSectionRoots = [
   '/maps',
   '/journal',
   '/calendar',
-  '/tools',
+  '/dice-roller',
   '/characters',
   '/settings',
 ] as const

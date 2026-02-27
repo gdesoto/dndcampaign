@@ -19,6 +19,31 @@ const { data: campaign } = await useAsyncData(
   }
 )
 
+const sessionId = computed(() => {
+  const value = route.params.sessionId
+  return typeof value === 'string' ? value : ''
+})
+
+const isSessionDetailRoute = computed(() =>
+  route.path.includes(`/campaigns/${campaignId.value}/sessions/`) && Boolean(sessionId.value)
+)
+
+const { data: sessionShell } = await useAsyncData(
+  () => `dashboard-session-shell-${sessionId.value || 'none'}`,
+  () => isSessionDetailRoute.value
+    ? request<{ title: string, sessionNumber?: number | null }>(`/api/sessions/${sessionId.value}`)
+    : Promise.resolve(null),
+  {
+    watch: [sessionId, isSessionDetailRoute],
+  }
+)
+
+const activeSessionTitle = computed(() => {
+  if (!sessionShell.value?.title) return undefined
+  if (!sessionShell.value.sessionNumber) return sessionShell.value.title
+  return `#${sessionShell.value.sessionNumber} - ${sessionShell.value.title}`
+})
+
 const campaignHeaderDescription = computed(() => {
   const details = [
     campaign.value?.system || 'System not set',
@@ -31,25 +56,45 @@ const {
   navItems,
   sectionTitle,
   breadcrumbItems,
-} = useCampaignNavigation(route, campaignId, campaign)
+} = useCampaignNavigation(route, campaignId, campaign, activeSessionTitle)
 
 const navLinks = computed(() => {
   const items = navItems.value
-  const sessionsIndex = items.findIndex((item) => item.label === 'Sessions')
-  const toolsIndex = items.findIndex((item) => item.label === 'Tools')
+  const byLabel = new Map(items.map((item) => [item.label, item]))
 
-  const campaignItems = sessionsIndex > -1 ? items.slice(0, sessionsIndex) : items
-  const sessionItems = sessionsIndex > -1
-    ? (toolsIndex > -1 ? items.slice(sessionsIndex, toolsIndex) : items.slice(sessionsIndex))
-    : []
-  const utilityItems = toolsIndex > -1 ? items.slice(toolsIndex) : []
-
-  return [
-    { label: 'Campaign', type: 'label' as const },
-    ...campaignItems,
-    ...(sessionItems.length ? [{ label: 'Sessions', type: 'label' as const }, ...sessionItems] : []),
-    ...(utilityItems.length ? [{ label: 'Utilities', type: 'label' as const }, ...utilityItems] : []),
+  const sectionDefinitions = [
+    {
+      label: 'Campaign',
+      labels: ['Overview', 'Characters', 'Calendar', 'Settings'],
+    },
+    {
+      label: 'Session Play',
+      labels: ['Sessions', 'Encounters', 'Dungeons', 'Journal', 'Requests'],
+    },
+    {
+      label: 'World',
+      labels: ['Quests', 'Milestones', 'Maps', 'Glossary'],
+    },
+    {
+      label: 'Utilities',
+      labels: ['Dice Roller'],
+    },
   ]
+
+  const grouped = sectionDefinitions.flatMap((section) => {
+    const sectionItems = section.labels
+      .map((label) => byLabel.get(label))
+      .filter((item): item is NonNullable<typeof item> => Boolean(item))
+
+    if (!sectionItems.length) return []
+
+    return [
+      { label: section.label, type: 'label' as const },
+      ...sectionItems,
+    ]
+  })
+
+  return grouped
 })
 </script>
 

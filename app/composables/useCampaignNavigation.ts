@@ -79,10 +79,10 @@ export const useCampaignNavigation = (
         active: path.startsWith(`${base}/calendar`),
       },
       {
-        label: 'Tools',
-        to: `${base}/tools`,
-        icon: 'i-lucide-wrench',
-        active: path.startsWith(`${base}/tools`),
+        label: 'Dice Roller',
+        to: `${base}/dice-roller`,
+        icon: 'i-lucide-dices',
+        active: path.startsWith(`${base}/dice-roller`),
       },
       {
         label: 'Glossary',
@@ -115,7 +115,7 @@ export const useCampaignNavigation = (
     if (suffix.startsWith('/journal')) return 'Journal'
     if (suffix.startsWith('/requests')) return 'Requests'
     if (suffix.startsWith('/calendar')) return 'Calendar'
-    if (suffix.startsWith('/tools')) return 'Tools'
+    if (suffix.startsWith('/dice-roller')) return 'Dice Roller'
     if (suffix.startsWith('/settings')) return 'Settings'
     if (suffix.startsWith('/documents')) return 'Document'
     if (suffix.startsWith('/recordings')) return 'Recording'
