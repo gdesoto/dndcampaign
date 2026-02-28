@@ -6,6 +6,7 @@ import JournalEntryPage from '../../app/pages/campaigns/[campaignId]/journal/[en
 const mockGetEntry = vi.fn()
 const mockListEntryHistory = vi.fn()
 const mockListMemberOptions = vi.fn()
+const mockListTags = vi.fn()
 const mockUpdateEntry = vi.fn()
 const mockDeleteEntry = vi.fn()
 const mockDiscoverEntry = vi.fn()
@@ -35,6 +36,7 @@ vi.mock('~/composables/useCampaignJournal', () => ({
     getEntry: mockGetEntry,
     listEntryHistory: mockListEntryHistory,
     listMemberOptions: mockListMemberOptions,
+    listTags: mockListTags,
     updateEntry: mockUpdateEntry,
     deleteEntry: mockDeleteEntry,
     discoverEntry: mockDiscoverEntry,
@@ -124,6 +126,7 @@ describe('campaign journal entry page', () => {
         { userId: 'user-dm', name: 'DM One', role: 'OWNER', hasDmAccess: true },
       ],
     })
+    mockListTags.mockResolvedValue({ items: [] })
     mockRequest.mockResolvedValue([])
   })
 

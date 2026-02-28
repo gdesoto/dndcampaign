@@ -29,6 +29,18 @@ export default defineConfig({
             nuxt: {
               rootDir: fileURLToPath(new URL('.', import.meta.url)),
               domEnvironment: 'happy-dom',
+              overrides: {
+                runtimeConfig: {
+                  public: {
+                    mdc: {
+                      highlight: {
+                        theme: {},
+                        langs: [],
+                      },
+                    },
+                  },
+                },
+              },
             },
           },
         },
