@@ -41,7 +41,14 @@ export default defineEventHandler(async (event) => {
     include: {
       sessions: {
         include: {
-          session: true,
+          session: {
+            select: {
+              id: true,
+              title: true,
+              sessionNumber: true,
+              playedAt: true,
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
       },
