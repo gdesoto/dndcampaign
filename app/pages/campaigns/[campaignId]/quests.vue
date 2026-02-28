@@ -248,23 +248,26 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
                   </div>
                 </div>
               </template>
-              <p class="text-sm text-default">{{ quest.description || 'Add quest notes.' }}</p>
-              <div class="mt-3 flex flex-wrap items-center gap-2">
-                <UBadge :color="typeBadgeColor(quest.type)" variant="soft" size="sm">
-                  {{ typeLabelMap[quest.type] }}
-                </UBadge>
-                <UBadge color="neutral" variant="soft" size="sm">
-                  {{ statusLabelMap[quest.status] }}
-                </UBadge>
-              </div>
-              <div class="mt-4 flex items-center justify-between gap-3">
+              <p class="text-sm whitespace-pre-line text-default">{{ quest.description || 'Add quest notes.' }}</p>
+              <div class="mt-3 flex flex-wrap items-start justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-2">
+                  <UBadge :color="typeBadgeColor(quest.type)" variant="soft" size="sm">
+                    {{ typeLabelMap[quest.type] }}
+                  </UBadge>
+                  <UBadge color="neutral" variant="soft" size="sm">
+                    {{ statusLabelMap[quest.status] }}
+                  </UBadge>
+                </div>
                 <USelect
+                  class="w-full sm:w-44"
                   :disabled="!canWriteContent"
                   :items="statusOptions"
                   :model-value="quest.status"
                   @update:model-value="(value) => updateStatus(quest, value as QuestItem['status'])"
                 />
-                <span class="text-xs text-muted">{{ quest.progressNotes || 'No progress notes.' }}</span>
+              </div>
+              <div class="mt-3 w-full">
+                <p class="text-xs whitespace-pre-line text-muted">{{ quest.progressNotes || 'No progress notes.' }}</p>
               </div>
             </SharedListItemCard>
           </div>
@@ -292,23 +295,26 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
                   </div>
                 </div>
               </template>
-              <p class="text-sm text-default">{{ quest.description || 'Add quest notes.' }}</p>
-              <div class="mt-3 flex flex-wrap items-center gap-2">
-                <UBadge :color="typeBadgeColor(quest.type)" variant="soft" size="sm">
-                  {{ typeLabelMap[quest.type] }}
-                </UBadge>
-                <UBadge color="neutral" variant="soft" size="sm">
-                  {{ statusLabelMap[quest.status] }}
-                </UBadge>
-              </div>
-              <div class="mt-4 flex items-center justify-between gap-3">
+              <p class="text-sm whitespace-pre-line text-default">{{ quest.description || 'Add quest notes.' }}</p>
+              <div class="mt-3 flex flex-wrap items-start justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-2">
+                  <UBadge :color="typeBadgeColor(quest.type)" variant="soft" size="sm">
+                    {{ typeLabelMap[quest.type] }}
+                  </UBadge>
+                  <UBadge color="neutral" variant="soft" size="sm">
+                    {{ statusLabelMap[quest.status] }}
+                  </UBadge>
+                </div>
                 <USelect
+                  class="w-full sm:w-44"
                   :disabled="!canWriteContent"
                   :items="statusOptions"
                   :model-value="quest.status"
                   @update:model-value="(value) => updateStatus(quest, value as QuestItem['status'])"
                 />
-                <span class="text-xs text-muted">{{ quest.progressNotes || 'No progress notes.' }}</span>
+              </div>
+              <div class="mt-3 w-full">
+                <p class="text-xs whitespace-pre-line text-muted">{{ quest.progressNotes || 'No progress notes.' }}</p>
               </div>
             </SharedListItemCard>
           </div>

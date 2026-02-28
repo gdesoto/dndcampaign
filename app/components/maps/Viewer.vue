@@ -431,7 +431,7 @@ onMounted(async () => {
         filter: burgFilter('capital'),
         paint: {
           'circle-radius': 5.3,
-          'circle-color': '#ffffff',
+          'circle-color': '#ffd400',
           'circle-stroke-color': '#2f241a',
           'circle-stroke-width': 1.2,
         },
@@ -440,7 +440,7 @@ onMounted(async () => {
         id: 'map-burg-major',
         type: 'circle',
         source: 'campaign-map-features',
-        minzoom: 4,
+        minzoom: 7,
         filter: burgFilter('major'),
         paint: {
           'circle-radius': 4.7,
@@ -453,7 +453,7 @@ onMounted(async () => {
         id: 'map-burg-minor',
         type: 'circle',
         source: 'campaign-map-features',
-        minzoom: 7,
+        minzoom: 9,
         filter: burgFilter('minor'),
         paint: {
           'circle-radius': 3.8,

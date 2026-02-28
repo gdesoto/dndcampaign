@@ -204,8 +204,9 @@ const deleteMapWithClose = async (mapId: string, close: () => void) => {
   }
 }
 
-const activeLayers = ref<MapFeatureType[]>(['state', 'marker', 'river', 'burg', 'route'])
+const activeLayers = ref<MapFeatureType[]>(['burg'])
 const glossaryPointsOnly = ref(false)
+const glossaryDefaultAppliedForMapId = ref('')
 const selectedFeatureIds = ref<string[]>([])
 const layerModalOpen = ref(false)
 const mapSettingsModalOpen = ref(false)
@@ -221,6 +222,29 @@ const selectedFeatureLabels = computed(() => {
       type: String(entry.properties.featureType || ''),
     }))
 })
+
+watch(
+  selectedMapId,
+  (value, previous) => {
+    if (value !== previous) {
+      glossaryDefaultAppliedForMapId.value = ''
+    }
+  },
+)
+
+watch(
+  [selectedMapId, viewer],
+  ([mapId, viewerData]) => {
+    if (!mapId || !viewerData || viewerData.map.id !== mapId) return
+    if (glossaryDefaultAppliedForMapId.value === mapId) return
+
+    glossaryPointsOnly.value = viewerData.features.some((feature) =>
+      Boolean(feature.properties.glossaryLinkedOrMatched),
+    )
+    glossaryDefaultAppliedForMapId.value = mapId
+  },
+  { immediate: true },
+)
 
 const stageOpen = ref(false)
 const stageResult = ref<MapGlossaryCommitResultDto | null>(null)

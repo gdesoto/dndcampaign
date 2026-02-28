@@ -178,6 +178,7 @@ export type CampaignDungeonSummary = {
   gridType: CampaignDungeonGridType
   generatorVersion: string
   roomCount: number
+  canDelete?: boolean
   createdAt: string
   updatedAt: string
 }

@@ -14,8 +14,10 @@ const isCreateOpen = ref(false)
 const isImportOpen = ref(false)
 const isCreating = ref(false)
 const isImporting = ref(false)
+const deletingDungeonId = ref('')
 const createError = ref('')
 const importError = ref('')
+const deleteError = ref('')
 const seedPattern = /^[A-Za-z0-9][A-Za-z0-9_-]{2,79}$/
 type DungeonThemeOption = 'ruins' | 'cavern' | 'sewer' | 'crypt' | 'custom'
 const dungeonThemeOptions = [
@@ -152,6 +154,20 @@ const importDungeon = async () => {
     isImporting.value = false
   }
 }
+
+const deleteDungeonWithClose = async (dungeon: CampaignDungeonSummary, close: () => void) => {
+  deleteError.value = ''
+  deletingDungeonId.value = dungeon.id
+  try {
+    await dungeonApi.deleteDungeon(campaignId.value, dungeon.id)
+    await refresh()
+    close()
+  } catch (cause) {
+    deleteError.value = (cause as Error).message || 'Unable to delete dungeon.'
+  } finally {
+    deletingDungeonId.value = ''
+  }
+}
 </script>
 
 <template>
@@ -218,16 +234,31 @@ const importDungeon = async () => {
             Rooms: {{ dungeon.roomCount }} • Updated {{ new Date(dungeon.updatedAt).toLocaleString() }}
           </div>
 
-          <UButton
-            variant="outline"
-            :to="`/campaigns/${campaignId}/dungeons/${dungeon.id}`"
-            icon="i-lucide-arrow-right"
-          >
-            Open dungeon
-          </UButton>
+          <div class="flex flex-wrap items-center gap-2">
+            <UButton
+              variant="outline"
+              :to="`/campaigns/${campaignId}/dungeons/${dungeon.id}`"
+              icon="i-lucide-arrow-right"
+            >
+              Open dungeon
+            </UButton>
+            <SharedConfirmActionPopover
+              v-if="dungeon.canDelete"
+              :message='`Delete dungeon "${dungeon.name}"? This removes its rooms, links, and snapshots.`'
+              trigger-label="Delete"
+              trigger-size="xs"
+              trigger-variant="ghost"
+              trigger-color="error"
+              confirm-label="Delete dungeon"
+              confirm-icon="i-lucide-trash-2"
+              :confirm-loading="deletingDungeonId === dungeon.id"
+              @confirm="({ close }) => deleteDungeonWithClose(dungeon, close)"
+            />
+          </div>
         </div>
       </UCard>
     </div>
+    <p v-if="deleteError" class="text-sm text-error">{{ deleteError }}</p>
 
     <UModal v-model:open="isCreateOpen" title="Create dungeon">
       <template #body>

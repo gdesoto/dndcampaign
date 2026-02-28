@@ -355,7 +355,7 @@ const decideRequest = async (requestId: string, decision: CampaignRequestDecisio
             </div>
           </template>
 
-          <p class="text-sm text-default">{{ request.description }}</p>
+          <p class="text-sm whitespace-pre-line text-default">{{ request.description }}</p>
 
           <div class="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted">
             <span v-if="request.visibility === 'PUBLIC'">Votes: {{ request.voteCount }}</span>

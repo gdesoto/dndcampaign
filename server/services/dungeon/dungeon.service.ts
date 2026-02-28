@@ -35,9 +35,10 @@ const toSummary = (row: {
   gridType: 'SQUARE'
   generatorVersion: string
   mapJson: unknown
+  createdByUserId: string
   createdAt: Date
   updatedAt: Date
-}): CampaignDungeonSummary => {
+}, canDelete: boolean): CampaignDungeonSummary => {
   const map = parseDungeonMap(row.mapJson)
   return {
     id: row.id,
@@ -49,6 +50,7 @@ const toSummary = (row: {
     gridType: row.gridType,
     generatorVersion: row.generatorVersion,
     roomCount: map.rooms.length,
+    canDelete,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   }
@@ -164,6 +166,10 @@ export class DungeonService {
   ): Promise<ServiceResult<CampaignDungeonSummary[]>> {
     const access = await ensureCampaignAccess(campaignId, userId, 'content.read')
     if (!access.ok) return access
+    const resolved = await resolveCampaignAccess(campaignId, userId)
+    const canDeleteAsOwnerOrDm = Boolean(
+      resolved.access?.role === 'OWNER' || resolved.access?.hasDmAccess,
+    )
 
     const rows = await prisma.campaignDungeon.findMany({
       where: {
@@ -174,7 +180,10 @@ export class DungeonService {
       orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
     })
 
-    return { ok: true, data: rows.map(toSummary) }
+    return {
+      ok: true,
+      data: rows.map((row) => toSummary(row, canDeleteAsOwnerOrDm || row.createdByUserId === userId)),
+    }
   }
 
   async createDungeon(
@@ -282,13 +291,47 @@ export class DungeonService {
   }
 
   async deleteDungeon(campaignId: string, dungeonId: string, userId: string): Promise<ServiceResult<{ deleted: true }>> {
-    const existing = await withDungeonAccess(dungeonId, campaignId, userId, 'content.write')
+    const existing = await prisma.campaignDungeon.findFirst({
+      where: {
+        id: dungeonId,
+        campaignId,
+        campaign: buildCampaignWhereForPermission(userId, 'content.read'),
+      },
+      select: {
+        id: true,
+        campaignId: true,
+        name: true,
+        createdByUserId: true,
+        campaign: {
+          select: {
+            ownerId: true,
+            members: {
+              where: { userId },
+              select: { hasDmAccess: true },
+              take: 1,
+            },
+          },
+        },
+      },
+    })
     if (!existing) {
       return {
         ok: false,
         statusCode: 404,
         code: 'NOT_FOUND',
         message: 'Dungeon not found or access denied.',
+      }
+    }
+    const canDelete =
+      existing.createdByUserId === userId
+      || existing.campaign.ownerId === userId
+      || Boolean(existing.campaign.members[0]?.hasDmAccess)
+    if (!canDelete) {
+      return {
+        ok: false,
+        statusCode: 403,
+        code: 'FORBIDDEN',
+        message: 'You do not have permission to delete this dungeon.',
       }
     }
 

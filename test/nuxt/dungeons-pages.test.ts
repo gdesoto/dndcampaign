@@ -7,6 +7,7 @@ import DungeonDetailPage from '../../app/pages/campaigns/[campaignId]/dungeons/[
 const mockListDungeons = vi.fn()
 const mockCreateDungeon = vi.fn()
 const mockImportDungeon = vi.fn()
+const mockDeleteDungeon = vi.fn()
 const mockGetDungeon = vi.fn()
 const mockUpdateDungeon = vi.fn()
 const mockGenerateDungeon = vi.fn()
@@ -34,6 +35,7 @@ vi.mock('~/composables/useDungeonList', () => ({
     listDungeons: mockListDungeons,
     createDungeon: mockCreateDungeon,
     importDungeon: mockImportDungeon,
+    deleteDungeon: mockDeleteDungeon,
   }),
 }))
 
@@ -69,6 +71,7 @@ const dungeonDetailFixture = {
   gridType: 'SQUARE',
   generatorVersion: '1.0.0',
   roomCount: 2,
+  canDelete: true,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
   config: {
@@ -148,6 +151,7 @@ describe('Dungeon pages', () => {
         gridType: 'SQUARE',
         generatorVersion: '1.0.0',
         roomCount: 2,
+        canDelete: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
@@ -192,6 +196,7 @@ describe('Dungeon pages', () => {
     mockUnpublishDungeon.mockResolvedValue({ ...dungeonDetailFixture, status: 'DRAFT' })
     mockCreateEncounterFromRoom.mockResolvedValue({ encounterId: 'encounter-1' })
     mockImportDungeon.mockResolvedValue({ id: 'imported-dungeon-1' })
+    mockDeleteDungeon.mockResolvedValue({ deleted: true })
   })
 
   it('renders dungeons list entries', async () => {

@@ -21,9 +21,15 @@ export function useDungeonList() {
       body: input,
     })
 
+  const deleteDungeon = async (campaignId: string, dungeonId: string) =>
+    request<{ deleted: true }>(`/api/campaigns/${campaignId}/dungeons/${dungeonId}`, {
+      method: 'DELETE',
+    })
+
   return {
     listDungeons,
     createDungeon,
     importDungeon,
+    deleteDungeon,
   }
 }

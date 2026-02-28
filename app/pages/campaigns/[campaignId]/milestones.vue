@@ -145,7 +145,7 @@ const toggleComplete = async (milestone: MilestoneItem) => {
                 <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="openEdit(milestone)">Edit</UButton>
               </div>
             </template>
-            <p class="text-sm text-default">{{ milestone.description || 'Add details about this milestone.' }}</p>
+            <p class="text-sm whitespace-pre-line text-default">{{ milestone.description || 'Add details about this milestone.' }}</p>
             <div class="mt-4 flex items-center justify-between gap-3">
               <span class="text-xs text-muted">
                 {{ milestone.isComplete ? 'Completed' : 'In progress' }}

@@ -46,8 +46,8 @@ export const dungeonContentConfigSchema = z.object({
 export const dungeonGeneratorConfigSchema = z
   .object({
     gridType: campaignDungeonGridTypeSchema.default('SQUARE'),
-    width: z.number().int().min(20).max(400).default(80),
-    height: z.number().int().min(20).max(400).default(80),
+    width: z.number().int().min(20).max(400).default(40),
+    height: z.number().int().min(20).max(400).default(40),
     cellSize: z.number().int().min(16).max(128).default(32),
     theme: z.string().trim().min(1).max(80).default('ruins'),
     layout: dungeonLayoutConfigSchema.default({
