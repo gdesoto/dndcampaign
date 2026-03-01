@@ -51,7 +51,16 @@ export const useMediaPlayer = () => {
 
   const hasSource = computed(() => Boolean(state.value.source))
 
+  let pendingCanPlayListener: { media: HTMLMediaElement; listener: () => void } | null = null
+
+  const clearPendingCanPlayListener = () => {
+    if (!pendingCanPlayListener) return
+    pendingCanPlayListener.media.removeEventListener('canplay', pendingCanPlayListener.listener)
+    pendingCanPlayListener = null
+  }
+
   const setElement = (value: HTMLMediaElement | null) => {
+    clearPendingCanPlayListener()
     const previous = element.value
     element.value = value
     if (previous && previous !== value) {
@@ -128,8 +137,9 @@ export const useMediaPlayer = () => {
       state.value.autoplay = true
       media.src = source.src
       media.load()
+      clearPendingCanPlayListener()
       const onCanPlay = () => {
-        media.removeEventListener('canplay', onCanPlay)
+        clearPendingCanPlayListener()
         if (!state.value.autoplay || token !== state.value.playToken) return
         media
           .play()
@@ -143,6 +153,7 @@ export const useMediaPlayer = () => {
             state.value.autoplay = false
           })
       }
+      pendingCanPlayListener = { media, listener: onCanPlay }
       media.addEventListener('canplay', onCanPlay)
       return
     }
@@ -173,6 +184,7 @@ export const useMediaPlayer = () => {
   }
 
   const stop = () => {
+    clearPendingCanPlayListener()
     if (element.value) {
       element.value.pause()
       element.value.currentTime = 0

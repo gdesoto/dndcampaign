@@ -33,7 +33,18 @@ export default defineEventHandler(async (event) => {
 
   const documents = await prisma.document.findMany({
     where: { sessionId },
-    include: { currentVersion: true },
+    include: {
+      currentVersion: {
+        select: {
+          id: true,
+          versionNumber: true,
+          format: true,
+          source: true,
+          createdByUserId: true,
+          createdAt: true,
+        },
+      },
+    },
     orderBy: { updatedAt: 'desc' },
   })
   return ok(documents)
