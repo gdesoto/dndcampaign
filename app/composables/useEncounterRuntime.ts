@@ -11,35 +11,41 @@ import type {
 export function useEncounterRuntime() {
   const { request } = useApi()
 
-  const start = async (encounterId: string) => request(`/api/encounters/${encounterId}/start`, { method: 'POST' })
-  const pause = async (encounterId: string) => request(`/api/encounters/${encounterId}/pause`, { method: 'POST' })
-  const resume = async (encounterId: string) => request(`/api/encounters/${encounterId}/resume`, { method: 'POST' })
-  const complete = async (encounterId: string) => request(`/api/encounters/${encounterId}/complete`, { method: 'POST' })
-  const abandon = async (encounterId: string) => request(`/api/encounters/${encounterId}/abandon`, { method: 'POST' })
-  const reset = async (encounterId: string) => request(`/api/encounters/${encounterId}/reset`, { method: 'POST' })
+  const start = async (encounterId: string) =>
+    request(`/api/encounters/${encounterId}`, { method: 'PATCH', body: { action: 'start' } })
+  const pause = async (encounterId: string) =>
+    request(`/api/encounters/${encounterId}`, { method: 'PATCH', body: { action: 'pause' } })
+  const resume = async (encounterId: string) =>
+    request(`/api/encounters/${encounterId}`, { method: 'PATCH', body: { action: 'resume' } })
+  const complete = async (encounterId: string) =>
+    request(`/api/encounters/${encounterId}`, { method: 'PATCH', body: { action: 'complete' } })
+  const abandon = async (encounterId: string) =>
+    request(`/api/encounters/${encounterId}`, { method: 'PATCH', body: { action: 'abandon' } })
+  const reset = async (encounterId: string) =>
+    request(`/api/encounters/${encounterId}`, { method: 'PATCH', body: { action: 'reset' } })
 
   const rollInitiative = async (encounterId: string, input?: EncounterInitiativeRollInput) =>
-    request(`/api/encounters/${encounterId}/initiative/roll`, {
-      method: 'POST',
-      body: input || { mode: 'ALL' },
+    request(`/api/encounters/${encounterId}/initiative`, {
+      method: 'PATCH',
+      body: { action: 'roll', ...(input || { mode: 'ALL' }) },
     })
 
   const reorderInitiative = async (encounterId: string, input: EncounterInitiativeReorderInput) =>
-    request(`/api/encounters/${encounterId}/initiative/reorder`, {
-      method: 'POST',
-      body: input,
+    request(`/api/encounters/${encounterId}/initiative`, {
+      method: 'PATCH',
+      body: { action: 'reorder', ...input },
     })
 
   const advanceTurn = async (encounterId: string) =>
-    request(`/api/encounters/${encounterId}/turn/advance`, { method: 'POST' })
+    request(`/api/encounters/${encounterId}/turn`, { method: 'PATCH', body: { action: 'advance' } })
 
   const rewindTurn = async (encounterId: string) =>
-    request(`/api/encounters/${encounterId}/turn/rewind`, { method: 'POST' })
+    request(`/api/encounters/${encounterId}/turn`, { method: 'PATCH', body: { action: 'rewind' } })
 
   const setActiveTurn = async (encounterId: string, input: EncounterSetActiveTurnInput) =>
-    request(`/api/encounters/${encounterId}/turn/set-active`, {
-      method: 'POST',
-      body: input,
+    request(`/api/encounters/${encounterId}/turn`, {
+      method: 'PATCH',
+      body: { action: 'set-active', ...input },
     })
 
   const listCombatants = async (encounterId: string) =>
@@ -65,15 +71,15 @@ export function useEncounterRuntime() {
     request(`/api/encounters/${encounterId}/combatants/${combatantId}`, { method: 'DELETE' })
 
   const applyDamage = async (encounterId: string, combatantId: string, amount: number, note?: string) =>
-    request(`/api/encounters/${encounterId}/combatants/${combatantId}/apply-damage`, {
-      method: 'POST',
-      body: { amount, note },
+    request(`/api/encounters/${encounterId}/combatants/${combatantId}`, {
+      method: 'PATCH',
+      body: { operation: 'damage', amount, note },
     })
 
   const applyHeal = async (encounterId: string, combatantId: string, amount: number, note?: string) =>
-    request(`/api/encounters/${encounterId}/combatants/${combatantId}/apply-heal`, {
-      method: 'POST',
-      body: { amount, note },
+    request(`/api/encounters/${encounterId}/combatants/${combatantId}`, {
+      method: 'PATCH',
+      body: { operation: 'heal', amount, note },
     })
 
   const addCondition = async (encounterId: string, combatantId: string, input: EncounterConditionCreateInput) =>

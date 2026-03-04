@@ -65,7 +65,7 @@ export function useSessionRecordings(options: UseSessionRecordingsOptions) {
     playbackError.value = ''
     playbackLoading[recordingId] = true
     try {
-      const payload = await request<{ url: string }>(`/api/recordings/${recordingId}/playback-url`)
+      const payload = await request<{ url: string }>(`/api/recordings/${recordingId}/playback/url`)
       const playbackUrl = payload?.url
       if (!playbackUrl) throw new Error('Unable to load recording playback URL.')
       playbackUrls[recordingId] = playbackUrl

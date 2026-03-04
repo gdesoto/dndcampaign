@@ -38,6 +38,7 @@ const docsEntries: UiRefreshDocEntry[] = [
 export const useUiRefreshDocs = () => {
   const navigationItems = [
     { label: 'Overview', to: '/docs', icon: 'i-lucide-book-open' },
+    { label: 'API Reference', to: '/docs/api', icon: 'i-lucide-braces' },
     ...docsEntries.map((entry) => ({
       label: entry.title,
       to: `/docs/${entry.slug}`,

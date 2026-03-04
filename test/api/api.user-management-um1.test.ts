@@ -88,7 +88,7 @@ describe('user management UM-1', () => {
   })
 
   it('gets and updates account profile', async () => {
-    const profileResponse = await fetch(`${baseUrl}/api/account/profile`, {
+    const profileResponse = await fetch(`${baseUrl}/api/account`, {
       headers: { cookie: authCookie },
     })
 
@@ -96,13 +96,14 @@ describe('user management UM-1', () => {
     const profilePayload = await profileResponse.json()
     expect(profilePayload.data.profile.email).toBe(registerUser.email)
 
-    const patchResponse = await fetch(`${baseUrl}/api/account/profile`, {
+    const patchResponse = await fetch(`${baseUrl}/api/account`, {
       method: 'PATCH',
       headers: {
         cookie: authCookie,
         'content-type': 'application/json',
       },
       body: JSON.stringify({
+        action: 'update-profile',
         name: 'Updated UM1 Tester',
         avatarUrl: 'https://example.com/avatar.png',
       }),
@@ -115,13 +116,14 @@ describe('user management UM-1', () => {
   })
 
   it('changes email with password re-auth', async () => {
-    const response = await fetch(`${baseUrl}/api/account/change-email`, {
-      method: 'POST',
+    const response = await fetch(`${baseUrl}/api/account`, {
+      method: 'PATCH',
       headers: {
         cookie: authCookie,
         'content-type': 'application/json',
       },
       body: JSON.stringify({
+        action: 'change-email',
         newEmail: 'um1-updated@example.com',
         password: registerUser.password,
       }),
@@ -133,13 +135,14 @@ describe('user management UM-1', () => {
   })
 
   it('changes password and allows login with new password', async () => {
-    const changeResponse = await fetch(`${baseUrl}/api/account/change-password`, {
-      method: 'POST',
+    const changeResponse = await fetch(`${baseUrl}/api/account`, {
+      method: 'PATCH',
       headers: {
         cookie: authCookie,
         'content-type': 'application/json',
       },
       body: JSON.stringify({
+        action: 'change-password',
         currentPassword: registerUser.password,
         newPassword: 'strongpass12345',
       }),
@@ -178,9 +181,13 @@ describe('user management UM-1', () => {
     expect(Array.isArray(sessionsPayload.data.sessions)).toBe(true)
     expect(sessionsPayload.data.sessions.length).toBeGreaterThan(0)
 
-    const revokeResponse = await fetch(`${baseUrl}/api/account/sessions/revoke-others`, {
-      method: 'POST',
-      headers: { cookie: authCookie },
+    const revokeResponse = await fetch(`${baseUrl}/api/account`, {
+      method: 'PATCH',
+      headers: {
+        cookie: authCookie,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ action: 'revoke-other-sessions' }),
     })
     expect(revokeResponse.status).toBe(200)
     const revokePayload = await revokeResponse.json()
@@ -188,7 +195,7 @@ describe('user management UM-1', () => {
   })
 
   it('requires authentication for account profile endpoints', async () => {
-    const response = await fetch(`${baseUrl}/api/account/profile`)
+    const response = await fetch(`${baseUrl}/api/account`)
     expect(response.status).toBe(401)
   })
 

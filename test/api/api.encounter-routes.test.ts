@@ -160,47 +160,51 @@ describe('encounter API routes', () => {
     })
     expect(invalidSourceCombatant.status).toBe(400)
 
-    const outsiderDamage = await fetch(`${baseUrl}/api/encounters/${encounterId}/combatants/${combatantId}/apply-damage`, {
-      method: 'POST',
+    const outsiderDamage = await fetch(`${baseUrl}/api/encounters/${encounterId}/combatants/${combatantId}`, {
+      method: 'PATCH',
       headers: {
         cookie: cookies.outsider,
         'content-type': 'application/json',
       },
-      body: JSON.stringify({ amount: 3 }),
+      body: JSON.stringify({ operation: 'damage', amount: 3 }),
     })
     expect(outsiderDamage.status).toBe(404)
 
-    const ownerDamage = await fetch(`${baseUrl}/api/encounters/${encounterId}/combatants/${combatantId}/apply-damage`, {
-      method: 'POST',
+    const ownerDamage = await fetch(`${baseUrl}/api/encounters/${encounterId}/combatants/${combatantId}`, {
+      method: 'PATCH',
       headers: {
         cookie: cookies.owner,
         'content-type': 'application/json',
       },
-      body: JSON.stringify({ amount: 5 }),
+      body: JSON.stringify({ operation: 'damage', amount: 5 }),
     })
     expect(ownerDamage.status).toBe(200)
 
-    const start = await fetch(`${baseUrl}/api/encounters/${encounterId}/start`, {
-      method: 'POST',
-      headers: { cookie: cookies.owner },
+    const start = await fetch(`${baseUrl}/api/encounters/${encounterId}`, {
+      method: 'PATCH',
+      headers: { cookie: cookies.owner, 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'start' }),
     })
     expect(start.status).toBe(200)
 
-    const reset = await fetch(`${baseUrl}/api/encounters/${encounterId}/reset`, {
-      method: 'POST',
-      headers: { cookie: cookies.owner },
+    const reset = await fetch(`${baseUrl}/api/encounters/${encounterId}`, {
+      method: 'PATCH',
+      headers: { cookie: cookies.owner, 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'reset' }),
     })
     expect(reset.status).toBe(200)
 
-    const firstRoll = await fetch(`${baseUrl}/api/encounters/${encounterId}/initiative/roll`, {
-      method: 'POST',
-      headers: { cookie: cookies.owner },
+    const firstRoll = await fetch(`${baseUrl}/api/encounters/${encounterId}/initiative`, {
+      method: 'PATCH',
+      headers: { cookie: cookies.owner, 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'roll' }),
     })
     expect(firstRoll.status).toBe(200)
 
-    const secondRoll = await fetch(`${baseUrl}/api/encounters/${encounterId}/initiative/roll`, {
-      method: 'POST',
-      headers: { cookie: cookies.owner },
+    const secondRoll = await fetch(`${baseUrl}/api/encounters/${encounterId}/initiative`, {
+      method: 'PATCH',
+      headers: { cookie: cookies.owner, 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'roll' }),
     })
     expect(secondRoll.status).toBe(200)
 
@@ -212,9 +216,10 @@ describe('encounter API routes', () => {
     const sortOrders = combatantsPayload.data.map((entry: { sortOrder: number }) => entry.sortOrder)
     expect(new Set(sortOrders).size).toBe(sortOrders.length)
 
-    const advance = await fetch(`${baseUrl}/api/encounters/${encounterId}/turn/advance`, {
-      method: 'POST',
-      headers: { cookie: cookies.owner },
+    const advance = await fetch(`${baseUrl}/api/encounters/${encounterId}/turn`, {
+      method: 'PATCH',
+      headers: { cookie: cookies.owner, 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'advance' }),
     })
     expect(advance.status).toBe(200)
 

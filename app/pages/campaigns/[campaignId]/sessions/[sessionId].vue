@@ -434,8 +434,9 @@ const attachTranscriptToVideo = async () => {
   subtitleAttachError.value = ''
   subtitleAttachLoading.value = true
   try {
-    await request(`/api/recordings/${selectedSubtitleRecordingId.value}/vtt/from-transcript`, {
+    await request(`/api/recordings/${selectedSubtitleRecordingId.value}/captions`, {
       method: 'POST',
+      body: { mode: 'from-transcript' },
     })
     await sessionInvalidation.afterRecordingsMutation()
   } catch (error) {

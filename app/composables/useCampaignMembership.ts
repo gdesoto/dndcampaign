@@ -78,7 +78,7 @@ export const useCampaignMembership = () => {
       newOwnerUserId: string
       previousOwnerUserId: string
       newOwnerMemberId: string
-    }>(`/api/campaigns/${campaignId}/owner-transfer`, {
+    }>(`/api/campaigns/${campaignId}/owner/transfer`, {
       method: 'POST',
       body: payload,
     })
@@ -88,7 +88,7 @@ export const useCampaignMembership = () => {
       campaignId: string
       campaignName: string
       role: CampaignMemberRole
-    }>(`/api/campaign-invites/${token}/accept`, {
+    }>(`/api/campaigns/invites/${token}/accept`, {
       method: 'POST',
     })
 
@@ -110,7 +110,7 @@ export const useCampaignMembership = () => {
       | { status: 'INVITE_NOT_FOUND' }
       | { status: 'INVITE_EXPIRED' }
       | { status: 'INVITE_ALREADY_PROCESSED' }
-    >(`/api/campaign-invites/${token}`)
+    >(`/api/campaigns/invites/${token}`)
 
   return {
     getMembers,

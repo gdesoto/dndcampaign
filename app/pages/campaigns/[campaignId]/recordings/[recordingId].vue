@@ -81,7 +81,7 @@ const { data: playbackUrl, pending: playbackPending } = await useAsyncData(
   () => `recording-playback-${recordingId.value}`,
   async () => {
     const payload = await request<{ url: string }>(
-      `/api/recordings/${recordingId.value}/playback-url`
+      `/api/recordings/${recordingId.value}/playback/url`
     )
     return payload?.url || ''
   }
@@ -204,7 +204,7 @@ const uploadVtt = async () => {
   try {
     const formData = new FormData()
     formData.append('file', vttFile.value)
-    await request(`/api/recordings/${recordingId.value}/vtt`, {
+    await request(`/api/recordings/${recordingId.value}/captions`, {
       method: 'POST',
       body: formData,
     })
@@ -223,8 +223,9 @@ const attachFromTranscript = async () => {
   transcriptAttachError.value = ''
   transcriptAttachLoading.value = true
   try {
-    await request(`/api/recordings/${recordingId.value}/vtt/from-transcript`, {
+    await request(`/api/recordings/${recordingId.value}/captions`, {
       method: 'POST',
+      body: { mode: 'from-transcript' },
     })
     await refresh()
     await refreshVttHistory()
@@ -299,7 +300,7 @@ const detachSubtitles = async () => {
   detachError.value = ''
   detachLoading.value = true
   try {
-    await request(`/api/recordings/${recordingId.value}/vtt`, {
+    await request(`/api/recordings/${recordingId.value}/captions`, {
       method: 'DELETE',
     })
     await refresh()
@@ -425,9 +426,12 @@ const startTranscription = async () => {
       diarize: transcribeForm.diarize,
       tagAudioEvents: transcribeForm.tagAudioEvents,
     }
-    await request(`/api/recordings/${recordingId.value}/transcribe`, {
+    await request(`/api/recordings/${recordingId.value}/transcriptions`, {
       method: 'POST',
-      body: payload,
+      body: {
+        mode: 'transcribe',
+        ...payload,
+      },
     })
     await refreshTranscriptions()
     transcribeModalOpen.value = false
@@ -449,9 +453,9 @@ const importTranscription = async () => {
       importError.value = 'Provide a transcription ID.'
       return
     }
-    await request(`/api/recordings/${recordingId.value}/transcriptions/import`, {
+    await request(`/api/recordings/${recordingId.value}/transcriptions`, {
       method: 'POST',
-      body: { transcriptionId },
+      body: { mode: 'import', transcriptionId },
     })
     await refreshTranscriptions()
     importTranscriptionId.value = ''
@@ -467,8 +471,9 @@ const importTranscription = async () => {
 const fetchTranscription = async (jobId: string) => {
   transcribeActionError.value = ''
   try {
-    await request(`/api/transcriptions/${jobId}/fetch`, {
-      method: 'POST',
+    await request(`/api/transcriptions/${jobId}`, {
+      method: 'PATCH',
+      body: { action: 'fetch' },
     })
     await refreshTranscriptions()
   } catch (error) {
@@ -480,9 +485,9 @@ const fetchTranscription = async (jobId: string) => {
 const applyTranscript = async (jobId: string, artifactId: string) => {
   transcribeActionError.value = ''
   try {
-    await request(`/api/transcriptions/${jobId}/apply-transcript`, {
-      method: 'POST',
-      body: { artifactId },
+    await request(`/api/transcriptions/${jobId}`, {
+      method: 'PATCH',
+      body: { action: 'apply-transcript', artifactId },
     })
     await refreshTranscript()
   } catch (error) {
@@ -495,9 +500,9 @@ const attachSubtitlesFromArtifact = async (jobId: string, artifactId: string) =>
   transcribeActionError.value = ''
   try {
     const recordingId = selectedVideoByArtifact[artifactId]
-    await request(`/api/transcriptions/${jobId}/attach-vtt`, {
-      method: 'POST',
-      body: { artifactId, recordingId },
+    await request(`/api/transcriptions/${jobId}`, {
+      method: 'PATCH',
+      body: { action: 'attach-vtt', artifactId, recordingId },
     })
     await refresh()
     await refreshVttHistory()

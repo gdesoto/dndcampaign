@@ -18,14 +18,14 @@ export function useSummaryJobState(options: UseSummaryJobStateOptions) {
 
   const { data: summaryJobData, refresh: refreshSummaryJob } = useAsyncData(
     () => `${options.keyPrefix}-summary-job-${options.sessionId.value}`,
-    () => request<SessionSummaryJobResponse>(`/api/sessions/${options.sessionId.value}/summary-jobs`)
+    () => request<SessionSummaryJobResponse>(`/api/sessions/${options.sessionId.value}/summaries/jobs`)
   )
 
   const { data: selectedSummaryJobData, refresh: refreshSelectedSummaryJob } = useAsyncData(
     () => `${options.keyPrefix}-summary-job-detail-${selectedSummaryJobId.value || 'latest'}`,
     () => {
       if (!selectedSummaryJobId.value) return Promise.resolve(null)
-      return request<SessionSummaryJobDetail>(`/api/summary-jobs/${selectedSummaryJobId.value}`)
+      return request<SessionSummaryJobDetail>(`/api/summaries/jobs/${selectedSummaryJobId.value}`)
     },
     { immediate: false }
   )

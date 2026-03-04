@@ -60,10 +60,11 @@ const loadStage = async () => {
   errorMessage.value = ''
   try {
     const response = await request<MapGlossaryStageResultDto>(
-      `/api/campaigns/${props.campaignId}/maps/${props.mapId}/glossary/stage`,
+      `/api/campaigns/${props.campaignId}/maps/${props.mapId}/glossary`,
       {
-        method: 'POST',
+        method: 'PATCH',
         body: {
+          action: 'stage',
           featureIds: props.featureIds,
         },
       }
@@ -111,10 +112,11 @@ const commit = async () => {
   errorMessage.value = ''
   try {
     const result = await request<MapGlossaryCommitResultDto>(
-      `/api/campaigns/${props.campaignId}/maps/${props.mapId}/glossary/commit`,
+      `/api/campaigns/${props.campaignId}/maps/${props.mapId}/glossary`,
       {
-        method: 'POST',
+        method: 'PATCH',
         body: {
+          action: 'commit',
           items: items.value.map((item) => ({
             featureId: item.featureId,
             action: item.action,

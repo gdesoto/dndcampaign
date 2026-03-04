@@ -117,7 +117,7 @@ describe('calendar section 4 API routes', () => {
   })
 
   it('applies calendar template and allows read access', async () => {
-    const applyResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar-config/template`, {
+    const applyResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar/config/template`, {
       method: 'POST',
       headers: {
         cookie: cookies.owner,
@@ -130,7 +130,7 @@ describe('calendar section 4 API routes', () => {
     expect(applyPayload.data.isEnabled).toBe(true)
     expect(applyPayload.data.months.length).toBeGreaterThan(0)
 
-    const viewResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar-config`, {
+    const viewResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar/config`, {
       headers: { cookie: cookies.viewer },
     })
     expect(viewResponse.status).toBe(200)
@@ -164,7 +164,7 @@ describe('calendar section 4 API routes', () => {
   })
 
   it('allows collaborator current date update and denies viewer update', async () => {
-    const collaboratorUpdate = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar-config/current-date`, {
+    const collaboratorUpdate = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar/config/current-date`, {
       method: 'PUT',
       headers: {
         cookie: cookies.collaborator,
@@ -174,7 +174,7 @@ describe('calendar section 4 API routes', () => {
     })
     expect(collaboratorUpdate.status).toBe(200)
 
-    const viewerUpdate = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar-config/current-date`, {
+    const viewerUpdate = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar/config/current-date`, {
       method: 'PUT',
       headers: {
         cookie: cookies.viewer,
@@ -198,7 +198,7 @@ describe('calendar section 4 API routes', () => {
     const sessionPayload = await sessionCreate.json()
     sessionId = sessionPayload.data.id
 
-    const rangeUpsert = await fetch(`${baseUrl}/api/sessions/${sessionId}/calendar-range`, {
+    const rangeUpsert = await fetch(`${baseUrl}/api/sessions/${sessionId}/calendar/range`, {
       method: 'PUT',
       headers: {
         cookie: cookies.collaborator,
@@ -214,7 +214,7 @@ describe('calendar section 4 API routes', () => {
     const rangePayload = await rangeUpsert.json()
     expect(rangePayload.data.endDay).toBe(10)
 
-    const viewerRangeUpsert = await fetch(`${baseUrl}/api/sessions/${sessionId}/calendar-range`, {
+    const viewerRangeUpsert = await fetch(`${baseUrl}/api/sessions/${sessionId}/calendar/range`, {
       method: 'PUT',
       headers: {
         cookie: cookies.viewer,
@@ -228,7 +228,7 @@ describe('calendar section 4 API routes', () => {
     })
     expect(viewerRangeUpsert.status).toBe(403)
 
-    const createEvent = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar-events`, {
+    const createEvent = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar/events`, {
       method: 'POST',
       headers: {
         cookie: cookies.collaborator,
@@ -245,7 +245,7 @@ describe('calendar section 4 API routes', () => {
     const eventPayload = await createEvent.json()
     eventId = eventPayload.data.id
 
-    const viewerCreateEvent = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar-events`, {
+    const viewerCreateEvent = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar/events`, {
       method: 'POST',
       headers: {
         cookie: cookies.viewer,
@@ -260,7 +260,7 @@ describe('calendar section 4 API routes', () => {
     })
     expect(viewerCreateEvent.status).toBe(403)
 
-    const patchEvent = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar-events/${eventId}`, {
+    const patchEvent = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar/events/${eventId}`, {
       method: 'PATCH',
       headers: {
         cookie: cookies.collaborator,
@@ -270,7 +270,7 @@ describe('calendar section 4 API routes', () => {
     })
     expect(patchEvent.status).toBe(200)
 
-    const calendarView = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar-view?year=2026&month=2`, {
+    const calendarView = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar/view?year=2026&month=2`, {
       headers: { cookie: cookies.viewer },
     })
     expect(calendarView.status).toBe(200)
@@ -280,13 +280,13 @@ describe('calendar section 4 API routes', () => {
       calendarViewPayload.data.sessionRanges.some((range: { sessionId: string }) => range.sessionId === sessionId),
     ).toBe(true)
 
-    const deleteEvent = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar-events/${eventId}`, {
+    const deleteEvent = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar/events/${eventId}`, {
       method: 'DELETE',
       headers: { cookie: cookies.collaborator },
     })
     expect(deleteEvent.status).toBe(200)
 
-    const deleteRange = await fetch(`${baseUrl}/api/sessions/${sessionId}/calendar-range`, {
+    const deleteRange = await fetch(`${baseUrl}/api/sessions/${sessionId}/calendar/range`, {
       method: 'DELETE',
       headers: { cookie: cookies.collaborator },
     })

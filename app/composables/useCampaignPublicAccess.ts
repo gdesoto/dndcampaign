@@ -32,17 +32,17 @@ export const useCampaignPublicAccess = () => {
   const { request } = useApi()
 
   const getSettings = (campaignId: string) =>
-    request<CampaignPublicAccessOwnerDto>(`/api/campaigns/${campaignId}/public-access`)
+    request<CampaignPublicAccessOwnerDto>(`/api/campaigns/${campaignId}/public/access`)
 
   const updateSettings = (campaignId: string, payload: CampaignPublicAccessUpdateInput) =>
-    request<CampaignPublicAccessOwnerDto>(`/api/campaigns/${campaignId}/public-access`, {
+    request<CampaignPublicAccessOwnerDto>(`/api/campaigns/${campaignId}/public/access`, {
       method: 'PATCH',
       body: payload,
     })
 
   const regenerateSlug = (campaignId: string) =>
     request<CampaignPublicAccessOwnerDto>(
-      `/api/campaigns/${campaignId}/public-access/regenerate-slug`,
+      `/api/campaigns/${campaignId}/public/access/regenerate-slug`,
       {
         method: 'POST',
       }

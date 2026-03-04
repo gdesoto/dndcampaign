@@ -86,7 +86,7 @@ export const usePublicCampaign = () => {
         total: number
         totalPages: number
       }
-    }>(`/api/public/campaigns/${publicSlug}/journal-entries${suffix ? `?${suffix}` : ''}`)
+    }>(`/api/public/campaigns/${publicSlug}/journal/entries${suffix ? `?${suffix}` : ''}`)
   }
 
   const getCharacters = (publicSlug: string) =>
@@ -118,7 +118,7 @@ export const usePublicCampaign = () => {
     >(`/api/public/campaigns/${publicSlug}/recaps`)
 
   const getRecapPlaybackUrl = (publicSlug: string, recapId: string) =>
-    request<{ url: string }>(`/api/public/campaigns/${publicSlug}/recaps/${recapId}/playback-url`)
+    request<{ url: string }>(`/api/public/campaigns/${publicSlug}/recaps/${recapId}/playback/url`)
 
   const getSessions = (publicSlug: string) =>
     request<

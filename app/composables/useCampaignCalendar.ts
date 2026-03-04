@@ -46,10 +46,10 @@ export const useCampaignCalendar = () => {
   const { request } = useApi()
 
   const getConfig = (campaignId: string) =>
-    request<CampaignCalendarConfigDto | null>(`/api/campaigns/${campaignId}/calendar-config`)
+    request<CampaignCalendarConfigDto | null>(`/api/campaigns/${campaignId}/calendar/config`)
 
   const upsertConfig = (campaignId: string, payload: CalendarConfigUpsertInput) =>
-    request<CampaignCalendarConfigDto>(`/api/campaigns/${campaignId}/calendar-config`, {
+    request<CampaignCalendarConfigDto>(`/api/campaigns/${campaignId}/calendar/config`, {
       method: 'PUT',
       body: payload,
     })
@@ -58,13 +58,13 @@ export const useCampaignCalendar = () => {
     campaignId: string,
     payload: CalendarTemplateApplyInput,
   ) =>
-    request<CampaignCalendarConfigDto>(`/api/campaigns/${campaignId}/calendar-config/template`, {
+    request<CampaignCalendarConfigDto>(`/api/campaigns/${campaignId}/calendar/config/template`, {
       method: 'POST',
       body: payload,
     })
 
   const updateCurrentDate = (campaignId: string, payload: CalendarCurrentDateUpdateInput) =>
-    request<CampaignCalendarConfigDto>(`/api/campaigns/${campaignId}/calendar-config/current-date`, {
+    request<CampaignCalendarConfigDto>(`/api/campaigns/${campaignId}/calendar/config/current-date`, {
       method: 'PUT',
       body: payload,
     })
@@ -79,43 +79,43 @@ export const useCampaignCalendar = () => {
     )
 
   const getEvents = (campaignId: string, query?: CalendarEventQueryInput) =>
-    request<CampaignCalendarEvent[]>(`/api/campaigns/${campaignId}/calendar-events`, {
+    request<CampaignCalendarEvent[]>(`/api/campaigns/${campaignId}/calendar/events`, {
       query,
     })
 
   const createEvent = (campaignId: string, payload: CalendarEventCreateInput) =>
-    request<CampaignCalendarEvent>(`/api/campaigns/${campaignId}/calendar-events`, {
+    request<CampaignCalendarEvent>(`/api/campaigns/${campaignId}/calendar/events`, {
       method: 'POST',
       body: payload,
     })
 
   const updateEvent = (campaignId: string, eventId: string, payload: CalendarEventUpdateInput) =>
-    request<CampaignCalendarEvent>(`/api/campaigns/${campaignId}/calendar-events/${eventId}`, {
+    request<CampaignCalendarEvent>(`/api/campaigns/${campaignId}/calendar/events/${eventId}`, {
       method: 'PATCH',
       body: payload,
     })
 
   const deleteEvent = (campaignId: string, eventId: string) =>
-    request<{ deleted: true }>(`/api/campaigns/${campaignId}/calendar-events/${eventId}`, {
+    request<{ deleted: true }>(`/api/campaigns/${campaignId}/calendar/events/${eventId}`, {
       method: 'DELETE',
     })
 
   const getRanges = (campaignId: string) =>
-    request<SessionCalendarRange[]>(`/api/campaigns/${campaignId}/calendar-ranges`)
+    request<SessionCalendarRange[]>(`/api/campaigns/${campaignId}/calendar/ranges`)
 
   const upsertSessionRange = (sessionId: string, payload: SessionCalendarRangeWriteInput) =>
-    request<SessionCalendarRange>(`/api/sessions/${sessionId}/calendar-range`, {
+    request<SessionCalendarRange>(`/api/sessions/${sessionId}/calendar/range`, {
       method: 'PUT',
       body: payload,
     })
 
   const deleteSessionRange = (sessionId: string) =>
-    request<{ deleted: true }>(`/api/sessions/${sessionId}/calendar-range`, {
+    request<{ deleted: true }>(`/api/sessions/${sessionId}/calendar/range`, {
       method: 'DELETE',
     })
 
   const getCalendarView = (campaignId: string, query?: CalendarViewQueryInput) =>
-    request<CampaignCalendarViewDto>(`/api/campaigns/${campaignId}/calendar-view`, {
+    request<CampaignCalendarViewDto>(`/api/campaigns/${campaignId}/calendar/view`, {
       query,
     })
 

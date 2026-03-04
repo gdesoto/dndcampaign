@@ -77,9 +77,12 @@ const importCharacter = async (payload: CharacterImportPayload) => {
   importError.value = ''
   isImporting.value = true
   try {
-    const character = await request<Character>('/api/characters/import', {
+    const character = await request<Character>('/api/characters', {
       method: 'POST',
-      body: payload,
+      body: {
+        action: 'import',
+        ...payload,
+      },
     })
     if (!character) {
       throw new Error('Unable to import character.')

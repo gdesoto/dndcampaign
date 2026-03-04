@@ -76,7 +76,7 @@ const { data: campaignMilestones, refresh: refreshCampaignMilestones } = await u
 )
 const { data: calendarConfig } = await useAsyncData(
   () => `encounter-detail-calendar-config-${campaignId.value}`,
-  () => request<CampaignCalendarConfigDto | null>(`/api/campaigns/${campaignId.value}/calendar-config`),
+  () => request<CampaignCalendarConfigDto | null>(`/api/campaigns/${campaignId.value}/calendar/config`),
 )
 
 const summary = ref<EncounterSummaryReport | null>(null)

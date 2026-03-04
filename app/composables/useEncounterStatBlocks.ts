@@ -5,22 +5,22 @@ export function useEncounterStatBlocks() {
   const { request } = useApi()
 
   const listStatBlocks = async (campaignId: string) =>
-    request<EncounterStatBlock[]>(`/api/campaigns/${campaignId}/encounter-stat-blocks`)
+    request<EncounterStatBlock[]>(`/api/campaigns/${campaignId}/encounters/stat-blocks`)
 
   const createStatBlock = async (campaignId: string, input: EncounterStatBlockCreateInput) =>
-    request<EncounterStatBlock>(`/api/campaigns/${campaignId}/encounter-stat-blocks`, {
+    request<EncounterStatBlock>(`/api/campaigns/${campaignId}/encounters/stat-blocks`, {
       method: 'POST',
       body: input,
     })
 
   const updateStatBlock = async (statBlockId: string, input: EncounterStatBlockUpdateInput) =>
-    request<EncounterStatBlock>(`/api/encounter-stat-blocks/${statBlockId}`, {
+    request<EncounterStatBlock>(`/api/encounters/stat-blocks/${statBlockId}`, {
       method: 'PATCH',
       body: input,
     })
 
   const deleteStatBlock = async (statBlockId: string) =>
-    request(`/api/encounter-stat-blocks/${statBlockId}`, {
+    request(`/api/encounters/stat-blocks/${statBlockId}`, {
       method: 'DELETE',
     })
 

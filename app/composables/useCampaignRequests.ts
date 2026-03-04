@@ -33,8 +33,9 @@ export function useCampaignRequests() {
     })
 
   const cancelRequest = async (campaignId: string, requestId: string) =>
-    request<CampaignRequestDetail>(`/api/campaigns/${campaignId}/requests/${requestId}/cancel`, {
-      method: 'POST',
+    request<CampaignRequestDetail>(`/api/campaigns/${campaignId}/requests/${requestId}`, {
+      method: 'PATCH',
+      body: { action: 'cancel' },
     })
 
   const addVote = async (campaignId: string, requestId: string) =>
@@ -52,9 +53,9 @@ export function useCampaignRequests() {
     requestId: string,
     input: CampaignRequestDecisionInput,
   ) =>
-    request<CampaignRequestDetail>(`/api/campaigns/${campaignId}/requests/${requestId}/decision`, {
-      method: 'POST',
-      body: input,
+    request<CampaignRequestDetail>(`/api/campaigns/${campaignId}/requests/${requestId}`, {
+      method: 'PATCH',
+      body: { action: 'decision', ...input },
     })
 
   return {
