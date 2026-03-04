@@ -99,81 +99,86 @@ const navLinks = computed(() => {
 </script>
 
 <template>
-  <div class="min-h-screen">
-    <AppHeader />
+  <div class="theme-shell">
+    <div class="theme-overlay theme-overlay-noise" />
+    <div class="theme-overlay theme-overlay-pattern" />
 
-    <UDashboardGroup class="fixed inset-x-0 bottom-0 top-[var(--ui-header-height)]">
-      <UDashboardSidebar
-        collapsible
-        resizable
-        :min-size="14"
-        :default-size="18"
-        :max-size="28"
-        :collapsed-size="0"
-        :ui="{
-          root: 'min-h-0 h-full',
-          footer: 'border-t border-default',
-        }"
-      >
-        <UNavigationMenu
-          :items="navLinks"
-          orientation="vertical"
-          class="w-full px-1 pb-2"
-          :ui="{ linkLabel: 'font-display tracking-[0.08em] uppercase text-md' }"
-        />
+    <div class="relative z-10 min-h-screen">
+      <AppHeader />
 
-        <template #footer="{ collapsed }">
-          <div class="w-full px-3 py-2.5">
-            <div v-if="collapsed" class="flex justify-center">
-              <UColorModeButton variant="ghost" size="xs" class="shrink-0" />
-            </div>
+      <UDashboardGroup class="fixed inset-x-0 bottom-0 top-[var(--ui-header-height)]">
+        <UDashboardSidebar
+          collapsible
+          resizable
+          :min-size="14"
+          :default-size="18"
+          :max-size="28"
+          :collapsed-size="0"
+          :ui="{
+            root: 'min-h-0 h-full',
+            footer: 'border-t border-default',
+          }"
+        >
+          <UNavigationMenu
+            :items="navLinks"
+            orientation="vertical"
+            class="w-full px-1 pb-2"
+            :ui="{ linkLabel: 'font-display tracking-[0.08em] uppercase text-md' }"
+          />
 
-            <div v-else class="space-y-2">
-              <div class="flex items-center justify-between gap-2">
-                <p class="font-display text-[13px] uppercase tracking-[0.12em] text-[var(--ui-text-dimmed)]">
-                  Party
-                </p>
+          <template #footer="{ collapsed }">
+            <div class="w-full px-3 py-2.5">
+              <div v-if="collapsed" class="flex justify-center">
                 <UColorModeButton variant="ghost" size="xs" class="shrink-0" />
               </div>
 
-              <div class="flex items-center gap-1.5">
-                <UBadge variant="outline" size="sm" color="primary" class="min-w-8 justify-center">DM</UBadge>
-                <UBadge variant="soft" size="sm" color="neutral" class="min-w-8 justify-center">PC</UBadge>
-                <UBadge variant="soft" size="sm" color="neutral" class="min-w-8 justify-center">PC</UBadge>
-              </div>
-            </div>
-          </div>
-        </template>
-      </UDashboardSidebar>
+              <div v-else class="space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="font-display text-[13px] uppercase tracking-[0.12em] text-[var(--ui-text-dimmed)]">
+                    Party
+                  </p>
+                  <UColorModeButton variant="ghost" size="xs" class="shrink-0" />
+                </div>
 
-      <UDashboardPanel
-        class="overflow-hidden"
-        :ui="{ root: 'min-h-0 h-full' }"
-      >
-        <UDashboardNavbar>
-          <template #leading>
-            <div class="flex min-w-0 items-start gap-3">
-              <UDashboardSidebarCollapse size="xl" square class="hidden xl:inline-flex" />
-              <div class="min-w-0">
-                <p class="font-display text-sm tracking-[0.08em] uppercase text-primary-500">
-                  {{ campaign?.name || 'Campaign' }} · {{ sectionTitle }}
-                </p>
-                <p class="text-xs text-muted">
-                  {{ campaignHeaderDescription }}
-                </p>
+                <div class="flex items-center gap-1.5">
+                  <UBadge variant="outline" size="sm" color="primary" class="min-w-8 justify-center">DM</UBadge>
+                  <UBadge variant="soft" size="sm" color="neutral" class="min-w-8 justify-center">PC</UBadge>
+                  <UBadge variant="soft" size="sm" color="neutral" class="min-w-8 justify-center">PC</UBadge>
+                </div>
               </div>
             </div>
           </template>
-        </UDashboardNavbar>
+        </UDashboardSidebar>
 
-        <div class="border-b border-default px-4 py-2 sm:px-6">
-          <UBreadcrumb :items="breadcrumbItems" />
-        </div>
+        <UDashboardPanel
+          class="overflow-hidden"
+          :ui="{ root: 'min-h-0 h-full' }"
+        >
+          <UDashboardNavbar>
+            <template #leading>
+              <div class="flex min-w-0 items-start gap-3">
+                <UDashboardSidebarCollapse size="xl" square class="hidden xl:inline-flex" />
+                <div class="min-w-0">
+                  <p class="font-display text-sm tracking-[0.08em] uppercase text-primary-500">
+                    {{ campaign?.name || 'Campaign' }} · {{ sectionTitle }}
+                  </p>
+                  <p class="text-xs text-muted">
+                    {{ campaignHeaderDescription }}
+                  </p>
+                </div>
+              </div>
+            </template>
+          </UDashboardNavbar>
 
-        <div class="h-full overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
-          <slot />
-        </div>
-      </UDashboardPanel>
-    </UDashboardGroup>
+          <div class="border-b border-default px-4 py-2 sm:px-6">
+            <UBreadcrumb :items="breadcrumbItems" />
+          </div>
+
+          <div class="h-full overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
+            <slot />
+          </div>
+        </UDashboardPanel>
+      </UDashboardGroup>
+    </div>
   </div>
 </template>
