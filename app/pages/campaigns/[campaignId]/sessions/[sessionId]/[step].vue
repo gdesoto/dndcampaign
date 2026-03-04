@@ -192,7 +192,7 @@ const notesModel = computed({
             </div>
           </div>
         </template>
-        <UForm :state="props.form" class="space-y-4" @submit.prevent="emit('save-session')">
+        <UForm :state="props.form" class="space-y-4" @submit="emit('save-session')">
           <UFormField label="Title" name="title">
             <UInput v-model="titleModel" :disabled="!canWriteContent" placeholder="This Is Why Taverns Have Rules" />
           </UFormField>

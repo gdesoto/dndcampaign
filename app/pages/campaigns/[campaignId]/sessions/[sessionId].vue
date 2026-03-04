@@ -12,6 +12,7 @@ const route = useRoute()
 const campaignId = computed(() => route.params.campaignId as string)
 const sessionId = computed(() => route.params.sessionId as string)
 const { request } = useApi()
+const toast = useToast()
 const player = useMediaPlayer()
 
 const {
@@ -419,6 +420,11 @@ const saveSession = async () => {
       },
     })
     await sessionInvalidation.afterSessionMutation()
+    toast.add({
+      title: 'Session saved',
+      color: 'success',
+      icon: 'i-lucide-check',
+    })
     if (isEditSessionOpen.value) isEditSessionOpen.value = false
   } catch (error) {
     saveError.value =
@@ -457,7 +463,7 @@ const attachTranscriptToVideo = async () => {
     :title="session?.title || 'Session details'"
     :description="sessionHeaderDescription"
   >
-    <div v-if="pending" class="grid gap-4">
+    <div v-if="pending && !session" class="grid gap-4">
       <UCard class="h-28 animate-pulse" />
       <UCard class="h-40 animate-pulse" />
     </div>
@@ -564,33 +570,33 @@ const attachTranscriptToVideo = async () => {
           @update:form="Object.assign(form, $event)"
           @update:selected-file="selectedFile = $event"
           @update:selected-kind="selectedKind = $event"
-          @upload-recording="canUploadRecording ? uploadRecording : () => undefined"
+          @upload-recording="canUploadRecording && uploadRecording()"
           @play-recording="loadPlayback"
           @open-player="player.openDrawer"
           @update:transcript-file="transcriptFile = $event"
           @update:show-full-transcript="showFullTranscript = $event"
           @update:selected-subtitle-recording-id="selectedSubtitleRecordingId = $event"
-          @create-transcript="canWriteContent ? saveTranscript : () => undefined"
-          @import-transcript="canWriteContent ? importTranscript : () => undefined"
-          @attach-subtitles="canWriteContent ? attachTranscriptToVideo : () => undefined"
+          @create-transcript="canWriteContent && saveTranscript()"
+          @import-transcript="canWriteContent && importTranscript()"
+          @attach-subtitles="canWriteContent && attachTranscriptToVideo()"
           @update:selected-summary-job-id="selectedSummaryJobId = $event"
           @refresh-jobs="refreshSummaryJob"
-          @send-to-n8n="canRunSummary ? sendSummaryToN8n : () => undefined"
-          @apply-pending-summary="canRunSummary ? applyPendingSummary : () => undefined"
+          @send-to-n8n="canRunSummary && sendSummaryToN8n()"
+          @apply-pending-summary="canRunSummary && applyPendingSummary()"
           @update:selected-suggestion-job-id="selectedSuggestionJobId = $event"
           @refresh-suggestion-jobs="refreshSuggestionJobs"
-          @generate-suggestions="canRunSummary ? generateSuggestions : () => undefined"
-          @apply-suggestion="canRunSummary ? applySuggestion : () => undefined"
-          @discard-suggestion="canRunSummary ? discardSuggestion : () => undefined"
+          @generate-suggestions="canRunSummary && generateSuggestions()"
+          @apply-suggestion="canRunSummary && applySuggestion($event)"
+          @discard-suggestion="canRunSummary && discardSuggestion($event)"
           @update:summary-content="summaryForm.content = $event"
-          @save-summary="canWriteContent ? saveSummary : () => undefined"
+          @save-summary="canWriteContent && saveSummary()"
           @update:summary-file="summaryFile = $event"
-          @import-summary="canWriteContent ? importSummary : () => undefined"
+          @import-summary="canWriteContent && importSummary()"
           @update:recap-file="recapFile = $event"
-          @upload-recap="canUploadRecording ? uploadRecap : () => undefined"
+          @upload-recap="canUploadRecording && uploadRecap()"
           @play-recap="loadRecapPlayback"
-          @delete-recap="canUploadRecording ? deleteRecap : () => undefined"
-          @save-session="canWriteContent ? saveSession : () => undefined"
+          @delete-recap="canUploadRecording && deleteRecap()"
+          @save-session="canWriteContent && saveSession()"
           @jump-step="openSessionSection"
         />
       </div>
