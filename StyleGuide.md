@@ -67,6 +67,19 @@ Guidelines:
 - Handle loading, empty, and error states explicitly in UI.
 - Prefer derived state (`computed`) instead of duplicating source-of-truth data.
 
+## Server API Preferences
+- Prefer resource-first, namespace paths over compound segments:
+  - Use `/api/campaigns/:campaignId/journal/entries` instead of `/api/campaigns/:campaignId/journal-entries`.
+- For single-model attribute updates, use `PUT`/`PATCH` on the canonical model endpoint with model attributes:
+  - Example: update encounter `name`/`type`/`visibility` via `PUT` or `PATCH` on `/api/encounters/:encounterId`.
+- For controlled state transitions or business operations, use typed action payloads on canonical endpoints where practical:
+  - Example: `PATCH /api/encounters/:encounterId` with `{ action: 'start' | 'pause' | ... }`.
+- Prefer endpoint reuse and consolidation over narrow one-off endpoints:
+  - Example: use a shared HP adjustment operation payload rather than separate `/apply-damage` and `/apply-heal` routes.
+- If an operation must safely coordinate changes across multiple models, a dedicated action endpoint is acceptable.
+- For payload-shape changes, add/expand tests before refactor and re-validate after refactor.
+- Any API route or payload change must be updated in the OpenAPI spec (`public/openapi.json`) in the same change set.
+
 ## Forms and Validation
 - Use Nuxt UI form primitives for consistent behavior and styling.
 - Keep form models typed and validation rules explicit.

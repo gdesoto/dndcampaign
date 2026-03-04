@@ -109,14 +109,15 @@ describe('dungeon API routes', () => {
     expect(listPayload.data.some((entry: { id: string }) => entry.id === dungeonId)).toBe(true)
 
     const generateResponse = await fetch(
-      `${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}/generate`,
+      `${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}`,
       {
-        method: 'POST',
+        method: 'PATCH',
         headers: {
           cookie: cookies.owner,
           'content-type': 'application/json',
         },
         body: JSON.stringify({
+          action: 'generate',
           seed: 'fixed-seed-a',
         }),
       },
@@ -126,14 +127,15 @@ describe('dungeon API routes', () => {
     const generatedHash = generatedPayload.data.map.metadata.configHash
 
     const regenerateDoors = await fetch(
-      `${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}/regenerate`,
+      `${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}`,
       {
-        method: 'POST',
+        method: 'PATCH',
         headers: {
           cookie: cookies.owner,
           'content-type': 'application/json',
         },
         body: JSON.stringify({
+          action: 'regenerate',
           scope: 'DOORS',
           seed: 'fixed-seed-a',
         }),
@@ -177,10 +179,14 @@ describe('dungeon API routes', () => {
     expect(updateRoomResponse.status).toBe(200)
 
     const createEncounterFromRoomResponse = await fetch(
-      `${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}/rooms/${roomRowId}/create-encounter`,
+      `${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}/rooms/${roomRowId}`,
       {
-        method: 'POST',
-        headers: { cookie: cookies.owner },
+        method: 'PATCH',
+        headers: {
+          cookie: cookies.owner,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'create-encounter' }),
       },
     )
     expect(createEncounterFromRoomResponse.status).toBe(200)
@@ -272,28 +278,40 @@ describe('dungeon API routes', () => {
     const viewerRoomsPayload = await viewerRoomsResponse.json()
     expect(viewerRoomsPayload.data[0].gmNotes).toBeNull()
 
-    const ownerPublishResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}/publish`, {
-      method: 'POST',
-      headers: { cookie: cookies.owner },
+    const ownerPublishResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}`, {
+      method: 'PATCH',
+      headers: {
+        cookie: cookies.owner,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ action: 'publish' }),
     })
     expect(ownerPublishResponse.status).toBe(200)
     const publishPayload = await ownerPublishResponse.json()
     expect(publishPayload.data.status).toBe('READY')
 
     const viewerUnpublishResponse = await fetch(
-      `${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}/unpublish`,
+      `${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}`,
       {
-        method: 'POST',
-        headers: { cookie: cookies.viewer },
+        method: 'PATCH',
+        headers: {
+          cookie: cookies.viewer,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'unpublish' }),
       },
     )
     expect(viewerUnpublishResponse.status).toBe(404)
 
     const ownerUnpublishResponse = await fetch(
-      `${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}/unpublish`,
+      `${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}`,
       {
-        method: 'POST',
-        headers: { cookie: cookies.owner },
+        method: 'PATCH',
+        headers: {
+          cookie: cookies.owner,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'unpublish' }),
       },
     )
     expect(ownerUnpublishResponse.status).toBe(200)
@@ -384,13 +402,14 @@ describe('dungeon API routes', () => {
     })
     expect(addSecretRoomResponse.status).toBe(200)
 
-    const exportDmResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}/export`, {
-      method: 'POST',
+    const exportDmResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}`, {
+      method: 'PATCH',
       headers: {
         cookie: cookies.owner,
         'content-type': 'application/json',
       },
       body: JSON.stringify({
+        action: 'export',
         format: 'JSON',
         playerSafe: false,
       }),
@@ -402,13 +421,14 @@ describe('dungeon API routes', () => {
     const dmHasSecretRoom = dmDocument.dungeon.map.rooms.some((entry: { isSecret: boolean }) => entry.isSecret)
     expect(dmHasSecretRoom).toBe(true)
 
-    const exportPlayerResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}/export`, {
-      method: 'POST',
+    const exportPlayerResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}`, {
+      method: 'PATCH',
       headers: {
         cookie: cookies.owner,
         'content-type': 'application/json',
       },
       body: JSON.stringify({
+        action: 'export',
         format: 'JSON',
         playerSafe: true,
       }),
@@ -422,13 +442,14 @@ describe('dungeon API routes', () => {
     expect(playerHasSecretRoom).toBe(false)
     expect(playerDocument.rooms.every((entry: { gmNotes: string | null }) => entry.gmNotes === null)).toBe(true)
 
-    const exportSvgResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}/export`, {
-      method: 'POST',
+    const exportSvgResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}`, {
+      method: 'PATCH',
       headers: {
         cookie: cookies.owner,
         'content-type': 'application/json',
       },
       body: JSON.stringify({
+        action: 'export',
         format: 'SVG',
         playerSafe: true,
       }),
@@ -438,13 +459,14 @@ describe('dungeon API routes', () => {
     expect(exportSvgPayload.data.filename.endsWith('.svg')).toBe(true)
     expect((exportSvgPayload.data.content as string).startsWith('<?xml')).toBe(true)
 
-    const exportPngResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}/export`, {
-      method: 'POST',
+    const exportPngResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}`, {
+      method: 'PATCH',
       headers: {
         cookie: cookies.owner,
         'content-type': 'application/json',
       },
       body: JSON.stringify({
+        action: 'export',
         format: 'PNG',
         playerSafe: true,
       }),
@@ -454,13 +476,14 @@ describe('dungeon API routes', () => {
     expect(exportPngPayload.data.filename.endsWith('.png')).toBe(true)
     expect(exportPngPayload.data.encoding).toBe('base64')
 
-    const exportPdfResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}/export`, {
-      method: 'POST',
+    const exportPdfResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}`, {
+      method: 'PATCH',
       headers: {
         cookie: cookies.owner,
         'content-type': 'application/json',
       },
       body: JSON.stringify({
+        action: 'export',
         format: 'PDF',
         playerSafe: true,
       }),
@@ -471,14 +494,15 @@ describe('dungeon API routes', () => {
     expect(exportPdfPayload.data.encoding).toBe('base64')
 
     const viewerForcedSafeExportResponse = await fetch(
-      `${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}/export`,
+      `${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}`,
       {
-        method: 'POST',
+        method: 'PATCH',
         headers: {
           cookie: cookies.viewer,
           'content-type': 'application/json',
         },
         body: JSON.stringify({
+          action: 'export',
           format: 'JSON',
           playerSafe: false,
         }),
@@ -489,13 +513,14 @@ describe('dungeon API routes', () => {
     const viewerDocument = JSON.parse(viewerForcedSafeExportPayload.data.content as string)
     expect(viewerDocument.rooms.every((entry: { gmNotes: string | null }) => entry.gmNotes === null)).toBe(true)
 
-    const importResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons/import`, {
+    const importResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons`, {
       method: 'POST',
       headers: {
         cookie: cookies.owner,
         'content-type': 'application/json',
       },
       body: JSON.stringify({
+        action: 'import',
         source: playerDocument,
         nameOverride: 'Imported Safe Dungeon',
       }),
@@ -518,13 +543,16 @@ describe('dungeon API routes', () => {
       source: playerDocument,
       nameOverride: 'x'.repeat(2_000_100),
     }
-    const oversizedResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons/import`, {
+    const oversizedResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons`, {
       method: 'POST',
       headers: {
         cookie: cookies.owner,
         'content-type': 'application/json',
       },
-      body: JSON.stringify(oversizedPayload),
+      body: JSON.stringify({
+        action: 'import',
+        ...oversizedPayload,
+      }),
     })
     expect(oversizedResponse.status).toBe(413)
   })

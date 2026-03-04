@@ -66,7 +66,7 @@ export function useSessionRecap(options: UseSessionRecapOptions) {
 
     recapPlaybackLoading.value = true
     try {
-      const payload = await request<{ url: string }>(`/api/recaps/${options.recap.value.id}/playback-url`)
+      const payload = await request<{ url: string }>(`/api/recaps/${options.recap.value.id}/playback/url`)
       const playbackUrl = payload?.url
       if (!playbackUrl) throw new Error('Unable to load recap playback URL.')
       recapPlaybackUrl.value = playbackUrl

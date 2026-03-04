@@ -132,8 +132,9 @@ export function useSessionSummaryJobs(options: UseSessionSummaryJobsOptions) {
     if (!summaryJob.value?.id) return
     summaryActionError.value = ''
     try {
-      await request(`/api/summary-jobs/${summaryJob.value.id}/apply-summary`, {
-        method: 'POST',
+      await request(`/api/summaries/jobs/${summaryJob.value.id}`, {
+        method: 'PATCH',
+        body: { action: 'apply' },
       })
       await options.refreshSummary()
       await refreshSummaryJob()

@@ -187,7 +187,7 @@ describe('campaign journal API routes', () => {
   })
 
   it('enforces visibility matrix and moderation write permissions', async () => {
-    const createMyselfRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries`, {
+    const createMyselfRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries`, {
       method: 'POST',
       headers: {
         cookie: cookies.player,
@@ -203,7 +203,7 @@ describe('campaign journal API routes', () => {
     const createMyselfPayload = await createMyselfRes.json()
     const myselfEntryId = createMyselfPayload.data.id as string
 
-    const createDmRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries`, {
+    const createDmRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries`, {
       method: 'POST',
       headers: {
         cookie: cookies.player,
@@ -219,7 +219,7 @@ describe('campaign journal API routes', () => {
     const createDmPayload = await createDmRes.json()
     const dmEntryId = createDmPayload.data.id as string
 
-    const createCampaignRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries`, {
+    const createCampaignRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries`, {
       method: 'POST',
       headers: {
         cookie: cookies.player,
@@ -235,7 +235,7 @@ describe('campaign journal API routes', () => {
     const createCampaignPayload = await createCampaignRes.json()
     const campaignEntryId = createCampaignPayload.data.id as string
 
-    const playerMineRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries?mine=true`, {
+    const playerMineRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries?mine=true`, {
       headers: { cookie: cookies.player },
     })
     expect(playerMineRes.status).toBe(200)
@@ -245,7 +245,7 @@ describe('campaign journal API routes', () => {
     expect(playerIds).toContain(dmEntryId)
     expect(playerIds).toContain(campaignEntryId)
 
-    const viewerListRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries`, {
+    const viewerListRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries`, {
       headers: { cookie: cookies.viewer },
     })
     expect(viewerListRes.status).toBe(200)
@@ -255,7 +255,7 @@ describe('campaign journal API routes', () => {
     expect(viewerIds).not.toContain(myselfEntryId)
     expect(viewerIds).not.toContain(dmEntryId)
 
-    const dmVisibleRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries?dmVisible=true`, {
+    const dmVisibleRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries?dmVisible=true`, {
       headers: { cookie: cookies.dm },
     })
     expect(dmVisibleRes.status).toBe(200)
@@ -265,12 +265,12 @@ describe('campaign journal API routes', () => {
     expect(dmVisibleIds).toContain(campaignEntryId)
     expect(dmVisibleIds).not.toContain(myselfEntryId)
 
-    const viewerDmDetail = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries/${dmEntryId}`, {
+    const viewerDmDetail = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries/${dmEntryId}`, {
       headers: { cookie: cookies.viewer },
     })
     expect(viewerDmDetail.status).toBe(404)
 
-    const dmDmDetail = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries/${dmEntryId}`, {
+    const dmDmDetail = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries/${dmEntryId}`, {
       headers: { cookie: cookies.dm },
     })
     expect(dmDmDetail.status).toBe(200)
@@ -279,7 +279,7 @@ describe('campaign journal API routes', () => {
     expect(dmDmDetailPayload.data.canDelete).toBe(true)
 
     const viewerPatchRes = await fetch(
-      `${baseUrl}/api/campaigns/${campaignId}/journal-entries/${campaignEntryId}`,
+      `${baseUrl}/api/campaigns/${campaignId}/journal/entries/${campaignEntryId}`,
       {
         method: 'PATCH',
         headers: {
@@ -291,7 +291,7 @@ describe('campaign journal API routes', () => {
     )
     expect(viewerPatchRes.status).toBe(403)
 
-    const dmPatchRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries/${dmEntryId}`, {
+    const dmPatchRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries/${dmEntryId}`, {
       method: 'PATCH',
       headers: {
         cookie: cookies.dm,
@@ -303,28 +303,28 @@ describe('campaign journal API routes', () => {
     const dmPatchPayload = await dmPatchRes.json()
     expect(dmPatchPayload.data.title).toContain('reviewed by Co-DM')
 
-    const dmDeleteRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries/${dmEntryId}`, {
+    const dmDeleteRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries/${dmEntryId}`, {
       method: 'DELETE',
       headers: { cookie: cookies.dm },
     })
     expect(dmDeleteRes.status).toBe(200)
 
     const deletedDetailRes = await fetch(
-      `${baseUrl}/api/campaigns/${campaignId}/journal-entries/${dmEntryId}`,
+      `${baseUrl}/api/campaigns/${campaignId}/journal/entries/${dmEntryId}`,
       {
         headers: { cookie: cookies.player },
       }
     )
     expect(deletedDetailRes.status).toBe(404)
 
-    const outsiderListRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries`, {
+    const outsiderListRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries`, {
       headers: { cookie: cookies.outsider },
     })
     expect(outsiderListRes.status).toBe(403)
   })
 
   it('validates multi-session links and search over title/body/tags', async () => {
-    const createRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries`, {
+    const createRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries`, {
       method: 'POST',
       headers: {
         cookie: cookies.player,
@@ -355,7 +355,7 @@ describe('campaign journal API routes', () => {
       created.tags.some((tag) => tag.tagType === 'GLOSSARY' && tag.glossaryEntryId === relicGlossaryId)
     ).toBe(true)
 
-    const invalidSessionRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries`, {
+    const invalidSessionRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries`, {
       method: 'POST',
       headers: {
         cookie: cookies.player,
@@ -371,7 +371,7 @@ describe('campaign journal API routes', () => {
     expect(invalidSessionRes.status).toBe(400)
 
     const searchTitleBodyRes = await fetch(
-      `${baseUrl}/api/campaigns/${campaignId}/journal-entries?search=KeywordRaven`,
+      `${baseUrl}/api/campaigns/${campaignId}/journal/entries?search=KeywordRaven`,
       {
         headers: { cookie: cookies.viewer },
       }
@@ -382,7 +382,7 @@ describe('campaign journal API routes', () => {
       (searchTitleBodyPayload.data.items as Array<{ id: string }>).some((entry) => entry.id === created.id)
     ).toBe(true)
 
-    const tagFilterRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries?tag=mystery`, {
+    const tagFilterRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries?tag=mystery`, {
       headers: { cookie: cookies.viewer },
     })
     expect(tagFilterRes.status).toBe(200)
@@ -392,7 +392,7 @@ describe('campaign journal API routes', () => {
     ).toBe(true)
 
     const sessionFilterRes = await fetch(
-      `${baseUrl}/api/campaigns/${campaignId}/journal-entries?sessionId=${sessionTwoId}`,
+      `${baseUrl}/api/campaigns/${campaignId}/journal/entries?sessionId=${sessionTwoId}`,
       {
         headers: { cookie: cookies.viewer },
       }
@@ -405,7 +405,7 @@ describe('campaign journal API routes', () => {
   })
 
   it('enforces discoverable holder editing/delete rules and archived list filters', async () => {
-    const createRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries`, {
+    const createRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries`, {
       method: 'POST',
       headers: {
         cookie: cookies.dm,
@@ -432,7 +432,7 @@ describe('campaign journal API routes', () => {
     })
 
     const holderVisibilityPatchRes = await fetch(
-      `${baseUrl}/api/campaigns/${campaignId}/journal-entries/${entryId}`,
+      `${baseUrl}/api/campaigns/${campaignId}/journal/entries/${entryId}`,
       {
         method: 'PATCH',
         headers: {
@@ -446,7 +446,7 @@ describe('campaign journal API routes', () => {
     )
     expect(holderVisibilityPatchRes.status).toBe(200)
 
-    const holderContentPatchRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries/${entryId}`, {
+    const holderContentPatchRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries/${entryId}`, {
       method: 'PATCH',
       headers: {
         cookie: cookies.player,
@@ -458,7 +458,7 @@ describe('campaign journal API routes', () => {
     })
     expect(holderContentPatchRes.status).toBe(403)
 
-    const holderDeleteRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries/${entryId}`, {
+    const holderDeleteRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries/${entryId}`, {
       method: 'DELETE',
       headers: {
         cookie: cookies.player,
@@ -475,7 +475,7 @@ describe('campaign journal API routes', () => {
       },
     })
 
-    const defaultListRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries`, {
+    const defaultListRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries`, {
       headers: { cookie: cookies.dm },
     })
     expect(defaultListRes.status).toBe(200)
@@ -485,7 +485,7 @@ describe('campaign journal API routes', () => {
     ).toBe(false)
 
     const includeArchivedRes = await fetch(
-      `${baseUrl}/api/campaigns/${campaignId}/journal-entries?includeArchived=true`,
+      `${baseUrl}/api/campaigns/${campaignId}/journal/entries?includeArchived=true`,
       {
         headers: { cookie: cookies.dm },
       }
@@ -496,7 +496,7 @@ describe('campaign journal API routes', () => {
       (includeArchivedPayload.data.items as Array<{ id: string }>).some((item) => item.id === entryId)
     ).toBe(true)
 
-    const archivedOnlyRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries?archived=true`, {
+    const archivedOnlyRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries?archived=true`, {
       headers: { cookie: cookies.dm },
     })
     expect(archivedOnlyRes.status).toBe(200)
@@ -505,7 +505,7 @@ describe('campaign journal API routes', () => {
       (archivedOnlyPayload.data.items as Array<{ id: string }>).some((item) => item.id === entryId)
     ).toBe(true)
 
-    const dmDeleteRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries/${entryId}`, {
+    const dmDeleteRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries/${entryId}`, {
       method: 'DELETE',
       headers: {
         cookie: cookies.dm,
@@ -515,14 +515,14 @@ describe('campaign journal API routes', () => {
   })
 
   it('supports discoverable endpoints for discover/transfer/archive/history/notifications', async () => {
-    const memberOptionsRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-member-options`, {
+    const memberOptionsRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/member-options`, {
       headers: {
         cookie: cookies.player,
       },
     })
     expect(memberOptionsRes.status).toBe(200)
 
-    const createRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries`, {
+    const createRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries`, {
       method: 'POST',
       headers: {
         cookie: cookies.dm,
@@ -538,121 +538,111 @@ describe('campaign journal API routes', () => {
     const createPayload = await createRes.json()
     const entryId = createPayload.data.id as string
 
-    const playerDiscoverablePatchRes = await fetch(
-      `${baseUrl}/api/campaigns/${campaignId}/journal-entries/${entryId}/discoverable`,
-      {
-        method: 'PATCH',
-        headers: {
-          cookie: cookies.player,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          isDiscoverable: true,
-          holderUserId: userIds.player,
-          visibility: 'DM',
-        }),
-      }
-    )
+    const playerDiscoverablePatchRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries/${entryId}`, {
+      method: 'PATCH',
+      headers: {
+        cookie: cookies.player,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'discoverable',
+        isDiscoverable: true,
+        holderUserId: userIds.player,
+        visibility: 'DM',
+      }),
+    })
     expect(playerDiscoverablePatchRes.status).toBe(403)
 
-    const dmDiscoverablePatchRes = await fetch(
-      `${baseUrl}/api/campaigns/${campaignId}/journal-entries/${entryId}/discoverable`,
-      {
-        method: 'PATCH',
-        headers: {
-          cookie: cookies.dm,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          isDiscoverable: true,
-          holderUserId: userIds.player,
-          visibility: 'DM',
-        }),
-      }
-    )
-    expect(dmDiscoverablePatchRes.status).toBe(200)
-
-    const holderTransferRes = await fetch(
-      `${baseUrl}/api/campaigns/${campaignId}/journal-entries/${entryId}/transfer`,
-      {
-        method: 'POST',
-        headers: {
-          cookie: cookies.player,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          toHolderUserId: userIds.viewer,
-          visibility: 'CAMPAIGN',
-        }),
-      }
-    )
-    expect(holderTransferRes.status).toBe(200)
-
-    const oldHolderTransferRes = await fetch(
-      `${baseUrl}/api/campaigns/${campaignId}/journal-entries/${entryId}/transfer`,
-      {
-        method: 'POST',
-        headers: {
-          cookie: cookies.player,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          toHolderUserId: userIds.player,
-        }),
-      }
-    )
-    expect(oldHolderTransferRes.status).toBe(403)
-
-    const dmDiscoverRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries/${entryId}/discover`, {
-      method: 'POST',
+    const dmDiscoverablePatchRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries/${entryId}`, {
+      method: 'PATCH',
       headers: {
         cookie: cookies.dm,
         'content-type': 'application/json',
       },
       body: JSON.stringify({
+        action: 'discoverable',
+        isDiscoverable: true,
+        holderUserId: userIds.player,
+        visibility: 'DM',
+      }),
+    })
+    expect(dmDiscoverablePatchRes.status).toBe(200)
+
+    const holderTransferRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries/${entryId}`, {
+      method: 'PATCH',
+      headers: {
+        cookie: cookies.player,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'transfer',
+        toHolderUserId: userIds.viewer,
+        visibility: 'CAMPAIGN',
+      }),
+    })
+    expect(holderTransferRes.status).toBe(200)
+
+    const oldHolderTransferRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries/${entryId}`, {
+      method: 'PATCH',
+      headers: {
+        cookie: cookies.player,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'transfer',
+        toHolderUserId: userIds.player,
+      }),
+    })
+    expect(oldHolderTransferRes.status).toBe(403)
+
+    const dmDiscoverRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries/${entryId}`, {
+      method: 'PATCH',
+      headers: {
+        cookie: cookies.dm,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'discover',
         holderUserId: userIds.player,
         visibility: 'DM',
       }),
     })
     expect(dmDiscoverRes.status).toBe(200)
 
-    const viewerTransferRes = await fetch(
-      `${baseUrl}/api/campaigns/${campaignId}/journal-entries/${entryId}/transfer`,
-      {
-        method: 'POST',
-        headers: {
-          cookie: cookies.viewer,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          toHolderUserId: userIds.player,
-        }),
-      }
-    )
+    const viewerTransferRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries/${entryId}`, {
+      method: 'PATCH',
+      headers: {
+        cookie: cookies.viewer,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'transfer',
+        toHolderUserId: userIds.player,
+      }),
+    })
     expect(viewerTransferRes.status).toBe(404)
 
-    const holderArchiveRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries/${entryId}/archive`, {
-      method: 'POST',
+    const holderArchiveRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries/${entryId}`, {
+      method: 'PATCH',
       headers: {
         cookie: cookies.player,
         'content-type': 'application/json',
       },
-      body: JSON.stringify({}),
+      body: JSON.stringify({ action: 'archive' }),
     })
     expect(holderArchiveRes.status).toBe(200)
 
-    const holderUnarchiveRes = await fetch(
-      `${baseUrl}/api/campaigns/${campaignId}/journal-entries/${entryId}/unarchive`,
-      {
-        method: 'POST',
-        headers: {
-          cookie: cookies.player,
-        },
-      }
-    )
+    const holderUnarchiveRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries/${entryId}`, {
+      method: 'PATCH',
+      headers: {
+        cookie: cookies.player,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ action: 'unarchive' }),
+    })
     expect(holderUnarchiveRes.status).toBe(200)
 
-    const historyRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries/${entryId}/history`, {
+    const historyRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries/${entryId}/history`, {
       headers: {
         cookie: cookies.player,
       },
@@ -666,7 +656,7 @@ describe('campaign journal API routes', () => {
     expect(historyActions).toContain('UNARCHIVED')
 
     const viewerHistoryRes = await fetch(
-      `${baseUrl}/api/campaigns/${campaignId}/journal-entries/${entryId}/history`,
+      `${baseUrl}/api/campaigns/${campaignId}/journal/entries/${entryId}/history`,
       {
         headers: {
           cookie: cookies.viewer,
@@ -675,7 +665,7 @@ describe('campaign journal API routes', () => {
     )
     expect(viewerHistoryRes.status).toBe(404)
 
-    const notificationsRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-notifications`, {
+    const notificationsRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/notifications`, {
       headers: {
         cookie: cookies.player,
       },
@@ -690,7 +680,7 @@ describe('campaign journal API routes', () => {
     expect(notificationTypes).toContain('ARCHIVED')
     expect(notificationTypes).toContain('UNARCHIVED')
 
-    const outsiderNotificationsRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-notifications`, {
+    const outsiderNotificationsRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/notifications`, {
       headers: {
         cookie: cookies.outsider,
       },
@@ -699,7 +689,7 @@ describe('campaign journal API routes', () => {
   })
 
   it('retains orphaned glossary labels after glossary deletion', async () => {
-    const createRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries`, {
+    const createRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries`, {
       method: 'POST',
       headers: {
         cookie: cookies.player,
@@ -717,7 +707,7 @@ describe('campaign journal API routes', () => {
       where: { id: relicGlossaryId },
     })
 
-    const tagsRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-tags?type=GLOSSARY`, {
+    const tagsRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/tags?type=GLOSSARY`, {
       headers: { cookie: cookies.player },
     })
     expect(tagsRes.status).toBe(200)
@@ -734,7 +724,7 @@ describe('campaign journal API routes', () => {
   })
 
   it('gates public journal with showJournal and only returns campaign-visible entries', async () => {
-    const settingsRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public-access`, {
+    const settingsRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public/access`, {
       headers: { cookie: cookies.owner },
     })
     expect(settingsRes.status).toBe(200)
@@ -742,7 +732,7 @@ describe('campaign journal API routes', () => {
     const publicSlug = settingsPayload.data.publicSlug as string
 
     const createPublicCampaignEntryRes = await fetch(
-      `${baseUrl}/api/campaigns/${campaignId}/journal-entries`,
+      `${baseUrl}/api/campaigns/${campaignId}/journal/entries`,
       {
         method: 'POST',
         headers: {
@@ -760,7 +750,7 @@ describe('campaign journal API routes', () => {
     const createPublicCampaignEntryPayload = await createPublicCampaignEntryRes.json()
     const publicCampaignEntryId = createPublicCampaignEntryPayload.data.id as string
 
-    const createPublicDmEntryRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal-entries`, {
+    const createPublicDmEntryRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries`, {
       method: 'POST',
       headers: {
         cookie: cookies.player,
@@ -776,7 +766,7 @@ describe('campaign journal API routes', () => {
     const createPublicDmEntryPayload = await createPublicDmEntryRes.json()
     const publicDmEntryId = createPublicDmEntryPayload.data.id as string
 
-    const enableWithoutJournalRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public-access`, {
+    const enableWithoutJournalRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public/access`, {
       method: 'PATCH',
       headers: {
         cookie: cookies.owner,
@@ -789,12 +779,12 @@ describe('campaign journal API routes', () => {
     })
     expect(enableWithoutJournalRes.status).toBe(200)
 
-    const deniedPublicRes = await fetch(`${baseUrl}/api/public/campaigns/${publicSlug}/journal-entries`)
+    const deniedPublicRes = await fetch(`${baseUrl}/api/public/campaigns/${publicSlug}/journal/entries`)
     expect(deniedPublicRes.status).toBe(404)
     const deniedPublicPayload = await deniedPublicRes.json()
     expect(deniedPublicPayload.error.code).toBe('PUBLIC_SECTION_NOT_AVAILABLE')
 
-    const enableJournalRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public-access`, {
+    const enableJournalRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public/access`, {
       method: 'PATCH',
       headers: {
         cookie: cookies.owner,
@@ -808,7 +798,7 @@ describe('campaign journal API routes', () => {
     expect(enableJournalRes.status).toBe(200)
 
     const publicListRes = await fetch(
-      `${baseUrl}/api/public/campaigns/${publicSlug}/journal-entries?search=Chronicle`
+      `${baseUrl}/api/public/campaigns/${publicSlug}/journal/entries?search=Chronicle`
     )
     expect(publicListRes.status).toBe(200)
     const publicListPayload = await publicListRes.json()

@@ -181,7 +181,7 @@ describe('user management UM-5 public visibility', () => {
   })
 
   it('enforces owner-only management and anonymous section visibility', async () => {
-    const ownerGetRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public-access`, {
+    const ownerGetRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public/access`, {
       headers: { cookie: cookies.owner },
     })
     expect(ownerGetRes.status).toBe(200)
@@ -189,12 +189,12 @@ describe('user management UM-5 public visibility', () => {
     expect(ownerGetPayload.data.isEnabled).toBe(false)
     expect(ownerGetPayload.data.publicSlug).toBeTruthy()
 
-    const collaboratorGetRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public-access`, {
+    const collaboratorGetRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public/access`, {
       headers: { cookie: cookies.collaborator },
     })
     expect(collaboratorGetRes.status).toBe(403)
 
-    const patchRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public-access`, {
+    const patchRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public/access`, {
       method: 'PATCH',
       headers: {
         cookie: cookies.owner,
@@ -248,7 +248,7 @@ describe('user management UM-5 public visibility', () => {
     )
     expect(beforeListed).toBe(false)
 
-    const enableListingRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public-access`, {
+    const enableListingRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public/access`, {
       method: 'PATCH',
       headers: {
         cookie: cookies.owner,
@@ -277,14 +277,14 @@ describe('user management UM-5 public visibility', () => {
   })
 
   it('allows public recap playback-url and public map viewer access', async () => {
-    const settingsRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public-access`, {
+    const settingsRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public/access`, {
       headers: { cookie: cookies.owner },
     })
     expect(settingsRes.status).toBe(200)
     const settingsPayload = await settingsRes.json()
     const publicSlug = settingsPayload.data.publicSlug as string
 
-    const enableSectionsRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public-access`, {
+    const enableSectionsRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public/access`, {
       method: 'PATCH',
       headers: {
         cookie: cookies.owner,
@@ -299,7 +299,7 @@ describe('user management UM-5 public visibility', () => {
     expect(enableSectionsRes.status).toBe(200)
 
     const recapPlaybackRes = await fetch(
-      `${baseUrl}/api/public/campaigns/${publicSlug}/recaps/${recapId}/playback-url`
+      `${baseUrl}/api/public/campaigns/${publicSlug}/recaps/${recapId}/playback/url`
     )
     expect(recapPlaybackRes.status).toBe(200)
     const recapPlaybackPayload = await recapPlaybackRes.json()
@@ -315,14 +315,14 @@ describe('user management UM-5 public visibility', () => {
   })
 
   it('regenerates slug and invalidates old URL', async () => {
-    const beforeRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public-access`, {
+    const beforeRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public/access`, {
       headers: { cookie: cookies.owner },
     })
     expect(beforeRes.status).toBe(200)
     const beforePayload = await beforeRes.json()
     const oldSlug = beforePayload.data.publicSlug as string
 
-    const regenRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public-access/regenerate-slug`, {
+    const regenRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public/access/regenerate-slug`, {
       method: 'POST',
       headers: { cookie: cookies.owner },
     })
@@ -339,14 +339,14 @@ describe('user management UM-5 public visibility', () => {
   })
 
   it('denies anonymous access when public access is disabled', async () => {
-    const currentRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public-access`, {
+    const currentRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public/access`, {
       headers: { cookie: cookies.owner },
     })
     expect(currentRes.status).toBe(200)
     const currentPayload = await currentRes.json()
     const slug = currentPayload.data.publicSlug as string
 
-    const disableRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public-access`, {
+    const disableRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public/access`, {
       method: 'PATCH',
       headers: {
         cookie: cookies.owner,

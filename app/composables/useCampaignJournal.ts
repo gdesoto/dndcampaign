@@ -29,15 +29,15 @@ export function useCampaignJournal() {
     campaignId: string,
     query: Partial<CampaignJournalListQueryInput> = {}
   ) =>
-    request<CampaignJournalListResponse>(`/api/campaigns/${campaignId}/journal-entries`, {
+    request<CampaignJournalListResponse>(`/api/campaigns/${campaignId}/journal/entries`, {
       query,
     })
 
   const getEntry = async (campaignId: string, entryId: string) =>
-    request<CampaignJournalEntryDetail>(`/api/campaigns/${campaignId}/journal-entries/${entryId}`)
+    request<CampaignJournalEntryDetail>(`/api/campaigns/${campaignId}/journal/entries/${entryId}`)
 
   const createEntry = async (campaignId: string, payload: CampaignJournalCreateInput) =>
-    request<CampaignJournalEntryDetail>(`/api/campaigns/${campaignId}/journal-entries`, {
+    request<CampaignJournalEntryDetail>(`/api/campaigns/${campaignId}/journal/entries`, {
       method: 'POST',
       body: payload,
     })
@@ -47,13 +47,13 @@ export function useCampaignJournal() {
     entryId: string,
     payload: CampaignJournalUpdateInput
   ) =>
-    request<CampaignJournalEntryDetail>(`/api/campaigns/${campaignId}/journal-entries/${entryId}`, {
+    request<CampaignJournalEntryDetail>(`/api/campaigns/${campaignId}/journal/entries/${entryId}`, {
       method: 'PATCH',
       body: payload,
     })
 
   const deleteEntry = async (campaignId: string, entryId: string) =>
-    request<{ id: string }>(`/api/campaigns/${campaignId}/journal-entries/${entryId}`, {
+    request<{ id: string }>(`/api/campaigns/${campaignId}/journal/entries/${entryId}`, {
       method: 'DELETE',
     })
 
@@ -62,60 +62,46 @@ export function useCampaignJournal() {
     entryId: string,
     payload: CampaignJournalDiscoverableUpdateInput
   ) =>
-    request<CampaignJournalEntryDetail>(
-      `/api/campaigns/${campaignId}/journal-entries/${entryId}/discoverable`,
-      {
-        method: 'PATCH',
-        body: payload,
-      }
-    )
+    request<CampaignJournalEntryDetail>(`/api/campaigns/${campaignId}/journal/entries/${entryId}`, {
+      method: 'PATCH',
+      body: { action: 'discoverable', ...payload },
+    })
 
   const discoverEntry = async (
     campaignId: string,
     entryId: string,
     payload: CampaignJournalDiscoverInput
   ) =>
-    request<CampaignJournalEntryDetail>(
-      `/api/campaigns/${campaignId}/journal-entries/${entryId}/discover`,
-      {
-        method: 'POST',
-        body: payload,
-      }
-    )
+    request<CampaignJournalEntryDetail>(`/api/campaigns/${campaignId}/journal/entries/${entryId}`, {
+      method: 'PATCH',
+      body: { action: 'discover', ...payload },
+    })
 
   const transferEntry = async (
     campaignId: string,
     entryId: string,
     payload: CampaignJournalTransferInput
   ) =>
-    request<CampaignJournalEntryDetail>(
-      `/api/campaigns/${campaignId}/journal-entries/${entryId}/transfer`,
-      {
-        method: 'POST',
-        body: payload,
-      }
-    )
+    request<CampaignJournalEntryDetail>(`/api/campaigns/${campaignId}/journal/entries/${entryId}`, {
+      method: 'PATCH',
+      body: { action: 'transfer', ...payload },
+    })
 
   const archiveEntry = async (
     campaignId: string,
     entryId: string,
     payload: CampaignJournalArchiveInput = { archived: true }
   ) =>
-    request<CampaignJournalEntryDetail>(
-      `/api/campaigns/${campaignId}/journal-entries/${entryId}/archive`,
-      {
-        method: 'POST',
-        body: payload,
-      }
-    )
+    request<CampaignJournalEntryDetail>(`/api/campaigns/${campaignId}/journal/entries/${entryId}`, {
+      method: 'PATCH',
+      body: { action: 'archive', ...payload },
+    })
 
   const unarchiveEntry = async (campaignId: string, entryId: string) =>
-    request<CampaignJournalEntryDetail>(
-      `/api/campaigns/${campaignId}/journal-entries/${entryId}/unarchive`,
-      {
-        method: 'POST',
-      }
-    )
+    request<CampaignJournalEntryDetail>(`/api/campaigns/${campaignId}/journal/entries/${entryId}`, {
+      method: 'PATCH',
+      body: { action: 'unarchive' },
+    })
 
   const listEntryHistory = async (
     campaignId: string,
@@ -123,7 +109,7 @@ export function useCampaignJournal() {
     query: Partial<CampaignJournalHistoryListQueryInput> = {}
   ) =>
     request<CampaignJournalHistoryResponse>(
-      `/api/campaigns/${campaignId}/journal-entries/${entryId}/history`,
+      `/api/campaigns/${campaignId}/journal/entries/${entryId}/history`,
       {
         query,
       }
@@ -133,20 +119,20 @@ export function useCampaignJournal() {
     campaignId: string,
     query: Partial<CampaignJournalNotificationListQueryInput> = {}
   ) =>
-    request<CampaignJournalNotificationListResponse>(`/api/campaigns/${campaignId}/journal-notifications`, {
+    request<CampaignJournalNotificationListResponse>(`/api/campaigns/${campaignId}/journal/notifications`, {
       query,
     })
 
   const listMemberOptions = async (campaignId: string) =>
     request<{ items: CampaignJournalMemberOption[] }>(
-      `/api/campaigns/${campaignId}/journal-member-options`,
+      `/api/campaigns/${campaignId}/journal/member-options`,
     )
 
   const listTags = async (
     campaignId: string,
     query: Partial<CampaignJournalTagListQueryInput> = {}
   ) =>
-    request<CampaignJournalTagListResponse>(`/api/campaigns/${campaignId}/journal-tags`, {
+    request<CampaignJournalTagListResponse>(`/api/campaigns/${campaignId}/journal/tags`, {
       query: {
         ...query,
         ...(query.pageSize !== undefined
@@ -160,7 +146,7 @@ export function useCampaignJournal() {
     query: Partial<CampaignJournalTagSuggestQueryInput> = {}
   ) =>
     request<{ items: CampaignJournalTagSuggestion[] }>(
-      `/api/campaigns/${campaignId}/journal-tags/suggest`,
+      `/api/campaigns/${campaignId}/journal/tags/suggest`,
       {
         query,
       }

@@ -57,7 +57,7 @@ describe('Campaign encounters page', () => {
     mockListTemplates.mockResolvedValue([])
     mockRequest.mockImplementation(async (path: string) => {
       if (String(path).includes('/sessions')) return []
-      if (String(path).includes('/calendar-config')) return null
+      if (String(path).includes('/calendar/config')) return null
       return []
     })
     mockListEncounters.mockResolvedValue([

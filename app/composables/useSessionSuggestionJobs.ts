@@ -85,7 +85,7 @@ export function useSessionSuggestionJobs(options: UseSessionSuggestionJobsOption
     suggestionSendError.value = ''
     suggestionSending.value = true
     try {
-      await request(`/api/sessions/${options.sessionId.value}/suggestion-jobs`, {
+      await request(`/api/sessions/${options.sessionId.value}/summaries/suggestions`, {
         method: 'POST',
         body: {
           summaryDocumentId: options.summaryDoc.value.id,
@@ -105,9 +105,10 @@ export function useSessionSuggestionJobs(options: UseSessionSuggestionJobsOption
   const applySuggestion = async (input: { suggestionId: string; payload: Record<string, unknown> }) => {
     suggestionActionError.value = ''
     try {
-      await request(`/api/summary-suggestions/${input.suggestionId}/apply`, {
-        method: 'POST',
+      await request(`/api/summaries/suggestions/${input.suggestionId}`, {
+        method: 'PATCH',
         body: {
+          action: 'apply',
           payload: input.payload,
         },
       })
@@ -122,8 +123,9 @@ export function useSessionSuggestionJobs(options: UseSessionSuggestionJobsOption
   const discardSuggestion = async (suggestionId: string) => {
     suggestionActionError.value = ''
     try {
-      await request(`/api/summary-suggestions/${suggestionId}/discard`, {
-        method: 'POST',
+      await request(`/api/summaries/suggestions/${suggestionId}`, {
+        method: 'PATCH',
+        body: { action: 'discard' },
       })
       await refreshSuggestionJobs()
       await refreshSelectedSuggestionJob()

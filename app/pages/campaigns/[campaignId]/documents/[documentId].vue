@@ -204,7 +204,7 @@ const { data: playbackUrl, pending: playbackPending } = await useAsyncData(
   async () => {
     if (!selectedRecordingId.value) return ''
     const payload = await request<{ url: string }>(
-      `/api/recordings/${selectedRecordingId.value}/playback-url`
+      `/api/recordings/${selectedRecordingId.value}/playback/url`
     )
     return payload?.url || ''
   },
@@ -879,9 +879,9 @@ const saveDocument = async () => {
 const restoreVersion = async (versionId: string) => {
   restoreError.value = ''
   try {
-    await request(`/api/documents/${documentId.value}/restore`, {
-      method: 'POST',
-      body: { versionId },
+    await request(`/api/documents/${documentId.value}`, {
+      method: 'PATCH',
+      body: { action: 'restore', versionId },
     })
     await refresh()
     await refreshVersions()
@@ -919,8 +919,9 @@ const attachTranscriptToVideo = async () => {
   subtitleAttachError.value = ''
   subtitleAttachLoading.value = true
   try {
-    await request(`/api/recordings/${selectedSubtitleRecordingId.value}/vtt/from-transcript`, {
+    await request(`/api/recordings/${selectedSubtitleRecordingId.value}/captions`, {
       method: 'POST',
+      body: { mode: 'from-transcript' },
     })
   } catch (error) {
     subtitleAttachError.value =
@@ -1030,9 +1031,9 @@ const linkRecordingToTranscript = async () => {
   }
   playbackRangeError.value = ''
   try {
-    await request(`/api/documents/${document.value.id}/link-recording`, {
-      method: 'POST',
-      body: { recordingId: selectedRecordingId.value },
+    await request(`/api/documents/${document.value.id}`, {
+      method: 'PATCH',
+      body: { action: 'link-recording', recordingId: selectedRecordingId.value },
     })
     await refresh()
   } catch (error) {
@@ -1045,9 +1046,9 @@ const unlinkRecording = async () => {
   if (!document.value?.id) return
   playbackRangeError.value = ''
   try {
-    await request(`/api/documents/${document.value.id}/link-recording`, {
-      method: 'POST',
-      body: { recordingId: null },
+    await request(`/api/documents/${document.value.id}`, {
+      method: 'PATCH',
+      body: { action: 'link-recording', recordingId: null },
     })
     await refresh()
   } catch (error) {

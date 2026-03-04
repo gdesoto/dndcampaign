@@ -216,7 +216,7 @@ describe('user management UM-7 hardening, audit, and release readiness', () => {
       select: { id: true },
     })
 
-    const acceptExpiredRes = await fetch(`${baseUrl}/api/campaign-invites/${expiredToken}/accept`, {
+    const acceptExpiredRes = await fetch(`${baseUrl}/api/campaigns/invites/${expiredToken}/accept`, {
       method: 'POST',
       headers: {
         cookie: cookies.invitee,
@@ -265,7 +265,7 @@ describe('user management UM-7 hardening, audit, and release readiness', () => {
 
     let inviteAcceptRateLimited = false
     for (let i = 0; i < 30; i += 1) {
-      const response = await fetch(`${baseUrl}/api/campaign-invites/rate-limit-probe-token/accept`, {
+      const response = await fetch(`${baseUrl}/api/campaigns/invites/rate-limit-probe-token/accept`, {
         method: 'POST',
         headers: {
           cookie: cookies.invitee,
@@ -307,7 +307,7 @@ describe('user management UM-7 hardening, audit, and release readiness', () => {
     )
     expect(dmAccessUpdateRes.status).toBe(200)
 
-    const publicUpdateRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public-access`, {
+    const publicUpdateRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public/access`, {
       method: 'PATCH',
       headers: {
         cookie: cookies.owner,

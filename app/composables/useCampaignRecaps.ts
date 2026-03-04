@@ -38,7 +38,7 @@ export const useCampaignRecaps = (
     recapError.value = ''
     recapLoading.value = true
     try {
-      const payload = await request<{ url: string }>(`/api/recaps/${recapId}/playback-url`)
+      const payload = await request<{ url: string }>(`/api/recaps/${recapId}/playback/url`)
       const playbackUrl = payload?.url
       if (!playbackUrl) throw new Error('Unable to load recap playback URL.')
       recapPlaybackUrl.value = playbackUrl

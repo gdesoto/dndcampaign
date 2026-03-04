@@ -166,8 +166,9 @@ const saveMapMeta = async () => {
 
 const setPrimary = async (mapId: string) => {
   if (!canWriteContent.value) return
-  await request(`/api/campaigns/${campaignId.value}/maps/${mapId}/set-primary`, {
-    method: 'POST',
+  await request(`/api/campaigns/${campaignId.value}/maps/${mapId}`, {
+    method: 'PATCH',
+    body: { action: 'set-primary' },
   })
   await refresh()
 }
@@ -275,10 +276,11 @@ const previewReimport = async () => {
     for (const file of reimportFiles.value) {
       formData.append('file', file, file.name)
     }
+    formData.set('action', 'reimport-preview')
     const preview = await request<MapReimportPreviewDto>(
-      `/api/campaigns/${campaignId.value}/maps/${selectedMap.value.id}/reimport`,
+      `/api/campaigns/${campaignId.value}/maps/${selectedMap.value.id}`,
       {
-        method: 'POST',
+        method: 'PATCH',
         body: formData,
       }
     )
@@ -307,15 +309,16 @@ const applyReimport = async () => {
     for (const file of reimportFiles.value) {
       formData.append('file', file, file.name)
     }
+    formData.set('action', 'reimport-apply')
     formData.set('strategy', applyStrategy.value)
     if (applyMapName.value.trim()) {
       formData.set('mapName', applyMapName.value.trim())
     }
     formData.set('keepPrimary', applyKeepPrimary.value ? 'true' : 'false')
     await request(
-      `/api/campaigns/${campaignId.value}/maps/${selectedMap.value.id}/reimport/apply`,
+      `/api/campaigns/${campaignId.value}/maps/${selectedMap.value.id}`,
       {
-        method: 'POST',
+        method: 'PATCH',
         body: formData,
       }
     )

@@ -137,7 +137,7 @@ describe('user management UM-4 membership and invite flows', () => {
     const inviteToken = invitePayload.data.inviteToken as string
     expect(inviteToken).toBeTruthy()
 
-    const acceptRes = await fetch(`${baseUrl}/api/campaign-invites/${inviteToken}/accept`, {
+    const acceptRes = await fetch(`${baseUrl}/api/campaigns/invites/${inviteToken}/accept`, {
       method: 'POST',
       headers: {
         cookie: cookies.invitee,
@@ -149,7 +149,7 @@ describe('user management UM-4 membership and invite flows', () => {
     expect(acceptPayload.data.campaignId).toBe(campaignId)
     expect(acceptPayload.data.role).toBe('VIEWER')
 
-    const replayRes = await fetch(`${baseUrl}/api/campaign-invites/${inviteToken}/accept`, {
+    const replayRes = await fetch(`${baseUrl}/api/campaigns/invites/${inviteToken}/accept`, {
       method: 'POST',
       headers: {
         cookie: cookies.invitee,
@@ -179,7 +179,7 @@ describe('user management UM-4 membership and invite flows', () => {
       select: { id: true },
     })
 
-    const acceptRes = await fetch(`${baseUrl}/api/campaign-invites/${expiredToken}/accept`, {
+    const acceptRes = await fetch(`${baseUrl}/api/campaigns/invites/${expiredToken}/accept`, {
       method: 'POST',
       headers: {
         cookie: cookies.outsider,
@@ -214,7 +214,7 @@ describe('user management UM-4 membership and invite flows', () => {
       },
     })
 
-    const alreadyMemberInspect = await fetch(`${baseUrl}/api/campaign-invites/${viewerInviteToken}`, {
+    const alreadyMemberInspect = await fetch(`${baseUrl}/api/campaigns/invites/${viewerInviteToken}`, {
       headers: { cookie: cookies.invitee },
     })
 
@@ -238,7 +238,7 @@ describe('user management UM-4 membership and invite flows', () => {
       },
     })
 
-    const wrongAccountInspect = await fetch(`${baseUrl}/api/campaign-invites/${wrongAccountToken}`, {
+    const wrongAccountInspect = await fetch(`${baseUrl}/api/campaigns/invites/${wrongAccountToken}`, {
       headers: { cookie: cookies.outsider },
     })
     expect(wrongAccountInspect.status).toBe(200)
@@ -246,7 +246,7 @@ describe('user management UM-4 membership and invite flows', () => {
     expect(wrongAccountPayload.data.status).toBe('WRONG_ACCOUNT')
     expect(wrongAccountPayload.data.campaignId).toBeUndefined()
 
-    const notFoundInspect = await fetch(`${baseUrl}/api/campaign-invites/does-not-exist-token-um4`, {
+    const notFoundInspect = await fetch(`${baseUrl}/api/campaigns/invites/does-not-exist-token-um4`, {
       headers: { cookie: cookies.owner },
     })
     expect(notFoundInspect.status).toBe(200)
@@ -269,7 +269,7 @@ describe('user management UM-4 membership and invite flows', () => {
       select: { id: true },
     })
 
-    const expiredInspect = await fetch(`${baseUrl}/api/campaign-invites/${expiredInspectToken}`, {
+    const expiredInspect = await fetch(`${baseUrl}/api/campaigns/invites/${expiredInspectToken}`, {
       headers: { cookie: cookies.outsider },
     })
     expect(expiredInspect.status).toBe(200)
@@ -354,7 +354,7 @@ describe('user management UM-4 membership and invite flows', () => {
 
     expect(inviteeMember?.id).toBeTruthy()
 
-    const badTransferRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/owner-transfer`, {
+    const badTransferRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/owner/transfer`, {
       method: 'POST',
       headers: {
         cookie: cookies.owner,
@@ -368,7 +368,7 @@ describe('user management UM-4 membership and invite flows', () => {
 
     expect(badTransferRes.status).toBe(401)
 
-    const transferRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/owner-transfer`, {
+    const transferRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/owner/transfer`, {
       method: 'POST',
       headers: {
         cookie: cookies.owner,

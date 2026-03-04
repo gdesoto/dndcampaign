@@ -116,7 +116,7 @@ const { data: campaignSessions } = await useAsyncData(
 )
 const { data: calendarConfig } = await useAsyncData(
   () => `encounter-create-calendar-config-${campaignId.value}`,
-  () => request<CampaignCalendarConfigDto | null>(`/api/campaigns/${campaignId.value}/calendar-config`),
+  () => request<CampaignCalendarConfigDto | null>(`/api/campaigns/${campaignId.value}/calendar/config`),
 )
 
 const sessionOptions = computed(() =>

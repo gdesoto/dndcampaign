@@ -16,9 +16,12 @@ export function useDungeonList() {
     })
 
   const importDungeon = async (campaignId: string, input: DungeonImportInput) =>
-    request<{ id: string }>(`/api/campaigns/${campaignId}/dungeons/import`, {
+    request<{ id: string }>(`/api/campaigns/${campaignId}/dungeons`, {
       method: 'POST',
-      body: input,
+      body: {
+        action: 'import',
+        ...input,
+      },
     })
 
   const deleteDungeon = async (campaignId: string, dungeonId: string) =>

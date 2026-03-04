@@ -35,15 +35,21 @@ export function useDungeonDetail() {
     })
 
   const generateDungeon = async (campaignId: string, dungeonId: string, input: DungeonGenerateInput = {}) =>
-    request<CampaignDungeonDetail>(`/api/campaigns/${campaignId}/dungeons/${dungeonId}/generate`, {
-      method: 'POST',
-      body: input,
+    request<CampaignDungeonDetail>(`/api/campaigns/${campaignId}/dungeons/${dungeonId}`, {
+      method: 'PATCH',
+      body: {
+        action: 'generate',
+        ...input,
+      },
     })
 
   const regenerateDungeon = async (campaignId: string, dungeonId: string, input: DungeonRegenerateInput) =>
-    request<CampaignDungeonDetail>(`/api/campaigns/${campaignId}/dungeons/${dungeonId}/regenerate`, {
-      method: 'POST',
-      body: input,
+    request<CampaignDungeonDetail>(`/api/campaigns/${campaignId}/dungeons/${dungeonId}`, {
+      method: 'PATCH',
+      body: {
+        action: 'regenerate',
+        ...input,
+      },
     })
 
   const patchMap = async (campaignId: string, dungeonId: string, input: DungeonMapPatchInput) =>
@@ -99,28 +105,31 @@ export function useDungeonDetail() {
     })
 
   const exportDungeon = async (campaignId: string, dungeonId: string, input: DungeonExportInput) =>
-    request<DungeonExportResult>(`/api/campaigns/${campaignId}/dungeons/${dungeonId}/export`, {
-      method: 'POST',
-      body: input,
+    request<DungeonExportResult>(`/api/campaigns/${campaignId}/dungeons/${dungeonId}`, {
+      method: 'PATCH',
+      body: {
+        action: 'export',
+        ...input,
+      },
     })
 
   const publishDungeon = async (campaignId: string, dungeonId: string) =>
-    request<CampaignDungeonDetail>(`/api/campaigns/${campaignId}/dungeons/${dungeonId}/publish`, {
-      method: 'POST',
+    request<CampaignDungeonDetail>(`/api/campaigns/${campaignId}/dungeons/${dungeonId}`, {
+      method: 'PATCH',
+      body: { action: 'publish' },
     })
 
   const unpublishDungeon = async (campaignId: string, dungeonId: string) =>
-    request<CampaignDungeonDetail>(`/api/campaigns/${campaignId}/dungeons/${dungeonId}/unpublish`, {
-      method: 'POST',
+    request<CampaignDungeonDetail>(`/api/campaigns/${campaignId}/dungeons/${dungeonId}`, {
+      method: 'PATCH',
+      body: { action: 'unpublish' },
     })
 
   const createEncounterFromRoom = async (campaignId: string, dungeonId: string, roomId: string) =>
-    request<{ encounterId: string }>(
-      `/api/campaigns/${campaignId}/dungeons/${dungeonId}/rooms/${roomId}/create-encounter`,
-      {
-        method: 'POST',
-      },
-    )
+    request<{ encounterId: string }>(`/api/campaigns/${campaignId}/dungeons/${dungeonId}/rooms/${roomId}`, {
+      method: 'PATCH',
+      body: { action: 'create-encounter' },
+    })
 
   return {
     getDungeon,

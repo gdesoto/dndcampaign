@@ -208,26 +208,28 @@ describe('campaign requests API routes', () => {
     const removePlayerVotePayload = await removePlayerVote.json()
     expect(removePlayerVotePayload.data.voteCount).toBe(1)
 
-    const playerDecisionAttempt = await fetch(`${baseUrl}/api/campaigns/${campaignId}/requests/${publicRequestId}/decision`, {
-      method: 'POST',
+    const playerDecisionAttempt = await fetch(`${baseUrl}/api/campaigns/${campaignId}/requests/${publicRequestId}`, {
+      method: 'PATCH',
       headers: {
         cookie: cookies.player,
         'content-type': 'application/json',
       },
       body: JSON.stringify({
+        action: 'decision',
         decision: 'APPROVED',
         decisionNote: 'Trying without DM access',
       }),
     })
     expect(playerDecisionAttempt.status).toBe(403)
 
-    const dmDecision = await fetch(`${baseUrl}/api/campaigns/${campaignId}/requests/${publicRequestId}/decision`, {
-      method: 'POST',
+    const dmDecision = await fetch(`${baseUrl}/api/campaigns/${campaignId}/requests/${publicRequestId}`, {
+      method: 'PATCH',
       headers: {
         cookie: cookies.dm,
         'content-type': 'application/json',
       },
       body: JSON.stringify({
+        action: 'decision',
         decision: 'APPROVED',
         decisionNote: 'Approved for next major story beat.',
       }),
@@ -286,21 +288,26 @@ describe('campaign requests API routes', () => {
     })
     expect(nonCreatorPatch.status).toBe(403)
 
-    const creatorCancel = await fetch(`${baseUrl}/api/campaigns/${campaignId}/requests/${pendingEditRequestId}/cancel`, {
-      method: 'POST',
-      headers: { cookie: cookies.player },
+    const creatorCancel = await fetch(`${baseUrl}/api/campaigns/${campaignId}/requests/${pendingEditRequestId}`, {
+      method: 'PATCH',
+      headers: {
+        cookie: cookies.player,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ action: 'cancel' }),
     })
     expect(creatorCancel.status).toBe(200)
     const creatorCancelPayload = await creatorCancel.json()
     expect(creatorCancelPayload.data.status).toBe('CANCELED')
 
-    const dmDecisionCanceled = await fetch(`${baseUrl}/api/campaigns/${campaignId}/requests/${pendingEditRequestId}/decision`, {
-      method: 'POST',
+    const dmDecisionCanceled = await fetch(`${baseUrl}/api/campaigns/${campaignId}/requests/${pendingEditRequestId}`, {
+      method: 'PATCH',
       headers: {
         cookie: cookies.dm,
         'content-type': 'application/json',
       },
       body: JSON.stringify({
+        action: 'decision',
         decision: 'DENIED',
       }),
     })

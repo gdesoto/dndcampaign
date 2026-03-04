@@ -145,7 +145,7 @@ describe('Encounter detail page', () => {
       if (String(path).includes('/characters')) {
         return [{ id: 'link-1', status: 'ACTIVE', character: { id: 'pc-1', name: 'Aria' } }]
       }
-      if (String(path).includes('/calendar-config')) return { isEnabled: false }
+      if (String(path).includes('/calendar/config')) return { isEnabled: false }
       return []
     })
   })

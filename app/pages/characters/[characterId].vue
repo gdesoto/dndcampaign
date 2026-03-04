@@ -214,9 +214,12 @@ const importCharacter = async (payload: CharacterImportPayload) => {
   importError.value = ''
   isImporting.value = true
   try {
-    await request(`/api/characters/${characterId.value}/import`, {
-      method: 'POST',
-      body: payload,
+    await request(`/api/characters/${characterId.value}`, {
+      method: 'PATCH',
+      body: {
+        action: 'import',
+        ...payload,
+      },
     })
     isImportOpen.value = false
     await refresh()
@@ -232,9 +235,12 @@ const refreshImport = async (payload: CharacterImportRefreshPayload) => {
   importError.value = ''
   isImporting.value = true
   try {
-    await request(`/api/characters/${characterId.value}/import/refresh`, {
-      method: 'POST',
-      body: payload,
+    await request(`/api/characters/${characterId.value}`, {
+      method: 'PATCH',
+      body: {
+        action: 'refresh-import',
+        ...payload,
+      },
     })
     await refresh()
   } catch (error) {
