@@ -1,5 +1,5 @@
 const fieldBase =
-  'w-full bg-[var(--ui-bg-accented)] border border-[var(--ui-border)] rounded font-sans text-[var(--ui-text)] placeholder:text-[var(--ui-text-dimmed)] placeholder:italic outline-none transition-colors focus:border-[var(--ui-border-accented)] focus:ring-2 focus:ring-[var(--ui-border-accented)]/20 disabled:opacity-70 disabled:cursor-not-allowed'
+  'w-full bg-[var(--ui-bg-accented)] border border-[var(--ui-border-muted)] rounded font-sans text-[var(--ui-text)] placeholder:text-[var(--ui-text-dimmed)] placeholder:italic outline-none transition-colors hover:border-[var(--ui-border)] focus:border-[var(--ui-border-accented)] focus:ring-1 focus:ring-[var(--ui-border-accented)]/20 dark:border-[var(--ui-border)] disabled:opacity-70 disabled:cursor-not-allowed'
 const cardSectionPadding = 'p-2 xl:p-4 xl:py-2'
 
 export default defineAppConfig({
@@ -25,16 +25,16 @@ export default defineAppConfig({
         },
         variant: {
           solid: {
-            base: 'bg-primary-500 text-neutral-950 border border-primary-400 hover:bg-primary-400',
+            base: 'bg-primary-500 text-neutral-950 border border-primary-400/65 hover:bg-primary-400 hover:border-primary-400/75 dark:border-primary-400',
           },
           outline: {
-            base: 'bg-primary-500/10 border border-primary-700 text-primary-600 hover:bg-primary-500/20 hover:border-primary-600 dark:text-primary-400',
+            base: 'bg-primary-500/10 border border-primary-700/60 text-primary-600 hover:bg-primary-500/20 hover:border-primary-600/70 dark:border-primary-700 dark:hover:border-primary-600 dark:text-primary-400',
           },
           ghost: {
-            base: 'bg-transparent border border-[var(--ui-border)] text-[var(--ui-text-muted)] hover:border-[var(--ui-border-accented)] hover:text-[var(--ui-text)]',
+            base: 'bg-transparent border border-[var(--ui-border-muted)] text-[var(--ui-text-muted)] hover:border-[var(--ui-border)] hover:text-[var(--ui-text)] dark:border-[var(--ui-border)] dark:hover:border-[var(--ui-border-accented)]',
           },
           soft: {
-            base: 'bg-error-500/15 border border-error-600/40 text-error-600 hover:bg-error-500/25 dark:text-error-400',
+            base: 'bg-error-500/15 border border-error-600/28 text-error-600 hover:bg-error-500/25 hover:border-error-600/38 dark:border-error-600/40 dark:text-error-400',
           },
           link: {
             base: 'bg-transparent border-transparent text-primary-700 hover:text-primary-500 p-0 dark:text-primary-600 dark:hover:text-primary-400',
@@ -113,6 +113,19 @@ export default defineAppConfig({
         size: 'md',
         color: 'neutral',
       },
+      compoundVariants: [
+        {
+          color: 'neutral',
+          variant: ['outline', 'subtle'],
+          class:
+            'focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[var(--ui-border-accented)]/30 dark:focus-visible:ring-[var(--ui-border-accented)]/35',
+        },
+        {
+          color: 'neutral',
+          highlight: true,
+          class: 'ring ring-inset ring-[var(--ui-border-accented)]/30 dark:ring-[var(--ui-border-accented)]/35',
+        },
+      ],
     },
 
     textarea: {
@@ -131,6 +144,19 @@ export default defineAppConfig({
         size: 'md',
         color: 'neutral',
       },
+      compoundVariants: [
+        {
+          color: 'neutral',
+          variant: ['outline', 'subtle'],
+          class:
+            'focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[var(--ui-border-accented)]/30 dark:focus-visible:ring-[var(--ui-border-accented)]/35',
+        },
+        {
+          color: 'neutral',
+          highlight: true,
+          class: 'ring ring-inset ring-[var(--ui-border-accented)]/30 dark:ring-[var(--ui-border-accented)]/35',
+        },
+      ],
     },
 
     dropdownMenu: {

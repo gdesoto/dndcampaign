@@ -130,14 +130,14 @@
 }
 
 .light {
-  --ui-bg: #f5efe4;
-  --ui-bg-elevated: #ede4d4;
-  --ui-bg-accented: #e0d4be;
-  --ui-bg-muted: #d4c8a8;
+  --ui-bg: #f2eadb;
+  --ui-bg-elevated: #fbf5ea;
+  --ui-bg-accented: #ece0ca;
+  --ui-bg-muted: #dfceaf;
 
-  --ui-border: #c0aa84;
+  --ui-border: #cab894;
   --ui-border-accented: #a97a28;
-  --ui-border-muted: #d4c8a8;
+  --ui-border-muted: #e2d4be;
 
   --ui-text: #2a2018;
   --ui-text-muted: #6e5a3e;
@@ -148,29 +148,36 @@
 
   /* Compatibility tokens for pre-v2 theme classes */
   --theme-bg:
-    radial-gradient(1000px 700px at 10% 0%, rgb(169 122 40 / 20%), transparent 60%),
-    radial-gradient(900px 600px at 90% 10%, rgb(232 184 90 / 14%), transparent 55%),
-    linear-gradient(180deg, #f5efe4 0%, #e0d4be 100%);
+    radial-gradient(980px 720px at 12% 2%, rgb(169 122 40 / 17%), transparent 60%),
+    radial-gradient(860px 620px at 86% 8%, rgb(122 167 191 / 12%), transparent 56%),
+    radial-gradient(920px 640px at 56% 100%, rgb(182 59 47 / 8%), transparent 62%),
+    linear-gradient(180deg, #f2eadb 0%, #e4d4bb 100%);
   --theme-text: var(--ui-text);
   --theme-text-muted: var(--ui-text-muted);
   --theme-text-soft: #3a2a10;
-  --theme-card-bg: linear-gradient(160deg, rgb(245 239 228 / 92%) 0%, rgb(237 228 212 / 90%) 100%);
-  --theme-card-border: rgb(106 83 52 / 25%);
-  --theme-card-shadow: 0 18px 40px rgb(40 28 16 / 14%);
-  --theme-panel-bg: rgb(255 255 255 / 45%);
-  --theme-panel-border: rgb(106 83 52 / 24%);
-  --theme-header-bg: rgb(245 239 228 / 90%);
-  --theme-header-border: rgb(106 83 52 / 22%);
-  --theme-nav-link-bg: rgb(255 255 255 / 65%);
-  --theme-nav-link-bg-hover: rgb(255 255 255 / 90%);
-  --theme-nav-link-border: rgb(106 83 52 / 25%);
+  --theme-card-bg:
+    linear-gradient(
+      162deg,
+      rgb(251 245 234 / 95%) 0%,
+      rgb(242 232 214 / 92%) 60%,
+      rgb(232 221 204 / 90%) 100%
+    );
+  --theme-card-border: rgb(106 83 52 / 20%);
+  --theme-card-shadow: 0 18px 40px rgb(40 28 16 / 12%);
+  --theme-panel-bg: linear-gradient(145deg, rgb(255 255 255 / 54%) 0%, rgb(214 228 238 / 28%) 100%);
+  --theme-panel-border: rgb(106 83 52 / 18%);
+  --theme-header-bg: linear-gradient(180deg, rgb(250 244 235 / 94%) 0%, rgb(244 235 222 / 90%) 100%);
+  --theme-header-border: rgb(106 83 52 / 16%);
+  --theme-nav-link-bg: linear-gradient(150deg, rgb(255 255 255 / 66%) 0%, rgb(233 242 248 / 32%) 100%);
+  --theme-nav-link-bg-hover: linear-gradient(150deg, rgb(255 255 255 / 88%) 0%, rgb(233 242 248 / 52%) 100%);
+  --theme-nav-link-border: rgb(106 83 52 / 18%);
   --theme-accent: var(--ui-primary);
   --theme-seal-bg: radial-gradient(circle at 35% 35%, #b63b2f 0%, #7b231d 45%, #4a1210 100%);
   --theme-overlay-noise-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
   --theme-overlay-noise-opacity: 0.16;
   --theme-overlay-pattern:
     repeating-radial-gradient(circle at 30% 20%, rgb(58 42 16 / 7%) 0, rgb(58 42 16 / 7%) 1px, transparent 1px, transparent 22px),
-    repeating-radial-gradient(circle at 70% 60%, rgb(58 42 16 / 5%) 0, rgb(58 42 16 / 5%) 1px, transparent 1px, transparent 18px);
+    repeating-radial-gradient(circle at 70% 60%, rgb(49 90 112 / 6%) 0, rgb(49 90 112 / 6%) 1px, transparent 1px, transparent 18px);
   --theme-overlay-pattern-opacity: 0.3;
 }
 
