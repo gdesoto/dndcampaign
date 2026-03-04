@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { resolveAuthRedirectPath } from '~/utils/auth-redirect'
+
 definePageMeta({ layout: 'auth' })
 
+const route = useRoute()
 const form = reactive({
   email: '',
   password: '',
@@ -9,13 +12,14 @@ const errorMessage = ref('')
 const isSubmitting = ref(false)
 
 const { login } = useAuth()
+const postLoginRedirect = computed(() => resolveAuthRedirectPath(route.query.redirect))
 
 const onSubmit = async () => {
   errorMessage.value = ''
   isSubmitting.value = true
   try {
     await login(form.email, form.password)
-    await navigateTo('/campaigns')
+    await navigateTo(postLoginRedirect.value)
   } catch (error) {
     errorMessage.value =
       (error as Error & { message?: string }).message || 'Unable to sign in.'
@@ -54,7 +58,9 @@ const onSubmit = async () => {
 
         <p class="text-sm text-muted">
           Need an account?
-          <NuxtLink class="font-medium text-primary" to="/register">Create one</NuxtLink>
+          <NuxtLink class="font-medium text-primary" :to="{ path: '/register', query: route.query }">
+            Create one
+          </NuxtLink>
         </p>
       </form>
     </UCard>

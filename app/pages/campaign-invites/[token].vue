@@ -83,7 +83,9 @@ const acceptInvite = async () => {
 }
 
 const switchAccount = async () => {
-  await auth.logout()
+  await auth.logout({
+    redirectTo: route.fullPath,
+  })
 }
 </script>
 

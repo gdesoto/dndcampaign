@@ -1,3 +1,5 @@
+import { resolveAuthRedirectPath } from '~/utils/auth-redirect'
+
 export const useAuth = () => {
   const session = useUserSession()
   const { request } = useApi()
@@ -23,10 +25,25 @@ export const useAuth = () => {
     await session.fetch()
   }
 
-  const logout = async () => {
+  const logout = async (options?: { redirectTo?: string } | Event) => {
     await request('/api/auth/logout', { method: 'POST' })
     await session.clear()
-    await navigateTo('/login')
+
+    const redirectTo = options && 'redirectTo' in options ? options.redirectTo : null
+    const redirect = redirectTo
+      ? resolveAuthRedirectPath(redirectTo)
+      : null
+    if (!redirect) {
+      await navigateTo('/login')
+      return
+    }
+
+    await navigateTo({
+      path: '/login',
+      query: {
+        redirect,
+      },
+    })
   }
 
   return {

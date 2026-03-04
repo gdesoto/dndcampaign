@@ -10,7 +10,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   if (!loggedIn.value) {
-    return navigateTo('/login')
+    return navigateTo({
+      path: '/login',
+      query: {
+        redirect: to.fullPath,
+      },
+    })
   }
 
   const sessionUser = (user.value as { systemRole?: 'USER' | 'SYSTEM_ADMIN' } | null) || null

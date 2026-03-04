@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
+import { resolveAuthRedirectPath } from '~/utils/auth-redirect'
 
 definePageMeta({ layout: 'auth' })
 
+const route = useRoute()
 const schema = z
   .object({
     name: z.string().trim().min(1, 'Name is required'),
@@ -26,6 +28,7 @@ const state = reactive<Partial<RegisterSchema>>({
 const { register } = useAuth()
 const isSubmitting = ref(false)
 const errorMessage = ref('')
+const postRegisterRedirect = computed(() => resolveAuthRedirectPath(route.query.redirect))
 
 const onSubmit = async (event: FormSubmitEvent<RegisterSchema>) => {
   errorMessage.value = ''
@@ -33,7 +36,7 @@ const onSubmit = async (event: FormSubmitEvent<RegisterSchema>) => {
 
   try {
     await register(event.data)
-    await navigateTo('/campaigns')
+    await navigateTo(postRegisterRedirect.value)
   } catch (error) {
     errorMessage.value = (error as Error & { message?: string }).message || 'Unable to register.'
   } finally {
@@ -77,7 +80,9 @@ const onSubmit = async (event: FormSubmitEvent<RegisterSchema>) => {
 
           <p class="text-sm text-muted">
             Already have an account?
-            <NuxtLink class="font-medium text-primary" to="/login">Sign in</NuxtLink>
+            <NuxtLink class="font-medium text-primary" :to="{ path: '/login', query: route.query }">
+              Sign in
+            </NuxtLink>
           </p>
         </div>
       </UForm>
