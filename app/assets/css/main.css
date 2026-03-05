@@ -96,7 +96,12 @@
   --ui-text-dimmed: #7e715d;
   --ui-text-highlighted: #fff6e8;
 
-  --ui-primary: var(--color-primary-400);
+  --ui-primary: var(--color-primary-500);
+  --ui-secondary: var(--color-info-500);
+  --ui-success: var(--color-success-500);
+  --ui-info: var(--color-info-500);
+  --ui-warning: var(--color-warning-500);
+  --ui-error: var(--color-error-500);
   --ui-radius: 0.25rem;
 
   /* Compatibility tokens for pre-v2 theme classes */
@@ -144,7 +149,12 @@
   --ui-text-dimmed: #9e8a6a;
   --ui-text-highlighted: #1a1410;
 
-  --ui-primary: var(--color-primary-600);
+  --ui-primary: var(--color-primary-500);
+  --ui-secondary: var(--color-info-500);
+  --ui-success: var(--color-success-500);
+  --ui-info: var(--color-info-500);
+  --ui-warning: var(--color-warning-500);
+  --ui-error: var(--color-error-500);
 
   /* Compatibility tokens for pre-v2 theme classes */
   --theme-bg:

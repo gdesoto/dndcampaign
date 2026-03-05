@@ -3,13 +3,9 @@ const {
   route,
   campaignId,
   sessionId,
-  form,
   canWriteContent,
   canUploadRecording,
   canRunSummary,
-  isSaving,
-  saveError,
-  checklistItems,
   selectedFile,
   selectedKind,
   isUploading,
@@ -69,6 +65,7 @@ const {
   recapPlaybackUrl,
   recapError,
   recapDeleteError,
+  recap,
   hasRecap,
   uploadRecording,
   loadPlayback,
@@ -88,7 +85,6 @@ const {
   uploadRecap,
   loadRecapPlayback,
   deleteRecap,
-  saveSession,
 } = await useSessionWorkspaceViewModel()
 
 const currentStep = computed(() =>
@@ -102,49 +98,7 @@ const returnToPath = computed(
 
 <template>
   <div class="space-y-4">
-    <div v-if="currentStep === 'details'" class="space-y-4">
-      <UCard>
-        <template #header>
-          <div>
-            <div>
-              <h2 class="text-lg font-semibold">Session details</h2>
-              <p class="text-sm text-muted">Keep the record current.</p>
-            </div>
-          </div>
-        </template>
-        <UForm :state="form" class="space-y-4" @submit.prevent="saveSession">
-          <UFormField label="Title" name="title">
-            <UInput v-model="form.title" :disabled="!canWriteContent" placeholder="This Is Why Taverns Have Rules" />
-          </UFormField>
-
-          <div class="grid gap-4 sm:grid-cols-2">
-            <UFormField label="Session number" name="sessionNumber">
-              <UInput v-model="form.sessionNumber" :disabled="!canWriteContent" type="number" />
-            </UFormField>
-            <UFormField label="Played at" name="playedAt">
-              <UInput v-model="form.playedAt" :disabled="!canWriteContent" type="date" />
-            </UFormField>
-          </div>
-
-          <UFormField label="Guest dungeon master" name="guestDungeonMasterName">
-            <UInput v-model="form.guestDungeonMasterName" :disabled="!canWriteContent" placeholder="Optional guest DM" />
-          </UFormField>
-
-          <UFormField label="Notes" name="notes">
-            <UTextarea v-model="form.notes" :disabled="!canWriteContent" :rows="6" />
-          </UFormField>
-
-          <p v-if="saveError" class="text-sm text-error">{{ saveError }}</p>
-
-          <div class="flex justify-end">
-            <UButton type="submit" :loading="isSaving" :disabled="!canWriteContent">Save session</UButton>
-          </div>
-        </UForm>
-      </UCard>
-      <SessionChecklistCard :items="checklistItems" />
-    </div>
-
-    <div v-else-if="currentStep === 'recordings'" class="space-y-4">
+    <div v-if="currentStep === 'recordings'" class="space-y-4">
       <SessionRecordingsPanel
         :workflow-mode="true"
         :campaign-id="campaignId"
@@ -250,6 +204,7 @@ const returnToPath = computed(
     <div v-else-if="currentStep === 'recap'" class="space-y-4">
       <SessionRecapPanel
         :workflow-mode="true"
+        :recap="recap"
         :recap-file="recapFile"
         :recap-uploading="recapUploading"
         :recap-playback-loading="recapPlaybackLoading"

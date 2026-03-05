@@ -31,6 +31,7 @@ const {
   recapPlaybackUrl,
   recapError,
   recapDeleteError,
+  recap,
   hasRecap,
   uploadRecap,
   loadRecapPlayback,
@@ -50,7 +51,7 @@ const {
       :suggestion-status="suggestionStatusLabel"
       :recap-status="recapStatus"
       mode="overview"
-      active-step="details"
+      active-step="recordings"
       @jump-step="openSessionSection"
     />
 
@@ -68,7 +69,7 @@ const {
                 variant="ghost"
                 icon="i-lucide-square-arrow-out-up-right"
                 aria-label="Open step"
-                @click="openSessionSection('details')"
+                @click="openSessionSection('recordings')"
               />
             </UTooltip>
             <UButton size="sm" variant="outline" :disabled="!canWriteContent" @click="openEditSession">
@@ -190,6 +191,7 @@ const {
     <SessionRecapPanel
       :workflow-mode="false"
       open-step="recap"
+      :recap="recap"
       :recap-file="recapFile"
       :recap-uploading="recapUploading"
       :recap-playback-loading="recapPlaybackLoading"

@@ -5,7 +5,7 @@ import {
   segmentsToPlainText,
 } from '#shared/utils/transcript'
 
-const workflowStepOrder = ['details', 'recordings', 'transcription', 'summary', 'suggestions', 'recap'] as const
+const workflowStepOrder = ['recordings', 'transcription', 'summary', 'suggestions', 'recap'] as const
 type WorkflowStep = (typeof workflowStepOrder)[number]
 const sessionSectionOrder = ['overview', ...workflowStepOrder] as const
 export type SessionSection = (typeof sessionSectionOrder)[number]
@@ -299,12 +299,6 @@ export async function useSessionWorkspaceViewModel() {
       icon: 'i-lucide-layout-dashboard',
     },
     {
-      title: 'Session details',
-      description: hasRecordings.value ? 'Ready to add recordings' : 'Add notes & basics',
-      value: 'details',
-      icon: 'i-lucide-notebook-pen',
-    },
-    {
       title: 'Recordings',
       description: hasRecordings.value ? 'Upload complete' : 'Upload audio/video',
       value: 'recordings',
@@ -342,7 +336,7 @@ export async function useSessionWorkspaceViewModel() {
     if (!hasSummary.value) return 'summary'
     if (!hasSuggestionJob.value) return 'suggestions'
     if (!hasRecap.value) return 'recap'
-    return 'details'
+    return 'recordings'
   })
 
   const openSessionSection = async (section: string) => {

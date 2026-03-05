@@ -104,18 +104,31 @@ describe('SessionRecapPanel', () => {
     const wrapper = await mountSuspended(RecapPanel, {
       props: {
         workflowMode: true,
-        recapFile: null,
+        recap: null,
+        recapFile: new File(['audio'], 'recap.mp3', { type: 'audio/mpeg' }),
         recapUploading: false,
         recapPlaybackLoading: false,
         recapDeleting: false,
         recapPlaybackUrl: '',
         recapError: '',
         recapDeleteError: '',
-        hasRecap: true,
+        hasRecap: false,
       },
     })
 
     await clickByText(wrapper, 'Upload recap')
+
+    await wrapper.setProps({
+      recap: {
+        id: 'recap-1',
+        filename: 'recap.mp3',
+        mimeType: 'audio/mpeg',
+        byteSize: 1024,
+        createdAt: new Date('2026-03-05T00:00:00.000Z').toISOString(),
+      },
+      hasRecap: true,
+    })
+
     await clickByText(wrapper, 'Play recap')
     await clickByText(wrapper, 'Delete recap')
 

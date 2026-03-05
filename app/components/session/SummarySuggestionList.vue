@@ -14,7 +14,7 @@ type SuggestionGroup = {
 
 type SessionSuggestion = SuggestionItem | null
 
-defineProps<{
+const props = defineProps<{
   suggestionGroups: SuggestionGroup[]
   sessionSuggestion: SessionSuggestion
 }>()
@@ -39,7 +39,7 @@ const toDraftPayload = (payload: Record<string, unknown>) => {
   return next
 }
 
-const ensureDraft = (suggestion: SuggestionItem) => {
+const mergeDraft = (suggestion: SuggestionItem) => {
   const base = toDraftPayload(suggestion.payload)
   const existing = drafts[suggestion.id] || {}
   const merged: Record<string, unknown> = {}
@@ -47,11 +47,12 @@ const ensureDraft = (suggestion: SuggestionItem) => {
     merged[key] = key in existing ? existing[key] : base[key]
   }
   drafts[suggestion.id] = merged
-  return merged
 }
 
+const draftFor = (suggestion: SuggestionItem) => drafts[suggestion.id] || toDraftPayload(suggestion.payload)
+
 const editableFields = (suggestion: SuggestionItem) =>
-  Object.entries(ensureDraft(suggestion)).filter(([field]) => field !== 'type')
+  Object.entries(draftFor(suggestion)).filter(([field]) => field !== 'type')
 
 const updateField = (suggestionId: string, key: string, value: unknown) => {
   if (!drafts[suggestionId]) drafts[suggestionId] = {}
@@ -80,13 +81,13 @@ const enumOptionsFor = (suggestion: SuggestionItem, field: string) => {
 const applySuggestion = (suggestion: SuggestionItem) => {
   const payload = {
     ...suggestion.payload,
-    ...ensureDraft(suggestion),
+    ...draftFor(suggestion),
   }
   emit('apply-suggestion', { suggestionId: suggestion.id, payload })
 }
 
 const applySessionField = (suggestion: SuggestionItem, field: 'title' | 'notes') => {
-  const draft = ensureDraft(suggestion)
+  const draft = draftFor(suggestion)
   if (typeof draft[field] !== 'string') return
   emit('apply-suggestion', {
     suggestionId: suggestion.id,
@@ -102,6 +103,19 @@ const suggestionTitle = (suggestion: SuggestionItem) => {
   if (typeof suggestion.payload.summary === 'string') return suggestion.payload.summary
   return 'Suggestion'
 }
+
+watch(
+  () => [props.sessionSuggestion, props.suggestionGroups],
+  () => {
+    if (props.sessionSuggestion) mergeDraft(props.sessionSuggestion)
+    for (const group of props.suggestionGroups) {
+      for (const suggestion of group.items) {
+        mergeDraft(suggestion)
+      }
+    }
+  },
+  { immediate: true, deep: true }
+)
 </script>
 
 <template>
@@ -120,7 +134,7 @@ const suggestionTitle = (suggestion: SuggestionItem) => {
         <div v-if="sessionSuggestion.payload.title || drafts[sessionSuggestion.id]?.title !== undefined">
           <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Title</p>
           <UInput
-            :model-value="String(ensureDraft(sessionSuggestion).title || '')"
+            :model-value="String(draftFor(sessionSuggestion).title || '')"
             class="mt-1"
             @update:model-value="updateField(sessionSuggestion.id, 'title', $event)"
           />
@@ -128,7 +142,7 @@ const suggestionTitle = (suggestion: SuggestionItem) => {
         <div v-if="sessionSuggestion.payload.notes || drafts[sessionSuggestion.id]?.notes !== undefined">
           <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Notes</p>
           <UTextarea
-            :model-value="String(ensureDraft(sessionSuggestion).notes || '')"
+            :model-value="String(draftFor(sessionSuggestion).notes || '')"
             :rows="4"
             class="mt-1"
             @update:model-value="updateField(sessionSuggestion.id, 'notes', $event)"
@@ -139,7 +153,7 @@ const suggestionTitle = (suggestion: SuggestionItem) => {
         <UButton
           size="xs"
           variant="outline"
-          :disabled="sessionSuggestion.status !== 'PENDING' || typeof ensureDraft(sessionSuggestion).title !== 'string'"
+          :disabled="sessionSuggestion.status !== 'PENDING' || typeof draftFor(sessionSuggestion).title !== 'string'"
           @click="applySessionField(sessionSuggestion, 'title')"
         >
           Apply title
@@ -147,7 +161,7 @@ const suggestionTitle = (suggestion: SuggestionItem) => {
         <UButton
           size="xs"
           variant="outline"
-          :disabled="sessionSuggestion.status !== 'PENDING' || typeof ensureDraft(sessionSuggestion).notes !== 'string'"
+          :disabled="sessionSuggestion.status !== 'PENDING' || typeof draftFor(sessionSuggestion).notes !== 'string'"
           @click="applySessionField(sessionSuggestion, 'notes')"
         >
           Apply notes
