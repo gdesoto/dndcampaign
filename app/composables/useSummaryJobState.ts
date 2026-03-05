@@ -14,21 +14,34 @@ type UseSummaryJobStateOptions = {
 export function useSummaryJobState(options: UseSummaryJobStateOptions) {
   const { request } = useApi()
 
-  const selectedSummaryJobId = ref('')
-
-  const { data: summaryJobData, refresh: refreshSummaryJob } = useAsyncData(
-    () => `${options.keyPrefix}-summary-job-${options.sessionId.value}`,
-    () => request<SessionSummaryJobResponse>(`/api/sessions/${options.sessionId.value}/summaries/jobs`)
+  const selectedSummaryJobId = useState<string>(
+    `${options.keyPrefix}-selected-summary-job-${options.sessionId.value}`,
+    () => ''
+  )
+  const summaryJobData = useState<SessionSummaryJobResponse | null>(
+    `${options.keyPrefix}-summary-job-data-${options.sessionId.value}`,
+    () => null
+  )
+  const selectedSummaryJobData = useState<SessionSummaryJobDetail | null>(
+    `${options.keyPrefix}-summary-job-detail-${options.sessionId.value}`,
+    () => null
   )
 
-  const { data: selectedSummaryJobData, refresh: refreshSelectedSummaryJob } = useAsyncData(
-    () => `${options.keyPrefix}-summary-job-detail-${selectedSummaryJobId.value || 'latest'}`,
-    () => {
-      if (!selectedSummaryJobId.value) return Promise.resolve(null)
-      return request<SessionSummaryJobDetail>(`/api/summaries/jobs/${selectedSummaryJobId.value}`)
-    },
-    { immediate: false }
-  )
+  const refreshSummaryJob = async () => {
+    summaryJobData.value = await request<SessionSummaryJobResponse>(
+      `/api/sessions/${options.sessionId.value}/summaries/jobs`
+    )
+  }
+
+  const refreshSelectedSummaryJob = async () => {
+    if (!selectedSummaryJobId.value) {
+      selectedSummaryJobData.value = null
+      return
+    }
+    selectedSummaryJobData.value = await request<SessionSummaryJobDetail>(
+      `/api/summaries/jobs/${selectedSummaryJobId.value}`
+    )
+  }
 
   const defaultJobForKind = computed(() => {
     if (options.jobKind === 'SUMMARY_GENERATION') {
@@ -81,10 +94,18 @@ export function useSummaryJobState(options: UseSummaryJobStateOptions) {
   watch(
     () => selectedSummaryJobId.value,
     async (value) => {
-      if (!value) return
+      if (!value) {
+        selectedSummaryJobData.value = null
+        return
+      }
       await refreshSelectedSummaryJob()
-    }
+    },
+    { immediate: true }
   )
+
+  if (!summaryJobData.value) {
+    void refreshSummaryJob()
+  }
 
   return {
     selectedSummaryJobId,

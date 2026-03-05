@@ -2,11 +2,13 @@
 withDefaults(defineProps<{
   backTo: string
   backLabel?: string
+  backButtonPlacement?: 'stacked' | 'header'
   headline?: string
   title: string
   description?: string
 }>(), {
   backLabel: 'Back',
+  backButtonPlacement: 'stacked',
   headline: '',
   description: '',
 })
@@ -18,6 +20,7 @@ const hasAside = computed(() => Boolean(slots.aside))
 <template>
   <div class="space-y-6">
     <UButton
+      v-if="backButtonPlacement === 'stacked'"
       variant="outline"
       icon="i-lucide-arrow-left"
       :to="backTo"
@@ -30,7 +33,15 @@ const hasAside = computed(() => Boolean(slots.aside))
       :title="title"
       :description="description"
     >
-      <template #right>
+      <template #links>
+        <UButton
+          v-if="backButtonPlacement === 'header'"
+          variant="outline"
+          icon="i-lucide-arrow-left"
+          :to="backTo"
+        >
+          {{ backLabel }}
+        </UButton>
         <slot name="actions" />
       </template>
     </UPageHeader>
@@ -49,4 +60,3 @@ const hasAside = computed(() => Boolean(slots.aside))
     </div>
   </div>
 </template>
-

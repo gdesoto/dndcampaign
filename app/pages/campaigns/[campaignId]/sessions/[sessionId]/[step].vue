@@ -1,183 +1,103 @@
 <script setup lang="ts">
-import type { SessionRecordingItem } from '#shared/types/session-workflow'
-
-type UiColor = 'error' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'neutral'
-type SessionFormState = {
-  title: string
-  sessionNumber: string
-  playedAt: string
-  guestDungeonMasterName: string
-  notes: string
-}
-
-const route = useRoute()
-
-const props = defineProps<{
-  campaignId: string
-  access?: {
-    role: 'OWNER' | 'COLLABORATOR' | 'VIEWER'
-    permissions: string[]
-  } | null
-  canWriteContent: boolean
-  canUploadRecording: boolean
-  canRunSummary: boolean
-  form: SessionFormState
-  isSaving: boolean
-  saveError: string
-  checklistItems: Array<{ id: string; label: string; done: boolean }>
-  selectedFile: File | null
-  selectedKind: 'AUDIO' | 'VIDEO'
-  isUploading: boolean
-  uploadError: string
-  playbackError: string
-  playbackLoading: Record<string, boolean>
-  playbackUrls: Record<string, string>
-  recordings: SessionRecordingItem[] | null | undefined
-  transcriptDocId?: string
-  transcriptError: string
-  transcriptImportError: string
-  transcriptImporting: boolean
-  transcriptFile: File | null
-  showFullTranscript: boolean
-  transcriptPreview: string
-  fullTranscript: string
-  selectedSubtitleRecordingId: string
-  videoOptions: Array<{ label: string; value: string }>
-  subtitleAttachLoading: boolean
-  subtitleAttachError: string
-  selectedSummaryJobId: string
-  summaryJobOptions: Array<{ label: string; value: string }>
-  summarySending: boolean
-  hasTranscript: boolean
-  summaryStatusColor: UiColor
-  summaryStatusLabel: string
-  summaryTrackingId?: string
-  summaryPendingText: string
-  summaryHighlights: unknown[]
-  summarySessionTags: unknown[]
-  summaryNotableDialogue: unknown[]
-  summaryConcreteFacts: unknown[]
-  hasSummary: boolean
-  selectedSuggestionJobId: string
-  suggestionJobOptions: Array<{ label: string; value: string }>
-  suggestionSending: boolean
-  suggestionStatusColor: UiColor
-  suggestionStatusLabel: string
-  suggestionTrackingId?: string
-  suggestionGroups: Array<{
-    label: string
-    items: Array<{
-      id: string
-      entityType: string
-      action: string
-      status: string
-      payload: Record<string, unknown>
-    }>
-  }>
-  sessionSuggestion: {
-    id: string
-    entityType: string
-    action: string
-    status: string
-    payload: Record<string, unknown>
-  } | null
-  summarySendError: string
-  summaryActionError: string
-  suggestionSendError: string
-  suggestionActionError: string
-  summaryContent: string
-  summarySaving: boolean
-  summaryDocId?: string
-  summaryFile: File | null
-  summaryImporting: boolean
-  summaryError: string
-  summaryImportError: string
-  recapFile: File | null
-  recapUploading: boolean
-  recapPlaybackLoading: boolean
-  recapDeleting: boolean
-  recapPlaybackUrl: string
-  recapError: string
-  recapDeleteError: string
-  hasRecap: boolean
-}>()
-
-const emit = defineEmits<{
-  'open-edit': []
-  'update:form': [value: SessionFormState]
-  'update:selectedFile': [value: File | null]
-  'update:selectedKind': [value: 'AUDIO' | 'VIDEO']
-  'upload-recording': []
-  'play-recording': [recordingId: string]
-  'open-player': []
-  'update:transcriptFile': [value: File | null]
-  'update:showFullTranscript': [value: boolean]
-  'update:selectedSubtitleRecordingId': [value: string]
-  'create-transcript': []
-  'import-transcript': []
-  'attach-subtitles': []
-  'update:selectedSummaryJobId': [value: string]
-  'refresh-jobs': []
-  'send-to-n8n': []
-  'apply-pending-summary': []
-  'update:selectedSuggestionJobId': [value: string]
-  'refresh-suggestion-jobs': []
-  'generate-suggestions': []
-  'apply-suggestion': [input: { suggestionId: string; payload: Record<string, unknown> }]
-  'discard-suggestion': [suggestionId: string]
-  'update:summaryContent': [value: string]
-  'save-summary': []
-  'update:summaryFile': [value: File | null]
-  'import-summary': []
-  'update:recapFile': [value: File | null]
-  'upload-recap': []
-  'play-recap': []
-  'delete-recap': []
-  'save-session': []
-}>()
+const {
+  route,
+  campaignId,
+  sessionId,
+  form,
+  canWriteContent,
+  canUploadRecording,
+  canRunSummary,
+  isSaving,
+  saveError,
+  checklistItems,
+  selectedFile,
+  selectedKind,
+  isUploading,
+  uploadError,
+  playbackError,
+  playbackLoading,
+  playbackUrls,
+  recordings,
+  transcriptDoc,
+  transcriptError,
+  transcriptImportError,
+  transcriptImporting,
+  transcriptFile,
+  showFullTranscript,
+  transcriptPreview,
+  fullTranscript,
+  selectedSubtitleRecordingId,
+  videoOptions,
+  subtitleAttachLoading,
+  subtitleAttachError,
+  selectedSummaryJobId,
+  summaryJobOptions,
+  summarySending,
+  hasTranscript,
+  summaryStatusColor,
+  summaryStatusLabel,
+  summaryJob,
+  summaryPendingText,
+  summaryHighlights,
+  summarySessionTags,
+  summaryNotableDialogue,
+  summaryConcreteFacts,
+  summarySendError,
+  summaryActionError,
+  summaryForm,
+  summarySaving,
+  summaryDoc,
+  summaryFile,
+  summaryImporting,
+  summaryError,
+  summaryImportError,
+  selectedSuggestionJobId,
+  suggestionJobOptions,
+  suggestionSending,
+  hasSummary,
+  suggestionStatusColor,
+  suggestionStatusLabel,
+  suggestionJob,
+  suggestionGroups,
+  sessionSuggestion,
+  suggestionSendError,
+  suggestionActionError,
+  recapFile,
+  recapUploading,
+  recapPlaybackLoading,
+  recapDeleting,
+  recapPlaybackUrl,
+  recapError,
+  recapDeleteError,
+  hasRecap,
+  uploadRecording,
+  loadPlayback,
+  openPlayer,
+  saveTranscript,
+  importTranscript,
+  attachTranscriptToVideo,
+  refreshSummaryJob,
+  sendSummaryToN8n,
+  applyPendingSummary,
+  refreshSuggestionJobs,
+  generateSuggestions,
+  applySuggestion,
+  discardSuggestion,
+  saveSummary,
+  importSummary,
+  uploadRecap,
+  loadRecapPlayback,
+  deleteRecap,
+  saveSession,
+} = await useSessionWorkspaceViewModel()
 
 const currentStep = computed(() =>
   typeof route.params.step === 'string' ? route.params.step : ''
 )
 
 const returnToPath = computed(
-  () => `/campaigns/${props.campaignId}/sessions/${route.params.sessionId}/${currentStep.value}`
+  () => `/campaigns/${campaignId}/sessions/${sessionId}/${currentStep.value}`
 )
-
-const updateFormField = <K extends keyof SessionFormState>(
-  key: K,
-  value: SessionFormState[K]
-) => {
-  emit('update:form', {
-    ...props.form,
-    [key]: value,
-  })
-}
-
-const titleModel = computed({
-  get: () => props.form.title,
-  set: (value: string) => updateFormField('title', value),
-})
-
-const sessionNumberModel = computed({
-  get: () => props.form.sessionNumber,
-  set: (value: string) => updateFormField('sessionNumber', value),
-})
-
-const playedAtModel = computed({
-  get: () => props.form.playedAt,
-  set: (value: string) => updateFormField('playedAt', value),
-})
-
-const guestDungeonMasterNameModel = computed({
-  get: () => props.form.guestDungeonMasterName,
-  set: (value: string) => updateFormField('guestDungeonMasterName', value),
-})
-
-const notesModel = computed({
-  get: () => props.form.notes,
-  set: (value: string) => updateFormField('notes', value),
-})
 </script>
 
 <template>
@@ -192,26 +112,26 @@ const notesModel = computed({
             </div>
           </div>
         </template>
-        <UForm :state="props.form" class="space-y-4" @submit="emit('save-session')">
+        <UForm :state="form" class="space-y-4" @submit.prevent="saveSession">
           <UFormField label="Title" name="title">
-            <UInput v-model="titleModel" :disabled="!canWriteContent" placeholder="This Is Why Taverns Have Rules" />
+            <UInput v-model="form.title" :disabled="!canWriteContent" placeholder="This Is Why Taverns Have Rules" />
           </UFormField>
 
           <div class="grid gap-4 sm:grid-cols-2">
             <UFormField label="Session number" name="sessionNumber">
-              <UInput v-model="sessionNumberModel" :disabled="!canWriteContent" type="number" />
+              <UInput v-model="form.sessionNumber" :disabled="!canWriteContent" type="number" />
             </UFormField>
             <UFormField label="Played at" name="playedAt">
-              <UInput v-model="playedAtModel" :disabled="!canWriteContent" type="date" />
+              <UInput v-model="form.playedAt" :disabled="!canWriteContent" type="date" />
             </UFormField>
           </div>
 
           <UFormField label="Guest dungeon master" name="guestDungeonMasterName">
-            <UInput v-model="guestDungeonMasterNameModel" :disabled="!canWriteContent" placeholder="Optional guest DM" />
+            <UInput v-model="form.guestDungeonMasterName" :disabled="!canWriteContent" placeholder="Optional guest DM" />
           </UFormField>
 
           <UFormField label="Notes" name="notes">
-            <UTextarea v-model="notesModel" :disabled="!canWriteContent" :rows="6" />
+            <UTextarea v-model="form.notes" :disabled="!canWriteContent" :rows="6" />
           </UFormField>
 
           <p v-if="saveError" class="text-sm text-error">{{ saveError }}</p>
@@ -236,11 +156,11 @@ const notesModel = computed({
         :playback-error="playbackError"
         :playback-loading="playbackLoading"
         :playback-urls="playbackUrls"
-        @update:selected-file="emit('update:selectedFile', $event)"
-        @update:selected-kind="emit('update:selectedKind', $event)"
-        @upload-recording="emit('upload-recording')"
-        @play-recording="emit('play-recording', $event)"
-        @open-player="emit('open-player')"
+        @update:selected-file="selectedFile = $event"
+        @update:selected-kind="selectedKind = $event"
+        @upload-recording="canUploadRecording && uploadRecording()"
+        @play-recording="loadPlayback"
+        @open-player="openPlayer"
       />
     </div>
 
@@ -249,7 +169,7 @@ const notesModel = computed({
         :campaign-id="campaignId"
         :return-to-path="returnToPath"
         :recordings="recordings"
-        :transcript-doc="transcriptDocId ? { id: transcriptDocId } : null"
+        :transcript-doc="transcriptDoc?.id ? { id: transcriptDoc.id } : null"
         :transcript-error="transcriptError"
         :transcript-import-error="transcriptImportError"
         :transcript-importing="transcriptImporting"
@@ -261,12 +181,12 @@ const notesModel = computed({
         :video-options="videoOptions"
         :subtitle-attach-loading="subtitleAttachLoading"
         :subtitle-attach-error="subtitleAttachError"
-        @update:transcript-file="emit('update:transcriptFile', $event)"
-        @update:show-full-transcript="emit('update:showFullTranscript', $event)"
-        @update:selected-subtitle-recording-id="emit('update:selectedSubtitleRecordingId', $event)"
-        @create-transcript="emit('create-transcript')"
-        @import-transcript="emit('import-transcript')"
-        @attach-subtitles="emit('attach-subtitles')"
+        @update:transcript-file="transcriptFile = $event"
+        @update:show-full-transcript="showFullTranscript = $event"
+        @update:selected-subtitle-recording-id="selectedSubtitleRecordingId = $event"
+        @create-transcript="canWriteContent && saveTranscript()"
+        @import-transcript="canWriteContent && importTranscript()"
+        @attach-subtitles="canWriteContent && attachTranscriptToVideo()"
       />
     </div>
 
@@ -280,7 +200,7 @@ const notesModel = computed({
         :has-transcript="hasTranscript"
         :summary-status-color="summaryStatusColor"
         :summary-status-label="summaryStatusLabel"
-        :summary-tracking-id="summaryTrackingId"
+        :summary-tracking-id="summaryJob?.trackingId"
         :summary-pending-text="summaryPendingText"
         :summary-highlights="summaryHighlights"
         :summary-session-tags="summarySessionTags"
@@ -288,21 +208,21 @@ const notesModel = computed({
         :summary-concrete-facts="summaryConcreteFacts"
         :summary-send-error="summarySendError"
         :summary-action-error="summaryActionError"
-        :summary-content="summaryContent"
+        :summary-content="summaryForm.content"
         :summary-saving="summarySaving"
-        :summary-doc-id="summaryDocId"
+        :summary-doc-id="summaryDoc?.id"
         :summary-file="summaryFile"
         :summary-importing="summaryImporting"
         :summary-error="summaryError"
         :summary-import-error="summaryImportError"
-        @update:selected-summary-job-id="emit('update:selectedSummaryJobId', $event)"
-        @refresh-jobs="emit('refresh-jobs')"
-        @send-to-n8n="emit('send-to-n8n')"
-        @apply-pending-summary="emit('apply-pending-summary')"
-        @update:summary-content="emit('update:summaryContent', $event)"
-        @save-summary="emit('save-summary')"
-        @update:summary-file="emit('update:summaryFile', $event)"
-        @import-summary="emit('import-summary')"
+        @update:selected-summary-job-id="selectedSummaryJobId = $event"
+        @refresh-jobs="refreshSummaryJob"
+        @send-to-n8n="canRunSummary && sendSummaryToN8n()"
+        @apply-pending-summary="canRunSummary && applyPendingSummary()"
+        @update:summary-content="summaryForm.content = $event"
+        @save-summary="canWriteContent && saveSummary()"
+        @update:summary-file="summaryFile = $event"
+        @import-summary="canWriteContent && importSummary()"
       />
     </div>
 
@@ -314,16 +234,16 @@ const notesModel = computed({
         :has-summary="hasSummary"
         :suggestion-status-color="suggestionStatusColor"
         :suggestion-status-label="suggestionStatusLabel"
-        :suggestion-tracking-id="suggestionTrackingId"
+        :suggestion-tracking-id="suggestionJob?.trackingId"
         :suggestion-groups="suggestionGroups"
         :session-suggestion="sessionSuggestion"
         :suggestion-send-error="suggestionSendError"
         :suggestion-action-error="suggestionActionError"
-        @update:selected-suggestion-job-id="emit('update:selectedSuggestionJobId', $event)"
-        @refresh-jobs="emit('refresh-suggestion-jobs')"
-        @generate-suggestions="emit('generate-suggestions')"
-        @apply-suggestion="emit('apply-suggestion', $event)"
-        @discard-suggestion="emit('discard-suggestion', $event)"
+        @update:selected-suggestion-job-id="selectedSuggestionJobId = $event"
+        @refresh-jobs="refreshSuggestionJobs"
+        @generate-suggestions="canRunSummary && generateSuggestions()"
+        @apply-suggestion="canRunSummary && applySuggestion($event)"
+        @discard-suggestion="canRunSummary && discardSuggestion($event)"
       />
     </div>
 
@@ -338,11 +258,11 @@ const notesModel = computed({
         :recap-error="recapError"
         :recap-delete-error="recapDeleteError"
         :has-recap="hasRecap"
-        @update:recap-file="emit('update:recapFile', $event)"
-        @upload-recap="emit('upload-recap')"
-        @play-recap="emit('play-recap')"
-        @delete-recap="emit('delete-recap')"
-        @open-player="emit('open-player')"
+        @update:recap-file="recapFile = $event"
+        @upload-recap="canUploadRecording && uploadRecap()"
+        @play-recap="loadRecapPlayback"
+        @delete-recap="canUploadRecording && deleteRecap()"
+        @open-player="openPlayer"
       />
     </div>
 

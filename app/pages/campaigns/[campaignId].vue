@@ -38,11 +38,6 @@ const { sectionTitle } = useCampaignNavigation(
 provide('campaignAccess', access)
 provide('campaignCanWriteContent', canWriteContent)
 
-const sessionDateLabel = computed(() => {
-  if (!sessionHeader.value?.playedAt) return 'Unscheduled'
-  return new Date(sessionHeader.value.playedAt).toLocaleDateString()
-})
-
 useSeoMeta({
   title: () => {
     const campaignName = campaign.value?.name || 'Campaign'
@@ -57,7 +52,7 @@ useSeoMeta({
 
 <template>
   <div class="space-y-6">
-    <div v-if="pending" class="space-y-3">
+    <div v-if="pending && !campaign" class="space-y-3">
       <UCard class="h-24 animate-pulse" />
       <UCard class="h-16 animate-pulse" />
     </div>
@@ -68,15 +63,6 @@ useSeoMeta({
     </UCard>
 
     <div v-else-if="campaign" class="space-y-4">
-      <SessionHeaderCard
-        v-if="isSessionDetailRoute && sessionHeader"
-        :session-number="sessionHeader.sessionNumber"
-        :title="sessionHeader.title"
-        :session-date-label="sessionDateLabel"
-        :show-edit="false"
-        :sticky="false"
-      />
-
       <NuxtPage />
     </div>
   </div>

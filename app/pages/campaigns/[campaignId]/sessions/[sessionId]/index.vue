@@ -1,60 +1,44 @@
 <script setup lang="ts">
-import type { SessionRecordingItem } from '#shared/types/session-workflow'
-
-type SessionForm = {
-  sessionNumber: string
-  playedAt: string
-  notes: string
-}
-
-type WorkflowStep = 'details' | 'recordings' | 'transcription' | 'summary' | 'suggestions' | 'recap'
-
-defineProps<{
-  campaignId: string
-  canWriteContent: boolean
-  canUploadRecording: boolean
-  canRunSummary: boolean
-  form: SessionForm
-  sessionDungeonMasterLabel: string
-  transcriptPreview: string
-  summaryPreview: string
-  recordingsCount: number
-  transcriptStatus: string
-  summaryStatus: string
-  suggestionStatus?: string
-  recapStatus: string
-  transcriptDocId?: string
-  summaryDocId?: string
-  recordings: SessionRecordingItem[] | null | undefined
-  selectedFile: File | null
-  selectedKind: 'AUDIO' | 'VIDEO'
-  isUploading: boolean
-  uploadError: string
-  playbackError: string
-  playbackLoading: Record<string, boolean>
-  playbackUrls: Record<string, string>
-  recapFile: File | null
-  recapUploading: boolean
-  recapPlaybackLoading: boolean
-  recapDeleting: boolean
-  recapPlaybackUrl: string
-  recapError: string
-  hasRecap: boolean
-}>()
-
-const emit = defineEmits<{
-  'open-edit': []
-  'jump-step': [step: WorkflowStep]
-  'update:selectedFile': [value: File | null]
-  'update:selectedKind': [value: 'AUDIO' | 'VIDEO']
-  'upload-recording': []
-  'play-recording': [recordingId: string]
-  'open-player': []
-  'update:recapFile': [value: File | null]
-  'upload-recap': []
-  'play-recap': []
-  'delete-recap': []
-}>()
+const {
+  campaignId,
+  canWriteContent,
+  canUploadRecording,
+  sessionDungeonMasterLabel,
+  transcriptPreview,
+  summaryPreview,
+  recordingsCount,
+  transcriptStatus,
+  summaryStatus,
+  suggestionStatusLabel,
+  recapStatus,
+  transcriptDoc,
+  summaryDoc,
+  recordings,
+  selectedFile,
+  selectedKind,
+  isUploading,
+  uploadError,
+  playbackError,
+  playbackLoading,
+  playbackUrls,
+  uploadRecording,
+  loadPlayback,
+  openPlayer,
+  recapFile,
+  recapUploading,
+  recapPlaybackLoading,
+  recapDeleting,
+  recapPlaybackUrl,
+  recapError,
+  recapDeleteError,
+  hasRecap,
+  uploadRecap,
+  loadRecapPlayback,
+  deleteRecap,
+  openSessionSection,
+  openEditSession,
+  form,
+} = await useSessionWorkspaceViewModel()
 </script>
 
 <template>
@@ -63,11 +47,11 @@ const emit = defineEmits<{
       :recordings-count="recordingsCount"
       :transcript-status="transcriptStatus"
       :summary-status="summaryStatus"
-      :suggestion-status="suggestionStatus"
+      :suggestion-status="suggestionStatusLabel"
       :recap-status="recapStatus"
       mode="overview"
       active-step="details"
-      @jump-step="emit('jump-step', $event)"
+      @jump-step="openSessionSection"
     />
 
     <UCard>
@@ -84,10 +68,10 @@ const emit = defineEmits<{
                 variant="ghost"
                 icon="i-lucide-square-arrow-out-up-right"
                 aria-label="Open step"
-                @click="emit('jump-step', 'details')"
+                @click="openSessionSection('details')"
               />
             </UTooltip>
-            <UButton size="sm" variant="outline" :disabled="!canWriteContent" @click="emit('open-edit')">
+            <UButton size="sm" variant="outline" :disabled="!canWriteContent" @click="openEditSession">
               Edit session
             </UButton>
           </div>
@@ -129,7 +113,7 @@ const emit = defineEmits<{
                 variant="ghost"
                 icon="i-lucide-square-arrow-out-up-right"
                 aria-label="Open step"
-                @click="emit('jump-step', 'transcription')"
+                @click="openSessionSection('transcription')"
               />
             </UTooltip>
           </div>
@@ -138,10 +122,10 @@ const emit = defineEmits<{
           <p class="whitespace-pre-line text-sm text-muted">{{ transcriptPreview }}</p>
           <div class="flex flex-wrap gap-2">
             <UButton
-              v-if="transcriptDocId"
+              v-if="transcriptDoc?.id"
               size="sm"
               variant="outline"
-              :to="`/campaigns/${campaignId}/documents/${transcriptDocId}`"
+              :to="`/campaigns/${campaignId}/documents/${transcriptDoc.id}`"
             >
               Open editor
             </UButton>
@@ -162,7 +146,7 @@ const emit = defineEmits<{
                 variant="ghost"
                 icon="i-lucide-square-arrow-out-up-right"
                 aria-label="Open step"
-                @click="emit('jump-step', 'summary')"
+                @click="openSessionSection('summary')"
               />
             </UTooltip>
           </div>
@@ -171,10 +155,10 @@ const emit = defineEmits<{
           <p class="whitespace-pre-line text-sm text-muted">{{ summaryPreview }}</p>
           <div class="flex flex-wrap gap-2">
             <UButton
-              v-if="summaryDocId"
+              v-if="summaryDoc?.id"
               size="sm"
               variant="outline"
-              :to="`/campaigns/${campaignId}/documents/${summaryDocId}`"
+              :to="`/campaigns/${campaignId}/documents/${summaryDoc.id}`"
             >
               Open editor
             </UButton>
@@ -195,12 +179,12 @@ const emit = defineEmits<{
       :playback-error="playbackError"
       :playback-loading="playbackLoading"
       :playback-urls="playbackUrls"
-      @update:selected-file="emit('update:selectedFile', $event)"
-      @update:selected-kind="emit('update:selectedKind', $event)"
-      @upload-recording="emit('upload-recording')"
-      @play-recording="emit('play-recording', $event)"
-      @open-player="emit('open-player')"
-      @open-step="emit('jump-step', $event)"
+      @update:selected-file="selectedFile = $event"
+      @update:selected-kind="selectedKind = $event"
+      @upload-recording="canUploadRecording && uploadRecording()"
+      @play-recording="loadPlayback"
+      @open-player="openPlayer"
+      @open-step="openSessionSection"
     />
 
     <SessionRecapPanel
@@ -212,14 +196,14 @@ const emit = defineEmits<{
       :recap-deleting="recapDeleting"
       :recap-playback-url="recapPlaybackUrl"
       :recap-error="recapError"
-      :recap-delete-error="''"
+      :recap-delete-error="recapDeleteError"
       :has-recap="hasRecap"
-      @update:recap-file="emit('update:recapFile', $event)"
-      @upload-recap="emit('upload-recap')"
-      @play-recap="emit('play-recap')"
-      @delete-recap="emit('delete-recap')"
-      @open-player="emit('open-player')"
-      @open-step="emit('jump-step', $event)"
+      @update:recap-file="recapFile = $event"
+      @upload-recap="canUploadRecording && uploadRecap()"
+      @play-recap="loadRecapPlayback"
+      @delete-recap="canUploadRecording && deleteRecap()"
+      @open-player="openPlayer"
+      @open-step="openSessionSection"
     />
   </div>
 </template>

@@ -26,6 +26,7 @@ const createForm = reactive({
   title: '',
   sessionNumber: '',
   playedAt: '',
+  guestDungeonMasterName: '',
   notes: '',
 })
 const createError = ref('')
@@ -37,6 +38,7 @@ const openCreate = () => {
   createForm.title = ''
   createForm.sessionNumber = ''
   createForm.playedAt = ''
+  createForm.guestDungeonMasterName = ''
   createForm.notes = ''
   isCreateOpen.value = true
 }
@@ -50,6 +52,7 @@ const createSession = async () => {
       title: createForm.title,
       sessionNumber: createForm.sessionNumber ? Number(createForm.sessionNumber) : undefined,
       playedAt: createForm.playedAt ? new Date(createForm.playedAt).toISOString() : undefined,
+      guestDungeonMasterName: createForm.guestDungeonMasterName || undefined,
       notes: createForm.notes || undefined,
     }
     const created = await request<SessionItem>(
@@ -103,11 +106,7 @@ const createSession = async () => {
         empty-message="No sessions yet."
         @retry="refresh"
       >
-        <template #loading>
-          <div class="grid gap-4 sm:grid-cols-2">
-            <UCard v-for="i in 3" :key="i" class="h-28 animate-pulse" />
-          </div>
-        </template>
+        <template #loading />
         <template #emptyActions>
           <UButton variant="outline" :disabled="!canWriteContent" @click="openCreate">Create your first session</UButton>
         </template>
@@ -149,20 +148,11 @@ const createSession = async () => {
       submit-label="Create"
       @submit="createSession"
     >
-      <UFormField label="Title" name="title">
-        <UInput v-model="createForm.title" placeholder="The Glass Crypt" />
-      </UFormField>
-      <div class="grid gap-4 sm:grid-cols-2">
-        <UFormField label="Session number" name="sessionNumber">
-          <UInput v-model="createForm.sessionNumber" type="number" placeholder="12" />
-        </UFormField>
-        <UFormField label="Played at" name="playedAt">
-          <UInput v-model="createForm.playedAt" type="date" />
-        </UFormField>
-      </div>
-      <UFormField label="Notes" name="notes">
-        <UTextarea v-model="createForm.notes" :rows="4" placeholder="Quick recap..." />
-      </UFormField>
+      <SessionFormFields
+        :form="createForm"
+        :notes-rows="4"
+        @update:form="Object.assign(createForm, $event)"
+      />
     </SharedEntityFormModal>
   </div>
 </template>
