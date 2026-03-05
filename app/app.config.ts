@@ -174,7 +174,7 @@ export default defineAppConfig({
 
     separator: {
       slots: {
-        root: 'border-[var(--ui-border)]',
+        border: 'border-[var(--ui-border)]',
       },
     },
 
