@@ -77,7 +77,7 @@ export const characterImportSectionItems: Array<{
   { label: 'Custom', value: 'CUSTOM' },
 ]
 
-export const getCharacterImportErrorMessage = (error: unknown, fallback: string) => {
+export function getCharacterImportErrorMessage(error: unknown, defaultMessage: string) {
   const typedError = error as Error & {
     message?: string
     code?: string
@@ -87,7 +87,7 @@ export const getCharacterImportErrorMessage = (error: unknown, fallback: string)
     data?: { error?: { message?: string } }
   }
   const statusCode = typedError.statusCode || typedError.status || typedError.response?.status
-  const baseMessage = typedError.message || typedError.data?.error?.message || fallback
+  const baseMessage = typedError.message || typedError.data?.error?.message || defaultMessage
   return statusCode === 403 || typedError.code === 'IMPORT_FORBIDDEN'
     ? characterImport403ErrorMessage
     : baseMessage
