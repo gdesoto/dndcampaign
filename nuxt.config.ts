@@ -15,6 +15,11 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
     '@nuxtjs/mdc'
   ],
+  vite: {
+    optimizeDeps: {
+      include: ['zod', 'maplibre-gl', 'rehype-sanitize']
+    }
+  },
   mdc: {
     remarkPlugins: {
       'remark-gfm': {
