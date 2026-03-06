@@ -180,6 +180,7 @@ export default defineAppConfig({
 
     navigationMenu: {
       slots: {
+        linkLeadingIcon: 'shrink-0 size-6',
         linkLabel: 'truncate font-display tracking-[0.08em] uppercase',
       },
     },

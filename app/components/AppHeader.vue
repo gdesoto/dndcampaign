@@ -13,9 +13,9 @@ const colorModeLabel = computed(() => {
 })
 
 const themeIcon = computed(() => {
-  if (colorMode.preference === 'light') return 'i-lucide-sun'
-  if (colorMode.preference === 'dark') return 'i-lucide-moon'
-  return colorMode.value === 'dark' ? 'i-lucide-moon' : 'i-lucide-sun'
+  if (colorMode.preference === 'light') return 'i-twemoji-sun'
+  if (colorMode.preference === 'dark') return 'i-twemoji-crescent-moon'
+  return colorMode.value === 'dark' ? 'i-twemoji-crescent-moon' : 'i-twemoji-sun'
 })
 
 const setColorMode = (preference: ThemePreference) => {
@@ -91,17 +91,17 @@ const themeMenuItems = computed(() => [
   [
     {
       label: 'System',
-      icon: colorMode.preference === 'system' ? 'i-lucide-check' : 'i-lucide-monitor',
+      icon: colorMode.preference === 'system' ? 'i-twemoji-check-mark-button' : 'i-twemoji-desktop-computer',
       onSelect: () => setColorMode('system'),
     },
     {
       label: 'Light',
-      icon: colorMode.preference === 'light' ? 'i-lucide-check' : 'i-lucide-sun',
+      icon: colorMode.preference === 'light' ? 'i-twemoji-check-mark-button' : 'i-twemoji-sun',
       onSelect: () => setColorMode('light'),
     },
     {
       label: 'Dark',
-      icon: colorMode.preference === 'dark' ? 'i-lucide-check' : 'i-lucide-moon',
+      icon: colorMode.preference === 'dark' ? 'i-twemoji-check-mark-button' : 'i-twemoji-crescent-moon',
       onSelect: () => setColorMode('dark'),
     },
   ],
@@ -111,17 +111,17 @@ const compactAccountMenuItems = computed(() => [
   [
     {
       label: 'System',
-      icon: colorMode.preference === 'system' ? 'i-lucide-check' : 'i-lucide-monitor',
+      icon: colorMode.preference === 'system' ? 'i-twemoji-check-mark-button' : 'i-twemoji-desktop-computer',
       onSelect: () => setColorMode('system'),
     },
     {
       label: 'Light',
-      icon: colorMode.preference === 'light' ? 'i-lucide-check' : 'i-lucide-sun',
+      icon: colorMode.preference === 'light' ? 'i-twemoji-check-mark-button' : 'i-twemoji-sun',
       onSelect: () => setColorMode('light'),
     },
     {
       label: 'Dark',
-      icon: colorMode.preference === 'dark' ? 'i-lucide-check' : 'i-lucide-moon',
+      icon: colorMode.preference === 'dark' ? 'i-twemoji-check-mark-button' : 'i-twemoji-crescent-moon',
       onSelect: () => setColorMode('dark'),
     },
   ],
@@ -182,7 +182,7 @@ const compactAccountMenuItems = computed(() => [
                   <ClientOnly>
                     <UIcon :name="themeIcon" class="h-5 w-5" />
                     <template #fallback>
-                      <UIcon name="i-lucide-monitor" class="h-5 w-5" />
+                      <UIcon name="i-twemoji-desktop-computer" class="h-5 w-5" />
                     </template>
                   </ClientOnly>
                 </UButton>
@@ -198,7 +198,7 @@ const compactAccountMenuItems = computed(() => [
                   class="theme-pill"
                   aria-label="Profile menu"
                 >
-                  <UIcon name="i-heroicons-user-circle" class="h-5 w-5" />
+                  <UIcon name="i-twemoji-bust-in-silhouette" class="h-5 w-5" />
                 </UButton>
               </UDropdownMenu>
             </UTooltip>

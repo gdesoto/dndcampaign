@@ -707,6 +707,13 @@
   dependencies:
     "@iconify/types" "*"
 
+"@iconify-json/twemoji@^1.2.5":
+  version "1.2.5"
+  resolved "https://registry.yarnpkg.com/@iconify-json/twemoji/-/twemoji-1.2.5.tgz#52e65345122ef4eff61a8bf9eceefbdbb5294c7a"
+  integrity sha512-uKpuIEV0v6K5BW3Mjdyl+XKFVAbbcPxAgifKvEMtZoUZB5+YiY5zaMm2uNNCxyXzAWU9yNLlj41WU6/mvgALsw==
+  dependencies:
+    "@iconify/types" "*"
+
 "@iconify/collections@^1.0.641":
   version "1.0.657"
   resolved "https://registry.yarnpkg.com/@iconify/collections/-/collections-1.0.657.tgz#fd12e5bea14c33459c11cfe77cf13af9994d4b81"
