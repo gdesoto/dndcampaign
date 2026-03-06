@@ -35,15 +35,12 @@ type GlossaryLite = {
 const ALL_FILTER_VALUE = '__ALL__'
 const UNASSIGNED_HOLDER_VALUE = '__UNASSIGNED__'
 
-const route = useRoute()
-const campaignId = computed(() => route.params.campaignId as string)
-const canWriteContent = inject('campaignCanWriteContent', computed(() => true))
+const { campaignId, request, canWriteContent } = useCampaignPageContext()
 const campaignAccess = inject<ComputedRef<CampaignAccess | undefined>>(
   'campaignAccess',
   computed(() => undefined),
 )
 const journalApi = useCampaignJournal()
-const { request } = useApi()
 const toast = useToast()
 
 const selectedTab = ref<JournalTab>('mine')
@@ -711,3 +708,4 @@ const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value
     </SharedEntityFormModal>
   </div>
 </template>
+

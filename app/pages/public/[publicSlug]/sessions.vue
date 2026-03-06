@@ -1,12 +1,5 @@
 <script setup lang="ts">
-const route = useRoute()
-const publicSlug = computed(() => route.params.publicSlug as string)
-const publicCampaign = usePublicCampaign()
-
-const { data: overview } = await useAsyncData(
-  () => `public-campaign-overview-${publicSlug.value}`,
-  () => publicCampaign.getOverview(publicSlug.value)
-)
+const { publicSlug, publicCampaign, overview } = await usePublicCampaignPageContext()
 
 const {
   data: sessions,
@@ -60,4 +53,5 @@ const formatDate = (value: string | null) => (value ? new Date(value).toLocaleDa
     </UPage>
   </UMain>
 </template>
+
 

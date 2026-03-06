@@ -642,11 +642,8 @@ onBeforeUnmount(() => {
       </template>
     </UPageHeader>
 
-    <UAlert
+    <SharedReadOnlyAlert
       v-if="!canWriteContent"
-      color="warning"
-      variant="subtle"
-      title="Read-only access"
       description="Your role can view this dungeon but cannot modify generation settings."
     />
     <UAlert

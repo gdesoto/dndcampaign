@@ -45,10 +45,7 @@ type CharacterOption = {
   isOwner: boolean
 }
 
-const route = useRoute()
-const campaignId = computed(() => route.params.campaignId as string)
-const { request } = useApi()
-const canWriteContent = inject('campaignCanWriteContent', computed(() => true))
+const { campaignId, request, canWriteContent } = useCampaignPageContext()
 
 const { data: links, pending, refresh, error } = await useAsyncData(
   () => `campaign-characters-${campaignId.value}`,
@@ -163,11 +160,8 @@ const initiativeFor = (link: CharacterLink) => {
 <template>
   <UPage>
     <div class="space-y-6">
-      <UAlert
+      <SharedReadOnlyAlert
         v-if="!canWriteContent"
-        color="warning"
-        variant="subtle"
-        title="Read-only access"
         description="Your role can view campaign characters but cannot attach, update, or remove links."
       />
 
@@ -353,5 +347,6 @@ const initiativeFor = (link: CharacterLink) => {
     </div>
   </UPage>
 </template>
+
 
 

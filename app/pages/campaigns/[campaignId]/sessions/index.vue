@@ -11,10 +11,7 @@ type SessionItem = {
   createdAt: string
 }
 
-const route = useRoute()
-const campaignId = computed(() => route.params.campaignId as string)
-const { request } = useApi()
-const canWriteContent = inject('campaignCanWriteContent', computed(() => true))
+const { campaignId, request, canWriteContent } = useCampaignPageContext()
 
 const { data: sessions, pending, refresh, error } = await useAsyncData(
   () => `sessions-${campaignId.value}`,
@@ -89,11 +86,8 @@ const createSession = async () => {
       @action="openCreate"
     >
       <template #notice>
-        <UAlert
+        <SharedReadOnlyAlert
           v-if="!canWriteContent"
-          color="warning"
-          variant="subtle"
-          title="Read-only access"
           description="Your role can view sessions but cannot create or edit them."
         />
       </template>
@@ -156,4 +150,5 @@ const createSession = async () => {
     </SharedEntityFormModal>
   </div>
 </template>
+
 

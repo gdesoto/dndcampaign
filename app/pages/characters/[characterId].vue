@@ -306,11 +306,8 @@ const deleteCharacter = async () => {
     </UCard>
 
     <div v-else-if="character" class="space-y-6">
-      <UAlert
+      <SharedReadOnlyAlert
         v-if="!canEdit"
-        color="warning"
-        variant="subtle"
-        title="Read-only access"
         description="This character is shared through campaign membership. Only the character owner can edit or delete it."
       />
       <UCard>

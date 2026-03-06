@@ -63,15 +63,10 @@ const statusCards = computed(() => [
         <span>{{ card.label }}</span>
         <div class="flex items-center gap-2">
           <span class="font-semibold">{{ card.value }}</span>
-          <UTooltip text="Open step" :content="{ side: 'left' }">
-            <UButton
-              size="xs"
-              variant="ghost"
-              icon="i-lucide-square-arrow-out-up-right"
-              aria-label="Open step"
-              @click="emit('jump-step', card.id)"
-            />
-          </UTooltip>
+          <SessionStepLinkButton
+            :step="card.id"
+            @open="emit('jump-step', card.id)"
+          />
         </div>
       </div>
     </div>
@@ -86,15 +81,10 @@ const statusCards = computed(() => [
     >
       <div class="flex items-start justify-between gap-3">
         <p class="text-xs uppercase tracking-[0.2em] text-dimmed">{{ card.label }}</p>
-        <UTooltip text="Open step" :content="{ side: 'left' }">
-          <UButton
-            size="xs"
-            variant="ghost"
-            icon="i-lucide-square-arrow-out-up-right"
-            aria-label="Open step"
-            @click="emit('jump-step', card.id)"
-          />
-        </UTooltip>
+        <SessionStepLinkButton
+          :step="card.id"
+          @open="emit('jump-step', card.id)"
+        />
       </div>
       <p class="mt-2 text-lg font-semibold">{{ card.value }}</p>
       <p class="text-xs text-muted">{{ card.hint }}</p>

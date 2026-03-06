@@ -1,17 +1,12 @@
 <script setup lang="ts">
-const route = useRoute()
-const publicSlug = computed(() => route.params.publicSlug as string)
-const publicCampaign = usePublicCampaign()
-
 const {
-  data: overview,
-  pending,
-  error,
-  refresh,
-} = await useAsyncData(
-  () => `public-campaign-overview-${publicSlug.value}`,
-  () => publicCampaign.getOverview(publicSlug.value)
-)
+  publicSlug,
+  publicCampaign,
+  overview,
+  overviewPending: pending,
+  overviewError: error,
+  refreshOverview: refresh,
+} = await usePublicCampaignPageContext()
 
 const sections = computed(() => {
   if (!overview.value) return []
@@ -77,4 +72,5 @@ const sections = computed(() => {
     </UPage>
   </UMain>
 </template>
+
 

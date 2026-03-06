@@ -8,10 +8,7 @@ import type {
 } from '#shared/types/campaign-overview'
 import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 
-const route = useRoute()
-const campaignId = computed(() => route.params.campaignId as string)
-const { request } = useApi()
-const canWriteContent = inject('campaignCanWriteContent', computed(() => true))
+const { campaignId, request, canWriteContent } = useCampaignPageContext()
 
 const { data: campaign, pending, refresh, error } = await useAsyncData(
   () => `campaign-${campaignId.value}`,
@@ -183,11 +180,8 @@ const saveCampaign = async () => {
     :description="overviewDescription"
   >
     <template #notice>
-      <UAlert
+      <SharedReadOnlyAlert
         v-if="!canWriteContent"
-        color="warning"
-        variant="subtle"
-        title="Read-only access"
         description="Your role can view this campaign overview but cannot edit campaign details."
       />
     </template>
@@ -266,3 +260,4 @@ const saveCampaign = async () => {
     />
   </CampaignListTemplate>
 </template>
+

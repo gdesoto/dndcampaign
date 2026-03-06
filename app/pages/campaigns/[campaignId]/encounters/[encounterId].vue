@@ -4,12 +4,8 @@ import type { CampaignCalendarConfigDto } from '~/composables/useCampaignCalenda
 
 definePageMeta({ layout: 'dashboard' })
 
-const route = useRoute()
-const campaignId = computed(() => route.params.campaignId as string)
+const { route, campaignId, request, canWriteContent } = useCampaignPageContext()
 const encounterId = computed(() => route.params.encounterId as string)
-
-const canWriteContent = inject('campaignCanWriteContent', computed(() => true))
-const { request } = useApi()
 
 const detailApi = useEncounterDetail()
 const runtimeApi = useEncounterRuntime()
@@ -768,11 +764,8 @@ await refreshSummary()
           @refresh="refreshPreservingUiState"
         />
 
-        <UAlert
+        <SharedReadOnlyAlert
           v-if="!canWriteContent"
-          color="warning"
-          variant="subtle"
-          title="Read-only access"
           description="Your role can view this encounter but cannot change runtime state."
         />
 
@@ -1127,4 +1120,5 @@ await refreshSummary()
     </SharedEntityFormModal>
   </div>
 </template>
+
 

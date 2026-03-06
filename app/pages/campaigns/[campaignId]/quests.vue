@@ -11,24 +11,21 @@ type QuestItem = {
   progressNotes?: string | null
 }
 
-const route = useRoute()
-const campaignId = computed(() => route.params.campaignId as string)
-const { request } = useApi()
-const canWriteContent = inject('campaignCanWriteContent', computed(() => true))
+const { campaignId, request, canWriteContent } = useCampaignPageContext()
 
 const { data: quests, pending, refresh, error } = await useAsyncData(
   () => `quests-${campaignId.value}`,
   () => request<QuestItem[]>(`/api/campaigns/${campaignId.value}/quests`)
 )
 
-const statusOptions = [
+const statusOptions: Array<{ label: string; value: QuestItem['status'] }> = [
   { label: 'Active', value: 'ACTIVE' },
   { label: 'Completed', value: 'COMPLETED' },
   { label: 'Failed', value: 'FAILED' },
   { label: 'On hold', value: 'ON_HOLD' },
 ]
 
-const typeOptions = [
+const typeOptions: Array<{ label: string; value: QuestItem['type'] }> = [
   { label: 'Main quest', value: 'MAIN' },
   { label: 'Side quest', value: 'SIDE' },
   { label: 'Player quest', value: 'PLAYER' },
@@ -84,81 +81,69 @@ const closedQuests = computed(() =>
   filteredQuests.value.filter((quest) => quest.status === 'COMPLETED' || quest.status === 'FAILED')
 )
 
-const isEditOpen = ref(false)
-const editMode = ref<'create' | 'edit'>('create')
-const editForm = reactive({
+const {
+  isOpen: isEditOpen,
+  mode: editMode,
+  form: editForm,
+  error: editError,
+  isSaving,
+  openCreate: openQuestCreate,
+  openEdit: openQuestEdit,
+  saveWith: saveQuestWith,
+} = useCrudModal(() => ({
   id: '',
   title: '',
   description: '',
   type: 'SIDE' as QuestItem['type'],
-  status: 'ACTIVE',
+  status: 'ACTIVE' as QuestItem['status'],
   progressNotes: '',
-})
-const editError = ref('')
-const isSaving = ref(false)
+}))
 
 const openCreate = () => {
   if (!canWriteContent.value) return
-  editMode.value = 'create'
-  editError.value = ''
-  editForm.id = ''
-  editForm.title = ''
-  editForm.description = ''
-  editForm.type = 'SIDE'
-  editForm.status = 'ACTIVE'
-  editForm.progressNotes = ''
-  isEditOpen.value = true
+  openQuestCreate()
 }
 
 const openEdit = (quest: QuestItem) => {
   if (!canWriteContent.value) return
-  editMode.value = 'edit'
-  editError.value = ''
-  editForm.id = quest.id
-  editForm.title = quest.title
-  editForm.description = quest.description || ''
-  editForm.type = quest.type
-  editForm.status = quest.status
-  editForm.progressNotes = quest.progressNotes || ''
-  isEditOpen.value = true
+  openQuestEdit({
+    id: quest.id,
+    title: quest.title,
+    description: quest.description || '',
+    type: quest.type,
+    status: quest.status,
+    progressNotes: quest.progressNotes || '',
+  })
 }
 
 const saveQuest = async () => {
   if (!canWriteContent.value) return
-  editError.value = ''
-  isSaving.value = true
-  try {
-    if (editMode.value === 'create') {
+  await saveQuestWith(async ({ mode, form }) => {
+    if (mode === 'create') {
       await request(`/api/campaigns/${campaignId.value}/quests`, {
         method: 'POST',
         body: {
-          title: editForm.title,
-          description: editForm.description || undefined,
-          type: editForm.type,
-          status: editForm.status,
-          progressNotes: editForm.progressNotes || undefined,
+          title: form.title,
+          description: form.description || undefined,
+          type: form.type,
+          status: form.status,
+          progressNotes: form.progressNotes || undefined,
         },
       })
     } else {
-      await request(`/api/quests/${editForm.id}`, {
+      await request(`/api/quests/${form.id}`, {
         method: 'PATCH',
         body: {
-          title: editForm.title,
-          description: editForm.description || null,
-          type: editForm.type,
-          status: editForm.status,
-          progressNotes: editForm.progressNotes || null,
+          title: form.title,
+          description: form.description || null,
+          type: form.type,
+          status: form.status,
+          progressNotes: form.progressNotes || null,
         },
       })
     }
-    isEditOpen.value = false
     await refresh()
-  } catch (error) {
-    editError.value =
-      (error as Error & { message?: string }).message || 'Unable to save quest.'
-  } finally {
-    isSaving.value = false
-  }
+  }, 'Unable to save quest.')
 }
 
 const deleteQuest = async (quest: QuestItem) => {
@@ -189,11 +174,8 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
       @action="openCreate"
     >
       <template #notice>
-        <UAlert
+        <SharedReadOnlyAlert
           v-if="!canWriteContent"
-          color="warning"
-          variant="subtle"
-          title="Read-only access"
           description="Your role can view quests but cannot change them."
         />
       </template>
@@ -235,41 +217,19 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
             <span class="text-xs text-muted">{{ primaryQuests.length }} shown</span>
           </div>
           <div v-if="primaryQuests.length" class="grid gap-4 sm:grid-cols-2">
-            <SharedListItemCard v-for="quest in primaryQuests" :key="quest.id">
-              <template #header>
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Quest</p>
-                    <h3 class="text-lg font-semibold">{{ quest.title }}</h3>
-                  </div>
-                  <div class="flex gap-2">
-                    <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="openEdit(quest)">Edit</UButton>
-                    <UButton size="xs" color="error" variant="ghost" :disabled="!canWriteContent" @click="deleteQuest(quest)">Delete</UButton>
-                  </div>
-                </div>
-              </template>
-              <p class="text-sm whitespace-pre-line text-default">{{ quest.description || 'Add quest notes.' }}</p>
-              <div class="mt-3 flex flex-wrap items-start justify-between gap-3">
-                <div class="flex flex-wrap items-center gap-2">
-                  <UBadge :color="typeBadgeColor(quest.type)" variant="soft" size="sm">
-                    {{ typeLabelMap[quest.type] }}
-                  </UBadge>
-                  <UBadge color="neutral" variant="soft" size="sm">
-                    {{ statusLabelMap[quest.status] }}
-                  </UBadge>
-                </div>
-                <USelect
-                  class="w-full sm:w-44"
-                  :disabled="!canWriteContent"
-                  :items="statusOptions"
-                  :model-value="quest.status"
-                  @update:model-value="(value) => updateStatus(quest, value as QuestItem['status'])"
-                />
-              </div>
-              <div class="mt-3 w-full">
-                <p class="text-xs whitespace-pre-line text-muted">{{ quest.progressNotes || 'No progress notes.' }}</p>
-              </div>
-            </SharedListItemCard>
+            <CampaignQuestCard
+              v-for="quest in primaryQuests"
+              :key="quest.id"
+              :quest="quest"
+              :can-write-content="canWriteContent"
+              :status-options="statusOptions"
+              :status-label-map="statusLabelMap"
+              :type-label-map="typeLabelMap"
+              :type-badge-color="typeBadgeColor"
+              @edit="openEdit"
+              @delete="deleteQuest"
+              @update-status="(quest, status) => updateStatus(quest, status as QuestItem['status'])"
+            />
           </div>
           <UCard v-else>
             <p class="text-sm text-muted">No active or on-hold quests match the current filters.</p>
@@ -282,41 +242,19 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
             <span class="text-xs text-muted">{{ closedQuests.length }} shown</span>
           </div>
           <div v-if="closedQuests.length" class="grid gap-4 sm:grid-cols-2">
-            <SharedListItemCard v-for="quest in closedQuests" :key="quest.id">
-              <template #header>
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Quest</p>
-                    <h3 class="text-lg font-semibold">{{ quest.title }}</h3>
-                  </div>
-                  <div class="flex gap-2">
-                    <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="openEdit(quest)">Edit</UButton>
-                    <UButton size="xs" color="error" variant="ghost" :disabled="!canWriteContent" @click="deleteQuest(quest)">Delete</UButton>
-                  </div>
-                </div>
-              </template>
-              <p class="text-sm whitespace-pre-line text-default">{{ quest.description || 'Add quest notes.' }}</p>
-              <div class="mt-3 flex flex-wrap items-start justify-between gap-3">
-                <div class="flex flex-wrap items-center gap-2">
-                  <UBadge :color="typeBadgeColor(quest.type)" variant="soft" size="sm">
-                    {{ typeLabelMap[quest.type] }}
-                  </UBadge>
-                  <UBadge color="neutral" variant="soft" size="sm">
-                    {{ statusLabelMap[quest.status] }}
-                  </UBadge>
-                </div>
-                <USelect
-                  class="w-full sm:w-44"
-                  :disabled="!canWriteContent"
-                  :items="statusOptions"
-                  :model-value="quest.status"
-                  @update:model-value="(value) => updateStatus(quest, value as QuestItem['status'])"
-                />
-              </div>
-              <div class="mt-3 w-full">
-                <p class="text-xs whitespace-pre-line text-muted">{{ quest.progressNotes || 'No progress notes.' }}</p>
-              </div>
-            </SharedListItemCard>
+            <CampaignQuestCard
+              v-for="quest in closedQuests"
+              :key="quest.id"
+              :quest="quest"
+              :can-write-content="canWriteContent"
+              :status-options="statusOptions"
+              :status-label-map="statusLabelMap"
+              :type-label-map="typeLabelMap"
+              :type-badge-color="typeBadgeColor"
+              @edit="openEdit"
+              @delete="deleteQuest"
+              @update-status="(quest, status) => updateStatus(quest, status as QuestItem['status'])"
+            />
           </div>
           <UCard v-else>
             <p class="text-sm text-muted">No completed or failed quests match the current filters.</p>
@@ -352,4 +290,5 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
     </SharedEntityFormModal>
   </div>
 </template>
+
 

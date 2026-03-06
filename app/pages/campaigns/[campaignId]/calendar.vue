@@ -533,11 +533,8 @@ const removeRange = async () => {
       <p class="mt-2 text-sm text-muted">Track in-world dates, events, and session timeline coverage.</p>
     </div>
 
-    <UAlert
+    <SharedReadOnlyAlert
       v-if="!canEditCalendar"
-      color="warning"
-      variant="subtle"
-      title="Read-only access"
       description="You can view calendar data, but only owner and collaborators can edit."
     />
 

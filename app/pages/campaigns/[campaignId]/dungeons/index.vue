@@ -192,11 +192,8 @@ const deleteDungeonWithClose = async (dungeon: CampaignDungeonSummary, close: ()
     </template>
 
     <template #notice>
-      <UAlert
+      <SharedReadOnlyAlert
         v-if="!canWriteContent"
-        color="warning"
-        variant="subtle"
-        title="Read-only access"
         description="Your role can view dungeons but cannot create or edit them."
       />
     </template>

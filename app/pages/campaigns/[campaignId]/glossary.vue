@@ -31,10 +31,7 @@ type GlossaryEntry = {
   campaignCharacters?: CharacterLink[]
 }
 
-const route = useRoute()
-const campaignId = computed(() => route.params.campaignId as string)
-const { request } = useApi()
-const canWriteContent = inject('campaignCanWriteContent', computed(() => true))
+const { campaignId, request, canWriteContent } = useCampaignPageContext()
 
 const types = [
   { label: 'PCs', value: 'PC' },
@@ -62,76 +59,67 @@ const { data: entries, pending, refresh, error } = await useAsyncData(
   { watch: [activeType, search] }
 )
 
-const isEditOpen = ref(false)
-const editMode = ref<'create' | 'edit'>('create')
-const editForm = reactive({
+const {
+  isOpen: isEditOpen,
+  mode: editMode,
+  form: editForm,
+  error: editError,
+  isSaving,
+  openCreate: openGlossaryCreate,
+  openEdit: openGlossaryEdit,
+  saveWith: saveGlossaryWith,
+} = useCrudModal(() => ({
   id: '',
   type: activeType.value,
   name: '',
   aliases: '',
   description: '',
-})
-const editError = ref('')
-const isSaving = ref(false)
+}))
 
 const openCreate = () => {
   if (!canWriteContent.value) return
-  editMode.value = 'create'
-  editError.value = ''
-  editForm.id = ''
-  editForm.type = activeType.value
-  editForm.name = ''
-  editForm.aliases = ''
-  editForm.description = ''
-  isEditOpen.value = true
+  openGlossaryCreate({
+    type: activeType.value,
+  })
 }
 
 const openEdit = (entry: GlossaryEntry) => {
   if (!canWriteContent.value) return
-  editMode.value = 'edit'
-  editError.value = ''
-  editForm.id = entry.id
-  editForm.type = entry.type
-  editForm.name = entry.name
-  editForm.aliases = entry.aliases || ''
-  editForm.description = entry.description
-  isEditOpen.value = true
+  openGlossaryEdit({
+    id: entry.id,
+    type: entry.type,
+    name: entry.name,
+    aliases: entry.aliases || '',
+    description: entry.description,
+  })
 }
 
 const saveEntry = async () => {
   if (!canWriteContent.value) return
-  editError.value = ''
-  isSaving.value = true
-  try {
-    if (editMode.value === 'create') {
+  await saveGlossaryWith(async ({ mode, form }) => {
+    if (mode === 'create') {
       await request(`/api/campaigns/${campaignId.value}/glossary`, {
         method: 'POST',
         body: {
-          type: editForm.type,
-          name: editForm.name,
-          aliases: editForm.aliases || undefined,
-          description: editForm.description,
+          type: form.type,
+          name: form.name,
+          aliases: form.aliases || undefined,
+          description: form.description,
         },
       })
     } else {
-      await request(`/api/glossary/${editForm.id}`, {
+      await request(`/api/glossary/${form.id}`, {
         method: 'PATCH',
         body: {
-          type: editForm.type,
-          name: editForm.name,
-          aliases: editForm.aliases || null,
-          description: editForm.description,
+          type: form.type,
+          name: form.name,
+          aliases: form.aliases || null,
+          description: form.description,
         },
       })
     }
-    isEditOpen.value = false
     await refresh()
-  } catch (error) {
-    editError.value =
-      (error as Error & { message?: string }).message || 'Unable to save glossary entry.'
-  } finally {
-    isSaving.value = false
-  }
+  }, 'Unable to save glossary entry.')
 }
 
 const deleteEntry = async (entry: GlossaryEntry) => {
@@ -166,11 +154,8 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
       @action="openCreate"
     >
       <template #notice>
-        <UAlert
+        <SharedReadOnlyAlert
           v-if="!canWriteContent"
-          color="warning"
-          variant="subtle"
-          title="Read-only access"
           description="Your role can view glossary entries but cannot edit them."
         />
       </template>
@@ -292,4 +277,5 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
     </SharedEntityFormModal>
   </div>
 </template>
+
 

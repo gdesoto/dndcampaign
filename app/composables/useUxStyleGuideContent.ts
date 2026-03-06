@@ -233,7 +233,7 @@ export const densityGuidelines: DensityTip[] = [
   {
     title: 'Prefer semantic labels over decorative chrome',
     guidance:
-      'Muted uppercase labels, concise badges, and predictable icon use improve readability more than extra borders and gradients.',
+      'Muted uppercase labels, concise badges, and predictable icon use improve readability more than ornamental visual effects.',
   },
   {
     title: 'Design for scan paths',

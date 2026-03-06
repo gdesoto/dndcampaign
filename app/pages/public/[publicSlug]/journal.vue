@@ -1,17 +1,10 @@
 <script setup lang="ts">
-const route = useRoute()
-const publicSlug = computed(() => route.params.publicSlug as string)
-const publicCampaign = usePublicCampaign()
+const { publicSlug, publicCampaign, overview } = await usePublicCampaignPageContext()
 
 const searchInput = ref('')
 const search = ref<string | undefined>(undefined)
 const page = ref(1)
 const pageSize = 20
-
-const { data: overview } = await useAsyncData(
-  () => `public-campaign-overview-${publicSlug.value}`,
-  () => publicCampaign.getOverview(publicSlug.value)
-)
 
 const {
   data: response,
@@ -176,3 +169,4 @@ const nextPage = async () => {
     </UPage>
   </UMain>
 </template>
+

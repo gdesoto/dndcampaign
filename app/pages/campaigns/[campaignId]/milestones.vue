@@ -10,76 +10,64 @@ type MilestoneItem = {
   completedAt?: string | null
 }
 
-const route = useRoute()
-const campaignId = computed(() => route.params.campaignId as string)
-const { request } = useApi()
-const canWriteContent = inject('campaignCanWriteContent', computed(() => true))
+const { campaignId, request, canWriteContent } = useCampaignPageContext()
 
 const { data: milestones, pending, refresh, error } = await useAsyncData(
   () => `milestones-${campaignId.value}`,
   () => request<MilestoneItem[]>(`/api/campaigns/${campaignId.value}/milestones`)
 )
 
-const isEditOpen = ref(false)
-const editMode = ref<'create' | 'edit'>('create')
-const editForm = reactive({
+const {
+  isOpen: isEditOpen,
+  mode: editMode,
+  form: editForm,
+  error: editError,
+  isSaving,
+  openCreate: openMilestoneCreate,
+  openEdit: openMilestoneEdit,
+  saveWith: saveMilestoneWith,
+} = useCrudModal(() => ({
   id: '',
   title: '',
   description: '',
-})
-const editError = ref('')
-const isSaving = ref(false)
+}))
 
 const openCreate = () => {
   if (!canWriteContent.value) return
-  editMode.value = 'create'
-  editError.value = ''
-  editForm.id = ''
-  editForm.title = ''
-  editForm.description = ''
-  isEditOpen.value = true
+  openMilestoneCreate()
 }
 
 const openEdit = (milestone: MilestoneItem) => {
   if (!canWriteContent.value) return
-  editMode.value = 'edit'
-  editError.value = ''
-  editForm.id = milestone.id
-  editForm.title = milestone.title
-  editForm.description = milestone.description || ''
-  isEditOpen.value = true
+  openMilestoneEdit({
+    id: milestone.id,
+    title: milestone.title,
+    description: milestone.description || '',
+  })
 }
 
 const saveMilestone = async () => {
   if (!canWriteContent.value) return
-  editError.value = ''
-  isSaving.value = true
-  try {
-    if (editMode.value === 'create') {
+  await saveMilestoneWith(async ({ mode, form }) => {
+    if (mode === 'create') {
       await request(`/api/campaigns/${campaignId.value}/milestones`, {
         method: 'POST',
         body: {
-          title: editForm.title,
-          description: editForm.description || undefined,
+          title: form.title,
+          description: form.description || undefined,
         },
       })
     } else {
-      await request(`/api/milestones/${editForm.id}`, {
+      await request(`/api/milestones/${form.id}`, {
         method: 'PATCH',
         body: {
-          title: editForm.title,
-          description: editForm.description || null,
+          title: form.title,
+          description: form.description || null,
         },
       })
     }
-    isEditOpen.value = false
     await refresh()
-  } catch (error) {
-    editError.value =
-      (error as Error & { message?: string }).message || 'Unable to save milestone.'
-  } finally {
-    isSaving.value = false
-  }
+  }, 'Unable to save milestone.')
 }
 
 const toggleComplete = async (milestone: MilestoneItem) => {
@@ -108,11 +96,8 @@ const toggleComplete = async (milestone: MilestoneItem) => {
       @action="openCreate"
     >
       <template #notice>
-        <UAlert
+        <SharedReadOnlyAlert
           v-if="!canWriteContent"
-          color="warning"
-          variant="subtle"
-          title="Read-only access"
           description="Your role can view milestones but cannot modify them."
         />
       </template>
@@ -176,4 +161,5 @@ const toggleComplete = async (milestone: MilestoneItem) => {
     </SharedEntityFormModal>
   </div>
 </template>
+
 

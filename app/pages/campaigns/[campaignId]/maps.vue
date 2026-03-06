@@ -11,10 +11,7 @@ import CampaignListTemplate from '~/components/campaign/templates/CampaignListTe
 
 definePageMeta({ layout: 'dashboard' })
 
-const route = useRoute()
-const campaignId = computed(() => route.params.campaignId as string)
-const { request } = useApi()
-const canWriteContent = inject('campaignCanWriteContent', computed(() => true))
+const { campaignId, request, canWriteContent } = useCampaignPageContext()
 
 const { data: maps, pending, refresh, error } = await useAsyncData(
   () => `campaign-maps-${campaignId.value}`,
@@ -349,11 +346,8 @@ const applyReimport = async () => {
         </UBadge>
       </template>
       <template #notice>
-        <UAlert
+        <SharedReadOnlyAlert
           v-if="!canWriteContent"
-          color="warning"
-          variant="subtle"
-          title="Read-only access"
           description="Your role can view maps but cannot import, edit, or delete them."
         />
       </template>
@@ -741,4 +735,5 @@ const applyReimport = async () => {
     </UModal>
   </div>
 </template>
+
 

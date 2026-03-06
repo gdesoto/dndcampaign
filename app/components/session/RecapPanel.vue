@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { SessionRecapRecording } from '#shared/types/session-workflow'
 
+type WorkflowStep = 'recordings' | 'transcription' | 'summary' | 'recap'
+
 const props = defineProps<{
   workflowMode: boolean
-  openStep?: 'recordings' | 'transcription' | 'summary' | 'recap'
+  openStep?: WorkflowStep
   recap: SessionRecapRecording | null | undefined
   recapFile: File | null
   recapUploading: boolean
@@ -21,7 +23,7 @@ const emit = defineEmits<{
   'play-recap': []
   'delete-recap': []
   'open-player': []
-  'open-step': [step: 'recordings' | 'transcription' | 'summary' | 'recap']
+  'open-step': [step: WorkflowStep]
 }>()
 
 const recapFileModel = computed({
@@ -30,6 +32,7 @@ const recapFileModel = computed({
 })
 
 const isReplaceModalOpen = ref(false)
+const { formatBytes } = useFormatBytes()
 
 const openReplaceModal = () => {
   recapFileModel.value = null
@@ -42,17 +45,6 @@ const submitReplace = () => {
   isReplaceModalOpen.value = false
 }
 
-const formatBytes = (value: number) => {
-  if (!value) return '0 B'
-  const units = ['B', 'KB', 'MB', 'GB']
-  let size = value
-  let unitIndex = 0
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024
-    unitIndex += 1
-  }
-  return `${size.toFixed(size >= 10 ? 0 : 1)} ${units[unitIndex]}`
-}
 </script>
 
 <template>
@@ -71,15 +63,11 @@ const formatBytes = (value: number) => {
         </div>
         <div class="flex items-center gap-2">
           <UBadge v-if="hasRecap" color="success" variant="soft">Attached</UBadge>
-          <UTooltip v-if="openStep" text="Open step" :content="{ side: 'left' }">
-            <UButton
-              size="xs"
-              variant="ghost"
-              icon="i-lucide-square-arrow-out-up-right"
-              aria-label="Open step"
-              @click="emit('open-step', openStep)"
-            />
-          </UTooltip>
+          <SessionStepLinkButton
+            v-if="openStep"
+            :step="openStep"
+            @open="(step) => emit('open-step', step as WorkflowStep)"
+          />
         </div>
       </div>
     </template>

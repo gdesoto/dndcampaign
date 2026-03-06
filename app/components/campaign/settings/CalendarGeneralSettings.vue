@@ -296,11 +296,8 @@ onMounted(() => {
     </div>
 
     <div v-else class="space-y-6">
-      <UAlert
+      <SharedReadOnlyAlert
         v-if="!canEdit"
-        color="warning"
-        variant="subtle"
-        title="Read-only access"
         description="You can view calendar settings, but only owner and collaborators can edit."
       />
 

@@ -63,15 +63,10 @@ const {
             <p class="text-sm text-muted">Key details at a glance.</p>
           </div>
           <div class="flex items-center gap-2">
-            <UTooltip text="Open step" :content="{ side: 'left' }">
-              <UButton
-                size="xs"
-                variant="ghost"
-                icon="i-lucide-square-arrow-out-up-right"
-                aria-label="Open step"
-                @click="openSessionSection('recordings')"
-              />
-            </UTooltip>
+            <SessionStepLinkButton
+              step="recordings"
+              @open="openSessionSection('recordings')"
+            />
             <UButton size="sm" variant="outline" :disabled="!canWriteContent" @click="openEditSession">
               Edit session
             </UButton>
@@ -108,15 +103,10 @@ const {
               <h2 class="text-lg font-semibold">Transcript</h2>
               <p class="text-sm text-muted">Latest transcript content.</p>
             </div>
-            <UTooltip text="Open step" :content="{ side: 'left' }">
-              <UButton
-                size="xs"
-                variant="ghost"
-                icon="i-lucide-square-arrow-out-up-right"
-                aria-label="Open step"
-                @click="openSessionSection('transcription')"
-              />
-            </UTooltip>
+            <SessionStepLinkButton
+              step="transcription"
+              @open="openSessionSection('transcription')"
+            />
           </div>
         </template>
         <div class="space-y-3">
@@ -141,15 +131,10 @@ const {
               <h2 class="text-lg font-semibold">Summary</h2>
               <p class="text-sm text-muted">Current session summary.</p>
             </div>
-            <UTooltip text="Open step" :content="{ side: 'left' }">
-              <UButton
-                size="xs"
-                variant="ghost"
-                icon="i-lucide-square-arrow-out-up-right"
-                aria-label="Open step"
-                @click="openSessionSection('summary')"
-              />
-            </UTooltip>
+            <SessionStepLinkButton
+              step="summary"
+              @open="openSessionSection('summary')"
+            />
           </div>
         </template>
         <div class="space-y-3">

@@ -50,11 +50,8 @@ useSeoMeta({
     </UCard>
 
     <div v-else class="space-y-6">
-      <UAlert
+      <SharedReadOnlyAlert
         v-if="!canWriteContent"
-        color="warning"
-        variant="subtle"
-        title="Read-only access"
         description="Your role can view this session workspace but cannot make changes."
       />
       <div class="space-y-6">

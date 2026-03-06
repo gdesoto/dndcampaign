@@ -6,10 +6,7 @@ import CampaignListTemplate from '~/components/campaign/templates/CampaignListTe
 
 definePageMeta({ layout: 'dashboard' })
 
-const route = useRoute()
-const campaignId = computed(() => route.params.campaignId as string)
-const canWriteContent = inject('campaignCanWriteContent', computed(() => true))
-const { request } = useApi()
+const { campaignId, request, canWriteContent } = useCampaignPageContext()
 
 const encounterApi = useEncounterList()
 const statBlockApi = useEncounterStatBlocks()
@@ -383,11 +380,8 @@ const statBlockOptions = computed(() =>
     @action="openCreate"
   >
     <template #notice>
-      <UAlert
+      <SharedReadOnlyAlert
         v-if="!canWriteContent"
-        color="warning"
-        variant="subtle"
-        title="Read-only access"
         description="Your role can view encounter data but cannot create or edit encounters."
       />
     </template>
@@ -644,4 +638,5 @@ const statBlockOptions = computed(() =>
     </SharedEntityFormModal>
   </CampaignListTemplate>
 </template>
+
 
