@@ -28,11 +28,11 @@ const tocLinks: NavigationMenuItem[] = [
 
     <UPageBody class="space-y-8">
       <section id="use-this-guide" class="space-y-4 scroll-mt-28">
-        <UCard class="overflow-hidden border-amber-200/10 bg-[radial-gradient(circle_at_top_left,rgba(245,196,118,0.14),transparent_30%),linear-gradient(135deg,rgba(21,29,39,0.98),rgba(59,35,24,0.95))] shadow-[0_24px_70px_rgba(0,0,0,0.3)]">
+        <UCard class="self-start">
           <div class="space-y-4">
-            <p class="text-xs uppercase tracking-[0.2em] text-amber-100/60">How to use this guide</p>
-            <h2 class="font-display text-2xl tracking-[0.04em] text-amber-50">Build interfaces that feel like a campaign desk, not a generic admin tool.</h2>
-            <p class="max-w-3xl text-sm leading-7 text-amber-50/75">
+            <p class="text-xs uppercase tracking-[0.2em] text-[var(--ui-text-dimmed)]">How to use this guide</p>
+            <h2 class="font-display text-2xl tracking-[0.04em] text-[var(--ui-text-highlighted)]">Build interfaces that feel like a campaign desk, not a generic admin tool.</h2>
+            <p class="max-w-3xl text-sm leading-7 text-[var(--ui-text-muted)]">
               This guide is split into focused pages so developers can move from philosophy to layouts to component patterns without scanning one giant document.
               Each section pairs principles with concrete in-app demonstrations grounded in quests, factions, omens, maps, and player choices.
             </p>
@@ -57,7 +57,7 @@ const tocLinks: NavigationMenuItem[] = [
             </UCard>
           </div>
 
-          <UCard class="self-start overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.015))]">
+          <UCard class="self-start">
             <template #header>
               <h3 class="font-display text-base tracking-[0.03em] text-[var(--ui-text-highlighted)]">Campaign desk snapshot</h3>
             </template>

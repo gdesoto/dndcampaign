@@ -26,13 +26,34 @@ const { interactionGuidelines, questActionItems, shortcutExamples, feedbackState
         </ul>
       </UCard>
 
+      <UCard class="self-start">
+        <template #header>
+          <h2 class="font-display text-xl tracking-[0.03em] text-[var(--ui-text-highlighted)]">Action hierarchy in interactive contexts</h2>
+        </template>
+        <p class="mb-4 text-sm leading-6 text-[var(--ui-text-muted)]">
+          Primary actions should stay dominant when time pressure is high, while secondary and destructive actions remain discoverable but clearly de-emphasized.
+        </p>
+        <div class="flex flex-wrap items-start gap-3">
+          <UButton icon="i-lucide-plus" variant="solid" color="primary">Add NPC</UButton>
+          <UButton variant="outline">Open session prep</UButton>
+          <UButton variant="ghost">Pin to dashboard</UButton>
+          <UButton color="error" variant="soft">Archive quest</UButton>
+        </div>
+        <div class="mt-4 flex flex-wrap items-start gap-2">
+          <UBadge color="success" variant="outline" label="Ready" />
+          <UBadge color="info" variant="outline" label="Active" />
+          <UBadge color="warning" variant="outline" label="Needs Prep" />
+          <UBadge color="error" variant="outline" label="Blocked" />
+        </div>
+      </UCard>
+
       <UCard>
         <template #header>
           <h2 class="font-display text-xl tracking-[0.03em] text-[var(--ui-text-highlighted)]">Demonstration: scoped row actions and inline feedback</h2>
         </template>
 
         <div class="grid gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
-          <div class="space-y-3 rounded-xl border border-rose-200/10 bg-[radial-gradient(circle_at_top_left,rgba(255,129,146,0.14),transparent_30%),linear-gradient(135deg,rgba(45,22,28,0.98),rgba(35,33,48,0.94))] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
+          <div class="space-y-3 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg-accented)] p-5">
             <div class="flex items-start justify-between gap-3 rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg)] p-3">
               <div class="space-y-1">
                 <p class="font-display text-base text-[var(--ui-text-highlighted)]">Question the Harbor Smuggler</p>

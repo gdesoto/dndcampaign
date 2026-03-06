@@ -58,11 +58,11 @@ const tocLinks: NavigationMenuItem[] = [
           </template>
 
           <div class="space-y-4">
-            <div class="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-cyan-300/10 bg-[radial-gradient(circle_at_top_right,rgba(87,196,255,0.14),transparent_34%),linear-gradient(135deg,rgba(15,27,38,0.96),rgba(32,47,66,0.96))] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
+            <div class="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg-accented)] p-5">
               <div>
-                <p class="text-xs uppercase tracking-[0.18em] text-cyan-100/60">Header region</p>
-                <p class="font-display mt-1 text-lg tracking-[0.03em] text-cyan-50">Dungeon master dashboard</p>
-                <p class="mt-1 text-sm text-cyan-50/70">What needs attention now, what session is next, and which threads are unresolved.</p>
+                <p class="text-xs uppercase tracking-[0.18em] text-[var(--ui-text-dimmed)]">Header region</p>
+                <p class="font-display mt-1 text-lg tracking-[0.03em] text-[var(--ui-text-highlighted)]">Dungeon master dashboard</p>
+                <p class="mt-1 text-sm text-[var(--ui-text-muted)]">What needs attention now, what session is next, and which threads are unresolved.</p>
               </div>
               <div class="flex flex-wrap gap-2">
                 <UButton size="sm" icon="i-lucide-plus">New session</UButton>
@@ -74,9 +74,9 @@ const tocLinks: NavigationMenuItem[] = [
               <UCard
                 v-for="card in dashboardPreviewCards"
                 :key="card.title"
-                class="self-start border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.015))]"
+                class="self-start"
               >
-                <p class="text-[11px] uppercase tracking-[0.18em] text-cyan-300/70">{{ card.eyebrow }}</p>
+                <p class="text-[11px] uppercase tracking-[0.18em] text-[var(--ui-primary)]/75">{{ card.eyebrow }}</p>
                 <p class="mt-2 font-display text-base text-[var(--ui-text-highlighted)]">{{ card.title }}</p>
                 <p class="mt-2 text-sm leading-6 text-[var(--ui-text-muted)]">{{ card.detail }}</p>
               </UCard>
@@ -94,12 +94,12 @@ const tocLinks: NavigationMenuItem[] = [
           </template>
 
           <div class="space-y-4">
-            <div class="rounded-xl border border-amber-200/15 bg-[radial-gradient(circle_at_top_left,rgba(241,189,94,0.14),transparent_32%),linear-gradient(135deg,rgba(37,27,20,0.96),rgba(63,45,30,0.94))] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.2)]">
+            <div class="rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg-accented)] p-5">
               <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p class="text-xs uppercase tracking-[0.18em] text-amber-100/60">Campaign header</p>
-                  <p class="font-display mt-1 text-lg tracking-[0.03em] text-amber-50">Emberfall Campaign</p>
-                  <p class="mt-1 text-sm text-amber-50/72">Dark mystery • Current arc: drowned bells • Next session: March 8</p>
+                  <p class="text-xs uppercase tracking-[0.18em] text-[var(--ui-text-dimmed)]">Campaign header</p>
+                  <p class="font-display mt-1 text-lg tracking-[0.03em] text-[var(--ui-text-highlighted)]">Emberfall Campaign</p>
+                  <p class="mt-1 text-sm text-[var(--ui-text-muted)]">Dark mystery • Current arc: drowned bells • Next session: March 8</p>
                 </div>
                 <UBadge color="warning" variant="outline" label="Arc at risk" />
               </div>
@@ -111,20 +111,20 @@ const tocLinks: NavigationMenuItem[] = [
               <UCard
                 v-for="zone in campaignViewZones"
                 :key="zone.title"
-                class="self-start border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.015))]"
+                class="self-start"
               >
-                <p class="text-[11px] uppercase tracking-[0.18em] text-amber-300/75">{{ zone.eyebrow }}</p>
+                <p class="text-[11px] uppercase tracking-[0.18em] text-[var(--ui-primary)]/75">{{ zone.eyebrow }}</p>
                 <p class="mt-2 font-display text-base text-[var(--ui-text-highlighted)]">{{ zone.title }}</p>
                 <p class="mt-2 text-sm leading-6 text-[var(--ui-text-muted)]">{{ zone.detail }}</p>
               </UCard>
             </div>
 
             <div class="grid gap-3 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
-              <div class="space-y-3 rounded-[1.25rem] border border-violet-200/10 bg-[radial-gradient(circle_at_top_left,rgba(179,132,255,0.16),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(245,160,98,0.14),transparent_32%),linear-gradient(135deg,rgba(20,23,39,0.98),rgba(65,36,33,0.94))] p-5 shadow-[0_25px_70px_rgba(0,0,0,0.35)]">
+              <div class="space-y-3 rounded-[1.25rem] border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p class="text-xs uppercase tracking-[0.18em] text-violet-100/60">Session scene board</p>
-                    <p class="font-display mt-1 text-xl tracking-[0.04em] text-white">Bells Under Emberfall: Act One</p>
+                    <p class="text-xs uppercase tracking-[0.18em] text-[var(--ui-text-dimmed)]">Session scene board</p>
+                    <p class="font-display mt-1 text-xl tracking-[0.04em] text-[var(--ui-text-highlighted)]">Bells Under Emberfall: Act One</p>
                   </div>
                   <UBadge color="warning" variant="outline" label="Ritual in progress" />
                 </div>
@@ -133,16 +133,16 @@ const tocLinks: NavigationMenuItem[] = [
                   <UCard
                     v-for="scene in scenePrepCards"
                     :key="scene.title"
-                    class="self-start border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))]"
+                    class="self-start"
                   >
-                    <p class="text-[11px] uppercase tracking-[0.18em] text-violet-100/60">{{ scene.eyebrow }}</p>
-                    <p class="mt-2 font-display text-base text-white">{{ scene.title }}</p>
-                    <p class="mt-2 text-sm leading-6 text-white/72">{{ scene.detail }}</p>
+                    <p class="text-[11px] uppercase tracking-[0.18em] text-[var(--ui-primary)]/75">{{ scene.eyebrow }}</p>
+                    <p class="mt-2 font-display text-base text-[var(--ui-text-highlighted)]">{{ scene.title }}</p>
+                    <p class="mt-2 text-sm leading-6 text-[var(--ui-text-muted)]">{{ scene.detail }}</p>
                   </UCard>
                 </div>
               </div>
 
-              <UCard class="self-start border-violet-200/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015))]">
+              <UCard class="self-start">
                 <template #header>
                   <h3 class="font-display text-base tracking-[0.03em] text-[var(--ui-text-highlighted)]">Ritual clock</h3>
                 </template>
@@ -151,7 +151,7 @@ const tocLinks: NavigationMenuItem[] = [
                   <div
                     v-for="step in ritualTrack"
                     :key="step"
-                    class="rounded-lg border border-violet-200/10 bg-[radial-gradient(circle_at_left,rgba(162,121,255,0.12),transparent_30%),var(--ui-bg-accented)] p-3"
+                    class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-accented)] p-3"
                   >
                     <p class="text-sm leading-6 text-[var(--ui-text-muted)]">{{ step }}</p>
                   </div>

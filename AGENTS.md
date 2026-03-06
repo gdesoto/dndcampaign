@@ -28,6 +28,7 @@ DND Campaign is a Nuxt 4 web app for running tabletop campaigns. It manages camp
 - Use Nuxt UI components for layout and controls; theme overrides live in `app/app.config.ts`.
 - Prefer `UPage`, `UPageHeader`, and `UCard` for page structure.
 - Keep Tailwind classes consistent.
+- Prefer Nuxt UI semantic utility classes (e.g., `text-highlighted`, `text-muted`, `text-dimmed`, `border-default`, `bg-accented`) over raw token expressions like `text-[var(--ui-text-highlighted)]` to satisfy lint rules such as `suggestConicalClasses`.
 - Diagnose and fix root causes before adding workarounds; document the cause if a workaround is unavoidable.
 
 ## Testing

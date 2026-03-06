@@ -39,19 +39,19 @@ const tocLinks: NavigationMenuItem[] = [
       </section>
 
       <section id="demonstration" class="space-y-4 scroll-mt-28">
-        <UCard class="overflow-hidden border-amber-200/10 bg-[radial-gradient(circle_at_top_left,rgba(245,196,118,0.15),transparent_30%),linear-gradient(135deg,rgba(21,29,39,0.98),rgba(59,35,24,0.95))] shadow-[0_24px_70px_rgba(0,0,0,0.3)]">
+        <UCard class="self-start">
           <template #header>
             <div class="space-y-1">
-              <h2 class="font-display text-xl tracking-[0.04em] text-amber-50">Demonstration: philosophy in one screen</h2>
-              <p class="text-sm text-amber-50/75">A campaign summary that makes urgency, tone, and the next move obvious immediately.</p>
+              <h2 class="font-display text-xl tracking-[0.04em] text-[var(--ui-text-highlighted)]">Demonstration: philosophy in one screen</h2>
+              <p class="text-sm text-[var(--ui-text-muted)]">A campaign summary that makes urgency, tone, and the next move obvious immediately.</p>
             </div>
           </template>
 
           <div class="space-y-4">
-            <div class="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-amber-200/15 bg-black/10 p-5">
+            <div class="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg-accented)] p-5">
               <div class="space-y-2">
-                <p class="text-xs uppercase tracking-[0.18em] text-amber-100/60">Campaign overview preview</p>
-                <h3 class="font-display text-xl tracking-[0.04em] text-amber-50">Emberfall: Bells Beneath the Archive</h3>
+                <p class="text-xs uppercase tracking-[0.18em] text-[var(--ui-text-dimmed)]">Campaign overview preview</p>
+                <h3 class="font-display text-xl tracking-[0.04em] text-[var(--ui-text-highlighted)]">Emberfall: Bells Beneath the Archive</h3>
                 <div class="flex flex-wrap gap-2">
                   <UBadge color="warning" variant="outline" label="Session tonight" />
                   <UBadge color="info" variant="outline" label="1 blocked quest" />
@@ -69,11 +69,11 @@ const tocLinks: NavigationMenuItem[] = [
               <UCard
                 v-for="card in dashboardPreviewCards"
                 :key="card.title"
-                class="self-start border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))]"
+                class="self-start"
               >
-                <p class="text-[11px] uppercase tracking-[0.18em] text-amber-200/70">{{ card.eyebrow }}</p>
-                <p class="mt-2 font-display text-base text-white">{{ card.title }}</p>
-                <p class="mt-2 text-sm leading-6 text-white/72">{{ card.detail }}</p>
+                <p class="text-[11px] uppercase tracking-[0.18em] text-[var(--ui-primary)]/75">{{ card.eyebrow }}</p>
+                <p class="mt-2 font-display text-base text-[var(--ui-text-highlighted)]">{{ card.title }}</p>
+                <p class="mt-2 text-sm leading-6 text-[var(--ui-text-muted)]">{{ card.detail }}</p>
               </UCard>
             </div>
           </div>
