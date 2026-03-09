@@ -86,6 +86,145 @@ export type UxGuidePageMeta = {
   description: string
 }
 
+export type DndCharacter = {
+  name: string
+  class: string
+  subclass: string
+  race: string
+  level: number
+  hp: number
+  maxHp: number
+  ac: number
+  speed: number
+  passivePerception: number
+  proficiencyBonus: number
+  conditions: string[]
+  icon: string
+}
+
+export type DndConditionChip = {
+  name: string
+  icon: string
+  color: 'error' | 'warning' | 'info' | 'success' | 'neutral'
+}
+
+export type DndCombatant = {
+  name: string
+  type: 'pc' | 'npc' | 'monster'
+  initiative: number
+  hp: number
+  maxHp: number
+  ac: number
+  conditions: string[]
+  icon: string
+  isActive: boolean
+}
+
+export type DndFactionCard = {
+  name: string
+  motto: string
+  territory: string
+  influence: 'minor' | 'moderate' | 'major' | 'dominant'
+  relation: 'allied' | 'neutral' | 'hostile' | 'unknown'
+  icon: string
+  keyNpcs: string[]
+  color: 'success' | 'info' | 'warning' | 'error' | 'neutral'
+}
+
+export type DndSpellSlotTrack = {
+  level: number
+  total: number
+  used: number
+}
+
+export type DndItem = {
+  name: string
+  type: string
+  rarity: 'common' | 'uncommon' | 'rare' | 'very rare' | 'legendary' | 'artifact'
+  requiresAttunement: boolean
+  description: string
+  icon: string
+  isAttuned: boolean
+}
+
+export type DndLocationCard = {
+  name: string
+  region: string
+  status: 'explored' | 'known' | 'rumored' | 'dangerous'
+  description: string
+  connectedQuests: string[]
+  icon: string
+  dangerLevel: number
+}
+
+export type DndThreatClock = {
+  name: string
+  description: string
+  segments: number
+  filled: number
+  consequence: string
+  urgency: 'error' | 'warning' | 'info'
+}
+
+export type DndQuestObjective = {
+  text: string
+  complete: boolean
+}
+
+export type DndQuestDetailed = {
+  title: string
+  status: 'active' | 'blocked' | 'complete' | 'ready'
+  patron: string
+  patronIcon: string
+  reward: string
+  objectives: DndQuestObjective[]
+  nextHook: string
+}
+
+export type DndQuestListEntry = {
+  title: string
+  status: 'active' | 'blocked' | 'complete' | 'ready'
+  patron: string
+  updated: string
+  urgency: 'critical' | 'high' | 'normal' | 'low'
+}
+
+export type DndSessionEntry = {
+  number: number
+  title: string
+  date: string
+  status: 'upcoming' | 'played' | 'draft'
+  hasRecap: boolean
+  hasRecording: boolean
+  playerCount: number
+}
+
+export type DndMilestone = {
+  title: string
+  description: string
+  session: string
+  complete: boolean
+  arc: string
+}
+
+export type DndAudioTrack = {
+  session: number
+  title: string
+  duration: string
+  date: string
+  fileSize: string
+}
+
+export type DndNpcListEntry = {
+  name: string
+  faction: string
+  location: string
+  status: string
+  lastSeen: string
+  icon: string
+  relation: 'ally' | 'neutral' | 'suspect' | 'hostile'
+}
+
 export const uxGuidePages: UxGuidePageMeta[] = [
   {
     title: 'Overview',
@@ -122,6 +261,12 @@ export const uxGuidePages: UxGuidePageMeta[] = [
     to: '/docs/ux-style-guide/readability',
     icon: 'i-lucide-table-properties',
     description: 'Screen real estate, data density, maps, notes, and readable campaign information.',
+  },
+  {
+    title: 'D&D Components',
+    to: '/docs/ux-style-guide/dnd-components',
+    icon: 'i-lucide-swords',
+    description: 'Character cards, quest logs, initiative trackers, faction displays, and other D&D-specific shared components.',
   },
 ]
 
@@ -584,6 +729,345 @@ export const shortcutExamples = [
   { keys: ['/'], description: 'Move focus to page-local search or filter.' },
 ]
 
+export const dndCharacters: DndCharacter[] = [
+  {
+    name: 'Rowan Ashwalker',
+    class: 'Ranger',
+    subclass: 'Gloom Stalker',
+    race: 'Wood Elf',
+    level: 5,
+    hp: 41,
+    maxHp: 52,
+    ac: 17,
+    speed: 35,
+    passivePerception: 17,
+    proficiencyBonus: 3,
+    conditions: [],
+    icon: 'i-twemoji-compass',
+  },
+  {
+    name: 'Iri Dawnsworn',
+    class: 'Cleric',
+    subclass: 'Twilight Domain',
+    race: 'High Elf',
+    level: 5,
+    hp: 22,
+    maxHp: 28,
+    ac: 15,
+    speed: 30,
+    passivePerception: 13,
+    proficiencyBonus: 3,
+    conditions: ['Blessed'],
+    icon: 'i-twemoji-sparkles',
+  },
+  {
+    name: 'Corvin Ashmark',
+    class: 'Rogue',
+    subclass: 'Arcane Trickster',
+    race: 'Human',
+    level: 5,
+    hp: 33,
+    maxHp: 38,
+    ac: 16,
+    speed: 30,
+    passivePerception: 16,
+    proficiencyBonus: 3,
+    conditions: ['Poisoned'],
+    icon: 'i-twemoji-crossed-swords',
+  },
+  {
+    name: 'Vesper',
+    class: 'Wizard',
+    subclass: 'School of Divination',
+    race: 'Tiefling',
+    level: 5,
+    hp: 15,
+    maxHp: 30,
+    ac: 13,
+    speed: 30,
+    passivePerception: 12,
+    proficiencyBonus: 3,
+    conditions: ['Concentrating', 'Exhaustion 1'],
+    icon: 'i-twemoji-crystal-ball',
+  },
+]
+
+export const dndConditions: DndConditionChip[] = [
+  { name: 'Blinded', icon: 'i-lucide-eye-off', color: 'neutral' },
+  { name: 'Charmed', icon: 'i-lucide-heart', color: 'info' },
+  { name: 'Deafened', icon: 'i-lucide-volume-x', color: 'neutral' },
+  { name: 'Exhaustion', icon: 'i-lucide-battery-low', color: 'warning' },
+  { name: 'Frightened', icon: 'i-lucide-alert-triangle', color: 'warning' },
+  { name: 'Grappled', icon: 'i-lucide-link-2', color: 'neutral' },
+  { name: 'Incapacitated', icon: 'i-lucide-ban', color: 'error' },
+  { name: 'Invisible', icon: 'i-lucide-ghost', color: 'info' },
+  { name: 'Paralyzed', icon: 'i-lucide-lock', color: 'error' },
+  { name: 'Petrified', icon: 'i-lucide-layers', color: 'neutral' },
+  { name: 'Poisoned', icon: 'i-lucide-droplets', color: 'success' },
+  { name: 'Prone', icon: 'i-lucide-arrow-down', color: 'neutral' },
+  { name: 'Restrained', icon: 'i-lucide-anchor', color: 'warning' },
+  { name: 'Stunned', icon: 'i-lucide-zap', color: 'warning' },
+  { name: 'Unconscious', icon: 'i-lucide-moon', color: 'error' },
+  { name: 'Concentrating', icon: 'i-lucide-brain', color: 'info' },
+  { name: 'Blessed', icon: 'i-lucide-star', color: 'success' },
+  { name: 'Cursed', icon: 'i-lucide-skull', color: 'error' },
+]
+
+export const dndCombatants: DndCombatant[] = [
+  {
+    name: 'Rowan Ashwalker',
+    type: 'pc',
+    initiative: 22,
+    hp: 41,
+    maxHp: 52,
+    ac: 17,
+    conditions: [],
+    icon: 'i-twemoji-compass',
+    isActive: true,
+  },
+  {
+    name: 'Ash Shade Cultist',
+    type: 'monster',
+    initiative: 18,
+    hp: 0,
+    maxHp: 18,
+    ac: 12,
+    conditions: ['Unconscious'],
+    icon: 'i-twemoji-dragon-face',
+    isActive: false,
+  },
+  {
+    name: 'Captain Mirel',
+    type: 'npc',
+    initiative: 14,
+    hp: 24,
+    maxHp: 36,
+    ac: 16,
+    conditions: ['Frightened'],
+    icon: 'i-twemoji-crossed-swords',
+    isActive: false,
+  },
+  {
+    name: 'Iri Dawnsworn',
+    type: 'pc',
+    initiative: 9,
+    hp: 22,
+    maxHp: 28,
+    ac: 15,
+    conditions: ['Blessed', 'Concentrating'],
+    icon: 'i-twemoji-sparkles',
+    isActive: false,
+  },
+]
+
+export const dndFactions: DndFactionCard[] = [
+  {
+    name: 'Harbor Watch',
+    motto: 'Order holds the tide.',
+    territory: 'South Docks · Merchant Quarter',
+    influence: 'major',
+    relation: 'allied',
+    icon: 'i-lucide-anchor',
+    keyNpcs: ['Captain Mirel', 'Dockmaster Yeva'],
+    color: 'info',
+  },
+  {
+    name: 'High Curators',
+    motto: 'Knowledge that endures outlasts the knower.',
+    territory: 'Archive Spire · Lamp District',
+    influence: 'dominant',
+    relation: 'neutral',
+    icon: 'i-lucide-library',
+    keyNpcs: ['Seraphine Vale', 'Archivist Nera'],
+    color: 'warning',
+  },
+  {
+    name: 'Ash Market',
+    motto: 'Everything has a price. Especially secrets.',
+    territory: 'Night Bazaar · Undercroft',
+    influence: 'moderate',
+    relation: 'hostile',
+    icon: 'i-lucide-flame',
+    keyNpcs: ['Tallow Venn', 'The Factor'],
+    color: 'error',
+  },
+]
+
+export const dndSpellSlots: DndSpellSlotTrack[] = [
+  { level: 1, total: 4, used: 2 },
+  { level: 2, total: 3, used: 1 },
+  { level: 3, total: 2, used: 0 },
+]
+
+export const dndItems: DndItem[] = [
+  {
+    name: 'Moonstone Lens',
+    type: 'Wondrous Item',
+    rarity: 'very rare',
+    requiresAttunement: true,
+    description: 'A lens ground from drowned moonstone. The attuned wearer sees through illusions and perceives invisible entities within 30 feet.',
+    icon: 'i-lucide-scan-eye',
+    isAttuned: true,
+  },
+  {
+    name: 'Dagger of Warning',
+    type: 'Weapon (Dagger)',
+    rarity: 'uncommon',
+    requiresAttunement: true,
+    description: 'While attuned, you cannot be surprised. The blade trembles faintly before danger arrives.',
+    icon: 'i-lucide-swords',
+    isAttuned: true,
+  },
+  {
+    name: 'Cloak of Elvenkind',
+    type: 'Wondrous Item',
+    rarity: 'uncommon',
+    requiresAttunement: true,
+    description: 'While hooded, gain advantage on Dexterity (Stealth) checks. Observers have disadvantage on Perception checks to see you.',
+    icon: 'i-lucide-wind',
+    isAttuned: false,
+  },
+  {
+    name: 'Sending Stone',
+    type: 'Wondrous Item',
+    rarity: 'common',
+    requiresAttunement: false,
+    description: 'One of a matched pair. Cast Sending once per day to communicate with the holder of the companion stone.',
+    icon: 'i-lucide-radio',
+    isAttuned: false,
+  },
+  {
+    name: 'Drowned Bell Fragment',
+    type: 'Quest Artifact',
+    rarity: 'artifact',
+    requiresAttunement: false,
+    description: 'A shard of the submerged bell of the Sunken Saint. Hums when within 100 feet of the complete artifact. Do not ring it.',
+    icon: 'i-lucide-bell',
+    isAttuned: false,
+  },
+]
+
+export const dndLocations: DndLocationCard[] = [
+  {
+    name: 'Flooded Chapel',
+    region: 'Emberfall Undercroft',
+    status: 'explored',
+    description: 'A partially submerged sanctuary. The drowned sigils here match the catacomb gate markings discovered last session.',
+    connectedQuests: ['Recover the Moonstone Lens', 'Map the Catacombs'],
+    icon: 'i-lucide-church',
+    dangerLevel: 3,
+  },
+  {
+    name: 'Archive Spire',
+    region: 'Lamp District',
+    status: 'known',
+    description: 'Headquarters of the High Curators. Upper floors remain locked. Seraphine has a private office on the seventh tier.',
+    connectedQuests: ['Recover the Moonstone Lens'],
+    icon: 'i-lucide-library',
+    dangerLevel: 1,
+  },
+  {
+    name: 'Smuggler Dock',
+    region: 'South Docks',
+    status: 'dangerous',
+    description: "Captain Mirel's known escape route. A trapdoor beneath the salt barrels leads to a canal passageway.",
+    connectedQuests: ['Question the Harbor Smuggler'],
+    icon: 'i-lucide-anchor',
+    dangerLevel: 2,
+  },
+  {
+    name: 'Lower Vault',
+    region: 'Catacomb Depths',
+    status: 'rumored',
+    description: 'Said to hold the sealed bell housing. Accessible only after all three crypt sigils are activated. No party member has been inside.',
+    connectedQuests: ['Map the Catacombs', 'Recover the Moonstone Lens'],
+    icon: 'i-lucide-vault',
+    dangerLevel: 5,
+  },
+]
+
+export const dndThreatClocks: DndThreatClock[] = [
+  {
+    name: 'Moonrise Deadline',
+    description: 'The Moonstone Lens must be recovered before the observatory seals at moonrise.',
+    segments: 6,
+    filled: 5,
+    consequence: 'Observatory wards awaken hostile echoes. The lens becomes unreachable until dawn.',
+    urgency: 'error',
+  },
+  {
+    name: 'Drowned Bell Ritual',
+    description: "The Sunken Saint's bell is being reassembled by an unknown faction beneath the city.",
+    segments: 4,
+    filled: 2,
+    consequence: 'The bell rings. Drowned shades rise in Emberfall harbor.',
+    urgency: 'warning',
+  },
+  {
+    name: 'Harbor Patrol Alert',
+    description: 'Harbor Watch is aware of unauthorized activity near the docks.',
+    segments: 3,
+    filled: 1,
+    consequence: 'South Docks are sealed. Captain Mirel cannot be contacted openly.',
+    urgency: 'info',
+  },
+]
+
+export const dndQuestList: DndQuestListEntry[] = [
+  { title: 'Recover the Moonstone Lens', status: 'active', patron: 'High Curator Seraphine', updated: '2h ago', urgency: 'critical' },
+  { title: 'Question the Harbor Smuggler', status: 'blocked', patron: 'Captain Mirel', updated: 'Yesterday', urgency: 'high' },
+  { title: 'Map the Catacombs under Emberfall', status: 'ready', patron: 'Party Goal', updated: '4d ago', urgency: 'normal' },
+  { title: 'Find the Lantern Court Envoy', status: 'active', patron: 'Unknown', updated: '1w ago', urgency: 'low' },
+  { title: 'Deliver the Sealed Letter', status: 'complete', patron: 'Archivist Nera', updated: '2w ago', urgency: 'low' },
+]
+
+export const dndSessions: DndSessionEntry[] = [
+  { number: 14, title: 'The Observatory Unsealed', date: 'Tonight', status: 'upcoming', hasRecap: false, hasRecording: false, playerCount: 4 },
+  { number: 13, title: 'Bells Beneath the Archive', date: 'Mar 1', status: 'played', hasRecap: true, hasRecording: true, playerCount: 4 },
+  { number: 12, title: 'The Ledger and the Liar', date: 'Feb 15', status: 'played', hasRecap: true, hasRecording: true, playerCount: 3 },
+  { number: 11, title: 'Harbor Watch Inquiry', date: 'Feb 1', status: 'played', hasRecap: true, hasRecording: false, playerCount: 4 },
+  { number: 10, title: 'Night Bazaar Negotiations', date: 'Jan 18', status: 'played', hasRecap: false, hasRecording: true, playerCount: 4 },
+]
+
+export const dndMilestones: DndMilestone[] = [
+  { title: 'Campaign Begins', description: 'The party meets in Emberfall during the lantern festival.', session: 'Session 1', complete: true, arc: 'Prologue' },
+  { title: 'The Brass Astrolabe Retrieved', description: 'First major artifact recovered from the dockside vault.', session: 'Session 7', complete: true, arc: 'The Drowned Archive' },
+  { title: 'Captain Mirel Confronted', description: "Mirel admits he forged the harbor manifest under duress.", session: 'Session 12', complete: true, arc: 'The Drowned Archive' },
+  { title: 'Recover the Moonstone Lens', description: 'Retrieve the lens from the sealed observatory before moonrise.', session: 'Session 14', complete: false, arc: 'The Drowned Archive' },
+  { title: 'Silence the Drowned Bell', description: 'Stop the ritual before the third toll awakens the harbor shades.', session: 'TBD', complete: false, arc: 'The Drowned Archive' },
+]
+
+export const dndAudioTracks: DndAudioTrack[] = [
+  { session: 13, title: 'Bells Beneath the Archive', duration: '3h 12m', date: 'Mar 1', fileSize: '184 MB' },
+  { session: 12, title: 'The Ledger and the Liar', duration: '2h 47m', date: 'Feb 15', fileSize: '162 MB' },
+  { session: 10, title: 'Night Bazaar Negotiations', duration: '3h 05m', date: 'Jan 18', fileSize: '178 MB' },
+  { session: 9, title: 'The Ash Market Contact', duration: '2h 23m', date: 'Jan 4', fileSize: '138 MB' },
+]
+
+export const dndNpcList: DndNpcListEntry[] = [
+  { name: 'Captain Mirel', faction: 'Harbor Watch', location: 'South Docks', status: 'Recurring', lastSeen: 'Session 13', icon: 'i-twemoji-crossed-swords', relation: 'ally' },
+  { name: 'Seraphine Vale', faction: 'High Curators', location: 'Archive Spire', status: 'Active', lastSeen: 'Session 12', icon: 'i-twemoji-crystal-ball', relation: 'ally' },
+  { name: 'Tallow Venn', faction: 'Ash Market', location: 'Night Bazaar', status: 'Hidden motive', lastSeen: 'Session 11', icon: 'i-twemoji-compass', relation: 'suspect' },
+  { name: 'Archivist Nera', faction: 'High Curators', location: 'Archive Spire', status: 'Minor contact', lastSeen: 'Session 9', icon: 'i-twemoji-scroll', relation: 'neutral' },
+  { name: 'The Factor', faction: 'Ash Market', location: 'Unknown', status: 'Unmet', lastSeen: '—', icon: 'i-twemoji-mage', relation: 'hostile' },
+]
+
+export const dndDetailedQuest: DndQuestDetailed = {
+  title: 'Recover the Moonstone Lens',
+  status: 'active',
+  patron: 'High Curator Seraphine',
+  patronIcon: 'i-twemoji-crystal-ball',
+  reward: '800 gp · Curator Library Access · Moonstone Lens (temporary)',
+  objectives: [
+    { text: 'Locate the sealed observatory entrance', complete: true },
+    { text: 'Bypass or neutralize the lower ward guardians', complete: true },
+    { text: 'Retrieve the lens from the upper vault', complete: false },
+    { text: 'Return the lens before moonrise', complete: false },
+    { text: 'Report findings to Seraphine Vale (optional)', complete: false },
+  ],
+  nextHook: 'The vault key was last seen with Tallow Venn at the Night Bazaar.',
+}
+
 export const useUxStyleGuideContent = () => ({
   uxGuidePages,
   principles,
@@ -610,4 +1094,18 @@ export const useUxStyleGuideContent = () => ({
   questActionItems,
   interactionGuidelines,
   shortcutExamples,
+  dndCharacters,
+  dndConditions,
+  dndCombatants,
+  dndFactions,
+  dndSpellSlots,
+  dndItems,
+  dndLocations,
+  dndThreatClocks,
+  dndDetailedQuest,
+  dndQuestList,
+  dndSessions,
+  dndMilestones,
+  dndAudioTracks,
+  dndNpcList,
 })

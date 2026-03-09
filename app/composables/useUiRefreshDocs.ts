@@ -60,6 +60,15 @@ const uxStyleGuideEntries: UiRefreshDocEntry[] = [
       'Includes practical map and player-note examples for the D&D tracker.',
     ],
   },
+  {
+    slug: 'ux-style-guide/dnd-components',
+    title: 'UX Guide: D&D Components',
+    description: 'Character cards, quest logs, initiative trackers, faction displays, and other D&D-specific shared components.',
+    body: [
+      'Showcases purpose-built component patterns for the D&D domain.',
+      'Covers character cards, party strips, quest logs, initiative trackers, threat clocks, loot cards, and location displays.',
+    ],
+  },
 ]
 
 const referenceEntries: UiRefreshDocEntry[] = [
