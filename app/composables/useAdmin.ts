@@ -31,10 +31,21 @@ type AdminActivityQuery = {
   pageSize?: number
 }
 
+type AdminStorageAuditQuery = {
+  campaignId?: string
+  issuesOnly?: boolean
+}
+
+type AdminStorageAuditFixPayload =
+  | { action: 'DELETE_ORPHAN_STORAGE_FILE'; storageKey: string }
+  | { action: 'DELETE_UNREFERENCED_ARTIFACT'; artifactId: string }
+  | { action: 'REPAIR_DOCUMENT_CURRENT_VERSION'; documentId: string }
+  | { action: 'DELETE_EMPTY_DOCUMENT'; documentId: string }
+
 export const useAdmin = () => {
   const { request } = useApi()
 
-  const toQuery = (input: Record<string, string | number | undefined>) => {
+  const toQuery = (input: Record<string, string | number | boolean | undefined>) => {
     const params = new URLSearchParams()
     for (const [key, value] of Object.entries(input)) {
       if (value === undefined || value === '') continue
@@ -151,6 +162,80 @@ export const useAdmin = () => {
     `/api/admin/analytics/usage.csv${toQuery(query)}`
   const getJobsCsvUrl = (query: AdminAnalyticsQuery = {}) =>
     `/api/admin/analytics/jobs.csv${toQuery(query)}`
+  const getStorageAudit = (query: AdminStorageAuditQuery = {}) =>
+    request<{
+      generatedAt: string
+      provider: string
+      localRoot: string
+      warnings: string[]
+      filters: {
+        campaignId: string | null
+        issuesOnly: boolean
+      }
+      summary: {
+        artifacts: {
+          total: number
+          ok: number
+          missingFile: number
+          unreferenced: number
+        }
+        storage: {
+          scannedFiles: number
+          orphanFiles: number
+          rootExists: boolean
+        }
+        documents: {
+          total: number
+          ok: number
+          missingCurrentVersion: number
+          empty: number
+        }
+        totalIssues: number
+        fixableIssues: number
+      }
+      artifactRows: Array<{
+        artifactId: string
+        campaignId: string | null
+        campaignName: string | null
+        storageKey: string
+        mimeType: string
+        byteSize: number
+        createdAt: string
+        referencedCount: number
+        existsOnStorage: boolean
+        status: 'OK' | 'MISSING_FILE' | 'UNREFERENCED' | 'MISSING_FILE_AND_UNREFERENCED'
+        fixActions: Array<'DELETE_UNREFERENCED_ARTIFACT'>
+      }>
+      orphanStorageRows: Array<{
+        storageKey: string
+        byteSize: number
+        campaignId: string | null
+        campaignName: string | null
+        fixActions: Array<'DELETE_ORPHAN_STORAGE_FILE'>
+      }>
+      documentRows: Array<{
+        documentId: string
+        campaignId: string
+        campaignName: string | null
+        title: string
+        type: 'TRANSCRIPT' | 'SUMMARY' | 'NOTES'
+        currentVersionId: string | null
+        latestVersionId: string | null
+        versionCount: number
+        status: 'OK' | 'MISSING_CURRENT_VERSION' | 'EMPTY'
+        fixActions: Array<'REPAIR_DOCUMENT_CURRENT_VERSION' | 'DELETE_EMPTY_DOCUMENT'>
+      }>
+    }>(`/api/admin/storage-audit${toQuery(query)}`)
+
+  const applyStorageAuditFix = (payload: AdminStorageAuditFixPayload) =>
+    request<{
+      action: AdminStorageAuditFixPayload['action']
+      targetId: string
+      message: string
+    }>('/api/admin/storage-audit/fix', {
+      method: 'POST',
+      body: payload,
+    })
 
   return {
     getUsers,
@@ -165,5 +250,7 @@ export const useAdmin = () => {
     getActivity,
     getUsageCsvUrl,
     getJobsCsvUrl,
+    getStorageAudit,
+    applyStorageAuditFix,
   }
 }

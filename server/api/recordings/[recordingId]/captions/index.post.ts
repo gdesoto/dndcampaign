@@ -83,7 +83,7 @@ export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
   const recordingId = event.context.params?.recordingId
   if (!recordingId) {
-    return fail(400, 'VALIDATION_ERROR', 'Recording id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Recording id is required')
   }
 
   const recording = await prisma.recording.findFirst({
@@ -94,14 +94,14 @@ export default defineEventHandler(async (event) => {
     include: { session: true },
   })
   if (!recording) {
-    return fail(404, 'NOT_FOUND', 'Recording not found')
+    return fail(event, 404, 'NOT_FOUND', 'Recording not found')
   }
 
   const contentType = String(getRequestHeader(event, 'content-type') || '')
   if (contentType.startsWith('multipart/form-data')) {
     const contentLength = Number(getRequestHeader(event, 'content-length') || 0)
     if (contentLength && contentLength > MAX_BYTES) {
-      return fail(400, 'VALIDATION_ERROR', 'File is too large')
+      return fail(event, 400, 'VALIDATION_ERROR', 'File is too large')
     }
 
     let result
@@ -119,6 +119,7 @@ export default defineEventHandler(async (event) => {
         let fileHandled = false
         let fileError: string | null = null
         let uploadPromise: Promise<unknown> | null = null
+        let uploadError: unknown = null
         let isSrt = false
         const chunks: Buffer[] = []
 
@@ -164,6 +165,10 @@ export default defineEventHandler(async (event) => {
               mimeType: finalMimeType,
               stream: file,
             })
+              .catch((error) => {
+                uploadError = error
+                return null
+              })
           }
         })
 
@@ -197,13 +202,23 @@ export default defineEventHandler(async (event) => {
               mimeType: 'text/vtt',
               stream: vttStream,
             })
+              .catch((error) => {
+                uploadError = error
+                return null
+              })
           }
           if (!uploadPromise) {
             reject(new Error('Upload failed'))
             return
           }
           uploadPromise
-            .then(() => resolve({ recordingId }))
+            .then(() => {
+              if (uploadError) {
+                reject(uploadError)
+                return
+              }
+              resolve({ recordingId })
+            })
             .catch((error) => reject(error))
         })
 
@@ -217,7 +232,7 @@ export default defineEventHandler(async (event) => {
         message === 'File is required' ||
         message === 'Only one file is allowed'
       ) {
-        return fail(400, 'VALIDATION_ERROR', message)
+        return fail(event, 400, 'VALIDATION_ERROR', message)
       }
       throw error
     }
@@ -229,7 +244,7 @@ export default defineEventHandler(async (event) => {
   const body = (await readBody(event)) ?? {}
   const mode = typeof body === 'object' && body !== null && 'mode' in body ? (body as { mode?: unknown }).mode : 'from-transcript'
   if (mode !== 'from-transcript') {
-    return fail(400, 'VALIDATION_ERROR', 'Invalid captions mode')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid captions mode')
   }
 
   const transcript = await prisma.document.findFirst({
@@ -241,7 +256,7 @@ export default defineEventHandler(async (event) => {
     include: { currentVersion: true },
   })
   if (!transcript?.currentVersion?.content) {
-    return fail(404, 'NOT_FOUND', 'Session transcript not found')
+    return fail(event, 404, 'NOT_FOUND', 'Session transcript not found')
   }
 
   const rawContent = transcript.currentVersion.content

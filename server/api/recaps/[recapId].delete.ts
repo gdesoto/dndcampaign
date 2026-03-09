@@ -1,28 +1,47 @@
 import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { ArtifactService } from '#server/services/artifact.service'
-import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
+import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
-  const sessionUser = await requireUserSession(event)
+  await requireUserSession(event)
   const recapId = event.context.params?.recapId
   if (!recapId) {
-    return fail(400, 'VALIDATION_ERROR', 'Recap id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Recap id is required')
   }
 
-  const recap = await prisma.recapRecording.findFirst({
-    where: {
-      id: recapId,
-      session: { campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'recording.upload') },
+  const recap = await prisma.recapRecording.findUnique({
+    where: { id: recapId },
+    select: {
+      id: true,
+      artifactId: true,
+      session: {
+        select: {
+          campaignId: true,
+        },
+      },
     },
   })
   if (!recap) {
-    return fail(404, 'NOT_FOUND', 'Recap not found')
+    return fail(event, 404, 'NOT_FOUND', 'Recap not found')
   }
 
+  const access = await requireCampaignPermission(event, recap.session.campaignId, 'recording.upload')
+  if (!access.ok) {
+    return access.response
+  }
+
+  const deletedRecap = await prisma.recapRecording.delete({
+    where: { id: recap.id },
+    select: { artifactId: true },
+  })
+
   const service = new ArtifactService()
-  await service.deleteArtifact(recap.artifactId)
-  await prisma.recapRecording.delete({ where: { id: recapId } })
+  try {
+    await service.deleteArtifact(deletedRecap.artifactId)
+  } catch {
+    // Best-effort cleanup after recap row removal.
+  }
 
   return ok({ success: true })
 })

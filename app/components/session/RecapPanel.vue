@@ -42,8 +42,16 @@ const openReplaceModal = () => {
 const submitReplace = () => {
   if (!recapFileModel.value) return
   emit('upload-recap')
-  isReplaceModalOpen.value = false
 }
+
+watch(
+  () => props.recapUploading,
+  (isUploading, wasUploading) => {
+    if (wasUploading && !isUploading && !props.recapError) {
+      isReplaceModalOpen.value = false
+    }
+  }
+)
 
 </script>
 
@@ -126,6 +134,8 @@ const submitReplace = () => {
           size="sm"
           variant="outline"
           icon="i-lucide-refresh-cw"
+          :loading="recapUploading"
+          :disabled="recapUploading"
           class="w-full sm:w-auto"
           @click="openReplaceModal"
         >
@@ -142,19 +152,28 @@ const submitReplace = () => {
         >
           Play recap
         </UButton>
-        <UButton
-          v-if="workflowMode"
-          size="sm"
-          variant="ghost"
-          color="error"
-          icon="i-lucide-trash-2"
-          :disabled="!hasRecap"
-          :loading="recapDeleting"
-          class="w-full sm:w-auto"
-          @click="emit('delete-recap')"
+        <SharedConfirmActionPopover
+          v-if="workflowMode && hasRecap"
+          message="Delete this recap audio file?"
+          confirm-label="Delete recap"
+          confirm-icon="i-lucide-trash-2"
+          :confirm-loading="recapDeleting"
+          content-class="w-64 p-3"
+          @confirm="({ close }) => { emit('delete-recap'); close() }"
         >
-          Delete recap
-        </UButton>
+          <template #trigger>
+            <UButton
+              size="sm"
+              variant="ghost"
+              color="error"
+              icon="i-lucide-trash-2"
+              :loading="recapDeleting"
+              class="w-full sm:w-auto"
+            >
+              Delete recap
+            </UButton>
+          </template>
+        </SharedConfirmActionPopover>
       </div>
 
       <UCard v-if="recapPlaybackUrl">
@@ -187,6 +206,7 @@ const submitReplace = () => {
             :dropzone="false"
             :preview="false"
             label="Choose replacement"
+            :disabled="recapUploading"
           />
 
           <p class="text-sm text-muted">
@@ -194,7 +214,7 @@ const submitReplace = () => {
           </p>
 
           <div class="flex justify-end gap-2">
-            <UButton variant="ghost" color="neutral" @click="isReplaceModalOpen = false">Cancel</UButton>
+            <UButton variant="ghost" color="neutral" :disabled="recapUploading" @click="isReplaceModalOpen = false">Cancel</UButton>
             <UButton :disabled="!recapFile" :loading="recapUploading" @click="submitReplace">
               Replace recap
             </UButton>

@@ -63,6 +63,41 @@ export const adminAnalyticsJobsQuerySchema = z.object({
   to: dateStringSchema.optional(),
 })
 
+export const adminStorageAuditQuerySchema = z.object({
+  campaignId: z.string().uuid().optional(),
+  issuesOnly: z
+    .union([z.boolean(), z.enum(['true', 'false', '1', '0'])])
+    .transform((value) => value === true || value === 'true' || value === '1')
+    .default(true),
+})
+
+const storageKeySchema = z
+  .string()
+  .min(1)
+  .max(1024)
+  .refine((value) => !value.startsWith('/') && !value.includes('\\') && !value.includes('..'), {
+    message: 'Storage key is invalid',
+  })
+
+export const adminStorageAuditFixSchema = z.discriminatedUnion('action', [
+  z.object({
+    action: z.literal('DELETE_ORPHAN_STORAGE_FILE'),
+    storageKey: storageKeySchema,
+  }),
+  z.object({
+    action: z.literal('DELETE_UNREFERENCED_ARTIFACT'),
+    artifactId: z.string().uuid(),
+  }),
+  z.object({
+    action: z.literal('REPAIR_DOCUMENT_CURRENT_VERSION'),
+    documentId: z.string().uuid(),
+  }),
+  z.object({
+    action: z.literal('DELETE_EMPTY_DOCUMENT'),
+    documentId: z.string().uuid(),
+  }),
+])
+
 export const adminCsvFormatQuerySchema = z.object({
   from: dateStringSchema.optional(),
   to: dateStringSchema.optional(),
@@ -77,3 +112,5 @@ export type AdminCampaignUpdateInput = z.infer<typeof adminCampaignUpdateSchema>
 export type AdminAnalyticsOverviewQuery = z.infer<typeof adminAnalyticsOverviewQuerySchema>
 export type AdminAnalyticsUsageQuery = z.infer<typeof adminAnalyticsUsageQuerySchema>
 export type AdminAnalyticsJobsQuery = z.infer<typeof adminAnalyticsJobsQuerySchema>
+export type AdminStorageAuditQuery = z.infer<typeof adminStorageAuditQuerySchema>
+export type AdminStorageAuditFixInput = z.infer<typeof adminStorageAuditFixSchema>

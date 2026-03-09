@@ -6,6 +6,7 @@ import {
   type TranscriptSegment,
 } from '#shared/utils/transcript'
 import { getFirstNameTerm } from '#shared/utils/name'
+import type { CampaignAccess } from '#shared/types/campaign-workflow'
 import CampaignDetailTemplate from '~/components/campaign/templates/CampaignDetailTemplate.vue'
 
 definePageMeta({ layout: 'dashboard' })
@@ -72,6 +73,13 @@ const returnTo = computed(() =>
 )
 const { request } = useApi()
 const player = useMediaPlayer()
+const campaignAccess = inject(
+  'campaignAccess',
+  computed(() => undefined as CampaignAccess | undefined)
+)
+const canManageDocument = computed(() =>
+  Boolean(campaignAccess.value?.permissions.includes('document.edit'))
+)
 const hasMounted = ref(false)
 const playbackRangeError = ref('')
 let playbackRangeTimer: ReturnType<typeof setInterval> | undefined
@@ -103,6 +111,8 @@ const importFile = ref<File | null>(null)
 const subtitleAttachLoading = ref(false)
 const subtitleAttachError = ref('')
 const selectedSubtitleRecordingId = ref('')
+const deleteLoading = ref(false)
+const deleteError = ref('')
 
 const windowStart = ref(0)
 const windowSize = ref(200)
@@ -1057,6 +1067,42 @@ const unlinkRecording = async () => {
   }
 }
 
+const deleteDocument = async () => {
+  if (!document.value || document.value.type !== 'TRANSCRIPT') return
+  deleteError.value = ''
+  deleteLoading.value = true
+  const sessionId = document.value.sessionId
+  try {
+    await request(`/api/documents/${documentId.value}`, {
+      method: 'DELETE',
+    })
+
+    if (returnTo.value) {
+      await navigateTo(returnTo.value)
+      return
+    }
+
+    if (sessionId) {
+      await navigateTo(`/campaigns/${campaignId.value}/sessions/${sessionId}`)
+      return
+    }
+
+    await navigateTo(`/campaigns/${campaignId.value}/sessions`)
+  } catch (error) {
+    deleteError.value =
+      (error as Error & { message?: string }).message || 'Unable to delete transcript.'
+  } finally {
+    deleteLoading.value = false
+  }
+}
+
+const deleteDocumentWithClose = async (close: () => void) => {
+  await deleteDocument()
+  if (!deleteError.value) {
+    close()
+  }
+}
+
 const transcriptPreview = computed(() => {
   if (document.value?.type !== 'TRANSCRIPT') return ''
   if (!segments.value.length) return 'No segments yet.'
@@ -1082,6 +1128,24 @@ const fullTranscript = computed(() =>
       <UButton variant="outline" :to="`/campaigns/${campaignId}/sessions`">
         All sessions
       </UButton>
+      <SharedConfirmActionPopover
+        v-if="canManageDocument && document?.type === 'TRANSCRIPT'"
+        message="Delete this transcript document?"
+        confirm-label="Delete transcript"
+        confirm-icon="i-lucide-trash-2"
+        :confirm-loading="deleteLoading"
+        @confirm="({ close }) => deleteDocumentWithClose(close)"
+      >
+        <template #trigger>
+          <UButton
+            color="error"
+            variant="outline"
+            :loading="deleteLoading"
+          >
+            Delete transcript
+          </UButton>
+        </template>
+      </SharedConfirmActionPopover>
     </template>
 
       <div v-if="pending" class="grid gap-4">
@@ -1098,6 +1162,14 @@ const fullTranscript = computed(() =>
         v-else-if="document?.type === 'TRANSCRIPT'"
         class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]"
       >
+        <UAlert
+          v-if="deleteError"
+          color="error"
+          variant="subtle"
+          :description="deleteError"
+          class="lg:col-span-2"
+        />
+
         <UCard>
           <template #header>
             <div class="space-y-4">
@@ -1804,6 +1876,14 @@ const fullTranscript = computed(() =>
       </div>
 
       <div v-else class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <UAlert
+          v-if="deleteError"
+          color="error"
+          variant="subtle"
+          :description="deleteError"
+          class="lg:col-span-2"
+        />
+
         <UCard>
           <template #header>
             <div>

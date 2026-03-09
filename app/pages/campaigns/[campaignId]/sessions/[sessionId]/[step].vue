@@ -11,11 +11,15 @@ const {
   isUploading,
   uploadError,
   playbackError,
+  deleteRecordingError,
+  deletingRecordingId,
   playbackLoading,
   playbackUrls,
   recordings,
   transcriptDoc,
   transcriptError,
+  transcriptDeleteError,
+  transcriptDeleting,
   transcriptImportError,
   transcriptImporting,
   transcriptFile,
@@ -69,9 +73,11 @@ const {
   hasRecap,
   uploadRecording,
   loadPlayback,
+  deleteRecording,
   openPlayer,
   saveTranscript,
   importTranscript,
+  deleteTranscript,
   attachTranscriptToVideo,
   refreshSummaryJob,
   sendSummaryToN8n,
@@ -102,18 +108,22 @@ const returnToPath = computed(
       <SessionRecordingsPanel
         :workflow-mode="true"
         :campaign-id="campaignId"
+        :can-manage-recordings="canUploadRecording"
         :recordings="recordings"
         :selected-file="selectedFile"
         :selected-kind="selectedKind"
         :is-uploading="isUploading"
         :upload-error="uploadError"
         :playback-error="playbackError"
+        :delete-error="deleteRecordingError"
+        :deleting-recording-id="deletingRecordingId"
         :playback-loading="playbackLoading"
         :playback-urls="playbackUrls"
         @update:selected-file="selectedFile = $event"
         @update:selected-kind="selectedKind = $event"
         @upload-recording="canUploadRecording && uploadRecording()"
         @play-recording="loadPlayback"
+        @delete-recording="canUploadRecording && deleteRecording($event)"
         @open-player="openPlayer"
       />
     </div>
@@ -122,9 +132,12 @@ const returnToPath = computed(
       <SessionTranscriptPanel
         :campaign-id="campaignId"
         :return-to-path="returnToPath"
+        :can-manage-transcript="canWriteContent"
         :recordings="recordings"
         :transcript-doc="transcriptDoc?.id ? { id: transcriptDoc.id } : null"
         :transcript-error="transcriptError"
+        :transcript-delete-error="transcriptDeleteError"
+        :transcript-deleting="transcriptDeleting"
         :transcript-import-error="transcriptImportError"
         :transcript-importing="transcriptImporting"
         :transcript-file="transcriptFile"
@@ -140,6 +153,7 @@ const returnToPath = computed(
         @update:selected-subtitle-recording-id="selectedSubtitleRecordingId = $event"
         @create-transcript="canWriteContent && saveTranscript()"
         @import-transcript="canWriteContent && importTranscript()"
+        @delete-transcript="canWriteContent && deleteTranscript()"
         @attach-subtitles="canWriteContent && attachTranscriptToVideo()"
       />
     </div>

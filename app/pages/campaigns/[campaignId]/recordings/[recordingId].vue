@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { getFirstNameTerm } from '#shared/utils/name'
+import type { CampaignAccess } from '#shared/types/campaign-workflow'
 import CampaignDetailTemplate from '~/components/campaign/templates/CampaignDetailTemplate.vue'
 
 definePageMeta({ layout: 'dashboard' })
@@ -71,6 +72,13 @@ const campaignId = computed(() => route.params.campaignId as string)
 const recordingId = computed(() => route.params.recordingId as string)
 const { request } = useApi()
 const player = useMediaPlayer()
+const campaignAccess = inject(
+  'campaignAccess',
+  computed(() => undefined as CampaignAccess | undefined)
+)
+const canManageRecording = computed(() =>
+  Boolean(campaignAccess.value?.permissions.includes('recording.upload'))
+)
 
 const { data: recording, pending, refresh, error } = await useAsyncData(
   () => `recording-${recordingId.value}`,
@@ -136,6 +144,10 @@ const transcriptAttachLoading = ref(false)
 const transcriptAttachError = ref('')
 const detachLoading = ref(false)
 const detachError = ref('')
+const recordingDeleteLoading = ref(false)
+const recordingDeleteError = ref('')
+const artifactDeleteError = ref('')
+const artifactDeleteLoadingById = reactive<Record<string, boolean>>({})
 const transcribeModalOpen = ref(false)
 const transcribeLoading = ref(false)
 const transcribeError = ref('')
@@ -310,6 +322,65 @@ const detachSubtitles = async () => {
       (error as Error & { message?: string }).message || 'Unable to detach subtitles.'
   } finally {
     detachLoading.value = false
+  }
+}
+
+const deleteRecording = async () => {
+  if (!recording.value) return
+  recordingDeleteError.value = ''
+  recordingDeleteLoading.value = true
+  const sessionId = recording.value.sessionId
+  try {
+    await request(`/api/recordings/${recordingId.value}`, {
+      method: 'DELETE',
+    })
+    await navigateTo(`/campaigns/${campaignId.value}/sessions/${sessionId}`)
+  } catch (error) {
+    recordingDeleteError.value =
+      (error as Error & { message?: string }).message || 'Unable to delete recording.'
+  } finally {
+    recordingDeleteLoading.value = false
+  }
+}
+
+const deleteRecordingWithClose = async (close: () => void) => {
+  await deleteRecording()
+  if (!recordingDeleteError.value) {
+    close()
+  }
+}
+
+const detachSubtitlesWithClose = async (close: () => void) => {
+  await detachSubtitles()
+  if (!detachError.value) {
+    close()
+  }
+}
+
+const deleteTranscriptionArtifact = async (jobId: string, artifactId: string) => {
+  artifactDeleteError.value = ''
+  artifactDeleteLoadingById[artifactId] = true
+  try {
+    await request(`/api/transcriptions/${jobId}/artifacts/${artifactId}`, {
+      method: 'DELETE',
+    })
+    await refreshTranscriptions()
+  } catch (error) {
+    artifactDeleteError.value =
+      (error as Error & { message?: string }).message || 'Unable to delete artifact.'
+  } finally {
+    artifactDeleteLoadingById[artifactId] = false
+  }
+}
+
+const deleteTranscriptionArtifactWithClose = async (
+  jobId: string,
+  artifactId: string,
+  close: () => void
+) => {
+  await deleteTranscriptionArtifact(jobId, artifactId)
+  if (!artifactDeleteError.value) {
+    close()
   }
 }
 
@@ -542,6 +613,25 @@ const { formatBytes } = useFormatBytes()
       <UButton variant="outline" :to="`/campaigns/${campaignId}/sessions`">
         All sessions
       </UButton>
+      <SharedConfirmActionPopover
+        v-if="canManageRecording && recording"
+        message="Delete this recording and all related transcription files?"
+        confirm-label="Delete recording"
+        confirm-icon="i-lucide-trash-2"
+        content-class="w-72 p-3"
+        :confirm-loading="recordingDeleteLoading"
+        @confirm="({ close }) => deleteRecordingWithClose(close)"
+      >
+        <template #trigger>
+          <UButton
+            color="error"
+            variant="outline"
+            :loading="recordingDeleteLoading"
+          >
+            Delete recording
+          </UButton>
+        </template>
+      </SharedConfirmActionPopover>
     </template>
 
       <div v-if="pending" class="grid gap-4">
@@ -555,6 +645,13 @@ const { formatBytes } = useFormatBytes()
       </UCard>
 
       <div v-else-if="recording" class="space-y-6">
+        <UAlert
+          v-if="recordingDeleteError"
+          color="error"
+          variant="subtle"
+          :description="recordingDeleteError"
+        />
+
         <UCard >
           <template #header>
             <div>
@@ -672,6 +769,25 @@ const { formatBytes } = useFormatBytes()
                     >
                       Download
                     </UButton>
+                    <SharedConfirmActionPopover
+                      v-if="canManageRecording"
+                      message="Delete this transcription output file?"
+                      confirm-label="Delete output"
+                      confirm-icon="i-lucide-trash-2"
+                      :confirm-loading="artifactDeleteLoadingById[artifact.artifact.id] || false"
+                      @confirm="({ close }) => deleteTranscriptionArtifactWithClose(job.id, artifact.artifact.id, close)"
+                    >
+                      <template #trigger>
+                        <UButton
+                          size="xs"
+                          color="error"
+                          variant="ghost"
+                          :loading="artifactDeleteLoadingById[artifact.artifact.id] || false"
+                        >
+                          Delete
+                        </UButton>
+                      </template>
+                    </SharedConfirmActionPopover>
                   </div>
                 </div>
               </div>
@@ -719,15 +835,25 @@ const { formatBytes } = useFormatBytes()
               >
                 Import session transcript
               </UButton>
-              <UButton
-                variant="ghost"
-                color="error"
-                :disabled="!recording?.vttArtifactId"
-                :loading="detachLoading"
-                @click="detachSubtitles"
+              <SharedConfirmActionPopover
+                v-if="recording?.vttArtifactId && canManageRecording"
+                message="Detach and delete the currently attached subtitle file?"
+                confirm-label="Detach subtitles"
+                confirm-icon="i-lucide-unlink"
+                :confirm-loading="detachLoading"
+                content-class="w-72 p-3"
+                @confirm="({ close }) => detachSubtitlesWithClose(close)"
               >
-                Detach subtitles
-              </UButton>
+                <template #trigger>
+                  <UButton
+                    variant="ghost"
+                    color="error"
+                    :loading="detachLoading"
+                  >
+                    Detach subtitles
+                  </UButton>
+                </template>
+              </SharedConfirmActionPopover>
               <span v-if="vttUrl" class="text-xs text-success">Attached</span>
             </div>
             <div
@@ -765,6 +891,9 @@ const { formatBytes } = useFormatBytes()
             </p>
             <p v-if="detachError" class="text-sm text-error">
               {{ detachError }}
+            </p>
+            <p v-if="artifactDeleteError" class="text-sm text-error">
+              {{ artifactDeleteError }}
             </p>
           </div>
         </UCard>

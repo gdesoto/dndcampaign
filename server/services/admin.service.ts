@@ -3,15 +3,19 @@ import type { ServiceResult } from '#server/services/auth.service'
 import type {
   AdminActivityLogListQuery,
   AdminCampaignListQuery,
+  AdminStorageAuditFixInput,
+  AdminStorageAuditQuery,
   AdminCampaignUpdateInput,
   AdminUserListQuery,
   AdminUserUpdateInput,
 } from '#shared/schemas/admin'
 import { AdminAuditService } from '#server/services/admin-audit.service'
 import { ActivityLogService } from '#server/services/activity-log.service'
+import { AdminStorageAuditService } from '#server/services/admin-storage-audit.service'
 
 const auditService = new AdminAuditService()
 const activityLogService = new ActivityLogService()
+const storageAuditService = new AdminStorageAuditService()
 
 const normalizeSearch = (value?: string) => {
   const normalized = value?.trim()
@@ -38,6 +42,51 @@ const getPagination = (page: number, pageSize: number) => ({
 })
 
 export class AdminService {
+  async getStorageAudit(query: AdminStorageAuditQuery) {
+    return storageAuditService.runAudit(query)
+  }
+
+  async applyStorageAuditFix(
+    actorUserId: string,
+    input: AdminStorageAuditFixInput
+  ): Promise<ServiceResult<{
+    action: AdminStorageAuditFixInput['action']
+    targetId: string
+    message: string
+  }>> {
+    const result = await storageAuditService.applyFix(input)
+    if (!result.ok) {
+      return result
+    }
+
+    await auditService.log({
+      actorUserId,
+      action: 'ADMIN_STORAGE_AUDIT_FIX_APPLIED',
+      targetType: 'STORAGE_AUDIT',
+      targetId: result.data.targetId,
+      summary: result.data.message,
+      metadata: {
+        action: result.data.action,
+        targetId: result.data.targetId,
+      },
+    })
+
+    await activityLogService.log({
+      actorUserId,
+      scope: 'ADMIN',
+      action: 'ADMIN_STORAGE_AUDIT_FIX_APPLIED',
+      targetType: 'STORAGE_AUDIT',
+      targetId: result.data.targetId,
+      summary: result.data.message,
+      metadata: {
+        action: result.data.action,
+        targetId: result.data.targetId,
+      },
+    })
+
+    return result
+  }
+
   async listUsers(query: AdminUserListQuery) {
     const search = normalizeSearch(query.search)
 

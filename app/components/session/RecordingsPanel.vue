@@ -14,6 +14,7 @@ type WorkflowStep = 'recordings' | 'transcription' | 'summary' | 'recap'
 const props = defineProps<{
   workflowMode: boolean
   openStep?: WorkflowStep
+  canManageRecordings?: boolean
   campaignId: string
   recordings: RecordingItem[] | null | undefined
   selectedFile: File | null
@@ -21,6 +22,8 @@ const props = defineProps<{
   isUploading: boolean
   uploadError: string
   playbackError: string
+  deleteError?: string
+  deletingRecordingId?: string
   playbackLoading: Record<string, boolean>
   playbackUrls: Record<string, string>
 }>()
@@ -30,6 +33,7 @@ const emit = defineEmits<{
   'update:selectedKind': [value: 'AUDIO' | 'VIDEO']
   'upload-recording': []
   'play-recording': [recordingId: string]
+  'delete-recording': [recordingId: string]
   'open-player': []
   'open-step': [step: WorkflowStep]
 }>()
@@ -95,6 +99,7 @@ const { formatBytes } = useFormatBytes()
       </div>
 
       <p v-if="workflowMode && playbackError" class="text-sm text-error">{{ playbackError }}</p>
+      <p v-if="deleteError" class="text-sm text-error">{{ deleteError }}</p>
 
       <div v-if="recordings?.length" class="space-y-3">
         <div
@@ -133,6 +138,25 @@ const { formatBytes } = useFormatBytes()
               >
                 Open
               </UButton>
+              <SharedConfirmActionPopover
+                v-if="canManageRecordings"
+                message="Delete this recording file?"
+                confirm-label="Delete"
+                confirm-icon="i-lucide-trash-2"
+                :confirm-loading="deletingRecordingId === recording.id"
+                @confirm="({ close }) => { emit('delete-recording', recording.id); close() }"
+              >
+                <template #trigger>
+                  <UButton
+                    size="xs"
+                    color="error"
+                    variant="outline"
+                    :loading="deletingRecordingId === recording.id"
+                  >
+                    Delete
+                  </UButton>
+                </template>
+              </SharedConfirmActionPopover>
             </div>
           </div>
 

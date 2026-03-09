@@ -11,9 +11,12 @@ type TranscriptDoc = {
 const props = defineProps<{
   campaignId: string
   returnToPath?: string
+  canManageTranscript?: boolean
   recordings: RecordingItem[] | null | undefined
   transcriptDoc: TranscriptDoc | null | undefined
   transcriptError: string
+  transcriptDeleteError?: string
+  transcriptDeleting?: boolean
   transcriptImportError: string
   transcriptImporting: boolean
   transcriptFile: File | null
@@ -33,6 +36,7 @@ const emit = defineEmits<{
   'create-transcript': []
   'import-transcript': []
   'attach-subtitles': []
+  'delete-transcript': []
 }>()
 
 const transcriptFileModel = computed({
@@ -75,6 +79,25 @@ const selectedSubtitleRecordingIdModel = computed({
           >
             Open editor
           </UButton>
+          <SharedConfirmActionPopover
+            v-if="transcriptDoc && canManageTranscript"
+            message="Delete the current transcript document?"
+            confirm-label="Delete transcript"
+            confirm-icon="i-lucide-trash-2"
+            :confirm-loading="transcriptDeleting"
+            @confirm="({ close }) => { emit('delete-transcript'); close() }"
+          >
+            <template #trigger>
+              <UButton
+                color="error"
+                variant="outline"
+                size="sm"
+                :loading="transcriptDeleting"
+              >
+                Delete transcript
+              </UButton>
+            </template>
+          </SharedConfirmActionPopover>
         </div>
       </template>
       <div class="space-y-4">
@@ -119,6 +142,9 @@ const selectedSubtitleRecordingIdModel = computed({
             </p>
           </div>
         </div>
+        <p v-if="transcriptDeleteError" class="text-sm text-error">
+          {{ transcriptDeleteError }}
+        </p>
       </div>
     </UCard>
     <UCard>

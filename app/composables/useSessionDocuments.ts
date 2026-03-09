@@ -25,6 +25,8 @@ export function useSessionDocuments(options: UseSessionDocumentsOptions) {
   const summaryImporting = ref(false)
   const transcriptFile = ref<File | null>(null)
   const summaryFile = ref<File | null>(null)
+  const transcriptDeleting = ref(false)
+  const transcriptDeleteError = ref('')
 
   const createDocument = async (type: 'TRANSCRIPT' | 'SUMMARY', content = '') => {
     const titleBase = type === 'SUMMARY' ? 'Summary' : 'Transcript'
@@ -144,6 +146,23 @@ export function useSessionDocuments(options: UseSessionDocumentsOptions) {
     summaryFile.value = null
   }
 
+  const deleteTranscript = async () => {
+    if (!options.transcriptDoc.value) return
+    transcriptDeleteError.value = ''
+    transcriptDeleting.value = true
+    try {
+      await request(`/api/documents/${options.transcriptDoc.value.id}`, {
+        method: 'DELETE',
+      })
+      await options.refreshTranscript()
+    } catch (error) {
+      transcriptDeleteError.value =
+        (error as Error & { message?: string }).message || 'Unable to delete transcript.'
+    } finally {
+      transcriptDeleting.value = false
+    }
+  }
+
   return {
     transcriptSaving,
     summarySaving,
@@ -155,9 +174,12 @@ export function useSessionDocuments(options: UseSessionDocumentsOptions) {
     summaryImporting,
     transcriptFile,
     summaryFile,
+    transcriptDeleting,
+    transcriptDeleteError,
     saveTranscript,
     saveSummary,
     importTranscript,
     importSummary,
+    deleteTranscript,
   }
 }

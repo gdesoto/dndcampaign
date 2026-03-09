@@ -1,6 +1,9 @@
 import { prisma } from '#server/db/prisma'
-import { ok, fail } from '#server/utils/http'
+import { RecordingService } from '#server/services/recording.service'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
+import { ok, fail } from '#server/utils/http'
+
+const recordingService = new RecordingService()
 
 export default defineEventHandler(async (event) => {
   await requireUserSession(event)
@@ -12,7 +15,7 @@ export default defineEventHandler(async (event) => {
   const recording = await prisma.recording.findUnique({
     where: { id: recordingId },
     select: {
-      artifactId: true,
+      id: true,
       session: {
         select: {
           campaignId: true,
@@ -20,15 +23,16 @@ export default defineEventHandler(async (event) => {
       },
     },
   })
+
   if (!recording) {
     return fail(event, 404, 'NOT_FOUND', 'Recording not found')
   }
 
-  const access = await requireCampaignPermission(event, recording.session.campaignId, 'content.read')
+  const access = await requireCampaignPermission(event, recording.session.campaignId, 'recording.upload')
   if (!access.ok) {
     return access.response
   }
 
-  const url = `/api/artifacts/${recording.artifactId}/stream`
-  return ok({ url, expiresAt: null })
+  await recordingService.deleteRecording(recording.id)
+  return ok({ success: true })
 })

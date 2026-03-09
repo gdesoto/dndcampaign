@@ -456,6 +456,7 @@ export class TranscriptionService {
         existingFormats.add(formatEnum)
       } catch (error) {
         const message = (error as Error & { code?: string }).code
+        await this.deleteArtifactBestEffort(artifact.id)
         if (message !== 'P2002') {
           throw error
         }
@@ -487,6 +488,7 @@ export class TranscriptionService {
         existingFormats.add('TXT')
       } catch (error) {
         const message = (error as Error & { code?: string }).code
+        await this.deleteArtifactBestEffort(artifact.id)
         if (message !== 'P2002') {
           throw error
         }
@@ -494,6 +496,14 @@ export class TranscriptionService {
     }
 
     return true
+  }
+
+  private async deleteArtifactBestEffort(artifactId: string) {
+    try {
+      await this.artifactService.deleteArtifact(artifactId)
+    } catch {
+      // Best-effort cleanup to avoid leaking orphan transcription artifacts.
+    }
   }
 }
 

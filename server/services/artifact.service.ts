@@ -75,9 +75,13 @@ export class ArtifactService {
   async deleteArtifact(artifactId: string) {
     const artifact = await prisma.artifact.findUnique({ where: { id: artifactId } })
     if (!artifact) return null
-    const adapter = getStorageAdapter()
-    await adapter.deleteObject(artifact.storageKey)
     await prisma.artifact.delete({ where: { id: artifactId } })
+    const adapter = getStorageAdapter()
+    try {
+      await adapter.deleteObject(artifact.storageKey)
+    } catch {
+      // Database row is already removed; ignore storage cleanup failures.
+    }
     return artifact
   }
 

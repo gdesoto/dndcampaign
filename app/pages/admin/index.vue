@@ -58,6 +58,9 @@ const adminBreadcrumbItems = [{ label: 'Admin' }]
             <UButton to="/admin/campaigns" variant="outline" icon="i-lucide-flag">Manage campaigns</UButton>
             <UButton to="/admin/analytics" variant="outline" icon="i-lucide-chart-column">View analytics</UButton>
             <UButton to="/admin/activity" variant="outline" icon="i-lucide-scroll-text">Activity log</UButton>
+            <UButton to="/admin/storage-audit" variant="outline" icon="i-lucide-database-backup">
+              Storage audit
+            </UButton>
             <UButton
               v-if="isDev"
               to="/admin/dev-tools"

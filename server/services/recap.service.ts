@@ -29,14 +29,34 @@ export class RecapService {
       },
     })
 
-    const existing = await prisma.recapRecording.findUnique({
-      where: { sessionId: input.sessionId },
-    })
+    try {
+      const existing = await prisma.recapRecording.findUnique({
+        where: { sessionId: input.sessionId },
+      })
 
-    if (existing) {
-      return prisma.recapRecording.update({
-        where: { id: existing.id },
+      if (existing) {
+        const previousArtifactId = existing.artifactId
+        const updated = await prisma.recapRecording.update({
+          where: { id: existing.id },
+          data: {
+            filename: input.filename,
+            mimeType: input.mimeType,
+            byteSize: artifact.byteSize,
+            durationSeconds: input.durationSeconds,
+            artifactId: artifact.id,
+          },
+        })
+
+        if (previousArtifactId !== artifact.id) {
+          await this.deleteArtifactBestEffort(previousArtifactId)
+        }
+
+        return updated
+      }
+
+      return await prisma.recapRecording.create({
         data: {
+          sessionId: input.sessionId,
           filename: input.filename,
           mimeType: input.mimeType,
           byteSize: artifact.byteSize,
@@ -44,17 +64,17 @@ export class RecapService {
           artifactId: artifact.id,
         },
       })
+    } catch (error) {
+      await this.deleteArtifactBestEffort(artifact.id)
+      throw error
     }
+  }
 
-    return prisma.recapRecording.create({
-      data: {
-        sessionId: input.sessionId,
-        filename: input.filename,
-        mimeType: input.mimeType,
-        byteSize: artifact.byteSize,
-        durationSeconds: input.durationSeconds,
-        artifactId: artifact.id,
-      },
-    })
+  private async deleteArtifactBestEffort(artifactId: string) {
+    try {
+      await this.artifactService.deleteArtifact(artifactId)
+    } catch {
+      // Best-effort cleanup to avoid blocking recap operations.
+    }
   }
 }

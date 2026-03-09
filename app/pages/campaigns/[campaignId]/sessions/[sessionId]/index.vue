@@ -19,10 +19,13 @@ const {
   isUploading,
   uploadError,
   playbackError,
+  deleteRecordingError,
+  deletingRecordingId,
   playbackLoading,
   playbackUrls,
   uploadRecording,
   loadPlayback,
+  deleteRecording,
   openPlayer,
   recapFile,
   recapUploading,
@@ -156,6 +159,7 @@ const {
     <SessionRecordingsPanel
       :workflow-mode="false"
       open-step="recordings"
+      :can-manage-recordings="canUploadRecording"
       :campaign-id="campaignId"
       :recordings="recordings"
       :selected-file="selectedFile"
@@ -163,12 +167,15 @@ const {
       :is-uploading="isUploading"
       :upload-error="uploadError"
       :playback-error="playbackError"
+      :delete-error="deleteRecordingError"
+      :deleting-recording-id="deletingRecordingId"
       :playback-loading="playbackLoading"
       :playback-urls="playbackUrls"
       @update:selected-file="selectedFile = $event"
       @update:selected-kind="selectedKind = $event"
       @upload-recording="canUploadRecording && uploadRecording()"
       @play-recording="loadPlayback"
+      @delete-recording="canUploadRecording && deleteRecording($event)"
       @open-player="openPlayer"
       @open-step="openSessionSection"
     />

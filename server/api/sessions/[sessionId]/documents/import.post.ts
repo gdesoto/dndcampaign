@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
   const sessionId = event.context.params?.sessionId
   if (!sessionId) {
-    return fail(400, 'VALIDATION_ERROR', 'Session id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Session id is required')
   }
 
   const session = await prisma.session.findFirst({
@@ -27,17 +27,17 @@ export default defineEventHandler(async (event) => {
     },
   })
   if (!session) {
-    return fail(404, 'NOT_FOUND', 'Session not found')
+    return fail(event, 404, 'NOT_FOUND', 'Session not found')
   }
 
   const contentType = String(getRequestHeader(event, 'content-type') || '')
   if (!contentType.startsWith('multipart/form-data')) {
-    return fail(400, 'VALIDATION_ERROR', 'Expected multipart form data')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Expected multipart form data')
   }
 
   const contentLength = Number(getRequestHeader(event, 'content-length') || 0)
   if (contentLength && contentLength > MAX_BYTES) {
-    return fail(400, 'VALIDATION_ERROR', 'File is too large')
+    return fail(event, 400, 'VALIDATION_ERROR', 'File is too large')
   }
 
   let result
@@ -142,7 +142,7 @@ export default defineEventHandler(async (event) => {
       message === 'File is required' ||
       message === 'Only one file is allowed'
     ) {
-      return fail(400, 'VALIDATION_ERROR', message)
+      return fail(event, 400, 'VALIDATION_ERROR', message)
     }
     throw error
   }

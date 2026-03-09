@@ -47,17 +47,22 @@ export class RecordingService {
       label: `Recording ${input.kind.toLowerCase()}`,
     })
 
-    return prisma.recording.create({
-      data: {
-        sessionId: input.sessionId,
-        kind: input.kind,
-        filename: input.filename,
-        mimeType: input.mimeType,
-        byteSize: artifact.byteSize,
-        durationSeconds: input.durationSeconds,
-        artifactId: artifact.id,
-      },
-    })
+    try {
+      return await prisma.recording.create({
+        data: {
+          sessionId: input.sessionId,
+          kind: input.kind,
+          filename: input.filename,
+          mimeType: input.mimeType,
+          byteSize: artifact.byteSize,
+          durationSeconds: input.durationSeconds,
+          artifactId: artifact.id,
+        },
+      })
+    } catch (error) {
+      await this.deleteArtifactBestEffort(artifact.id)
+      throw error
+    }
   }
 
   async createRecordingFromStream(input: CreateRecordingStreamInput) {
@@ -70,17 +75,22 @@ export class RecordingService {
       label: `Recording ${input.kind.toLowerCase()}`,
     })
 
-    return prisma.recording.create({
-      data: {
-        sessionId: input.sessionId,
-        kind: input.kind,
-        filename: input.filename,
-        mimeType: input.mimeType,
-        byteSize: artifact.byteSize,
-        durationSeconds: input.durationSeconds,
-        artifactId: artifact.id,
-      },
-    })
+    try {
+      return await prisma.recording.create({
+        data: {
+          sessionId: input.sessionId,
+          kind: input.kind,
+          filename: input.filename,
+          mimeType: input.mimeType,
+          byteSize: artifact.byteSize,
+          durationSeconds: input.durationSeconds,
+          artifactId: artifact.id,
+        },
+      })
+    } catch (error) {
+      await this.deleteArtifactBestEffort(artifact.id)
+      throw error
+    }
   }
 
   async attachVttFromStream(input: AttachVttStreamInput) {
@@ -97,10 +107,63 @@ export class RecordingService {
       },
     })
 
-    return prisma.recording.update({
-      where: { id: input.recordingId },
-      data: { vttArtifactId: artifact.id },
+    try {
+      return await prisma.recording.update({
+        where: { id: input.recordingId },
+        data: { vttArtifactId: artifact.id },
+      })
+    } catch (error) {
+      await this.deleteArtifactBestEffort(artifact.id)
+      throw error
+    }
+  }
+
+  async deleteRecording(recordingId: string) {
+    const recording = await prisma.recording.findUnique({
+      where: { id: recordingId },
+      select: {
+        id: true,
+        artifactId: true,
+        vttArtifactId: true,
+        transcriptionJobs: {
+          select: {
+            artifacts: {
+              select: {
+                artifactId: true,
+              },
+            },
+          },
+        },
+      },
     })
+
+    if (!recording) {
+      return null
+    }
+
+    const relatedArtifactIds = new Set<string>([
+      recording.artifactId,
+      ...(recording.vttArtifactId ? [recording.vttArtifactId] : []),
+      ...recording.transcriptionJobs.flatMap((job) => job.artifacts.map((artifact) => artifact.artifactId)),
+    ])
+
+    await prisma.recording.delete({
+      where: { id: recording.id },
+    })
+
+    for (const artifactId of relatedArtifactIds) {
+      await this.deleteArtifactBestEffort(artifactId)
+    }
+
+    return recording
+  }
+
+  private async deleteArtifactBestEffort(artifactId: string) {
+    try {
+      await this.artifactService.deleteArtifact(artifactId)
+    } catch {
+      // Best-effort cleanup to avoid leaking orphan artifacts.
+    }
   }
 }
 

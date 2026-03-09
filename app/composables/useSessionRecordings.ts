@@ -18,6 +18,8 @@ export function useSessionRecordings(options: UseSessionRecordingsOptions) {
   const playbackUrls = reactive<Record<string, string>>({})
   const playbackLoading = reactive<Record<string, boolean>>({})
   const playbackError = ref('')
+  const deletingRecordingId = ref('')
+  const deleteError = ref('')
 
   const uploadRecording = async () => {
     if (!selectedFile.value) return
@@ -90,6 +92,27 @@ export function useSessionRecordings(options: UseSessionRecordingsOptions) {
     }
   }
 
+  const deleteRecording = async (recordingId: string) => {
+    if (!recordingId || deletingRecordingId.value) return
+
+    deleteError.value = ''
+    deletingRecordingId.value = recordingId
+
+    try {
+      await request(`/api/recordings/${recordingId}`, {
+        method: 'DELETE',
+      })
+      playbackUrls[recordingId] = ''
+      playbackLoading[recordingId] = false
+      await options.refreshRecordings()
+    } catch (error) {
+      deleteError.value =
+        (error as Error & { message?: string }).message || 'Unable to delete recording.'
+    } finally {
+      deletingRecordingId.value = ''
+    }
+  }
+
   return {
     uploadError,
     isUploading,
@@ -98,7 +121,10 @@ export function useSessionRecordings(options: UseSessionRecordingsOptions) {
     playbackUrls,
     playbackLoading,
     playbackError,
+    deletingRecordingId,
+    deleteError,
     uploadRecording,
     loadPlayback,
+    deleteRecording,
   }
 }

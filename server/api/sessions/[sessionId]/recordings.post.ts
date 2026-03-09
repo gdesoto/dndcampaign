@@ -4,7 +4,7 @@ import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { RecordingService } from '#server/services/recording.service'
 import type { RecordingKind } from '#server/db/prisma-client'
-import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
+import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 const MAX_BYTES = 2 * 1024 * 1024 * 1024
 const ALLOWED_MIME = [
@@ -24,28 +24,30 @@ export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
   const sessionId = event.context.params?.sessionId
   if (!sessionId) {
-    return fail(400, 'VALIDATION_ERROR', 'Session id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Session id is required')
   }
 
-  const session = await prisma.session.findFirst({
-    where: {
-      id: sessionId,
-      campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'recording.upload'),
-    },
-    include: { campaign: true },
+  const session = await prisma.session.findUnique({
+    where: { id: sessionId },
+    select: { id: true, campaignId: true },
   })
   if (!session) {
-    return fail(404, 'NOT_FOUND', 'Session not found')
+    return fail(event, 404, 'NOT_FOUND', 'Session not found')
+  }
+
+  const access = await requireCampaignPermission(event, session.campaignId, 'recording.upload')
+  if (!access.ok) {
+    return access.response
   }
 
   const contentType = String(getRequestHeader(event, 'content-type') || '')
   if (!contentType.startsWith('multipart/form-data')) {
-    return fail(400, 'VALIDATION_ERROR', 'Expected multipart form data')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Expected multipart form data')
   }
 
   const contentLength = Number(getRequestHeader(event, 'content-length') || 0)
   if (contentLength && contentLength > MAX_BYTES) {
-    return fail(400, 'VALIDATION_ERROR', 'File is too large')
+    return fail(event, 400, 'VALIDATION_ERROR', 'File is too large')
   }
 
   let recording
@@ -65,6 +67,7 @@ export default defineEventHandler(async (event) => {
     let fileHandled = false
     let fileError: string | null = null
     let uploadPromise: Promise<unknown> | null = null
+    let uploadError: unknown = null
 
     busboy.on('field', (name, value) => {
       if (name === 'kind') {
@@ -127,6 +130,10 @@ export default defineEventHandler(async (event) => {
         kind: kind as RecordingKind,
         durationSeconds,
       })
+        .catch((error) => {
+          uploadError = error
+          return null
+        })
     })
 
     busboy.on('filesLimit', () => {
@@ -148,6 +155,10 @@ export default defineEventHandler(async (event) => {
       }
       try {
         const result = await uploadPromise
+        if (uploadError) {
+          reject(uploadError)
+          return
+        }
         resolve(result)
       } catch (error) {
         reject(error)
@@ -164,7 +175,7 @@ export default defineEventHandler(async (event) => {
       message === 'File is required' ||
       message === 'Only one file is allowed'
     ) {
-      return fail(400, 'VALIDATION_ERROR', message)
+      return fail(event, 400, 'VALIDATION_ERROR', message)
     }
     throw error
   }
