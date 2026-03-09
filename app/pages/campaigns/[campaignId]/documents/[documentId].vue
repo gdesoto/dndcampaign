@@ -575,6 +575,12 @@ const visibleSegments = computed(() =>
   filteredSegments.value.slice(windowStart.value, windowStart.value + windowSize.value)
 )
 
+const maxWindowStart = computed(() => {
+  const total = filteredSegments.value.length
+  if (!total) return 0
+  return Math.floor((total - 1) / windowSize.value) * windowSize.value
+})
+
 const canPrevWindow = computed(() => windowStart.value > 0)
 const canNextWindow = computed(
   () => windowStart.value + windowSize.value < filteredSegments.value.length
@@ -849,11 +855,42 @@ const moveWindow = (direction: 1 | -1) => {
     0,
     Math.min(
       windowStart.value + direction * windowSize.value,
-      Math.max(0, filteredSegments.value.length - windowSize.value)
+      maxWindowStart.value
     )
   )
   windowStart.value = nextStart
 }
+
+watch(
+  () => filteredSegments.value.map((segment) => segment.id),
+  (filteredIds) => {
+    const filteredIdSet = new Set(filteredIds)
+    const nextSelectedIds = selectedSegmentIds.value.filter((segmentId) =>
+      filteredIdSet.has(segmentId)
+    )
+
+    if (nextSelectedIds.length !== selectedSegmentIds.value.length) {
+      selectedSegmentIds.value = nextSelectedIds
+    }
+
+    if (
+      selectionAnchorSegmentId.value &&
+      !filteredIdSet.has(selectionAnchorSegmentId.value)
+    ) {
+      selectionAnchorSegmentId.value = ''
+    }
+
+    if (selectedSegmentId.value && !filteredIdSet.has(selectedSegmentId.value)) {
+      selectedSegmentId.value = ''
+    }
+
+    const clampedStart = Math.max(0, Math.min(windowStart.value, maxWindowStart.value))
+    if (clampedStart !== windowStart.value) {
+      windowStart.value = clampedStart
+    }
+  },
+  { immediate: true }
+)
 
 const saveDocument = async () => {
   saveError.value = ''
@@ -865,18 +902,23 @@ const saveDocument = async () => {
       : content.value
     const format = isTranscript ? 'PLAINTEXT' : 'MARKDOWN'
 
-    await request(`/api/documents/${documentId.value}`, {
+    const updated = await request<DocumentDetail>(`/api/documents/${documentId.value}`, {
       method: 'PATCH',
       body: {
         content: payloadContent,
         format,
       },
     })
+
+    if (updated && document.value) {
+      document.value.currentVersionId = updated.currentVersionId ?? document.value.currentVersionId
+      document.value.currentVersion = updated.currentVersion ?? document.value.currentVersion
+    }
+
     savedTranscriptState.value =
       isTranscript ? payloadContent : savedTranscriptState.value
     updateDirtyState()
-    lastSavedAt.value = new Date().toISOString()
-    await refresh()
+    lastSavedAt.value = updated?.currentVersion?.createdAt || new Date().toISOString()
     await refreshVersions()
   } catch (error) {
     saveError.value =
