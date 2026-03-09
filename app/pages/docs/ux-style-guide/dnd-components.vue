@@ -1446,8 +1446,8 @@ const tocLinks: NavigationMenuItem[] = [
                   :class="activeTrackIndex === idx
                     ? 'border-primary-500 bg-primary-500/20 text-primary-300'
                     : 'border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] text-muted hover:border-primary-500/60 hover:text-primary-400'"
-                  @click="toggleTrack(idx)"
                   :aria-label="activeTrackIndex === idx ? 'Pause' : 'Play'"
+                  @click="toggleTrack(idx)"
                 >
                   <UIcon
                     :name="activeTrackIndex === idx ? 'i-lucide-pause' : 'i-lucide-play'"
