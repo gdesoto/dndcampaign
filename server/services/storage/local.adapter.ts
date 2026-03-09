@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { createReadStream, createWriteStream } from 'node:fs'
 import { mkdir, stat, unlink, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import type { Readable } from 'node:stream'
+import { Transform, type Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import type { StorageAdapter, PutObjectResult, GetObjectResult } from './storage.types'
 
@@ -37,13 +37,17 @@ export class LocalStorageAdapter implements StorageAdapter {
     const checksum = createHash('sha256')
     let byteSize = 0
 
-    stream.on('data', (chunk) => {
-      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
-      byteSize += buffer.length
-      checksum.update(buffer)
+    // Keep backpressure intact while computing checksum/size during write.
+    const hashingTransform = new Transform({
+      transform(chunk, _encoding, callback) {
+        const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+        byteSize += buffer.length
+        checksum.update(buffer)
+        callback(null, buffer)
+      },
     })
 
-    await pipeline(stream, createWriteStream(filePath))
+    await pipeline(stream, hashingTransform, createWriteStream(filePath))
 
     return {
       storageKey: key,
