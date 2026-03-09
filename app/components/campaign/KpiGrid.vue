@@ -15,24 +15,28 @@ defineProps<{
       :value="lastSessionNumber"
       :hint="lastSessionDateLabel"
       tone="neutral"
+      icon="i-twemoji-spiral-calendar"
     />
     <SharedStatCard
       label="Active quests"
       :value="activeQuestCount"
       :hint="activeQuestCount ? 'Keep them moving.' : 'Ready for a new thread.'"
       :tone="activeQuestCount ? 'positive' : 'attention'"
+      icon="i-twemoji-scroll"
     />
     <SharedStatCard
       label="Open milestones"
       :value="openMilestoneCount"
       :hint="openMilestoneCount ? 'Progress is steady.' : 'Milestones are clear.'"
       :tone="openMilestoneCount ? 'warning' : 'positive'"
+      icon="i-twemoji-triangular-flag"
     />
     <SharedStatCard
       label="Recaps"
       :value="recapCount"
       :hint="recapCount ? 'Keep the story alive.' : 'Upload the first recap.'"
       :tone="recapCount ? 'positive' : 'attention'"
+      icon="i-twemoji-clapper-board"
     />
   </div>
 </template>

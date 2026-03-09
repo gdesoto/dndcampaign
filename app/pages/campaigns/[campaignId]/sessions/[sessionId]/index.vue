@@ -46,7 +46,7 @@ const {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-6 theme-reveal">
     <SessionStatusCards
       :recordings-count="recordingsCount"
       :transcript-status="transcriptStatus"
@@ -62,7 +62,7 @@ const {
       <template #header>
         <div class="flex items-start justify-between gap-4">
           <div>
-            <h2 class="text-lg font-semibold">Session overview</h2>
+            <h2 class="font-display text-lg font-semibold tracking-[0.06em]">Session overview</h2>
             <p class="text-sm text-muted">Key details at a glance.</p>
           </div>
           <div class="flex items-center gap-2">
@@ -78,19 +78,31 @@ const {
       </template>
       <div class="grid gap-4 sm:grid-cols-3 text-sm">
         <div>
-          <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Session #</p>
+          <div class="flex items-center gap-1.5">
+            <UIcon name="i-twemoji-game-die" class="size-3.5 shrink-0" />
+            <p class="font-display text-xs uppercase tracking-[0.2em] text-dimmed">Session #</p>
+          </div>
           <p class="mt-1 font-semibold">{{ form.sessionNumber || '-' }}</p>
         </div>
         <div>
-          <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Played at</p>
+          <div class="flex items-center gap-1.5">
+            <UIcon name="i-twemoji-spiral-calendar" class="size-3.5 shrink-0" />
+            <p class="font-display text-xs uppercase tracking-[0.2em] text-dimmed">Played at</p>
+          </div>
           <p class="mt-1 font-semibold">{{ form.playedAt || 'Unscheduled' }}</p>
         </div>
         <div>
-          <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Dungeon Master</p>
+          <div class="flex items-center gap-1.5">
+            <UIcon name="i-twemoji-mage" class="size-3.5 shrink-0" />
+            <p class="font-display text-xs uppercase tracking-[0.2em] text-dimmed">Dungeon Master</p>
+          </div>
           <p class="mt-1 font-semibold">{{ sessionDungeonMasterLabel }}</p>
         </div>
         <div class="sm:col-span-3">
-          <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Notes</p>
+          <div class="flex items-center gap-1.5">
+            <UIcon name="i-twemoji-memo" class="size-3.5 shrink-0" />
+            <p class="font-display text-xs uppercase tracking-[0.2em] text-dimmed">Notes</p>
+          </div>
           <p class="mt-1 text-sm text-muted">
             {{ form.notes || 'No notes added yet.' }}
           </p>
@@ -103,7 +115,7 @@ const {
         <template #header>
           <div class="flex items-start justify-between gap-3">
             <div>
-              <h2 class="text-lg font-semibold">Transcript</h2>
+              <h2 class="font-display text-lg font-semibold tracking-[0.06em]">Transcript</h2>
               <p class="text-sm text-muted">Latest transcript content.</p>
             </div>
             <SessionStepLinkButton
@@ -131,7 +143,7 @@ const {
         <template #header>
           <div class="flex items-start justify-between gap-3">
             <div>
-              <h2 class="text-lg font-semibold">Summary</h2>
+              <h2 class="font-display text-lg font-semibold tracking-[0.06em]">Summary</h2>
               <p class="text-sm text-muted">Current session summary.</p>
             </div>
             <SessionStepLinkButton

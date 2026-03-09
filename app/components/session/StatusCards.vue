@@ -19,30 +19,35 @@ const statusCards = computed(() => [
   {
     id: 'recordings' as const,
     label: 'Recordings',
+    icon: 'i-twemoji-studio-microphone',
     value: String(props.recordingsCount),
     hint: props.recordingsCount ? 'Media uploaded.' : 'Add media files.',
   },
   {
     id: 'transcription' as const,
     label: 'Transcript',
+    icon: 'i-twemoji-scroll',
     value: props.transcriptStatus,
     hint: props.transcriptStatus === 'Available' ? 'Ready to review.' : 'Awaiting transcript.',
   },
   {
     id: 'summary' as const,
     label: 'Summary',
+    icon: 'i-twemoji-memo',
     value: props.summaryStatus,
     hint: props.summaryStatus === 'Available' ? 'Capture key beats.' : 'Generate summary.',
   },
   {
     id: 'suggestions' as const,
     label: 'Suggestions',
+    icon: 'i-twemoji-sparkles',
     value: props.suggestionStatus || 'Not started',
     hint: props.suggestionStatus === 'Ready for review' ? 'Review changes.' : 'Generate suggestions.',
   },
   {
     id: 'recap' as const,
     label: 'Recap',
+    icon: 'i-twemoji-clapper-board',
     value: props.recapStatus,
     hint: props.recapStatus === 'Attached' ? 'Ready to play.' : 'Upload recap.',
   },
@@ -80,7 +85,10 @@ const statusCards = computed(() => [
       :ui="{ body: 'p-4' }"
     >
       <div class="flex items-start justify-between gap-3">
-        <p class="text-xs uppercase tracking-[0.2em] text-dimmed">{{ card.label }}</p>
+        <div class="flex items-center gap-1.5">
+          <UIcon :name="card.icon" class="size-3.5 shrink-0" />
+          <p class="font-display text-xs uppercase tracking-[0.2em] text-dimmed">{{ card.label }}</p>
+        </div>
         <SessionStepLinkButton
           :step="card.id"
           @open="emit('jump-step', card.id)"

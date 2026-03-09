@@ -160,7 +160,7 @@ const navLinks = computed(() => {
                 <UDashboardSidebarCollapse size="xl" square class="hidden xl:inline-flex" />
                 <div class="min-w-0">
                   <p class="font-display text-sm tracking-[0.08em] uppercase text-primary-500">
-                    {{ campaign?.name || 'Campaign' }} · {{ sectionTitle }}
+                    {{ campaign?.name || 'Campaign' }} • {{ sectionTitle }}
                   </p>
                   <p class="text-xs text-muted">
                     {{ campaignHeaderDescription }}

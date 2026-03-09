@@ -12,18 +12,19 @@ const emit = defineEmits<{
 
 <template>
   <UCard>
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <div class="space-y-2">
-        <p class="text-xs uppercase tracking-[0.3em] text-dimmed">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+      <div class="min-w-0 flex-1 space-y-3">
+        <p class="font-display text-xs uppercase tracking-[0.3em] text-dimmed">
           <span>{{ system }}</span>
           <span v-if="dungeonMasterName" class="mx-2 text-muted">•</span>
           <span v-if="dungeonMasterName">DM: {{ dungeonMasterName }}</span>
         </p>
-        <p class="text-sm text-muted">
+        <div class="h-px w-full bg-linear-to-r from-(--ui-border-accented)/40 via-(--ui-border-accented)/20 to-transparent" />
+        <p class="text-sm text-muted leading-relaxed">
           {{ description || 'Add a short overview for the campaign.' }}
         </p>
       </div>
-      <UButton size="lg" variant="subtle" @click="emit('edit')">Edit campaign</UButton>
+      <UButton size="lg" variant="subtle" class="shrink-0" @click="emit('edit')">Edit campaign</UButton>
     </div>
   </UCard>
 </template>

@@ -1,6 +1,6 @@
 const fieldBase =
   'w-full bg-[var(--ui-bg-accented)] border border-[var(--ui-border-muted)] rounded font-sans text-[var(--ui-text)] placeholder:text-[var(--ui-text-dimmed)] placeholder:italic outline-none transition-colors hover:border-[var(--ui-border)] focus:border-[var(--ui-border-accented)] focus:ring-1 focus:ring-[var(--ui-border-accented)]/20 dark:border-[var(--ui-border)] disabled:opacity-70 disabled:cursor-not-allowed'
-const cardSectionPadding = 'p-2 xl:p-4 xl:py-2'
+const cardSectionPadding = 'p-3 xl:p-4 xl:py-2'
 
 export default defineAppConfig({
   ui: {
@@ -34,7 +34,10 @@ export default defineAppConfig({
             base: 'bg-transparent border border-[var(--ui-border-muted)] text-[var(--ui-text-muted)] hover:border-[var(--ui-border)] hover:text-[var(--ui-text)] dark:border-[var(--ui-border)] dark:hover:border-[var(--ui-border-accented)]',
           },
           soft: {
-            base: 'bg-error-500/15 border border-error-600/28 text-error-600 hover:bg-error-500/25 hover:border-error-600/38 dark:border-error-600/40 dark:text-error-400',
+            base: 'bg-[var(--ui-bg-accented)] border border-[var(--ui-border-muted)] text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-elevated)] hover:border-[var(--ui-border)] hover:text-[var(--ui-text)]',
+          },
+          subtle: {
+            base: 'bg-transparent border border-transparent text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-accented)] hover:text-[var(--ui-text)]',
           },
           link: {
             base: 'bg-transparent border-transparent text-primary-700 hover:text-primary-500 p-0 dark:text-primary-600 dark:hover:text-primary-400',
@@ -46,6 +49,13 @@ export default defineAppConfig({
         color: 'primary',
         variant: 'outline',
       },
+      compoundVariants: [
+        {
+          color: 'error',
+          variant: 'soft',
+          class: { base: 'bg-error-500/15 border border-error-600/28 text-error-600 hover:bg-error-500/25 hover:border-error-600/38 dark:border-error-600/40 dark:text-error-400' },
+        },
+      ],
     },
 
     badge: {
@@ -207,7 +217,7 @@ export default defineAppConfig({
         root: 'relative pb-4 pt-0 border-b border-[var(--ui-border)]',
         wrapper: 'flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between',
         headline: 'text-xs uppercase tracking-[0.3em] text-[var(--ui-text-dimmed)] font-display',
-        title: 'text-2xl font-semibold text-[var(--ui-text-highlighted)]',
+        title: 'text-2xl font-display font-semibold text-[var(--ui-text-highlighted)]',
         description: 'text-sm text-[var(--ui-text-muted)]',
         links: 'flex flex-wrap items-center gap-1.5',
       },

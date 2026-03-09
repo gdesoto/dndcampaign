@@ -66,15 +66,6 @@ const {
   questStatusColor,
 } = useCampaignOverviewMetrics(sessions, quests, milestones)
 const { activityItems } = useCampaignActivityItems(campaign, activityLogs, recaps, sessions, quests, milestones)
-const overviewDescription = computed(() => {
-  const details = [
-    campaign.value?.system || 'System not set',
-    campaign.value?.dungeonMasterName ? `DM: ${campaign.value.dungeonMasterName}` : '',
-  ].filter(Boolean)
-
-  return details.join(' • ')
-})
-
 const statusDraft = ref('')
 const isSaving = ref(false)
 const saveError = ref('')
@@ -177,7 +168,6 @@ const saveCampaign = async () => {
   <CampaignListTemplate
     headline="Campaign"
     title="Overview"
-    :description="overviewDescription"
   >
     <template #notice>
       <SharedReadOnlyAlert
@@ -196,7 +186,7 @@ const saveCampaign = async () => {
       <UButton class="mt-4" variant="outline" @click="campaignInvalidation.refreshWorkspace">Try again</UButton>
     </UCard>
 
-    <div v-else-if="campaign" class="space-y-6">
+    <div v-else-if="campaign" class="space-y-6 theme-reveal">
       <CampaignHeaderCard
         :system="campaign.system"
         :dungeon-master-name="campaign.dungeonMasterName"
@@ -209,15 +199,6 @@ const saveCampaign = async () => {
         :active-quest-count="activeQuestCount"
         :open-milestone-count="openMilestoneCount"
         :recap-count="recaps?.length || 0"
-      />
-
-      <CampaignStatusEditor
-        v-model:value="statusDraft"
-        :readonly="!canWriteContent"
-        :saving="isSaving"
-        :error="saveError"
-        :updated-at-label="new Date(campaign.updatedAt).toLocaleString()"
-        @save="saveStatus"
       />
 
       <CampaignOverviewCollections
@@ -243,12 +224,25 @@ const saveCampaign = async () => {
         @delete="deleteRecap"
         @open-player="openPlayer"
       />
-
-      <CampaignRecentActivity
-        :campaign-id="campaignId"
-        :items="activityItems"
-      />
     </div>
+
+    <template #aside>
+      <template v-if="campaign">
+        <CampaignStatusEditor
+          v-model:value="statusDraft"
+          :readonly="!canWriteContent"
+          :saving="isSaving"
+          :error="saveError"
+          :updated-at-label="new Date(campaign.updatedAt).toLocaleString()"
+          @save="saveStatus"
+        />
+
+        <CampaignRecentActivity
+          :campaign-id="campaignId"
+          :items="activityItems"
+        />
+      </template>
+    </template>
 
     <CampaignEditModal
       v-model:open="isEditOpen"
