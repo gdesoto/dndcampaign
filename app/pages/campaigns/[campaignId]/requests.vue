@@ -301,15 +301,11 @@ const decideRequest = async (requestId: string, decision: CampaignRequestDecisio
 
 <template>
   <div class="space-y-8">
-    <div class="flex flex-wrap items-center justify-between gap-4">
-      <div>
-        <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Requests</p>
-        <h1 class="mt-2 text-2xl font-semibold">DM request board</h1>
-      </div>
-      <UButton size="lg" icon="i-lucide-plus" @click="openCreate">
-        New request
-      </UButton>
-    </div>
+    <UPageHeader headline="Requests" title="DM request board">
+      <template #links>
+        <UButton icon="i-lucide-plus" @click="openCreate">New request</UButton>
+      </template>
+    </UPageHeader>
 
     <UCard>
       <UTabs v-model="selectedTab" :items="visibleTabItems" :content="false" />

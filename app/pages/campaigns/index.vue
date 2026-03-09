@@ -75,13 +75,11 @@ const createCampaign = async () => {
 <template>
   <UPage>
     <div class="space-y-8">
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Your world</p>
-          <h1 class="mt-2 text-2xl font-semibold">Campaigns</h1>
-        </div>
-        <UButton size="lg" @click="openCreate">New campaign</UButton>
-      </div>
+      <UPageHeader headline="Your world" title="Campaigns">
+        <template #links>
+          <UButton @click="openCreate">New campaign</UButton>
+        </template>
+      </UPageHeader>
 
       <SharedResourceState
         :pending="pending"
@@ -111,32 +109,32 @@ const createCampaign = async () => {
               class="h-full transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-lg"
               :ui="{
                 root: 'h-full overflow-hidden',
-                header: 'before:block before:h-[4px] before:bg-gradient-to-r before:from-primary-700 before:via-primary-500 before:to-primary-700',
+                header: 'before:block before:h-1 before:bg-linear-to-r before:from-primary-700 before:via-primary-500 before:to-primary-700',
                 body: 'space-y-4',
               }"
             >
               <template #header>
                 <div class="flex items-start justify-between gap-3">
                   <div class="space-y-1">
-                    <p class="font-display text-[10px] uppercase tracking-[0.18em] text-[var(--ui-text-dimmed)]">
+                    <p class="font-display text-[10px] uppercase tracking-[0.18em] text-dimmed">
                       {{ systemLabelFor(campaign) }}
                     </p>
-                    <h3 class="font-display text-lg uppercase tracking-[0.02em] text-[var(--ui-text-highlighted)]">
+                    <h3 class="font-display text-lg uppercase tracking-[0.02em] text-highlighted">
                       {{ campaign.name }}
                     </h3>
                   </div>
                   <UIcon
                     name="i-lucide-arrow-up-right"
-                    class="mt-0.5 size-4 text-[var(--ui-text-dimmed)] transition-colors group-hover:text-primary-500"
+                    class="mt-0.5 size-4 text-dimmed transition-colors group-hover:text-primary-500"
                   />
                 </div>
               </template>
-              <p class="line-clamp-3 min-h-[4.5rem] text-sm text-[var(--ui-text-muted)]">
+              <p class="line-clamp-3 min-h-18 text-sm text-muted">
                 {{ campaign.description || 'No description yet.' }}
               </p>
-              <div class="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--ui-border)] pt-3">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-t border-default pt-3">
                 <UBadge color="primary" variant="outline">DM: {{ dmLabelFor(campaign) }}</UBadge>
-                <p class="text-xs text-[var(--ui-text-dimmed)]">
+                <p class="text-xs text-dimmed">
                   Updated {{ formatUpdatedAt(campaign.updatedAt) }}
                 </p>
               </div>

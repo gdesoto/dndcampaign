@@ -18,11 +18,6 @@ export default defineAppConfig({
         base: 'font-display font-semibold tracking-widest uppercase transition-all cursor-pointer disabled:cursor-not-allowed aria-disabled:cursor-not-allowed',
       },
       variants: {
-        size: {
-          sm: { base: 'text-[10px] px-2.5 py-1 gap-1.5 rounded' },
-          md: { base: 'text-[11px] px-3 py-1.5 gap-1.5 rounded' },
-          lg: { base: 'text-[13px] px-4 py-2 gap-2 rounded' },
-        },
         variant: {
           solid: {
             base: 'bg-primary-500 text-neutral-950 border border-primary-400/65 hover:bg-primary-400 hover:border-primary-400/75 dark:border-primary-400',
@@ -62,12 +57,6 @@ export default defineAppConfig({
       slots: {
         base: 'font-display tracking-[0.08em] uppercase',
       },
-      variants: {
-        size: {
-          sm: { base: 'text-[10px] px-1.5 py-0.5 rounded-[3px]' },
-          md: { base: 'text-[10px] px-1.5 py-0.5 rounded-[3px]' },
-        },
-      },
       defaultVariants: {
         size: 'sm',
         color: 'primary',
@@ -95,7 +84,7 @@ export default defineAppConfig({
         root: 'flex flex-col',
         list: 'flex border-b border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-0', // px-6
         trigger: // grow justify-center
-          'rounded-none font-display text-[11px] tracking-[0.1em] uppercase text-[var(--ui-text-dimmed)] px-3.5 py-2.5 border-b-2 border-transparent -mb-px transition-all cursor-pointer hover:text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-accented)]/60 data-[state=active]:rounded-none data-[state=active]:text-primary data-[state=active]:bg-[var(--ui-bg-accented)] data-[state=active]:border-primary-500',
+          'rounded-none font-display tracking-[0.1em] uppercase text-[var(--ui-text-dimmed)] px-3.5 py-2.5 border-b-2 border-transparent -mb-px transition-all cursor-pointer hover:text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-accented)]/60 data-[state=active]:rounded-none data-[state=active]:text-primary data-[state=active]:bg-[var(--ui-bg-accented)] data-[state=active]:border-primary-500',
         indicator: 'hidden',
         label: 'truncate text-inherit',
         content: 'outline-none',
@@ -111,13 +100,6 @@ export default defineAppConfig({
       slots: {
         root: 'relative inline-flex items-center w-full',
         base: fieldBase,
-      },
-      variants: {
-        size: {
-          sm: { base: 'text-sm px-2.5 py-1.5' },
-          md: { base: 'text-[14px] px-2.5 py-1.5' },
-          lg: { base: 'text-base px-3 py-2' },
-        },
       },
       defaultVariants: {
         size: 'md',
@@ -142,13 +124,6 @@ export default defineAppConfig({
       slots: {
         root: 'relative inline-flex items-center w-full',
         base: fieldBase,
-      },
-      variants: {
-        size: {
-          sm: { base: 'text-sm px-2.5 py-1.5' },
-          md: { base: 'text-[14px] px-2.5 py-1.5' },
-          lg: { base: 'text-base px-3 py-2' },
-        },
       },
       defaultVariants: {
         size: 'md',
@@ -215,8 +190,8 @@ export default defineAppConfig({
     pageHeader: {
       slots: {
         root: 'relative pb-4 pt-0 border-b border-[var(--ui-border)]',
-        wrapper: 'flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between',
-        headline: 'text-xs uppercase tracking-[0.3em] text-[var(--ui-text-dimmed)] font-display',
+        wrapper: 'flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between',
+        headline: 'mb-1 text-sm uppercase tracking-[0.3em] text-[var(--ui-text-dimmed)] font-display',
         title: 'text-2xl font-display font-semibold text-[var(--ui-text-highlighted)]',
         description: 'text-sm text-[var(--ui-text-muted)]',
         links: 'flex flex-wrap items-center gap-1.5',

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__nuxt-ui-remote__get-component",
+      "mcp__nuxt-ui-remote__list-components",
+      "mcp__nuxt-ui-remote__get-component-metadata"
+    ]
+  }
+}

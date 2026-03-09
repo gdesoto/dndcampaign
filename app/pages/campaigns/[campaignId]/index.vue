@@ -169,6 +169,18 @@ const saveCampaign = async () => {
     headline="Campaign"
     title="Overview"
   >
+    <template #actions>
+      <UButton
+        size="lg"
+        variant="outline"
+        icon="i-lucide-pencil"
+        :disabled="!canWriteContent"
+        @click="openEdit"
+      >
+        Edit campaign
+      </UButton>
+    </template>
+
     <template #notice>
       <SharedReadOnlyAlert
         v-if="!canWriteContent"
@@ -191,7 +203,6 @@ const saveCampaign = async () => {
         :system="campaign.system"
         :dungeon-master-name="campaign.dungeonMasterName"
         :description="campaign.description"
-        @edit="openEdit"
       />
       <CampaignKpiGrid
         :last-session-number="latestSession?.sessionNumber ?? '-'"
@@ -254,4 +265,3 @@ const saveCampaign = async () => {
     />
   </CampaignListTemplate>
 </template>
-

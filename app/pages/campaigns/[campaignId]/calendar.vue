@@ -527,11 +527,11 @@ const removeRange = async () => {
 
 <template>
   <div class="space-y-6">
-    <div>
-      <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Calendar</p>
-      <h1 class="mt-2 text-2xl font-semibold">Campaign calendar</h1>
-      <p class="mt-2 text-sm text-muted">Track in-world dates, events, and session timeline coverage.</p>
-    </div>
+    <UPageHeader
+      headline="Calendar"
+      title="Campaign calendar"
+      description="Track in-world dates, events, and session timeline coverage."
+    />
 
     <SharedReadOnlyAlert
       v-if="!canEditCalendar"

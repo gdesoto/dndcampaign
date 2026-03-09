@@ -11,6 +11,7 @@ const {
   currentSection,
   sessionNavigationItems,
   openSessionSection,
+  openEditSession,
   refreshSession,
   sessionHeaderDescription,
   isEditSessionOpen,
@@ -44,6 +45,18 @@ useSeoMeta({
     :title="session?.title || 'Session details'"
     :description="sessionHeaderDescription"
   >
+    <template #actions>
+      <UButton
+        size="lg"
+        variant="outline"
+        icon="i-lucide-pencil"
+        :disabled="!canWriteContent"
+        @click="openEditSession"
+      >
+        Edit session
+      </UButton>
+    </template>
+
     <UCard v-if="error" class="text-center">
       <p class="text-sm text-error">Unable to load this session.</p>
       <UButton class="mt-4" variant="outline" @click="refreshSession">Try again</UButton>

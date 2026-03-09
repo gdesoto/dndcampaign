@@ -165,17 +165,17 @@ const initiativeFor = (link: CharacterLink) => {
         description="Your role can view campaign characters but cannot attach, update, or remove links."
       />
 
-      <UCard>
-        <template #header>
-          <div class="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Campaign</p>
-              <h1 class="mt-2 text-2xl font-semibold">Characters</h1>
-              <p class="mt-2 text-sm text-muted">Manage which PCs are part of this campaign.</p>
-            </div>
-            <UButton variant="outline" :to="`/characters`">Open roster</UButton>
-          </div>
+      <UPageHeader
+        headline="Campaign"
+        title="Characters"
+        description="Manage which PCs are part of this campaign."
+      >
+        <template #links>
+          <UButton variant="outline" :to="`/characters`">Open roster</UButton>
         </template>
+      </UPageHeader>
+
+      <UCard>
         <div class="space-y-3">
           <div class="flex flex-wrap gap-2">
             <USelectMenu

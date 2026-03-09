@@ -1,7 +1,6 @@
 <script setup lang="ts">
 const {
   campaignId,
-  canWriteContent,
   canUploadRecording,
   sessionDungeonMasterLabel,
   transcriptPreview,
@@ -40,7 +39,6 @@ const {
   loadRecapPlayback,
   deleteRecap,
   openSessionSection,
-  openEditSession,
   form,
 } = await useSessionWorkspaceViewModel()
 </script>
@@ -65,15 +63,10 @@ const {
             <h2 class="font-display text-lg font-semibold tracking-[0.06em]">Session overview</h2>
             <p class="text-sm text-muted">Key details at a glance.</p>
           </div>
-          <div class="flex items-center gap-2">
-            <SessionStepLinkButton
-              step="recordings"
-              @open="openSessionSection('recordings')"
-            />
-            <UButton size="sm" variant="outline" :disabled="!canWriteContent" @click="openEditSession">
-              Edit session
-            </UButton>
-          </div>
+          <SessionStepLinkButton
+            step="recordings"
+            @open="openSessionSection('recordings')"
+          />
         </div>
       </template>
       <div class="grid gap-4 sm:grid-cols-3 text-sm">

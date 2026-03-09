@@ -4,10 +4,6 @@ defineProps<{
   dungeonMasterName?: string | null
   description?: string | null
 }>()
-
-const emit = defineEmits<{
-  edit: []
-}>()
 </script>
 
 <template>
@@ -24,7 +20,6 @@ const emit = defineEmits<{
           {{ description || 'Add a short overview for the campaign.' }}
         </p>
       </div>
-      <UButton size="lg" variant="subtle" class="shrink-0" @click="emit('edit')">Edit campaign</UButton>
     </div>
   </UCard>
 </template>
