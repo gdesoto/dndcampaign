@@ -27,12 +27,6 @@ const markerToneClass = computed(() => {
   return 'bg-muted'
 })
 
-const iconToneClass = computed(() => {
-  if (props.tone === 'positive') return 'text-success'
-  if (props.tone === 'warning') return 'text-warning'
-  if (props.tone === 'attention') return 'text-secondary'
-  return 'text-dimmed'
-})
 </script>
 
 <template>

@@ -98,7 +98,7 @@ const currentStep = computed(() =>
 )
 
 const returnToPath = computed(
-  () => `/campaigns/${campaignId}/sessions/${sessionId}/${currentStep.value}`
+  () => `/campaigns/${campaignId.value}/sessions/${sessionId.value}/${currentStep.value}`
 )
 </script>
 

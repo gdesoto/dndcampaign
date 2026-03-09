@@ -138,29 +138,27 @@ const summaryFileModel = computed({
     </UCard>
     <UCard>
       <template #header>
-        <div>
-          <h2 class="text-lg font-semibold">Summary</h2>
-          <p class="text-sm text-muted">
-            Write a recap or import one.
-          </p>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="min-w-0">
+            <h2 class="text-lg font-semibold">Summary</h2>
+            <p class="text-sm text-muted">
+              Write a recap or import one.
+            </p>
+          </div>
+          <UButton
+            v-if="summaryDocId"
+            variant="outline"
+            size="sm"
+            :to="`/campaigns/${campaignId}/documents/${summaryDocId}`"
+          >
+            Open editor
+          </UButton>
         </div>
       </template>
       <div class="space-y-4">
         <UTextarea v-model="summaryContentModel" :rows="5" />
         <div class="flex flex-wrap items-center gap-3">
           <UButton :loading="summarySaving" @click="emit('save-summary')">Save summary</UButton>
-          <UButton
-            v-if="summaryDocId"
-            variant="outline"
-            :to="props.returnToPath
-              ? {
-                  path: `/campaigns/${campaignId}/documents/${summaryDocId}`,
-                  query: { returnTo: props.returnToPath },
-                }
-              : `/campaigns/${campaignId}/documents/${summaryDocId}`"
-          >
-            Open editor
-          </UButton>
         </div>
         <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
           <UFileUpload

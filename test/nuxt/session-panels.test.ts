@@ -114,6 +114,18 @@ describe('SessionRecapPanel', () => {
         recapDeleteError: '',
         hasRecap: false,
       },
+      global: {
+        stubs: {
+          SharedConfirmActionPopover: {
+            template: `
+              <div>
+                <slot name="trigger" />
+                <button type="button" @click="$emit('confirm', { close: () => {} })">Confirm delete recap</button>
+              </div>
+            `,
+          },
+        },
+      },
     })
 
     await clickByText(wrapper, 'Upload recap')
@@ -131,6 +143,7 @@ describe('SessionRecapPanel', () => {
 
     await clickByText(wrapper, 'Play recap')
     await clickByText(wrapper, 'Delete recap')
+    await clickByText(wrapper, 'Confirm delete recap')
 
     expect(wrapper.emitted('upload-recap')).toBeTruthy()
     expect(wrapper.emitted('play-recap')).toBeTruthy()

@@ -59,45 +59,42 @@ const selectedSubtitleRecordingIdModel = computed({
   <div class="space-y-4">
     <UCard>
       <template #header>
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div>
-          <h2 class="text-lg font-semibold">Transcript</h2>
-          <p class="text-sm text-muted">
-            Review the transcript and open the editor for full editing.
-          </p>
-        </div>
-          <UButton
-            v-if="transcriptDoc"
-            variant="outline"
-            size="sm"
-            :to="props.returnToPath
-              ? {
-                  path: `/campaigns/${campaignId}/documents/${transcriptDoc.id}`,
-                  query: { returnTo: props.returnToPath },
-                }
-              : `/campaigns/${campaignId}/documents/${transcriptDoc.id}`"
-          >
-            Open editor
-          </UButton>
-          <SharedConfirmActionPopover
-            v-if="transcriptDoc && canManageTranscript"
-            message="Delete the current transcript document?"
-            confirm-label="Delete transcript"
-            confirm-icon="i-lucide-trash-2"
-            :confirm-loading="transcriptDeleting"
-            @confirm="({ close }) => { emit('delete-transcript'); close() }"
-          >
-            <template #trigger>
-              <UButton
-                color="error"
-                variant="outline"
-                size="sm"
-                :loading="transcriptDeleting"
-              >
-                Delete transcript
-              </UButton>
-            </template>
-          </SharedConfirmActionPopover>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="min-w-0">
+            <h2 class="text-lg font-semibold">Transcript</h2>
+            <p class="text-sm text-muted">
+              Review the transcript and open the editor for full editing.
+            </p>
+          </div>
+          <div class="ml-auto flex items-center justify-end gap-2">
+            <UButton
+              v-if="transcriptDoc"
+              variant="outline"
+              size="sm"
+              :to="`/campaigns/${campaignId}/documents/${transcriptDoc.id}`"
+            >
+              Open editor
+            </UButton>
+            <SharedConfirmActionPopover
+              v-if="transcriptDoc && canManageTranscript"
+              message="Delete the current transcript document?"
+              confirm-label="Delete transcript"
+              confirm-icon="i-lucide-trash-2"
+              :confirm-loading="transcriptDeleting"
+              @confirm="({ close }) => { emit('delete-transcript'); close() }"
+            >
+              <template #trigger>
+                <UButton
+                  color="error"
+                  variant="outline"
+                  size="sm"
+                  :loading="transcriptDeleting"
+                >
+                  Delete transcript
+                </UButton>
+              </template>
+            </SharedConfirmActionPopover>
+          </div>
         </div>
       </template>
       <div class="space-y-4">
