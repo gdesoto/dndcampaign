@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { sortRecapsByReverseSessionNumber } from '~/utils/recaps'
+
 const { publicSlug, publicCampaign, overview } = await usePublicCampaignPageContext()
 
 const {
@@ -16,11 +18,18 @@ const selectedRecapId = ref('')
 const recapPlaybackUrl = ref('')
 const recapLoading = ref(false)
 const recapError = ref('')
+const recapsSortedBySessionNumber = computed(() =>
+  sortRecapsByReverseSessionNumber(recaps.value)
+)
 
 watch(
-  () => recaps.value,
+  () => recapsSortedBySessionNumber.value,
   (value) => {
-    if (value?.length && !selectedRecapId.value) {
+    if (!value.length) {
+      selectedRecapId.value = ''
+      return
+    }
+    if (!selectedRecapId.value || !value.some((item) => item.id === selectedRecapId.value)) {
       selectedRecapId.value = value[0]?.id || ''
     }
   },
@@ -75,7 +84,7 @@ const playRecap = async (recapId: string) => {
 
         <CampaignRecapPlaylist
           v-else
-          :recaps="recaps"
+          :recaps="recapsSortedBySessionNumber"
           :selected-recap-id="selectedRecapId"
           :playback-url="recapPlaybackUrl"
           :loading="recapLoading"

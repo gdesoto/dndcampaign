@@ -45,6 +45,7 @@ const formatDate = (value?: string | null) => {
 
 const {
   recaps,
+  recapsSortedBySessionNumber,
   selectedRecapId,
   recapPlaybackUrl,
   recapLoading,
@@ -55,19 +56,6 @@ const {
   deleteRecap,
   openPlayer,
 } = useCampaignRecaps(campaignId, campaignInvalidation.afterRecapMutation)
-
-const recapsByReverseSessionNumber = computed(() => {
-  if (!recaps.value?.length) return recaps.value
-  return [...recaps.value].sort((a, b) => {
-    const aSessionNumber = a.session.sessionNumber ?? Number.NEGATIVE_INFINITY
-    const bSessionNumber = b.session.sessionNumber ?? Number.NEGATIVE_INFINITY
-    if (aSessionNumber !== bSessionNumber) return bSessionNumber - aSessionNumber
-
-    const aDate = new Date(a.session.playedAt || a.createdAt).getTime()
-    const bDate = new Date(b.session.playedAt || b.createdAt).getTime()
-    return bDate - aDate
-  })
-})
 
 const {
   latestSession,
@@ -235,7 +223,7 @@ const saveCampaign = async () => {
 
       <CampaignRecapPlaylist
         :campaign-id="campaignId"
-        :recaps="recapsByReverseSessionNumber"
+        :recaps="recapsSortedBySessionNumber"
         :selected-recap-id="selectedRecapId"
         :playback-url="recapPlaybackUrl"
         :loading="recapLoading"

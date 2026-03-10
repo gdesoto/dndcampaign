@@ -1,4 +1,5 @@
 import type { CampaignRecapItem } from '#shared/types/campaign-overview'
+import { sortRecapsByReverseSessionNumber } from '~/utils/recaps'
 
 export const useCampaignRecaps = (
   campaignId: Ref<string>,
@@ -18,6 +19,9 @@ export const useCampaignRecaps = (
   const recapError = ref('')
   const recapDeleting = ref(false)
   const recapDeleteError = ref('')
+  const recapsSortedBySessionNumber = computed(() =>
+    sortRecapsByReverseSessionNumber(recaps.value)
+  )
 
   const formatDateTime = (value?: string | null) => {
     if (!value) return 'Unscheduled'
@@ -25,9 +29,13 @@ export const useCampaignRecaps = (
   }
 
   watch(
-    () => recaps.value,
+    () => recapsSortedBySessionNumber.value,
     (value) => {
-      if (value?.length && !selectedRecapId.value) {
+      if (!value.length) {
+        selectedRecapId.value = ''
+        return
+      }
+      if (!selectedRecapId.value || !value.some((item) => item.id === selectedRecapId.value)) {
         selectedRecapId.value = value[0]?.id || ''
       }
     },
@@ -76,7 +84,7 @@ export const useCampaignRecaps = (
     }
     if (selectedRecapId.value === recapId) {
       recapPlaybackUrl.value = ''
-      selectedRecapId.value = recaps.value?.[0]?.id || ''
+      selectedRecapId.value = recapsSortedBySessionNumber.value[0]?.id || ''
     }
     try {
       await request(`/api/recaps/${recapId}`, { method: 'DELETE' })
@@ -99,6 +107,7 @@ export const useCampaignRecaps = (
 
   return {
     recaps,
+    recapsSortedBySessionNumber,
     selectedRecapId,
     recapPlaybackUrl,
     recapLoading,
