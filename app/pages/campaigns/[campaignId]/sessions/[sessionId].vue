@@ -41,13 +41,14 @@ useSeoMeta({
     :back-to="`/campaigns/${campaignId}/sessions`"
     back-label="Back to sessions"
     back-button-placement="header"
+    back-button-size="md"
     headline="Session Workspace"
     :title="session?.title || 'Session details'"
     :description="sessionHeaderDescription"
   >
     <template #actions>
       <UButton
-        size="lg"
+        size="md"
         variant="outline"
         icon="i-lucide-pencil"
         :disabled="!canWriteContent"

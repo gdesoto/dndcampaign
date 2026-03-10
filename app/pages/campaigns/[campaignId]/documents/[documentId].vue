@@ -84,6 +84,8 @@ const hasMounted = ref(false)
 const playbackRangeError = ref('')
 let playbackRangeTimer: ReturnType<typeof setInterval> | undefined
 const showFullTranscript = ref(false)
+const showAdvancedFilters = ref(false)
+const showBulkEdit = ref(false)
 
 const { data: document, pending, refresh, error } = await useAsyncData(
   () => `document-${documentId.value}`,
@@ -180,14 +182,6 @@ const linkedRecordingLabel = computed(() => {
   return match ? `${match.filename} (${match.kind})` : id
 })
 
-const selectedRecordingLabel = computed(() => {
-  if (!selectedRecordingId.value) return 'None selected'
-  const match = sessionRecordings.value?.find(
-    (recording) => recording.id === selectedRecordingId.value
-  )
-  return match ? `${match.filename} (${match.kind})` : selectedRecordingId.value
-})
-
 const videoOptions = computed(() =>
   (sessionRecordings.value || [])
     .filter((recording) => recording.kind === 'VIDEO')
@@ -209,7 +203,7 @@ const { data: selectedRecording } = await useAsyncData(
   { watch: [selectedRecordingId] }
 )
 
-const { data: playbackUrl, pending: playbackPending } = await useAsyncData(
+const { data: playbackUrl } = await useAsyncData(
   () => `document-recording-playback-${selectedRecordingId.value}`,
   async () => {
     if (!selectedRecordingId.value) return ''
@@ -344,6 +338,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  player.stop()
   if (playbackRangeTimer) {
     clearInterval(playbackRangeTimer)
   }
@@ -998,6 +993,30 @@ const startPlayback = async () => {
   )
 }
 
+const autoLoadSource = () => {
+  if (!selectedRecording.value || !playbackUrl.value) return
+  player.loadSource(
+    {
+      id: selectedRecording.value.id,
+      title: selectedRecording.value.filename,
+      subtitle: selectedRecording.value.kind,
+      kind: selectedRecording.value.kind,
+      src: playbackUrl.value,
+      vttUrl: vttUrl.value,
+    },
+    { presentation: 'page' }
+  )
+}
+
+watch(
+  playbackReady,
+  (value) => {
+    if (!value) return
+    if (player.state.value.source?.src === playbackUrl.value) return
+    autoLoadSource()
+  }
+)
+
 const stopPlaybackRangeTimer = () => {
   if (playbackRangeTimer) {
     clearInterval(playbackRangeTimer)
@@ -1145,12 +1164,6 @@ const deleteDocumentWithClose = async (close: () => void) => {
   }
 }
 
-const transcriptPreview = computed(() => {
-  if (document.value?.type !== 'TRANSCRIPT') return ''
-  if (!segments.value.length) return 'No segments yet.'
-  return segmentsToPlainText(segments.value.slice(0, 3), { includeDisabled: false })
-})
-
 const fullTranscript = computed(() =>
   segmentsToPlainText(segments.value, { includeDisabled: false })
 )
@@ -1160,35 +1173,13 @@ const fullTranscript = computed(() =>
   <CampaignDetailTemplate
     :back-to="document?.sessionId ? (returnTo || `/campaigns/${campaignId}/sessions/${document.sessionId}`) : `/campaigns/${campaignId}/sessions`"
     back-label="Back to session"
+    back-button-placement="header"
     headline="Session Asset"
     :title="document?.title || 'Document editor'"
     :description="document?.type === 'TRANSCRIPT'
       ? 'Transcript editor with synchronized playback tools.'
       : 'Markdown-first session document editor with version history.'"
   >
-    <template #actions>
-      <UButton variant="outline" :to="`/campaigns/${campaignId}/sessions`">
-        All sessions
-      </UButton>
-      <SharedConfirmActionPopover
-        v-if="canManageDocument && document?.type === 'TRANSCRIPT'"
-        message="Delete this transcript document?"
-        confirm-label="Delete transcript"
-        confirm-icon="i-lucide-trash-2"
-        :confirm-loading="deleteLoading"
-        @confirm="({ close }) => deleteDocumentWithClose(close)"
-      >
-        <template #trigger>
-          <UButton
-            color="error"
-            variant="outline"
-            :loading="deleteLoading"
-          >
-            Delete transcript
-          </UButton>
-        </template>
-      </SharedConfirmActionPopover>
-    </template>
 
       <div v-if="pending" class="grid gap-4">
         <UCard class="h-32 animate-pulse" />
@@ -1204,389 +1195,27 @@ const fullTranscript = computed(() =>
         v-else-if="document?.type === 'TRANSCRIPT'"
         class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]"
       >
-        <UAlert
-          v-if="deleteError"
-          color="error"
-          variant="subtle"
-          :description="deleteError"
-          class="lg:col-span-2"
-        />
 
         <UCard>
           <template #header>
-            <div class="space-y-4">
-              <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="space-y-2">
+              <div class="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h2 class="text-lg font-semibold">Transcript editor</h2>
-                  <p class="text-sm text-muted">
-                    Segmented editing with audio sync and search.
-                  </p>
+                  <p class="text-sm text-muted">Segmented editing with audio sync and search.</p>
                 </div>
-                <div class="flex flex-wrap items-center gap-2 text-xs text-dimmed">
-                  <span v-if="isDirty" class="rounded-full bg-warning/20 px-2 py-1 text-warning">
-                    Unsaved changes
-                  </span>
-                  <span v-if="lastSavedAt">
-                    Last saved {{ new Date(lastSavedAt).toLocaleString() }}
-                  </span>
-                  <UButton :loading="isSaving" size="sm" @click="saveDocument">
-                    Save version
-                  </UButton>
+                <div class="flex items-center gap-1">
+                  <UButton size="xs" variant="ghost" icon="i-lucide-chevron-left" :disabled="!canPrevWindow" aria-label="Previous page" @click="moveWindow(-1)" />
+                  <span class="text-xs text-dimmed tabular-nums">{{ windowLabel }}</span>
+                  <UButton size="xs" variant="ghost" icon="i-lucide-chevron-right" :disabled="!canNextWindow" aria-label="Next page" @click="moveWindow(1)" />
                 </div>
               </div>
-              <div class="space-y-3 rounded-lg border border-default/60 bg-elevated/20 p-3">
-                <div class="space-y-2">
-                  <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
-                    Filtering
-                  </p>
-                  <div class="flex flex-wrap items-center gap-2">
-                    <UInput
-                      v-model="searchInput"
-                      size="xs"
-                      class="w-56"
-                      placeholder="Search transcript"
-                      :ui="{ trailing: 'pe-1' }">
-                      <template v-if="searchInput?.length" #trailing>
-                        <UButton
-                          color="neutral"
-                          variant="link"
-                          size="sm"
-                          icon="i-lucide-circle-x"
-                          aria-label="Clear input"
-                          @click="searchInput = ''"
-                        />
-                      </template>
-                    </UInput>
-                    <UCheckbox v-model="searchFilterEnabled" label="Filter search matches" />
-                    <UButton
-                      size="xs"
-                      variant="outline"
-                      :disabled="!matchIndices.length"
-                      @click="goToMatch(-1)"
-                    >
-                      Prev Match
-                    </UButton>
-                    <UButton
-                      size="xs"
-                      variant="outline"
-                      :disabled="!matchIndices.length"
-                      @click="goToMatch(1)"
-                    >
-                      Next Match
-                    </UButton>
-                    <span v-if="matchIndices.length" class="text-xs text-dimmed">
-                      {{ activeMatchIndex + 1 }}/{{ matchIndices.length }}
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <div class="grid grid-cols-1 gap-4 rounded-lg border border-default/60 bg-default/30 p-3 md:grid-cols-3">
-                    <div class="space-y-2 md:border-r md:border-default/60 md:pr-4">
-                      <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
-                        Speakers
-                      </p>
-                      <USelectMenu
-                        v-model="speakerFilterSelection"
-                        size="xs"
-                        class="w-full"
-                        clear
-                        multiple
-                        :items="speakerOptions"
-                        placeholder="All speakers"
-                      />
-                    </div>
-
-                    <div class="space-y-2 md:border-r md:border-default/60 md:pr-4">
-                      <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
-                        Time Range
-                      </p>
-                      <div class="flex items-center gap-2">
-                        <UFieldGroup class="w-full">
-                          <UInput
-                            v-model="startTimeFilter"
-                            :ui="{
-                              base: 'pl-11',
-                              leading: 'pointer-events-none',
-                              trailing: 'pe-1'
-                            }"
-                            size="xs"
-                            class="w-1/2 min-w-0"
-                            placeholder="mm:ss">
-                            <template #leading>
-                              <p class="text-xs text-muted">
-                                Start
-                              </p>
-                            </template>
-                            <template v-if="startTimeFilter?.length" #trailing>
-                              <UButton
-                                color="neutral"
-                                variant="link"
-                                size="sm"
-                                icon="i-lucide-circle-x"
-                                aria-label="Clear input"
-                                @click="startTimeFilter = ''"
-                              />
-                            </template>
-                          </UInput>
-                          <UInput
-                            v-model="endTimeFilter"
-                            :ui="{
-                              base: 'pl-11',
-                              leading: 'pointer-events-none',
-                              trailing: 'pe-1'
-                            }"
-                            size="xs"
-                            class="w-1/2 min-w-0"
-                            placeholder="mm:ss">
-                            <template #leading>
-                              <p class="text-xs text-muted">
-                                End
-                              </p>
-                            </template>
-                            <template v-if="endTimeFilter?.length" #trailing>
-                              <UButton
-                                color="neutral"
-                                variant="link"
-                                size="sm"
-                                icon="i-lucide-circle-x"
-                                aria-label="Clear input"
-                                @click="endTimeFilter = ''"
-                              />
-                            </template>
-                          </UInput>
-                        </UFieldGroup>
-                      </div>
-                    </div>
-
-                    <div class="space-y-2">
-                      <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
-                        Duration Filter
-                      </p>
-                      <div class="flex items-center gap-2">
-                        <UFieldGroup class="w-full">
-                          <UInput
-                            v-model="minLengthFilter"
-                            :ui="{
-                              base: 'pl-10',
-                              leading: 'pointer-events-none',
-                              trailing: 'pe-1'
-                            }"
-                            size="xs"
-                            class="w-1/2 min-w-0"
-                            placeholder="seconds">
-                            <template #leading>
-                              <p class="text-xs text-muted">
-                                Min
-                              </p>
-                            </template>
-                            <template v-if="minLengthFilter?.length" #trailing>
-                              <UButton
-                                color="neutral"
-                                variant="link"
-                                size="sm"
-                                icon="i-lucide-circle-x"
-                                aria-label="Clear input"
-                                @click="minLengthFilter = ''"
-                              />
-                            </template>
-                          </UInput>
-                          <UInput
-                            v-model="maxLengthFilter"
-                            :ui="{
-                              base: 'pl-10',
-                              leading: 'pointer-events-none',
-                              trailing: 'pe-1'
-                            }"
-                            size="xs"
-                            class="w-1/2 min-w-0"
-                            placeholder="seconds">
-                            <template #leading>
-                              <p class="text-xs text-muted">
-                                Max
-                              </p>
-                            </template>
-                            <template v-if="maxLengthFilter?.length" #trailing>
-                              <UButton
-                                color="neutral"
-                                variant="link"
-                                size="sm"
-                                icon="i-lucide-circle-x"
-                                aria-label="Clear input"
-                                @click="maxLengthFilter = ''"
-                              />
-                            </template>
-                          </UInput>
-                        </UFieldGroup>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-dimmed">{{ selectedSegmentIds.length }} selected</span>
+                <UButton size="xs" variant="ghost" @click="selectAllFiltered">Select filtered</UButton>
+                <UButton size="xs" variant="ghost" :disabled="!selectedSegmentIds.length" @click="clearSelection">Clear</UButton>
+                <UButton size="xs" variant="outline" icon="i-lucide-play" :disabled="!selectedSegmentIds.length" @click="playSelection">Play selection</UButton>
               </div>
-
-              <div class="space-y-3 rounded-lg border border-default/60 bg-elevated/20 p-3">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
-                    Updates
-                  </p>
-                  <div class="flex items-center justify-end gap-2">
-                    <UButton
-                      size="xs"
-                      variant="outline"
-                      icon="i-lucide-undo-2"
-                      :disabled="!canUndo"
-                      @click="undoTranscriptChange"
-                    >
-                      Undo
-                    </UButton>
-                    <UButton
-                      size="xs"
-                      variant="outline"
-                      icon="i-lucide-redo-2"
-                      :disabled="!canRedo"
-                      @click="redoTranscriptChange"
-                    >
-                      Redo
-                    </UButton>
-                  </div>
-                </div>
-                <div class="grid grid-cols-1 gap-4 rounded-lg border border-default/60 bg-default/30 p-3 md:grid-cols-2">
-                  <div class="space-y-2 md:border-r md:border-default/60 md:pr-4">
-                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
-                      Set Speaker
-                    </p>
-                    <div class="flex flex-wrap items-center gap-2">
-                      <UFieldGroup class="w-full">
-                        <USelectMenu
-                          v-model="selectedSpeakerPreset"
-                          :items="speakerPresetOptions"
-                          :search-input="{ placeholder: 'Search speaker presets...' }"
-                          size="xs"
-                          class="w-1/2 min-w-0"
-                          placeholder="Select character"
-                        />
-                        <UInput
-                          v-model="speakerBulkInput"
-                          size="xs"
-                          class="w-1/2 min-w-0"
-                          placeholder="Set custom speaker"
-                        />
-                      </UFieldGroup>
-                      <div class="flex flex-wrap items-center gap-2">
-                        <UButton
-                          size="xs"
-                          variant="outline"
-                          :disabled="!selectedSegmentIds.length"
-                          @click="applySpeakerToSelection(speakerBulkInput)"
-                        >
-                          Update Selection
-                        </UButton>
-                        <UButton
-                          size="xs"
-                          variant="outline"
-                          :disabled="!filteredSegments.length"
-                          @click="applySpeakerToFiltered(speakerBulkInput)"
-                        >
-                          Update Filtered
-                        </UButton>
-                        <UButton
-                          size="xs"
-                          variant="ghost"
-                          icon="i-lucide-x"
-                          :disabled="!selectedSpeakerPreset && !speakerBulkInput.trim()"
-                          @click="clearSpeakerUpdateInputs"
-                        >
-                          Clear
-                        </UButton>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="space-y-2">
-                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
-                      Enable/Disable Segments
-                    </p>
-                    <div class="flex flex-wrap items-center gap-2">
-                      <UButton
-                        size="xs"
-                        variant="outline"
-                        :disabled="!selectedSegmentIds.length"
-                        @click="applyDisableToSelection(true)"
-                      >
-                        Disable Selected
-                      </UButton>
-                      <UButton
-                        size="xs"
-                        variant="outline"
-                        :disabled="!selectedSegmentIds.length"
-                        @click="applyDisableToSelection(false)"
-                      >
-                        Enable Selected
-                      </UButton>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div class="space-y-2">
-                    <div class="flex items-center gap-2">
-                      <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed pl-2">
-                        Selection
-                      </p>
-                      <span class="text-xs text-dimmed">{{ selectedSegmentIds.length }}</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <UButton size="xs" variant="ghost" @click="selectAllFiltered">
-                        Select filtered
-                      </UButton>
-                      <UButton
-                        size="xs"
-                        variant="ghost"
-                        :disabled="!selectedSegmentIds.length"
-                        @click="clearSelection"
-                      >
-                        Clear
-                      </UButton>
-                      <UButton
-                        size="xs"
-                        variant="outline"
-                        :disabled="!selectedSegmentIds.length"
-                        @click="playSelection"
-                      >
-                        Play Selection Range
-                      </UButton>
-                    </div>
-                </div>
-
-                <div class="space-y-2 md:text-right">
-                    <div class="flex items-center gap-2 md:justify-end">
-                      <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
-                        View Window
-                      </p>
-                      <span class="text-xs text-dimmed">{{ windowLabel }}</span>
-                    </div>
-                    <div class="flex items-center gap-2 md:justify-end">
-                      <UButton
-                        size="xs"
-                        variant="ghost"
-                        :disabled="!canPrevWindow"
-                        @click="moveWindow(-1)"
-                      >
-                        Previous
-                      </UButton>
-                      <UButton
-                        size="xs"
-                        variant="ghost"
-                        :disabled="!canNextWindow"
-                        @click="moveWindow(1)"
-                      >
-                        Next
-                      </UButton>
-                    </div>
-                </div>
-              </div>
-              <p v-if="saveError" class="text-sm text-error">{{ saveError }}</p>
             </div>
           </template>
 
@@ -1620,32 +1249,37 @@ const fullTranscript = computed(() =>
                       - {{ formatDuration(segment) }}
                     </span>
                   </div>
-                  <div class="flex items-center gap-2">
-                    <UButton
-                      size="xs"
-                      variant="outline"
-                      @click="toggleSegmentDisabled(segment.id)"
-                    >
-                      {{ segment.disabled ? 'Enable' : 'Disable' }}
-                    </UButton>
-                    <UButton
-                      size="xs"
-                      icon="i-lucide-play"
-                      color="primary"
-                      :disabled="segment.startMs === null || segment.endMs === null"
-                      @click="playSegment(segment)"
-                    >
-                      Play segment
-                    </UButton>
-                    <UButton
-                      size="xs"
-                      variant="outline"
-                      icon="i-lucide-skip-forward"
-                      :disabled="segment.startMs === null"
-                      @click="jumpToSegment(segment)"
-                    >
-                      Jump
-                    </UButton>
+                  <div class="flex items-center gap-1">
+                    <UTooltip :text="segment.disabled ? 'Enable segment' : 'Disable segment'">
+                      <UButton
+                        size="xs"
+                        variant="ghost"
+                        :icon="segment.disabled ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                        :aria-label="segment.disabled ? 'Enable segment' : 'Disable segment'"
+                        @click="toggleSegmentDisabled(segment.id)"
+                      />
+                    </UTooltip>
+                    <UTooltip text="Play segment">
+                      <UButton
+                        size="xs"
+                        variant="ghost"
+                        icon="i-lucide-play"
+                        color="primary"
+                        aria-label="Play segment"
+                        :disabled="segment.startMs === null || segment.endMs === null"
+                        @click="playSegment(segment)"
+                      />
+                    </UTooltip>
+                    <UTooltip text="Jump to timestamp">
+                      <UButton
+                        size="xs"
+                        variant="ghost"
+                        icon="i-lucide-skip-forward"
+                        aria-label="Jump to timestamp"
+                        :disabled="segment.startMs === null"
+                        @click="jumpToSegment(segment)"
+                      />
+                    </UTooltip>
                   </div>
                 </div>
                 <div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
@@ -1722,58 +1356,242 @@ const fullTranscript = computed(() =>
         </UCard>
 
         <div class="space-y-6">
-            <UCard class="sticky top-24 z-20">
-            <template #header>
-              <div>
-                <h2 class="text-lg font-semibold">Playback</h2>
-                <p class="text-sm text-muted">
-                  Sync transcript edits with session audio or video.
-                </p>
-              </div>
-            </template>
-            <div class="space-y-3">
-              <div class="flex items-center gap-2 text-xs text-dimmed">
-                <span>Selected audio file:</span>
-                <span class="font-semibold text-default">{{ selectedRecordingLabel }}</span>
-                <UTooltip text="Change the linked audio in Transcript actions.">
-                  <UIcon name="i-lucide-info" class="h-4 w-4 text-dimmed" />
-                </UTooltip>
-              </div>
-              <div class="flex flex-wrap items-center gap-2">
-                <UButton
-                  size="sm"
-                  variant="outline"
-                  :disabled="!playbackReady"
-                  :loading="hasMounted && playbackPending"
-                  @click="startPlayback"
-                >
-                  Play in editor
-                </UButton>
-                <span v-if="hasMounted && playbackPending" class="text-xs text-dimmed">
-                  Loading stream...
-                </span>
-              </div>
+          <!-- Sticky group: Media player + Transcript tools -->
+          <div class="sticky top-0 z-20 space-y-4">
+            <!-- Media player (no card wrapper — player UI provides its own container) -->
+            <div>
               <MediaPlayerDock dock-id="transcript-player-dock" mode="page" />
-              <p v-if="player.state.value.error" class="text-sm text-error">
-                {{ player.state.value.error }}
-              </p>
-              <p v-if="playbackRangeError" class="text-sm text-error">
-                {{ playbackRangeError }}
-              </p>
+              <p v-if="player.state.value.error" class="mt-2 text-sm text-error">{{ player.state.value.error }}</p>
+              <p v-if="playbackRangeError" class="mt-2 text-sm text-error">{{ playbackRangeError }}</p>
             </div>
-          </UCard>
 
+            <!-- Transcript tools card -->
+            <UCard>
+              <template #header>
+                <div>
+                  <h2 class="text-lg font-semibold">Transcript tools</h2>
+                  <p class="text-sm text-muted">Search, filter, edit, and navigate transcript segments.</p>
+                </div>
+              </template>
+              <div class="space-y-3">
+                <!-- Undo/Redo + Save -->
+                <div class="flex flex-wrap items-center gap-2">
+                  <span v-if="isDirty" class="rounded-full bg-warning/20 px-2 py-1 text-xs text-warning">
+                    Unsaved changes
+                  </span>
+                  <span v-if="lastSavedAt" class="text-xs text-dimmed">
+                    Saved {{ new Date(lastSavedAt).toLocaleTimeString() }}
+                  </span>
+                  <UTooltip text="Undo (Ctrl+Z / Cmd+Z)">
+                    <UButton size="xs" variant="ghost" icon="i-lucide-undo-2" :disabled="!canUndo" aria-label="Undo" @click="undoTranscriptChange" />
+                  </UTooltip>
+                  <UTooltip text="Redo (Ctrl+Shift+Z / Cmd+Shift+Z)">
+                    <UButton size="xs" variant="ghost" icon="i-lucide-redo-2" :disabled="!canRedo" aria-label="Redo" @click="redoTranscriptChange" />
+                  </UTooltip>
+                  <UButton :loading="isSaving" size="sm" class="ml-auto" @click="saveDocument">
+                    Save version
+                  </UButton>
+                </div>
+
+                <!-- Search + match nav + section toggles -->
+                <div class="flex flex-wrap items-center gap-2">
+                  <UInput
+                    v-model="searchInput"
+                    size="xs"
+                    class="w-full"
+                    placeholder="Search transcript"
+                    :ui="{ trailing: 'pe-1' }">
+                    <template v-if="searchInput?.length" #trailing>
+                      <UButton
+                        color="neutral"
+                        variant="link"
+                        size="sm"
+                        icon="i-lucide-circle-x"
+                        aria-label="Clear search"
+                        @click="searchInput = ''"
+                      />
+                    </template>
+                  </UInput>
+                  <template v-if="searchInput?.length">
+                    <UTooltip text="Previous match">
+                      <UButton size="xs" variant="ghost" icon="i-lucide-chevron-up" :disabled="!matchIndices.length" aria-label="Previous match" @click="goToMatch(-1)" />
+                    </UTooltip>
+                    <span v-if="matchIndices.length" class="text-xs text-dimmed tabular-nums">
+                      {{ activeMatchIndex + 1 }}/{{ matchIndices.length }}
+                    </span>
+                    <UTooltip text="Next match">
+                      <UButton size="xs" variant="ghost" icon="i-lucide-chevron-down" :disabled="!matchIndices.length" aria-label="Next match" @click="goToMatch(1)" />
+                    </UTooltip>
+                    <UTooltip :text="searchFilterEnabled ? 'Showing only matching segments — click to show all' : 'Showing all segments with highlights — click to filter'">
+                      <UButton
+                        size="xs"
+                        :variant="searchFilterEnabled ? 'solid' : 'outline'"
+                        :icon="searchFilterEnabled ? 'i-lucide-filter' : 'i-lucide-highlighter'"
+                        @click="searchFilterEnabled = !searchFilterEnabled"
+                      >
+                        {{ searchFilterEnabled ? 'Filter' : 'Highlight' }}
+                      </UButton>
+                    </UTooltip>
+                  </template>
+                  <div class="ml-auto flex items-center gap-1">
+                    <UButton
+                      size="xs"
+                      variant="ghost"
+                      :icon="showAdvancedFilters ? 'i-lucide-filter-x' : 'i-lucide-sliders-horizontal'"
+                      :color="(speakerFilterSelection.length || startTimeFilter || endTimeFilter || minLengthFilter || maxLengthFilter) ? 'primary' : 'neutral'"
+                      @click="showAdvancedFilters = !showAdvancedFilters"
+                    >
+                      Filters{{ (speakerFilterSelection.length || startTimeFilter || endTimeFilter || minLengthFilter || maxLengthFilter) ? ' •' : '' }}
+                    </UButton>
+                    <UButton
+                      size="xs"
+                      variant="ghost"
+                      :icon="showBulkEdit ? 'i-lucide-pencil-off' : 'i-lucide-pencil'"
+                      @click="showBulkEdit = !showBulkEdit"
+                    >
+                      Bulk edit
+                    </UButton>
+                  </div>
+                </div>
+
+                <!-- Collapsible: Advanced Filters -->
+                <div v-show="showAdvancedFilters" class="space-y-3 rounded-lg border border-default bg-elevated p-3">
+                  <div class="space-y-2">
+                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">Speakers</p>
+                    <USelectMenu
+                      v-model="speakerFilterSelection"
+                      size="xs"
+                      class="w-full"
+                      clear
+                      multiple
+                      :items="speakerOptions"
+                      placeholder="All speakers"
+                    />
+                  </div>
+                  <div class="space-y-2">
+                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">Time Range</p>
+                    <UFieldGroup class="w-full">
+                      <UInput
+                        v-model="startTimeFilter"
+                        :ui="{ base: 'pl-11', leading: 'pointer-events-none', trailing: 'pe-1' }"
+                        size="xs"
+                        class="w-1/2 min-w-0"
+                        placeholder="mm:ss">
+                        <template #leading><p class="text-xs text-muted">Start</p></template>
+                        <template v-if="startTimeFilter?.length" #trailing>
+                          <UButton color="neutral" variant="link" size="sm" icon="i-lucide-circle-x" aria-label="Clear" @click="startTimeFilter = ''" />
+                        </template>
+                      </UInput>
+                      <UInput
+                        v-model="endTimeFilter"
+                        :ui="{ base: 'pl-11', leading: 'pointer-events-none', trailing: 'pe-1' }"
+                        size="xs"
+                        class="w-1/2 min-w-0"
+                        placeholder="mm:ss">
+                        <template #leading><p class="text-xs text-muted">End</p></template>
+                        <template v-if="endTimeFilter?.length" #trailing>
+                          <UButton color="neutral" variant="link" size="sm" icon="i-lucide-circle-x" aria-label="Clear" @click="endTimeFilter = ''" />
+                        </template>
+                      </UInput>
+                    </UFieldGroup>
+                  </div>
+                  <div class="space-y-2">
+                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">Duration</p>
+                    <UFieldGroup class="w-full">
+                      <UInput
+                        v-model="minLengthFilter"
+                        :ui="{ base: 'pl-10', leading: 'pointer-events-none', trailing: 'pe-1' }"
+                        size="xs"
+                        class="w-1/2 min-w-0"
+                        placeholder="seconds">
+                        <template #leading><p class="text-xs text-muted">Min</p></template>
+                        <template v-if="minLengthFilter?.length" #trailing>
+                          <UButton color="neutral" variant="link" size="sm" icon="i-lucide-circle-x" aria-label="Clear" @click="minLengthFilter = ''" />
+                        </template>
+                      </UInput>
+                      <UInput
+                        v-model="maxLengthFilter"
+                        :ui="{ base: 'pl-10', leading: 'pointer-events-none', trailing: 'pe-1' }"
+                        size="xs"
+                        class="w-1/2 min-w-0"
+                        placeholder="seconds">
+                        <template #leading><p class="text-xs text-muted">Max</p></template>
+                        <template v-if="maxLengthFilter?.length" #trailing>
+                          <UButton color="neutral" variant="link" size="sm" icon="i-lucide-circle-x" aria-label="Clear" @click="maxLengthFilter = ''" />
+                        </template>
+                      </UInput>
+                    </UFieldGroup>
+                  </div>
+                </div>
+
+                <!-- Collapsible: Bulk Edit -->
+                <div v-show="showBulkEdit" class="space-y-3 rounded-lg border border-default bg-elevated p-3">
+                  <div class="space-y-2">
+                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">Set Speaker</p>
+                    <UFieldGroup class="w-full">
+                      <USelectMenu
+                        v-model="selectedSpeakerPreset"
+                        :items="speakerPresetOptions"
+                        :search-input="{ placeholder: 'Search speaker presets...' }"
+                        size="xs"
+                        class="w-1/2 min-w-0"
+                        placeholder="Select character"
+                      />
+                      <UInput v-model="speakerBulkInput" size="xs" class="w-1/2 min-w-0" placeholder="Custom speaker name" />
+                    </UFieldGroup>
+                    <div class="flex flex-wrap items-center gap-2">
+                      <UButton size="xs" variant="outline" :disabled="!selectedSegmentIds.length" @click="applySpeakerToSelection(speakerBulkInput)">Update selection</UButton>
+                      <UButton size="xs" variant="outline" :disabled="!filteredSegments.length" @click="applySpeakerToFiltered(speakerBulkInput)">Update filtered</UButton>
+                      <UButton size="xs" variant="ghost" icon="i-lucide-x" :disabled="!selectedSpeakerPreset && !speakerBulkInput.trim()" @click="clearSpeakerUpdateInputs">Clear</UButton>
+                    </div>
+                  </div>
+                  <div class="space-y-2">
+                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">Enable / Disable</p>
+                    <div class="flex flex-wrap items-center gap-2">
+                      <UButton size="xs" variant="outline" :disabled="!selectedSegmentIds.length" @click="applyDisableToSelection(true)">Disable selected</UButton>
+                      <UButton size="xs" variant="outline" :disabled="!selectedSegmentIds.length" @click="applyDisableToSelection(false)">Enable selected</UButton>
+                    </div>
+                  </div>
+                </div>
+
+                <p v-if="saveError" class="text-sm text-error">{{ saveError }}</p>
+              </div>
+            </UCard>
+          </div>
+
+          <!-- Manage transcript card -->
           <UCard>
             <template #header>
               <div>
-                <h2 class="text-lg font-semibold">Transcript actions</h2>
-                <p class="text-sm text-muted">
-                  Import text or attach subtitles to video recordings.
-                </p>
+                <h2 class="text-lg font-semibold">Manage transcript</h2>
+                <p class="text-sm text-muted">Configure audio link, import files, and manage this transcript.</p>
               </div>
             </template>
             <div class="space-y-4">
-              <div class="grid gap-3">
+              <!-- Audio link -->
+              <div class="space-y-2 rounded-lg border border-default bg-elevated/30 p-3">
+                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Audio link</p>
+                <USelect
+                  v-model="selectedRecordingId"
+                  :items="recordingOptions"
+                  placeholder="Select recording"
+                  size="sm"
+                  class="w-full"
+                />
+                <div class="flex flex-wrap items-center gap-2 text-xs text-dimmed">
+                  <span v-if="linkedRecordingId">Linked: {{ linkedRecordingLabel }}</span>
+                  <span v-else>No default recording linked.</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <UButton size="xs" variant="outline" :disabled="!selectedRecordingId" @click="linkRecordingToTranscript">Set selected as default</UButton>
+                  <UButton size="xs" variant="ghost" :disabled="!linkedRecordingId" @click="unlinkRecording">Clear default</UButton>
+                </div>
+              </div>
+
+              <!-- Import transcript -->
+              <div class="space-y-2 rounded-lg border border-default bg-elevated/30 p-3">
+                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Import transcript</p>
+                <p class="text-xs text-dimmed">Accepts .txt, .md, .vtt formats.</p>
                 <UInput
                   type="file"
                   accept=".txt,.md,.markdown,.vtt"
@@ -1790,44 +1608,13 @@ const fullTranscript = computed(() =>
                 </UButton>
               </div>
 
-              <div class="space-y-2 rounded-lg border border-default bg-elevated/30 p-3">
-                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Audio link</p>
-                <USelect
-                  v-model="selectedRecordingId"
-                  :items="recordingOptions"
-                  placeholder="Select recording"
-                  size="sm"
-                  class="w-full"
-                />
-                <div class="flex flex-wrap items-center gap-2 text-xs text-dimmed">
-                  <span v-if="linkedRecordingId">
-                    Linked: {{ linkedRecordingLabel }}
-                  </span>
-                  <UButton
-                    size="xs"
-                    variant="outline"
-                    :disabled="!selectedRecordingId"
-                    @click="linkRecordingToTranscript"
-                  >
-                    Set as default
-                  </UButton>
-                  <UButton
-                    size="xs"
-                    variant="ghost"
-                    :disabled="!linkedRecordingId"
-                    @click="unlinkRecording"
-                  >
-                    Clear default
-                  </UButton>
-                </div>
-              </div>
-
+              <!-- Subtitles -->
               <div class="space-y-2 rounded-lg border border-default bg-elevated/30 p-3">
                 <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Subtitles</p>
                 <USelect
                   v-model="selectedSubtitleRecordingId"
                   :items="videoOptions"
-                  placeholder="Select video"
+                  placeholder="Select video recording"
                   size="sm"
                   class="w-full"
                 />
@@ -1842,6 +1629,30 @@ const fullTranscript = computed(() =>
                 </UButton>
               </div>
 
+              <!-- Danger zone -->
+              <div v-if="canManageDocument" class="space-y-2 rounded-lg border border-error/30 bg-error/5 p-3">
+                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Danger zone</p>
+                <SharedConfirmActionPopover
+                  message="Delete this transcript document?"
+                  confirm-label="Delete transcript"
+                  confirm-icon="i-lucide-trash-2"
+                  :confirm-loading="deleteLoading"
+                  @confirm="({ close }) => deleteDocumentWithClose(close)"
+                >
+                  <template #trigger>
+                    <UButton
+                      color="error"
+                      variant="outline"
+                      class="w-full justify-center"
+                      :loading="deleteLoading"
+                    >
+                      Delete transcript
+                    </UButton>
+                  </template>
+                </SharedConfirmActionPopover>
+                <p v-if="deleteError" class="text-sm text-error">{{ deleteError }}</p>
+              </div>
+
               <p v-if="importError" class="text-sm text-error">{{ importError }}</p>
               <p v-if="subtitleAttachError" class="text-sm text-error">{{ subtitleAttachError }}</p>
             </div>
@@ -1849,31 +1660,28 @@ const fullTranscript = computed(() =>
 
           <UCard>
             <template #header>
-              <div>
-                <h2 class="text-lg font-semibold">
-                  {{ showFullTranscript ? 'Read-only transcript' : 'Transcript preview' }}
-                </h2>
-                <p class="text-sm text-muted">
-                  {{ showFullTranscript ? 'Full transcript text (read-only).' : 'Top segments for quick review.' }}
-                </p>
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <h2 class="text-lg font-semibold">Transcript preview</h2>
+                  <p class="text-sm text-muted">Read-only view of the full transcript text.</p>
+                </div>
+                <UButton
+                  size="xs"
+                  variant="ghost"
+                  :icon="showFullTranscript ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+                  :aria-label="showFullTranscript ? 'Collapse preview' : 'Expand preview'"
+                  @click="showFullTranscript = !showFullTranscript"
+                />
               </div>
             </template>
-            <div class="space-y-3">
-              <div
-                class="whitespace-pre-line text-sm text-muted"
-                :class="showFullTranscript ? 'max-h-96 overflow-y-auto' : ''"
-              >
-                {{ (showFullTranscript ? fullTranscript : transcriptPreview) || 'No transcript yet.' }}
+            <div v-show="showFullTranscript" class="space-y-3">
+              <div class="max-h-96 overflow-y-auto whitespace-pre-line text-sm text-muted">
+                {{ fullTranscript || 'No transcript yet.' }}
               </div>
-              <UButton
-                size="sm"
-                variant="outline"
-                class="w-full justify-center"
-                @click="showFullTranscript = !showFullTranscript"
-              >
-                {{ showFullTranscript ? 'Hide full transcript' : 'Show full transcript' }}
-              </UButton>
             </div>
+            <p v-show="!showFullTranscript" class="text-xs text-dimmed">
+              Click to expand and read the full transcript.
+            </p>
           </UCard>
 
           <UCard>
@@ -1893,7 +1701,10 @@ const fullTranscript = computed(() =>
               >
                 <div class="flex items-center justify-between gap-2">
                   <div>
-                    <p class="font-semibold">Version {{ version.versionNumber }}</p>
+                    <div class="flex items-center gap-2">
+                      <p class="font-semibold">Version {{ version.versionNumber }}</p>
+                      <UBadge v-if="document?.currentVersionId === version.id" color="primary" variant="subtle" size="xs">Current</UBadge>
+                    </div>
                     <p class="text-xs text-dimmed">
                       {{ new Date(version.createdAt).toLocaleString() }} - {{ version.source }}
                     </p>

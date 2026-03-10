@@ -226,25 +226,19 @@ const openFullPlayer = () => {
           >
         </component>
 
-        <div v-if="showInline" class="space-y-3 rounded-lg border border-default bg-elevated/40 p-4">
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Now playing</p>
-              <p class="font-semibold">{{ state.source?.title }}</p>
-              <p v-if="state.source?.subtitle" class="text-xs text-muted">{{ state.source?.subtitle }}</p>
-            </div>
-            <div class="flex items-center gap-2">
-              <UButton size="sm" variant="outline" @click="player.toggle">
-                <UIcon :name="state.isPlaying ? 'i-heroicons-pause' : 'i-heroicons-play'" />
-              </UButton>
-              <UButton size="sm" variant="ghost" @click="openFullPlayer">
-                Open player
-              </UButton>
-            </div>
-          </div>
-          <div class="space-y-2">
+        <div v-if="showInline" class="rounded-lg border border-default bg-elevated/40 p-3">
+          <div class="flex items-center gap-2">
+            <UTooltip text="Skip back 5 seconds">
+              <UButton size="xs" variant="ghost" icon="i-lucide-rotate-ccw" @click="player.seek(Math.max(0, state.currentTime - 5))" />
+            </UTooltip>
+            <UButton size="xs" variant="outline" @click="player.toggle">
+              <UIcon :name="state.isPlaying ? 'i-heroicons-pause' : 'i-heroicons-play'" />
+            </UButton>
+            <UTooltip text="Skip forward 30 seconds">
+              <UButton size="xs" variant="ghost" icon="i-lucide-rotate-cw" @click="player.seek(state.currentTime + 30)" />
+            </UTooltip>
             <input
-              class="w-full accent-primary"
+              class="min-w-0 flex-1 accent-primary"
               type="range"
               min="0"
               max="100"
@@ -252,11 +246,12 @@ const openFullPlayer = () => {
               :value="progress"
               @input="onSeek"
             >
-            <div class="flex items-center justify-between text-xs text-dimmed">
-              <span>{{ formatTime(state.currentTime) }}</span>
-              <span>{{ formatTime(state.duration) }}</span>
-            </div>
+            <span class="shrink-0 text-xs tabular-nums text-dimmed">{{ formatTime(state.currentTime) }} / {{ formatTime(state.duration) }}</span>
+            <UTooltip text="Open full player">
+              <UButton size="xs" variant="ghost" icon="i-lucide-maximize-2" @click="openFullPlayer" />
+            </UTooltip>
           </div>
+          <p class="mt-1 truncate text-xs text-muted">{{ state.source?.title }}</p>
         </div>
       </div>
     </Teleport>

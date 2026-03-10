@@ -3,12 +3,14 @@ withDefaults(defineProps<{
   backTo: string
   backLabel?: string
   backButtonPlacement?: 'stacked' | 'header'
+  backButtonSize?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
   headline?: string
   title: string
   description?: string
 }>(), {
   backLabel: 'Back',
   backButtonPlacement: 'stacked',
+  backButtonSize: 'md',
   headline: '',
   description: '',
 })
@@ -21,6 +23,7 @@ const hasAside = computed(() => Boolean(slots.aside))
   <div class="space-y-6">
     <UButton
       v-if="backButtonPlacement === 'stacked'"
+      :size="backButtonSize"
       variant="outline"
       icon="i-lucide-arrow-left"
       :to="backTo"
@@ -36,6 +39,7 @@ const hasAside = computed(() => Boolean(slots.aside))
       <template #links>
         <UButton
           v-if="backButtonPlacement === 'header'"
+          :size="backButtonSize"
           variant="outline"
           icon="i-lucide-arrow-left"
           :to="backTo"

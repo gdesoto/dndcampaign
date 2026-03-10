@@ -226,6 +226,31 @@ export const useMediaPlayer = () => {
     if (element.value) element.value.playbackRate = nextValue
   }
 
+  const loadSource = (
+    source: MediaSource,
+    options?: { presentation?: MediaPresentation }
+  ) => {
+    state.value.error = ''
+    state.value.autoplay = false
+    state.value.source = source
+    if (options?.presentation) {
+      state.value.presentation = options.presentation
+    }
+    const media = element.value
+    if (!media) return
+    const expectedTag = source.kind === 'VIDEO' ? 'VIDEO' : 'AUDIO'
+    if (media.tagName !== expectedTag) {
+      media.pause()
+      media.removeAttribute('src')
+      media.load()
+      return
+    }
+    if (media.src !== source.src) {
+      media.src = source.src
+      media.load()
+    }
+  }
+
   const setPresentation = (value: MediaPresentation) => {
     state.value.presentation = value
     if (value === 'page') {
@@ -251,6 +276,7 @@ export const useMediaPlayer = () => {
     hasSource,
     setElement,
     playSource,
+    loadSource,
     play,
     pause,
     stop,
