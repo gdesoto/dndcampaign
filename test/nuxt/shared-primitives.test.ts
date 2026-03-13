@@ -49,6 +49,29 @@ describe('SharedEntityFormModal', () => {
     expect(wrapper.emitted('cancel')).toBeTruthy()
   })
 
+  it('disables overlay dismissal on the shared entity modal', async () => {
+    const wrapper = await mountSuspended(EntityFormModal, {
+      props: {
+        open: true,
+        title: 'Edit thing',
+      },
+      slots: {
+        default: () => h('div', 'Fields'),
+      },
+      global: {
+        stubs: {
+          UModal: {
+            props: ['open', 'dismissible'],
+            emits: ['update:open'],
+            template: '<div :data-dismissible="String(dismissible)"><slot name="content" /></div>',
+          },
+        },
+      },
+    })
+
+    expect(wrapper.attributes('data-dismissible')).toBe('false')
+  })
+
   it('emits delete when the footer delete action is enabled', async () => {
     const wrapper = await mountSuspended(EntityFormModal, {
       props: {

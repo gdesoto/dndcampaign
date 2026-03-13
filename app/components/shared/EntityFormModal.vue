@@ -53,7 +53,7 @@ const onDelete = () => {
 </script>
 
 <template>
-  <UModal v-model:open="openModel" scrollable>
+  <UModal v-model:open="openModel" :dismissible="false" scrollable>
     <template #content>
       <UCard>
         <template #header>
