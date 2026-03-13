@@ -59,6 +59,8 @@ const { data: entries, pending, refresh, error } = await useAsyncData(
   { watch: [activeType, search] }
 )
 
+const isInitialEntriesLoadPending = computed(() => pending.value && !entries.value)
+
 const {
   isOpen: isEditOpen,
   mode: editMode,
@@ -180,7 +182,7 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
       </template>
 
       <SharedResourceState
-        :pending="pending"
+        :pending="isInitialEntriesLoadPending"
         :error="error"
         :empty="!entries?.length"
         error-message="Unable to load glossary entries."

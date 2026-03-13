@@ -36,6 +36,7 @@ const {
     watch: [() => filters.status, () => filters.type],
   },
 )
+const isInitialEncountersLoadPending = computed(() => pending.value && !encounters.value)
 const {
   data: statBlocks,
   pending: statBlocksPending,
@@ -45,6 +46,7 @@ const {
   () => `encounter-stat-blocks-${campaignId.value}`,
   () => statBlockApi.listStatBlocks(campaignId.value),
 )
+const isInitialStatBlocksLoadPending = computed(() => statBlocksPending.value && !statBlocks.value)
 const {
   data: templates,
   pending: templatesPending,
@@ -54,6 +56,7 @@ const {
   () => `encounter-templates-${campaignId.value}`,
   () => templateApi.listTemplates(campaignId.value),
 )
+const isInitialTemplatesLoadPending = computed(() => templatesPending.value && !templates.value)
 
 const isCreateOpen = ref(false)
 const createError = ref('')
@@ -396,7 +399,7 @@ const statBlockOptions = computed(() =>
     </template>
 
     <SharedResourceState
-      :pending="pending"
+      :pending="isInitialEncountersLoadPending"
       :error="error"
       :empty="!encounters?.length"
       error-message="Unable to load encounters."
@@ -444,7 +447,7 @@ const statBlockOptions = computed(() =>
         </div>
       </template>
       <SharedResourceState
-        :pending="statBlocksPending"
+        :pending="isInitialStatBlocksLoadPending"
         :error="statBlocksError"
         :empty="!statBlocks?.length"
         error-message="Unable to load encounter stat blocks."
@@ -500,7 +503,7 @@ const statBlockOptions = computed(() =>
         </div>
       </template>
       <SharedResourceState
-        :pending="templatesPending"
+        :pending="isInitialTemplatesLoadPending"
         :error="templatesError"
         :empty="!templates?.length"
         error-message="Unable to load encounter templates."

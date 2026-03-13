@@ -18,6 +18,8 @@ const { data: sessions, pending, refresh, error } = await useAsyncData(
   () => request<SessionItem[]>(`/api/campaigns/${campaignId.value}/sessions`)
 )
 
+const isInitialSessionsLoadPending = computed(() => pending.value && !sessions.value)
+
 const isCreateOpen = ref(false)
 const createForm = reactive({
   title: '',
@@ -93,7 +95,7 @@ const createSession = async () => {
       </template>
 
       <SharedResourceState
-        :pending="pending"
+        :pending="isInitialSessionsLoadPending"
         :error="error"
         :empty="!sessions?.length"
         error-message="Unable to load sessions."

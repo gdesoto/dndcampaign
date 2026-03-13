@@ -17,6 +17,8 @@ const { data: milestones, pending, refresh, error } = await useAsyncData(
   () => request<MilestoneItem[]>(`/api/campaigns/${campaignId.value}/milestones`)
 )
 
+const isInitialLoadPending = computed(() => pending.value && !milestones.value)
+
 const {
   isOpen: isEditOpen,
   mode: editMode,
@@ -120,7 +122,7 @@ const deleteMilestone = async (milestone: MilestoneItem) => {
       </template>
 
       <SharedResourceState
-        :pending="pending"
+        :pending="isInitialLoadPending"
         :error="error"
         :empty="!milestones?.length"
         error-message="Unable to load milestones."

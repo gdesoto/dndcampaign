@@ -18,6 +18,8 @@ const { data: quests, pending, refresh, error } = await useAsyncData(
   () => request<QuestItem[]>(`/api/campaigns/${campaignId.value}/quests`)
 )
 
+const isInitialQuestsLoadPending = computed(() => pending.value && !quests.value)
+
 const statusOptions: Array<{ label: string; value: QuestItem['status'] }> = [
   { label: 'Active', value: 'ACTIVE' },
   { label: 'Completed', value: 'COMPLETED' },
@@ -194,7 +196,7 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
       </template>
 
       <SharedResourceState
-        :pending="pending"
+        :pending="isInitialQuestsLoadPending"
         :error="error"
         :empty="!quests?.length"
         error-message="Unable to load quests."

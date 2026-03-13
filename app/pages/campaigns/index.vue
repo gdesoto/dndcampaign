@@ -18,6 +18,8 @@ const { data: campaigns, pending, refresh, error } = await useAsyncData(
   () => request<CampaignSummary[]>('/api/campaigns')
 )
 
+const isInitialCampaignsLoadPending = computed(() => pending.value && !campaigns.value)
+
 const isCreateOpen = ref(false)
 const createForm = reactive({
   name: '',
@@ -82,7 +84,7 @@ const createCampaign = async () => {
       </UPageHeader>
 
       <SharedResourceState
-        :pending="pending"
+        :pending="isInitialCampaignsLoadPending"
         :error="error"
         :empty="!campaigns?.length"
         error-message="Unable to load campaigns."
@@ -164,4 +166,3 @@ const createCampaign = async () => {
     </div>
   </UPage>
 </template>
-
