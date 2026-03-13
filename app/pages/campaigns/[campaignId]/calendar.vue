@@ -185,19 +185,28 @@ const rangesInSelectedMonth = computed(() => {
   })
 })
 
-const dayRangeCountMap = computed(() => {
-  const map = new Map<number, number>()
+const daySessionMap = computed(() => {
+  const map = new Map<number, SessionItem[]>()
   const month = selectedMonthMeta.value
   if (!month) return map
 
   for (let day = 1; day <= month.length; day += 1) {
-    const count = rangesInSelectedMonth.value.filter((range) =>
-      rangeIntersectsDay(range, { year: month.year, month: month.month, day }),
-    ).length
-    if (count > 0) {
-      map.set(day, count)
+    const sessionsForDay = rangesInSelectedMonth.value
+      .filter((range) => rangeIntersectsDay(range, { year: month.year, month: month.month, day }))
+      .map((range) => range.session)
+      .filter((session): session is SessionItem => Boolean(session))
+      .sort((left, right) => {
+        const leftNumber = left.sessionNumber ?? Number.MAX_SAFE_INTEGER
+        const rightNumber = right.sessionNumber ?? Number.MAX_SAFE_INTEGER
+        if (leftNumber !== rightNumber) return leftNumber - rightNumber
+        return left.title.localeCompare(right.title)
+      })
+
+    if (sessionsForDay.length > 0) {
+      map.set(day, sessionsForDay)
     }
   }
+
   return map
 })
 
@@ -463,9 +472,9 @@ const loadRangeForSession = (sessionId: string) => {
   rangeForm.sessionId = sessionId
   const existing = (sessionRanges.value || []).find((range) => range.sessionId === sessionId)
   if (!existing) {
-    const fallbackYear = selectedMonthMeta.value?.year || currentDate.value?.year || 1
-    const fallbackMonth = selectedMonthMeta.value?.month || currentDate.value?.month || 1
-    const fallbackDay = selectedDay.value || currentDate.value?.day || 1
+    const fallbackYear = currentDate.value?.year || selectedMonthMeta.value?.year || 1
+    const fallbackMonth = currentDate.value?.month || selectedMonthMeta.value?.month || 1
+    const fallbackDay = currentDate.value?.day || selectedDay.value || 1
     rangeForm.startYear = fallbackYear
     rangeForm.startMonth = fallbackMonth
     rangeForm.startDay = fallbackDay
@@ -612,9 +621,21 @@ const removeRange = async () => {
               >
                 <div class="font-semibold">{{ cellDay }}</div>
                 <div class="mt-1 flex flex-col items-start gap-1 text-[11px]">
-                  <span v-if="dayRangeCountMap.get(cellDay)" class="text-primary">
-                    {{ dayRangeCountMap.get(cellDay) }} Session{{ dayRangeCountMap.get(cellDay)! > 1 ? 's' : '' }}
-                  </span>
+                  <div
+                    v-if="daySessionMap.get(cellDay)?.length"
+                    class="flex flex-wrap items-center gap-1"
+                  >
+                    <UTooltip
+                      v-for="session in daySessionMap.get(cellDay)"
+                      :key="session.id"
+                      :text="session.title"
+                      :content="{ side: 'top' }"
+                    >
+                      <span class="rounded-sm bg-primary/10 px-1 py-0.5 text-primary">
+                        Session {{ session.sessionNumber ?? '?' }}
+                      </span>
+                    </UTooltip>
+                  </div>
                   <span
                     v-if="dayEventCountMap.get(cellDay)"
                     class="text-secondary"
