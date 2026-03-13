@@ -32,6 +32,8 @@ const {
   description: '',
 }))
 
+const deletingMilestoneId = ref<string | null>(null)
+
 const openCreate = () => {
   if (!canWriteContent.value) return
   openMilestoneCreate()
@@ -82,6 +84,21 @@ const toggleComplete = async (milestone: MilestoneItem) => {
   })
   await refresh()
 }
+
+const deleteMilestone = async (milestone: MilestoneItem) => {
+  if (!canWriteContent.value) return
+
+  deletingMilestoneId.value = milestone.id
+
+  try {
+    await request(`/api/milestones/${milestone.id}`, {
+      method: 'DELETE',
+    })
+    await refresh()
+  } finally {
+    deletingMilestoneId.value = null
+  }
+}
 </script>
 
 <template>
@@ -127,7 +144,19 @@ const toggleComplete = async (milestone: MilestoneItem) => {
                   <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Milestone</p>
                   <h3 class="text-lg font-semibold">{{ milestone.title }}</h3>
                 </div>
-                <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="openEdit(milestone)">Edit</UButton>
+                <div class="flex items-start gap-2">
+                  <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="openEdit(milestone)">Edit</UButton>
+                  <SharedConfirmActionPopover
+                    trigger-label="Delete"
+                    trigger-color="error"
+                    trigger-variant="ghost"
+                    confirm-label="Delete"
+                    message="Delete this milestone? This action cannot be undone."
+                    :disabled="!canWriteContent"
+                    :confirm-loading="deletingMilestoneId === milestone.id"
+                    @confirm="deleteMilestone(milestone)"
+                  />
+                </div>
               </div>
             </template>
             <p class="text-sm whitespace-pre-line text-default">{{ milestone.description || 'Add details about this milestone.' }}</p>
