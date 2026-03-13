@@ -41,7 +41,7 @@ const {
               :key="`${character.name}-${character.roleLabel || ''}`"
               class="rounded-lg border border-default bg-elevated/20 p-3"
             >
-              <div class="flex items-start justify-between gap-3">
+              <div class="flex items-center justify-between gap-3">
                 <div>
                   <p class="text-sm font-semibold">{{ character.name }}</p>
                   <p v-if="character.status" class="text-xs text-muted">{{ character.status }}</p>

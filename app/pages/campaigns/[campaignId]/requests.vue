@@ -331,7 +331,7 @@ const decideRequest = async (requestId: string, decision: CampaignRequestDecisio
       <div class="grid gap-4 sm:grid-cols-2">
         <SharedListItemCard v-for="request in requests" :key="request.id">
           <template #header>
-            <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center justify-between gap-3">
               <div class="space-y-1">
                 <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Request</p>
                 <h3 class="text-base font-semibold">{{ request.title }}</h3>
@@ -475,4 +475,3 @@ const decideRequest = async (requestId: string, decision: CampaignRequestDecisio
     </SharedEntityFormModal>
   </div>
 </template>
-

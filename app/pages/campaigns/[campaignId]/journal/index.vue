@@ -524,7 +524,7 @@ const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value
           :key="entry.id"
         >
           <template #header>
-            <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center justify-between gap-3">
               <div class="space-y-1">
                 <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Journal entry</p>
                 <NuxtLink

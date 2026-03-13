@@ -150,7 +150,7 @@ const deleteEditingMilestone = async () => {
         <div class="grid gap-4 sm:grid-cols-2">
           <SharedListItemCard v-for="milestone in milestones" :key="milestone.id">
             <template #header>
-              <div class="flex items-start justify-between gap-3">
+              <div class="flex items-center justify-between gap-3">
                 <div>
                   <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Milestone</p>
                   <h3 class="text-lg font-semibold">{{ milestone.title }}</h3>

@@ -35,7 +35,7 @@ const emit = defineEmits<{
 <template>
   <SharedListItemCard>
     <template #header>
-      <div class="flex items-start justify-between gap-3">
+      <div class="flex items-center justify-between gap-3">
         <div>
           <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Quest</p>
           <h3 class="text-lg font-semibold">{{ quest.title }}</h3>

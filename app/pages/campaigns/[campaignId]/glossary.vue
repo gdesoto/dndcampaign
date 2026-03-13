@@ -220,7 +220,7 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
             :key="entry.id"
           >
             <template #header>
-              <div class="flex items-start justify-between gap-3">
+              <div class="flex items-center justify-between gap-3">
                 <div>
                   <p class="text-xs uppercase tracking-[0.2em] text-dimmed">{{ entry.type }}</p>
                   <h3 class="text-lg font-semibold">{{ entry.name }}</h3>
