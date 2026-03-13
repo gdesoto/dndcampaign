@@ -229,6 +229,7 @@ export type GlossaryEntryWhereInput = {
   sourceMapFeature?: Prisma.XOR<Prisma.CampaignMapFeatureNullableScalarRelationFilter, Prisma.CampaignMapFeatureWhereInput> | null
   mapLinks?: Prisma.CampaignMapGlossaryLinkListRelationFilter
   journalTags?: Prisma.CampaignJournalTagListRelationFilter
+  questSources?: Prisma.QuestListRelationFilter
 }
 
 export type GlossaryEntryOrderByWithRelationInput = {
@@ -249,6 +250,7 @@ export type GlossaryEntryOrderByWithRelationInput = {
   sourceMapFeature?: Prisma.CampaignMapFeatureOrderByWithRelationInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkOrderByRelationAggregateInput
   journalTags?: Prisma.CampaignJournalTagOrderByRelationAggregateInput
+  questSources?: Prisma.QuestOrderByRelationAggregateInput
 }
 
 export type GlossaryEntryWhereUniqueInput = Prisma.AtLeast<{
@@ -272,6 +274,7 @@ export type GlossaryEntryWhereUniqueInput = Prisma.AtLeast<{
   sourceMapFeature?: Prisma.XOR<Prisma.CampaignMapFeatureNullableScalarRelationFilter, Prisma.CampaignMapFeatureWhereInput> | null
   mapLinks?: Prisma.CampaignMapGlossaryLinkListRelationFilter
   journalTags?: Prisma.CampaignJournalTagListRelationFilter
+  questSources?: Prisma.QuestListRelationFilter
 }, "id">
 
 export type GlossaryEntryOrderByWithAggregationInput = {
@@ -321,6 +324,7 @@ export type GlossaryEntryCreateInput = {
   sourceMapFeature?: Prisma.CampaignMapFeatureCreateNestedOneWithoutSourceGlossaryEntriesInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkCreateNestedManyWithoutGlossaryEntryInput
   journalTags?: Prisma.CampaignJournalTagCreateNestedManyWithoutGlossaryEntryInput
+  questSources?: Prisma.QuestCreateNestedManyWithoutSourceNpcInput
 }
 
 export type GlossaryEntryUncheckedCreateInput = {
@@ -338,6 +342,7 @@ export type GlossaryEntryUncheckedCreateInput = {
   campaignCharacters?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutGlossaryEntryInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
   journalTags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutGlossaryEntryInput
+  questSources?: Prisma.QuestUncheckedCreateNestedManyWithoutSourceNpcInput
 }
 
 export type GlossaryEntryUpdateInput = {
@@ -355,6 +360,7 @@ export type GlossaryEntryUpdateInput = {
   sourceMapFeature?: Prisma.CampaignMapFeatureUpdateOneWithoutSourceGlossaryEntriesNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUpdateManyWithoutGlossaryEntryNestedInput
   journalTags?: Prisma.CampaignJournalTagUpdateManyWithoutGlossaryEntryNestedInput
+  questSources?: Prisma.QuestUpdateManyWithoutSourceNpcNestedInput
 }
 
 export type GlossaryEntryUncheckedUpdateInput = {
@@ -372,6 +378,7 @@ export type GlossaryEntryUncheckedUpdateInput = {
   campaignCharacters?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   journalTags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutGlossaryEntryNestedInput
+  questSources?: Prisma.QuestUncheckedUpdateManyWithoutSourceNpcNestedInput
 }
 
 export type GlossaryEntryCreateManyInput = {
@@ -643,6 +650,22 @@ export type GlossaryEntryUpdateOneRequiredWithoutSessionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.GlossaryEntryUpdateToOneWithWhereWithoutSessionsInput, Prisma.GlossaryEntryUpdateWithoutSessionsInput>, Prisma.GlossaryEntryUncheckedUpdateWithoutSessionsInput>
 }
 
+export type GlossaryEntryCreateNestedOneWithoutQuestSourcesInput = {
+  create?: Prisma.XOR<Prisma.GlossaryEntryCreateWithoutQuestSourcesInput, Prisma.GlossaryEntryUncheckedCreateWithoutQuestSourcesInput>
+  connectOrCreate?: Prisma.GlossaryEntryCreateOrConnectWithoutQuestSourcesInput
+  connect?: Prisma.GlossaryEntryWhereUniqueInput
+}
+
+export type GlossaryEntryUpdateOneWithoutQuestSourcesNestedInput = {
+  create?: Prisma.XOR<Prisma.GlossaryEntryCreateWithoutQuestSourcesInput, Prisma.GlossaryEntryUncheckedCreateWithoutQuestSourcesInput>
+  connectOrCreate?: Prisma.GlossaryEntryCreateOrConnectWithoutQuestSourcesInput
+  upsert?: Prisma.GlossaryEntryUpsertWithoutQuestSourcesInput
+  disconnect?: Prisma.GlossaryEntryWhereInput | boolean
+  delete?: Prisma.GlossaryEntryWhereInput | boolean
+  connect?: Prisma.GlossaryEntryWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.GlossaryEntryUpdateToOneWithWhereWithoutQuestSourcesInput, Prisma.GlossaryEntryUpdateWithoutQuestSourcesInput>, Prisma.GlossaryEntryUncheckedUpdateWithoutQuestSourcesInput>
+}
+
 export type GlossaryEntryCreateNestedOneWithoutCampaignCharactersInput = {
   create?: Prisma.XOR<Prisma.GlossaryEntryCreateWithoutCampaignCharactersInput, Prisma.GlossaryEntryUncheckedCreateWithoutCampaignCharactersInput>
   connectOrCreate?: Prisma.GlossaryEntryCreateOrConnectWithoutCampaignCharactersInput
@@ -673,6 +696,7 @@ export type GlossaryEntryCreateWithoutCampaignInput = {
   sourceMapFeature?: Prisma.CampaignMapFeatureCreateNestedOneWithoutSourceGlossaryEntriesInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkCreateNestedManyWithoutGlossaryEntryInput
   journalTags?: Prisma.CampaignJournalTagCreateNestedManyWithoutGlossaryEntryInput
+  questSources?: Prisma.QuestCreateNestedManyWithoutSourceNpcInput
 }
 
 export type GlossaryEntryUncheckedCreateWithoutCampaignInput = {
@@ -689,6 +713,7 @@ export type GlossaryEntryUncheckedCreateWithoutCampaignInput = {
   campaignCharacters?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutGlossaryEntryInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
   journalTags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutGlossaryEntryInput
+  questSources?: Prisma.QuestUncheckedCreateNestedManyWithoutSourceNpcInput
 }
 
 export type GlossaryEntryCreateOrConnectWithoutCampaignInput = {
@@ -746,6 +771,7 @@ export type GlossaryEntryCreateWithoutJournalTagsInput = {
   sourceMap?: Prisma.CampaignMapCreateNestedOneWithoutSourceGlossaryEntriesInput
   sourceMapFeature?: Prisma.CampaignMapFeatureCreateNestedOneWithoutSourceGlossaryEntriesInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkCreateNestedManyWithoutGlossaryEntryInput
+  questSources?: Prisma.QuestCreateNestedManyWithoutSourceNpcInput
 }
 
 export type GlossaryEntryUncheckedCreateWithoutJournalTagsInput = {
@@ -762,6 +788,7 @@ export type GlossaryEntryUncheckedCreateWithoutJournalTagsInput = {
   sessions?: Prisma.GlossarySessionLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
   campaignCharacters?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutGlossaryEntryInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
+  questSources?: Prisma.QuestUncheckedCreateNestedManyWithoutSourceNpcInput
 }
 
 export type GlossaryEntryCreateOrConnectWithoutJournalTagsInput = {
@@ -794,6 +821,7 @@ export type GlossaryEntryUpdateWithoutJournalTagsInput = {
   sourceMap?: Prisma.CampaignMapUpdateOneWithoutSourceGlossaryEntriesNestedInput
   sourceMapFeature?: Prisma.CampaignMapFeatureUpdateOneWithoutSourceGlossaryEntriesNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUpdateManyWithoutGlossaryEntryNestedInput
+  questSources?: Prisma.QuestUpdateManyWithoutSourceNpcNestedInput
 }
 
 export type GlossaryEntryUncheckedUpdateWithoutJournalTagsInput = {
@@ -810,6 +838,7 @@ export type GlossaryEntryUncheckedUpdateWithoutJournalTagsInput = {
   sessions?: Prisma.GlossarySessionLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   campaignCharacters?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
+  questSources?: Prisma.QuestUncheckedUpdateManyWithoutSourceNpcNestedInput
 }
 
 export type GlossaryEntryCreateWithoutSourceMapInput = {
@@ -826,6 +855,7 @@ export type GlossaryEntryCreateWithoutSourceMapInput = {
   sourceMapFeature?: Prisma.CampaignMapFeatureCreateNestedOneWithoutSourceGlossaryEntriesInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkCreateNestedManyWithoutGlossaryEntryInput
   journalTags?: Prisma.CampaignJournalTagCreateNestedManyWithoutGlossaryEntryInput
+  questSources?: Prisma.QuestCreateNestedManyWithoutSourceNpcInput
 }
 
 export type GlossaryEntryUncheckedCreateWithoutSourceMapInput = {
@@ -842,6 +872,7 @@ export type GlossaryEntryUncheckedCreateWithoutSourceMapInput = {
   campaignCharacters?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutGlossaryEntryInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
   journalTags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutGlossaryEntryInput
+  questSources?: Prisma.QuestUncheckedCreateNestedManyWithoutSourceNpcInput
 }
 
 export type GlossaryEntryCreateOrConnectWithoutSourceMapInput = {
@@ -883,6 +914,7 @@ export type GlossaryEntryCreateWithoutSourceMapFeatureInput = {
   sourceMap?: Prisma.CampaignMapCreateNestedOneWithoutSourceGlossaryEntriesInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkCreateNestedManyWithoutGlossaryEntryInput
   journalTags?: Prisma.CampaignJournalTagCreateNestedManyWithoutGlossaryEntryInput
+  questSources?: Prisma.QuestCreateNestedManyWithoutSourceNpcInput
 }
 
 export type GlossaryEntryUncheckedCreateWithoutSourceMapFeatureInput = {
@@ -899,6 +931,7 @@ export type GlossaryEntryUncheckedCreateWithoutSourceMapFeatureInput = {
   campaignCharacters?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutGlossaryEntryInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
   journalTags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutGlossaryEntryInput
+  questSources?: Prisma.QuestUncheckedCreateNestedManyWithoutSourceNpcInput
 }
 
 export type GlossaryEntryCreateOrConnectWithoutSourceMapFeatureInput = {
@@ -940,6 +973,7 @@ export type GlossaryEntryCreateWithoutMapLinksInput = {
   sourceMap?: Prisma.CampaignMapCreateNestedOneWithoutSourceGlossaryEntriesInput
   sourceMapFeature?: Prisma.CampaignMapFeatureCreateNestedOneWithoutSourceGlossaryEntriesInput
   journalTags?: Prisma.CampaignJournalTagCreateNestedManyWithoutGlossaryEntryInput
+  questSources?: Prisma.QuestCreateNestedManyWithoutSourceNpcInput
 }
 
 export type GlossaryEntryUncheckedCreateWithoutMapLinksInput = {
@@ -956,6 +990,7 @@ export type GlossaryEntryUncheckedCreateWithoutMapLinksInput = {
   sessions?: Prisma.GlossarySessionLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
   campaignCharacters?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutGlossaryEntryInput
   journalTags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutGlossaryEntryInput
+  questSources?: Prisma.QuestUncheckedCreateNestedManyWithoutSourceNpcInput
 }
 
 export type GlossaryEntryCreateOrConnectWithoutMapLinksInput = {
@@ -988,6 +1023,7 @@ export type GlossaryEntryUpdateWithoutMapLinksInput = {
   sourceMap?: Prisma.CampaignMapUpdateOneWithoutSourceGlossaryEntriesNestedInput
   sourceMapFeature?: Prisma.CampaignMapFeatureUpdateOneWithoutSourceGlossaryEntriesNestedInput
   journalTags?: Prisma.CampaignJournalTagUpdateManyWithoutGlossaryEntryNestedInput
+  questSources?: Prisma.QuestUpdateManyWithoutSourceNpcNestedInput
 }
 
 export type GlossaryEntryUncheckedUpdateWithoutMapLinksInput = {
@@ -1004,6 +1040,7 @@ export type GlossaryEntryUncheckedUpdateWithoutMapLinksInput = {
   sessions?: Prisma.GlossarySessionLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   campaignCharacters?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   journalTags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutGlossaryEntryNestedInput
+  questSources?: Prisma.QuestUncheckedUpdateManyWithoutSourceNpcNestedInput
 }
 
 export type GlossaryEntryCreateWithoutSessionsInput = {
@@ -1020,6 +1057,7 @@ export type GlossaryEntryCreateWithoutSessionsInput = {
   sourceMapFeature?: Prisma.CampaignMapFeatureCreateNestedOneWithoutSourceGlossaryEntriesInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkCreateNestedManyWithoutGlossaryEntryInput
   journalTags?: Prisma.CampaignJournalTagCreateNestedManyWithoutGlossaryEntryInput
+  questSources?: Prisma.QuestCreateNestedManyWithoutSourceNpcInput
 }
 
 export type GlossaryEntryUncheckedCreateWithoutSessionsInput = {
@@ -1036,6 +1074,7 @@ export type GlossaryEntryUncheckedCreateWithoutSessionsInput = {
   campaignCharacters?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutGlossaryEntryInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
   journalTags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutGlossaryEntryInput
+  questSources?: Prisma.QuestUncheckedCreateNestedManyWithoutSourceNpcInput
 }
 
 export type GlossaryEntryCreateOrConnectWithoutSessionsInput = {
@@ -1068,6 +1107,7 @@ export type GlossaryEntryUpdateWithoutSessionsInput = {
   sourceMapFeature?: Prisma.CampaignMapFeatureUpdateOneWithoutSourceGlossaryEntriesNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUpdateManyWithoutGlossaryEntryNestedInput
   journalTags?: Prisma.CampaignJournalTagUpdateManyWithoutGlossaryEntryNestedInput
+  questSources?: Prisma.QuestUpdateManyWithoutSourceNpcNestedInput
 }
 
 export type GlossaryEntryUncheckedUpdateWithoutSessionsInput = {
@@ -1081,6 +1121,91 @@ export type GlossaryEntryUncheckedUpdateWithoutSessionsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sourceMapId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceMapFeatureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  campaignCharacters?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutGlossaryEntryNestedInput
+  mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
+  journalTags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutGlossaryEntryNestedInput
+  questSources?: Prisma.QuestUncheckedUpdateManyWithoutSourceNpcNestedInput
+}
+
+export type GlossaryEntryCreateWithoutQuestSourcesInput = {
+  id?: string
+  type: $Enums.GlossaryType
+  name: string
+  aliases?: string | null
+  description: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  campaign: Prisma.CampaignCreateNestedOneWithoutGlossaryInput
+  sessions?: Prisma.GlossarySessionLinkCreateNestedManyWithoutGlossaryEntryInput
+  campaignCharacters?: Prisma.CampaignCharacterCreateNestedManyWithoutGlossaryEntryInput
+  sourceMap?: Prisma.CampaignMapCreateNestedOneWithoutSourceGlossaryEntriesInput
+  sourceMapFeature?: Prisma.CampaignMapFeatureCreateNestedOneWithoutSourceGlossaryEntriesInput
+  mapLinks?: Prisma.CampaignMapGlossaryLinkCreateNestedManyWithoutGlossaryEntryInput
+  journalTags?: Prisma.CampaignJournalTagCreateNestedManyWithoutGlossaryEntryInput
+}
+
+export type GlossaryEntryUncheckedCreateWithoutQuestSourcesInput = {
+  id?: string
+  campaignId: string
+  type: $Enums.GlossaryType
+  name: string
+  aliases?: string | null
+  description: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sourceMapId?: string | null
+  sourceMapFeatureId?: string | null
+  sessions?: Prisma.GlossarySessionLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
+  campaignCharacters?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutGlossaryEntryInput
+  mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
+  journalTags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutGlossaryEntryInput
+}
+
+export type GlossaryEntryCreateOrConnectWithoutQuestSourcesInput = {
+  where: Prisma.GlossaryEntryWhereUniqueInput
+  create: Prisma.XOR<Prisma.GlossaryEntryCreateWithoutQuestSourcesInput, Prisma.GlossaryEntryUncheckedCreateWithoutQuestSourcesInput>
+}
+
+export type GlossaryEntryUpsertWithoutQuestSourcesInput = {
+  update: Prisma.XOR<Prisma.GlossaryEntryUpdateWithoutQuestSourcesInput, Prisma.GlossaryEntryUncheckedUpdateWithoutQuestSourcesInput>
+  create: Prisma.XOR<Prisma.GlossaryEntryCreateWithoutQuestSourcesInput, Prisma.GlossaryEntryUncheckedCreateWithoutQuestSourcesInput>
+  where?: Prisma.GlossaryEntryWhereInput
+}
+
+export type GlossaryEntryUpdateToOneWithWhereWithoutQuestSourcesInput = {
+  where?: Prisma.GlossaryEntryWhereInput
+  data: Prisma.XOR<Prisma.GlossaryEntryUpdateWithoutQuestSourcesInput, Prisma.GlossaryEntryUncheckedUpdateWithoutQuestSourcesInput>
+}
+
+export type GlossaryEntryUpdateWithoutQuestSourcesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumGlossaryTypeFieldUpdateOperationsInput | $Enums.GlossaryType
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  aliases?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  campaign?: Prisma.CampaignUpdateOneRequiredWithoutGlossaryNestedInput
+  sessions?: Prisma.GlossarySessionLinkUpdateManyWithoutGlossaryEntryNestedInput
+  campaignCharacters?: Prisma.CampaignCharacterUpdateManyWithoutGlossaryEntryNestedInput
+  sourceMap?: Prisma.CampaignMapUpdateOneWithoutSourceGlossaryEntriesNestedInput
+  sourceMapFeature?: Prisma.CampaignMapFeatureUpdateOneWithoutSourceGlossaryEntriesNestedInput
+  mapLinks?: Prisma.CampaignMapGlossaryLinkUpdateManyWithoutGlossaryEntryNestedInput
+  journalTags?: Prisma.CampaignJournalTagUpdateManyWithoutGlossaryEntryNestedInput
+}
+
+export type GlossaryEntryUncheckedUpdateWithoutQuestSourcesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  campaignId?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumGlossaryTypeFieldUpdateOperationsInput | $Enums.GlossaryType
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  aliases?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sourceMapId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceMapFeatureId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sessions?: Prisma.GlossarySessionLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   campaignCharacters?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   journalTags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutGlossaryEntryNestedInput
@@ -1100,6 +1225,7 @@ export type GlossaryEntryCreateWithoutCampaignCharactersInput = {
   sourceMapFeature?: Prisma.CampaignMapFeatureCreateNestedOneWithoutSourceGlossaryEntriesInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkCreateNestedManyWithoutGlossaryEntryInput
   journalTags?: Prisma.CampaignJournalTagCreateNestedManyWithoutGlossaryEntryInput
+  questSources?: Prisma.QuestCreateNestedManyWithoutSourceNpcInput
 }
 
 export type GlossaryEntryUncheckedCreateWithoutCampaignCharactersInput = {
@@ -1116,6 +1242,7 @@ export type GlossaryEntryUncheckedCreateWithoutCampaignCharactersInput = {
   sessions?: Prisma.GlossarySessionLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedCreateNestedManyWithoutGlossaryEntryInput
   journalTags?: Prisma.CampaignJournalTagUncheckedCreateNestedManyWithoutGlossaryEntryInput
+  questSources?: Prisma.QuestUncheckedCreateNestedManyWithoutSourceNpcInput
 }
 
 export type GlossaryEntryCreateOrConnectWithoutCampaignCharactersInput = {
@@ -1148,6 +1275,7 @@ export type GlossaryEntryUpdateWithoutCampaignCharactersInput = {
   sourceMapFeature?: Prisma.CampaignMapFeatureUpdateOneWithoutSourceGlossaryEntriesNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUpdateManyWithoutGlossaryEntryNestedInput
   journalTags?: Prisma.CampaignJournalTagUpdateManyWithoutGlossaryEntryNestedInput
+  questSources?: Prisma.QuestUpdateManyWithoutSourceNpcNestedInput
 }
 
 export type GlossaryEntryUncheckedUpdateWithoutCampaignCharactersInput = {
@@ -1164,6 +1292,7 @@ export type GlossaryEntryUncheckedUpdateWithoutCampaignCharactersInput = {
   sessions?: Prisma.GlossarySessionLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   journalTags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutGlossaryEntryNestedInput
+  questSources?: Prisma.QuestUncheckedUpdateManyWithoutSourceNpcNestedInput
 }
 
 export type GlossaryEntryCreateManyCampaignInput = {
@@ -1192,6 +1321,7 @@ export type GlossaryEntryUpdateWithoutCampaignInput = {
   sourceMapFeature?: Prisma.CampaignMapFeatureUpdateOneWithoutSourceGlossaryEntriesNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUpdateManyWithoutGlossaryEntryNestedInput
   journalTags?: Prisma.CampaignJournalTagUpdateManyWithoutGlossaryEntryNestedInput
+  questSources?: Prisma.QuestUpdateManyWithoutSourceNpcNestedInput
 }
 
 export type GlossaryEntryUncheckedUpdateWithoutCampaignInput = {
@@ -1208,6 +1338,7 @@ export type GlossaryEntryUncheckedUpdateWithoutCampaignInput = {
   campaignCharacters?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   journalTags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutGlossaryEntryNestedInput
+  questSources?: Prisma.QuestUncheckedUpdateManyWithoutSourceNpcNestedInput
 }
 
 export type GlossaryEntryUncheckedUpdateManyWithoutCampaignInput = {
@@ -1248,6 +1379,7 @@ export type GlossaryEntryUpdateWithoutSourceMapInput = {
   sourceMapFeature?: Prisma.CampaignMapFeatureUpdateOneWithoutSourceGlossaryEntriesNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUpdateManyWithoutGlossaryEntryNestedInput
   journalTags?: Prisma.CampaignJournalTagUpdateManyWithoutGlossaryEntryNestedInput
+  questSources?: Prisma.QuestUpdateManyWithoutSourceNpcNestedInput
 }
 
 export type GlossaryEntryUncheckedUpdateWithoutSourceMapInput = {
@@ -1264,6 +1396,7 @@ export type GlossaryEntryUncheckedUpdateWithoutSourceMapInput = {
   campaignCharacters?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   journalTags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutGlossaryEntryNestedInput
+  questSources?: Prisma.QuestUncheckedUpdateManyWithoutSourceNpcNestedInput
 }
 
 export type GlossaryEntryUncheckedUpdateManyWithoutSourceMapInput = {
@@ -1304,6 +1437,7 @@ export type GlossaryEntryUpdateWithoutSourceMapFeatureInput = {
   sourceMap?: Prisma.CampaignMapUpdateOneWithoutSourceGlossaryEntriesNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUpdateManyWithoutGlossaryEntryNestedInput
   journalTags?: Prisma.CampaignJournalTagUpdateManyWithoutGlossaryEntryNestedInput
+  questSources?: Prisma.QuestUpdateManyWithoutSourceNpcNestedInput
 }
 
 export type GlossaryEntryUncheckedUpdateWithoutSourceMapFeatureInput = {
@@ -1320,6 +1454,7 @@ export type GlossaryEntryUncheckedUpdateWithoutSourceMapFeatureInput = {
   campaignCharacters?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   mapLinks?: Prisma.CampaignMapGlossaryLinkUncheckedUpdateManyWithoutGlossaryEntryNestedInput
   journalTags?: Prisma.CampaignJournalTagUncheckedUpdateManyWithoutGlossaryEntryNestedInput
+  questSources?: Prisma.QuestUncheckedUpdateManyWithoutSourceNpcNestedInput
 }
 
 export type GlossaryEntryUncheckedUpdateManyWithoutSourceMapFeatureInput = {
@@ -1344,6 +1479,7 @@ export type GlossaryEntryCountOutputType = {
   campaignCharacters: number
   mapLinks: number
   journalTags: number
+  questSources: number
 }
 
 export type GlossaryEntryCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1351,6 +1487,7 @@ export type GlossaryEntryCountOutputTypeSelect<ExtArgs extends runtime.Types.Ext
   campaignCharacters?: boolean | GlossaryEntryCountOutputTypeCountCampaignCharactersArgs
   mapLinks?: boolean | GlossaryEntryCountOutputTypeCountMapLinksArgs
   journalTags?: boolean | GlossaryEntryCountOutputTypeCountJournalTagsArgs
+  questSources?: boolean | GlossaryEntryCountOutputTypeCountQuestSourcesArgs
 }
 
 /**
@@ -1391,6 +1528,13 @@ export type GlossaryEntryCountOutputTypeCountJournalTagsArgs<ExtArgs extends run
   where?: Prisma.CampaignJournalTagWhereInput
 }
 
+/**
+ * GlossaryEntryCountOutputType without action
+ */
+export type GlossaryEntryCountOutputTypeCountQuestSourcesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.QuestWhereInput
+}
+
 
 export type GlossaryEntrySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1410,6 +1554,7 @@ export type GlossaryEntrySelect<ExtArgs extends runtime.Types.Extensions.Interna
   sourceMapFeature?: boolean | Prisma.GlossaryEntry$sourceMapFeatureArgs<ExtArgs>
   mapLinks?: boolean | Prisma.GlossaryEntry$mapLinksArgs<ExtArgs>
   journalTags?: boolean | Prisma.GlossaryEntry$journalTagsArgs<ExtArgs>
+  questSources?: boolean | Prisma.GlossaryEntry$questSourcesArgs<ExtArgs>
   _count?: boolean | Prisma.GlossaryEntryCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["glossaryEntry"]>
 
@@ -1467,6 +1612,7 @@ export type GlossaryEntryInclude<ExtArgs extends runtime.Types.Extensions.Intern
   sourceMapFeature?: boolean | Prisma.GlossaryEntry$sourceMapFeatureArgs<ExtArgs>
   mapLinks?: boolean | Prisma.GlossaryEntry$mapLinksArgs<ExtArgs>
   journalTags?: boolean | Prisma.GlossaryEntry$journalTagsArgs<ExtArgs>
+  questSources?: boolean | Prisma.GlossaryEntry$questSourcesArgs<ExtArgs>
   _count?: boolean | Prisma.GlossaryEntryCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type GlossaryEntryIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1490,6 +1636,7 @@ export type $GlossaryEntryPayload<ExtArgs extends runtime.Types.Extensions.Inter
     sourceMapFeature: Prisma.$CampaignMapFeaturePayload<ExtArgs> | null
     mapLinks: Prisma.$CampaignMapGlossaryLinkPayload<ExtArgs>[]
     journalTags: Prisma.$CampaignJournalTagPayload<ExtArgs>[]
+    questSources: Prisma.$QuestPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1903,6 +2050,7 @@ export interface Prisma__GlossaryEntryClient<T, Null = never, ExtArgs extends ru
   sourceMapFeature<T extends Prisma.GlossaryEntry$sourceMapFeatureArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.GlossaryEntry$sourceMapFeatureArgs<ExtArgs>>): Prisma.Prisma__CampaignMapFeatureClient<runtime.Types.Result.GetResult<Prisma.$CampaignMapFeaturePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   mapLinks<T extends Prisma.GlossaryEntry$mapLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.GlossaryEntry$mapLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignMapGlossaryLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   journalTags<T extends Prisma.GlossaryEntry$journalTagsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.GlossaryEntry$journalTagsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignJournalTagPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  questSources<T extends Prisma.GlossaryEntry$questSourcesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.GlossaryEntry$questSourcesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$QuestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2467,6 +2615,30 @@ export type GlossaryEntry$journalTagsArgs<ExtArgs extends runtime.Types.Extensio
   take?: number
   skip?: number
   distinct?: Prisma.CampaignJournalTagScalarFieldEnum | Prisma.CampaignJournalTagScalarFieldEnum[]
+}
+
+/**
+ * GlossaryEntry.questSources
+ */
+export type GlossaryEntry$questSourcesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Quest
+   */
+  select?: Prisma.QuestSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Quest
+   */
+  omit?: Prisma.QuestOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.QuestInclude<ExtArgs> | null
+  where?: Prisma.QuestWhereInput
+  orderBy?: Prisma.QuestOrderByWithRelationInput | Prisma.QuestOrderByWithRelationInput[]
+  cursor?: Prisma.QuestWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.QuestScalarFieldEnum | Prisma.QuestScalarFieldEnum[]
 }
 
 /**

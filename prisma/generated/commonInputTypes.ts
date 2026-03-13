@@ -814,6 +814,20 @@ export type EnumQuestTypeFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumQuestTypeFilter<$PrismaModel> | $Enums.QuestType
 }
 
+export type EnumQuestTrackFilter<$PrismaModel = never> = {
+  equals?: $Enums.QuestTrack | Prisma.EnumQuestTrackFieldRefInput<$PrismaModel>
+  in?: $Enums.QuestTrack[]
+  notIn?: $Enums.QuestTrack[]
+  not?: Prisma.NestedEnumQuestTrackFilter<$PrismaModel> | $Enums.QuestTrack
+}
+
+export type EnumQuestSourceTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.QuestSourceType | Prisma.EnumQuestSourceTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.QuestSourceType[]
+  notIn?: $Enums.QuestSourceType[]
+  not?: Prisma.NestedEnumQuestSourceTypeFilter<$PrismaModel> | $Enums.QuestSourceType
+}
+
 export type EnumQuestStatusFilter<$PrismaModel = never> = {
   equals?: $Enums.QuestStatus | Prisma.EnumQuestStatusFieldRefInput<$PrismaModel>
   in?: $Enums.QuestStatus[]
@@ -829,6 +843,26 @@ export type EnumQuestTypeWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumQuestTypeFilter<$PrismaModel>
   _max?: Prisma.NestedEnumQuestTypeFilter<$PrismaModel>
+}
+
+export type EnumQuestTrackWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.QuestTrack | Prisma.EnumQuestTrackFieldRefInput<$PrismaModel>
+  in?: $Enums.QuestTrack[]
+  notIn?: $Enums.QuestTrack[]
+  not?: Prisma.NestedEnumQuestTrackWithAggregatesFilter<$PrismaModel> | $Enums.QuestTrack
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumQuestTrackFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumQuestTrackFilter<$PrismaModel>
+}
+
+export type EnumQuestSourceTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.QuestSourceType | Prisma.EnumQuestSourceTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.QuestSourceType[]
+  notIn?: $Enums.QuestSourceType[]
+  not?: Prisma.NestedEnumQuestSourceTypeWithAggregatesFilter<$PrismaModel> | $Enums.QuestSourceType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumQuestSourceTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumQuestSourceTypeFilter<$PrismaModel>
 }
 
 export type EnumQuestStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -1818,6 +1852,20 @@ export type NestedEnumQuestTypeFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumQuestTypeFilter<$PrismaModel> | $Enums.QuestType
 }
 
+export type NestedEnumQuestTrackFilter<$PrismaModel = never> = {
+  equals?: $Enums.QuestTrack | Prisma.EnumQuestTrackFieldRefInput<$PrismaModel>
+  in?: $Enums.QuestTrack[]
+  notIn?: $Enums.QuestTrack[]
+  not?: Prisma.NestedEnumQuestTrackFilter<$PrismaModel> | $Enums.QuestTrack
+}
+
+export type NestedEnumQuestSourceTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.QuestSourceType | Prisma.EnumQuestSourceTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.QuestSourceType[]
+  notIn?: $Enums.QuestSourceType[]
+  not?: Prisma.NestedEnumQuestSourceTypeFilter<$PrismaModel> | $Enums.QuestSourceType
+}
+
 export type NestedEnumQuestStatusFilter<$PrismaModel = never> = {
   equals?: $Enums.QuestStatus | Prisma.EnumQuestStatusFieldRefInput<$PrismaModel>
   in?: $Enums.QuestStatus[]
@@ -1833,6 +1881,26 @@ export type NestedEnumQuestTypeWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumQuestTypeFilter<$PrismaModel>
   _max?: Prisma.NestedEnumQuestTypeFilter<$PrismaModel>
+}
+
+export type NestedEnumQuestTrackWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.QuestTrack | Prisma.EnumQuestTrackFieldRefInput<$PrismaModel>
+  in?: $Enums.QuestTrack[]
+  notIn?: $Enums.QuestTrack[]
+  not?: Prisma.NestedEnumQuestTrackWithAggregatesFilter<$PrismaModel> | $Enums.QuestTrack
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumQuestTrackFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumQuestTrackFilter<$PrismaModel>
+}
+
+export type NestedEnumQuestSourceTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.QuestSourceType | Prisma.EnumQuestSourceTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.QuestSourceType[]
+  notIn?: $Enums.QuestSourceType[]
+  not?: Prisma.NestedEnumQuestSourceTypeWithAggregatesFilter<$PrismaModel> | $Enums.QuestSourceType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumQuestSourceTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumQuestSourceTypeFilter<$PrismaModel>
 }
 
 export type NestedEnumQuestStatusWithAggregatesFilter<$PrismaModel = never> = {

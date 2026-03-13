@@ -264,12 +264,29 @@ export type QuestStatus = (typeof QuestStatus)[keyof typeof QuestStatus]
 
 
 export const QuestType = {
-  MAIN: 'MAIN',
-  SIDE: 'SIDE',
-  PLAYER: 'PLAYER'
+  CAMPAIGN: 'CAMPAIGN',
+  GUILD: 'GUILD',
+  CHARACTER: 'CHARACTER'
 } as const
 
 export type QuestType = (typeof QuestType)[keyof typeof QuestType]
+
+
+export const QuestTrack = {
+  MAIN: 'MAIN',
+  SIDE: 'SIDE'
+} as const
+
+export type QuestTrack = (typeof QuestTrack)[keyof typeof QuestTrack]
+
+
+export const QuestSourceType = {
+  FREE_TEXT: 'FREE_TEXT',
+  NPC: 'NPC',
+  CAMPAIGN_CHARACTER: 'CAMPAIGN_CHARACTER'
+} as const
+
+export type QuestSourceType = (typeof QuestSourceType)[keyof typeof QuestSourceType]
 
 
 export const StorageProvider = {

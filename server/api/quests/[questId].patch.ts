@@ -1,8 +1,11 @@
-import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { readValidatedBodySafe } from '#server/utils/validate'
 import { questUpdateSchema } from '#shared/schemas/quest'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
+import { prisma } from '#server/db/prisma'
+import { QuestService } from '#server/services/quest.service'
+
+const questService = new QuestService()
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
@@ -26,11 +29,11 @@ export default defineEventHandler(async (event) => {
     return fail(404, 'NOT_FOUND', 'Quest not found')
   }
 
-  const updated = await prisma.quest.update({
-    where: { id: questId },
-    data: parsed.data,
-  })
+  const result = await questService.updateQuest(questId, parsed.data)
+  if (!result.ok) {
+    return fail(result.statusCode, result.code, result.message, result.fields)
+  }
 
-  return ok(updated)
+  return ok(result.data)
 })
 

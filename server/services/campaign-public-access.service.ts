@@ -809,21 +809,53 @@ export class CampaignPublicAccessService {
     const resolved = await this.resolvePublicAccess(publicSlug, 'quests')
     if (!resolved.ok) return resolved
 
-    const rows = await prisma.quest.findMany({
-      where: { campaignId: resolved.campaignId },
-      select: {
-        title: true,
-        description: true,
-        type: true,
-        status: true,
-        progressNotes: true,
-        sortOrder: true,
-        createdAt: true,
-      },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-    })
+      const rows = await prisma.quest.findMany({
+        where: { campaignId: resolved.campaignId },
+        include: {
+          sourceNpc: {
+            select: {
+              name: true,
+            },
+          },
+          sourceCharacter: {
+            select: {
+              name: true,
+            },
+          },
+        },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+      })
 
-    return { ok: true as const, data: rows }
+    return {
+      ok: true as const,
+      data: rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        type: row.type,
+        track: row.track,
+        sourceType: row.sourceType,
+          sourceText: row.sourceText,
+          sourceNpcId: row.sourceNpcId,
+          sourceNpcName: row.sourceNpc?.name || null,
+          sourceCharacterId: row.sourceCharacterId,
+          sourceCharacterName: row.sourceCharacter?.name || null,
+          reward: row.reward,
+        status: row.status,
+        progressNotes: row.progressNotes,
+        expirationDate:
+          row.expirationYear !== null && row.expirationMonth !== null && row.expirationDay !== null
+            ? {
+                year: row.expirationYear,
+                month: row.expirationMonth,
+                day: row.expirationDay,
+              }
+            : null,
+        sortOrder: row.sortOrder,
+        createdAt: row.createdAt.toISOString(),
+        updatedAt: row.updatedAt.toISOString(),
+      })),
+    }
   }
 
   async getPublicMilestones(publicSlug: string) {

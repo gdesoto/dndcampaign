@@ -784,6 +784,7 @@ model GlossaryEntry {
   sourceMapFeature   CampaignMapFeature?       @relation("GlossaryEntrySourceFeature", fields: [sourceMapFeatureId], references: [id], onDelete: SetNull)
   mapLinks           CampaignMapGlossaryLink[]
   journalTags        CampaignJournalTag[]
+  questSources       Quest[]
 
   @@index([campaignId, type])
   @@index([sourceMapId])
@@ -927,9 +928,20 @@ enum QuestStatus {
 }
 
 enum QuestType {
+  CAMPAIGN
+  GUILD
+  CHARACTER
+}
+
+enum QuestTrack {
   MAIN
   SIDE
-  PLAYER
+}
+
+enum QuestSourceType {
+  FREE_TEXT
+  NPC
+  CAMPAIGN_CHARACTER
 }
 
 enum StorageProvider {
@@ -1067,19 +1079,32 @@ model RecapRecording {
 }
 
 model Quest {
-  id            String      @id @default(uuid())
-  campaignId    String
-  campaign      Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  title         String
-  description   String?
-  type          QuestType   @default(SIDE)
-  status        QuestStatus @default(ACTIVE)
-  progressNotes String?
-  sortOrder     Int         @default(0)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                    String          @id @default(uuid())
+  campaignId            String
+  campaign              Campaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  title                 String
+  description           String?
+  type                  QuestType       @default(CAMPAIGN)
+  track                 QuestTrack      @default(SIDE)
+  sourceType            QuestSourceType @default(FREE_TEXT)
+  sourceText            String?
+  sourceNpcId           String?
+  sourceNpc             GlossaryEntry?  @relation(fields: [sourceNpcId], references: [id], onDelete: SetNull)
+  sourceCharacterId     String?
+  sourceCharacter       PlayerCharacter? @relation(fields: [sourceCharacterId], references: [id], onDelete: SetNull)
+  reward                String?
+  status                QuestStatus     @default(ACTIVE)
+  progressNotes         String?
+  expirationYear        Int?
+  expirationMonth       Int?
+  expirationDay         Int?
+  sortOrder             Int             @default(0)
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
 
   @@index([campaignId])
+  @@index([sourceNpcId])
+  @@index([sourceCharacterId])
 }
 
 model Milestone {
@@ -1278,6 +1303,7 @@ model PlayerCharacter {
   createdAt          DateTime                 @default(now())
   updatedAt          DateTime                 @updatedAt
   campaignLinks      CampaignCharacter[]
+  questSources       Quest[]
   imports            CharacterImport[]
   importSettings     CharacterImportSettings?
 

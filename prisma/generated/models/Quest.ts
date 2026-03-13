@@ -27,10 +27,16 @@ export type AggregateQuest = {
 }
 
 export type QuestAvgAggregateOutputType = {
+  expirationYear: number | null
+  expirationMonth: number | null
+  expirationDay: number | null
   sortOrder: number | null
 }
 
 export type QuestSumAggregateOutputType = {
+  expirationYear: number | null
+  expirationMonth: number | null
+  expirationDay: number | null
   sortOrder: number | null
 }
 
@@ -40,8 +46,17 @@ export type QuestMinAggregateOutputType = {
   title: string | null
   description: string | null
   type: $Enums.QuestType | null
+  track: $Enums.QuestTrack | null
+  sourceType: $Enums.QuestSourceType | null
+  sourceText: string | null
+  sourceNpcId: string | null
+  sourceCharacterId: string | null
+  reward: string | null
   status: $Enums.QuestStatus | null
   progressNotes: string | null
+  expirationYear: number | null
+  expirationMonth: number | null
+  expirationDay: number | null
   sortOrder: number | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -53,8 +68,17 @@ export type QuestMaxAggregateOutputType = {
   title: string | null
   description: string | null
   type: $Enums.QuestType | null
+  track: $Enums.QuestTrack | null
+  sourceType: $Enums.QuestSourceType | null
+  sourceText: string | null
+  sourceNpcId: string | null
+  sourceCharacterId: string | null
+  reward: string | null
   status: $Enums.QuestStatus | null
   progressNotes: string | null
+  expirationYear: number | null
+  expirationMonth: number | null
+  expirationDay: number | null
   sortOrder: number | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -66,8 +90,17 @@ export type QuestCountAggregateOutputType = {
   title: number
   description: number
   type: number
+  track: number
+  sourceType: number
+  sourceText: number
+  sourceNpcId: number
+  sourceCharacterId: number
+  reward: number
   status: number
   progressNotes: number
+  expirationYear: number
+  expirationMonth: number
+  expirationDay: number
   sortOrder: number
   createdAt: number
   updatedAt: number
@@ -76,10 +109,16 @@ export type QuestCountAggregateOutputType = {
 
 
 export type QuestAvgAggregateInputType = {
+  expirationYear?: true
+  expirationMonth?: true
+  expirationDay?: true
   sortOrder?: true
 }
 
 export type QuestSumAggregateInputType = {
+  expirationYear?: true
+  expirationMonth?: true
+  expirationDay?: true
   sortOrder?: true
 }
 
@@ -89,8 +128,17 @@ export type QuestMinAggregateInputType = {
   title?: true
   description?: true
   type?: true
+  track?: true
+  sourceType?: true
+  sourceText?: true
+  sourceNpcId?: true
+  sourceCharacterId?: true
+  reward?: true
   status?: true
   progressNotes?: true
+  expirationYear?: true
+  expirationMonth?: true
+  expirationDay?: true
   sortOrder?: true
   createdAt?: true
   updatedAt?: true
@@ -102,8 +150,17 @@ export type QuestMaxAggregateInputType = {
   title?: true
   description?: true
   type?: true
+  track?: true
+  sourceType?: true
+  sourceText?: true
+  sourceNpcId?: true
+  sourceCharacterId?: true
+  reward?: true
   status?: true
   progressNotes?: true
+  expirationYear?: true
+  expirationMonth?: true
+  expirationDay?: true
   sortOrder?: true
   createdAt?: true
   updatedAt?: true
@@ -115,8 +172,17 @@ export type QuestCountAggregateInputType = {
   title?: true
   description?: true
   type?: true
+  track?: true
+  sourceType?: true
+  sourceText?: true
+  sourceNpcId?: true
+  sourceCharacterId?: true
+  reward?: true
   status?: true
   progressNotes?: true
+  expirationYear?: true
+  expirationMonth?: true
+  expirationDay?: true
   sortOrder?: true
   createdAt?: true
   updatedAt?: true
@@ -215,8 +281,17 @@ export type QuestGroupByOutputType = {
   title: string
   description: string | null
   type: $Enums.QuestType
+  track: $Enums.QuestTrack
+  sourceType: $Enums.QuestSourceType
+  sourceText: string | null
+  sourceNpcId: string | null
+  sourceCharacterId: string | null
+  reward: string | null
   status: $Enums.QuestStatus
   progressNotes: string | null
+  expirationYear: number | null
+  expirationMonth: number | null
+  expirationDay: number | null
   sortOrder: number
   createdAt: Date
   updatedAt: Date
@@ -251,12 +326,23 @@ export type QuestWhereInput = {
   title?: Prisma.StringFilter<"Quest"> | string
   description?: Prisma.StringNullableFilter<"Quest"> | string | null
   type?: Prisma.EnumQuestTypeFilter<"Quest"> | $Enums.QuestType
+  track?: Prisma.EnumQuestTrackFilter<"Quest"> | $Enums.QuestTrack
+  sourceType?: Prisma.EnumQuestSourceTypeFilter<"Quest"> | $Enums.QuestSourceType
+  sourceText?: Prisma.StringNullableFilter<"Quest"> | string | null
+  sourceNpcId?: Prisma.StringNullableFilter<"Quest"> | string | null
+  sourceCharacterId?: Prisma.StringNullableFilter<"Quest"> | string | null
+  reward?: Prisma.StringNullableFilter<"Quest"> | string | null
   status?: Prisma.EnumQuestStatusFilter<"Quest"> | $Enums.QuestStatus
   progressNotes?: Prisma.StringNullableFilter<"Quest"> | string | null
+  expirationYear?: Prisma.IntNullableFilter<"Quest"> | number | null
+  expirationMonth?: Prisma.IntNullableFilter<"Quest"> | number | null
+  expirationDay?: Prisma.IntNullableFilter<"Quest"> | number | null
   sortOrder?: Prisma.IntFilter<"Quest"> | number
   createdAt?: Prisma.DateTimeFilter<"Quest"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Quest"> | Date | string
   campaign?: Prisma.XOR<Prisma.CampaignScalarRelationFilter, Prisma.CampaignWhereInput>
+  sourceNpc?: Prisma.XOR<Prisma.GlossaryEntryNullableScalarRelationFilter, Prisma.GlossaryEntryWhereInput> | null
+  sourceCharacter?: Prisma.XOR<Prisma.PlayerCharacterNullableScalarRelationFilter, Prisma.PlayerCharacterWhereInput> | null
 }
 
 export type QuestOrderByWithRelationInput = {
@@ -265,12 +351,23 @@ export type QuestOrderByWithRelationInput = {
   title?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   type?: Prisma.SortOrder
+  track?: Prisma.SortOrder
+  sourceType?: Prisma.SortOrder
+  sourceText?: Prisma.SortOrderInput | Prisma.SortOrder
+  sourceNpcId?: Prisma.SortOrderInput | Prisma.SortOrder
+  sourceCharacterId?: Prisma.SortOrderInput | Prisma.SortOrder
+  reward?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   progressNotes?: Prisma.SortOrderInput | Prisma.SortOrder
+  expirationYear?: Prisma.SortOrderInput | Prisma.SortOrder
+  expirationMonth?: Prisma.SortOrderInput | Prisma.SortOrder
+  expirationDay?: Prisma.SortOrderInput | Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   campaign?: Prisma.CampaignOrderByWithRelationInput
+  sourceNpc?: Prisma.GlossaryEntryOrderByWithRelationInput
+  sourceCharacter?: Prisma.PlayerCharacterOrderByWithRelationInput
 }
 
 export type QuestWhereUniqueInput = Prisma.AtLeast<{
@@ -282,12 +379,23 @@ export type QuestWhereUniqueInput = Prisma.AtLeast<{
   title?: Prisma.StringFilter<"Quest"> | string
   description?: Prisma.StringNullableFilter<"Quest"> | string | null
   type?: Prisma.EnumQuestTypeFilter<"Quest"> | $Enums.QuestType
+  track?: Prisma.EnumQuestTrackFilter<"Quest"> | $Enums.QuestTrack
+  sourceType?: Prisma.EnumQuestSourceTypeFilter<"Quest"> | $Enums.QuestSourceType
+  sourceText?: Prisma.StringNullableFilter<"Quest"> | string | null
+  sourceNpcId?: Prisma.StringNullableFilter<"Quest"> | string | null
+  sourceCharacterId?: Prisma.StringNullableFilter<"Quest"> | string | null
+  reward?: Prisma.StringNullableFilter<"Quest"> | string | null
   status?: Prisma.EnumQuestStatusFilter<"Quest"> | $Enums.QuestStatus
   progressNotes?: Prisma.StringNullableFilter<"Quest"> | string | null
+  expirationYear?: Prisma.IntNullableFilter<"Quest"> | number | null
+  expirationMonth?: Prisma.IntNullableFilter<"Quest"> | number | null
+  expirationDay?: Prisma.IntNullableFilter<"Quest"> | number | null
   sortOrder?: Prisma.IntFilter<"Quest"> | number
   createdAt?: Prisma.DateTimeFilter<"Quest"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Quest"> | Date | string
   campaign?: Prisma.XOR<Prisma.CampaignScalarRelationFilter, Prisma.CampaignWhereInput>
+  sourceNpc?: Prisma.XOR<Prisma.GlossaryEntryNullableScalarRelationFilter, Prisma.GlossaryEntryWhereInput> | null
+  sourceCharacter?: Prisma.XOR<Prisma.PlayerCharacterNullableScalarRelationFilter, Prisma.PlayerCharacterWhereInput> | null
 }, "id">
 
 export type QuestOrderByWithAggregationInput = {
@@ -296,8 +404,17 @@ export type QuestOrderByWithAggregationInput = {
   title?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   type?: Prisma.SortOrder
+  track?: Prisma.SortOrder
+  sourceType?: Prisma.SortOrder
+  sourceText?: Prisma.SortOrderInput | Prisma.SortOrder
+  sourceNpcId?: Prisma.SortOrderInput | Prisma.SortOrder
+  sourceCharacterId?: Prisma.SortOrderInput | Prisma.SortOrder
+  reward?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   progressNotes?: Prisma.SortOrderInput | Prisma.SortOrder
+  expirationYear?: Prisma.SortOrderInput | Prisma.SortOrder
+  expirationMonth?: Prisma.SortOrderInput | Prisma.SortOrder
+  expirationDay?: Prisma.SortOrderInput | Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -317,8 +434,17 @@ export type QuestScalarWhereWithAggregatesInput = {
   title?: Prisma.StringWithAggregatesFilter<"Quest"> | string
   description?: Prisma.StringNullableWithAggregatesFilter<"Quest"> | string | null
   type?: Prisma.EnumQuestTypeWithAggregatesFilter<"Quest"> | $Enums.QuestType
+  track?: Prisma.EnumQuestTrackWithAggregatesFilter<"Quest"> | $Enums.QuestTrack
+  sourceType?: Prisma.EnumQuestSourceTypeWithAggregatesFilter<"Quest"> | $Enums.QuestSourceType
+  sourceText?: Prisma.StringNullableWithAggregatesFilter<"Quest"> | string | null
+  sourceNpcId?: Prisma.StringNullableWithAggregatesFilter<"Quest"> | string | null
+  sourceCharacterId?: Prisma.StringNullableWithAggregatesFilter<"Quest"> | string | null
+  reward?: Prisma.StringNullableWithAggregatesFilter<"Quest"> | string | null
   status?: Prisma.EnumQuestStatusWithAggregatesFilter<"Quest"> | $Enums.QuestStatus
   progressNotes?: Prisma.StringNullableWithAggregatesFilter<"Quest"> | string | null
+  expirationYear?: Prisma.IntNullableWithAggregatesFilter<"Quest"> | number | null
+  expirationMonth?: Prisma.IntNullableWithAggregatesFilter<"Quest"> | number | null
+  expirationDay?: Prisma.IntNullableWithAggregatesFilter<"Quest"> | number | null
   sortOrder?: Prisma.IntWithAggregatesFilter<"Quest"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Quest"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Quest"> | Date | string
@@ -329,12 +455,21 @@ export type QuestCreateInput = {
   title: string
   description?: string | null
   type?: $Enums.QuestType
+  track?: $Enums.QuestTrack
+  sourceType?: $Enums.QuestSourceType
+  sourceText?: string | null
+  reward?: string | null
   status?: $Enums.QuestStatus
   progressNotes?: string | null
+  expirationYear?: number | null
+  expirationMonth?: number | null
+  expirationDay?: number | null
   sortOrder?: number
   createdAt?: Date | string
   updatedAt?: Date | string
   campaign: Prisma.CampaignCreateNestedOneWithoutQuestsInput
+  sourceNpc?: Prisma.GlossaryEntryCreateNestedOneWithoutQuestSourcesInput
+  sourceCharacter?: Prisma.PlayerCharacterCreateNestedOneWithoutQuestSourcesInput
 }
 
 export type QuestUncheckedCreateInput = {
@@ -343,8 +478,17 @@ export type QuestUncheckedCreateInput = {
   title: string
   description?: string | null
   type?: $Enums.QuestType
+  track?: $Enums.QuestTrack
+  sourceType?: $Enums.QuestSourceType
+  sourceText?: string | null
+  sourceNpcId?: string | null
+  sourceCharacterId?: string | null
+  reward?: string | null
   status?: $Enums.QuestStatus
   progressNotes?: string | null
+  expirationYear?: number | null
+  expirationMonth?: number | null
+  expirationDay?: number | null
   sortOrder?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -355,12 +499,21 @@ export type QuestUpdateInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.EnumQuestTypeFieldUpdateOperationsInput | $Enums.QuestType
+  track?: Prisma.EnumQuestTrackFieldUpdateOperationsInput | $Enums.QuestTrack
+  sourceType?: Prisma.EnumQuestSourceTypeFieldUpdateOperationsInput | $Enums.QuestSourceType
+  sourceText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reward?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumQuestStatusFieldUpdateOperationsInput | $Enums.QuestStatus
   progressNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expirationYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationMonth?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   campaign?: Prisma.CampaignUpdateOneRequiredWithoutQuestsNestedInput
+  sourceNpc?: Prisma.GlossaryEntryUpdateOneWithoutQuestSourcesNestedInput
+  sourceCharacter?: Prisma.PlayerCharacterUpdateOneWithoutQuestSourcesNestedInput
 }
 
 export type QuestUncheckedUpdateInput = {
@@ -369,8 +522,17 @@ export type QuestUncheckedUpdateInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.EnumQuestTypeFieldUpdateOperationsInput | $Enums.QuestType
+  track?: Prisma.EnumQuestTrackFieldUpdateOperationsInput | $Enums.QuestTrack
+  sourceType?: Prisma.EnumQuestSourceTypeFieldUpdateOperationsInput | $Enums.QuestSourceType
+  sourceText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceNpcId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceCharacterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reward?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumQuestStatusFieldUpdateOperationsInput | $Enums.QuestStatus
   progressNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expirationYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationMonth?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -382,8 +544,17 @@ export type QuestCreateManyInput = {
   title: string
   description?: string | null
   type?: $Enums.QuestType
+  track?: $Enums.QuestTrack
+  sourceType?: $Enums.QuestSourceType
+  sourceText?: string | null
+  sourceNpcId?: string | null
+  sourceCharacterId?: string | null
+  reward?: string | null
   status?: $Enums.QuestStatus
   progressNotes?: string | null
+  expirationYear?: number | null
+  expirationMonth?: number | null
+  expirationDay?: number | null
   sortOrder?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -394,8 +565,15 @@ export type QuestUpdateManyMutationInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.EnumQuestTypeFieldUpdateOperationsInput | $Enums.QuestType
+  track?: Prisma.EnumQuestTrackFieldUpdateOperationsInput | $Enums.QuestTrack
+  sourceType?: Prisma.EnumQuestSourceTypeFieldUpdateOperationsInput | $Enums.QuestSourceType
+  sourceText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reward?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumQuestStatusFieldUpdateOperationsInput | $Enums.QuestStatus
   progressNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expirationYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationMonth?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -407,8 +585,17 @@ export type QuestUncheckedUpdateManyInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.EnumQuestTypeFieldUpdateOperationsInput | $Enums.QuestType
+  track?: Prisma.EnumQuestTrackFieldUpdateOperationsInput | $Enums.QuestTrack
+  sourceType?: Prisma.EnumQuestSourceTypeFieldUpdateOperationsInput | $Enums.QuestSourceType
+  sourceText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceNpcId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceCharacterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reward?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumQuestStatusFieldUpdateOperationsInput | $Enums.QuestStatus
   progressNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expirationYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationMonth?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -430,14 +617,26 @@ export type QuestCountOrderByAggregateInput = {
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
   type?: Prisma.SortOrder
+  track?: Prisma.SortOrder
+  sourceType?: Prisma.SortOrder
+  sourceText?: Prisma.SortOrder
+  sourceNpcId?: Prisma.SortOrder
+  sourceCharacterId?: Prisma.SortOrder
+  reward?: Prisma.SortOrder
   status?: Prisma.SortOrder
   progressNotes?: Prisma.SortOrder
+  expirationYear?: Prisma.SortOrder
+  expirationMonth?: Prisma.SortOrder
+  expirationDay?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type QuestAvgOrderByAggregateInput = {
+  expirationYear?: Prisma.SortOrder
+  expirationMonth?: Prisma.SortOrder
+  expirationDay?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
 }
 
@@ -447,8 +646,17 @@ export type QuestMaxOrderByAggregateInput = {
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
   type?: Prisma.SortOrder
+  track?: Prisma.SortOrder
+  sourceType?: Prisma.SortOrder
+  sourceText?: Prisma.SortOrder
+  sourceNpcId?: Prisma.SortOrder
+  sourceCharacterId?: Prisma.SortOrder
+  reward?: Prisma.SortOrder
   status?: Prisma.SortOrder
   progressNotes?: Prisma.SortOrder
+  expirationYear?: Prisma.SortOrder
+  expirationMonth?: Prisma.SortOrder
+  expirationDay?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -460,14 +668,26 @@ export type QuestMinOrderByAggregateInput = {
   title?: Prisma.SortOrder
   description?: Prisma.SortOrder
   type?: Prisma.SortOrder
+  track?: Prisma.SortOrder
+  sourceType?: Prisma.SortOrder
+  sourceText?: Prisma.SortOrder
+  sourceNpcId?: Prisma.SortOrder
+  sourceCharacterId?: Prisma.SortOrder
+  reward?: Prisma.SortOrder
   status?: Prisma.SortOrder
   progressNotes?: Prisma.SortOrder
+  expirationYear?: Prisma.SortOrder
+  expirationMonth?: Prisma.SortOrder
+  expirationDay?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
 
 export type QuestSumOrderByAggregateInput = {
+  expirationYear?: Prisma.SortOrder
+  expirationMonth?: Prisma.SortOrder
+  expirationDay?: Prisma.SortOrder
   sortOrder?: Prisma.SortOrder
 }
 
@@ -513,12 +733,104 @@ export type QuestUncheckedUpdateManyWithoutCampaignNestedInput = {
   deleteMany?: Prisma.QuestScalarWhereInput | Prisma.QuestScalarWhereInput[]
 }
 
+export type QuestCreateNestedManyWithoutSourceNpcInput = {
+  create?: Prisma.XOR<Prisma.QuestCreateWithoutSourceNpcInput, Prisma.QuestUncheckedCreateWithoutSourceNpcInput> | Prisma.QuestCreateWithoutSourceNpcInput[] | Prisma.QuestUncheckedCreateWithoutSourceNpcInput[]
+  connectOrCreate?: Prisma.QuestCreateOrConnectWithoutSourceNpcInput | Prisma.QuestCreateOrConnectWithoutSourceNpcInput[]
+  createMany?: Prisma.QuestCreateManySourceNpcInputEnvelope
+  connect?: Prisma.QuestWhereUniqueInput | Prisma.QuestWhereUniqueInput[]
+}
+
+export type QuestUncheckedCreateNestedManyWithoutSourceNpcInput = {
+  create?: Prisma.XOR<Prisma.QuestCreateWithoutSourceNpcInput, Prisma.QuestUncheckedCreateWithoutSourceNpcInput> | Prisma.QuestCreateWithoutSourceNpcInput[] | Prisma.QuestUncheckedCreateWithoutSourceNpcInput[]
+  connectOrCreate?: Prisma.QuestCreateOrConnectWithoutSourceNpcInput | Prisma.QuestCreateOrConnectWithoutSourceNpcInput[]
+  createMany?: Prisma.QuestCreateManySourceNpcInputEnvelope
+  connect?: Prisma.QuestWhereUniqueInput | Prisma.QuestWhereUniqueInput[]
+}
+
+export type QuestUpdateManyWithoutSourceNpcNestedInput = {
+  create?: Prisma.XOR<Prisma.QuestCreateWithoutSourceNpcInput, Prisma.QuestUncheckedCreateWithoutSourceNpcInput> | Prisma.QuestCreateWithoutSourceNpcInput[] | Prisma.QuestUncheckedCreateWithoutSourceNpcInput[]
+  connectOrCreate?: Prisma.QuestCreateOrConnectWithoutSourceNpcInput | Prisma.QuestCreateOrConnectWithoutSourceNpcInput[]
+  upsert?: Prisma.QuestUpsertWithWhereUniqueWithoutSourceNpcInput | Prisma.QuestUpsertWithWhereUniqueWithoutSourceNpcInput[]
+  createMany?: Prisma.QuestCreateManySourceNpcInputEnvelope
+  set?: Prisma.QuestWhereUniqueInput | Prisma.QuestWhereUniqueInput[]
+  disconnect?: Prisma.QuestWhereUniqueInput | Prisma.QuestWhereUniqueInput[]
+  delete?: Prisma.QuestWhereUniqueInput | Prisma.QuestWhereUniqueInput[]
+  connect?: Prisma.QuestWhereUniqueInput | Prisma.QuestWhereUniqueInput[]
+  update?: Prisma.QuestUpdateWithWhereUniqueWithoutSourceNpcInput | Prisma.QuestUpdateWithWhereUniqueWithoutSourceNpcInput[]
+  updateMany?: Prisma.QuestUpdateManyWithWhereWithoutSourceNpcInput | Prisma.QuestUpdateManyWithWhereWithoutSourceNpcInput[]
+  deleteMany?: Prisma.QuestScalarWhereInput | Prisma.QuestScalarWhereInput[]
+}
+
+export type QuestUncheckedUpdateManyWithoutSourceNpcNestedInput = {
+  create?: Prisma.XOR<Prisma.QuestCreateWithoutSourceNpcInput, Prisma.QuestUncheckedCreateWithoutSourceNpcInput> | Prisma.QuestCreateWithoutSourceNpcInput[] | Prisma.QuestUncheckedCreateWithoutSourceNpcInput[]
+  connectOrCreate?: Prisma.QuestCreateOrConnectWithoutSourceNpcInput | Prisma.QuestCreateOrConnectWithoutSourceNpcInput[]
+  upsert?: Prisma.QuestUpsertWithWhereUniqueWithoutSourceNpcInput | Prisma.QuestUpsertWithWhereUniqueWithoutSourceNpcInput[]
+  createMany?: Prisma.QuestCreateManySourceNpcInputEnvelope
+  set?: Prisma.QuestWhereUniqueInput | Prisma.QuestWhereUniqueInput[]
+  disconnect?: Prisma.QuestWhereUniqueInput | Prisma.QuestWhereUniqueInput[]
+  delete?: Prisma.QuestWhereUniqueInput | Prisma.QuestWhereUniqueInput[]
+  connect?: Prisma.QuestWhereUniqueInput | Prisma.QuestWhereUniqueInput[]
+  update?: Prisma.QuestUpdateWithWhereUniqueWithoutSourceNpcInput | Prisma.QuestUpdateWithWhereUniqueWithoutSourceNpcInput[]
+  updateMany?: Prisma.QuestUpdateManyWithWhereWithoutSourceNpcInput | Prisma.QuestUpdateManyWithWhereWithoutSourceNpcInput[]
+  deleteMany?: Prisma.QuestScalarWhereInput | Prisma.QuestScalarWhereInput[]
+}
+
 export type EnumQuestTypeFieldUpdateOperationsInput = {
   set?: $Enums.QuestType
 }
 
+export type EnumQuestTrackFieldUpdateOperationsInput = {
+  set?: $Enums.QuestTrack
+}
+
+export type EnumQuestSourceTypeFieldUpdateOperationsInput = {
+  set?: $Enums.QuestSourceType
+}
+
 export type EnumQuestStatusFieldUpdateOperationsInput = {
   set?: $Enums.QuestStatus
+}
+
+export type QuestCreateNestedManyWithoutSourceCharacterInput = {
+  create?: Prisma.XOR<Prisma.QuestCreateWithoutSourceCharacterInput, Prisma.QuestUncheckedCreateWithoutSourceCharacterInput> | Prisma.QuestCreateWithoutSourceCharacterInput[] | Prisma.QuestUncheckedCreateWithoutSourceCharacterInput[]
+  connectOrCreate?: Prisma.QuestCreateOrConnectWithoutSourceCharacterInput | Prisma.QuestCreateOrConnectWithoutSourceCharacterInput[]
+  createMany?: Prisma.QuestCreateManySourceCharacterInputEnvelope
+  connect?: Prisma.QuestWhereUniqueInput | Prisma.QuestWhereUniqueInput[]
+}
+
+export type QuestUncheckedCreateNestedManyWithoutSourceCharacterInput = {
+  create?: Prisma.XOR<Prisma.QuestCreateWithoutSourceCharacterInput, Prisma.QuestUncheckedCreateWithoutSourceCharacterInput> | Prisma.QuestCreateWithoutSourceCharacterInput[] | Prisma.QuestUncheckedCreateWithoutSourceCharacterInput[]
+  connectOrCreate?: Prisma.QuestCreateOrConnectWithoutSourceCharacterInput | Prisma.QuestCreateOrConnectWithoutSourceCharacterInput[]
+  createMany?: Prisma.QuestCreateManySourceCharacterInputEnvelope
+  connect?: Prisma.QuestWhereUniqueInput | Prisma.QuestWhereUniqueInput[]
+}
+
+export type QuestUpdateManyWithoutSourceCharacterNestedInput = {
+  create?: Prisma.XOR<Prisma.QuestCreateWithoutSourceCharacterInput, Prisma.QuestUncheckedCreateWithoutSourceCharacterInput> | Prisma.QuestCreateWithoutSourceCharacterInput[] | Prisma.QuestUncheckedCreateWithoutSourceCharacterInput[]
+  connectOrCreate?: Prisma.QuestCreateOrConnectWithoutSourceCharacterInput | Prisma.QuestCreateOrConnectWithoutSourceCharacterInput[]
+  upsert?: Prisma.QuestUpsertWithWhereUniqueWithoutSourceCharacterInput | Prisma.QuestUpsertWithWhereUniqueWithoutSourceCharacterInput[]
+  createMany?: Prisma.QuestCreateManySourceCharacterInputEnvelope
+  set?: Prisma.QuestWhereUniqueInput | Prisma.QuestWhereUniqueInput[]
+  disconnect?: Prisma.QuestWhereUniqueInput | Prisma.QuestWhereUniqueInput[]
+  delete?: Prisma.QuestWhereUniqueInput | Prisma.QuestWhereUniqueInput[]
+  connect?: Prisma.QuestWhereUniqueInput | Prisma.QuestWhereUniqueInput[]
+  update?: Prisma.QuestUpdateWithWhereUniqueWithoutSourceCharacterInput | Prisma.QuestUpdateWithWhereUniqueWithoutSourceCharacterInput[]
+  updateMany?: Prisma.QuestUpdateManyWithWhereWithoutSourceCharacterInput | Prisma.QuestUpdateManyWithWhereWithoutSourceCharacterInput[]
+  deleteMany?: Prisma.QuestScalarWhereInput | Prisma.QuestScalarWhereInput[]
+}
+
+export type QuestUncheckedUpdateManyWithoutSourceCharacterNestedInput = {
+  create?: Prisma.XOR<Prisma.QuestCreateWithoutSourceCharacterInput, Prisma.QuestUncheckedCreateWithoutSourceCharacterInput> | Prisma.QuestCreateWithoutSourceCharacterInput[] | Prisma.QuestUncheckedCreateWithoutSourceCharacterInput[]
+  connectOrCreate?: Prisma.QuestCreateOrConnectWithoutSourceCharacterInput | Prisma.QuestCreateOrConnectWithoutSourceCharacterInput[]
+  upsert?: Prisma.QuestUpsertWithWhereUniqueWithoutSourceCharacterInput | Prisma.QuestUpsertWithWhereUniqueWithoutSourceCharacterInput[]
+  createMany?: Prisma.QuestCreateManySourceCharacterInputEnvelope
+  set?: Prisma.QuestWhereUniqueInput | Prisma.QuestWhereUniqueInput[]
+  disconnect?: Prisma.QuestWhereUniqueInput | Prisma.QuestWhereUniqueInput[]
+  delete?: Prisma.QuestWhereUniqueInput | Prisma.QuestWhereUniqueInput[]
+  connect?: Prisma.QuestWhereUniqueInput | Prisma.QuestWhereUniqueInput[]
+  update?: Prisma.QuestUpdateWithWhereUniqueWithoutSourceCharacterInput | Prisma.QuestUpdateWithWhereUniqueWithoutSourceCharacterInput[]
+  updateMany?: Prisma.QuestUpdateManyWithWhereWithoutSourceCharacterInput | Prisma.QuestUpdateManyWithWhereWithoutSourceCharacterInput[]
+  deleteMany?: Prisma.QuestScalarWhereInput | Prisma.QuestScalarWhereInput[]
 }
 
 export type QuestCreateWithoutCampaignInput = {
@@ -526,11 +838,20 @@ export type QuestCreateWithoutCampaignInput = {
   title: string
   description?: string | null
   type?: $Enums.QuestType
+  track?: $Enums.QuestTrack
+  sourceType?: $Enums.QuestSourceType
+  sourceText?: string | null
+  reward?: string | null
   status?: $Enums.QuestStatus
   progressNotes?: string | null
+  expirationYear?: number | null
+  expirationMonth?: number | null
+  expirationDay?: number | null
   sortOrder?: number
   createdAt?: Date | string
   updatedAt?: Date | string
+  sourceNpc?: Prisma.GlossaryEntryCreateNestedOneWithoutQuestSourcesInput
+  sourceCharacter?: Prisma.PlayerCharacterCreateNestedOneWithoutQuestSourcesInput
 }
 
 export type QuestUncheckedCreateWithoutCampaignInput = {
@@ -538,8 +859,17 @@ export type QuestUncheckedCreateWithoutCampaignInput = {
   title: string
   description?: string | null
   type?: $Enums.QuestType
+  track?: $Enums.QuestTrack
+  sourceType?: $Enums.QuestSourceType
+  sourceText?: string | null
+  sourceNpcId?: string | null
+  sourceCharacterId?: string | null
+  reward?: string | null
   status?: $Enums.QuestStatus
   progressNotes?: string | null
+  expirationYear?: number | null
+  expirationMonth?: number | null
+  expirationDay?: number | null
   sortOrder?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -579,11 +909,154 @@ export type QuestScalarWhereInput = {
   title?: Prisma.StringFilter<"Quest"> | string
   description?: Prisma.StringNullableFilter<"Quest"> | string | null
   type?: Prisma.EnumQuestTypeFilter<"Quest"> | $Enums.QuestType
+  track?: Prisma.EnumQuestTrackFilter<"Quest"> | $Enums.QuestTrack
+  sourceType?: Prisma.EnumQuestSourceTypeFilter<"Quest"> | $Enums.QuestSourceType
+  sourceText?: Prisma.StringNullableFilter<"Quest"> | string | null
+  sourceNpcId?: Prisma.StringNullableFilter<"Quest"> | string | null
+  sourceCharacterId?: Prisma.StringNullableFilter<"Quest"> | string | null
+  reward?: Prisma.StringNullableFilter<"Quest"> | string | null
   status?: Prisma.EnumQuestStatusFilter<"Quest"> | $Enums.QuestStatus
   progressNotes?: Prisma.StringNullableFilter<"Quest"> | string | null
+  expirationYear?: Prisma.IntNullableFilter<"Quest"> | number | null
+  expirationMonth?: Prisma.IntNullableFilter<"Quest"> | number | null
+  expirationDay?: Prisma.IntNullableFilter<"Quest"> | number | null
   sortOrder?: Prisma.IntFilter<"Quest"> | number
   createdAt?: Prisma.DateTimeFilter<"Quest"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Quest"> | Date | string
+}
+
+export type QuestCreateWithoutSourceNpcInput = {
+  id?: string
+  title: string
+  description?: string | null
+  type?: $Enums.QuestType
+  track?: $Enums.QuestTrack
+  sourceType?: $Enums.QuestSourceType
+  sourceText?: string | null
+  reward?: string | null
+  status?: $Enums.QuestStatus
+  progressNotes?: string | null
+  expirationYear?: number | null
+  expirationMonth?: number | null
+  expirationDay?: number | null
+  sortOrder?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  campaign: Prisma.CampaignCreateNestedOneWithoutQuestsInput
+  sourceCharacter?: Prisma.PlayerCharacterCreateNestedOneWithoutQuestSourcesInput
+}
+
+export type QuestUncheckedCreateWithoutSourceNpcInput = {
+  id?: string
+  campaignId: string
+  title: string
+  description?: string | null
+  type?: $Enums.QuestType
+  track?: $Enums.QuestTrack
+  sourceType?: $Enums.QuestSourceType
+  sourceText?: string | null
+  sourceCharacterId?: string | null
+  reward?: string | null
+  status?: $Enums.QuestStatus
+  progressNotes?: string | null
+  expirationYear?: number | null
+  expirationMonth?: number | null
+  expirationDay?: number | null
+  sortOrder?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type QuestCreateOrConnectWithoutSourceNpcInput = {
+  where: Prisma.QuestWhereUniqueInput
+  create: Prisma.XOR<Prisma.QuestCreateWithoutSourceNpcInput, Prisma.QuestUncheckedCreateWithoutSourceNpcInput>
+}
+
+export type QuestCreateManySourceNpcInputEnvelope = {
+  data: Prisma.QuestCreateManySourceNpcInput | Prisma.QuestCreateManySourceNpcInput[]
+}
+
+export type QuestUpsertWithWhereUniqueWithoutSourceNpcInput = {
+  where: Prisma.QuestWhereUniqueInput
+  update: Prisma.XOR<Prisma.QuestUpdateWithoutSourceNpcInput, Prisma.QuestUncheckedUpdateWithoutSourceNpcInput>
+  create: Prisma.XOR<Prisma.QuestCreateWithoutSourceNpcInput, Prisma.QuestUncheckedCreateWithoutSourceNpcInput>
+}
+
+export type QuestUpdateWithWhereUniqueWithoutSourceNpcInput = {
+  where: Prisma.QuestWhereUniqueInput
+  data: Prisma.XOR<Prisma.QuestUpdateWithoutSourceNpcInput, Prisma.QuestUncheckedUpdateWithoutSourceNpcInput>
+}
+
+export type QuestUpdateManyWithWhereWithoutSourceNpcInput = {
+  where: Prisma.QuestScalarWhereInput
+  data: Prisma.XOR<Prisma.QuestUpdateManyMutationInput, Prisma.QuestUncheckedUpdateManyWithoutSourceNpcInput>
+}
+
+export type QuestCreateWithoutSourceCharacterInput = {
+  id?: string
+  title: string
+  description?: string | null
+  type?: $Enums.QuestType
+  track?: $Enums.QuestTrack
+  sourceType?: $Enums.QuestSourceType
+  sourceText?: string | null
+  reward?: string | null
+  status?: $Enums.QuestStatus
+  progressNotes?: string | null
+  expirationYear?: number | null
+  expirationMonth?: number | null
+  expirationDay?: number | null
+  sortOrder?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  campaign: Prisma.CampaignCreateNestedOneWithoutQuestsInput
+  sourceNpc?: Prisma.GlossaryEntryCreateNestedOneWithoutQuestSourcesInput
+}
+
+export type QuestUncheckedCreateWithoutSourceCharacterInput = {
+  id?: string
+  campaignId: string
+  title: string
+  description?: string | null
+  type?: $Enums.QuestType
+  track?: $Enums.QuestTrack
+  sourceType?: $Enums.QuestSourceType
+  sourceText?: string | null
+  sourceNpcId?: string | null
+  reward?: string | null
+  status?: $Enums.QuestStatus
+  progressNotes?: string | null
+  expirationYear?: number | null
+  expirationMonth?: number | null
+  expirationDay?: number | null
+  sortOrder?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type QuestCreateOrConnectWithoutSourceCharacterInput = {
+  where: Prisma.QuestWhereUniqueInput
+  create: Prisma.XOR<Prisma.QuestCreateWithoutSourceCharacterInput, Prisma.QuestUncheckedCreateWithoutSourceCharacterInput>
+}
+
+export type QuestCreateManySourceCharacterInputEnvelope = {
+  data: Prisma.QuestCreateManySourceCharacterInput | Prisma.QuestCreateManySourceCharacterInput[]
+}
+
+export type QuestUpsertWithWhereUniqueWithoutSourceCharacterInput = {
+  where: Prisma.QuestWhereUniqueInput
+  update: Prisma.XOR<Prisma.QuestUpdateWithoutSourceCharacterInput, Prisma.QuestUncheckedUpdateWithoutSourceCharacterInput>
+  create: Prisma.XOR<Prisma.QuestCreateWithoutSourceCharacterInput, Prisma.QuestUncheckedCreateWithoutSourceCharacterInput>
+}
+
+export type QuestUpdateWithWhereUniqueWithoutSourceCharacterInput = {
+  where: Prisma.QuestWhereUniqueInput
+  data: Prisma.XOR<Prisma.QuestUpdateWithoutSourceCharacterInput, Prisma.QuestUncheckedUpdateWithoutSourceCharacterInput>
+}
+
+export type QuestUpdateManyWithWhereWithoutSourceCharacterInput = {
+  where: Prisma.QuestScalarWhereInput
+  data: Prisma.XOR<Prisma.QuestUpdateManyMutationInput, Prisma.QuestUncheckedUpdateManyWithoutSourceCharacterInput>
 }
 
 export type QuestCreateManyCampaignInput = {
@@ -591,8 +1064,17 @@ export type QuestCreateManyCampaignInput = {
   title: string
   description?: string | null
   type?: $Enums.QuestType
+  track?: $Enums.QuestTrack
+  sourceType?: $Enums.QuestSourceType
+  sourceText?: string | null
+  sourceNpcId?: string | null
+  sourceCharacterId?: string | null
+  reward?: string | null
   status?: $Enums.QuestStatus
   progressNotes?: string | null
+  expirationYear?: number | null
+  expirationMonth?: number | null
+  expirationDay?: number | null
   sortOrder?: number
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -603,11 +1085,20 @@ export type QuestUpdateWithoutCampaignInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.EnumQuestTypeFieldUpdateOperationsInput | $Enums.QuestType
+  track?: Prisma.EnumQuestTrackFieldUpdateOperationsInput | $Enums.QuestTrack
+  sourceType?: Prisma.EnumQuestSourceTypeFieldUpdateOperationsInput | $Enums.QuestSourceType
+  sourceText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reward?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumQuestStatusFieldUpdateOperationsInput | $Enums.QuestStatus
   progressNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expirationYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationMonth?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sourceNpc?: Prisma.GlossaryEntryUpdateOneWithoutQuestSourcesNestedInput
+  sourceCharacter?: Prisma.PlayerCharacterUpdateOneWithoutQuestSourcesNestedInput
 }
 
 export type QuestUncheckedUpdateWithoutCampaignInput = {
@@ -615,8 +1106,17 @@ export type QuestUncheckedUpdateWithoutCampaignInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.EnumQuestTypeFieldUpdateOperationsInput | $Enums.QuestType
+  track?: Prisma.EnumQuestTrackFieldUpdateOperationsInput | $Enums.QuestTrack
+  sourceType?: Prisma.EnumQuestSourceTypeFieldUpdateOperationsInput | $Enums.QuestSourceType
+  sourceText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceNpcId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceCharacterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reward?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumQuestStatusFieldUpdateOperationsInput | $Enums.QuestStatus
   progressNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expirationYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationMonth?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -627,8 +1127,185 @@ export type QuestUncheckedUpdateManyWithoutCampaignInput = {
   title?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.EnumQuestTypeFieldUpdateOperationsInput | $Enums.QuestType
+  track?: Prisma.EnumQuestTrackFieldUpdateOperationsInput | $Enums.QuestTrack
+  sourceType?: Prisma.EnumQuestSourceTypeFieldUpdateOperationsInput | $Enums.QuestSourceType
+  sourceText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceNpcId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceCharacterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reward?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumQuestStatusFieldUpdateOperationsInput | $Enums.QuestStatus
   progressNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expirationYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationMonth?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type QuestCreateManySourceNpcInput = {
+  id?: string
+  campaignId: string
+  title: string
+  description?: string | null
+  type?: $Enums.QuestType
+  track?: $Enums.QuestTrack
+  sourceType?: $Enums.QuestSourceType
+  sourceText?: string | null
+  sourceCharacterId?: string | null
+  reward?: string | null
+  status?: $Enums.QuestStatus
+  progressNotes?: string | null
+  expirationYear?: number | null
+  expirationMonth?: number | null
+  expirationDay?: number | null
+  sortOrder?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type QuestUpdateWithoutSourceNpcInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumQuestTypeFieldUpdateOperationsInput | $Enums.QuestType
+  track?: Prisma.EnumQuestTrackFieldUpdateOperationsInput | $Enums.QuestTrack
+  sourceType?: Prisma.EnumQuestSourceTypeFieldUpdateOperationsInput | $Enums.QuestSourceType
+  sourceText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reward?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumQuestStatusFieldUpdateOperationsInput | $Enums.QuestStatus
+  progressNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expirationYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationMonth?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  campaign?: Prisma.CampaignUpdateOneRequiredWithoutQuestsNestedInput
+  sourceCharacter?: Prisma.PlayerCharacterUpdateOneWithoutQuestSourcesNestedInput
+}
+
+export type QuestUncheckedUpdateWithoutSourceNpcInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  campaignId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumQuestTypeFieldUpdateOperationsInput | $Enums.QuestType
+  track?: Prisma.EnumQuestTrackFieldUpdateOperationsInput | $Enums.QuestTrack
+  sourceType?: Prisma.EnumQuestSourceTypeFieldUpdateOperationsInput | $Enums.QuestSourceType
+  sourceText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceCharacterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reward?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumQuestStatusFieldUpdateOperationsInput | $Enums.QuestStatus
+  progressNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expirationYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationMonth?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type QuestUncheckedUpdateManyWithoutSourceNpcInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  campaignId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumQuestTypeFieldUpdateOperationsInput | $Enums.QuestType
+  track?: Prisma.EnumQuestTrackFieldUpdateOperationsInput | $Enums.QuestTrack
+  sourceType?: Prisma.EnumQuestSourceTypeFieldUpdateOperationsInput | $Enums.QuestSourceType
+  sourceText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceCharacterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reward?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumQuestStatusFieldUpdateOperationsInput | $Enums.QuestStatus
+  progressNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expirationYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationMonth?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type QuestCreateManySourceCharacterInput = {
+  id?: string
+  campaignId: string
+  title: string
+  description?: string | null
+  type?: $Enums.QuestType
+  track?: $Enums.QuestTrack
+  sourceType?: $Enums.QuestSourceType
+  sourceText?: string | null
+  sourceNpcId?: string | null
+  reward?: string | null
+  status?: $Enums.QuestStatus
+  progressNotes?: string | null
+  expirationYear?: number | null
+  expirationMonth?: number | null
+  expirationDay?: number | null
+  sortOrder?: number
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type QuestUpdateWithoutSourceCharacterInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumQuestTypeFieldUpdateOperationsInput | $Enums.QuestType
+  track?: Prisma.EnumQuestTrackFieldUpdateOperationsInput | $Enums.QuestTrack
+  sourceType?: Prisma.EnumQuestSourceTypeFieldUpdateOperationsInput | $Enums.QuestSourceType
+  sourceText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reward?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumQuestStatusFieldUpdateOperationsInput | $Enums.QuestStatus
+  progressNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expirationYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationMonth?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  campaign?: Prisma.CampaignUpdateOneRequiredWithoutQuestsNestedInput
+  sourceNpc?: Prisma.GlossaryEntryUpdateOneWithoutQuestSourcesNestedInput
+}
+
+export type QuestUncheckedUpdateWithoutSourceCharacterInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  campaignId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumQuestTypeFieldUpdateOperationsInput | $Enums.QuestType
+  track?: Prisma.EnumQuestTrackFieldUpdateOperationsInput | $Enums.QuestTrack
+  sourceType?: Prisma.EnumQuestSourceTypeFieldUpdateOperationsInput | $Enums.QuestSourceType
+  sourceText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceNpcId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reward?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumQuestStatusFieldUpdateOperationsInput | $Enums.QuestStatus
+  progressNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expirationYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationMonth?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type QuestUncheckedUpdateManyWithoutSourceCharacterInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  campaignId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.EnumQuestTypeFieldUpdateOperationsInput | $Enums.QuestType
+  track?: Prisma.EnumQuestTrackFieldUpdateOperationsInput | $Enums.QuestTrack
+  sourceType?: Prisma.EnumQuestSourceTypeFieldUpdateOperationsInput | $Enums.QuestSourceType
+  sourceText?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceNpcId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reward?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumQuestStatusFieldUpdateOperationsInput | $Enums.QuestStatus
+  progressNotes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expirationYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationMonth?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  expirationDay?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -642,12 +1319,23 @@ export type QuestSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   title?: boolean
   description?: boolean
   type?: boolean
+  track?: boolean
+  sourceType?: boolean
+  sourceText?: boolean
+  sourceNpcId?: boolean
+  sourceCharacterId?: boolean
+  reward?: boolean
   status?: boolean
   progressNotes?: boolean
+  expirationYear?: boolean
+  expirationMonth?: boolean
+  expirationDay?: boolean
   sortOrder?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   campaign?: boolean | Prisma.CampaignDefaultArgs<ExtArgs>
+  sourceNpc?: boolean | Prisma.Quest$sourceNpcArgs<ExtArgs>
+  sourceCharacter?: boolean | Prisma.Quest$sourceCharacterArgs<ExtArgs>
 }, ExtArgs["result"]["quest"]>
 
 export type QuestSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -656,12 +1344,23 @@ export type QuestSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   title?: boolean
   description?: boolean
   type?: boolean
+  track?: boolean
+  sourceType?: boolean
+  sourceText?: boolean
+  sourceNpcId?: boolean
+  sourceCharacterId?: boolean
+  reward?: boolean
   status?: boolean
   progressNotes?: boolean
+  expirationYear?: boolean
+  expirationMonth?: boolean
+  expirationDay?: boolean
   sortOrder?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   campaign?: boolean | Prisma.CampaignDefaultArgs<ExtArgs>
+  sourceNpc?: boolean | Prisma.Quest$sourceNpcArgs<ExtArgs>
+  sourceCharacter?: boolean | Prisma.Quest$sourceCharacterArgs<ExtArgs>
 }, ExtArgs["result"]["quest"]>
 
 export type QuestSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -670,12 +1369,23 @@ export type QuestSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   title?: boolean
   description?: boolean
   type?: boolean
+  track?: boolean
+  sourceType?: boolean
+  sourceText?: boolean
+  sourceNpcId?: boolean
+  sourceCharacterId?: boolean
+  reward?: boolean
   status?: boolean
   progressNotes?: boolean
+  expirationYear?: boolean
+  expirationMonth?: boolean
+  expirationDay?: boolean
   sortOrder?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   campaign?: boolean | Prisma.CampaignDefaultArgs<ExtArgs>
+  sourceNpc?: boolean | Prisma.Quest$sourceNpcArgs<ExtArgs>
+  sourceCharacter?: boolean | Prisma.Quest$sourceCharacterArgs<ExtArgs>
 }, ExtArgs["result"]["quest"]>
 
 export type QuestSelectScalar = {
@@ -684,28 +1394,45 @@ export type QuestSelectScalar = {
   title?: boolean
   description?: boolean
   type?: boolean
+  track?: boolean
+  sourceType?: boolean
+  sourceText?: boolean
+  sourceNpcId?: boolean
+  sourceCharacterId?: boolean
+  reward?: boolean
   status?: boolean
   progressNotes?: boolean
+  expirationYear?: boolean
+  expirationMonth?: boolean
+  expirationDay?: boolean
   sortOrder?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type QuestOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "campaignId" | "title" | "description" | "type" | "status" | "progressNotes" | "sortOrder" | "createdAt" | "updatedAt", ExtArgs["result"]["quest"]>
+export type QuestOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "campaignId" | "title" | "description" | "type" | "track" | "sourceType" | "sourceText" | "sourceNpcId" | "sourceCharacterId" | "reward" | "status" | "progressNotes" | "expirationYear" | "expirationMonth" | "expirationDay" | "sortOrder" | "createdAt" | "updatedAt", ExtArgs["result"]["quest"]>
 export type QuestInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   campaign?: boolean | Prisma.CampaignDefaultArgs<ExtArgs>
+  sourceNpc?: boolean | Prisma.Quest$sourceNpcArgs<ExtArgs>
+  sourceCharacter?: boolean | Prisma.Quest$sourceCharacterArgs<ExtArgs>
 }
 export type QuestIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   campaign?: boolean | Prisma.CampaignDefaultArgs<ExtArgs>
+  sourceNpc?: boolean | Prisma.Quest$sourceNpcArgs<ExtArgs>
+  sourceCharacter?: boolean | Prisma.Quest$sourceCharacterArgs<ExtArgs>
 }
 export type QuestIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   campaign?: boolean | Prisma.CampaignDefaultArgs<ExtArgs>
+  sourceNpc?: boolean | Prisma.Quest$sourceNpcArgs<ExtArgs>
+  sourceCharacter?: boolean | Prisma.Quest$sourceCharacterArgs<ExtArgs>
 }
 
 export type $QuestPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Quest"
   objects: {
     campaign: Prisma.$CampaignPayload<ExtArgs>
+    sourceNpc: Prisma.$GlossaryEntryPayload<ExtArgs> | null
+    sourceCharacter: Prisma.$PlayerCharacterPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -713,8 +1440,17 @@ export type $QuestPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     title: string
     description: string | null
     type: $Enums.QuestType
+    track: $Enums.QuestTrack
+    sourceType: $Enums.QuestSourceType
+    sourceText: string | null
+    sourceNpcId: string | null
+    sourceCharacterId: string | null
+    reward: string | null
     status: $Enums.QuestStatus
     progressNotes: string | null
+    expirationYear: number | null
+    expirationMonth: number | null
+    expirationDay: number | null
     sortOrder: number
     createdAt: Date
     updatedAt: Date
@@ -1113,6 +1849,8 @@ readonly fields: QuestFieldRefs;
 export interface Prisma__QuestClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   campaign<T extends Prisma.CampaignDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CampaignDefaultArgs<ExtArgs>>): Prisma.Prisma__CampaignClient<runtime.Types.Result.GetResult<Prisma.$CampaignPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  sourceNpc<T extends Prisma.Quest$sourceNpcArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Quest$sourceNpcArgs<ExtArgs>>): Prisma.Prisma__GlossaryEntryClient<runtime.Types.Result.GetResult<Prisma.$GlossaryEntryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  sourceCharacter<T extends Prisma.Quest$sourceCharacterArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Quest$sourceCharacterArgs<ExtArgs>>): Prisma.Prisma__PlayerCharacterClient<runtime.Types.Result.GetResult<Prisma.$PlayerCharacterPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1147,8 +1885,17 @@ export interface QuestFieldRefs {
   readonly title: Prisma.FieldRef<"Quest", 'String'>
   readonly description: Prisma.FieldRef<"Quest", 'String'>
   readonly type: Prisma.FieldRef<"Quest", 'QuestType'>
+  readonly track: Prisma.FieldRef<"Quest", 'QuestTrack'>
+  readonly sourceType: Prisma.FieldRef<"Quest", 'QuestSourceType'>
+  readonly sourceText: Prisma.FieldRef<"Quest", 'String'>
+  readonly sourceNpcId: Prisma.FieldRef<"Quest", 'String'>
+  readonly sourceCharacterId: Prisma.FieldRef<"Quest", 'String'>
+  readonly reward: Prisma.FieldRef<"Quest", 'String'>
   readonly status: Prisma.FieldRef<"Quest", 'QuestStatus'>
   readonly progressNotes: Prisma.FieldRef<"Quest", 'String'>
+  readonly expirationYear: Prisma.FieldRef<"Quest", 'Int'>
+  readonly expirationMonth: Prisma.FieldRef<"Quest", 'Int'>
+  readonly expirationDay: Prisma.FieldRef<"Quest", 'Int'>
   readonly sortOrder: Prisma.FieldRef<"Quest", 'Int'>
   readonly createdAt: Prisma.FieldRef<"Quest", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Quest", 'DateTime'>
@@ -1543,6 +2290,44 @@ export type QuestDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Interna
    * Limit how many Quests to delete.
    */
   limit?: number
+}
+
+/**
+ * Quest.sourceNpc
+ */
+export type Quest$sourceNpcArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the GlossaryEntry
+   */
+  select?: Prisma.GlossaryEntrySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the GlossaryEntry
+   */
+  omit?: Prisma.GlossaryEntryOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GlossaryEntryInclude<ExtArgs> | null
+  where?: Prisma.GlossaryEntryWhereInput
+}
+
+/**
+ * Quest.sourceCharacter
+ */
+export type Quest$sourceCharacterArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PlayerCharacter
+   */
+  select?: Prisma.PlayerCharacterSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PlayerCharacter
+   */
+  omit?: Prisma.PlayerCharacterOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PlayerCharacterInclude<ExtArgs> | null
+  where?: Prisma.PlayerCharacterWhereInput
 }
 
 /**

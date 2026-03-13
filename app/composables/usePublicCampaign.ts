@@ -151,13 +151,28 @@ export const usePublicCampaign = () => {
   const getQuests = (publicSlug: string) =>
     request<
       Array<{
+        id: string
         title: string
         description: string | null
-        type: string
-        status: string
+        type: 'CAMPAIGN' | 'GUILD' | 'CHARACTER'
+        track: 'MAIN' | 'SIDE'
+        sourceType: 'FREE_TEXT' | 'NPC' | 'CAMPAIGN_CHARACTER'
+        sourceText: string | null
+        sourceNpcId: string | null
+        sourceNpcName: string | null
+        sourceCharacterId: string | null
+        sourceCharacterName: string | null
+        reward: string | null
+        status: 'ACTIVE' | 'COMPLETED' | 'FAILED' | 'ON_HOLD'
         progressNotes: string | null
+        expirationDate: {
+          year: number
+          month: number
+          day: number
+        } | null
         sortOrder: number
         createdAt: string
+        updatedAt: string
       }>
     >(`/api/public/campaigns/${publicSlug}/quests`)
 

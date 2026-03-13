@@ -1,6 +1,8 @@
-import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
+import { QuestService } from '#server/services/quest.service'
+
+const questService = new QuestService()
 
 export default defineEventHandler(async (event) => {
   const campaignId = event.context.params?.campaignId
@@ -13,10 +15,7 @@ export default defineEventHandler(async (event) => {
     return authz.response
   }
 
-  const quests = await prisma.quest.findMany({
-    where: { campaignId },
-    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-  })
+  const quests = await questService.listCampaignQuests(campaignId)
 
   return ok(quests)
 })

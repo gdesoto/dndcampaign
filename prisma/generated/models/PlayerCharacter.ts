@@ -225,6 +225,7 @@ export type PlayerCharacterWhereInput = {
   owner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   portraitArtifact?: Prisma.XOR<Prisma.ArtifactNullableScalarRelationFilter, Prisma.ArtifactWhereInput> | null
   campaignLinks?: Prisma.CampaignCharacterListRelationFilter
+  questSources?: Prisma.QuestListRelationFilter
   imports?: Prisma.CharacterImportListRelationFilter
   importSettings?: Prisma.XOR<Prisma.CharacterImportSettingsNullableScalarRelationFilter, Prisma.CharacterImportSettingsWhereInput> | null
 }
@@ -244,6 +245,7 @@ export type PlayerCharacterOrderByWithRelationInput = {
   owner?: Prisma.UserOrderByWithRelationInput
   portraitArtifact?: Prisma.ArtifactOrderByWithRelationInput
   campaignLinks?: Prisma.CampaignCharacterOrderByRelationAggregateInput
+  questSources?: Prisma.QuestOrderByRelationAggregateInput
   imports?: Prisma.CharacterImportOrderByRelationAggregateInput
   importSettings?: Prisma.CharacterImportSettingsOrderByWithRelationInput
 }
@@ -266,6 +268,7 @@ export type PlayerCharacterWhereUniqueInput = Prisma.AtLeast<{
   owner?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   portraitArtifact?: Prisma.XOR<Prisma.ArtifactNullableScalarRelationFilter, Prisma.ArtifactWhereInput> | null
   campaignLinks?: Prisma.CampaignCharacterListRelationFilter
+  questSources?: Prisma.QuestListRelationFilter
   imports?: Prisma.CharacterImportListRelationFilter
   importSettings?: Prisma.XOR<Prisma.CharacterImportSettingsNullableScalarRelationFilter, Prisma.CharacterImportSettingsWhereInput> | null
 }, "id">
@@ -317,6 +320,7 @@ export type PlayerCharacterCreateInput = {
   owner: Prisma.UserCreateNestedOneWithoutPlayerCharactersInput
   portraitArtifact?: Prisma.ArtifactCreateNestedOneWithoutCharacterPortraitsInput
   campaignLinks?: Prisma.CampaignCharacterCreateNestedManyWithoutCharacterInput
+  questSources?: Prisma.QuestCreateNestedManyWithoutSourceCharacterInput
   imports?: Prisma.CharacterImportCreateNestedManyWithoutCharacterInput
   importSettings?: Prisma.CharacterImportSettingsCreateNestedOneWithoutCharacterInput
 }
@@ -334,6 +338,7 @@ export type PlayerCharacterUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   campaignLinks?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutCharacterInput
+  questSources?: Prisma.QuestUncheckedCreateNestedManyWithoutSourceCharacterInput
   imports?: Prisma.CharacterImportUncheckedCreateNestedManyWithoutCharacterInput
   importSettings?: Prisma.CharacterImportSettingsUncheckedCreateNestedOneWithoutCharacterInput
 }
@@ -351,6 +356,7 @@ export type PlayerCharacterUpdateInput = {
   owner?: Prisma.UserUpdateOneRequiredWithoutPlayerCharactersNestedInput
   portraitArtifact?: Prisma.ArtifactUpdateOneWithoutCharacterPortraitsNestedInput
   campaignLinks?: Prisma.CampaignCharacterUpdateManyWithoutCharacterNestedInput
+  questSources?: Prisma.QuestUpdateManyWithoutSourceCharacterNestedInput
   imports?: Prisma.CharacterImportUpdateManyWithoutCharacterNestedInput
   importSettings?: Prisma.CharacterImportSettingsUpdateOneWithoutCharacterNestedInput
 }
@@ -368,6 +374,7 @@ export type PlayerCharacterUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   campaignLinks?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutCharacterNestedInput
+  questSources?: Prisma.QuestUncheckedUpdateManyWithoutSourceCharacterNestedInput
   imports?: Prisma.CharacterImportUncheckedUpdateManyWithoutCharacterNestedInput
   importSettings?: Prisma.CharacterImportSettingsUncheckedUpdateOneWithoutCharacterNestedInput
 }
@@ -420,6 +427,11 @@ export type PlayerCharacterListRelationFilter = {
 
 export type PlayerCharacterOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
+}
+
+export type PlayerCharacterNullableScalarRelationFilter = {
+  is?: Prisma.PlayerCharacterWhereInput | null
+  isNot?: Prisma.PlayerCharacterWhereInput | null
 }
 
 export type PlayerCharacterCountOrderByAggregateInput = {
@@ -549,6 +561,22 @@ export type PlayerCharacterUncheckedUpdateManyWithoutPortraitArtifactNestedInput
   deleteMany?: Prisma.PlayerCharacterScalarWhereInput | Prisma.PlayerCharacterScalarWhereInput[]
 }
 
+export type PlayerCharacterCreateNestedOneWithoutQuestSourcesInput = {
+  create?: Prisma.XOR<Prisma.PlayerCharacterCreateWithoutQuestSourcesInput, Prisma.PlayerCharacterUncheckedCreateWithoutQuestSourcesInput>
+  connectOrCreate?: Prisma.PlayerCharacterCreateOrConnectWithoutQuestSourcesInput
+  connect?: Prisma.PlayerCharacterWhereUniqueInput
+}
+
+export type PlayerCharacterUpdateOneWithoutQuestSourcesNestedInput = {
+  create?: Prisma.XOR<Prisma.PlayerCharacterCreateWithoutQuestSourcesInput, Prisma.PlayerCharacterUncheckedCreateWithoutQuestSourcesInput>
+  connectOrCreate?: Prisma.PlayerCharacterCreateOrConnectWithoutQuestSourcesInput
+  upsert?: Prisma.PlayerCharacterUpsertWithoutQuestSourcesInput
+  disconnect?: Prisma.PlayerCharacterWhereInput | boolean
+  delete?: Prisma.PlayerCharacterWhereInput | boolean
+  connect?: Prisma.PlayerCharacterWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.PlayerCharacterUpdateToOneWithWhereWithoutQuestSourcesInput, Prisma.PlayerCharacterUpdateWithoutQuestSourcesInput>, Prisma.PlayerCharacterUncheckedUpdateWithoutQuestSourcesInput>
+}
+
 export type EnumCharacterSourceProviderFieldUpdateOperationsInput = {
   set?: $Enums.CharacterSourceProvider
 }
@@ -607,6 +635,7 @@ export type PlayerCharacterCreateWithoutOwnerInput = {
   updatedAt?: Date | string
   portraitArtifact?: Prisma.ArtifactCreateNestedOneWithoutCharacterPortraitsInput
   campaignLinks?: Prisma.CampaignCharacterCreateNestedManyWithoutCharacterInput
+  questSources?: Prisma.QuestCreateNestedManyWithoutSourceCharacterInput
   imports?: Prisma.CharacterImportCreateNestedManyWithoutCharacterInput
   importSettings?: Prisma.CharacterImportSettingsCreateNestedOneWithoutCharacterInput
 }
@@ -623,6 +652,7 @@ export type PlayerCharacterUncheckedCreateWithoutOwnerInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   campaignLinks?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutCharacterInput
+  questSources?: Prisma.QuestUncheckedCreateNestedManyWithoutSourceCharacterInput
   imports?: Prisma.CharacterImportUncheckedCreateNestedManyWithoutCharacterInput
   importSettings?: Prisma.CharacterImportSettingsUncheckedCreateNestedOneWithoutCharacterInput
 }
@@ -681,6 +711,7 @@ export type PlayerCharacterCreateWithoutPortraitArtifactInput = {
   updatedAt?: Date | string
   owner: Prisma.UserCreateNestedOneWithoutPlayerCharactersInput
   campaignLinks?: Prisma.CampaignCharacterCreateNestedManyWithoutCharacterInput
+  questSources?: Prisma.QuestCreateNestedManyWithoutSourceCharacterInput
   imports?: Prisma.CharacterImportCreateNestedManyWithoutCharacterInput
   importSettings?: Prisma.CharacterImportSettingsCreateNestedOneWithoutCharacterInput
 }
@@ -697,6 +728,7 @@ export type PlayerCharacterUncheckedCreateWithoutPortraitArtifactInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   campaignLinks?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutCharacterInput
+  questSources?: Prisma.QuestUncheckedCreateNestedManyWithoutSourceCharacterInput
   imports?: Prisma.CharacterImportUncheckedCreateNestedManyWithoutCharacterInput
   importSettings?: Prisma.CharacterImportSettingsUncheckedCreateNestedOneWithoutCharacterInput
 }
@@ -726,6 +758,90 @@ export type PlayerCharacterUpdateManyWithWhereWithoutPortraitArtifactInput = {
   data: Prisma.XOR<Prisma.PlayerCharacterUpdateManyMutationInput, Prisma.PlayerCharacterUncheckedUpdateManyWithoutPortraitArtifactInput>
 }
 
+export type PlayerCharacterCreateWithoutQuestSourcesInput = {
+  id?: string
+  name: string
+  status?: string | null
+  portraitUrl?: string | null
+  sheetJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  summaryJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  sourceProvider?: $Enums.CharacterSourceProvider
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  owner: Prisma.UserCreateNestedOneWithoutPlayerCharactersInput
+  portraitArtifact?: Prisma.ArtifactCreateNestedOneWithoutCharacterPortraitsInput
+  campaignLinks?: Prisma.CampaignCharacterCreateNestedManyWithoutCharacterInput
+  imports?: Prisma.CharacterImportCreateNestedManyWithoutCharacterInput
+  importSettings?: Prisma.CharacterImportSettingsCreateNestedOneWithoutCharacterInput
+}
+
+export type PlayerCharacterUncheckedCreateWithoutQuestSourcesInput = {
+  id?: string
+  ownerId: string
+  name: string
+  status?: string | null
+  portraitUrl?: string | null
+  portraitArtifactId?: string | null
+  sheetJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  summaryJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  sourceProvider?: $Enums.CharacterSourceProvider
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  campaignLinks?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutCharacterInput
+  imports?: Prisma.CharacterImportUncheckedCreateNestedManyWithoutCharacterInput
+  importSettings?: Prisma.CharacterImportSettingsUncheckedCreateNestedOneWithoutCharacterInput
+}
+
+export type PlayerCharacterCreateOrConnectWithoutQuestSourcesInput = {
+  where: Prisma.PlayerCharacterWhereUniqueInput
+  create: Prisma.XOR<Prisma.PlayerCharacterCreateWithoutQuestSourcesInput, Prisma.PlayerCharacterUncheckedCreateWithoutQuestSourcesInput>
+}
+
+export type PlayerCharacterUpsertWithoutQuestSourcesInput = {
+  update: Prisma.XOR<Prisma.PlayerCharacterUpdateWithoutQuestSourcesInput, Prisma.PlayerCharacterUncheckedUpdateWithoutQuestSourcesInput>
+  create: Prisma.XOR<Prisma.PlayerCharacterCreateWithoutQuestSourcesInput, Prisma.PlayerCharacterUncheckedCreateWithoutQuestSourcesInput>
+  where?: Prisma.PlayerCharacterWhereInput
+}
+
+export type PlayerCharacterUpdateToOneWithWhereWithoutQuestSourcesInput = {
+  where?: Prisma.PlayerCharacterWhereInput
+  data: Prisma.XOR<Prisma.PlayerCharacterUpdateWithoutQuestSourcesInput, Prisma.PlayerCharacterUncheckedUpdateWithoutQuestSourcesInput>
+}
+
+export type PlayerCharacterUpdateWithoutQuestSourcesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  portraitUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sheetJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  summaryJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  sourceProvider?: Prisma.EnumCharacterSourceProviderFieldUpdateOperationsInput | $Enums.CharacterSourceProvider
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  owner?: Prisma.UserUpdateOneRequiredWithoutPlayerCharactersNestedInput
+  portraitArtifact?: Prisma.ArtifactUpdateOneWithoutCharacterPortraitsNestedInput
+  campaignLinks?: Prisma.CampaignCharacterUpdateManyWithoutCharacterNestedInput
+  imports?: Prisma.CharacterImportUpdateManyWithoutCharacterNestedInput
+  importSettings?: Prisma.CharacterImportSettingsUpdateOneWithoutCharacterNestedInput
+}
+
+export type PlayerCharacterUncheckedUpdateWithoutQuestSourcesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  ownerId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  portraitUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  portraitArtifactId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sheetJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  summaryJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  sourceProvider?: Prisma.EnumCharacterSourceProviderFieldUpdateOperationsInput | $Enums.CharacterSourceProvider
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  campaignLinks?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutCharacterNestedInput
+  imports?: Prisma.CharacterImportUncheckedUpdateManyWithoutCharacterNestedInput
+  importSettings?: Prisma.CharacterImportSettingsUncheckedUpdateOneWithoutCharacterNestedInput
+}
+
 export type PlayerCharacterCreateWithoutCampaignLinksInput = {
   id?: string
   name: string
@@ -738,6 +854,7 @@ export type PlayerCharacterCreateWithoutCampaignLinksInput = {
   updatedAt?: Date | string
   owner: Prisma.UserCreateNestedOneWithoutPlayerCharactersInput
   portraitArtifact?: Prisma.ArtifactCreateNestedOneWithoutCharacterPortraitsInput
+  questSources?: Prisma.QuestCreateNestedManyWithoutSourceCharacterInput
   imports?: Prisma.CharacterImportCreateNestedManyWithoutCharacterInput
   importSettings?: Prisma.CharacterImportSettingsCreateNestedOneWithoutCharacterInput
 }
@@ -754,6 +871,7 @@ export type PlayerCharacterUncheckedCreateWithoutCampaignLinksInput = {
   sourceProvider?: $Enums.CharacterSourceProvider
   createdAt?: Date | string
   updatedAt?: Date | string
+  questSources?: Prisma.QuestUncheckedCreateNestedManyWithoutSourceCharacterInput
   imports?: Prisma.CharacterImportUncheckedCreateNestedManyWithoutCharacterInput
   importSettings?: Prisma.CharacterImportSettingsUncheckedCreateNestedOneWithoutCharacterInput
 }
@@ -786,6 +904,7 @@ export type PlayerCharacterUpdateWithoutCampaignLinksInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   owner?: Prisma.UserUpdateOneRequiredWithoutPlayerCharactersNestedInput
   portraitArtifact?: Prisma.ArtifactUpdateOneWithoutCharacterPortraitsNestedInput
+  questSources?: Prisma.QuestUpdateManyWithoutSourceCharacterNestedInput
   imports?: Prisma.CharacterImportUpdateManyWithoutCharacterNestedInput
   importSettings?: Prisma.CharacterImportSettingsUpdateOneWithoutCharacterNestedInput
 }
@@ -802,6 +921,7 @@ export type PlayerCharacterUncheckedUpdateWithoutCampaignLinksInput = {
   sourceProvider?: Prisma.EnumCharacterSourceProviderFieldUpdateOperationsInput | $Enums.CharacterSourceProvider
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  questSources?: Prisma.QuestUncheckedUpdateManyWithoutSourceCharacterNestedInput
   imports?: Prisma.CharacterImportUncheckedUpdateManyWithoutCharacterNestedInput
   importSettings?: Prisma.CharacterImportSettingsUncheckedUpdateOneWithoutCharacterNestedInput
 }
@@ -819,6 +939,7 @@ export type PlayerCharacterCreateWithoutImportsInput = {
   owner: Prisma.UserCreateNestedOneWithoutPlayerCharactersInput
   portraitArtifact?: Prisma.ArtifactCreateNestedOneWithoutCharacterPortraitsInput
   campaignLinks?: Prisma.CampaignCharacterCreateNestedManyWithoutCharacterInput
+  questSources?: Prisma.QuestCreateNestedManyWithoutSourceCharacterInput
   importSettings?: Prisma.CharacterImportSettingsCreateNestedOneWithoutCharacterInput
 }
 
@@ -835,6 +956,7 @@ export type PlayerCharacterUncheckedCreateWithoutImportsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   campaignLinks?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutCharacterInput
+  questSources?: Prisma.QuestUncheckedCreateNestedManyWithoutSourceCharacterInput
   importSettings?: Prisma.CharacterImportSettingsUncheckedCreateNestedOneWithoutCharacterInput
 }
 
@@ -867,6 +989,7 @@ export type PlayerCharacterUpdateWithoutImportsInput = {
   owner?: Prisma.UserUpdateOneRequiredWithoutPlayerCharactersNestedInput
   portraitArtifact?: Prisma.ArtifactUpdateOneWithoutCharacterPortraitsNestedInput
   campaignLinks?: Prisma.CampaignCharacterUpdateManyWithoutCharacterNestedInput
+  questSources?: Prisma.QuestUpdateManyWithoutSourceCharacterNestedInput
   importSettings?: Prisma.CharacterImportSettingsUpdateOneWithoutCharacterNestedInput
 }
 
@@ -883,6 +1006,7 @@ export type PlayerCharacterUncheckedUpdateWithoutImportsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   campaignLinks?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutCharacterNestedInput
+  questSources?: Prisma.QuestUncheckedUpdateManyWithoutSourceCharacterNestedInput
   importSettings?: Prisma.CharacterImportSettingsUncheckedUpdateOneWithoutCharacterNestedInput
 }
 
@@ -899,6 +1023,7 @@ export type PlayerCharacterCreateWithoutImportSettingsInput = {
   owner: Prisma.UserCreateNestedOneWithoutPlayerCharactersInput
   portraitArtifact?: Prisma.ArtifactCreateNestedOneWithoutCharacterPortraitsInput
   campaignLinks?: Prisma.CampaignCharacterCreateNestedManyWithoutCharacterInput
+  questSources?: Prisma.QuestCreateNestedManyWithoutSourceCharacterInput
   imports?: Prisma.CharacterImportCreateNestedManyWithoutCharacterInput
 }
 
@@ -915,6 +1040,7 @@ export type PlayerCharacterUncheckedCreateWithoutImportSettingsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   campaignLinks?: Prisma.CampaignCharacterUncheckedCreateNestedManyWithoutCharacterInput
+  questSources?: Prisma.QuestUncheckedCreateNestedManyWithoutSourceCharacterInput
   imports?: Prisma.CharacterImportUncheckedCreateNestedManyWithoutCharacterInput
 }
 
@@ -947,6 +1073,7 @@ export type PlayerCharacterUpdateWithoutImportSettingsInput = {
   owner?: Prisma.UserUpdateOneRequiredWithoutPlayerCharactersNestedInput
   portraitArtifact?: Prisma.ArtifactUpdateOneWithoutCharacterPortraitsNestedInput
   campaignLinks?: Prisma.CampaignCharacterUpdateManyWithoutCharacterNestedInput
+  questSources?: Prisma.QuestUpdateManyWithoutSourceCharacterNestedInput
   imports?: Prisma.CharacterImportUpdateManyWithoutCharacterNestedInput
 }
 
@@ -963,6 +1090,7 @@ export type PlayerCharacterUncheckedUpdateWithoutImportSettingsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   campaignLinks?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutCharacterNestedInput
+  questSources?: Prisma.QuestUncheckedUpdateManyWithoutSourceCharacterNestedInput
   imports?: Prisma.CharacterImportUncheckedUpdateManyWithoutCharacterNestedInput
 }
 
@@ -991,6 +1119,7 @@ export type PlayerCharacterUpdateWithoutOwnerInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   portraitArtifact?: Prisma.ArtifactUpdateOneWithoutCharacterPortraitsNestedInput
   campaignLinks?: Prisma.CampaignCharacterUpdateManyWithoutCharacterNestedInput
+  questSources?: Prisma.QuestUpdateManyWithoutSourceCharacterNestedInput
   imports?: Prisma.CharacterImportUpdateManyWithoutCharacterNestedInput
   importSettings?: Prisma.CharacterImportSettingsUpdateOneWithoutCharacterNestedInput
 }
@@ -1007,6 +1136,7 @@ export type PlayerCharacterUncheckedUpdateWithoutOwnerInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   campaignLinks?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutCharacterNestedInput
+  questSources?: Prisma.QuestUncheckedUpdateManyWithoutSourceCharacterNestedInput
   imports?: Prisma.CharacterImportUncheckedUpdateManyWithoutCharacterNestedInput
   importSettings?: Prisma.CharacterImportSettingsUncheckedUpdateOneWithoutCharacterNestedInput
 }
@@ -1049,6 +1179,7 @@ export type PlayerCharacterUpdateWithoutPortraitArtifactInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   owner?: Prisma.UserUpdateOneRequiredWithoutPlayerCharactersNestedInput
   campaignLinks?: Prisma.CampaignCharacterUpdateManyWithoutCharacterNestedInput
+  questSources?: Prisma.QuestUpdateManyWithoutSourceCharacterNestedInput
   imports?: Prisma.CharacterImportUpdateManyWithoutCharacterNestedInput
   importSettings?: Prisma.CharacterImportSettingsUpdateOneWithoutCharacterNestedInput
 }
@@ -1065,6 +1196,7 @@ export type PlayerCharacterUncheckedUpdateWithoutPortraitArtifactInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   campaignLinks?: Prisma.CampaignCharacterUncheckedUpdateManyWithoutCharacterNestedInput
+  questSources?: Prisma.QuestUncheckedUpdateManyWithoutSourceCharacterNestedInput
   imports?: Prisma.CharacterImportUncheckedUpdateManyWithoutCharacterNestedInput
   importSettings?: Prisma.CharacterImportSettingsUncheckedUpdateOneWithoutCharacterNestedInput
 }
@@ -1089,11 +1221,13 @@ export type PlayerCharacterUncheckedUpdateManyWithoutPortraitArtifactInput = {
 
 export type PlayerCharacterCountOutputType = {
   campaignLinks: number
+  questSources: number
   imports: number
 }
 
 export type PlayerCharacterCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   campaignLinks?: boolean | PlayerCharacterCountOutputTypeCountCampaignLinksArgs
+  questSources?: boolean | PlayerCharacterCountOutputTypeCountQuestSourcesArgs
   imports?: boolean | PlayerCharacterCountOutputTypeCountImportsArgs
 }
 
@@ -1112,6 +1246,13 @@ export type PlayerCharacterCountOutputTypeDefaultArgs<ExtArgs extends runtime.Ty
  */
 export type PlayerCharacterCountOutputTypeCountCampaignLinksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.CampaignCharacterWhereInput
+}
+
+/**
+ * PlayerCharacterCountOutputType without action
+ */
+export type PlayerCharacterCountOutputTypeCountQuestSourcesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.QuestWhereInput
 }
 
 /**
@@ -1137,6 +1278,7 @@ export type PlayerCharacterSelect<ExtArgs extends runtime.Types.Extensions.Inter
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   portraitArtifact?: boolean | Prisma.PlayerCharacter$portraitArtifactArgs<ExtArgs>
   campaignLinks?: boolean | Prisma.PlayerCharacter$campaignLinksArgs<ExtArgs>
+  questSources?: boolean | Prisma.PlayerCharacter$questSourcesArgs<ExtArgs>
   imports?: boolean | Prisma.PlayerCharacter$importsArgs<ExtArgs>
   importSettings?: boolean | Prisma.PlayerCharacter$importSettingsArgs<ExtArgs>
   _count?: boolean | Prisma.PlayerCharacterCountOutputTypeDefaultArgs<ExtArgs>
@@ -1193,6 +1335,7 @@ export type PlayerCharacterInclude<ExtArgs extends runtime.Types.Extensions.Inte
   owner?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   portraitArtifact?: boolean | Prisma.PlayerCharacter$portraitArtifactArgs<ExtArgs>
   campaignLinks?: boolean | Prisma.PlayerCharacter$campaignLinksArgs<ExtArgs>
+  questSources?: boolean | Prisma.PlayerCharacter$questSourcesArgs<ExtArgs>
   imports?: boolean | Prisma.PlayerCharacter$importsArgs<ExtArgs>
   importSettings?: boolean | Prisma.PlayerCharacter$importSettingsArgs<ExtArgs>
   _count?: boolean | Prisma.PlayerCharacterCountOutputTypeDefaultArgs<ExtArgs>
@@ -1212,6 +1355,7 @@ export type $PlayerCharacterPayload<ExtArgs extends runtime.Types.Extensions.Int
     owner: Prisma.$UserPayload<ExtArgs>
     portraitArtifact: Prisma.$ArtifactPayload<ExtArgs> | null
     campaignLinks: Prisma.$CampaignCharacterPayload<ExtArgs>[]
+    questSources: Prisma.$QuestPayload<ExtArgs>[]
     imports: Prisma.$CharacterImportPayload<ExtArgs>[]
     importSettings: Prisma.$CharacterImportSettingsPayload<ExtArgs> | null
   }
@@ -1624,6 +1768,7 @@ export interface Prisma__PlayerCharacterClient<T, Null = never, ExtArgs extends 
   owner<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   portraitArtifact<T extends Prisma.PlayerCharacter$portraitArtifactArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PlayerCharacter$portraitArtifactArgs<ExtArgs>>): Prisma.Prisma__ArtifactClient<runtime.Types.Result.GetResult<Prisma.$ArtifactPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   campaignLinks<T extends Prisma.PlayerCharacter$campaignLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PlayerCharacter$campaignLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignCharacterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  questSources<T extends Prisma.PlayerCharacter$questSourcesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PlayerCharacter$questSourcesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$QuestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   imports<T extends Prisma.PlayerCharacter$importsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PlayerCharacter$importsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CharacterImportPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   importSettings<T extends Prisma.PlayerCharacter$importSettingsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PlayerCharacter$importSettingsArgs<ExtArgs>>): Prisma.Prisma__CharacterImportSettingsClient<runtime.Types.Result.GetResult<Prisma.$CharacterImportSettingsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
@@ -2100,6 +2245,30 @@ export type PlayerCharacter$campaignLinksArgs<ExtArgs extends runtime.Types.Exte
   take?: number
   skip?: number
   distinct?: Prisma.CampaignCharacterScalarFieldEnum | Prisma.CampaignCharacterScalarFieldEnum[]
+}
+
+/**
+ * PlayerCharacter.questSources
+ */
+export type PlayerCharacter$questSourcesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Quest
+   */
+  select?: Prisma.QuestSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Quest
+   */
+  omit?: Prisma.QuestOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.QuestInclude<ExtArgs> | null
+  where?: Prisma.QuestWhereInput
+  orderBy?: Prisma.QuestOrderByWithRelationInput | Prisma.QuestOrderByWithRelationInput[]
+  cursor?: Prisma.QuestWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.QuestScalarFieldEnum | Prisma.QuestScalarFieldEnum[]
 }
 
 /**

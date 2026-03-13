@@ -1,8 +1,10 @@
-import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
 import { readValidatedBodySafe } from '#server/utils/validate'
 import { questCreateSchema } from '#shared/schemas/quest'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
+import { QuestService } from '#server/services/quest.service'
+
+const questService = new QuestService()
 
 export default defineEventHandler(async (event) => {
   const campaignId = event.context.params?.campaignId
@@ -20,17 +22,11 @@ export default defineEventHandler(async (event) => {
     return fail(400, 'VALIDATION_ERROR', 'Invalid quest payload', parsed.fieldErrors)
   }
 
-  const quest = await prisma.quest.create({
-    data: {
-      campaignId,
-      title: parsed.data.title,
-      description: parsed.data.description,
-      type: parsed.data.type,
-      status: parsed.data.status,
-      progressNotes: parsed.data.progressNotes,
-    },
-  })
+  const result = await questService.createQuest(campaignId, parsed.data)
+  if (!result.ok) {
+    return fail(result.statusCode, result.code, result.message, result.fields)
+  }
 
-  return ok(quest)
+  return ok(result.data)
 })
 
