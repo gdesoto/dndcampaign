@@ -78,6 +78,8 @@ const {
   description: '',
 }))
 
+const deletingEntryId = ref<string | null>(null)
+
 const openCreate = () => {
   if (!canWriteContent.value) return
   openGlossaryCreate({
@@ -126,8 +128,22 @@ const saveEntry = async () => {
 
 const deleteEntry = async (entry: GlossaryEntry) => {
   if (!canWriteContent.value) return
-  await request(`/api/glossary/${entry.id}`, { method: 'DELETE' })
-  await refresh()
+  deletingEntryId.value = entry.id
+  try {
+    await request(`/api/glossary/${entry.id}`, { method: 'DELETE' })
+    await refresh()
+  } finally {
+    deletingEntryId.value = null
+  }
+}
+
+const deleteEditingEntry = async () => {
+  if (editMode.value !== 'edit') return
+  const entry = (entries.value || []).find((item) => item.id === editForm.id)
+  if (!entry) return
+
+  await deleteEntry(entry)
+  isEditOpen.value = false
 }
 
 const linkSession = async (entry: GlossaryEntry, sessionId: string) => {
@@ -220,7 +236,6 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
                     View character
                   </UButton>
                   <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="openEdit(entry)">Edit</UButton>
-                  <UButton size="xs" color="error" variant="ghost" :disabled="!canWriteContent" @click="deleteEntry(entry)">Delete</UButton>
                 </div>
               </div>
             </template>
@@ -262,6 +277,9 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
       :saving="isSaving"
       :error="editError"
       :submit-label="editMode === 'create' ? 'Create' : 'Save'"
+      :show-delete-action="editMode === 'edit'"
+      :delete-loading="deletingEntryId === editForm.id"
+      @delete="deleteEditingEntry"
       @submit="saveEntry"
     >
       <UFormField label="Type" name="type">

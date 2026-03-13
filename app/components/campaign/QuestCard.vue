@@ -28,7 +28,6 @@ defineProps<{
 
 const emit = defineEmits<{
   edit: [quest: QuestCardItem]
-  delete: [quest: QuestCardItem]
   'update-status': [quest: QuestCardItem, status: QuestStatus]
 }>()
 </script>
@@ -41,10 +40,7 @@ const emit = defineEmits<{
           <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Quest</p>
           <h3 class="text-lg font-semibold">{{ quest.title }}</h3>
         </div>
-        <div class="flex gap-2">
-          <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="emit('edit', quest)">Edit</UButton>
-          <UButton size="xs" color="error" variant="ghost" :disabled="!canWriteContent" @click="emit('delete', quest)">Delete</UButton>
-        </div>
+        <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="emit('edit', quest)">Edit</UButton>
       </div>
     </template>
 

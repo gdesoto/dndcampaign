@@ -101,6 +101,8 @@ const {
   progressNotes: '',
 }))
 
+const deletingQuestId = ref<string | null>(null)
+
 const openCreate = () => {
   if (!canWriteContent.value) return
   openQuestCreate()
@@ -150,8 +152,22 @@ const saveQuest = async () => {
 
 const deleteQuest = async (quest: QuestItem) => {
   if (!canWriteContent.value) return
-  await request(`/api/quests/${quest.id}`, { method: 'DELETE' })
-  await refresh()
+  deletingQuestId.value = quest.id
+  try {
+    await request(`/api/quests/${quest.id}`, { method: 'DELETE' })
+    await refresh()
+  } finally {
+    deletingQuestId.value = null
+  }
+}
+
+const deleteEditingQuest = async () => {
+  if (editMode.value !== 'edit') return
+  const quest = (quests.value || []).find((item) => item.id === editForm.id)
+  if (!quest) return
+
+  await deleteQuest(quest)
+  isEditOpen.value = false
 }
 
 const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
@@ -229,7 +245,6 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
               :type-label-map="typeLabelMap"
               :type-badge-color="typeBadgeColor"
               @edit="openEdit"
-              @delete="deleteQuest"
               @update-status="(quest, status) => updateStatus(quest, status as QuestItem['status'])"
             />
           </div>
@@ -254,7 +269,6 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
               :type-label-map="typeLabelMap"
               :type-badge-color="typeBadgeColor"
               @edit="openEdit"
-              @delete="deleteQuest"
               @update-status="(quest, status) => updateStatus(quest, status as QuestItem['status'])"
             />
           </div>
@@ -272,6 +286,9 @@ const updateStatus = async (quest: QuestItem, status: QuestItem['status']) => {
       :saving="isSaving"
       :error="editError"
       :submit-label="editMode === 'create' ? 'Create' : 'Save'"
+      :show-delete-action="editMode === 'edit'"
+      :delete-loading="deletingQuestId === editForm.id"
+      @delete="deleteEditingQuest"
       @submit="saveQuest"
     >
       <UFormField label="Title" name="title">

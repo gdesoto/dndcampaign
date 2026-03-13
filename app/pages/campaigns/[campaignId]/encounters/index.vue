@@ -268,6 +268,12 @@ const deleteStatBlock = async (id: string) => {
   }
 }
 
+const deleteEditingStatBlock = async () => {
+  if (!editingStatBlockId.value) return
+  await deleteStatBlock(editingStatBlockId.value)
+  isStatBlockModalOpen.value = false
+}
+
 const saveTemplate = async () => {
   if (!canWriteContent.value) return
   isSavingTemplate.value = true
@@ -319,6 +325,12 @@ const deleteTemplate = async (templateId: string) => {
   } catch (error) {
     templateError.value = (error as Error).message || 'Unable to delete template.'
   }
+}
+
+const deleteEditingTemplate = async () => {
+  if (!editingTemplateId.value) return
+  await deleteTemplate(editingTemplateId.value)
+  isTemplateModalOpen.value = false
 }
 
 const createEncounter = async (payload: EncounterCreateInput) => {
@@ -471,20 +483,6 @@ const statBlockOptions = computed(() =>
             </div>
             <div class="flex gap-2">
               <UButton :disabled="!canWriteContent" size="xs" variant="outline" @click="openEditStatBlock(statBlock.id)">Edit</UButton>
-              <SharedConfirmActionPopover
-                message="Delete this stat block?"
-                content-class="w-72 p-3"
-                confirm-label="Delete"
-                confirm-icon="i-lucide-trash-2"
-                @confirm="({ close }) => { deleteStatBlock(statBlock.id); close() }"
-              >
-                <template #trigger>
-                  <UButton :disabled="!canWriteContent" size="xs" color="error" variant="ghost">Delete</UButton>
-                </template>
-                <template #content>
-                  <p class="text-sm text-muted">Remove {{ statBlock.name }} from the campaign stat block library?</p>
-                </template>
-              </SharedConfirmActionPopover>
             </div>
           </div>
         </div>
@@ -522,20 +520,6 @@ const statBlockOptions = computed(() =>
             </div>
             <div class="flex gap-2">
               <UButton :disabled="!canWriteContent" size="xs" variant="outline" @click="openEditTemplate(template.id)">Edit</UButton>
-              <SharedConfirmActionPopover
-                message="Delete this template?"
-                content-class="w-72 p-3"
-                confirm-label="Delete"
-                confirm-icon="i-lucide-trash-2"
-                @confirm="({ close }) => { deleteTemplate(template.id); close() }"
-              >
-                <template #trigger>
-                  <UButton :disabled="!canWriteContent" size="xs" color="error" variant="ghost">Delete</UButton>
-                </template>
-                <template #content>
-                  <p class="text-sm text-muted">Remove {{ template.name }} from the encounter template library?</p>
-                </template>
-              </SharedConfirmActionPopover>
             </div>
           </div>
         </div>
@@ -549,6 +533,8 @@ const statBlockOptions = computed(() =>
       submit-label="Save"
       :saving="isSavingStatBlock"
       :error="statBlockError"
+      :show-delete-action="Boolean(editingStatBlockId)"
+      @delete="deleteEditingStatBlock"
       @submit="saveStatBlock"
     >
       <UFormField label="Name">
@@ -579,6 +565,8 @@ const statBlockOptions = computed(() =>
       submit-label="Save"
       :saving="isSavingTemplate"
       :error="templateError"
+      :show-delete-action="Boolean(editingTemplateId)"
+      @delete="deleteEditingTemplate"
       @submit="saveTemplate"
     >
       <UFormField label="Name">

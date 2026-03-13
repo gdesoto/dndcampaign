@@ -48,6 +48,37 @@ describe('SharedEntityFormModal', () => {
     await cancelButton!.trigger('click')
     expect(wrapper.emitted('cancel')).toBeTruthy()
   })
+
+  it('emits delete when the footer delete action is enabled', async () => {
+    const wrapper = await mountSuspended(EntityFormModal, {
+      props: {
+        open: true,
+        title: 'Edit thing',
+        showDeleteAction: true,
+      },
+      slots: {
+        default: () => h('div', 'Fields'),
+      },
+      global: {
+        stubs: {
+          SharedConfirmActionPopover: {
+            emits: ['confirm'],
+            template: '<div><button type="button" @click="$emit(\'confirm\', { close: () => {} })">Delete</button></div>',
+          },
+          UModal: {
+            props: ['open'],
+            emits: ['update:open'],
+            template: '<div><slot name="content" /></div>',
+          },
+        },
+      },
+    })
+
+    const deleteButton = wrapper.findAll('button').find((button) => button.text().trim() === 'Delete')
+    expect(deleteButton).toBeDefined()
+    await deleteButton!.trigger('click')
+    expect(wrapper.emitted('delete')).toBeTruthy()
+  })
 })
 
 describe('SharedListItemCard', () => {

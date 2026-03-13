@@ -374,7 +374,7 @@ const toggleArchive = async () => {
               Settings
             </UButton>
             <SharedConfirmActionPopover
-              v-if="entry?.canDelete"
+              v-if="entry?.canDelete && !entry?.canEdit"
               trigger-label="Delete"
               trigger-color="error"
               trigger-variant="outline"
@@ -548,6 +548,9 @@ const toggleArchive = async () => {
       :saving="isSaving"
       :error="actionError"
       submit-label="Save changes"
+      :show-delete-action="Boolean(entry?.canDelete)"
+      :delete-loading="isDeleting"
+      @delete="deleteEntry"
       @submit="saveEdit"
     >
       <UFormField label="Title" name="title" required>

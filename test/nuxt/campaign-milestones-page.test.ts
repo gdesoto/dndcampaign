@@ -94,19 +94,17 @@ describe('Campaign milestones page', () => {
             `,
           },
           SharedEntityFormModal: {
-            template: '<div><slot /></div>',
+            props: ['open', 'showDeleteAction'],
+            emits: ['delete'],
+            template: `
+              <div>
+                <slot />
+                <button v-if="showDeleteAction" type="button" @click="$emit('delete')">Delete</button>
+              </div>
+            `,
           },
           SharedReadOnlyAlert: {
             template: '<div />',
-          },
-          SharedConfirmActionPopover: {
-            emits: ['confirm'],
-            template: `
-              <div>
-                <slot name="trigger" />
-                <button type="button" @click="$emit('confirm', { close: () => {} })">Confirm delete milestone</button>
-              </div>
-            `,
           },
           UButton: {
             emits: ['click'],
@@ -135,12 +133,19 @@ describe('Campaign milestones page', () => {
 
     expect(wrapper.text()).toContain('Secure the alliance')
 
-    const confirmDeleteButton = wrapper.findAll('button').find((button) =>
-      button.text().trim() === 'Confirm delete milestone'
+    const editButton = wrapper.findAll('button').find((button) =>
+      button.text().trim() === 'Edit'
     )
 
-    expect(confirmDeleteButton).toBeDefined()
-    await confirmDeleteButton!.trigger('click')
+    expect(editButton).toBeDefined()
+    await editButton!.trigger('click')
+
+    const deleteButton = wrapper.findAll('button').find((button) =>
+      button.text().trim() === 'Delete'
+    )
+
+    expect(deleteButton).toBeDefined()
+    await deleteButton!.trigger('click')
 
     expect(mockRequest).toHaveBeenCalledWith('/api/milestones/milestone-1', expect.objectContaining({ method: 'DELETE' }))
     expect(mockRefresh).toHaveBeenCalled()
@@ -182,13 +187,11 @@ describe('Campaign milestones page', () => {
             `,
           },
           SharedEntityFormModal: {
+            props: ['open', 'showDeleteAction'],
             template: '<div><slot /></div>',
           },
           SharedReadOnlyAlert: {
             template: '<div />',
-          },
-          SharedConfirmActionPopover: {
-            template: '<div><slot name="trigger" /></div>',
           },
           UButton: {
             emits: ['click'],

@@ -101,6 +101,15 @@ const deleteMilestone = async (milestone: MilestoneItem) => {
     deletingMilestoneId.value = null
   }
 }
+
+const deleteEditingMilestone = async () => {
+  if (editMode.value !== 'edit') return
+  const milestone = (milestones.value || []).find((item) => item.id === editForm.id)
+  if (!milestone) return
+
+  await deleteMilestone(milestone)
+  isEditOpen.value = false
+}
 </script>
 
 <template>
@@ -146,19 +155,7 @@ const deleteMilestone = async (milestone: MilestoneItem) => {
                   <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Milestone</p>
                   <h3 class="text-lg font-semibold">{{ milestone.title }}</h3>
                 </div>
-                <div class="flex items-start gap-2">
-                  <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="openEdit(milestone)">Edit</UButton>
-                  <SharedConfirmActionPopover
-                    trigger-label="Delete"
-                    trigger-color="error"
-                    trigger-variant="ghost"
-                    confirm-label="Delete"
-                    message="Delete this milestone? This action cannot be undone."
-                    :disabled="!canWriteContent"
-                    :confirm-loading="deletingMilestoneId === milestone.id"
-                    @confirm="deleteMilestone(milestone)"
-                  />
-                </div>
+                <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="openEdit(milestone)">Edit</UButton>
               </div>
             </template>
             <p class="text-sm whitespace-pre-line text-default">{{ milestone.description || 'Add details about this milestone.' }}</p>
@@ -181,6 +178,9 @@ const deleteMilestone = async (milestone: MilestoneItem) => {
       :saving="isSaving"
       :error="editError"
       :submit-label="editMode === 'create' ? 'Create' : 'Save'"
+      :show-delete-action="editMode === 'edit'"
+      :delete-loading="deletingMilestoneId === editForm.id"
+      @delete="deleteEditingMilestone"
       @submit="saveMilestone"
     >
       <UFormField label="Title" name="title">

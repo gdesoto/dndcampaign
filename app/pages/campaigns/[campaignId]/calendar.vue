@@ -422,6 +422,12 @@ const deleteEvent = async (eventId: string) => {
   }
 }
 
+const deleteEditingEvent = async () => {
+  if (eventMode.value !== 'edit' || !eventForm.id) return
+  await deleteEvent(eventForm.id)
+  eventModalOpen.value = false
+}
+
 const applyCurrentDate = async () => {
   if (!canEditCalendar.value) return
   currentDateAction.error = ''
@@ -668,15 +674,6 @@ const removeRange = async () => {
                   </div>
                   <div v-if="canEditCalendar" class="flex items-center gap-1">
                     <UButton size="xs" variant="ghost" @click="openEditEvent(event)">Edit</UButton>
-                    <UButton
-                      size="xs"
-                      color="error"
-                      variant="ghost"
-                      :loading="eventAction.deletingId === event.id"
-                      @click="deleteEvent(event.id)"
-                    >
-                      Delete
-                    </UButton>
                   </div>
                 </div>
               </div>
@@ -848,6 +845,9 @@ const removeRange = async () => {
       :saving="eventAction.saving"
       :error="eventAction.error"
       :submit-label="eventMode === 'create' ? 'Create' : 'Save'"
+      :show-delete-action="eventMode === 'edit'"
+      :delete-loading="eventAction.deletingId === eventForm.id"
+      @delete="deleteEditingEvent"
       @submit="saveEvent"
     >
       <UFormField label="Title" name="title">
@@ -870,5 +870,3 @@ const removeRange = async () => {
     </SharedEntityFormModal>
   </div>
 </template>
-
-

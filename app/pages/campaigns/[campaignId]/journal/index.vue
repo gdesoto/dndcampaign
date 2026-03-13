@@ -434,6 +434,12 @@ const deleteEntry = async (entry: CampaignJournalEntryListItem) => {
   }
 }
 
+const deleteEditingEntry = async () => {
+  if (!editTarget.value?.canDelete) return
+  await deleteEntry(editTarget.value)
+  isEditOpen.value = false
+}
+
 const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value}/journal/${entryId}`)
 </script>
 
@@ -589,7 +595,7 @@ const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value
               Edit
             </UButton>
             <SharedConfirmActionPopover
-              v-if="entry.canDelete"
+              v-if="entry.canDelete && !entry.canEdit"
               trigger-label="Delete"
               trigger-color="error"
               trigger-variant="ghost"
@@ -679,6 +685,9 @@ const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value
       :saving="isSaving"
       :error="actionError"
       submit-label="Save changes"
+      :show-delete-action="Boolean(editTarget?.canDelete)"
+      :delete-loading="Boolean(editTarget && actionLoadingByEntryId[editTarget.id])"
+      @delete="deleteEditingEntry"
       @submit="saveEdit"
     >
       <JournalEntryFormFields
