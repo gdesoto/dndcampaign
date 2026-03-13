@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
+import { formatSessionDate, serializeSessionDateInput } from '~/utils/session-date'
 definePageMeta({ layout: 'dashboard' })
 
 type SessionItem = {
@@ -50,7 +51,7 @@ const createSession = async () => {
     const payload = {
       title: createForm.title,
       sessionNumber: createForm.sessionNumber ? Number(createForm.sessionNumber) : undefined,
-      playedAt: createForm.playedAt ? new Date(createForm.playedAt).toISOString() : undefined,
+      playedAt: serializeSessionDateInput(createForm.playedAt) || undefined,
       guestDungeonMasterName: createForm.guestDungeonMasterName || undefined,
       notes: createForm.notes || undefined,
     }
@@ -123,7 +124,7 @@ const createSession = async () => {
                     <h3 class="text-lg font-semibold">{{ session.title }}</h3>
                   </div>
                   <span class="text-xs text-muted">
-                    {{ session.playedAt ? new Date(session.playedAt).toLocaleDateString() : 'Unscheduled' }}
+                    {{ formatSessionDate(session.playedAt) }}
                   </span>
                 </div>
               </template>

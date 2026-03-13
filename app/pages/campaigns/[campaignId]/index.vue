@@ -7,6 +7,7 @@ import type {
   CampaignSessionSummary,
 } from '#shared/types/campaign-overview'
 import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
+import { formatSessionDate } from '~/utils/session-date'
 
 const { campaignId, request, canWriteContent } = useCampaignPageContext()
 
@@ -41,6 +42,11 @@ const { data: activityLogs } = await useAsyncData(
 const formatDate = (value?: string | null) => {
   if (!value) return 'Unscheduled'
   return new Date(value).toLocaleDateString()
+}
+
+const formatSessionSummaryDate = (session?: CampaignSessionSummary | null) => {
+  if (!session) return 'No sessions yet.'
+  return session.playedAt ? formatSessionDate(session.playedAt) : formatDate(session.createdAt)
 }
 
 const {
@@ -207,7 +213,7 @@ const saveCampaign = async () => {
       />
       <CampaignKpiGrid
         :last-session-number="latestSession?.sessionNumber ?? '-'"
-        :last-session-date-label="latestSession ? formatDate(latestSession.playedAt || latestSession.createdAt) : 'No sessions yet.'"
+        :last-session-date-label="formatSessionSummaryDate(latestSession)"
         :active-quest-count="activeQuestCount"
         :open-milestone-count="openMilestoneCount"
         :recap-count="recaps?.length || 0"

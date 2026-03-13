@@ -32,8 +32,8 @@ const listError = ref('')
 const actionError = ref('')
 
 const tabItems = [
-  { label: 'Public', value: 'public' },
   { label: 'Mine', value: 'mine' },
+  { label: 'Public', value: 'public' },
   { label: 'Pending', value: 'pending' },
   { label: 'Decided', value: 'decided' },
   { label: 'Moderation Queue', value: 'moderation' },

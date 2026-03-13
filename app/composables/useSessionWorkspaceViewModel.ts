@@ -4,6 +4,7 @@ import {
   parseTranscriptSegments,
   segmentsToPlainText,
 } from '#shared/utils/transcript'
+import { formatSessionDate, serializeSessionDateInput } from '~/utils/session-date'
 
 const workflowStepOrder = ['recordings', 'transcription', 'summary', 'suggestions', 'recap'] as const
 type WorkflowStep = (typeof workflowStepOrder)[number]
@@ -229,7 +230,7 @@ export async function useSessionWorkspaceViewModel() {
     if (!session.value) return 'Manage recordings, transcript, summary, and recap for this session.'
     const details = [
       session.value.sessionNumber ? `Session ${session.value.sessionNumber}` : 'Session',
-      session.value.playedAt ? new Date(session.value.playedAt).toLocaleDateString() : 'Unscheduled',
+      formatSessionDate(session.value.playedAt),
     ]
     return details.join(' • ')
   })
@@ -398,7 +399,7 @@ export async function useSessionWorkspaceViewModel() {
         body: {
           title: form.title || undefined,
           sessionNumber: form.sessionNumber ? Number(form.sessionNumber) : undefined,
-          playedAt: form.playedAt ? new Date(form.playedAt).toISOString() : null,
+          playedAt: serializeSessionDateInput(form.playedAt),
           guestDungeonMasterName: form.guestDungeonMasterName || null,
           notes: form.notes || null,
         },

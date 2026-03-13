@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { formatSessionDate } from '~/utils/session-date'
+
 const { publicSlug, publicCampaign, overview } = await usePublicCampaignPageContext()
 
 const {
@@ -11,7 +13,6 @@ const {
   () => publicCampaign.getSessions(publicSlug.value)
 )
 
-const formatDate = (value: string | null) => (value ? new Date(value).toLocaleDateString() : 'Unscheduled')
 </script>
 
 <template>
@@ -44,7 +45,7 @@ const formatDate = (value: string | null) => (value ? new Date(value).toLocaleDa
               class="rounded-lg border border-default bg-elevated/20 p-3"
             >
               <p class="text-sm font-semibold">Session #{{ session.sessionNumber || '?' }} · {{ session.title }}</p>
-              <p class="text-xs text-muted">{{ formatDate(session.playedAt) }}</p>
+              <p class="text-xs text-muted">{{ formatSessionDate(session.playedAt) }}</p>
               <p v-if="session.notes" class="mt-1 text-xs text-muted line-clamp-3">{{ session.notes }}</p>
             </div>
           </div>

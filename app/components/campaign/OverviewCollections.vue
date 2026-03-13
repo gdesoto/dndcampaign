@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { formatSessionDate } from '~/utils/session-date'
+
 type SessionSummary = {
   id: string
   title: string
@@ -33,6 +35,9 @@ const formatDate = (value?: string | null) => {
   if (!value) return 'Unscheduled'
   return new Date(value).toLocaleDateString()
 }
+
+const formatSessionSummaryDate = (session: SessionSummary) =>
+  session.playedAt ? formatSessionDate(session.playedAt) : formatDate(session.createdAt)
 </script>
 
 <template>
@@ -53,7 +58,7 @@ const formatDate = (value?: string | null) => {
           <div>
             <p class="font-semibold">{{ session.title }}</p>
             <p class="text-xs text-muted">
-              Session {{ session.sessionNumber ?? '-' }} - {{ formatDate(session.playedAt || session.createdAt) }}
+              Session {{ session.sessionNumber ?? '-' }} - {{ formatSessionSummaryDate(session) }}
             </p>
           </div>
           <UButton size="xs" variant="outline" :to="`/campaigns/${campaignId}/sessions/${session.id}`">Open</UButton>

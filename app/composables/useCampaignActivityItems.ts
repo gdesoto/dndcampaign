@@ -5,8 +5,10 @@ import type {
   CampaignMilestoneSummary,
   CampaignQuestSummary,
   CampaignRecapItem,
-  CampaignSessionSummary, CampaignOverviewDetail 
+  CampaignSessionSummary,
+  CampaignOverviewDetail,
 } from '#shared/types/campaign-overview'
+import { formatSessionDate } from '../utils/session-date'
 
 export const useCampaignActivityItems = (
   campaign: Ref<CampaignOverviewDetail | null | undefined>,
@@ -61,7 +63,9 @@ export const useCampaignActivityItems = (
         id: `session-${session.id}`,
         date,
         title: `Session ${session.sessionNumber ?? '-'}`,
-        description: `${session.title} - ${formatDateTime(date)}`,
+        description: `${session.title} - ${
+          session.playedAt ? formatSessionDate(session.playedAt) : formatDateTime(session.createdAt)
+        }`,
       })
     }
 

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { formatSessionDate } from '~/utils/session-date'
+
 type RecapItem = {
   id: string
   filename: string
@@ -65,7 +67,7 @@ const emit = defineEmits<{
               <p class="font-semibold">{{ recap.session.title }}</p>
               <p class="text-xs text-muted">
                 Session {{ recap.session.sessionNumber ?? '-' }}
-                - {{ recap.session.playedAt ? new Date(recap.session.playedAt).toLocaleDateString() : 'Unscheduled' }}
+                - {{ formatSessionDate(recap.session.playedAt) }}
               </p>
             </div>
             <div class="flex items-center gap-2">
