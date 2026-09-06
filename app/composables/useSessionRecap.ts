@@ -4,6 +4,7 @@ import type { SessionRecapRecording } from '#shared/types/session-workflow'
 type UseSessionRecapOptions = {
   sessionId: Ref<string>
   recap: Ref<SessionRecapRecording | null | undefined>
+  selectedRecapKind: Ref<'AUDIO' | 'VIDEO'>
   refreshRecap: () => Promise<void>
 }
 
@@ -20,15 +21,23 @@ export function useSessionRecap(options: UseSessionRecapOptions) {
   const recapDeleteError = ref('')
 
   watch(
-    () => options.recap.value,
+    () => [options.recap.value, options.selectedRecapKind.value],
     () => {
       recapPlaybackUrl.value = ''
+      recapFile.value = null
+      recapError.value = ''
+      recapDeleteError.value = ''
     }
   )
 
   const uploadRecap = async () => {
     if (!recapFile.value) return
     recapError.value = ''
+    const fileKind = recapFile.value.type.startsWith('video/') ? 'VIDEO' : 'AUDIO'
+    if (fileKind !== options.selectedRecapKind.value) {
+      recapError.value = `Choose ${options.selectedRecapKind.value === 'AUDIO' ? 'an audio' : 'a video'} file for this recap.`
+      return
+    }
     recapUploading.value = true
     try {
       const formData = new FormData()
@@ -54,11 +63,11 @@ export function useSessionRecap(options: UseSessionRecapOptions) {
         {
           id: options.recap.value.id,
           title: options.recap.value.filename || 'Recap',
-          subtitle: 'Recap audio',
-          kind: 'AUDIO',
+          subtitle: 'Session recap',
+          kind: options.recap.value.mimeType?.startsWith('video/') ? 'VIDEO' : 'AUDIO',
           src: recapPlaybackUrl.value,
         },
-        { presentation: 'global' }
+        { presentation: 'global', openDrawer: options.recap.value.mimeType?.startsWith('video/') }
       )
       return
     }
@@ -74,11 +83,11 @@ export function useSessionRecap(options: UseSessionRecapOptions) {
         {
           id: options.recap.value.id,
           title: options.recap.value.filename || 'Recap',
-          subtitle: 'Recap audio',
-          kind: 'AUDIO',
+          subtitle: 'Session recap',
+          kind: options.recap.value.mimeType?.startsWith('video/') ? 'VIDEO' : 'AUDIO',
           src: playbackUrl,
         },
-        { presentation: 'global' }
+        { presentation: 'global', openDrawer: options.recap.value.mimeType?.startsWith('video/') }
       )
     } catch (error) {
       recapError.value =

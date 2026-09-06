@@ -4748,6 +4748,7 @@ export type TranscriptionArtifactScalarFieldEnum = (typeof TranscriptionArtifact
 export const RecapRecordingScalarFieldEnum = {
   id: 'id',
   sessionId: 'sessionId',
+  kind: 'kind',
   filename: 'filename',
   mimeType: 'mimeType',
   byteSize: 'byteSize',

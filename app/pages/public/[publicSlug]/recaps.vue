@@ -52,10 +52,10 @@ const playRecap = async (recapId: string) => {
         id: recapId,
         title: recap?.session.title || recap?.filename || 'Public recap',
         subtitle: recap ? `Session ${recap.session.sessionNumber ?? '-'}` : undefined,
-        kind: 'AUDIO',
+        kind: recap?.mimeType?.startsWith('video/') ? 'VIDEO' : 'AUDIO',
         src: playback.url,
       },
-      { presentation: 'global' }
+      { presentation: 'global', openDrawer: recap?.mimeType?.startsWith('video/') }
     )
   } catch (playbackError) {
     recapError.value =
@@ -93,7 +93,7 @@ const playRecap = async (recapId: string) => {
           :delete-error="''"
           :can-delete="false"
           title="Public recap playlist"
-          description="Listen to campaign recaps in read-only mode."
+          description="Watch or listen to campaign recaps in read-only mode."
           empty-message="No public recaps available."
           @play="playRecap"
           @open-player="() => player.openDrawer()"

@@ -24,7 +24,7 @@ export async function useSessionWorkspaceViewModel() {
   const {
     session,
     recordings,
-    recap,
+    recaps,
     transcriptDoc,
     summaryDoc,
     access,
@@ -42,6 +42,11 @@ export async function useSessionWorkspaceViewModel() {
   } = await useSessionWorkspace({
     sessionId,
   })
+
+  const selectedRecapKind = ref<'AUDIO' | 'VIDEO'>('AUDIO')
+  const recap = computed(() => recaps.value.find((item) =>
+    (item.mimeType.startsWith('video/') ? 'VIDEO' : 'AUDIO') === selectedRecapKind.value
+  ) ?? null)
 
   const sessionInvalidation = useSessionWorkspaceInvalidation({
     refreshAll,
@@ -132,6 +137,7 @@ export async function useSessionWorkspaceViewModel() {
   } = await nuxtApp.runWithContext(() => useSessionRecap({
     sessionId,
     recap,
+    selectedRecapKind,
     refreshRecap: sessionInvalidation.afterRecapMutation,
   }))
 
@@ -236,14 +242,14 @@ export async function useSessionWorkspaceViewModel() {
   })
 
   const recordingsCount = computed(() => recordings.value?.length || 0)
-  const recapStatus = computed(() => (recap.value ? 'Attached' : 'Missing'))
+  const recapStatus = computed(() => (recaps.value.length ? 'Attached' : 'Missing'))
   const transcriptStatus = computed(() => (transcriptDoc.value ? 'Available' : 'Missing'))
   const summaryStatus = computed(() => (summaryDoc.value ? 'Available' : 'Missing'))
   const hasRecordings = computed(() => (recordings.value?.length || 0) > 0)
   const hasTranscript = computed(() => Boolean(transcriptDoc.value))
   const hasSummary = computed(() => Boolean(summaryDoc.value))
   const hasSuggestionJob = computed(() => Boolean(suggestionJob.value))
-  const hasRecap = computed(() => Boolean(recap.value))
+  const hasRecap = computed(() => Boolean(recaps.value.length))
   const videoOptions = computed(() =>
     (recordings.value || [])
       .filter((recording) => recording.kind === 'VIDEO')
@@ -331,7 +337,7 @@ export async function useSessionWorkspaceViewModel() {
     },
     {
       title: 'Recap',
-      description: hasRecap.value ? 'Recap attached' : 'Create recap podcast',
+      description: hasRecap.value ? 'Recap attached' : 'Upload audio or video recap',
       value: 'recap',
       icon: hasRecap.value ? 'i-lucide-check-circle' : 'i-lucide-mic',
     },
@@ -450,6 +456,8 @@ export async function useSessionWorkspaceViewModel() {
     session,
     recordings,
     recap,
+    recaps,
+    selectedRecapKind,
     transcriptDoc,
     summaryDoc,
     access,

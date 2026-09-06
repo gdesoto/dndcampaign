@@ -25,13 +25,14 @@ export class SessionWorkspaceService {
       return null
     }
 
-    const [recordings, recap, transcriptDoc, summaryDoc] = await Promise.all([
+    const [recordings, recaps, transcriptDoc, summaryDoc] = await Promise.all([
       prisma.recording.findMany({
         where: { sessionId },
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.recapRecording.findUnique({
+      prisma.recapRecording.findMany({
         where: { sessionId },
+        orderBy: { kind: 'asc' },
       }),
       prisma.document.findFirst({
         where: { sessionId, type: 'TRANSCRIPT' },
@@ -46,7 +47,8 @@ export class SessionWorkspaceService {
     return {
       session,
       recordings,
-      recap,
+      recaps,
+      recap: recaps[0] ?? null,
       transcriptDoc,
       summaryDoc,
       access: accessResolution.access,

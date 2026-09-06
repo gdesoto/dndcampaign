@@ -100,12 +100,34 @@ describe('SessionSuggestionsPanel', () => {
 })
 
 describe('SessionRecapPanel', () => {
-  it('emits upload/play/delete actions in workflow mode', async () => {
+  it('shows both attached media types and lets the user select video', async () => {
+    const audio = { id: 'audio', filename: 'recap.mp3', mimeType: 'audio/mpeg', byteSize: 100, createdAt: '2026-09-06' }
+    const video = { ...audio, id: 'video', filename: 'recap.mp4', mimeType: 'video/mp4' }
+    const wrapper = await mountSuspended(RecapPanel, {
+      props: {
+        workflowMode: true, recap: audio, recaps: [audio, video], selectedKind: 'AUDIO',
+        recapFile: null, recapUploading: false, recapPlaybackLoading: false, recapDeleting: false,
+        recapPlaybackUrl: '', recapError: '', recapDeleteError: '', hasRecap: true,
+      },
+    })
+    expect(wrapper.text()).toContain('Audio · Attached')
+    expect(wrapper.text()).toContain('Video · Attached')
+    const videoButton = wrapper.findAll('button').find((button) => button.text().includes('Video · Attached'))!
+    await videoButton.trigger('click')
+    expect(wrapper.emitted('update:selectedKind')?.[0]).toEqual(['VIDEO'])
+    await wrapper.setProps({ selectedKind: 'VIDEO', recap: video })
+    expect(wrapper.text()).toContain('recap.mp4')
+    expect(wrapper.text()).not.toContain('recap.mp3')
+  })
+
+  it.each(['audio/mpeg', 'video/mp4'])('emits upload/play/delete actions for %s', async (mimeType) => {
     const wrapper = await mountSuspended(RecapPanel, {
       props: {
         workflowMode: true,
         recap: null,
-        recapFile: new File(['audio'], 'recap.mp3', { type: 'audio/mpeg' }),
+        recaps: [],
+        selectedKind: mimeType.startsWith('video/') ? 'VIDEO' : 'AUDIO',
+        recapFile: new File(['media'], 'recap', { type: mimeType }),
         recapUploading: false,
         recapPlaybackLoading: false,
         recapDeleting: false,
@@ -128,19 +150,21 @@ describe('SessionRecapPanel', () => {
       },
     })
 
+    expect(wrapper.find('input[type="file"]').attributes('accept')).toContain(mimeType)
     await clickByText(wrapper, 'Upload recap')
 
     await wrapper.setProps({
       recap: {
         id: 'recap-1',
         filename: 'recap.mp3',
-        mimeType: 'audio/mpeg',
+        mimeType,
         byteSize: 1024,
         createdAt: new Date('2026-03-05T00:00:00.000Z').toISOString(),
       },
       hasRecap: true,
     })
 
+    expect(wrapper.text()).toContain(mimeType.startsWith('video/') ? 'Video recap' : 'Audio recap')
     await clickByText(wrapper, 'Play recap')
     await clickByText(wrapper, 'Delete recap')
     await clickByText(wrapper, 'Confirm delete recap')

@@ -106,6 +106,7 @@ export const usePublicCampaign = () => {
       Array<{
         id: string
         filename: string
+        mimeType: string
         durationSeconds: number | null
         createdAt: string
         session: {

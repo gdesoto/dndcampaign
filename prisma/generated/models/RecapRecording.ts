@@ -39,6 +39,7 @@ export type RecapRecordingSumAggregateOutputType = {
 export type RecapRecordingMinAggregateOutputType = {
   id: string | null
   sessionId: string | null
+  kind: $Enums.RecordingKind | null
   filename: string | null
   mimeType: string | null
   byteSize: number | null
@@ -51,6 +52,7 @@ export type RecapRecordingMinAggregateOutputType = {
 export type RecapRecordingMaxAggregateOutputType = {
   id: string | null
   sessionId: string | null
+  kind: $Enums.RecordingKind | null
   filename: string | null
   mimeType: string | null
   byteSize: number | null
@@ -63,6 +65,7 @@ export type RecapRecordingMaxAggregateOutputType = {
 export type RecapRecordingCountAggregateOutputType = {
   id: number
   sessionId: number
+  kind: number
   filename: number
   mimeType: number
   byteSize: number
@@ -87,6 +90,7 @@ export type RecapRecordingSumAggregateInputType = {
 export type RecapRecordingMinAggregateInputType = {
   id?: true
   sessionId?: true
+  kind?: true
   filename?: true
   mimeType?: true
   byteSize?: true
@@ -99,6 +103,7 @@ export type RecapRecordingMinAggregateInputType = {
 export type RecapRecordingMaxAggregateInputType = {
   id?: true
   sessionId?: true
+  kind?: true
   filename?: true
   mimeType?: true
   byteSize?: true
@@ -111,6 +116,7 @@ export type RecapRecordingMaxAggregateInputType = {
 export type RecapRecordingCountAggregateInputType = {
   id?: true
   sessionId?: true
+  kind?: true
   filename?: true
   mimeType?: true
   byteSize?: true
@@ -210,6 +216,7 @@ export type RecapRecordingGroupByArgs<ExtArgs extends runtime.Types.Extensions.I
 export type RecapRecordingGroupByOutputType = {
   id: string
   sessionId: string
+  kind: $Enums.RecordingKind
   filename: string
   mimeType: string
   byteSize: number
@@ -245,6 +252,7 @@ export type RecapRecordingWhereInput = {
   NOT?: Prisma.RecapRecordingWhereInput | Prisma.RecapRecordingWhereInput[]
   id?: Prisma.StringFilter<"RecapRecording"> | string
   sessionId?: Prisma.StringFilter<"RecapRecording"> | string
+  kind?: Prisma.EnumRecordingKindFilter<"RecapRecording"> | $Enums.RecordingKind
   filename?: Prisma.StringFilter<"RecapRecording"> | string
   mimeType?: Prisma.StringFilter<"RecapRecording"> | string
   byteSize?: Prisma.IntFilter<"RecapRecording"> | number
@@ -259,6 +267,7 @@ export type RecapRecordingWhereInput = {
 export type RecapRecordingOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   sessionId?: Prisma.SortOrder
+  kind?: Prisma.SortOrder
   filename?: Prisma.SortOrder
   mimeType?: Prisma.SortOrder
   byteSize?: Prisma.SortOrder
@@ -272,10 +281,12 @@ export type RecapRecordingOrderByWithRelationInput = {
 
 export type RecapRecordingWhereUniqueInput = Prisma.AtLeast<{
   id?: string
-  sessionId?: string
+  sessionId_kind?: Prisma.RecapRecordingSessionIdKindCompoundUniqueInput
   AND?: Prisma.RecapRecordingWhereInput | Prisma.RecapRecordingWhereInput[]
   OR?: Prisma.RecapRecordingWhereInput[]
   NOT?: Prisma.RecapRecordingWhereInput | Prisma.RecapRecordingWhereInput[]
+  sessionId?: Prisma.StringFilter<"RecapRecording"> | string
+  kind?: Prisma.EnumRecordingKindFilter<"RecapRecording"> | $Enums.RecordingKind
   filename?: Prisma.StringFilter<"RecapRecording"> | string
   mimeType?: Prisma.StringFilter<"RecapRecording"> | string
   byteSize?: Prisma.IntFilter<"RecapRecording"> | number
@@ -285,11 +296,12 @@ export type RecapRecordingWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"RecapRecording"> | Date | string
   session?: Prisma.XOR<Prisma.SessionScalarRelationFilter, Prisma.SessionWhereInput>
   artifact?: Prisma.XOR<Prisma.ArtifactScalarRelationFilter, Prisma.ArtifactWhereInput>
-}, "id" | "sessionId">
+}, "id" | "sessionId_kind">
 
 export type RecapRecordingOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   sessionId?: Prisma.SortOrder
+  kind?: Prisma.SortOrder
   filename?: Prisma.SortOrder
   mimeType?: Prisma.SortOrder
   byteSize?: Prisma.SortOrder
@@ -310,6 +322,7 @@ export type RecapRecordingScalarWhereWithAggregatesInput = {
   NOT?: Prisma.RecapRecordingScalarWhereWithAggregatesInput | Prisma.RecapRecordingScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"RecapRecording"> | string
   sessionId?: Prisma.StringWithAggregatesFilter<"RecapRecording"> | string
+  kind?: Prisma.EnumRecordingKindWithAggregatesFilter<"RecapRecording"> | $Enums.RecordingKind
   filename?: Prisma.StringWithAggregatesFilter<"RecapRecording"> | string
   mimeType?: Prisma.StringWithAggregatesFilter<"RecapRecording"> | string
   byteSize?: Prisma.IntWithAggregatesFilter<"RecapRecording"> | number
@@ -321,19 +334,21 @@ export type RecapRecordingScalarWhereWithAggregatesInput = {
 
 export type RecapRecordingCreateInput = {
   id?: string
+  kind?: $Enums.RecordingKind
   filename: string
   mimeType: string
   byteSize: number
   durationSeconds?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  session: Prisma.SessionCreateNestedOneWithoutRecapInput
+  session: Prisma.SessionCreateNestedOneWithoutRecapsInput
   artifact: Prisma.ArtifactCreateNestedOneWithoutRecapRecordingsInput
 }
 
 export type RecapRecordingUncheckedCreateInput = {
   id?: string
   sessionId: string
+  kind?: $Enums.RecordingKind
   filename: string
   mimeType: string
   byteSize: number
@@ -345,19 +360,21 @@ export type RecapRecordingUncheckedCreateInput = {
 
 export type RecapRecordingUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumRecordingKindFieldUpdateOperationsInput | $Enums.RecordingKind
   filename?: Prisma.StringFieldUpdateOperationsInput | string
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
   byteSize?: Prisma.IntFieldUpdateOperationsInput | number
   durationSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  session?: Prisma.SessionUpdateOneRequiredWithoutRecapNestedInput
+  session?: Prisma.SessionUpdateOneRequiredWithoutRecapsNestedInput
   artifact?: Prisma.ArtifactUpdateOneRequiredWithoutRecapRecordingsNestedInput
 }
 
 export type RecapRecordingUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sessionId?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumRecordingKindFieldUpdateOperationsInput | $Enums.RecordingKind
   filename?: Prisma.StringFieldUpdateOperationsInput | string
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
   byteSize?: Prisma.IntFieldUpdateOperationsInput | number
@@ -370,6 +387,7 @@ export type RecapRecordingUncheckedUpdateInput = {
 export type RecapRecordingCreateManyInput = {
   id?: string
   sessionId: string
+  kind?: $Enums.RecordingKind
   filename: string
   mimeType: string
   byteSize: number
@@ -381,6 +399,7 @@ export type RecapRecordingCreateManyInput = {
 
 export type RecapRecordingUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumRecordingKindFieldUpdateOperationsInput | $Enums.RecordingKind
   filename?: Prisma.StringFieldUpdateOperationsInput | string
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
   byteSize?: Prisma.IntFieldUpdateOperationsInput | number
@@ -392,6 +411,7 @@ export type RecapRecordingUpdateManyMutationInput = {
 export type RecapRecordingUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sessionId?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumRecordingKindFieldUpdateOperationsInput | $Enums.RecordingKind
   filename?: Prisma.StringFieldUpdateOperationsInput | string
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
   byteSize?: Prisma.IntFieldUpdateOperationsInput | number
@@ -399,11 +419,6 @@ export type RecapRecordingUncheckedUpdateManyInput = {
   artifactId?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type RecapRecordingNullableScalarRelationFilter = {
-  is?: Prisma.RecapRecordingWhereInput | null
-  isNot?: Prisma.RecapRecordingWhereInput | null
 }
 
 export type RecapRecordingListRelationFilter = {
@@ -416,9 +431,15 @@ export type RecapRecordingOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type RecapRecordingSessionIdKindCompoundUniqueInput = {
+  sessionId: string
+  kind: $Enums.RecordingKind
+}
+
 export type RecapRecordingCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   sessionId?: Prisma.SortOrder
+  kind?: Prisma.SortOrder
   filename?: Prisma.SortOrder
   mimeType?: Prisma.SortOrder
   byteSize?: Prisma.SortOrder
@@ -436,6 +457,7 @@ export type RecapRecordingAvgOrderByAggregateInput = {
 export type RecapRecordingMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   sessionId?: Prisma.SortOrder
+  kind?: Prisma.SortOrder
   filename?: Prisma.SortOrder
   mimeType?: Prisma.SortOrder
   byteSize?: Prisma.SortOrder
@@ -448,6 +470,7 @@ export type RecapRecordingMaxOrderByAggregateInput = {
 export type RecapRecordingMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   sessionId?: Prisma.SortOrder
+  kind?: Prisma.SortOrder
   filename?: Prisma.SortOrder
   mimeType?: Prisma.SortOrder
   byteSize?: Prisma.SortOrder
@@ -462,36 +485,46 @@ export type RecapRecordingSumOrderByAggregateInput = {
   durationSeconds?: Prisma.SortOrder
 }
 
-export type RecapRecordingCreateNestedOneWithoutSessionInput = {
-  create?: Prisma.XOR<Prisma.RecapRecordingCreateWithoutSessionInput, Prisma.RecapRecordingUncheckedCreateWithoutSessionInput>
-  connectOrCreate?: Prisma.RecapRecordingCreateOrConnectWithoutSessionInput
-  connect?: Prisma.RecapRecordingWhereUniqueInput
+export type RecapRecordingCreateNestedManyWithoutSessionInput = {
+  create?: Prisma.XOR<Prisma.RecapRecordingCreateWithoutSessionInput, Prisma.RecapRecordingUncheckedCreateWithoutSessionInput> | Prisma.RecapRecordingCreateWithoutSessionInput[] | Prisma.RecapRecordingUncheckedCreateWithoutSessionInput[]
+  connectOrCreate?: Prisma.RecapRecordingCreateOrConnectWithoutSessionInput | Prisma.RecapRecordingCreateOrConnectWithoutSessionInput[]
+  createMany?: Prisma.RecapRecordingCreateManySessionInputEnvelope
+  connect?: Prisma.RecapRecordingWhereUniqueInput | Prisma.RecapRecordingWhereUniqueInput[]
 }
 
-export type RecapRecordingUncheckedCreateNestedOneWithoutSessionInput = {
-  create?: Prisma.XOR<Prisma.RecapRecordingCreateWithoutSessionInput, Prisma.RecapRecordingUncheckedCreateWithoutSessionInput>
-  connectOrCreate?: Prisma.RecapRecordingCreateOrConnectWithoutSessionInput
-  connect?: Prisma.RecapRecordingWhereUniqueInput
+export type RecapRecordingUncheckedCreateNestedManyWithoutSessionInput = {
+  create?: Prisma.XOR<Prisma.RecapRecordingCreateWithoutSessionInput, Prisma.RecapRecordingUncheckedCreateWithoutSessionInput> | Prisma.RecapRecordingCreateWithoutSessionInput[] | Prisma.RecapRecordingUncheckedCreateWithoutSessionInput[]
+  connectOrCreate?: Prisma.RecapRecordingCreateOrConnectWithoutSessionInput | Prisma.RecapRecordingCreateOrConnectWithoutSessionInput[]
+  createMany?: Prisma.RecapRecordingCreateManySessionInputEnvelope
+  connect?: Prisma.RecapRecordingWhereUniqueInput | Prisma.RecapRecordingWhereUniqueInput[]
 }
 
-export type RecapRecordingUpdateOneWithoutSessionNestedInput = {
-  create?: Prisma.XOR<Prisma.RecapRecordingCreateWithoutSessionInput, Prisma.RecapRecordingUncheckedCreateWithoutSessionInput>
-  connectOrCreate?: Prisma.RecapRecordingCreateOrConnectWithoutSessionInput
-  upsert?: Prisma.RecapRecordingUpsertWithoutSessionInput
-  disconnect?: Prisma.RecapRecordingWhereInput | boolean
-  delete?: Prisma.RecapRecordingWhereInput | boolean
-  connect?: Prisma.RecapRecordingWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.RecapRecordingUpdateToOneWithWhereWithoutSessionInput, Prisma.RecapRecordingUpdateWithoutSessionInput>, Prisma.RecapRecordingUncheckedUpdateWithoutSessionInput>
+export type RecapRecordingUpdateManyWithoutSessionNestedInput = {
+  create?: Prisma.XOR<Prisma.RecapRecordingCreateWithoutSessionInput, Prisma.RecapRecordingUncheckedCreateWithoutSessionInput> | Prisma.RecapRecordingCreateWithoutSessionInput[] | Prisma.RecapRecordingUncheckedCreateWithoutSessionInput[]
+  connectOrCreate?: Prisma.RecapRecordingCreateOrConnectWithoutSessionInput | Prisma.RecapRecordingCreateOrConnectWithoutSessionInput[]
+  upsert?: Prisma.RecapRecordingUpsertWithWhereUniqueWithoutSessionInput | Prisma.RecapRecordingUpsertWithWhereUniqueWithoutSessionInput[]
+  createMany?: Prisma.RecapRecordingCreateManySessionInputEnvelope
+  set?: Prisma.RecapRecordingWhereUniqueInput | Prisma.RecapRecordingWhereUniqueInput[]
+  disconnect?: Prisma.RecapRecordingWhereUniqueInput | Prisma.RecapRecordingWhereUniqueInput[]
+  delete?: Prisma.RecapRecordingWhereUniqueInput | Prisma.RecapRecordingWhereUniqueInput[]
+  connect?: Prisma.RecapRecordingWhereUniqueInput | Prisma.RecapRecordingWhereUniqueInput[]
+  update?: Prisma.RecapRecordingUpdateWithWhereUniqueWithoutSessionInput | Prisma.RecapRecordingUpdateWithWhereUniqueWithoutSessionInput[]
+  updateMany?: Prisma.RecapRecordingUpdateManyWithWhereWithoutSessionInput | Prisma.RecapRecordingUpdateManyWithWhereWithoutSessionInput[]
+  deleteMany?: Prisma.RecapRecordingScalarWhereInput | Prisma.RecapRecordingScalarWhereInput[]
 }
 
-export type RecapRecordingUncheckedUpdateOneWithoutSessionNestedInput = {
-  create?: Prisma.XOR<Prisma.RecapRecordingCreateWithoutSessionInput, Prisma.RecapRecordingUncheckedCreateWithoutSessionInput>
-  connectOrCreate?: Prisma.RecapRecordingCreateOrConnectWithoutSessionInput
-  upsert?: Prisma.RecapRecordingUpsertWithoutSessionInput
-  disconnect?: Prisma.RecapRecordingWhereInput | boolean
-  delete?: Prisma.RecapRecordingWhereInput | boolean
-  connect?: Prisma.RecapRecordingWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.RecapRecordingUpdateToOneWithWhereWithoutSessionInput, Prisma.RecapRecordingUpdateWithoutSessionInput>, Prisma.RecapRecordingUncheckedUpdateWithoutSessionInput>
+export type RecapRecordingUncheckedUpdateManyWithoutSessionNestedInput = {
+  create?: Prisma.XOR<Prisma.RecapRecordingCreateWithoutSessionInput, Prisma.RecapRecordingUncheckedCreateWithoutSessionInput> | Prisma.RecapRecordingCreateWithoutSessionInput[] | Prisma.RecapRecordingUncheckedCreateWithoutSessionInput[]
+  connectOrCreate?: Prisma.RecapRecordingCreateOrConnectWithoutSessionInput | Prisma.RecapRecordingCreateOrConnectWithoutSessionInput[]
+  upsert?: Prisma.RecapRecordingUpsertWithWhereUniqueWithoutSessionInput | Prisma.RecapRecordingUpsertWithWhereUniqueWithoutSessionInput[]
+  createMany?: Prisma.RecapRecordingCreateManySessionInputEnvelope
+  set?: Prisma.RecapRecordingWhereUniqueInput | Prisma.RecapRecordingWhereUniqueInput[]
+  disconnect?: Prisma.RecapRecordingWhereUniqueInput | Prisma.RecapRecordingWhereUniqueInput[]
+  delete?: Prisma.RecapRecordingWhereUniqueInput | Prisma.RecapRecordingWhereUniqueInput[]
+  connect?: Prisma.RecapRecordingWhereUniqueInput | Prisma.RecapRecordingWhereUniqueInput[]
+  update?: Prisma.RecapRecordingUpdateWithWhereUniqueWithoutSessionInput | Prisma.RecapRecordingUpdateWithWhereUniqueWithoutSessionInput[]
+  updateMany?: Prisma.RecapRecordingUpdateManyWithWhereWithoutSessionInput | Prisma.RecapRecordingUpdateManyWithWhereWithoutSessionInput[]
+  deleteMany?: Prisma.RecapRecordingScalarWhereInput | Prisma.RecapRecordingScalarWhereInput[]
 }
 
 export type RecapRecordingCreateNestedManyWithoutArtifactInput = {
@@ -538,6 +571,7 @@ export type RecapRecordingUncheckedUpdateManyWithoutArtifactNestedInput = {
 
 export type RecapRecordingCreateWithoutSessionInput = {
   id?: string
+  kind?: $Enums.RecordingKind
   filename: string
   mimeType: string
   byteSize: number
@@ -549,6 +583,7 @@ export type RecapRecordingCreateWithoutSessionInput = {
 
 export type RecapRecordingUncheckedCreateWithoutSessionInput = {
   id?: string
+  kind?: $Enums.RecordingKind
   filename: string
   mimeType: string
   byteSize: number
@@ -563,53 +598,58 @@ export type RecapRecordingCreateOrConnectWithoutSessionInput = {
   create: Prisma.XOR<Prisma.RecapRecordingCreateWithoutSessionInput, Prisma.RecapRecordingUncheckedCreateWithoutSessionInput>
 }
 
-export type RecapRecordingUpsertWithoutSessionInput = {
-  update: Prisma.XOR<Prisma.RecapRecordingUpdateWithoutSessionInput, Prisma.RecapRecordingUncheckedUpdateWithoutSessionInput>
-  create: Prisma.XOR<Prisma.RecapRecordingCreateWithoutSessionInput, Prisma.RecapRecordingUncheckedCreateWithoutSessionInput>
-  where?: Prisma.RecapRecordingWhereInput
+export type RecapRecordingCreateManySessionInputEnvelope = {
+  data: Prisma.RecapRecordingCreateManySessionInput | Prisma.RecapRecordingCreateManySessionInput[]
 }
 
-export type RecapRecordingUpdateToOneWithWhereWithoutSessionInput = {
-  where?: Prisma.RecapRecordingWhereInput
+export type RecapRecordingUpsertWithWhereUniqueWithoutSessionInput = {
+  where: Prisma.RecapRecordingWhereUniqueInput
+  update: Prisma.XOR<Prisma.RecapRecordingUpdateWithoutSessionInput, Prisma.RecapRecordingUncheckedUpdateWithoutSessionInput>
+  create: Prisma.XOR<Prisma.RecapRecordingCreateWithoutSessionInput, Prisma.RecapRecordingUncheckedCreateWithoutSessionInput>
+}
+
+export type RecapRecordingUpdateWithWhereUniqueWithoutSessionInput = {
+  where: Prisma.RecapRecordingWhereUniqueInput
   data: Prisma.XOR<Prisma.RecapRecordingUpdateWithoutSessionInput, Prisma.RecapRecordingUncheckedUpdateWithoutSessionInput>
 }
 
-export type RecapRecordingUpdateWithoutSessionInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  filename?: Prisma.StringFieldUpdateOperationsInput | string
-  mimeType?: Prisma.StringFieldUpdateOperationsInput | string
-  byteSize?: Prisma.IntFieldUpdateOperationsInput | number
-  durationSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  artifact?: Prisma.ArtifactUpdateOneRequiredWithoutRecapRecordingsNestedInput
+export type RecapRecordingUpdateManyWithWhereWithoutSessionInput = {
+  where: Prisma.RecapRecordingScalarWhereInput
+  data: Prisma.XOR<Prisma.RecapRecordingUpdateManyMutationInput, Prisma.RecapRecordingUncheckedUpdateManyWithoutSessionInput>
 }
 
-export type RecapRecordingUncheckedUpdateWithoutSessionInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  filename?: Prisma.StringFieldUpdateOperationsInput | string
-  mimeType?: Prisma.StringFieldUpdateOperationsInput | string
-  byteSize?: Prisma.IntFieldUpdateOperationsInput | number
-  durationSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  artifactId?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+export type RecapRecordingScalarWhereInput = {
+  AND?: Prisma.RecapRecordingScalarWhereInput | Prisma.RecapRecordingScalarWhereInput[]
+  OR?: Prisma.RecapRecordingScalarWhereInput[]
+  NOT?: Prisma.RecapRecordingScalarWhereInput | Prisma.RecapRecordingScalarWhereInput[]
+  id?: Prisma.StringFilter<"RecapRecording"> | string
+  sessionId?: Prisma.StringFilter<"RecapRecording"> | string
+  kind?: Prisma.EnumRecordingKindFilter<"RecapRecording"> | $Enums.RecordingKind
+  filename?: Prisma.StringFilter<"RecapRecording"> | string
+  mimeType?: Prisma.StringFilter<"RecapRecording"> | string
+  byteSize?: Prisma.IntFilter<"RecapRecording"> | number
+  durationSeconds?: Prisma.IntNullableFilter<"RecapRecording"> | number | null
+  artifactId?: Prisma.StringFilter<"RecapRecording"> | string
+  createdAt?: Prisma.DateTimeFilter<"RecapRecording"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"RecapRecording"> | Date | string
 }
 
 export type RecapRecordingCreateWithoutArtifactInput = {
   id?: string
+  kind?: $Enums.RecordingKind
   filename: string
   mimeType: string
   byteSize: number
   durationSeconds?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  session: Prisma.SessionCreateNestedOneWithoutRecapInput
+  session: Prisma.SessionCreateNestedOneWithoutRecapsInput
 }
 
 export type RecapRecordingUncheckedCreateWithoutArtifactInput = {
   id?: string
   sessionId: string
+  kind?: $Enums.RecordingKind
   filename: string
   mimeType: string
   byteSize: number
@@ -643,24 +683,58 @@ export type RecapRecordingUpdateManyWithWhereWithoutArtifactInput = {
   data: Prisma.XOR<Prisma.RecapRecordingUpdateManyMutationInput, Prisma.RecapRecordingUncheckedUpdateManyWithoutArtifactInput>
 }
 
-export type RecapRecordingScalarWhereInput = {
-  AND?: Prisma.RecapRecordingScalarWhereInput | Prisma.RecapRecordingScalarWhereInput[]
-  OR?: Prisma.RecapRecordingScalarWhereInput[]
-  NOT?: Prisma.RecapRecordingScalarWhereInput | Prisma.RecapRecordingScalarWhereInput[]
-  id?: Prisma.StringFilter<"RecapRecording"> | string
-  sessionId?: Prisma.StringFilter<"RecapRecording"> | string
-  filename?: Prisma.StringFilter<"RecapRecording"> | string
-  mimeType?: Prisma.StringFilter<"RecapRecording"> | string
-  byteSize?: Prisma.IntFilter<"RecapRecording"> | number
-  durationSeconds?: Prisma.IntNullableFilter<"RecapRecording"> | number | null
-  artifactId?: Prisma.StringFilter<"RecapRecording"> | string
-  createdAt?: Prisma.DateTimeFilter<"RecapRecording"> | Date | string
-  updatedAt?: Prisma.DateTimeFilter<"RecapRecording"> | Date | string
+export type RecapRecordingCreateManySessionInput = {
+  id?: string
+  kind?: $Enums.RecordingKind
+  filename: string
+  mimeType: string
+  byteSize: number
+  durationSeconds?: number | null
+  artifactId: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type RecapRecordingUpdateWithoutSessionInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumRecordingKindFieldUpdateOperationsInput | $Enums.RecordingKind
+  filename?: Prisma.StringFieldUpdateOperationsInput | string
+  mimeType?: Prisma.StringFieldUpdateOperationsInput | string
+  byteSize?: Prisma.IntFieldUpdateOperationsInput | number
+  durationSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  artifact?: Prisma.ArtifactUpdateOneRequiredWithoutRecapRecordingsNestedInput
+}
+
+export type RecapRecordingUncheckedUpdateWithoutSessionInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumRecordingKindFieldUpdateOperationsInput | $Enums.RecordingKind
+  filename?: Prisma.StringFieldUpdateOperationsInput | string
+  mimeType?: Prisma.StringFieldUpdateOperationsInput | string
+  byteSize?: Prisma.IntFieldUpdateOperationsInput | number
+  durationSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  artifactId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type RecapRecordingUncheckedUpdateManyWithoutSessionInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumRecordingKindFieldUpdateOperationsInput | $Enums.RecordingKind
+  filename?: Prisma.StringFieldUpdateOperationsInput | string
+  mimeType?: Prisma.StringFieldUpdateOperationsInput | string
+  byteSize?: Prisma.IntFieldUpdateOperationsInput | number
+  durationSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  artifactId?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type RecapRecordingCreateManyArtifactInput = {
   id?: string
   sessionId: string
+  kind?: $Enums.RecordingKind
   filename: string
   mimeType: string
   byteSize: number
@@ -671,18 +745,20 @@ export type RecapRecordingCreateManyArtifactInput = {
 
 export type RecapRecordingUpdateWithoutArtifactInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumRecordingKindFieldUpdateOperationsInput | $Enums.RecordingKind
   filename?: Prisma.StringFieldUpdateOperationsInput | string
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
   byteSize?: Prisma.IntFieldUpdateOperationsInput | number
   durationSeconds?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  session?: Prisma.SessionUpdateOneRequiredWithoutRecapNestedInput
+  session?: Prisma.SessionUpdateOneRequiredWithoutRecapsNestedInput
 }
 
 export type RecapRecordingUncheckedUpdateWithoutArtifactInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sessionId?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumRecordingKindFieldUpdateOperationsInput | $Enums.RecordingKind
   filename?: Prisma.StringFieldUpdateOperationsInput | string
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
   byteSize?: Prisma.IntFieldUpdateOperationsInput | number
@@ -694,6 +770,7 @@ export type RecapRecordingUncheckedUpdateWithoutArtifactInput = {
 export type RecapRecordingUncheckedUpdateManyWithoutArtifactInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   sessionId?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.EnumRecordingKindFieldUpdateOperationsInput | $Enums.RecordingKind
   filename?: Prisma.StringFieldUpdateOperationsInput | string
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
   byteSize?: Prisma.IntFieldUpdateOperationsInput | number
@@ -707,6 +784,7 @@ export type RecapRecordingUncheckedUpdateManyWithoutArtifactInput = {
 export type RecapRecordingSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   sessionId?: boolean
+  kind?: boolean
   filename?: boolean
   mimeType?: boolean
   byteSize?: boolean
@@ -721,6 +799,7 @@ export type RecapRecordingSelect<ExtArgs extends runtime.Types.Extensions.Intern
 export type RecapRecordingSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   sessionId?: boolean
+  kind?: boolean
   filename?: boolean
   mimeType?: boolean
   byteSize?: boolean
@@ -735,6 +814,7 @@ export type RecapRecordingSelectCreateManyAndReturn<ExtArgs extends runtime.Type
 export type RecapRecordingSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   sessionId?: boolean
+  kind?: boolean
   filename?: boolean
   mimeType?: boolean
   byteSize?: boolean
@@ -749,6 +829,7 @@ export type RecapRecordingSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
 export type RecapRecordingSelectScalar = {
   id?: boolean
   sessionId?: boolean
+  kind?: boolean
   filename?: boolean
   mimeType?: boolean
   byteSize?: boolean
@@ -758,7 +839,7 @@ export type RecapRecordingSelectScalar = {
   updatedAt?: boolean
 }
 
-export type RecapRecordingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sessionId" | "filename" | "mimeType" | "byteSize" | "durationSeconds" | "artifactId" | "createdAt" | "updatedAt", ExtArgs["result"]["recapRecording"]>
+export type RecapRecordingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "sessionId" | "kind" | "filename" | "mimeType" | "byteSize" | "durationSeconds" | "artifactId" | "createdAt" | "updatedAt", ExtArgs["result"]["recapRecording"]>
 export type RecapRecordingInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   session?: boolean | Prisma.SessionDefaultArgs<ExtArgs>
   artifact?: boolean | Prisma.ArtifactDefaultArgs<ExtArgs>
@@ -781,6 +862,7 @@ export type $RecapRecordingPayload<ExtArgs extends runtime.Types.Extensions.Inte
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     sessionId: string
+    kind: $Enums.RecordingKind
     filename: string
     mimeType: string
     byteSize: number
@@ -1215,6 +1297,7 @@ export interface Prisma__RecapRecordingClient<T, Null = never, ExtArgs extends r
 export interface RecapRecordingFieldRefs {
   readonly id: Prisma.FieldRef<"RecapRecording", 'String'>
   readonly sessionId: Prisma.FieldRef<"RecapRecording", 'String'>
+  readonly kind: Prisma.FieldRef<"RecapRecording", 'RecordingKind'>
   readonly filename: Prisma.FieldRef<"RecapRecording", 'String'>
   readonly mimeType: Prisma.FieldRef<"RecapRecording", 'String'>
   readonly byteSize: Prisma.FieldRef<"RecapRecording", 'Int'>

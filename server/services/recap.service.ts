@@ -16,6 +16,7 @@ export class RecapService {
   private artifactService = new ArtifactService()
 
   async createRecapFromStream(input: CreateRecapStreamInput) {
+    const kind = input.mimeType.startsWith('video/') ? 'VIDEO' : 'AUDIO'
     const artifact = await this.artifactService.createArtifactFromStream({
       ownerId: input.ownerId,
       campaignId: input.campaignId,
@@ -31,7 +32,7 @@ export class RecapService {
 
     try {
       const existing = await prisma.recapRecording.findUnique({
-        where: { sessionId: input.sessionId },
+        where: { sessionId_kind: { sessionId: input.sessionId, kind } },
       })
 
       if (existing) {
@@ -42,7 +43,7 @@ export class RecapService {
             filename: input.filename,
             mimeType: input.mimeType,
             byteSize: artifact.byteSize,
-            durationSeconds: input.durationSeconds,
+            durationSeconds: input.durationSeconds ?? null,
             artifactId: artifact.id,
           },
         })
@@ -57,10 +58,11 @@ export class RecapService {
       return await prisma.recapRecording.create({
         data: {
           sessionId: input.sessionId,
+          kind,
           filename: input.filename,
           mimeType: input.mimeType,
           byteSize: artifact.byteSize,
-          durationSeconds: input.durationSeconds,
+          durationSeconds: input.durationSeconds ?? null,
           artifactId: artifact.id,
         },
       })

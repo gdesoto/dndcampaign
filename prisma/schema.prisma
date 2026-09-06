@@ -379,7 +379,7 @@ model Session {
   glossaryLinks          GlossarySessionLink[]
   recordings             Recording[]
   documents              Document[]
-  recap                  RecapRecording?
+  recaps                 RecapRecording[]
   summaryJobs            SummaryJob[]
   calendarRange          SessionCalendarRange?
   encounters             CampaignEncounter[]
@@ -1063,8 +1063,9 @@ model TranscriptionArtifact {
 
 model RecapRecording {
   id              String   @id @default(uuid())
-  sessionId       String   @unique
+  sessionId       String
   session         Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  kind            RecordingKind @default(AUDIO)
   filename        String
   mimeType        String
   byteSize        Int
@@ -1074,7 +1075,7 @@ model RecapRecording {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  @@index([sessionId])
+  @@unique([sessionId, kind])
   @@index([artifactId])
 }
 

@@ -10182,7 +10182,7 @@
           "public"
         ],
         "summary": "GET /api/public/campaigns/{publicSlug}/recaps",
-        "description": "Auto-documented from server route `public/campaigns/[publicSlug]/recaps.get.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Auto-documented from server route `public/campaigns/[publicSlug]/recaps.get.ts`. This operation uses the project standard API envelope `{ data, error }`. Each recap includes mimeType so clients can select audio or video playback.",
         "operationId": "get_api_public_campaigns_publicSlug_recaps",
         "parameters": [
           {
@@ -11587,7 +11587,7 @@
           "sessions"
         ],
         "summary": "GET /api/sessions/{sessionId}/recap",
-        "description": "Auto-documented from server route `sessions/[sessionId]/recap.get.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Auto-documented from server route `sessions/[sessionId]/recap.get.ts`. This operation uses the project standard API envelope `{ data, error }`. Returns an array of the session audio and video recaps, ordered by kind. Each recap has its own id for playback and deletion.",
         "operationId": "get_api_sessions_sessionId_recap",
         "parameters": [
           {
@@ -11641,7 +11641,7 @@
           "sessions"
         ],
         "summary": "POST /api/sessions/{sessionId}/recap",
-        "description": "Auto-documented from server route `sessions/[sessionId]/recap.post.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Auto-documented from server route `sessions/[sessionId]/recap.post.ts`. This operation uses the project standard API envelope `{ data, error }`. Accepts one audio recap or MP4, WebM, or Ogg video recap (up to 512 MB). Keeps one AUDIO and one VIDEO recap per session in the existing RecapRecording table. The file MIME type determines kind; uploading replaces only the recap of that kind and leaves the other kind intact.",
         "operationId": "post_api_sessions_sessionId_recap",
         "parameters": [
           {
@@ -11961,7 +11961,7 @@
           "sessions"
         ],
         "summary": "GET /api/sessions/{sessionId}/workspace",
-        "description": "Auto-documented from server route `sessions/[sessionId]/workspace.get.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Auto-documented from server route `sessions/[sessionId]/workspace.get.ts`. This operation uses the project standard API envelope `{ data, error }`. Includes recaps, an array of all session audio/video recaps ordered by kind. The legacy recap field contains the first recap or null.",
         "operationId": "get_api_sessions_sessionId_workspace",
         "parameters": [
           {

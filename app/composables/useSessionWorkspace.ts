@@ -22,7 +22,7 @@ export async function useSessionWorkspace(options: UseSessionWorkspaceOptions) {
 
   const session = computed(() => workspace.value?.session)
   const recordings = computed(() => workspace.value?.recordings)
-  const recap = computed(() => workspace.value?.recap)
+  const recaps = computed(() => workspace.value?.recaps ?? [])
   const transcriptDoc = computed(() => workspace.value?.transcriptDoc)
   const summaryDoc = computed(() => workspace.value?.summaryDoc)
   const access = computed(() => workspace.value?.access)
@@ -43,7 +43,7 @@ export async function useSessionWorkspace(options: UseSessionWorkspaceOptions) {
   return {
     session,
     recordings,
-    recap,
+    recaps,
     transcriptDoc,
     summaryDoc,
     access,

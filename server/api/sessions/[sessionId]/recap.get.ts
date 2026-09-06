@@ -19,9 +19,10 @@ export default defineEventHandler(async (event) => {
     return fail(404, 'NOT_FOUND', 'Session not found')
   }
 
-  const recap = await prisma.recapRecording.findUnique({
+  const recaps = await prisma.recapRecording.findMany({
     where: { sessionId },
+    orderBy: { kind: 'asc' },
   })
 
-  return ok(recap)
+  return ok(recaps)
 })

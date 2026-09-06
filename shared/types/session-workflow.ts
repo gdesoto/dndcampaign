@@ -98,6 +98,7 @@ export type SessionSummaryJobDetail = SessionSummaryJob & {
 export type SessionWorkspace = {
   session: SessionDetail
   recordings: SessionRecordingItem[]
+  recaps: SessionRecapRecording[]
   recap: SessionRecapRecording | null
   transcriptDoc: SessionDocumentDetail | null
   summaryDoc: SessionDocumentDetail | null

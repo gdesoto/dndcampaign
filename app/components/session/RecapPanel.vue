@@ -7,6 +7,8 @@ const props = defineProps<{
   workflowMode: boolean
   openStep?: WorkflowStep
   recap: SessionRecapRecording | null | undefined
+  recaps: SessionRecapRecording[]
+  selectedKind: 'AUDIO' | 'VIDEO'
   recapFile: File | null
   recapUploading: boolean
   recapPlaybackLoading: boolean
@@ -18,6 +20,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
+  'update:selectedKind': [value: 'AUDIO' | 'VIDEO']
   'update:recapFile': [value: File | null]
   'upload-recap': []
   'play-recap': []
@@ -31,7 +34,16 @@ const recapFileModel = computed({
   set: (value: File | null | undefined) => emit('update:recapFile', value ?? null),
 })
 
+const mediaKinds = ['AUDIO', 'VIDEO'] as const
+const kindLabel = computed(() => props.selectedKind === 'VIDEO' ? 'Video' : 'Audio')
+const acceptedTypes = computed(() => props.selectedKind === 'VIDEO'
+  ? 'video/mp4,video/webm,video/ogg'
+  : 'audio/mpeg,audio/mp4,audio/m4a,audio/x-m4a,audio/wav,audio/x-wav,audio/webm,audio/ogg')
+const hasKind = (kind: 'AUDIO' | 'VIDEO') => props.recaps.some((item) =>
+  (item.mimeType.startsWith('video/') ? 'VIDEO' : 'AUDIO') === kind
+)
 const isReplaceModalOpen = ref(false)
+watch(() => props.selectedKind, () => { isReplaceModalOpen.value = false })
 const { formatBytes } = useFormatBytes()
 
 const openReplaceModal = () => {
@@ -60,12 +72,12 @@ watch(
     <template #header>
       <div class="flex items-center justify-between gap-3">
         <div>
-          <h2 class="text-lg font-semibold">Recap podcast</h2>
+          <h2 class="text-lg font-semibold">Session recaps</h2>
           <p class="text-sm text-muted">
             {{
               workflowMode
-                ? 'Upload a short audio recap for this session.'
-              : 'Listen to the recap audio.'
+                ? 'Keep both an audio and a video recap for this session.'
+              : 'Choose an audio or video recap to play.'
             }}
           </p>
         </div>
@@ -81,12 +93,27 @@ watch(
     </template>
 
     <div class="space-y-4">
+      <div class="flex flex-wrap gap-2" role="group" aria-label="Recap type">
+        <UButton
+          v-for="kind in mediaKinds"
+          :key="kind"
+          :variant="selectedKind === kind ? 'solid' : 'outline'"
+          :aria-pressed="selectedKind === kind"
+          :icon="kind === 'VIDEO' ? 'i-lucide-video' : 'i-lucide-headphones'"
+          :disabled="recapUploading || recapDeleting || recapPlaybackLoading"
+          @click="emit('update:selectedKind', kind)"
+        >
+          {{ kind === 'VIDEO' ? 'Video' : 'Audio' }} · {{ hasKind(kind) ? 'Attached' : 'Not uploaded' }}
+        </UButton>
+      </div>
+      <p v-if="workflowMode" class="text-xs text-muted">One audio and one video recap per session, up to 512 MB each. Replacing a recap only replaces the same media type. Video formats: MP4, WebM, Ogg.</p>
+      <p v-if="!hasRecap" class="text-sm text-muted">No {{ kindLabel.toLowerCase() }} recap uploaded.</p>
       <div
         v-if="workflowMode && !hasRecap"
         class="flex flex-col gap-3 rounded-md border border-default bg-elevated/40 p-3 sm:flex-row sm:items-center sm:justify-between"
       >
         <div class="min-w-0">
-          <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Recap audio</p>
+          <p class="text-xs uppercase tracking-[0.2em] text-dimmed">{{ kindLabel }} recap</p>
           <p class="truncate text-sm text-muted">
             {{
               recapFile?.name
@@ -97,7 +124,7 @@ watch(
 
         <UFileUpload
           v-model="recapFileModel"
-          accept="audio/*"
+          :accept="acceptedTypes"
           variant="button"
           size="sm"
           :dropzone="false"
@@ -108,7 +135,7 @@ watch(
       </div>
 
       <div v-if="hasRecap && recap" class="rounded-md border border-default bg-elevated/30 p-3">
-        <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Recap details</p>
+        <p class="text-xs uppercase tracking-[0.2em] text-dimmed">{{ recap.mimeType.startsWith('video/') ? 'Video recap' : 'Audio recap' }}</p>
         <div class="mt-2 grid gap-2 text-sm text-muted sm:grid-cols-2">
           <p><span class="text-dimmed">File:</span> {{ recap.filename || 'Unknown' }}</p>
           <p><span class="text-dimmed">Type:</span> {{ recap.mimeType || 'Unknown' }}</p>
@@ -154,7 +181,7 @@ watch(
         </UButton>
         <SharedConfirmActionPopover
           v-if="workflowMode && hasRecap"
-          message="Delete this recap audio file?"
+          :message="`Delete this ${kindLabel.toLowerCase()} recap file?`"
           confirm-label="Delete recap"
           confirm-icon="i-lucide-trash-2"
           :confirm-loading="recapDeleting"
@@ -194,13 +221,13 @@ watch(
     <template #content>
       <UCard>
         <template #header>
-          <h3 class="text-base font-semibold">Replace recap audio</h3>
+          <h3 class="text-base font-semibold">Replace {{ kindLabel.toLowerCase() }} recap</h3>
         </template>
 
         <div class="space-y-4">
           <UFileUpload
             v-model="recapFileModel"
-            accept="audio/*"
+            :accept="acceptedTypes"
             variant="button"
             size="sm"
             :dropzone="false"
@@ -214,7 +241,7 @@ watch(
           </p>
 
           <div class="flex justify-end gap-2">
-            <UButton variant="ghost" color="neutral" :disabled="recapUploading" @click="isReplaceModalOpen = false">Cancel</UButton>
+            <UButton variant="ghost" color="neutral" :disabled="recapUploading" @click="() => { isReplaceModalOpen = false }">Cancel</UButton>
             <UButton :disabled="!recapFile" :loading="recapUploading" @click="submitReplace">
               Replace recap
             </UButton>

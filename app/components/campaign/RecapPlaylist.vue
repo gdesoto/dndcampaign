@@ -4,6 +4,7 @@ import { formatSessionDate } from '~/utils/session-date'
 type RecapItem = {
   id: string
   filename: string
+  mimeType?: string
   createdAt: string
   session: {
     id: string
@@ -51,7 +52,7 @@ const emit = defineEmits<{
     <template #header>
       <div>
         <h2 class="text-lg font-semibold">{{ title || 'Recap playlist' }}</h2>
-        <p class="text-sm text-muted">{{ description || 'Listen to session recaps across the campaign.' }}</p>
+        <p class="text-sm text-muted">{{ description || 'Watch or listen to session recaps across the campaign.' }}</p>
       </div>
     </template>
     <div class="space-y-4">
@@ -65,6 +66,7 @@ const emit = defineEmits<{
           >
             <div>
               <p class="font-semibold">{{ recap.session.title }}</p>
+              <UBadge color="neutral" variant="soft" size="sm">{{ recap.mimeType?.startsWith('video/') ? 'Video' : 'Audio' }}</UBadge>
               <p class="text-xs text-muted">
                 Session {{ recap.session.sessionNumber ?? '-' }}
                 - {{ formatSessionDate(recap.session.playedAt) }}
@@ -105,7 +107,7 @@ const emit = defineEmits<{
               <p class="text-xs text-muted">Playing in the global player.</p>
               <UButton size="xs" variant="ghost" @click="emit('open-player')">Open player</UButton>
             </div>
-            <p v-else class="text-xs text-muted">Select a recap to start listening.</p>
+            <p v-else class="text-xs text-muted">Select a recap to start playback.</p>
           </div>
         </UCard>
       </div>

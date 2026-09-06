@@ -665,6 +665,7 @@ export class CampaignPublicAccessService {
       select: {
         id: true,
         filename: true,
+        mimeType: true,
         durationSeconds: true,
         createdAt: true,
         session: {

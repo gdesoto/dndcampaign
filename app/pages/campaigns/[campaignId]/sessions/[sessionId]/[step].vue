@@ -70,7 +70,8 @@ const {
   recapError,
   recapDeleteError,
   recap,
-  hasRecap,
+  recaps,
+  selectedRecapKind,
   uploadRecording,
   loadPlayback,
   deleteRecording,
@@ -217,8 +218,10 @@ const returnToPath = computed(
 
     <div v-else-if="currentStep === 'recap'" class="space-y-4">
       <SessionRecapPanel
+        v-model:selected-kind="selectedRecapKind"
         :workflow-mode="true"
         :recap="recap"
+        :recaps="recaps"
         :recap-file="recapFile"
         :recap-uploading="recapUploading"
         :recap-playback-loading="recapPlaybackLoading"
@@ -226,7 +229,7 @@ const returnToPath = computed(
         :recap-playback-url="recapPlaybackUrl"
         :recap-error="recapError"
         :recap-delete-error="recapDeleteError"
-        :has-recap="hasRecap"
+        :has-recap="Boolean(recap)"
         @update:recap-file="recapFile = $event"
         @upload-recap="canUploadRecording && uploadRecap()"
         @play-recap="loadRecapPlayback"

@@ -252,7 +252,7 @@ export type SessionWhereInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkListRelationFilter
   recordings?: Prisma.RecordingListRelationFilter
   documents?: Prisma.DocumentListRelationFilter
-  recap?: Prisma.XOR<Prisma.RecapRecordingNullableScalarRelationFilter, Prisma.RecapRecordingWhereInput> | null
+  recaps?: Prisma.RecapRecordingListRelationFilter
   summaryJobs?: Prisma.SummaryJobListRelationFilter
   calendarRange?: Prisma.XOR<Prisma.SessionCalendarRangeNullableScalarRelationFilter, Prisma.SessionCalendarRangeWhereInput> | null
   encounters?: Prisma.CampaignEncounterListRelationFilter
@@ -273,7 +273,7 @@ export type SessionOrderByWithRelationInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkOrderByRelationAggregateInput
   recordings?: Prisma.RecordingOrderByRelationAggregateInput
   documents?: Prisma.DocumentOrderByRelationAggregateInput
-  recap?: Prisma.RecapRecordingOrderByWithRelationInput
+  recaps?: Prisma.RecapRecordingOrderByRelationAggregateInput
   summaryJobs?: Prisma.SummaryJobOrderByRelationAggregateInput
   calendarRange?: Prisma.SessionCalendarRangeOrderByWithRelationInput
   encounters?: Prisma.CampaignEncounterOrderByRelationAggregateInput
@@ -298,7 +298,7 @@ export type SessionWhereUniqueInput = Prisma.AtLeast<{
   glossaryLinks?: Prisma.GlossarySessionLinkListRelationFilter
   recordings?: Prisma.RecordingListRelationFilter
   documents?: Prisma.DocumentListRelationFilter
-  recap?: Prisma.XOR<Prisma.RecapRecordingNullableScalarRelationFilter, Prisma.RecapRecordingWhereInput> | null
+  recaps?: Prisma.RecapRecordingListRelationFilter
   summaryJobs?: Prisma.SummaryJobListRelationFilter
   calendarRange?: Prisma.XOR<Prisma.SessionCalendarRangeNullableScalarRelationFilter, Prisma.SessionCalendarRangeWhereInput> | null
   encounters?: Prisma.CampaignEncounterListRelationFilter
@@ -350,7 +350,7 @@ export type SessionCreateInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkCreateNestedManyWithoutSessionInput
   recordings?: Prisma.RecordingCreateNestedManyWithoutSessionInput
   documents?: Prisma.DocumentCreateNestedManyWithoutSessionInput
-  recap?: Prisma.RecapRecordingCreateNestedOneWithoutSessionInput
+  recaps?: Prisma.RecapRecordingCreateNestedManyWithoutSessionInput
   summaryJobs?: Prisma.SummaryJobCreateNestedManyWithoutSessionInput
   calendarRange?: Prisma.SessionCalendarRangeCreateNestedOneWithoutSessionInput
   encounters?: Prisma.CampaignEncounterCreateNestedManyWithoutSessionInput
@@ -370,7 +370,7 @@ export type SessionUncheckedCreateInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkUncheckedCreateNestedManyWithoutSessionInput
   recordings?: Prisma.RecordingUncheckedCreateNestedManyWithoutSessionInput
   documents?: Prisma.DocumentUncheckedCreateNestedManyWithoutSessionInput
-  recap?: Prisma.RecapRecordingUncheckedCreateNestedOneWithoutSessionInput
+  recaps?: Prisma.RecapRecordingUncheckedCreateNestedManyWithoutSessionInput
   summaryJobs?: Prisma.SummaryJobUncheckedCreateNestedManyWithoutSessionInput
   calendarRange?: Prisma.SessionCalendarRangeUncheckedCreateNestedOneWithoutSessionInput
   encounters?: Prisma.CampaignEncounterUncheckedCreateNestedManyWithoutSessionInput
@@ -390,7 +390,7 @@ export type SessionUpdateInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkUpdateManyWithoutSessionNestedInput
   recordings?: Prisma.RecordingUpdateManyWithoutSessionNestedInput
   documents?: Prisma.DocumentUpdateManyWithoutSessionNestedInput
-  recap?: Prisma.RecapRecordingUpdateOneWithoutSessionNestedInput
+  recaps?: Prisma.RecapRecordingUpdateManyWithoutSessionNestedInput
   summaryJobs?: Prisma.SummaryJobUpdateManyWithoutSessionNestedInput
   calendarRange?: Prisma.SessionCalendarRangeUpdateOneWithoutSessionNestedInput
   encounters?: Prisma.CampaignEncounterUpdateManyWithoutSessionNestedInput
@@ -410,7 +410,7 @@ export type SessionUncheckedUpdateInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkUncheckedUpdateManyWithoutSessionNestedInput
   recordings?: Prisma.RecordingUncheckedUpdateManyWithoutSessionNestedInput
   documents?: Prisma.DocumentUncheckedUpdateManyWithoutSessionNestedInput
-  recap?: Prisma.RecapRecordingUncheckedUpdateOneWithoutSessionNestedInput
+  recaps?: Prisma.RecapRecordingUncheckedUpdateManyWithoutSessionNestedInput
   summaryJobs?: Prisma.SummaryJobUncheckedUpdateManyWithoutSessionNestedInput
   calendarRange?: Prisma.SessionCalendarRangeUncheckedUpdateOneWithoutSessionNestedInput
   encounters?: Prisma.CampaignEncounterUncheckedUpdateManyWithoutSessionNestedInput
@@ -643,18 +643,18 @@ export type SessionUpdateOneRequiredWithoutRecordingsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.SessionUpdateToOneWithWhereWithoutRecordingsInput, Prisma.SessionUpdateWithoutRecordingsInput>, Prisma.SessionUncheckedUpdateWithoutRecordingsInput>
 }
 
-export type SessionCreateNestedOneWithoutRecapInput = {
-  create?: Prisma.XOR<Prisma.SessionCreateWithoutRecapInput, Prisma.SessionUncheckedCreateWithoutRecapInput>
-  connectOrCreate?: Prisma.SessionCreateOrConnectWithoutRecapInput
+export type SessionCreateNestedOneWithoutRecapsInput = {
+  create?: Prisma.XOR<Prisma.SessionCreateWithoutRecapsInput, Prisma.SessionUncheckedCreateWithoutRecapsInput>
+  connectOrCreate?: Prisma.SessionCreateOrConnectWithoutRecapsInput
   connect?: Prisma.SessionWhereUniqueInput
 }
 
-export type SessionUpdateOneRequiredWithoutRecapNestedInput = {
-  create?: Prisma.XOR<Prisma.SessionCreateWithoutRecapInput, Prisma.SessionUncheckedCreateWithoutRecapInput>
-  connectOrCreate?: Prisma.SessionCreateOrConnectWithoutRecapInput
-  upsert?: Prisma.SessionUpsertWithoutRecapInput
+export type SessionUpdateOneRequiredWithoutRecapsNestedInput = {
+  create?: Prisma.XOR<Prisma.SessionCreateWithoutRecapsInput, Prisma.SessionUncheckedCreateWithoutRecapsInput>
+  connectOrCreate?: Prisma.SessionCreateOrConnectWithoutRecapsInput
+  upsert?: Prisma.SessionUpsertWithoutRecapsInput
   connect?: Prisma.SessionWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.SessionUpdateToOneWithWhereWithoutRecapInput, Prisma.SessionUpdateWithoutRecapInput>, Prisma.SessionUncheckedUpdateWithoutRecapInput>
+  update?: Prisma.XOR<Prisma.XOR<Prisma.SessionUpdateToOneWithWhereWithoutRecapsInput, Prisma.SessionUpdateWithoutRecapsInput>, Prisma.SessionUncheckedUpdateWithoutRecapsInput>
 }
 
 export type SessionCreateNestedOneWithoutDocumentsInput = {
@@ -699,7 +699,7 @@ export type SessionCreateWithoutCampaignInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkCreateNestedManyWithoutSessionInput
   recordings?: Prisma.RecordingCreateNestedManyWithoutSessionInput
   documents?: Prisma.DocumentCreateNestedManyWithoutSessionInput
-  recap?: Prisma.RecapRecordingCreateNestedOneWithoutSessionInput
+  recaps?: Prisma.RecapRecordingCreateNestedManyWithoutSessionInput
   summaryJobs?: Prisma.SummaryJobCreateNestedManyWithoutSessionInput
   calendarRange?: Prisma.SessionCalendarRangeCreateNestedOneWithoutSessionInput
   encounters?: Prisma.CampaignEncounterCreateNestedManyWithoutSessionInput
@@ -718,7 +718,7 @@ export type SessionUncheckedCreateWithoutCampaignInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkUncheckedCreateNestedManyWithoutSessionInput
   recordings?: Prisma.RecordingUncheckedCreateNestedManyWithoutSessionInput
   documents?: Prisma.DocumentUncheckedCreateNestedManyWithoutSessionInput
-  recap?: Prisma.RecapRecordingUncheckedCreateNestedOneWithoutSessionInput
+  recaps?: Prisma.RecapRecordingUncheckedCreateNestedManyWithoutSessionInput
   summaryJobs?: Prisma.SummaryJobUncheckedCreateNestedManyWithoutSessionInput
   calendarRange?: Prisma.SessionCalendarRangeUncheckedCreateNestedOneWithoutSessionInput
   encounters?: Prisma.CampaignEncounterUncheckedCreateNestedManyWithoutSessionInput
@@ -778,7 +778,7 @@ export type SessionCreateWithoutJournalEntryLinksInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkCreateNestedManyWithoutSessionInput
   recordings?: Prisma.RecordingCreateNestedManyWithoutSessionInput
   documents?: Prisma.DocumentCreateNestedManyWithoutSessionInput
-  recap?: Prisma.RecapRecordingCreateNestedOneWithoutSessionInput
+  recaps?: Prisma.RecapRecordingCreateNestedManyWithoutSessionInput
   summaryJobs?: Prisma.SummaryJobCreateNestedManyWithoutSessionInput
   calendarRange?: Prisma.SessionCalendarRangeCreateNestedOneWithoutSessionInput
   encounters?: Prisma.CampaignEncounterCreateNestedManyWithoutSessionInput
@@ -797,7 +797,7 @@ export type SessionUncheckedCreateWithoutJournalEntryLinksInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkUncheckedCreateNestedManyWithoutSessionInput
   recordings?: Prisma.RecordingUncheckedCreateNestedManyWithoutSessionInput
   documents?: Prisma.DocumentUncheckedCreateNestedManyWithoutSessionInput
-  recap?: Prisma.RecapRecordingUncheckedCreateNestedOneWithoutSessionInput
+  recaps?: Prisma.RecapRecordingUncheckedCreateNestedManyWithoutSessionInput
   summaryJobs?: Prisma.SummaryJobUncheckedCreateNestedManyWithoutSessionInput
   calendarRange?: Prisma.SessionCalendarRangeUncheckedCreateNestedOneWithoutSessionInput
   encounters?: Prisma.CampaignEncounterUncheckedCreateNestedManyWithoutSessionInput
@@ -832,7 +832,7 @@ export type SessionUpdateWithoutJournalEntryLinksInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkUpdateManyWithoutSessionNestedInput
   recordings?: Prisma.RecordingUpdateManyWithoutSessionNestedInput
   documents?: Prisma.DocumentUpdateManyWithoutSessionNestedInput
-  recap?: Prisma.RecapRecordingUpdateOneWithoutSessionNestedInput
+  recaps?: Prisma.RecapRecordingUpdateManyWithoutSessionNestedInput
   summaryJobs?: Prisma.SummaryJobUpdateManyWithoutSessionNestedInput
   calendarRange?: Prisma.SessionCalendarRangeUpdateOneWithoutSessionNestedInput
   encounters?: Prisma.CampaignEncounterUpdateManyWithoutSessionNestedInput
@@ -851,7 +851,7 @@ export type SessionUncheckedUpdateWithoutJournalEntryLinksInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkUncheckedUpdateManyWithoutSessionNestedInput
   recordings?: Prisma.RecordingUncheckedUpdateManyWithoutSessionNestedInput
   documents?: Prisma.DocumentUncheckedUpdateManyWithoutSessionNestedInput
-  recap?: Prisma.RecapRecordingUncheckedUpdateOneWithoutSessionNestedInput
+  recaps?: Prisma.RecapRecordingUncheckedUpdateManyWithoutSessionNestedInput
   summaryJobs?: Prisma.SummaryJobUncheckedUpdateManyWithoutSessionNestedInput
   calendarRange?: Prisma.SessionCalendarRangeUncheckedUpdateOneWithoutSessionNestedInput
   encounters?: Prisma.CampaignEncounterUncheckedUpdateManyWithoutSessionNestedInput
@@ -870,7 +870,7 @@ export type SessionCreateWithoutCalendarRangeInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkCreateNestedManyWithoutSessionInput
   recordings?: Prisma.RecordingCreateNestedManyWithoutSessionInput
   documents?: Prisma.DocumentCreateNestedManyWithoutSessionInput
-  recap?: Prisma.RecapRecordingCreateNestedOneWithoutSessionInput
+  recaps?: Prisma.RecapRecordingCreateNestedManyWithoutSessionInput
   summaryJobs?: Prisma.SummaryJobCreateNestedManyWithoutSessionInput
   encounters?: Prisma.CampaignEncounterCreateNestedManyWithoutSessionInput
   journalEntryLinks?: Prisma.CampaignJournalEntrySessionLinkCreateNestedManyWithoutSessionInput
@@ -889,7 +889,7 @@ export type SessionUncheckedCreateWithoutCalendarRangeInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkUncheckedCreateNestedManyWithoutSessionInput
   recordings?: Prisma.RecordingUncheckedCreateNestedManyWithoutSessionInput
   documents?: Prisma.DocumentUncheckedCreateNestedManyWithoutSessionInput
-  recap?: Prisma.RecapRecordingUncheckedCreateNestedOneWithoutSessionInput
+  recaps?: Prisma.RecapRecordingUncheckedCreateNestedManyWithoutSessionInput
   summaryJobs?: Prisma.SummaryJobUncheckedCreateNestedManyWithoutSessionInput
   encounters?: Prisma.CampaignEncounterUncheckedCreateNestedManyWithoutSessionInput
   journalEntryLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedCreateNestedManyWithoutSessionInput
@@ -924,7 +924,7 @@ export type SessionUpdateWithoutCalendarRangeInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkUpdateManyWithoutSessionNestedInput
   recordings?: Prisma.RecordingUpdateManyWithoutSessionNestedInput
   documents?: Prisma.DocumentUpdateManyWithoutSessionNestedInput
-  recap?: Prisma.RecapRecordingUpdateOneWithoutSessionNestedInput
+  recaps?: Prisma.RecapRecordingUpdateManyWithoutSessionNestedInput
   summaryJobs?: Prisma.SummaryJobUpdateManyWithoutSessionNestedInput
   encounters?: Prisma.CampaignEncounterUpdateManyWithoutSessionNestedInput
   journalEntryLinks?: Prisma.CampaignJournalEntrySessionLinkUpdateManyWithoutSessionNestedInput
@@ -943,7 +943,7 @@ export type SessionUncheckedUpdateWithoutCalendarRangeInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkUncheckedUpdateManyWithoutSessionNestedInput
   recordings?: Prisma.RecordingUncheckedUpdateManyWithoutSessionNestedInput
   documents?: Prisma.DocumentUncheckedUpdateManyWithoutSessionNestedInput
-  recap?: Prisma.RecapRecordingUncheckedUpdateOneWithoutSessionNestedInput
+  recaps?: Prisma.RecapRecordingUncheckedUpdateManyWithoutSessionNestedInput
   summaryJobs?: Prisma.SummaryJobUncheckedUpdateManyWithoutSessionNestedInput
   encounters?: Prisma.CampaignEncounterUncheckedUpdateManyWithoutSessionNestedInput
   journalEntryLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedUpdateManyWithoutSessionNestedInput
@@ -962,7 +962,7 @@ export type SessionCreateWithoutEncountersInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkCreateNestedManyWithoutSessionInput
   recordings?: Prisma.RecordingCreateNestedManyWithoutSessionInput
   documents?: Prisma.DocumentCreateNestedManyWithoutSessionInput
-  recap?: Prisma.RecapRecordingCreateNestedOneWithoutSessionInput
+  recaps?: Prisma.RecapRecordingCreateNestedManyWithoutSessionInput
   summaryJobs?: Prisma.SummaryJobCreateNestedManyWithoutSessionInput
   calendarRange?: Prisma.SessionCalendarRangeCreateNestedOneWithoutSessionInput
   journalEntryLinks?: Prisma.CampaignJournalEntrySessionLinkCreateNestedManyWithoutSessionInput
@@ -981,7 +981,7 @@ export type SessionUncheckedCreateWithoutEncountersInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkUncheckedCreateNestedManyWithoutSessionInput
   recordings?: Prisma.RecordingUncheckedCreateNestedManyWithoutSessionInput
   documents?: Prisma.DocumentUncheckedCreateNestedManyWithoutSessionInput
-  recap?: Prisma.RecapRecordingUncheckedCreateNestedOneWithoutSessionInput
+  recaps?: Prisma.RecapRecordingUncheckedCreateNestedManyWithoutSessionInput
   summaryJobs?: Prisma.SummaryJobUncheckedCreateNestedManyWithoutSessionInput
   calendarRange?: Prisma.SessionCalendarRangeUncheckedCreateNestedOneWithoutSessionInput
   journalEntryLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedCreateNestedManyWithoutSessionInput
@@ -1016,7 +1016,7 @@ export type SessionUpdateWithoutEncountersInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkUpdateManyWithoutSessionNestedInput
   recordings?: Prisma.RecordingUpdateManyWithoutSessionNestedInput
   documents?: Prisma.DocumentUpdateManyWithoutSessionNestedInput
-  recap?: Prisma.RecapRecordingUpdateOneWithoutSessionNestedInput
+  recaps?: Prisma.RecapRecordingUpdateManyWithoutSessionNestedInput
   summaryJobs?: Prisma.SummaryJobUpdateManyWithoutSessionNestedInput
   calendarRange?: Prisma.SessionCalendarRangeUpdateOneWithoutSessionNestedInput
   journalEntryLinks?: Prisma.CampaignJournalEntrySessionLinkUpdateManyWithoutSessionNestedInput
@@ -1035,7 +1035,7 @@ export type SessionUncheckedUpdateWithoutEncountersInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkUncheckedUpdateManyWithoutSessionNestedInput
   recordings?: Prisma.RecordingUncheckedUpdateManyWithoutSessionNestedInput
   documents?: Prisma.DocumentUncheckedUpdateManyWithoutSessionNestedInput
-  recap?: Prisma.RecapRecordingUncheckedUpdateOneWithoutSessionNestedInput
+  recaps?: Prisma.RecapRecordingUncheckedUpdateManyWithoutSessionNestedInput
   summaryJobs?: Prisma.SummaryJobUncheckedUpdateManyWithoutSessionNestedInput
   calendarRange?: Prisma.SessionCalendarRangeUncheckedUpdateOneWithoutSessionNestedInput
   journalEntryLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedUpdateManyWithoutSessionNestedInput
@@ -1053,7 +1053,7 @@ export type SessionCreateWithoutGlossaryLinksInput = {
   campaign: Prisma.CampaignCreateNestedOneWithoutSessionsInput
   recordings?: Prisma.RecordingCreateNestedManyWithoutSessionInput
   documents?: Prisma.DocumentCreateNestedManyWithoutSessionInput
-  recap?: Prisma.RecapRecordingCreateNestedOneWithoutSessionInput
+  recaps?: Prisma.RecapRecordingCreateNestedManyWithoutSessionInput
   summaryJobs?: Prisma.SummaryJobCreateNestedManyWithoutSessionInput
   calendarRange?: Prisma.SessionCalendarRangeCreateNestedOneWithoutSessionInput
   encounters?: Prisma.CampaignEncounterCreateNestedManyWithoutSessionInput
@@ -1072,7 +1072,7 @@ export type SessionUncheckedCreateWithoutGlossaryLinksInput = {
   updatedAt?: Date | string
   recordings?: Prisma.RecordingUncheckedCreateNestedManyWithoutSessionInput
   documents?: Prisma.DocumentUncheckedCreateNestedManyWithoutSessionInput
-  recap?: Prisma.RecapRecordingUncheckedCreateNestedOneWithoutSessionInput
+  recaps?: Prisma.RecapRecordingUncheckedCreateNestedManyWithoutSessionInput
   summaryJobs?: Prisma.SummaryJobUncheckedCreateNestedManyWithoutSessionInput
   calendarRange?: Prisma.SessionCalendarRangeUncheckedCreateNestedOneWithoutSessionInput
   encounters?: Prisma.CampaignEncounterUncheckedCreateNestedManyWithoutSessionInput
@@ -1107,7 +1107,7 @@ export type SessionUpdateWithoutGlossaryLinksInput = {
   campaign?: Prisma.CampaignUpdateOneRequiredWithoutSessionsNestedInput
   recordings?: Prisma.RecordingUpdateManyWithoutSessionNestedInput
   documents?: Prisma.DocumentUpdateManyWithoutSessionNestedInput
-  recap?: Prisma.RecapRecordingUpdateOneWithoutSessionNestedInput
+  recaps?: Prisma.RecapRecordingUpdateManyWithoutSessionNestedInput
   summaryJobs?: Prisma.SummaryJobUpdateManyWithoutSessionNestedInput
   calendarRange?: Prisma.SessionCalendarRangeUpdateOneWithoutSessionNestedInput
   encounters?: Prisma.CampaignEncounterUpdateManyWithoutSessionNestedInput
@@ -1126,7 +1126,7 @@ export type SessionUncheckedUpdateWithoutGlossaryLinksInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   recordings?: Prisma.RecordingUncheckedUpdateManyWithoutSessionNestedInput
   documents?: Prisma.DocumentUncheckedUpdateManyWithoutSessionNestedInput
-  recap?: Prisma.RecapRecordingUncheckedUpdateOneWithoutSessionNestedInput
+  recaps?: Prisma.RecapRecordingUncheckedUpdateManyWithoutSessionNestedInput
   summaryJobs?: Prisma.SummaryJobUncheckedUpdateManyWithoutSessionNestedInput
   calendarRange?: Prisma.SessionCalendarRangeUncheckedUpdateOneWithoutSessionNestedInput
   encounters?: Prisma.CampaignEncounterUncheckedUpdateManyWithoutSessionNestedInput
@@ -1145,7 +1145,7 @@ export type SessionCreateWithoutRecordingsInput = {
   campaign: Prisma.CampaignCreateNestedOneWithoutSessionsInput
   glossaryLinks?: Prisma.GlossarySessionLinkCreateNestedManyWithoutSessionInput
   documents?: Prisma.DocumentCreateNestedManyWithoutSessionInput
-  recap?: Prisma.RecapRecordingCreateNestedOneWithoutSessionInput
+  recaps?: Prisma.RecapRecordingCreateNestedManyWithoutSessionInput
   summaryJobs?: Prisma.SummaryJobCreateNestedManyWithoutSessionInput
   calendarRange?: Prisma.SessionCalendarRangeCreateNestedOneWithoutSessionInput
   encounters?: Prisma.CampaignEncounterCreateNestedManyWithoutSessionInput
@@ -1164,7 +1164,7 @@ export type SessionUncheckedCreateWithoutRecordingsInput = {
   updatedAt?: Date | string
   glossaryLinks?: Prisma.GlossarySessionLinkUncheckedCreateNestedManyWithoutSessionInput
   documents?: Prisma.DocumentUncheckedCreateNestedManyWithoutSessionInput
-  recap?: Prisma.RecapRecordingUncheckedCreateNestedOneWithoutSessionInput
+  recaps?: Prisma.RecapRecordingUncheckedCreateNestedManyWithoutSessionInput
   summaryJobs?: Prisma.SummaryJobUncheckedCreateNestedManyWithoutSessionInput
   calendarRange?: Prisma.SessionCalendarRangeUncheckedCreateNestedOneWithoutSessionInput
   encounters?: Prisma.CampaignEncounterUncheckedCreateNestedManyWithoutSessionInput
@@ -1199,7 +1199,7 @@ export type SessionUpdateWithoutRecordingsInput = {
   campaign?: Prisma.CampaignUpdateOneRequiredWithoutSessionsNestedInput
   glossaryLinks?: Prisma.GlossarySessionLinkUpdateManyWithoutSessionNestedInput
   documents?: Prisma.DocumentUpdateManyWithoutSessionNestedInput
-  recap?: Prisma.RecapRecordingUpdateOneWithoutSessionNestedInput
+  recaps?: Prisma.RecapRecordingUpdateManyWithoutSessionNestedInput
   summaryJobs?: Prisma.SummaryJobUpdateManyWithoutSessionNestedInput
   calendarRange?: Prisma.SessionCalendarRangeUpdateOneWithoutSessionNestedInput
   encounters?: Prisma.CampaignEncounterUpdateManyWithoutSessionNestedInput
@@ -1218,14 +1218,14 @@ export type SessionUncheckedUpdateWithoutRecordingsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   glossaryLinks?: Prisma.GlossarySessionLinkUncheckedUpdateManyWithoutSessionNestedInput
   documents?: Prisma.DocumentUncheckedUpdateManyWithoutSessionNestedInput
-  recap?: Prisma.RecapRecordingUncheckedUpdateOneWithoutSessionNestedInput
+  recaps?: Prisma.RecapRecordingUncheckedUpdateManyWithoutSessionNestedInput
   summaryJobs?: Prisma.SummaryJobUncheckedUpdateManyWithoutSessionNestedInput
   calendarRange?: Prisma.SessionCalendarRangeUncheckedUpdateOneWithoutSessionNestedInput
   encounters?: Prisma.CampaignEncounterUncheckedUpdateManyWithoutSessionNestedInput
   journalEntryLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedUpdateManyWithoutSessionNestedInput
 }
 
-export type SessionCreateWithoutRecapInput = {
+export type SessionCreateWithoutRecapsInput = {
   id?: string
   title: string
   sessionNumber?: number | null
@@ -1244,7 +1244,7 @@ export type SessionCreateWithoutRecapInput = {
   journalEntryLinks?: Prisma.CampaignJournalEntrySessionLinkCreateNestedManyWithoutSessionInput
 }
 
-export type SessionUncheckedCreateWithoutRecapInput = {
+export type SessionUncheckedCreateWithoutRecapsInput = {
   id?: string
   campaignId: string
   title: string
@@ -1263,23 +1263,23 @@ export type SessionUncheckedCreateWithoutRecapInput = {
   journalEntryLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedCreateNestedManyWithoutSessionInput
 }
 
-export type SessionCreateOrConnectWithoutRecapInput = {
+export type SessionCreateOrConnectWithoutRecapsInput = {
   where: Prisma.SessionWhereUniqueInput
-  create: Prisma.XOR<Prisma.SessionCreateWithoutRecapInput, Prisma.SessionUncheckedCreateWithoutRecapInput>
+  create: Prisma.XOR<Prisma.SessionCreateWithoutRecapsInput, Prisma.SessionUncheckedCreateWithoutRecapsInput>
 }
 
-export type SessionUpsertWithoutRecapInput = {
-  update: Prisma.XOR<Prisma.SessionUpdateWithoutRecapInput, Prisma.SessionUncheckedUpdateWithoutRecapInput>
-  create: Prisma.XOR<Prisma.SessionCreateWithoutRecapInput, Prisma.SessionUncheckedCreateWithoutRecapInput>
+export type SessionUpsertWithoutRecapsInput = {
+  update: Prisma.XOR<Prisma.SessionUpdateWithoutRecapsInput, Prisma.SessionUncheckedUpdateWithoutRecapsInput>
+  create: Prisma.XOR<Prisma.SessionCreateWithoutRecapsInput, Prisma.SessionUncheckedCreateWithoutRecapsInput>
   where?: Prisma.SessionWhereInput
 }
 
-export type SessionUpdateToOneWithWhereWithoutRecapInput = {
+export type SessionUpdateToOneWithWhereWithoutRecapsInput = {
   where?: Prisma.SessionWhereInput
-  data: Prisma.XOR<Prisma.SessionUpdateWithoutRecapInput, Prisma.SessionUncheckedUpdateWithoutRecapInput>
+  data: Prisma.XOR<Prisma.SessionUpdateWithoutRecapsInput, Prisma.SessionUncheckedUpdateWithoutRecapsInput>
 }
 
-export type SessionUpdateWithoutRecapInput = {
+export type SessionUpdateWithoutRecapsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
   sessionNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1298,7 +1298,7 @@ export type SessionUpdateWithoutRecapInput = {
   journalEntryLinks?: Prisma.CampaignJournalEntrySessionLinkUpdateManyWithoutSessionNestedInput
 }
 
-export type SessionUncheckedUpdateWithoutRecapInput = {
+export type SessionUncheckedUpdateWithoutRecapsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   campaignId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1329,7 +1329,7 @@ export type SessionCreateWithoutDocumentsInput = {
   campaign: Prisma.CampaignCreateNestedOneWithoutSessionsInput
   glossaryLinks?: Prisma.GlossarySessionLinkCreateNestedManyWithoutSessionInput
   recordings?: Prisma.RecordingCreateNestedManyWithoutSessionInput
-  recap?: Prisma.RecapRecordingCreateNestedOneWithoutSessionInput
+  recaps?: Prisma.RecapRecordingCreateNestedManyWithoutSessionInput
   summaryJobs?: Prisma.SummaryJobCreateNestedManyWithoutSessionInput
   calendarRange?: Prisma.SessionCalendarRangeCreateNestedOneWithoutSessionInput
   encounters?: Prisma.CampaignEncounterCreateNestedManyWithoutSessionInput
@@ -1348,7 +1348,7 @@ export type SessionUncheckedCreateWithoutDocumentsInput = {
   updatedAt?: Date | string
   glossaryLinks?: Prisma.GlossarySessionLinkUncheckedCreateNestedManyWithoutSessionInput
   recordings?: Prisma.RecordingUncheckedCreateNestedManyWithoutSessionInput
-  recap?: Prisma.RecapRecordingUncheckedCreateNestedOneWithoutSessionInput
+  recaps?: Prisma.RecapRecordingUncheckedCreateNestedManyWithoutSessionInput
   summaryJobs?: Prisma.SummaryJobUncheckedCreateNestedManyWithoutSessionInput
   calendarRange?: Prisma.SessionCalendarRangeUncheckedCreateNestedOneWithoutSessionInput
   encounters?: Prisma.CampaignEncounterUncheckedCreateNestedManyWithoutSessionInput
@@ -1383,7 +1383,7 @@ export type SessionUpdateWithoutDocumentsInput = {
   campaign?: Prisma.CampaignUpdateOneRequiredWithoutSessionsNestedInput
   glossaryLinks?: Prisma.GlossarySessionLinkUpdateManyWithoutSessionNestedInput
   recordings?: Prisma.RecordingUpdateManyWithoutSessionNestedInput
-  recap?: Prisma.RecapRecordingUpdateOneWithoutSessionNestedInput
+  recaps?: Prisma.RecapRecordingUpdateManyWithoutSessionNestedInput
   summaryJobs?: Prisma.SummaryJobUpdateManyWithoutSessionNestedInput
   calendarRange?: Prisma.SessionCalendarRangeUpdateOneWithoutSessionNestedInput
   encounters?: Prisma.CampaignEncounterUpdateManyWithoutSessionNestedInput
@@ -1402,7 +1402,7 @@ export type SessionUncheckedUpdateWithoutDocumentsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   glossaryLinks?: Prisma.GlossarySessionLinkUncheckedUpdateManyWithoutSessionNestedInput
   recordings?: Prisma.RecordingUncheckedUpdateManyWithoutSessionNestedInput
-  recap?: Prisma.RecapRecordingUncheckedUpdateOneWithoutSessionNestedInput
+  recaps?: Prisma.RecapRecordingUncheckedUpdateManyWithoutSessionNestedInput
   summaryJobs?: Prisma.SummaryJobUncheckedUpdateManyWithoutSessionNestedInput
   calendarRange?: Prisma.SessionCalendarRangeUncheckedUpdateOneWithoutSessionNestedInput
   encounters?: Prisma.CampaignEncounterUncheckedUpdateManyWithoutSessionNestedInput
@@ -1422,7 +1422,7 @@ export type SessionCreateWithoutSummaryJobsInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkCreateNestedManyWithoutSessionInput
   recordings?: Prisma.RecordingCreateNestedManyWithoutSessionInput
   documents?: Prisma.DocumentCreateNestedManyWithoutSessionInput
-  recap?: Prisma.RecapRecordingCreateNestedOneWithoutSessionInput
+  recaps?: Prisma.RecapRecordingCreateNestedManyWithoutSessionInput
   calendarRange?: Prisma.SessionCalendarRangeCreateNestedOneWithoutSessionInput
   encounters?: Prisma.CampaignEncounterCreateNestedManyWithoutSessionInput
   journalEntryLinks?: Prisma.CampaignJournalEntrySessionLinkCreateNestedManyWithoutSessionInput
@@ -1441,7 +1441,7 @@ export type SessionUncheckedCreateWithoutSummaryJobsInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkUncheckedCreateNestedManyWithoutSessionInput
   recordings?: Prisma.RecordingUncheckedCreateNestedManyWithoutSessionInput
   documents?: Prisma.DocumentUncheckedCreateNestedManyWithoutSessionInput
-  recap?: Prisma.RecapRecordingUncheckedCreateNestedOneWithoutSessionInput
+  recaps?: Prisma.RecapRecordingUncheckedCreateNestedManyWithoutSessionInput
   calendarRange?: Prisma.SessionCalendarRangeUncheckedCreateNestedOneWithoutSessionInput
   encounters?: Prisma.CampaignEncounterUncheckedCreateNestedManyWithoutSessionInput
   journalEntryLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedCreateNestedManyWithoutSessionInput
@@ -1476,7 +1476,7 @@ export type SessionUpdateWithoutSummaryJobsInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkUpdateManyWithoutSessionNestedInput
   recordings?: Prisma.RecordingUpdateManyWithoutSessionNestedInput
   documents?: Prisma.DocumentUpdateManyWithoutSessionNestedInput
-  recap?: Prisma.RecapRecordingUpdateOneWithoutSessionNestedInput
+  recaps?: Prisma.RecapRecordingUpdateManyWithoutSessionNestedInput
   calendarRange?: Prisma.SessionCalendarRangeUpdateOneWithoutSessionNestedInput
   encounters?: Prisma.CampaignEncounterUpdateManyWithoutSessionNestedInput
   journalEntryLinks?: Prisma.CampaignJournalEntrySessionLinkUpdateManyWithoutSessionNestedInput
@@ -1495,7 +1495,7 @@ export type SessionUncheckedUpdateWithoutSummaryJobsInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkUncheckedUpdateManyWithoutSessionNestedInput
   recordings?: Prisma.RecordingUncheckedUpdateManyWithoutSessionNestedInput
   documents?: Prisma.DocumentUncheckedUpdateManyWithoutSessionNestedInput
-  recap?: Prisma.RecapRecordingUncheckedUpdateOneWithoutSessionNestedInput
+  recaps?: Prisma.RecapRecordingUncheckedUpdateManyWithoutSessionNestedInput
   calendarRange?: Prisma.SessionCalendarRangeUncheckedUpdateOneWithoutSessionNestedInput
   encounters?: Prisma.CampaignEncounterUncheckedUpdateManyWithoutSessionNestedInput
   journalEntryLinks?: Prisma.CampaignJournalEntrySessionLinkUncheckedUpdateManyWithoutSessionNestedInput
@@ -1524,7 +1524,7 @@ export type SessionUpdateWithoutCampaignInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkUpdateManyWithoutSessionNestedInput
   recordings?: Prisma.RecordingUpdateManyWithoutSessionNestedInput
   documents?: Prisma.DocumentUpdateManyWithoutSessionNestedInput
-  recap?: Prisma.RecapRecordingUpdateOneWithoutSessionNestedInput
+  recaps?: Prisma.RecapRecordingUpdateManyWithoutSessionNestedInput
   summaryJobs?: Prisma.SummaryJobUpdateManyWithoutSessionNestedInput
   calendarRange?: Prisma.SessionCalendarRangeUpdateOneWithoutSessionNestedInput
   encounters?: Prisma.CampaignEncounterUpdateManyWithoutSessionNestedInput
@@ -1543,7 +1543,7 @@ export type SessionUncheckedUpdateWithoutCampaignInput = {
   glossaryLinks?: Prisma.GlossarySessionLinkUncheckedUpdateManyWithoutSessionNestedInput
   recordings?: Prisma.RecordingUncheckedUpdateManyWithoutSessionNestedInput
   documents?: Prisma.DocumentUncheckedUpdateManyWithoutSessionNestedInput
-  recap?: Prisma.RecapRecordingUncheckedUpdateOneWithoutSessionNestedInput
+  recaps?: Prisma.RecapRecordingUncheckedUpdateManyWithoutSessionNestedInput
   summaryJobs?: Prisma.SummaryJobUncheckedUpdateManyWithoutSessionNestedInput
   calendarRange?: Prisma.SessionCalendarRangeUncheckedUpdateOneWithoutSessionNestedInput
   encounters?: Prisma.CampaignEncounterUncheckedUpdateManyWithoutSessionNestedInput
@@ -1570,6 +1570,7 @@ export type SessionCountOutputType = {
   glossaryLinks: number
   recordings: number
   documents: number
+  recaps: number
   summaryJobs: number
   encounters: number
   journalEntryLinks: number
@@ -1579,6 +1580,7 @@ export type SessionCountOutputTypeSelect<ExtArgs extends runtime.Types.Extension
   glossaryLinks?: boolean | SessionCountOutputTypeCountGlossaryLinksArgs
   recordings?: boolean | SessionCountOutputTypeCountRecordingsArgs
   documents?: boolean | SessionCountOutputTypeCountDocumentsArgs
+  recaps?: boolean | SessionCountOutputTypeCountRecapsArgs
   summaryJobs?: boolean | SessionCountOutputTypeCountSummaryJobsArgs
   encounters?: boolean | SessionCountOutputTypeCountEncountersArgs
   journalEntryLinks?: boolean | SessionCountOutputTypeCountJournalEntryLinksArgs
@@ -1618,6 +1620,13 @@ export type SessionCountOutputTypeCountDocumentsArgs<ExtArgs extends runtime.Typ
 /**
  * SessionCountOutputType without action
  */
+export type SessionCountOutputTypeCountRecapsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.RecapRecordingWhereInput
+}
+
+/**
+ * SessionCountOutputType without action
+ */
 export type SessionCountOutputTypeCountSummaryJobsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.SummaryJobWhereInput
 }
@@ -1651,7 +1660,7 @@ export type SessionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   glossaryLinks?: boolean | Prisma.Session$glossaryLinksArgs<ExtArgs>
   recordings?: boolean | Prisma.Session$recordingsArgs<ExtArgs>
   documents?: boolean | Prisma.Session$documentsArgs<ExtArgs>
-  recap?: boolean | Prisma.Session$recapArgs<ExtArgs>
+  recaps?: boolean | Prisma.Session$recapsArgs<ExtArgs>
   summaryJobs?: boolean | Prisma.Session$summaryJobsArgs<ExtArgs>
   calendarRange?: boolean | Prisma.Session$calendarRangeArgs<ExtArgs>
   encounters?: boolean | Prisma.Session$encountersArgs<ExtArgs>
@@ -1703,7 +1712,7 @@ export type SessionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs
   glossaryLinks?: boolean | Prisma.Session$glossaryLinksArgs<ExtArgs>
   recordings?: boolean | Prisma.Session$recordingsArgs<ExtArgs>
   documents?: boolean | Prisma.Session$documentsArgs<ExtArgs>
-  recap?: boolean | Prisma.Session$recapArgs<ExtArgs>
+  recaps?: boolean | Prisma.Session$recapsArgs<ExtArgs>
   summaryJobs?: boolean | Prisma.Session$summaryJobsArgs<ExtArgs>
   calendarRange?: boolean | Prisma.Session$calendarRangeArgs<ExtArgs>
   encounters?: boolean | Prisma.Session$encountersArgs<ExtArgs>
@@ -1724,7 +1733,7 @@ export type $SessionPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     glossaryLinks: Prisma.$GlossarySessionLinkPayload<ExtArgs>[]
     recordings: Prisma.$RecordingPayload<ExtArgs>[]
     documents: Prisma.$DocumentPayload<ExtArgs>[]
-    recap: Prisma.$RecapRecordingPayload<ExtArgs> | null
+    recaps: Prisma.$RecapRecordingPayload<ExtArgs>[]
     summaryJobs: Prisma.$SummaryJobPayload<ExtArgs>[]
     calendarRange: Prisma.$SessionCalendarRangePayload<ExtArgs> | null
     encounters: Prisma.$CampaignEncounterPayload<ExtArgs>[]
@@ -2138,7 +2147,7 @@ export interface Prisma__SessionClient<T, Null = never, ExtArgs extends runtime.
   glossaryLinks<T extends Prisma.Session$glossaryLinksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Session$glossaryLinksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$GlossarySessionLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   recordings<T extends Prisma.Session$recordingsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Session$recordingsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecordingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   documents<T extends Prisma.Session$documentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Session$documentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DocumentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  recap<T extends Prisma.Session$recapArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Session$recapArgs<ExtArgs>>): Prisma.Prisma__RecapRecordingClient<runtime.Types.Result.GetResult<Prisma.$RecapRecordingPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  recaps<T extends Prisma.Session$recapsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Session$recapsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RecapRecordingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   summaryJobs<T extends Prisma.Session$summaryJobsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Session$summaryJobsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SummaryJobPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   calendarRange<T extends Prisma.Session$calendarRangeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Session$calendarRangeArgs<ExtArgs>>): Prisma.Prisma__SessionCalendarRangeClient<runtime.Types.Result.GetResult<Prisma.$SessionCalendarRangePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   encounters<T extends Prisma.Session$encountersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Session$encountersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignEncounterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -2647,9 +2656,9 @@ export type Session$documentsArgs<ExtArgs extends runtime.Types.Extensions.Inter
 }
 
 /**
- * Session.recap
+ * Session.recaps
  */
-export type Session$recapArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type Session$recapsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
    * Select specific fields to fetch from the RecapRecording
    */
@@ -2663,6 +2672,11 @@ export type Session$recapArgs<ExtArgs extends runtime.Types.Extensions.InternalA
    */
   include?: Prisma.RecapRecordingInclude<ExtArgs> | null
   where?: Prisma.RecapRecordingWhereInput
+  orderBy?: Prisma.RecapRecordingOrderByWithRelationInput | Prisma.RecapRecordingOrderByWithRelationInput[]
+  cursor?: Prisma.RecapRecordingWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.RecapRecordingScalarFieldEnum | Prisma.RecapRecordingScalarFieldEnum[]
 }
 
 /**

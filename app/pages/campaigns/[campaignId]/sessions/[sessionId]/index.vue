@@ -34,7 +34,8 @@ const {
   recapError,
   recapDeleteError,
   recap,
-  hasRecap,
+  recaps,
+  selectedRecapKind,
   uploadRecap,
   loadRecapPlayback,
   deleteRecap,
@@ -186,9 +187,11 @@ const {
     />
 
     <SessionRecapPanel
+      v-model:selected-kind="selectedRecapKind"
       :workflow-mode="false"
       open-step="recap"
       :recap="recap"
+      :recaps="recaps"
       :recap-file="recapFile"
       :recap-uploading="recapUploading"
       :recap-playback-loading="recapPlaybackLoading"
@@ -196,7 +199,7 @@ const {
       :recap-playback-url="recapPlaybackUrl"
       :recap-error="recapError"
       :recap-delete-error="recapDeleteError"
-      :has-recap="hasRecap"
+      :has-recap="Boolean(recap)"
       @update:recap-file="recapFile = $event"
       @upload-recap="canUploadRecording && uploadRecap()"
       @play-recap="loadRecapPlayback"

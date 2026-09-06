@@ -55,14 +55,14 @@ export const useCampaignRecaps = (
       await player.playSource(
         {
           id: recapId,
-          title: recap?.session.title || recap?.filename || 'Recap audio',
+          title: recap?.session.title || recap?.filename || 'Session recap',
           subtitle: recap
             ? `Session ${recap.session.sessionNumber ?? '-'} - ${formatDateTime(recap.createdAt)}`
             : undefined,
-          kind: 'AUDIO',
+          kind: recap?.mimeType?.startsWith('video/') ? 'VIDEO' : 'AUDIO',
           src: playbackUrl,
         },
-        { presentation: 'global' }
+        { presentation: 'global', openDrawer: recap?.mimeType?.startsWith('video/') }
       )
     } catch (error) {
       recapError.value =
