@@ -114,11 +114,20 @@ export const computeCharacterSummary = (
     .map((entry) => (typeof entry.name === 'string' ? entry.name : undefined))
     .filter((entry): entry is string => Boolean(entry))
 
-  const wis = typeof abilityScores.wis === 'number' ? abilityScores.wis : undefined
+  const getAbilityTotal = (val: unknown): number | undefined => {
+    if (typeof val === 'number') return val
+    if (typeof val === 'object' && val !== null) {
+      const v = val as Record<string, unknown>
+      if (typeof v.total === 'number') return v.total
+      if (typeof v.base === 'number') return v.base
+    }
+    return undefined
+  }
+  const wis = getAbilityTotal(abilityScores.wis)
   const passivePerception =
     typeof abilityScores.passivePerception === 'number'
       ? abilityScores.passivePerception
-      : wis
+      : wis !== undefined
         ? 10 + Math.floor((wis - 10) / 2)
         : undefined
 

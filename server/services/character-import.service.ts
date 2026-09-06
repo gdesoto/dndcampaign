@@ -56,6 +56,18 @@ const sectionKeyDefaults: Record<CharacterSection, boolean> = {
 
 const toNumber = (value: unknown) => (typeof value === 'number' ? value : undefined)
 
+const alignmentIdMap: Record<number, string> = {
+  1: 'Lawful Good',
+  2: 'Neutral Good',
+  3: 'Chaotic Good',
+  4: 'Lawful Neutral',
+  5: 'True Neutral',
+  6: 'Chaotic Neutral',
+  7: 'Lawful Evil',
+  8: 'Neutral Evil',
+  9: 'Chaotic Evil',
+}
+
 const mapDndBeyondToSheet = (payload: any) => {
   const data = payload?.data || payload
   const stats = Array.isArray(data?.stats) ? data.stats : []
@@ -90,7 +102,7 @@ const mapDndBeyondToSheet = (payload: any) => {
       name: data?.name,
       playerName: data?.username,
       level: toNumber(data?.level),
-      alignment: data?.alignmentId,
+      alignment: alignmentIdMap[data?.alignmentId] ?? data?.alignmentId?.toString() ?? '',
       experience: toNumber(data?.currentXp),
       inspiration: Boolean(data?.inspiration),
     },

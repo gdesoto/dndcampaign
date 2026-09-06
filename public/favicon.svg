@@ -1,0 +1,39 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="12" y1="10" x2="54" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#211712"/>
+      <stop offset="1" stop-color="#0F0C0A"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="17" y1="14" x2="47" y2="50" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F5D27A"/>
+      <stop offset="1" stop-color="#B9812C"/>
+    </linearGradient>
+    <linearGradient id="goldSoft" x1="20" y1="18" x2="44" y2="46" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF3C4"/>
+      <stop offset="1" stop-color="#E1A84A"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <path
+    d="M32 11L46 19.5V36.5L32 49L18 36.5V19.5L32 11Z"
+    fill="url(#gold)"
+    stroke="#7A4F13"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M32 16.5L42.5 22.5V34.5L32 43L21.5 34.5V22.5L32 16.5Z"
+    fill="none"
+    stroke="url(#goldSoft)"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M32 18.5L38.2 29L32 39.5L25.8 29L32 18.5Z"
+    fill="#1B130E"
+    opacity="0.35"
+  />
+  <circle cx="32" cy="29" r="3.75" fill="#FFF3C4"/>
+  <path d="M13 18L16 18.9L13.9 21L13 18Z" fill="#F5D27A" opacity="0.85"/>
+  <path d="M51 44L54 44.9L51.9 47L51 44Z" fill="#F5D27A" opacity="0.75"/>
+</svg>

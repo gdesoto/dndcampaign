@@ -84,3 +84,8 @@ E2E tests use Playwright (`test/e2e/`).
 ## Planning Docs
 
 `dev_plan/` contains milestone checklists and design documents. Consult `dev_plan/DeveloperBuildPlan.md` and `dev_plan/SoftwareDesignDocument.md` for feature scope and architecture decisions.
+
+## Making changes
+
+- After javascript, typescript, or vue file changes make sure `yarn lint` and `yarn typecheck` pass.
+- Run tests that apply to any files that were changed. If a large portion of the code base is youched, then run all tests `yarn test`.
