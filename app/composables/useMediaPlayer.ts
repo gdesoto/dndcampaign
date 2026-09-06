@@ -1,4 +1,5 @@
 import { computed } from 'vue'
+import { releaseRecapProgress, trackRecapProgress } from '~/utils/recap-progress'
 
 export type MediaKind = 'AUDIO' | 'VIDEO'
 
@@ -8,6 +9,8 @@ export type MediaSource = {
   subtitle?: string
   kind: MediaKind
   src: string
+  recapProgressId?: string
+  startTime?: number
   vttUrl?: string
 }
 
@@ -64,6 +67,7 @@ export const useMediaPlayer = () => {
     const previous = element.value
     element.value = value
     if (previous && previous !== value) {
+      releaseRecapProgress(previous)
       previous.pause()
       previous.currentTime = 0
       previous.removeAttribute('src')
@@ -76,6 +80,7 @@ export const useMediaPlayer = () => {
       value.pause()
     }
     if (state.value.source && value.src !== state.value.source.src) {
+      trackRecapProgress(value, state.value.source.recapProgressId, state.value.source.startTime)
       value.src = state.value.source.src
       value.load()
     }
@@ -125,6 +130,7 @@ export const useMediaPlayer = () => {
     const expectedTag = source.kind === 'VIDEO' ? 'VIDEO' : 'AUDIO'
     if (media.tagName !== expectedTag) {
       // Element will be replaced (audio -> video or video -> audio). Defer play until new element mounts.
+      releaseRecapProgress(media)
       media.pause()
       media.removeAttribute('src')
       media.load()
@@ -135,6 +141,7 @@ export const useMediaPlayer = () => {
     if (media.src !== source.src) {
       const token = state.value.playToken
       state.value.autoplay = true
+      trackRecapProgress(media, source.recapProgressId, source.startTime)
       media.src = source.src
       media.load()
       clearPendingCanPlayListener()
@@ -158,8 +165,10 @@ export const useMediaPlayer = () => {
       return
     }
 
+    if (source.startTime !== undefined) media.currentTime = source.startTime
     try {
       await media.play()
+      state.value.error = ''
       state.value.isPlaying = true
     } catch (error) {
       state.value.error =
@@ -172,6 +181,7 @@ export const useMediaPlayer = () => {
     if (!media) return
     try {
       await media.play()
+      state.value.error = ''
       state.value.isPlaying = true
     } catch (error) {
       state.value.error =
@@ -186,8 +196,11 @@ export const useMediaPlayer = () => {
   const stop = () => {
     clearPendingCanPlayListener()
     if (element.value) {
+      releaseRecapProgress(element.value)
       element.value.pause()
       element.value.currentTime = 0
+      element.value.removeAttribute('src')
+      element.value.load()
     }
     state.value.isPlaying = false
     state.value.currentTime = 0
@@ -230,6 +243,8 @@ export const useMediaPlayer = () => {
     source: MediaSource,
     options?: { presentation?: MediaPresentation }
   ) => {
+    clearPendingCanPlayListener()
+    state.value.playToken += 1
     state.value.error = ''
     state.value.autoplay = false
     state.value.source = source
@@ -240,12 +255,14 @@ export const useMediaPlayer = () => {
     if (!media) return
     const expectedTag = source.kind === 'VIDEO' ? 'VIDEO' : 'AUDIO'
     if (media.tagName !== expectedTag) {
+      releaseRecapProgress(media)
       media.pause()
       media.removeAttribute('src')
       media.load()
       return
     }
     if (media.src !== source.src) {
+      trackRecapProgress(media, source.recapProgressId, source.startTime)
       media.src = source.src
       media.load()
     }

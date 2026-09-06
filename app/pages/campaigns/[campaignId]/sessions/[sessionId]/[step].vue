@@ -219,6 +219,7 @@ const returnToPath = computed(
     <div v-else-if="currentStep === 'recap'" class="space-y-4">
       <SessionRecapPanel
         v-model:selected-kind="selectedRecapKind"
+        :campaign-id="campaignId"
         :workflow-mode="true"
         :recap="recap"
         :recaps="recaps"

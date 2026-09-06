@@ -91,6 +91,14 @@ describe('audio and video session recaps', () => {
         expect(publicStream.status).toBe(200)
         expect(publicStream.headers.get('content-type')).toContain('video/mp4')
         expect(await publicStream.text()).toBe('recap media bytes')
+        const ranged = await fetch(`${baseUrl}/api/public/campaigns/${access.publicSlug}/recaps/${recapId}/stream`, { headers: { range: 'bytes=6-10' } })
+        expect(ranged.status).toBe(206)
+        expect(ranged.headers.get('content-range')).toBe('bytes 6-10/17')
+        expect(await ranged.text()).toBe('media')
+        const invalid = await fetch(`${baseUrl}/api/public/campaigns/${access.publicSlug}/recaps/${recapId}/stream`, { headers: { range: 'bytes=999-' } })
+        expect(invalid.status).toBe(416)
+        expect(invalid.headers.get('content-range')).toBe('bytes */17')
+        await invalid.text()
       }
     }
   })

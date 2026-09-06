@@ -55,6 +55,7 @@ export const useCampaignRecaps = (
       await player.playSource(
         {
           id: recapId,
+          recapProgressId: recapId,
           title: recap?.session.title || recap?.filename || 'Session recap',
           subtitle: recap
             ? `Session ${recap.session.sessionNumber ?? '-'} - ${formatDateTime(recap.createdAt)}`

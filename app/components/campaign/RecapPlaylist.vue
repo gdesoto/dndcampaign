@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { readRecapProgress } from '~/utils/recap-progress'
 import { formatSessionDate } from '~/utils/session-date'
 
 type RecapItem = {
@@ -14,8 +15,9 @@ type RecapItem = {
   }
 }
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   campaignId?: string
+  watchBasePath?: string
   recaps: RecapItem[] | null | undefined
   selectedRecapId: string
   playbackUrl: string
@@ -31,6 +33,7 @@ withDefaults(defineProps<{
   emptyActionTo?: string
 }>(), {
   campaignId: '',
+  watchBasePath: '',
   canDelete: true,
   title: '',
   description: '',
@@ -45,6 +48,18 @@ const emit = defineEmits<{
   select: [recapId: string]
   'open-player': []
 }>()
+const mounted = ref(false)
+const savedPosition = computed(() => mounted.value
+  ? readRecapProgress(props.selectedRecapId)?.position || 0
+  : 0)
+onMounted(() => { mounted.value = true })
+watch([mounted, () => props.recaps], ([ready, recaps]) => {
+  if (!ready || !recaps?.length) return
+  const latest = recaps.map(recap => ({ id: recap.id, progress: readRecapProgress(recap.id) }))
+    .filter(item => item.progress)
+    .sort((a, b) => b.progress!.updatedAt - a.progress!.updatedAt)[0]
+  if (latest) emit('select', latest.id)
+}, { immediate: true })
 </script>
 
 <template>
@@ -72,7 +87,8 @@ const emit = defineEmits<{
                 - {{ formatSessionDate(recap.session.playedAt) }}
               </p>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center justify-end gap-2">
+              <CampaignRecapLinks v-if="watchBasePath || campaignId" :base-path="watchBasePath || `/campaigns/${campaignId}`" :recap-id="recap.id" />
               <UButton
                 size="xs"
                 variant="outline"
@@ -106,6 +122,12 @@ const emit = defineEmits<{
             <div v-if="playbackUrl" class="flex items-center justify-between gap-3">
               <p class="text-xs text-muted">Playing in the global player.</p>
               <UButton size="xs" variant="ghost" @click="emit('open-player')">Open player</UButton>
+            </div>
+            <div v-else-if="savedPosition > 0" class="space-y-2">
+              <p class="text-xs text-muted">Your place is saved on this browser.</p>
+              <UButton size="xs" variant="outline" :loading="loading" @click="emit('play', selectedRecapId)">
+                Resume at {{ Math.floor(savedPosition / 60) }}:{{ Math.floor(savedPosition % 60).toString().padStart(2, '0') }}
+              </UButton>
             </div>
             <p v-else class="text-xs text-muted">Select a recap to start playback.</p>
           </div>

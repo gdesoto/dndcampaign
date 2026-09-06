@@ -1,8 +1,29 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import RecapPlaylist from '../../app/components/campaign/RecapPlaylist.vue'
 
 describe('CampaignRecapPlaylist', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  it('selects the most recent available recap and offers its saved position', async () => {
+    const recaps = ['r1', 'r2'].map(id => ({
+      id, filename: id, createdAt: '2026-09-06', session: { id, title: id },
+    }))
+    for (const [id, updatedAt] of [['r1', 1], ['r2', 2], ['removed', 3]] as const) {
+      localStorage.setItem(`dmvault-recap-progress-v1:${id}`, JSON.stringify({ position: 123, updatedAt }))
+    }
+    const wrapper = await mountSuspended(RecapPlaylist, { props: {
+      recaps, selectedRecapId: 'r1', playbackUrl: '', loading: false,
+      deleting: false, error: '', deleteError: '', canDelete: false,
+    } })
+    expect(wrapper.emitted('select')?.[0]).toEqual(['r2'])
+    await wrapper.setProps({ selectedRecapId: 'r2' })
+    const resume = wrapper.findAll('button').find(button => button.text() === 'Resume at 2:03')
+    expect(resume).toBeDefined()
+    await resume!.trigger('click')
+    expect(wrapper.emitted('play')?.[0]).toEqual(['r2'])
+    wrapper.unmount()
+  })
   it.each(['audio/mpeg', 'video/mp4'])('emits playback actions for %s recaps', async (mimeType) => {
     const wrapper = await mountSuspended(RecapPlaylist, {
       props: {

@@ -4,6 +4,7 @@ import type { SessionRecapRecording } from '#shared/types/session-workflow'
 type WorkflowStep = 'recordings' | 'transcription' | 'summary' | 'recap'
 
 const props = defineProps<{
+  campaignId?: string
   workflowMode: boolean
   openStep?: WorkflowStep
   recap: SessionRecapRecording | null | undefined
@@ -145,6 +146,7 @@ watch(
       </div>
 
       <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+        <CampaignRecapLinks v-if="campaignId && recap" :base-path="`/campaigns/${campaignId}`" :recap-id="recap.id" />
         <UButton
           v-if="workflowMode && !hasRecap"
           size="sm"

@@ -1,3 +1,4 @@
+import { getMediaStream } from '#server/utils/media-stream'
 import { randomBytes } from 'node:crypto'
 import { Prisma } from '#server/db/prisma-client'
 import { prisma } from '#server/db/prisma'
@@ -713,7 +714,7 @@ export class CampaignPublicAccessService {
     }
   }
 
-  async getPublicRecapStream(publicSlug: string, recapId: string) {
+  async getPublicRecapStream(publicSlug: string, recapId: string, rangeHeader?: string) {
     const resolved = await this.resolvePublicAccess(publicSlug, 'recaps')
     if (!resolved.ok) return resolved
 
@@ -746,7 +747,7 @@ export class CampaignPublicAccessService {
     }
 
     const adapter = getStorageAdapter()
-    const stream = await adapter.getObject(recap.artifact.storageKey)
+    const stream = await getMediaStream(adapter, recap.artifact.storageKey, rangeHeader)
     return {
       ok: true as const,
       data: {

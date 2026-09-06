@@ -188,6 +188,7 @@ const {
 
     <SessionRecapPanel
       v-model:selected-kind="selectedRecapKind"
+      :campaign-id="campaignId"
       :workflow-mode="false"
       open-step="recap"
       :recap="recap"

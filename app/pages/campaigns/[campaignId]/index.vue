@@ -239,6 +239,7 @@ const saveCampaign = async () => {
         :empty-action-to="`/campaigns/${campaignId}/sessions`"
         empty-action-label="Upload a recap"
         @play="playRecap"
+        @select="selectedRecapId = $event"
         @delete="deleteRecap"
         @open-player="openPlayer"
       />

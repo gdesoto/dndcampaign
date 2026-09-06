@@ -50,6 +50,7 @@ const playRecap = async (recapId: string) => {
     await player.playSource(
       {
         id: recapId,
+        recapProgressId: recapId,
         title: recap?.session.title || recap?.filename || 'Public recap',
         subtitle: recap ? `Session ${recap.session.sessionNumber ?? '-'}` : undefined,
         kind: recap?.mimeType?.startsWith('video/') ? 'VIDEO' : 'AUDIO',
@@ -85,6 +86,7 @@ const playRecap = async (recapId: string) => {
         <CampaignRecapPlaylist
           v-else
           :recaps="recapsSortedBySessionNumber"
+          :watch-base-path="`/public/${publicSlug}`"
           :selected-recap-id="selectedRecapId"
           :playback-url="recapPlaybackUrl"
           :loading="recapLoading"
@@ -96,6 +98,7 @@ const playRecap = async (recapId: string) => {
           description="Watch or listen to campaign recaps in read-only mode."
           empty-message="No public recaps available."
           @play="playRecap"
+          @select="selectedRecapId = $event"
           @open-player="() => player.openDrawer()"
         />
       </div>

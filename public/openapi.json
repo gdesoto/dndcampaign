@@ -10311,7 +10311,7 @@
           "public"
         ],
         "summary": "GET /api/public/campaigns/{publicSlug}/recaps/{recapId}/stream",
-        "description": "Auto-documented from server route `public/campaigns/[publicSlug]/recaps/[recapId]/stream.get.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Streams a shared recap. Supports single byte-range requests for seeking and playback resume when supported by storage. Public campaign and recap access are checked before reading media.",
         "operationId": "get_api_public_campaigns_publicSlug_recaps_recapId_stream",
         "parameters": [
           {
@@ -10333,6 +10333,15 @@
               "type": "string"
             },
             "example": "c8b2e6f8-3f9b-4b06-a4a0-87a0ef0b7a15"
+          },
+          {
+            "name": "Range",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "bytes=0-1023"
           }
         ],
         "responses": {
@@ -10361,13 +10370,42 @@
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
+          },
+          "206": {
+            "description": "Requested byte range.",
+            "headers": {
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Accept-Ranges": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "416": {
+            "description": "The byte range is outside the media file.",
+            "headers": {
+              "Content-Range": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           }
         },
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
+        "security": [],
         "x-source-file": "public/campaigns/[publicSlug]/recaps/[recapId]/stream.get.ts",
         "x-generated": true
       }

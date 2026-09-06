@@ -101,6 +101,10 @@ const attachListeners = (el: HTMLMediaElement) => {
   const onEnded = () => {
     state.value.isPlaying = false
   }
+  const onError = () => {
+    state.value.isPlaying = false
+    state.value.error = 'Unable to load media. Select it again to retry.'
+  }
   const onVolume = () => {
     state.value.volume = el.volume
   }
@@ -114,6 +118,7 @@ const attachListeners = (el: HTMLMediaElement) => {
   el.addEventListener('seeking', onSeek)
   el.addEventListener('seeked', onSeek)
   el.addEventListener('ended', onEnded)
+  el.addEventListener('error', onError)
   el.addEventListener('volumechange', onVolume)
 
   return () => {
@@ -126,6 +131,7 @@ const attachListeners = (el: HTMLMediaElement) => {
     el.removeEventListener('seeking', onSeek)
     el.removeEventListener('seeked', onSeek)
     el.removeEventListener('ended', onEnded)
+    el.removeEventListener('error', onError)
     el.removeEventListener('volumechange', onVolume)
   }
 }
@@ -174,6 +180,7 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  player.setElement(null)
   cleanupListeners.value?.()
 })
 
@@ -211,9 +218,9 @@ const openFullPlayer = () => {
         <component
           :is="isVideo ? 'video' : 'audio'"
           ref="mediaEl"
-          class="w-full"
-          :class="isVideo ? 'rounded-lg' : 'sr-only'"
+          :class="isVideo ? 'w-full rounded-lg' : 'sr-only'"
           preload="metadata"
+          playsinline
           :controls="showInline"
         >
           <track
@@ -231,7 +238,7 @@ const openFullPlayer = () => {
             <UTooltip text="Skip back 5 seconds">
               <UButton size="xs" variant="ghost" icon="i-lucide-rotate-ccw" @click="player.seek(Math.max(0, state.currentTime - 5))" />
             </UTooltip>
-            <UButton size="xs" variant="outline" @click="player.toggle">
+            <UButton size="xs" variant="outline" :aria-label="state.isPlaying ? 'Pause playback' : 'Play media'" @click="player.toggle">
               <UIcon :name="state.isPlaying ? 'i-heroicons-pause' : 'i-heroicons-play'" />
             </UButton>
             <UTooltip text="Skip forward 30 seconds">
@@ -240,6 +247,7 @@ const openFullPlayer = () => {
             <input
               class="min-w-0 flex-1 accent-primary"
               type="range"
+              aria-label="Playback position"
               min="0"
               max="100"
               step="0.1"
@@ -266,7 +274,7 @@ const openFullPlayer = () => {
           <p v-if="state.source?.subtitle" class="text-xs text-muted">{{ state.source?.subtitle }}</p>
         </div>
         <div class="flex items-center gap-2">
-          <UButton size="lg" variant="outline" @click="player.toggle">
+          <UButton size="lg" variant="outline" :aria-label="state.isPlaying ? 'Pause playback' : 'Play media'" @click="player.toggle">
             <UIcon :name="state.isPlaying ? 'i-heroicons-pause' : 'i-heroicons-play'" />
           </UButton>
           <UButton size="lg" variant="ghost" class="ml-3" @click="player.openDrawer">
@@ -308,7 +316,7 @@ const openFullPlayer = () => {
 
         <div class="space-y-3">
           <div class="flex flex-wrap items-center gap-3">
-            <UButton size="sm" variant="outline" @click="player.toggle">
+            <UButton size="sm" variant="outline" :aria-label="state.isPlaying ? 'Pause playback' : 'Play media'" @click="player.toggle">
               <UIcon :name="state.isPlaying ? 'i-heroicons-pause' : 'i-heroicons-play'" />
             </UButton>
             <div class="flex items-center gap-2 text-xs text-dimmed">
@@ -320,6 +328,7 @@ const openFullPlayer = () => {
           <input
             class="w-full accent-primary"
             type="range"
+            aria-label="Playback position"
             min="0"
             max="100"
             step="0.1"

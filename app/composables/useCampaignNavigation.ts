@@ -103,6 +103,7 @@ export const useCampaignNavigation = (
     const campaignBase = `/campaigns/${campaignId.value}`
     const suffix = path.startsWith(campaignBase) ? path.slice(campaignBase.length) : ''
     if (suffix === '' || suffix === '/') return 'Overview'
+    if (suffix.startsWith('/watch')) return 'Recap playlist'
     if (suffix.startsWith('/characters')) return 'Characters'
     if (suffix.startsWith('/dungeons')) return 'Dungeons'
     if (suffix.startsWith('/encounters')) return 'Encounters'

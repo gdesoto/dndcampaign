@@ -62,6 +62,7 @@ export function useSessionRecap(options: UseSessionRecapOptions) {
       await player.playSource(
         {
           id: options.recap.value.id,
+          recapProgressId: options.recap.value.id,
           title: options.recap.value.filename || 'Recap',
           subtitle: 'Session recap',
           kind: options.recap.value.mimeType?.startsWith('video/') ? 'VIDEO' : 'AUDIO',
@@ -82,6 +83,7 @@ export function useSessionRecap(options: UseSessionRecapOptions) {
       await player.playSource(
         {
           id: options.recap.value.id,
+          recapProgressId: options.recap.value.id,
           title: options.recap.value.filename || 'Recap',
           subtitle: 'Session recap',
           kind: options.recap.value.mimeType?.startsWith('video/') ? 'VIDEO' : 'AUDIO',
