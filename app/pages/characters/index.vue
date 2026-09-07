@@ -188,7 +188,7 @@ const importCharacter = async (payload: CharacterImportPayload) => {
       </template>
       <template #footer>
         <div class="flex justify-end gap-3">
-          <UButton variant="ghost" color="neutral" @click="isCreateOpen = false">Cancel</UButton>
+           <UButton variant="ghost" color="neutral" @click="() => { isCreateOpen = false }">Cancel</UButton>
           <UButton :loading="isCreating" @click="createCharacter">Create</UButton>
         </div>
       </template>

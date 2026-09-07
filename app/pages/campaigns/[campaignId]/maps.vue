@@ -404,7 +404,7 @@ const applyReimport = async () => {
                 :disabled="!selectedMapId"
                 title="Layers"
                 aria-label="Open map layer filters"
-                @click="layerModalOpen = true"
+                @click="() => { layerModalOpen = true }"
               />
               <UButton
                 size="sm"
@@ -413,7 +413,7 @@ const applyReimport = async () => {
                 icon="i-lucide-settings-2"
                 :disabled="!selectedMap"
                 title="Map settings"
-                @click="mapSettingsModalOpen = true"
+                @click="() => { mapSettingsModalOpen = true }"
               >
                 Map settings
               </UButton>
@@ -426,7 +426,7 @@ const applyReimport = async () => {
                 :title="
                   canWriteContent ? 'Re-import / update' : 'Read-only role cannot re-import maps'
                 "
-                @click="reimportPanelOpen = true"
+                @click="() => { reimportPanelOpen = true }"
               >
                 Re-import / update
               </UButton>
@@ -434,7 +434,7 @@ const applyReimport = async () => {
                 size="sm"
                 :disabled="!canWriteContent || !selectedFeatureIds.length || !selectedMapId"
                 :title="canWriteContent ? undefined : 'Read-only role cannot stage glossary actions'"
-                @click="stageOpen = true"
+                @click="() => { stageOpen = true }"
               >
                 Stage for glossary ({{ selectedFeatureIds.length }})
               </UButton>
@@ -558,7 +558,7 @@ const applyReimport = async () => {
             color="neutral"
             variant="outline"
             :disabled="!canWriteContent"
-            @click="importModalOpen = true"
+            @click="() => { importModalOpen = true }"
           >
             Import another map
           </UButton>
@@ -722,7 +722,7 @@ const applyReimport = async () => {
           </div>
           <template #footer>
             <div class="flex justify-end gap-2">
-              <UButton variant="ghost" color="neutral" :disabled="reimporting" @click="reimportModalOpen = false">
+              <UButton variant="ghost" color="neutral" :disabled="reimporting" @click="() => { reimportModalOpen = false }">
                 Cancel
               </UButton>
               <UButton :loading="reimporting" @click="applyReimport">

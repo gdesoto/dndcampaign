@@ -678,7 +678,7 @@ const copyPublicUrl = async () => {
 
       <template #footer>
         <div class="flex w-full justify-end gap-2">
-          <UButton variant="ghost" color="neutral" @click="transferModalOpen = false">Cancel</UButton>
+          <UButton variant="ghost" color="neutral" @click="() => { transferModalOpen = false }">Cancel</UButton>
           <UButton color="warning" :loading="transferAction.saving" @click="transferOwnership">
             Transfer ownership
           </UButton>

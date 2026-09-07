@@ -582,7 +582,7 @@ const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value
             <UButton
               size="xs"
               variant="outline"
-              @click="openEntry(entry.id)"
+              @click="() => { void openEntry(entry.id) }"
             >
               Open
             </UButton>

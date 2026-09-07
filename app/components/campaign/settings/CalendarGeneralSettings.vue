@@ -596,7 +596,7 @@ onMounted(() => {
   >
     <template #footer>
       <div class="flex w-full justify-end gap-2">
-        <UButton variant="ghost" color="neutral" @click="disableConfirmOpen = false">Cancel</UButton>
+        <UButton variant="ghost" color="neutral" @click="() => { disableConfirmOpen = false }">Cancel</UButton>
         <UButton color="error" @click="confirmDisable">Disable</UButton>
       </div>
     </template>
@@ -609,7 +609,7 @@ onMounted(() => {
   >
     <template #footer>
       <div class="flex w-full justify-end gap-2">
-        <UButton variant="ghost" color="neutral" @click="templateConfirmOpen = false">Cancel</UButton>
+        <UButton variant="ghost" color="neutral" @click="() => { templateConfirmOpen = false }">Cancel</UButton>
         <UButton color="warning" :loading="state.applyingTemplate" @click="applyTemplate">Apply template</UButton>
       </div>
     </template>

@@ -102,7 +102,7 @@ const selectedSubtitleRecordingIdModel = computed({
           size="xs"
           variant="outline"
           class="w-full justify-center"
-          @click="showFullTranscriptModel = !showFullTranscriptModel"
+          @click="() => { showFullTranscriptModel = !showFullTranscriptModel }"
         >
           {{ showFullTranscriptModel ? 'Hide full transcript' : 'Show full transcript' }}
         </UButton>

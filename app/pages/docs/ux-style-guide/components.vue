@@ -217,7 +217,7 @@ const alertActions: ButtonProps[] = [
         </template>
 
         <div class="space-y-4">
-          <UButton icon="i-lucide-scroll" variant="solid" @click="isQuestModalOpen = true">Open create quest example</UButton>
+           <UButton icon="i-lucide-scroll" variant="solid" @click="() => { isQuestModalOpen = true }">Open create quest example</UButton>
 
           <UModal
             v-model:open="isQuestModalOpen"
@@ -231,8 +231,8 @@ const alertActions: ButtonProps[] = [
               </div>
             </template>
             <template #footer>
-              <UButton variant="ghost" @click="isQuestModalOpen = false">Cancel</UButton>
-              <UButton variant="solid" @click="isQuestModalOpen = false">Create quest</UButton>
+               <UButton variant="ghost" @click="() => { isQuestModalOpen = false }">Cancel</UButton>
+               <UButton variant="solid" @click="() => { isQuestModalOpen = false }">Create quest</UButton>
             </template>
           </UModal>
         </div>

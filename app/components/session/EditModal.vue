@@ -47,7 +47,7 @@ const submit = () => {
           <p v-if="error" class="text-sm text-error">{{ error }}</p>
 
           <div class="flex justify-end gap-3">
-            <UButton variant="ghost" color="neutral" @click="openModel = false">Cancel</UButton>
+            <UButton variant="ghost" color="neutral" @click="() => { openModel = false }">Cancel</UButton>
             <UButton type="submit" :loading="saving">Save session</UButton>
           </div>
         </UForm>

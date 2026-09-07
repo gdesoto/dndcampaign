@@ -250,7 +250,7 @@ const resetBuilder = () => {
                 :color="builderSides === die.value ? 'primary' : 'neutral'"
                 :variant="builderSides === die.value ? 'solid' : 'outline'"
                 size="lg"
-                @click="builderSides = die.value"
+                @click="() => { builderSides = die.value }"
               >
                 {{ die.label }}
               </UButton>
@@ -263,7 +263,7 @@ const resetBuilder = () => {
                 :color="builderMode === 'normal' ? 'primary' : 'neutral'"
                 :variant="builderMode === 'normal' ? 'solid' : 'outline'"
                 size="lg"
-                @click="builderMode = 'normal'"
+                @click="() => { builderMode = 'normal' }"
               >
                 Normal
               </UButton>
@@ -271,7 +271,7 @@ const resetBuilder = () => {
                 :color="builderMode === 'advantage' ? 'primary' : 'neutral'"
                 :variant="builderMode === 'advantage' ? 'solid' : 'outline'"
                 size="lg"
-                @click="builderMode = 'advantage'"
+                @click="() => { builderMode = 'advantage' }"
               >
                 Advantage
               </UButton>
@@ -279,7 +279,7 @@ const resetBuilder = () => {
                 :color="builderMode === 'disadvantage' ? 'primary' : 'neutral'"
                 :variant="builderMode === 'disadvantage' ? 'solid' : 'outline'"
                 size="lg"
-                @click="builderMode = 'disadvantage'"
+                @click="() => { builderMode = 'disadvantage' }"
               >
                 Disadvantage
               </UButton>
@@ -298,7 +298,7 @@ const resetBuilder = () => {
               variant="ghost"
               size="sm"
               :icon="advancedOpen ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
-              @click="advancedOpen = !advancedOpen"
+              @click="() => { advancedOpen = !advancedOpen }"
             >
               {{ advancedOpen ? 'Hide advanced notation' : 'Advanced: type notation' }}
             </UButton>

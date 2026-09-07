@@ -1408,7 +1408,7 @@ const fullTranscript = computed(() =>
                         size="sm"
                         icon="i-lucide-circle-x"
                         aria-label="Clear search"
-                        @click="searchInput = ''"
+                        @click="() => { searchInput = '' }"
                       />
                     </template>
                   </UInput>
@@ -1427,7 +1427,7 @@ const fullTranscript = computed(() =>
                         size="xs"
                         :variant="searchFilterEnabled ? 'solid' : 'outline'"
                         :icon="searchFilterEnabled ? 'i-lucide-filter' : 'i-lucide-highlighter'"
-                        @click="searchFilterEnabled = !searchFilterEnabled"
+                        @click="() => { searchFilterEnabled = !searchFilterEnabled }"
                       >
                         {{ searchFilterEnabled ? 'Filter' : 'Highlight' }}
                       </UButton>
@@ -1439,7 +1439,7 @@ const fullTranscript = computed(() =>
                       variant="ghost"
                       :icon="showAdvancedFilters ? 'i-lucide-filter-x' : 'i-lucide-sliders-horizontal'"
                       :color="(speakerFilterSelection.length || startTimeFilter || endTimeFilter || minLengthFilter || maxLengthFilter) ? 'primary' : 'neutral'"
-                      @click="showAdvancedFilters = !showAdvancedFilters"
+                      @click="() => { showAdvancedFilters = !showAdvancedFilters }"
                     >
                       Filters{{ (speakerFilterSelection.length || startTimeFilter || endTimeFilter || minLengthFilter || maxLengthFilter) ? ' •' : '' }}
                     </UButton>
@@ -1447,7 +1447,7 @@ const fullTranscript = computed(() =>
                       size="xs"
                       variant="ghost"
                       :icon="showBulkEdit ? 'i-lucide-pencil-off' : 'i-lucide-pencil'"
-                      @click="showBulkEdit = !showBulkEdit"
+                      @click="() => { showBulkEdit = !showBulkEdit }"
                     >
                       Bulk edit
                     </UButton>
@@ -1479,7 +1479,7 @@ const fullTranscript = computed(() =>
                         placeholder="mm:ss">
                         <template #leading><p class="text-xs text-muted">Start</p></template>
                         <template v-if="startTimeFilter?.length" #trailing>
-                          <UButton color="neutral" variant="link" size="sm" icon="i-lucide-circle-x" aria-label="Clear" @click="startTimeFilter = ''" />
+                          <UButton color="neutral" variant="link" size="sm" icon="i-lucide-circle-x" aria-label="Clear" @click="() => { startTimeFilter = '' }" />
                         </template>
                       </UInput>
                       <UInput
@@ -1490,7 +1490,7 @@ const fullTranscript = computed(() =>
                         placeholder="mm:ss">
                         <template #leading><p class="text-xs text-muted">End</p></template>
                         <template v-if="endTimeFilter?.length" #trailing>
-                          <UButton color="neutral" variant="link" size="sm" icon="i-lucide-circle-x" aria-label="Clear" @click="endTimeFilter = ''" />
+                          <UButton color="neutral" variant="link" size="sm" icon="i-lucide-circle-x" aria-label="Clear" @click="() => { endTimeFilter = '' }" />
                         </template>
                       </UInput>
                     </UFieldGroup>
@@ -1506,7 +1506,7 @@ const fullTranscript = computed(() =>
                         placeholder="seconds">
                         <template #leading><p class="text-xs text-muted">Min</p></template>
                         <template v-if="minLengthFilter?.length" #trailing>
-                          <UButton color="neutral" variant="link" size="sm" icon="i-lucide-circle-x" aria-label="Clear" @click="minLengthFilter = ''" />
+                          <UButton color="neutral" variant="link" size="sm" icon="i-lucide-circle-x" aria-label="Clear" @click="() => { minLengthFilter = '' }" />
                         </template>
                       </UInput>
                       <UInput
@@ -1517,7 +1517,7 @@ const fullTranscript = computed(() =>
                         placeholder="seconds">
                         <template #leading><p class="text-xs text-muted">Max</p></template>
                         <template v-if="maxLengthFilter?.length" #trailing>
-                          <UButton color="neutral" variant="link" size="sm" icon="i-lucide-circle-x" aria-label="Clear" @click="maxLengthFilter = ''" />
+                          <UButton color="neutral" variant="link" size="sm" icon="i-lucide-circle-x" aria-label="Clear" @click="() => { maxLengthFilter = '' }" />
                         </template>
                       </UInput>
                     </UFieldGroup>
@@ -1670,7 +1670,7 @@ const fullTranscript = computed(() =>
                   variant="ghost"
                   :icon="showFullTranscript ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
                   :aria-label="showFullTranscript ? 'Collapse preview' : 'Expand preview'"
-                  @click="showFullTranscript = !showFullTranscript"
+                  @click="() => { showFullTranscript = !showFullTranscript }"
                 />
               </div>
             </template>

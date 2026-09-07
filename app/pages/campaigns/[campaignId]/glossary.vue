@@ -187,7 +187,7 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
                 :key="type.value"
                 size="sm"
                 :variant="activeType === type.value ? 'solid' : 'outline'"
-                @click="activeType = type.value as typeof activeType"
+                @click="() => { activeType = type.value as typeof activeType }"
               >
                 {{ type.label }}
               </UButton>

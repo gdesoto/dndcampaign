@@ -408,14 +408,14 @@ const toggleArchive = async () => {
                   size="sm"
                   :variant="documentMode === 'edit' ? 'solid' : 'outline'"
                   :disabled="!canEditDocumentContent"
-                  @click="documentMode = 'edit'"
+                   @click="() => { documentMode = 'edit' }"
                 >
                   Edit
                 </UButton>
                 <UButton
                   size="sm"
                   :variant="documentMode === 'preview' ? 'solid' : 'outline'"
-                  @click="documentMode = 'preview'"
+                   @click="() => { documentMode = 'preview' }"
                 >
                   Preview
                 </UButton>

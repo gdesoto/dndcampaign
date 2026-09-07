@@ -687,10 +687,10 @@ const { formatBytes } = useFormatBytes()
                 </p>
               </div>
               <div class="flex flex-wrap items-center gap-2">
-                <UButton size="sm" variant="outline" @click="importModalOpen = true">
+                 <UButton size="sm" variant="outline" @click="() => { importModalOpen = true }">
                   Import transcription
                 </UButton>
-                <UButton size="sm" variant="outline" @click="transcribeModalOpen = true">
+                 <UButton size="sm" variant="outline" @click="() => { transcribeModalOpen = true }">
                   Start transcription
                 </UButton>
               </div>
@@ -1053,7 +1053,7 @@ const { formatBytes } = useFormatBytes()
           </div>
           <template #footer>
             <div class="flex justify-end gap-3">
-              <UButton variant="ghost" color="neutral" @click="transcribeModalOpen = false">
+               <UButton variant="ghost" color="neutral" @click="() => { transcribeModalOpen = false }">
                 Cancel
               </UButton>
               <UButton :loading="transcribeLoading" @click="startTranscription">
@@ -1091,7 +1091,7 @@ const { formatBytes } = useFormatBytes()
         </div>
         <template #footer>
           <div class="flex justify-end gap-3">
-            <UButton variant="ghost" color="neutral" @click="importModalOpen = false">
+             <UButton variant="ghost" color="neutral" @click="() => { importModalOpen = false }">
               Cancel
             </UButton>
             <UButton :loading="importLoading" @click="importTranscription">

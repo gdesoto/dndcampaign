@@ -224,7 +224,7 @@ const commit = async () => {
           <div class="flex items-center justify-between gap-3">
             <p v-if="errorMessage" class="text-sm text-error">{{ errorMessage }}</p>
             <div class="ml-auto flex gap-2">
-              <UButton variant="ghost" color="neutral" :disabled="saving" @click="openModel = false">
+              <UButton variant="ghost" color="neutral" :disabled="saving" @click="() => { openModel = false }">
                 Cancel
               </UButton>
               <UButton :loading="saving" :disabled="loading || !items.length" @click="commit">

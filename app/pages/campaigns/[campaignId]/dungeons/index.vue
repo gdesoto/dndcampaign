@@ -297,7 +297,7 @@ const deleteDungeonWithClose = async (dungeon: CampaignDungeonSummary, close: ()
       </template>
       <template #footer>
         <div class="flex justify-end gap-2">
-          <UButton variant="ghost" @click="isCreateOpen = false">Cancel</UButton>
+           <UButton variant="ghost" @click="() => { isCreateOpen = false }">Cancel</UButton>
           <UButton :loading="isCreating" :disabled="!canCreateDungeon" @click="createDungeon">Create</UButton>
         </div>
       </template>
@@ -321,7 +321,7 @@ const deleteDungeonWithClose = async (dungeon: CampaignDungeonSummary, close: ()
       </template>
       <template #footer>
         <div class="flex justify-end gap-2">
-          <UButton variant="ghost" @click="isImportOpen = false">Cancel</UButton>
+           <UButton variant="ghost" @click="() => { isImportOpen = false }">Cancel</UButton>
           <UButton :loading="isImporting" :disabled="!importForm.payload.trim()" @click="importDungeon">
             Import
           </UButton>
