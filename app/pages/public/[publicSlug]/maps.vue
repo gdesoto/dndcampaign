@@ -13,6 +13,9 @@ const {
 
 const selectedMapSlug = ref('')
 const selectedFeatureIds = ref<string[]>([])
+const glossaryPointsOnly = ref(false)
+const glossaryDefaultAppliedForMapSlug = ref('')
+const layerModalOpen = ref(false)
 
 watch(
   () => maps.value,
@@ -22,6 +25,15 @@ watch(
     }
   },
   { immediate: true }
+)
+
+watch(
+  selectedMapSlug,
+  (value, previous) => {
+    if (value !== previous) {
+      glossaryDefaultAppliedForMapSlug.value = ''
+    }
+  },
 )
 
 const {
@@ -39,17 +51,30 @@ const {
 )
 
 const activeLayers = ref<import('#shared/schemas/map').MapFeatureType[]>([
-  'state',
-  'province',
   'burg',
   'marker',
-  'river',
-  'route',
-  'cell',
 ])
+
+watch(
+  [selectedMapSlug, mapViewer],
+  ([mapSlug, viewer]) => {
+    if (!mapSlug || !viewer) return
+    if (glossaryDefaultAppliedForMapSlug.value === mapSlug) return
+
+    glossaryPointsOnly.value = viewer.features.some((feature) =>
+      Boolean(feature.properties.glossaryLinkedOrMatched),
+    )
+    glossaryDefaultAppliedForMapSlug.value = mapSlug
+  },
+  { immediate: true },
+)
 
 const updateSelectedFeatureIds = (value: string[]) => {
   selectedFeatureIds.value = value
+}
+
+const openLayerModal = () => {
+  layerModalOpen.value = true
 }
 </script>
 
@@ -61,12 +86,31 @@ const updateSelectedFeatureIds = (value: string[]) => {
 
         <UCard>
           <template #header>
-            <h2 class="text-lg font-semibold">Maps</h2>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h2 class="text-lg font-semibold">Maps</h2>
+              <div class="flex flex-wrap items-center gap-2">
+                <UCheckbox
+                  v-model="glossaryPointsOnly"
+                  label="Show glossary features only"
+                  :disabled="!selectedMapSlug"
+                />
+                <UButton
+                  size="sm"
+                  color="neutral"
+                  variant="ghost"
+                  icon="i-lucide-filter"
+                  :disabled="!selectedMapSlug"
+                  title="Layers"
+                  aria-label="Open map layer filters"
+                  @click="openLayerModal"
+                />
+              </div>
+            </div>
           </template>
 
           <div v-if="pending" class="space-y-2">
-            <div class="h-10 w-full animate-pulse rounded bg-muted"></div>
-            <div class="h-10 w-full animate-pulse rounded bg-muted"></div>
+            <div class="h-10 w-full animate-pulse rounded bg-muted" />
+            <div class="h-10 w-full animate-pulse rounded bg-muted" />
           </div>
 
           <div v-else-if="error" class="space-y-3">
@@ -95,7 +139,7 @@ const updateSelectedFeatureIds = (value: string[]) => {
               </button>
             </div>
 
-            <div v-if="viewerPending" class="h-96 animate-pulse rounded-lg bg-muted"></div>
+            <div v-if="viewerPending" class="h-96 animate-pulse rounded-lg bg-muted" />
 
             <UCard v-else-if="viewerError || !mapViewer" class="space-y-3">
               <p class="text-sm text-error">Unable to load the selected public map viewer.</p>
@@ -108,12 +152,23 @@ const updateSelectedFeatureIds = (value: string[]) => {
               :svg-background-url="publicCampaign.getMapSvgUrl(publicSlug, selectedMapSlug)"
               :active-layers="activeLayers"
               :selected-feature-ids="selectedFeatureIds"
+              :glossary-points-only="glossaryPointsOnly"
               @update:selected-feature-ids="updateSelectedFeatureIds"
             />
           </div>
         </UCard>
       </div>
     </UPage>
+
+    <UModal
+      v-model:open="layerModalOpen"
+      title="Viewer layers"
+      description="Show or hide map feature layers in the viewer."
+    >
+      <template #content>
+        <MapsLayerPanel v-model="activeLayers" />
+      </template>
+    </UModal>
   </UMain>
 </template>
 

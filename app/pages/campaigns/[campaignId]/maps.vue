@@ -202,7 +202,7 @@ const deleteMapWithClose = async (mapId: string, close: () => void) => {
   }
 }
 
-const activeLayers = ref<MapFeatureType[]>(['burg'])
+const activeLayers = ref<MapFeatureType[]>(['burg', 'marker'])
 const glossaryPointsOnly = ref(false)
 const glossaryDefaultAppliedForMapId = ref('')
 const selectedFeatureIds = ref<string[]>([])
