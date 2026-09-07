@@ -20,6 +20,14 @@ const { data: sessions, pending, refresh, error } = await useAsyncData(
 )
 
 const isInitialSessionsLoadPending = computed(() => pending.value && !sessions.value)
+const showNewestFirst = ref(true)
+const orderedSessions = computed(() => {
+  const sessionList = sessions.value || []
+  return showNewestFirst.value ? [...sessionList].reverse() : sessionList
+})
+const toggleSessionOrder = () => {
+  showNewestFirst.value = !showNewestFirst.value
+}
 
 const isCreateOpen = ref(false)
 const createForm = reactive({
@@ -88,6 +96,18 @@ const createSession = async () => {
       :action-disabled="!canWriteContent"
       @action="openCreate"
     >
+      <template #actions>
+        <UTooltip :text="showNewestFirst ? 'Show oldest sessions first' : 'Show newest sessions first'">
+          <UButton
+            size="lg"
+            variant="outline"
+            icon="i-lucide-arrow-up-down"
+            square
+            :aria-label="showNewestFirst ? 'Show oldest sessions first' : 'Show newest sessions first'"
+            @click="toggleSessionOrder"
+          />
+        </UTooltip>
+      </template>
       <template #notice>
         <SharedReadOnlyAlert
           v-if="!canWriteContent"
@@ -110,7 +130,7 @@ const createSession = async () => {
 
         <div class="grid gap-4 sm:grid-cols-2">
           <NuxtLink
-            v-for="session in sessions"
+            v-for="session in orderedSessions"
             :key="session.id"
             :to="`/campaigns/${campaignId}/sessions/${session.id}`"
           >
