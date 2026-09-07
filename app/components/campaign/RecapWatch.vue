@@ -13,6 +13,18 @@ const { player, playlist, selected, selectedId, selectedIndex, next, previous, l
 })
 const state = player.state
 const active = computed(() => Boolean(selected.value) && state.value.source?.recapProgressId === selectedId.value)
+const playlistButtons = new Map<string, HTMLButtonElement>()
+
+const setPlaylistButton = (id: string, element: unknown) => {
+  if (element instanceof HTMLButtonElement) playlistButtons.set(id, element)
+  else if (!element) playlistButtons.delete(id)
+}
+
+watch([selectedId, playlist], async ([id]) => {
+  if (!id) return
+  await nextTick()
+  playlistButtons.get(id)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+}, { flush: 'post' })
 </script>
 
 <template>
@@ -56,7 +68,7 @@ const active = computed(() => Boolean(selected.value) && state.value.source?.rec
         </template>
         <ol class="max-h-[70vh] space-y-2 overflow-y-auto" aria-label="Session recap playlist">
           <li v-for="(recap, index) in playlist" :key="recap.id">
-            <button type="button" class="flex w-full items-center gap-3 rounded-lg border border-default p-3 text-left transition hover:bg-accented focus-visible:outline-2 focus-visible:outline-primary" :class="recap.id === selectedId ? 'border-primary bg-primary/10' : ''" :aria-current="recap.id === selectedId ? 'true' : undefined" @click="choose(recap.id)">
+            <button :ref="element => setPlaylistButton(recap.id, element)" type="button" class="flex w-full items-center gap-3 rounded-lg border border-default p-3 text-left transition hover:bg-accented focus-visible:outline-2 focus-visible:outline-primary" :class="recap.id === selectedId ? 'border-primary bg-primary/10' : ''" :aria-current="recap.id === selectedId ? 'true' : undefined" @click="choose(recap.id)">
               <span class="shrink-0 text-xs tabular-nums text-dimmed">{{ index + 1 }}</span>
               <UIcon :name="recap.mimeType?.startsWith('video/') ? 'i-lucide-video' : 'i-lucide-headphones'" class="size-6 shrink-0 text-primary" />
               <span class="min-w-0">
