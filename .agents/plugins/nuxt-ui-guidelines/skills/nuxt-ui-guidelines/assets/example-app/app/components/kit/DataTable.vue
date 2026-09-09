@@ -196,7 +196,7 @@ const cards = computed(() => props.view === "cards");
 const presentation = computed(() => ({
   table: cards.value ? "hidden" : "hidden md:block",
   controls: cards.value ? "flex" : "flex md:hidden",
-  frame: cards.value ? "min-w-0" : "overflow-hidden rounded-lg md:border md:border-default",
+  frame: cards.value ? "min-w-0" : "overflow-hidden rounded-lg bg-default md:border md:border-default",
   list: cards.value
     ? "grid gap-3 md:grid-cols-2 2xl:grid-cols-3 items-start"
     : "space-y-3 md:hidden",

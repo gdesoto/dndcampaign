@@ -98,8 +98,10 @@ const items = computed<NavigationMenuItem[][]>(() => [
 ]);
 </script>
 <template>
-  <!-- Clip the fixed shell so anchor navigation only scrolls the panel body. -->
-  <UDashboardGroup storage="local" unit="rem" class="overflow-clip">
+  <!-- Clip the fixed shell so anchor navigation only scrolls the panel body.
+       `app-ground` marks it as the page ground: the panels are transparent, and
+       an identity that wants a texture or a wash paints it here. -->
+  <UDashboardGroup storage="local" unit="rem" class="app-ground overflow-clip">
     <UDashboardSidebar
       v-model:open="open"
       collapsible
@@ -109,7 +111,7 @@ const items = computed<NavigationMenuItem[][]>(() => [
       :max-size="19"
       :collapsed-size="3.5"
       :menu="{ title: 'Navigation', description: 'Examples and reference pages' }"
-      :ui="{ root: 'bg-muted/40', footer: 'border-t border-default' }"
+      :ui="{ root: 'bg-muted', footer: 'border-t border-default' }"
     >
       <template #header="{ collapsed }">
         <NuxtLink

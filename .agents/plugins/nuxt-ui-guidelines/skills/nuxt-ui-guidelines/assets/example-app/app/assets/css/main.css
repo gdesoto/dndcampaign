@@ -57,13 +57,90 @@ body {
   --ui-radius: 0.625rem;
   font-family: var(--font-sans);
 }
-/* Character, not a signal. On the campaign identity a warm sheen crosses a card
-   under the cursor. It sits on every card because it is transient and addressed
-   to the one the reader is pointing at, so it cannot compete with the resting
-   marks the eye sweeps a grid for. It carries no state, both ends of the sweep
-   leave the card clear so no wash ever sits over the text, and it stops entirely
-   under reduced motion. Ornament belongs here for the same reason tokens do:
-   defined once, it cannot drift between pages. */
+/* Character. Each identity below gets a ground of its own and one thing that
+   happens under the cursor. Neither stands for anything, which is exactly what
+   makes them character rather than signals, so both stay off the resting layer
+   where a status color or a semantic edge has to be read. Ornament belongs in
+   this file for the same reason tokens do: defined once, it cannot drift
+   between pages.
+
+   The ground goes on the shell element, not on `body`. The dashboard group is
+   `fixed inset-0`, so nothing is in flow and `body` has zero height; a flat
+   colour still propagates to the canvas from there, but a gradient collapses
+   with the box that generated it. `.app-ground` is that shell. */
+
+/* Campaign: aged vellum. A wash over the whole page, a warm glow from above it,
+   and a fine hatch in the grain. */
+.identity-campaign .app-ground {
+  background-image:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--ui-primary) 5%, transparent) 0 1px,
+      transparent 1px 7px
+    ),
+    radial-gradient(
+      120% 70% at 50% -10%,
+      color-mix(in oklab, var(--ui-primary) 15%, transparent),
+      transparent 65%
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--ui-primary) 5%, transparent),
+      color-mix(in oklab, var(--ui-primary) 9%, transparent)
+    );
+}
+.identity-campaign.dark .app-ground {
+  background-image:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--ui-primary) 4%, transparent) 0 1px,
+      transparent 1px 7px
+    ),
+    radial-gradient(
+      120% 70% at 50% -10%,
+      color-mix(in oklab, var(--ui-primary) 9%, transparent),
+      transparent 65%
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--ui-primary) 3%, transparent),
+      color-mix(in oklab, var(--ui-primary) 6%, transparent)
+    );
+}
+
+/* Coastal: light off the water, low and wide, deepening toward the horizon. */
+.identity-coastal .app-ground {
+  background-image:
+    radial-gradient(
+      95% 55% at 8% 0%,
+      color-mix(in oklab, var(--ui-primary) 14%, transparent),
+      transparent 58%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 30%,
+      color-mix(in oklab, var(--ui-primary) 11%, transparent)
+    );
+}
+.identity-coastal.dark .app-ground {
+  background-image:
+    radial-gradient(
+      95% 55% at 8% 0%,
+      color-mix(in oklab, var(--ui-primary) 9%, transparent),
+      transparent 58%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 30%,
+      color-mix(in oklab, var(--ui-primary) 7%, transparent)
+    );
+}
+
+/* Campaign, under the cursor: a warm sheen crosses the card. It sits on every
+   card because it is transient and addressed to the one the reader is already
+   pointing at, so it cannot compete with the resting marks the eye sweeps a
+   grid for. Both ends of the sweep leave the card clear, so no wash ever parks
+   over the text, and reduced motion stops it entirely. */
 .identity-sheen {
   position: relative;
 }
@@ -93,6 +170,27 @@ body {
   .identity-sheen:hover::after {
     transition: none;
     background-position: 130% 0;
+  }
+}
+
+/* Coastal, under the cursor: the card lifts into its own light. `transform`
+   composites, so nothing reflows and no neighbour moves; reduced motion keeps
+   the warmth and drops the movement. */
+.identity-lift {
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease;
+}
+.identity-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px -14px color-mix(in oklab, var(--ui-primary) 55%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .identity-lift {
+    transition: box-shadow 220ms ease;
+  }
+  .identity-lift:hover {
+    transform: none;
   }
 }
 .identity-coastal {

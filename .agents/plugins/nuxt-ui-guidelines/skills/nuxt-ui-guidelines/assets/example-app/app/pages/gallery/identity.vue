@@ -9,7 +9,7 @@ const layers = [
   { layer: 'app/app.config.ts', owns: 'Semantic color aliases and shared component defaults.', mechanism: 'ui.colors, applied at runtime here so the switch needs no reload.' },
   { layer: 'UTheme', owns: 'Component slot classes and prop defaults for one subtree.', mechanism: 'Native provide/inject; outranks app.config, outranked by a component’s own ui and class props.' },
   { layer: 'A composition’s ui prop', owns: 'The single instance that genuinely differs.', mechanism: 'Unused by these identities — nothing here needed a one-off.' },
-  { layer: 'Character', owns: 'Ground, texture, ornament, and what happens under the cursor. Stands for nothing but the product.', mechanism: 'A class in main.css reached through a shared component default, so it cannot drift between pages. The campaign cards carry one.' },
+  { layer: 'Character', owns: 'Ground, texture, ornament, and what happens under the cursor. Stands for nothing but the product.', mechanism: 'Classes in main.css: the ground on the shell element, the hover treatment reached through a shared component default. Neither can drift between pages.' },
 ];
 const unchanged = [
   'The action vocabulary: Open · Edit · Duplicate · Archive · Delete, in that order.',
