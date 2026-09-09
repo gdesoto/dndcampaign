@@ -231,6 +231,7 @@ v-model="filters.campaignId"
           </template>
 
           <SharedResponsiveTable
+            identity-column="storageKey" status-column="status"
             :columns="artifactColumns"
             :data="
               artifactRows.map((row) => ({
@@ -279,6 +280,7 @@ v-model="filters.campaignId"
           </template>
 
           <SharedResponsiveTable
+            identity-column="storageKey"
             :columns="orphanColumns"
             :data="
               orphanStorageRows.map((row) => ({
@@ -319,6 +321,7 @@ v-model="filters.campaignId"
           </template>
 
           <SharedResponsiveTable
+            identity-column="title" status-column="status"
             :columns="documentColumns"
             :data="
               documentRows.map((row) => ({

@@ -700,11 +700,11 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
               <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p class="font-semibold">Status: {{ job.status }}</p>
-                  <p class="text-xs text-dimmed">
+                  <p class="text-xs text-muted">
                     {{ new Date(job.createdAt).toLocaleString() }}
                   </p>
                 </div>
-                <div class="flex flex-wrap items-center gap-2 text-xs text-dimmed">
+                <div class="flex flex-wrap items-center gap-2 text-xs text-muted">
                   <span>Formats: {{ job.requestedFormats?.join(', ') || '—' }}</span>
                   <span>Audio events: {{ job.tagAudioEvents ? 'on' : 'off' }}</span>
                   <UButton
@@ -724,7 +724,7 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
                   class="flex flex-wrap items-center justify-between gap-2 rounded-md border border-default bg-default/40 px-3 py-2"
                 >
                   <div>
-                    <p class="text-xs uppercase tracking-[0.2em] text-dimmed">
+                    <p class="text-xs uppercase tracking-[0.2em] text-muted">
                       {{ artifact.format }}
                     </p>
                     <p class="text-xs text-muted">
@@ -832,7 +832,7 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
               Current subtitles: {{ vttFileName }}
             </div>
             <div v-if="vttHistory?.length" class="space-y-2 rounded-md border border-default bg-elevated/30 px-3 py-2 text-xs text-default">
-              <p class="text-[11px] uppercase tracking-[0.2em] text-dimmed">Subtitle history</p>
+              <p class="text-[11px] uppercase tracking-[0.2em] text-muted">Subtitle history</p>
               <div
                 v-for="item in vttHistory"
                 :key="item.id"
@@ -842,7 +842,7 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
                   <p class="font-semibold">
                     {{ item.storageKey.split('/').pop() }}
                   </p>
-                  <p class="text-[11px] text-dimmed">
+                  <p class="text-[11px] text-muted">
                     {{ new Date(item.createdAt).toLocaleString() }}
                   </p>
                 </div>
@@ -876,19 +876,19 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
           </template>
           <div class="grid gap-4 text-sm text-default sm:grid-cols-2">
             <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Kind</p>
+              <p class="text-xs uppercase tracking-[0.2em] text-muted">Kind</p>
               <p class="mt-1 font-semibold">{{ recording.kind }}</p>
             </div>
             <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Size</p>
+              <p class="text-xs uppercase tracking-[0.2em] text-muted">Size</p>
               <p class="mt-1 font-semibold">{{ formatBytes(recording.byteSize) }}</p>
             </div>
             <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Mime type</p>
+              <p class="text-xs uppercase tracking-[0.2em] text-muted">Mime type</p>
               <p class="mt-1 font-semibold">{{ recording.mimeType }}</p>
             </div>
             <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Uploaded</p>
+              <p class="text-xs uppercase tracking-[0.2em] text-muted">Uploaded</p>
               <p class="mt-1 font-semibold">{{ new Date(recording.createdAt).toLocaleString() }}</p>
             </div>
           </div>
@@ -945,7 +945,7 @@ id="field-campaigns--campaignId--recordings--recordingId--vue-3"
                   max="0.4"
                   step="0.01"
                 />
-                <p class="mt-1 text-xs text-dimmed">
+                <p class="mt-1 text-xs text-muted">
                   0.1 to 0.4. Higher values usually predict fewer speakers.
                 </p>
               </div>

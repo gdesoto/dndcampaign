@@ -58,7 +58,7 @@ const campaignColumns: TableColumn<{
 }>[] = [
   { accessorKey: 'name', header: 'Name' },
   { accessorKey: 'ownerEmail', header: 'Owner email' },
-  { accessorKey: 'isArchived', header: 'Archived' },
+  { accessorKey: 'isArchived', header: 'Status' },
   { accessorKey: 'memberCount', header: 'Members', meta: { class: { th: 'text-right tabular-nums', td: 'text-right tabular-nums' } } },
   { accessorKey: 'sessionCount', header: 'Sessions', meta: { class: { th: 'text-right tabular-nums', td: 'text-right tabular-nums' } } },
   { accessorKey: 'documentCount', header: 'Documents', meta: { class: { th: 'text-right tabular-nums', td: 'text-right tabular-nums' } } },
@@ -249,19 +249,25 @@ const campaignActions = (id: string): RecordAction[] => [
             <h2 class="text-lg font-semibold">Search campaigns</h2>
           </template>
 
-          <div class="grid gap-3 md:grid-cols-3">
-            <UInput v-model="filters.search" aria-label="Search campaigns" placeholder="Campaign name or description" />
-            <USelect
-v-model="filters.archived"
-              aria-label="Campaign status"
-              :items="[
+          <SharedFilterToolbar label="Filter campaigns">
+            <UFormField label="Search campaigns">
+              <UInput v-model="filters.search" placeholder="Campaign name or description" icon="i-lucide-search" class="w-full" />
+            </UFormField>
+            <UFormField label="Campaign status">
+              <USelect
+                v-model="filters.archived"
+                :items="[
                 { label: 'All campaigns', value: 'all' },
                 { label: 'Active only', value: 'active' },
                 { label: 'Archived only', value: 'archived' },
               ]"
-            />
-            <UButton :loading="pending" @click="refreshCampaigns">Refresh</UButton>
-          </div>
+                class="w-full"
+              />
+            </UFormField>
+            <template #actions>
+              <UButton :loading="pending" @click="refreshCampaigns">Refresh</UButton>
+            </template>
+          </SharedFilterToolbar>
         </UCard>
 
         <UCard>
@@ -273,6 +279,7 @@ v-model="filters.archived"
           </template>
 
           <SharedResponsiveTable
+            identity-column="name" status-column="isArchived" action-column="openCampaign"
 
             :data="campaigns.map((campaign) => ({
               ...campaign,
@@ -284,6 +291,7 @@ v-model="filters.archived"
             :loading="pending"
             empty="No campaigns found"
           >
+            <template #isArchived-cell="{ row }"><UBadge color="neutral" variant="subtle">{{ row.original.isArchived === 'Yes' ? 'Archived' : 'Active' }}</UBadge></template>
             <template #name-cell="{ row }"><NuxtLink :to="`/campaigns/${row.original.id}`" class="font-semibold">{{ row.original.name }}</NuxtLink></template>
             <template #openCampaign-cell="{ row }">
               <SharedActionMenu class="justify-end" :name="row.original.name" :items="campaignActions(row.original.id)" />

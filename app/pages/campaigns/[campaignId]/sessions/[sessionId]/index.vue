@@ -74,28 +74,28 @@ const {
         <div>
           <div class="flex items-center gap-1.5">
             <UIcon name="i-twemoji-game-die" class="size-3.5 shrink-0" />
-            <p class="font-display text-xs uppercase tracking-[0.2em] text-dimmed">Session #</p>
+            <p class="font-display text-xs uppercase tracking-[0.2em] text-muted">Session #</p>
           </div>
           <p class="mt-1 font-semibold">{{ form.sessionNumber || '-' }}</p>
         </div>
         <div>
           <div class="flex items-center gap-1.5">
             <UIcon name="i-twemoji-spiral-calendar" class="size-3.5 shrink-0" />
-            <p class="font-display text-xs uppercase tracking-[0.2em] text-dimmed">Played at</p>
+            <p class="font-display text-xs uppercase tracking-[0.2em] text-muted">Played at</p>
           </div>
           <p class="mt-1 font-semibold">{{ form.playedAt || 'Unscheduled' }}</p>
         </div>
         <div>
           <div class="flex items-center gap-1.5">
             <UIcon name="i-twemoji-mage" class="size-3.5 shrink-0" />
-            <p class="font-display text-xs uppercase tracking-[0.2em] text-dimmed">Dungeon Master</p>
+            <p class="font-display text-xs uppercase tracking-[0.2em] text-muted">Dungeon Master</p>
           </div>
           <p class="mt-1 font-semibold">{{ sessionDungeonMasterLabel }}</p>
         </div>
         <div class="sm:col-span-3">
           <div class="flex items-center gap-1.5">
             <UIcon name="i-twemoji-memo" class="size-3.5 shrink-0" />
-            <p class="font-display text-xs uppercase tracking-[0.2em] text-dimmed">Notes</p>
+            <p class="font-display text-xs uppercase tracking-[0.2em] text-muted">Notes</p>
           </div>
           <p class="mt-1 text-sm text-muted">
             {{ form.notes || 'No notes added yet.' }}

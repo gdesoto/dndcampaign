@@ -441,17 +441,17 @@ const updateStatus = async (quest: QuestItem, status: QuestStatus) => {
 
       <template #filters>
         <UCard>
-          <div class="grid gap-4 md:grid-cols-3">
-            <UFormField label="Filter by category" name="typeFilter">
-              <USelect v-model="selectedTypeFilter" :items="typeFilterOptions" />
+          <SharedFilterToolbar label="Filter quests">
+            <UFormField label="Category" name="typeFilter">
+              <USelect v-model="selectedTypeFilter" class="w-full" :items="typeFilterOptions" />
             </UFormField>
-            <UFormField label="Filter by track" name="trackFilter">
-              <USelect v-model="selectedTrackFilter" :items="trackFilterOptions" />
+            <UFormField label="Track" name="trackFilter">
+              <USelect v-model="selectedTrackFilter" class="w-full" :items="trackFilterOptions" />
             </UFormField>
-            <UFormField label="Filter by status" name="statusFilter">
-              <USelect v-model="selectedStatusFilter" :items="statusFilterOptions" />
+            <UFormField label="Status" name="statusFilter">
+              <USelect v-model="selectedStatusFilter" class="w-full" :items="statusFilterOptions" />
             </UFormField>
-          </div>
+          </SharedFilterToolbar>
         </UCard>
       </template>
 

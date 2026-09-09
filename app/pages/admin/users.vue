@@ -45,7 +45,7 @@ const userColumns = [
   { accessorKey: 'name', header: 'Name' },
   { accessorKey: 'email', header: 'Email' },
   { accessorKey: 'systemRole', header: 'Role' },
-  { accessorKey: 'isActive', header: 'Active' },
+  { accessorKey: 'isActive', header: 'Status' },
   { accessorKey: 'lastLoginAt', header: 'Last login' },
   { accessorKey: 'ownedCampaignCount', header: 'Owned campaigns', meta: { class: { th: 'text-right tabular-nums', td: 'text-right tabular-nums' } } },
   { accessorKey: 'memberCampaignCount', header: 'Member campaigns', meta: { class: { th: 'text-right tabular-nums', td: 'text-right tabular-nums' } } },
@@ -148,28 +148,36 @@ const adminBreadcrumbItems = [
             <h2 class="text-lg font-semibold">Search users</h2>
           </template>
 
-          <div class="grid gap-3 md:grid-cols-4">
-            <UInput v-model="filters.search" aria-label="Search users" placeholder="Name or email" />
-            <USelect
-v-model="filters.status"
-              aria-label="Status"
-              :items="[
+          <SharedFilterToolbar label="Filter users">
+            <UFormField label="Search users">
+              <UInput v-model="filters.search" placeholder="Name or email" icon="i-lucide-search" class="w-full" />
+            </UFormField>
+            <UFormField label="Status">
+              <USelect
+                v-model="filters.status"
+                :items="[
                 { label: 'All statuses', value: 'all' },
                 { label: 'Active only', value: 'active' },
                 { label: 'Inactive only', value: 'inactive' },
               ]"
-            />
-            <USelect
-v-model="filters.role"
-              aria-label="Role"
-              :items="[
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField label="Role">
+              <USelect
+                v-model="filters.role"
+                :items="[
                 { label: 'All roles', value: 'all' },
                 { label: 'Users', value: 'USER' },
                 { label: 'System admins', value: 'SYSTEM_ADMIN' },
               ]"
-            />
-            <UButton :loading="pending" @click="refreshUsers">Refresh</UButton>
-          </div>
+                class="w-full"
+              />
+            </UFormField>
+            <template #actions>
+              <UButton :loading="pending" @click="refreshUsers">Refresh</UButton>
+            </template>
+          </SharedFilterToolbar>
         </UCard>
 
         <UCard>
@@ -181,12 +189,15 @@ v-model="filters.role"
           </template>
 
           <SharedResponsiveTable
+            identity-column="name" status-column="isActive"
 
             :data="users.map((user) => ({ ...user, isActive: user.isActive ? 'Yes' : 'No', lastLoginAt: formatLastLogin(user.lastLoginAt) }))"
             :columns="userColumns"
             :loading="pending"
             empty="No users found"
-          ><template #actions-cell="{ row }"><UButton color="neutral" variant="ghost" icon="i-lucide-pencil" @click="editRecord(row.original.id)">Edit</UButton></template></SharedResponsiveTable>
+          >
+            <template #isActive-cell="{ row }"><UBadge :color="row.original.isActive === 'Yes' ? 'success' : 'neutral'" variant="subtle">{{ row.original.isActive === 'Yes' ? 'Active' : 'Inactive' }}</UBadge></template>
+            <template #actions-cell="{ row }"><UButton color="neutral" variant="ghost" icon="i-lucide-pencil" @click="editRecord(row.original.id)">Edit</UButton></template></SharedResponsiveTable>
 
           <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
             <p class="text-sm text-muted">{{ usersData?.total ? (page - 1) * pageSize + 1 : 0 }}–{{ Math.min(page * pageSize, usersData?.total || 0) }} of {{ usersData?.total || 0 }}</p>

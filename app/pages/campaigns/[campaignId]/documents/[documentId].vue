@@ -1217,12 +1217,12 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                 </div>
                 <div class="flex items-center gap-1">
                   <UButton size="xs" variant="ghost" icon="i-lucide-chevron-left" :disabled="!canPrevWindow" aria-label="Previous page" @click="moveWindow(-1)" />
-                  <span class="text-xs text-dimmed tabular-nums">{{ windowLabel }}</span>
+                  <span class="text-xs text-muted tabular-nums">{{ windowLabel }}</span>
                   <UButton size="xs" variant="ghost" icon="i-lucide-chevron-right" :disabled="!canNextWindow" aria-label="Next page" @click="moveWindow(1)" />
                 </div>
               </div>
               <div class="flex items-center gap-2">
-                <span class="text-xs text-dimmed">{{ selectedSegmentIds.length }} selected</span>
+                <span class="text-xs text-muted">{{ selectedSegmentIds.length }} selected</span>
                 <UButton size="xs" variant="ghost" @click="selectAllFiltered">Select filtered</UButton>
                 <UButton size="xs" variant="ghost" :disabled="!selectedSegmentIds.length" @click="clearSelection">Clear</UButton>
                 <UButton size="xs" variant="outline" icon="i-lucide-play" :disabled="!selectedSegmentIds.length" @click="playSelection">Play selection</UButton>
@@ -1248,7 +1248,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                 }"
               >
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                  <div class="flex items-center gap-2 text-xs text-dimmed">
+                  <div class="flex items-center gap-2 text-xs text-muted">
                     <UCheckbox
                       :model-value="selectedSet.has(segment.id)"
                       @click="(event: MouseEvent) => noteSegmentSelectionClick(event, segment.id)"
@@ -1316,7 +1316,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                         />
                         <template #content="{ close }">
                           <div class="space-y-1">
-                            <p class="px-1 text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">
+                            <p class="px-1 text-[11px] font-medium uppercase tracking-[0.2em] text-muted">
                               Swap Speaker
                             </p>
                             <div v-if="speakerPresetOptions.length" class="max-h-48 space-y-1 overflow-y-auto pr-1">
@@ -1331,7 +1331,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                                 {{ option }}
                               </UButton>
                             </div>
-                            <p v-else class="px-1 text-xs text-dimmed">
+                            <p v-else class="px-1 text-xs text-muted">
                               No speaker presets available.
                             </p>
                           </div>
@@ -1342,7 +1342,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                   <span v-if="segment.disabled" class="rounded-full bg-warning/20 px-2 py-0.5 text-warning">
                     Disabled in preview
                   </span>
-                  <span v-if="segment.confidence !== null && segment.confidence !== undefined" class="text-dimmed">
+                  <span v-if="segment.confidence !== null && segment.confidence !== undefined" class="text-muted">
                     Confidence: {{ Math.round(segment.confidence * 100) }}%
                   </span>
                 </div>
@@ -1390,7 +1390,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                   <span v-if="isDirty" class="rounded-full bg-warning/20 px-2 py-1 text-xs text-warning">
                     Unsaved changes
                   </span>
-                  <span v-if="lastSavedAt" class="text-xs text-dimmed">
+                  <span v-if="lastSavedAt" class="text-xs text-muted">
                     Saved {{ new Date(lastSavedAt).toLocaleTimeString() }}
                   </span>
                   <UTooltip text="Undo (Ctrl+Z / Cmd+Z)">
@@ -1427,7 +1427,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                     <UTooltip text="Previous match">
                       <UButton size="xs" variant="ghost" icon="i-lucide-chevron-up" :disabled="!matchIndices.length" aria-label="Previous match" @click="goToMatch(-1)" />
                     </UTooltip>
-                    <span v-if="matchIndices.length" class="text-xs text-dimmed tabular-nums">
+                    <span v-if="matchIndices.length" class="text-xs text-muted tabular-nums">
                       {{ activeMatchIndex + 1 }}/{{ matchIndices.length }}
                     </span>
                     <UTooltip text="Next match">
@@ -1468,7 +1468,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                 <!-- Collapsible: Advanced Filters -->
                 <div v-show="showAdvancedFilters" class="space-y-3 rounded-lg border border-default bg-elevated p-3">
                   <div class="space-y-2">
-                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">Speakers</p>
+                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-muted">Speakers</p>
                     <USelectMenu
                       v-model="speakerFilterSelection"
                       size="xs"
@@ -1480,7 +1480,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                     />
                   </div>
                   <div class="space-y-2">
-                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">Time Range</p>
+                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-muted">Time Range</p>
                     <UFieldGroup class="w-full">
                       <UInput
                         v-model="startTimeFilter"
@@ -1507,7 +1507,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                     </UFieldGroup>
                   </div>
                   <div class="space-y-2">
-                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">Duration</p>
+                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-muted">Duration</p>
                     <UFieldGroup class="w-full">
                       <UInput
                         v-model="minLengthFilter"
@@ -1538,7 +1538,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                 <!-- Collapsible: Bulk Edit -->
                 <div v-show="showBulkEdit" class="space-y-3 rounded-lg border border-default bg-elevated p-3">
                   <div class="space-y-2">
-                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">Set Speaker</p>
+                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-muted">Set Speaker</p>
                     <UFieldGroup class="w-full">
                       <USelectMenu
                         v-model="selectedSpeakerPreset"
@@ -1557,7 +1557,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                     </div>
                   </div>
                   <div class="space-y-2">
-                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-dimmed">Enable / Disable</p>
+                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-muted">Enable / Disable</p>
                     <div class="flex flex-wrap items-center gap-2">
                       <UButton size="xs" variant="outline" :disabled="!selectedSegmentIds.length" @click="applyDisableToSelection(true)">Disable selected</UButton>
                       <UButton size="xs" variant="outline" :disabled="!selectedSegmentIds.length" @click="applyDisableToSelection(false)">Enable selected</UButton>
@@ -1581,7 +1581,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
             <div class="space-y-4">
               <!-- Audio link -->
               <div class="space-y-2 rounded-lg border border-default bg-elevated/30 p-3">
-                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Audio link</p>
+                <p class="text-xs uppercase tracking-[0.2em] text-muted">Audio link</p>
                 <USelect
                   v-model="selectedRecordingId"
                   :items="recordingOptions"
@@ -1589,7 +1589,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                   size="sm"
                   class="w-full"
                 />
-                <div class="flex flex-wrap items-center gap-2 text-xs text-dimmed">
+                <div class="flex flex-wrap items-center gap-2 text-xs text-muted">
                   <span v-if="linkedRecordingId">Linked: {{ linkedRecordingLabel }}</span>
                   <span v-else>No default recording linked.</span>
                 </div>
@@ -1601,8 +1601,8 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
 
               <!-- Import transcript -->
               <div class="space-y-2 rounded-lg border border-default bg-elevated/30 p-3">
-                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Import transcript</p>
-                <p class="text-xs text-dimmed">Accepts .txt, .md, .vtt formats.</p>
+                <p class="text-xs uppercase tracking-[0.2em] text-muted">Import transcript</p>
+                <p class="text-xs text-muted">Accepts .txt, .md, .vtt formats.</p>
                 <UInput
                   aria-label="Import document file" type="file"
                   accept=".txt,.md,.markdown,.vtt"
@@ -1621,7 +1621,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
 
               <!-- Subtitles -->
               <div class="space-y-2 rounded-lg border border-default bg-elevated/30 p-3">
-                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Subtitles</p>
+                <p class="text-xs uppercase tracking-[0.2em] text-muted">Subtitles</p>
                 <USelect
                   v-model="selectedSubtitleRecordingId"
                   :items="videoOptions"
@@ -1642,7 +1642,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
 
               <!-- Danger zone -->
               <div v-if="canManageDocument" class="space-y-2 rounded-lg border border-error/30 bg-error/5 p-3">
-                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Danger zone</p>
+                <p class="text-xs uppercase tracking-[0.2em] text-muted">Danger zone</p>
                 <SharedConfirmActionPopover
                   message="Delete this transcript document?"
                   confirm-label="Delete transcript"
@@ -1690,7 +1690,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                 {{ fullTranscript || 'No transcript yet.' }}
               </div>
             </div>
-            <p v-show="!showFullTranscript" class="text-xs text-dimmed">
+            <p v-show="!showFullTranscript" class="text-xs text-muted">
               Click to expand and read the full transcript.
             </p>
           </UCard>
@@ -1716,7 +1716,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                       <p class="font-semibold">Version {{ version.versionNumber }}</p>
                       <UBadge v-if="document?.currentVersionId === version.id" color="primary" variant="subtle" size="xs">Current</UBadge>
                     </div>
-                    <p class="text-xs text-dimmed">
+                    <p class="text-xs text-muted">
                       {{ new Date(version.createdAt).toLocaleString() }} - {{ version.source }}
                     </p>
                   </div>
@@ -1801,7 +1801,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
               <div class="flex items-center justify-between gap-2">
                 <div>
                   <p class="font-semibold">Version {{ version.versionNumber }}</p>
-                  <p class="text-xs text-dimmed">
+                  <p class="text-xs text-muted">
                     {{ new Date(version.createdAt).toLocaleString() }} - {{ version.source }}
                   </p>
                 </div>

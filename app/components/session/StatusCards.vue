@@ -87,7 +87,7 @@ const statusCards = computed(() => [
       <div class="flex items-start justify-between gap-3">
         <div class="flex items-center gap-1.5">
           <UIcon :name="card.icon" class="size-3.5 shrink-0" />
-          <p class="font-display text-xs uppercase tracking-[0.2em] text-dimmed">{{ card.label }}</p>
+          <p class="font-display text-xs uppercase tracking-[0.2em] text-muted">{{ card.label }}</p>
         </div>
         <SessionStepLinkButton
           :step="card.id"

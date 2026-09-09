@@ -198,20 +198,14 @@ const sessionActions = (entry: GlossaryEntry, link: GlossaryLink): RecordAction[
 
       <template #filters>
         <UCard>
-          <div class="flex flex-wrap items-center gap-3">
-            <div class="flex gap-2">
-              <UButton
-                v-for="type in types"
-                :key="type.value"
-                size="sm"
-                :variant="activeType === type.value ? 'solid' : 'outline'"
-                @click="() => { activeType = type.value as typeof activeType }"
-              >
-                {{ type.label }}
-              </UButton>
-            </div>
-            <UInput v-model="search" placeholder="Search names, aliases, description..." class="min-w-[240px]" />
-          </div>
+          <SharedFilterToolbar label="Filter glossary">
+            <UFormField label="Search glossary" name="glossarySearch">
+              <UInput v-model="search" placeholder="Name, alias, or description" icon="i-lucide-search" class="w-full" />
+            </UFormField>
+            <UFormField label="Type" name="glossaryType">
+              <USelect v-model="activeType" :items="types" class="w-full" />
+            </UFormField>
+          </SharedFilterToolbar>
         </UCard>
       </template>
 

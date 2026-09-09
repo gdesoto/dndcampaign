@@ -132,7 +132,7 @@ watch(
       </div>
       <div class="mt-3 space-y-2 text-sm text-muted">
         <div v-if="sessionSuggestion.payload.title || drafts[sessionSuggestion.id]?.title !== undefined">
-          <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Title</p>
+          <p class="text-xs uppercase tracking-[0.2em] text-muted">Title</p>
           <UInput
             :model-value="String(draftFor(sessionSuggestion).title || '')"
             class="mt-1"
@@ -140,7 +140,7 @@ watch(
           />
         </div>
         <div v-if="sessionSuggestion.payload.notes || drafts[sessionSuggestion.id]?.notes !== undefined">
-          <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Notes</p>
+          <p class="text-xs uppercase tracking-[0.2em] text-muted">Notes</p>
           <UTextarea
             :model-value="String(draftFor(sessionSuggestion).notes || '')"
             :rows="4"
@@ -235,7 +235,7 @@ watch(
                 v-for="[field, fieldValue] in editableFields(suggestion)"
                 :key="`${suggestion.id}-${field}`"
               >
-                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">{{ field }}</p>
+                <p class="text-xs uppercase tracking-[0.2em] text-muted">{{ field }}</p>
                 <UTextarea
                   v-if="typeof fieldValue === 'string' && (fieldValue.length > 40 || field.includes('description') || field.includes('notes'))"
                   :model-value="String(fieldValue)"

@@ -139,7 +139,7 @@ const createSession = async () => {
               <template #header>
                 <div class="flex items-center justify-between gap-3">
                   <div>
-                    <p class="text-xs uppercase tracking-[0.2em] text-dimmed">
+                    <p class="text-xs uppercase tracking-[0.2em] text-muted">
                       Session {{ session.sessionNumber ?? '—' }}
                     </p>
                     <h3 class="text-lg font-semibold">{{ session.title }}</h3>

@@ -67,7 +67,7 @@ const actions = computed<RecordAction[]>(() => props.canWriteContent ? [
     <template #header>
       <div class="flex items-center justify-between gap-3">
         <div>
-          <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Quest</p>
+          <p class="text-xs uppercase tracking-[0.2em] text-muted">Quest</p>
           <h3 class="text-lg font-semibold">{{ quest.title }}</h3>
         </div>
         <SharedActionMenu :name="quest.title" :items="actions" />
@@ -98,9 +98,9 @@ const actions = computed<RecordAction[]>(() => props.canWriteContent ? [
     </div>
 
     <div class="mt-3 grid gap-2 text-xs text-muted md:grid-cols-2">
-      <p><span class="text-dimmed">Source:</span> {{ getSourceLabel(quest) }}</p>
-      <p v-if="quest.reward"><span class="text-dimmed">Reward:</span> {{ quest.reward }}</p>
-      <p v-if="getExpirationLabel(quest)"><span class="text-dimmed">Expires:</span> {{ getExpirationLabel(quest) }}</p>
+      <p><span class="text-muted">Source:</span> {{ getSourceLabel(quest) }}</p>
+      <p v-if="quest.reward"><span class="text-muted">Reward:</span> {{ quest.reward }}</p>
+      <p v-if="getExpirationLabel(quest)"><span class="text-muted">Expires:</span> {{ getExpirationLabel(quest) }}</p>
     </div>
 
     <div class="mt-3 w-full">

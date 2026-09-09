@@ -107,7 +107,7 @@
 
   --ui-text: #ece2d2;
   --ui-text-muted: #b8aa90;
-  --ui-text-dimmed: #7e715d;
+  --ui-text-dimmed: #a49680;
   --ui-text-highlighted: #fff6e8;
 
   --ui-primary: var(--color-primary-500);
@@ -157,8 +157,8 @@
   --ui-border-muted: #e2d4be;
 
   --ui-text: #2a2018;
-  --ui-text-muted: #6e5a3e;
-  --ui-text-dimmed: #9e8a6a;
+  --ui-text-muted: #59472f;
+  --ui-text-dimmed: #69563b;
   --ui-text-highlighted: #1a1410;
 
   --ui-primary: var(--color-primary-500);

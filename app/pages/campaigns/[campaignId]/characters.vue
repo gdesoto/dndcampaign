@@ -20,6 +20,7 @@ type CharacterLink = {
       portraitUrl?: string
     }
     sheetJson?: {
+      hitPoints?: { current?: number; max?: number }
       basics?: {
         playerName?: string
       }
@@ -142,7 +143,7 @@ const abilityModFor = (score?: number) => {
   return modifier >= 0 ? `+${modifier}` : String(modifier)
 }
 
-const hpFor = (link: CharacterLink) => link.character.summaryJson?.hp
+const hpFor = (link: CharacterLink) => link.character.sheetJson?.hitPoints?.current ?? link.character.summaryJson?.hp
 const acFor = (link: CharacterLink) => link.character.summaryJson?.ac
 const initiativeFor = (link: CharacterLink) => {
   const dex = abilityScoreFor(link, 'dex')
@@ -254,7 +255,7 @@ const characterActions = (link: CharacterLink): RecordAction[] => [
                     <NuxtLink :to="`/characters/${link.character.id}`" class="hover:underline">{{ link.character.name }}</NuxtLink>
                   </h3>
                   <p class="text-sm italic text-[var(--ui-text-muted)]">{{ subtitleFor(link) }}</p>
-                  <p class="text-xs text-[var(--ui-text-dimmed)]">{{ ownerLineFor(link) }}</p>
+                  <p class="text-xs text-[var(--ui-text-muted)]">{{ ownerLineFor(link) }}</p>
                   <div class="flex flex-wrap items-center gap-2 pt-1">
                     <UBadge
                       :color="link.status === 'ACTIVE' ? 'primary' : 'neutral'"
@@ -276,20 +277,7 @@ const characterActions = (link: CharacterLink): RecordAction[] => [
             </div>
 
             <div class="space-y-2">
-              <div class="flex items-end justify-between gap-2">
-                <p class="font-display text-[10px] uppercase tracking-[0.2em] text-[var(--ui-text-dimmed)]">
-                  Hit Points
-                </p>
-                <p class="font-display text-sm text-[var(--ui-text-highlighted)]">
-                  {{ hpFor(link) ?? '—' }}
-                </p>
-              </div>
-              <div class="h-2 rounded-sm border border-[var(--ui-border)] bg-[var(--ui-bg-muted)]/60 p-[1px]">
-                <div
-                  class="h-full rounded-[2px] bg-success-500/80"
-                  :style="{ width: typeof hpFor(link) === 'number' ? '100%' : '35%' }"
-                />
-              </div>
+              <CharacterHitPoints :name="link.character.name" :current="hpFor(link)" :max="link.character.sheetJson?.hitPoints?.max" />
               <div class="flex flex-wrap items-center justify-between gap-2 text-sm text-[var(--ui-text-muted)]">
                 <p>AC {{ acFor(link) ?? '—' }}</p>
                 <p>Initiative {{ initiativeFor(link) ?? '—' }}</p>
@@ -306,7 +294,7 @@ const characterActions = (link: CharacterLink): RecordAction[] => [
                   {{ abilityScoreFor(link, ability.key) ?? '—' }}
                 </p>
                 <p class="text-[11px] text-primary-500">{{ abilityModFor(abilityScoreFor(link, ability.key)) ?? '—' }}</p>
-                <p class="text-[10px] uppercase tracking-[0.14em] text-[var(--ui-text-dimmed)]">{{ ability.label }}</p>
+                <p class="text-[10px] uppercase tracking-[0.14em] text-[var(--ui-text-muted)]">{{ ability.label }}</p>
               </div>
             </div>
           </div>

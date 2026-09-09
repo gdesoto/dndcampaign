@@ -134,7 +134,7 @@ const recapActions = computed<RecordAction[]>(() => {
         class="flex flex-col gap-3 rounded-md border border-default bg-elevated/40 p-3 sm:flex-row sm:items-center sm:justify-between"
       >
         <div class="min-w-0">
-          <p class="text-xs uppercase tracking-[0.2em] text-dimmed">{{ kindLabel }} recap</p>
+          <p class="text-xs uppercase tracking-[0.2em] text-muted">{{ kindLabel }} recap</p>
           <p class="truncate text-sm text-muted">
             {{
               recapFile?.name
@@ -156,12 +156,12 @@ const recapActions = computed<RecordAction[]>(() => {
       </div>
 
       <div v-if="hasRecap && recap" class="rounded-md border border-default bg-elevated/30 p-3">
-        <p class="text-xs uppercase tracking-[0.2em] text-dimmed">{{ recap.mimeType.startsWith('video/') ? 'Video recap' : 'Audio recap' }}</p>
+        <p class="text-xs uppercase tracking-[0.2em] text-muted">{{ recap.mimeType.startsWith('video/') ? 'Video recap' : 'Audio recap' }}</p>
         <div class="mt-2 grid gap-2 text-sm text-muted sm:grid-cols-2">
-          <p><span class="text-dimmed">File:</span> {{ recap.filename || 'Unknown' }}</p>
-          <p><span class="text-dimmed">Type:</span> {{ recap.mimeType || 'Unknown' }}</p>
-          <p><span class="text-dimmed">Size:</span> {{ formatBytes(recap.byteSize) }}</p>
-          <p><span class="text-dimmed">Uploaded:</span> {{ new Date(recap.createdAt).toLocaleString() }}</p>
+          <p><span class="text-muted">File:</span> {{ recap.filename || 'Unknown' }}</p>
+          <p><span class="text-muted">Type:</span> {{ recap.mimeType || 'Unknown' }}</p>
+          <p><span class="text-muted">Size:</span> {{ formatBytes(recap.byteSize) }}</p>
+          <p><span class="text-muted">Uploaded:</span> {{ new Date(recap.createdAt).toLocaleString() }}</p>
         </div>
       </div>
 

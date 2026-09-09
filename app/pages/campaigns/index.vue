@@ -119,7 +119,7 @@ const createCampaign = async () => {
               <template #header>
                 <div class="flex items-start justify-between gap-3">
                   <div class="space-y-1">
-                    <p class="font-display text-[10px] uppercase tracking-[0.18em] text-dimmed">
+                    <p class="font-display text-[10px] uppercase tracking-[0.18em] text-muted">
                       {{ systemLabelFor(campaign) }}
                     </p>
                     <h3 class="font-display text-lg uppercase tracking-[0.02em] text-highlighted">
@@ -128,7 +128,7 @@ const createCampaign = async () => {
                   </div>
                   <UIcon
                     name="i-lucide-arrow-up-right"
-                    class="mt-0.5 size-4 text-dimmed transition-colors group-hover:text-primary-500"
+                    class="mt-0.5 size-4 text-muted transition-colors group-hover:text-primary-500"
                   />
                 </div>
               </template>
@@ -137,7 +137,7 @@ const createCampaign = async () => {
               </p>
               <div class="flex flex-wrap items-center justify-between gap-2 border-t border-default pt-3">
                 <UBadge color="primary" variant="outline">DM: {{ dmLabelFor(campaign) }}</UBadge>
-                <p class="text-xs text-dimmed">
+                <p class="text-xs text-muted">
                   Updated {{ formatUpdatedAt(campaign.updatedAt) }}
                 </p>
               </div>
