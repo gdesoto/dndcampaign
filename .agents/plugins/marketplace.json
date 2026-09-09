@@ -1,0 +1,20 @@
+{
+  "name": "dndcampaign",
+  "interface": {
+    "displayName": "Dndcampaign"
+  },
+  "plugins": [
+    {
+      "name": "nuxt-ui-guidelines",
+      "source": {
+        "source": "local",
+        "path": "./.agents/plugins/nuxt-ui-guidelines"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

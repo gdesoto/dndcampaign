@@ -1,0 +1,22 @@
+{
+  "name": "nuxt-ui-guidelines",
+  "version": "0.1.0",
+  "description": "Information-dense Nuxt UI design guidelines, a full reference app, and the official Nuxt UI documentation MCP.",
+  "author": {
+    "name": "Local developer"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Nuxt UI Guidelines",
+    "shortDescription": "Design conventions, example app, and Nuxt UI MCP.",
+    "longDescription": "Build and review Nuxt interfaces with shared interaction guidelines, varied gallery and application examples, and live Nuxt UI component documentation.",
+    "developerName": "Local developer",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": [
+      "Build a Nuxt dashboard using these guidelines.",
+      "Review this page against the UI guidelines."
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}

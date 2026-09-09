@@ -1,0 +1,10 @@
+{
+  "name": "nuxt-ui-guidelines",
+  "version": "0.1.0",
+  "description": "Information-dense Nuxt UI design guidelines, a full reference app, and the official Nuxt UI documentation MCP.",
+  "author": {
+    "name": "Local developer"
+  },
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
+}
