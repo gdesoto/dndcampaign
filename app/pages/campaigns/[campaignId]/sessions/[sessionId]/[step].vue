@@ -120,11 +120,11 @@ const returnToPath = computed(
         :deleting-recording-id="deletingRecordingId"
         :playback-loading="playbackLoading"
         :playback-urls="playbackUrls"
+        :delete-recording="canUploadRecording ? deleteRecording : undefined"
         @update:selected-file="selectedFile = $event"
         @update:selected-kind="selectedKind = $event"
         @upload-recording="canUploadRecording && uploadRecording()"
         @play-recording="loadPlayback"
-        @delete-recording="canUploadRecording && deleteRecording($event)"
         @open-player="openPlayer"
       />
     </div>
@@ -149,12 +149,12 @@ const returnToPath = computed(
         :video-options="videoOptions"
         :subtitle-attach-loading="subtitleAttachLoading"
         :subtitle-attach-error="subtitleAttachError"
+        :delete-transcript="canWriteContent ? deleteTranscript : undefined"
         @update:transcript-file="transcriptFile = $event"
         @update:show-full-transcript="showFullTranscript = $event"
         @update:selected-subtitle-recording-id="selectedSubtitleRecordingId = $event"
         @create-transcript="canWriteContent && saveTranscript()"
         @import-transcript="canWriteContent && importTranscript()"
-        @delete-transcript="canWriteContent && deleteTranscript()"
         @attach-subtitles="canWriteContent && attachTranscriptToVideo()"
       />
     </div>
@@ -231,10 +231,10 @@ const returnToPath = computed(
         :recap-error="recapError"
         :recap-delete-error="recapDeleteError"
         :has-recap="Boolean(recap)"
+        :delete-recap="canUploadRecording ? deleteRecap : undefined"
         @update:recap-file="recapFile = $event"
         @upload-recap="canUploadRecording && uploadRecap()"
         @play-recap="loadRecapPlayback"
-        @delete-recap="canUploadRecording && deleteRecap()"
         @open-player="openPlayer"
       />
     </div>

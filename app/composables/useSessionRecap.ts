@@ -112,6 +112,7 @@ export function useSessionRecap(options: UseSessionRecapOptions) {
     } catch (error) {
       recapDeleteError.value =
         (error as Error & { message?: string }).message || 'Unable to delete recap.'
+      throw new Error(recapDeleteError.value, { cause: error })
     } finally {
       recapDeleting.value = false
     }

@@ -7,11 +7,6 @@ const currentUser = computed(
 const colorMode = useColorMode()
 type ThemePreference = 'system' | 'light' | 'dark'
 
-const colorModeLabel = computed(() => {
-  if (colorMode.preference === 'system') return 'System'
-  return colorMode.preference === 'dark' ? 'Dark' : 'Light'
-})
-
 const themeIcon = computed(() => {
   if (colorMode.preference === 'light') return 'i-twemoji-sun'
   if (colorMode.preference === 'dark') return 'i-twemoji-crescent-moon'
@@ -108,30 +103,12 @@ const themeMenuItems = computed(() => [
 ])
 
 const compactAccountMenuItems = computed(() => [
-  [
-    {
-      label: 'System',
-      icon: colorMode.preference === 'system' ? 'i-twemoji-check-mark-button' : 'i-twemoji-desktop-computer',
-      onSelect: () => setColorMode('system'),
-    },
-    {
-      label: 'Light',
-      icon: colorMode.preference === 'light' ? 'i-twemoji-check-mark-button' : 'i-twemoji-sun',
-      onSelect: () => setColorMode('light'),
-    },
-    {
-      label: 'Dark',
-      icon: colorMode.preference === 'dark' ? 'i-twemoji-check-mark-button' : 'i-twemoji-crescent-moon',
-      onSelect: () => setColorMode('dark'),
-    },
-  ],
-  [
-    {
-      label: `Current: ${colorModeLabel.value}`,
-      type: 'label' as const,
-    },
-  ],
   ...profileMenuItems.value,
+  [{
+    label: 'Theme',
+    icon: 'i-lucide-palette',
+    children: themeMenuItems.value,
+  }],
 ])
 </script>
 
@@ -204,19 +181,21 @@ const compactAccountMenuItems = computed(() => [
             </UTooltip>
           </div>
 
-          <div class="md:hidden">
-            <UDropdownMenu :items="compactAccountMenuItems">
-              <UButton
-                size="sm"
-                color="primary"
-                variant="ghost"
-                class="theme-pill"
-                aria-label="Open account menu"
-              >
-                <UIcon name="i-lucide-ellipsis" class="h-4 w-4" />
-              </UButton>
-            </UDropdownMenu>
-          </div>
+          <ClientOnly>
+            <div class="md:hidden">
+              <UDropdownMenu :items="compactAccountMenuItems">
+                <UButton
+                  size="sm"
+                  color="primary"
+                  variant="ghost"
+                  class="theme-pill"
+                  aria-label="Open account menu"
+                >
+                  <UIcon name="i-twemoji-bust-in-silhouette" class="h-4 w-4" />
+                </UButton>
+              </UDropdownMenu>
+            </div>
+          </ClientOnly>
         </template>
 
         <template v-else>
@@ -245,27 +224,6 @@ const compactAccountMenuItems = computed(() => [
         />
 
         <UNavigationMenu :items="topNavItems" orientation="vertical" class="-mx-2.5" />
-
-        <div v-if="loggedIn" class="space-y-2 border-t border-default pt-3">
-          <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Theme</p>
-          <div class="grid grid-cols-3 gap-2">
-            <UButton size="sm" color="neutral" variant="subtle" class="theme-pill" @click="setColorMode('system')">
-              System
-            </UButton>
-            <UButton size="sm" color="neutral" variant="subtle" class="theme-pill" @click="setColorMode('light')">
-              Light
-            </UButton>
-            <UButton size="sm" color="neutral" variant="subtle" class="theme-pill" @click="setColorMode('dark')">
-              Dark
-            </UButton>
-          </div>
-          <UButton size="sm" color="primary" variant="ghost" to="/settings" block class="theme-pill">
-            Settings
-          </UButton>
-          <UButton size="sm" color="primary" variant="ghost" block class="theme-pill" @click="logout">
-            Logout
-          </UButton>
-        </div>
       </div>
     </template>
   </UHeader>

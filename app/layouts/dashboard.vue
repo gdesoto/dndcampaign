@@ -19,22 +19,36 @@ const { data: campaign } = await useAsyncData(
   }
 )
 
-const sessionId = computed(() => {
-  const value = route.params.sessionId
-  return typeof value === 'string' ? value : ''
+const asset = computed(() => {
+  if (typeof route.params.recordingId === 'string') return { type: 'recordings', id: route.params.recordingId }
+  if (typeof route.params.documentId === 'string') return { type: 'documents', id: route.params.documentId }
+  return null
 })
 
-const isSessionDetailRoute = computed(() =>
-  route.path.includes(`/campaigns/${campaignId.value}/sessions/`) && Boolean(sessionId.value)
+const { data: assetShell } = await useAsyncData(
+  () => `dashboard-asset-shell-${campaignId.value}-${asset.value?.type || 'none'}-${asset.value?.id || 'none'}`,
+  () => asset.value
+    ? request<{ sessionId?: string | null, title?: string, filename?: string }>(`/api/${asset.value.type}/${asset.value.id}`)
+    : Promise.resolve(null),
 )
+
+const sessionId = computed(() => {
+  const value = route.params.sessionId
+  return typeof value === 'string' ? value : (asset.value ? assetShell.value?.sessionId || '' : '')
+})
+
+const assetContext = computed(() => ({
+  sessionId: sessionId.value,
+  title: asset.value ? assetShell.value?.title || assetShell.value?.filename : undefined,
+}))
 
 const { data: sessionShell } = await useAsyncData(
   () => `dashboard-session-shell-${sessionId.value || 'none'}`,
-  () => isSessionDetailRoute.value
+  () => sessionId.value
     ? request<{ title: string, sessionNumber?: number | null }>(`/api/sessions/${sessionId.value}`)
     : Promise.resolve(null),
   {
-    watch: [sessionId, isSessionDetailRoute],
+    watch: [sessionId],
   }
 )
 
@@ -56,7 +70,7 @@ const {
   navItems,
   sectionTitle,
   breadcrumbItems,
-} = useCampaignNavigation(route, campaignId, campaign, activeSessionTitle)
+} = useCampaignNavigation(route, campaignId, campaign, activeSessionTitle, assetContext)
 
 const navLinks = computed(() => {
   const items = navItems.value

@@ -12,6 +12,7 @@ type RecordingItem = {
 type WorkflowStep = 'recordings' | 'transcription' | 'summary' | 'recap'
 
 const props = defineProps<{
+  deleteRecording?: (recordingId: string) => Promise<unknown>
   workflowMode: boolean
   openStep?: WorkflowStep
   canManageRecordings?: boolean
@@ -33,7 +34,6 @@ const emit = defineEmits<{
   'update:selectedKind': [value: 'AUDIO' | 'VIDEO']
   'upload-recording': []
   'play-recording': [recordingId: string]
-  'delete-recording': [recordingId: string]
   'open-player': []
   'open-step': [step: WorkflowStep]
 }>()
@@ -139,19 +139,21 @@ const { formatBytes } = useFormatBytes()
                 Open
               </UButton>
               <SharedConfirmActionPopover
-                v-if="canManageRecordings"
-                message="Delete this recording file?"
+                v-if="canManageRecordings && deleteRecording"
+                :message="`Delete recording ${recording.filename}? This permanently removes its file.`"
                 confirm-label="Delete"
                 confirm-icon="i-lucide-trash-2"
                 :confirm-loading="deletingRecordingId === recording.id"
-                @confirm="({ close }) => { emit('delete-recording', recording.id); close() }"
+                :disabled="Boolean(deletingRecordingId)"
+                :action="() => deleteRecording!(recording.id)"
               >
                 <template #trigger>
                   <UButton
                     size="xs"
-                    color="error"
+                    color="neutral"
                     variant="outline"
                     :loading="deletingRecordingId === recording.id"
+                    :disabled="Boolean(deletingRecordingId)"
                   >
                     Delete
                   </UButton>

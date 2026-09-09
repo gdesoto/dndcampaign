@@ -108,6 +108,7 @@ export function useSessionRecordings(options: UseSessionRecordingsOptions) {
     } catch (error) {
       deleteError.value =
         (error as Error & { message?: string }).message || 'Unable to delete recording.'
+      throw new Error(deleteError.value, { cause: error })
     } finally {
       deletingRecordingId.value = ''
     }

@@ -5,7 +5,8 @@ export const useCampaignNavigation = (
   route: ReturnType<typeof useRoute>,
   campaignId: Ref<string>,
   campaign: Ref<CampaignShell | null | undefined>,
-  sessionTitle?: Ref<string | undefined>
+  sessionTitle?: Ref<string | undefined>,
+  assetContext?: Ref<{ sessionId?: string, title?: string }>
 ) => {
   const navItems = computed(() => {
     const base = `/campaigns/${campaignId.value}`
@@ -22,7 +23,7 @@ export const useCampaignNavigation = (
         label: 'Sessions',
         to: `${base}/sessions`,
         icon: 'i-twemoji-spiral-calendar',
-        active: path.startsWith(`${base}/sessions`),
+        active: ['sessions', 'documents', 'recordings'].some(section => path === `${base}/${section}` || path.startsWith(`${base}/${section}/`)),
       },
       {
         label: 'Encounters',
@@ -149,7 +150,7 @@ export const useCampaignNavigation = (
       return [
         ...rootItems,
         { label: 'Sessions', to: `/campaigns/${campaignId.value}/sessions` },
-        { label: sessionTitle?.value || 'Session' },
+        { label: sessionTitle?.value || 'Session', ...(stepLabel ? { to: `${sessionPrefix}${path.slice(sessionPrefix.length).split('/')[0]}` } : {}) },
         ...(stepLabel ? [{ label: stepLabel }] : []),
       ]
     }
@@ -174,18 +175,13 @@ export const useCampaignNavigation = (
         { label: 'Entry' },
       ]
     }
-    if (path.includes(`/campaigns/${campaignId.value}/recordings/`)) {
+    if (path.startsWith(`/campaigns/${campaignId.value}/recordings/`) || path.startsWith(`/campaigns/${campaignId.value}/documents/`)) {
+      const parentSessionId = assetContext?.value.sessionId
       return [
         ...rootItems,
         { label: 'Sessions', to: `/campaigns/${campaignId.value}/sessions` },
-        { label: 'Recording' },
-      ]
-    }
-    if (path.includes(`/campaigns/${campaignId.value}/documents/`)) {
-      return [
-        ...rootItems,
-        { label: 'Sessions', to: `/campaigns/${campaignId.value}/sessions` },
-        { label: 'Document' },
+        ...(parentSessionId ? [{ label: sessionTitle?.value || 'Session', to: `/campaigns/${campaignId.value}/sessions/${parentSessionId}` }] : []),
+        { label: assetContext?.value.title || sectionTitle.value },
       ]
     }
     return [...rootItems, { label: sectionTitle.value }]

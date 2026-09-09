@@ -9,6 +9,7 @@ type TranscriptDoc = {
 }
 
 const props = defineProps<{
+  deleteTranscript?: () => Promise<unknown>
   campaignId: string
   returnToPath?: string
   canManageTranscript?: boolean
@@ -36,7 +37,6 @@ const emit = defineEmits<{
   'create-transcript': []
   'import-transcript': []
   'attach-subtitles': []
-  'delete-transcript': []
 }>()
 
 const transcriptFileModel = computed({
@@ -76,16 +76,16 @@ const selectedSubtitleRecordingIdModel = computed({
               Open editor
             </UButton>
             <SharedConfirmActionPopover
-              v-if="transcriptDoc && canManageTranscript"
-              message="Delete the current transcript document?"
+              v-if="transcriptDoc && canManageTranscript && deleteTranscript"
+              message="Delete the current transcript document? This permanently removes the transcript and its versions."
               confirm-label="Delete transcript"
               confirm-icon="i-lucide-trash-2"
               :confirm-loading="transcriptDeleting"
-              @confirm="({ close }) => { emit('delete-transcript'); close() }"
+              :action="deleteTranscript"
             >
               <template #trigger>
                 <UButton
-                  color="error"
+                  color="neutral"
                   variant="outline"
                   size="sm"
                   :loading="transcriptDeleting"

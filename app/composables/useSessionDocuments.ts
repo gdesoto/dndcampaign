@@ -158,6 +158,7 @@ export function useSessionDocuments(options: UseSessionDocumentsOptions) {
     } catch (error) {
       transcriptDeleteError.value =
         (error as Error & { message?: string }).message || 'Unable to delete transcript.'
+      throw new Error(transcriptDeleteError.value, { cause: error })
     } finally {
       transcriptDeleting.value = false
     }

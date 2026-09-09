@@ -4,6 +4,7 @@ import type { SessionRecapRecording } from '#shared/types/session-workflow'
 type WorkflowStep = 'recordings' | 'transcription' | 'summary' | 'recap'
 
 const props = defineProps<{
+  deleteRecap?: () => Promise<unknown>
   campaignId?: string
   workflowMode: boolean
   openStep?: WorkflowStep
@@ -25,7 +26,6 @@ const emit = defineEmits<{
   'update:recapFile': [value: File | null]
   'upload-recap': []
   'play-recap': []
-  'delete-recap': []
   'open-player': []
   'open-step': [step: WorkflowStep]
 }>()
@@ -164,7 +164,7 @@ watch(
           variant="outline"
           icon="i-lucide-refresh-cw"
           :loading="recapUploading"
-          :disabled="recapUploading"
+          :disabled="recapUploading || recapDeleting"
           class="w-full sm:w-auto"
           @click="openReplaceModal"
         >
@@ -182,21 +182,23 @@ watch(
           Play recap
         </UButton>
         <SharedConfirmActionPopover
-          v-if="workflowMode && hasRecap"
-          :message="`Delete this ${kindLabel.toLowerCase()} recap file?`"
+          v-if="workflowMode && hasRecap && deleteRecap"
+          :message="`Delete ${kindLabel.toLowerCase()} recap ${recap?.filename || 'file'}? This permanently removes its file.`"
           confirm-label="Delete recap"
           confirm-icon="i-lucide-trash-2"
           :confirm-loading="recapDeleting"
+          :disabled="recapUploading"
           content-class="w-64 p-3"
-          @confirm="({ close }) => { emit('delete-recap'); close() }"
+          :action="deleteRecap"
         >
           <template #trigger>
             <UButton
               size="sm"
               variant="ghost"
-              color="error"
+              color="neutral"
               icon="i-lucide-trash-2"
               :loading="recapDeleting"
+              :disabled="recapUploading || recapDeleting"
               class="w-full sm:w-auto"
             >
               Delete recap
@@ -235,7 +237,7 @@ watch(
             :dropzone="false"
             :preview="false"
             label="Choose replacement"
-            :disabled="recapUploading"
+            :disabled="recapUploading || recapDeleting"
           />
 
           <p class="text-sm text-muted">
@@ -243,7 +245,7 @@ watch(
           </p>
 
           <div class="flex justify-end gap-2">
-            <UButton variant="ghost" color="neutral" :disabled="recapUploading" @click="() => { isReplaceModalOpen = false }">Cancel</UButton>
+            <UButton variant="ghost" color="neutral" :disabled="recapUploading || recapDeleting" @click="() => { isReplaceModalOpen = false }">Cancel</UButton>
             <UButton :disabled="!recapFile" :loading="recapUploading" @click="submitReplace">
               Replace recap
             </UButton>

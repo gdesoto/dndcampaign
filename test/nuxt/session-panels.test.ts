@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import StatusCards from '../../app/components/session/StatusCards.vue'
 import SummaryPanel from '../../app/components/session/SummaryPanel.vue'
@@ -120,10 +120,12 @@ describe('SessionRecapPanel', () => {
     expect(wrapper.text()).not.toContain('recap.mp3')
   })
 
-  it.each(['audio/mpeg', 'video/mp4'])('emits upload/play/delete actions for %s', async (mimeType) => {
+  it.each(['audio/mpeg', 'video/mp4'])('emits upload/play and awaits delete actions for %s', async (mimeType) => {
+    const deleteRecap = vi.fn().mockResolvedValue(undefined)
     const wrapper = await mountSuspended(RecapPanel, {
       props: {
         workflowMode: true,
+        deleteRecap,
         recap: null,
         recaps: [],
         selectedKind: mimeType.startsWith('video/') ? 'VIDEO' : 'AUDIO',
@@ -139,10 +141,11 @@ describe('SessionRecapPanel', () => {
       global: {
         stubs: {
           SharedConfirmActionPopover: {
+            props: ['action'],
             template: `
               <div>
                 <slot name="trigger" />
-                <button type="button" @click="$emit('confirm', { close: () => {} })">Confirm delete recap</button>
+                <button type="button" @click="action()">Confirm delete recap</button>
               </div>
             `,
           },
@@ -171,7 +174,7 @@ describe('SessionRecapPanel', () => {
 
     expect(wrapper.emitted('upload-recap')).toBeTruthy()
     expect(wrapper.emitted('play-recap')).toBeTruthy()
-    expect(wrapper.emitted('delete-recap')).toBeTruthy()
+    expect(deleteRecap).toHaveBeenCalledOnce()
   })
 })
 
