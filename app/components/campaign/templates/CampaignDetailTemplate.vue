@@ -9,7 +9,7 @@ withDefaults(defineProps<{
   description?: string
 }>(), {
   backLabel: 'Back',
-  backButtonPlacement: 'stacked',
+  backButtonPlacement: 'header',
   backButtonSize: 'md',
   headline: '',
   description: '',
@@ -20,7 +20,7 @@ const hasAside = computed(() => Boolean(slots.aside))
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="min-w-0 space-y-4">
     <UButton
       v-if="backButtonPlacement === 'stacked'"
       :size="backButtonSize"
@@ -31,12 +31,11 @@ const hasAside = computed(() => Boolean(slots.aside))
       {{ backLabel }}
     </UButton>
 
-    <UPageHeader
-      :headline="headline"
+    <CampaignPageHeader
       :title="title"
       :description="description"
     >
-      <template #links>
+      <template #actions>
         <UButton
           v-if="backButtonPlacement === 'header'"
           :size="backButtonSize"
@@ -48,19 +47,19 @@ const hasAside = computed(() => Boolean(slots.aside))
         </UButton>
         <slot name="actions" />
       </template>
-    </UPageHeader>
+    </CampaignPageHeader>
 
     <div
       :class="hasAside
-        ? 'grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]'
-        : 'space-y-6'"
+        ? 'grid min-w-0 gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(16rem,1fr)]'
+        : 'min-w-0 space-y-4'"
     >
-      <div class="space-y-6">
+      <div class="min-w-0 space-y-4">
         <slot />
       </div>
-      <div v-if="hasAside" class="space-y-6">
+      <aside v-if="hasAside" aria-label="Supporting information" class="min-w-0 space-y-4">
         <slot name="aside" />
-      </div>
+      </aside>
     </div>
   </div>
 </template>

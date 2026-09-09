@@ -20,22 +20,19 @@ defineProps<{
     <SharedStatCard
       label="Active quests"
       :value="activeQuestCount"
-      :hint="activeQuestCount ? 'Keep them moving.' : 'Ready for a new thread.'"
-      :tone="activeQuestCount ? 'positive' : 'attention'"
+      hint="Currently active"
       icon="i-twemoji-scroll"
     />
     <SharedStatCard
       label="Open milestones"
       :value="openMilestoneCount"
-      :hint="openMilestoneCount ? 'Progress is steady.' : 'Milestones are clear.'"
-      :tone="openMilestoneCount ? 'warning' : 'positive'"
+      hint="Not yet completed"
       icon="i-twemoji-triangular-flag"
     />
     <SharedStatCard
       label="Recaps"
       :value="recapCount"
-      :hint="recapCount ? 'Keep the story alive.' : 'Upload the first recap.'"
-      :tone="recapCount ? 'positive' : 'attention'"
+      hint="Available to watch or listen"
       icon="i-twemoji-clapper-board"
     />
   </div>

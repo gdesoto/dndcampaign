@@ -15,7 +15,7 @@ export default defineAppConfig({
 
     button: {
       slots: {
-        base: 'font-display font-semibold tracking-[0.08em] uppercase transition-all cursor-pointer disabled:cursor-not-allowed aria-disabled:cursor-not-allowed',
+        base: 'max-w-full font-display font-semibold tracking-[0.08em] uppercase transition-all cursor-pointer disabled:cursor-not-allowed aria-disabled:cursor-not-allowed pointer-coarse:min-h-11 pointer-coarse:min-w-11',
       },
       defaultVariants: {
         size: 'md',
@@ -176,11 +176,11 @@ export default defineAppConfig({
     pageHeader: {
       slots: {
         root: 'relative pb-4 pt-0 border-b border-[var(--ui-border)]',
-        wrapper: 'flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between',
+        wrapper: 'flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between',
         headline: 'mb-1 text-sm uppercase tracking-[0.08em] text-[var(--ui-text-dimmed)] font-display',
-        title: 'type-title text-[length:var(--text-title)] sm:text-[length:var(--text-title)] font-semibold',
+        title: 'min-w-0 break-words type-title text-[length:var(--text-title)] sm:text-[length:var(--text-title)] font-semibold',
         description: 'text-sm text-[var(--ui-text-muted)]',
-        links: 'flex flex-wrap items-center gap-1.5',
+        links: 'flex max-w-full flex-wrap items-center gap-2 sm:justify-end',
       },
       variants: {
         title: {

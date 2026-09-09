@@ -9,6 +9,8 @@ type UseCampaignWorkspaceOptions = {
 
 export async function useCampaignWorkspace(options: UseCampaignWorkspaceOptions) {
   const { request } = useApi()
+  const resourceKey = () => `campaign-workspace-${options.campaignId.value}-${options.isSessionDetailRoute.value ? (options.sessionId.value || 'none') : 'none'}`
+  const retained = useRetainedResource<CampaignWorkspace | null>(resourceKey)
 
   const {
     data: workspace,
@@ -16,17 +18,19 @@ export async function useCampaignWorkspace(options: UseCampaignWorkspaceOptions)
     error,
     refresh: refreshWorkspace,
   } = await useAsyncData(
-    () => `campaign-workspace-${options.campaignId.value}-${options.isSessionDetailRoute.value ? (options.sessionId.value || 'none') : 'none'}`,
-    () =>
+    resourceKey,
+    () => retained.load(() =>
       request<CampaignWorkspace>(`/api/campaigns/${options.campaignId.value}/workspace`, {
         query: {
           sessionId: options.isSessionDetailRoute.value ? options.sessionId.value : undefined,
         },
-      }),
+      })),
     {
+      default: retained.get,
       watch: [options.sessionId, options.isSessionDetailRoute],
     }
   )
+  retained.seed(workspace.value)
 
   const campaign = computed(() => workspace.value?.campaign)
   const sessionHeader = computed(() => workspace.value?.sessionHeader || null)

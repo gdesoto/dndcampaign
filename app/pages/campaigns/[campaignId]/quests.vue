@@ -426,6 +426,7 @@ const updateStatus = async (quest: QuestItem, status: QuestStatus) => {
     <CampaignListTemplate
       headline="Quests"
       title="Quest tracker"
+      :count="quests ? filteredQuests.length : undefined"
       description="Track quest category, main or side status, rewards, sources, and expiration dates."
       action-label="New quest"
       action-icon="i-lucide-plus"
@@ -545,7 +546,7 @@ v-model:open="isEditOpen"
       :submit-label="editMode === 'create' ? 'Create' : 'Save'"
       :show-delete-action="editMode === 'edit'"
       :delete-loading="deletingQuestId === editForm.id"
-      @delete="deleteEditingQuest"
+      :delete-action="deleteEditingQuest"
       @submit="saveQuest"
     >
       <UFormField label="Title" name="title">

@@ -26,8 +26,8 @@ Every statement here sits at one of three levels. When a rule and an identity co
 
 | Level | Meaning | Examples |
 | --- | --- | --- |
-| **Fixed** | Never traded away. These are the guidelines. | Keyboard reachability and visible focus; accessible names; status never carried by color alone; confirmation matched to risk; no Undo that does not reverse; loading, empty, and failure as distinct resolved states; labels that are not placeholders; drafts preserved on failure; one action vocabulary used consistently; adequate touch targets |
-| **Default** | Sound starting points. Deviate deliberately, decide once, and record it centrally rather than drifting page by page. | 25 rows per page; at most seven data columns; the Open · Edit · Duplicate · Archive · Delete order; toolbar order; one trailing row menu; breadcrumb shape; which variant means "primary action" |
+| **Fixed** | Never traded away. These are the guidelines. | Keyboard reachability and visible focus; accessible names; status never carried by color alone; confirmation matched to risk; no Undo that does not reverse; loading, empty, and failure as distinct resolved states; labels that are not placeholders; one action vocabulary used consistently; adequate touch targets |
+| **Default** | Sound starting points. Deviate deliberately, decide once, and record it centrally rather than drifting page by page. | 25 rows per page; at most seven data columns; the Open · Edit · Duplicate · Archive · Delete order; toolbar order; one trailing row menu; breadcrumb shape; which variant means "primary action"; disabled Save for unchanged edits |
 | **Yours** | The guide has no opinion. Identity lives here. | Hue and palette; typefaces, including display and serif faces; radii from square to fully rounded; border weight or none; shadow, texture, and surface treatment; icon set and style; the concrete density values; illustration and ornament |
 
 Note what is *not* on the Fixed list: no color, no font, no radius, no pixel value. The example application's blue-and-slate, Public Sans, 4px-radius appearance is one instantiation, not the specification. A finance product with hairline borders and a near-square radius, and a campaign tracker with parchment surfaces and a display serif, can both satisfy every Fixed rule without compromise.
@@ -43,6 +43,10 @@ One connective rule keeps identity and legibility from fighting. **Identity live
 - Explain any requirement that cannot be met through native props, slots, styling, or composition before replacing an interaction engine.
 
 ### Design priorities
+
+Optimize first for an understandable, efficient, visually coherent user experience: task clarity, intuitive navigation, readable hierarchy, useful grouping, and polished presentation. Assess the ordinary user journey before applicable failure paths.
+
+Safeguards should support the task. Match interruptions and implementation effort to the work users could lose and the consequences of the action, accounting for existing recovery. A presentation or usability request does not imply adding unrelated form infrastructure. Apply the relevant sections to the requested scope.
 
 - The example application's identity is blue/slate with Public Sans. It is a demonstration of the principles, not a requirement of them; a host replaces it wholesale.
 - Character and clarity are not a trade. Considerate behavior and concise language come first, and an identity that wants texture, ornament, an atmospheric ground, or a shimmer under the cursor may have all of them, provided none of it is mistakable for a signal.
@@ -382,7 +386,6 @@ Place toasts bottom-right on desktop and bottom-center below md. Respect safe-ar
 - Do not add artificial loading to synchronous in-memory sorting/filtering.
 - Show no records or no matches only after a successful resolved request establishes that result.
 - On refresh failure, retain useful existing content and show a nearby error with Retry; on first-load failure, show an error/retry state rather than an empty collection.
-- Preserve drafts on mutation failure.
 - Do not use a toast as the sole indication that content is loading.
 
 #### Block conflicts, not the whole interface
@@ -417,19 +420,13 @@ Place toasts bottom-right on desktop and bottom-center below md. Respect safe-ar
 
 ## 6. Shared forms
 
-Most of this section governs **record editors**: forms that create or change an entity, where the input exists only in the form and losing it loses work. EntityForm, the protected draft, and the dirty-cancellation prompt all exist for that case.
+Make forms easy to scan and complete: group related fields, use clear labels and sensible defaults, and keep the next action apparent. Choose inline, modal, or page presentation by the task's complexity and the context users need.
 
-A **settings or preferences form** is the other kind, and it is not a lesser version of the first. Its values are already persisted, every field holds a current value the moment the page opens, and Cancel means *restore what is saved* rather than *discard what I wrote*. Such a form may own a plain UForm rather than EntityForm — it has no create, duplicate or delete lifecycle to share — and a Cancel that restores the last saved values needs no prompt, because pressing it loses nothing. Do not add a confirmation to make it look consistent with the record editors: a prompt that guards nothing is what teaches a reader to dismiss the prompts that guard something.
+### Shared fields where useful
 
-**The test is what Cancel destroys.** If it discards work that exists nowhere else, protect it. If it restores values the server already holds, let it act. Say which kind a form is once, where the form is defined, rather than deciding again per field.
-
-### One field/schema implementation
-
-- Use one entity field component and one schema for New and Edit.
-- EntityForm owns the UForm shell, footer, pending state, submission error, and optional modal container, for the record editors described above.
-- Entity-specific fields, state, and persistence are supplied by the caller.
-- Support `presentation="modal"` (default) and `presentation="page"` without duplicating fields, validation, or footer markup.
-- A page form renders inline without a dialog, overlay, or focus trap; the page owns its heading, layout, and navigation.
+- Reuse fields and validation for New/Edit where they express the same business rules.
+- Keep entity-specific state and persistence in the host; use a shared shell only when it removes repeated behavior.
+- A page form uses normal page layout and navigation without a dialog focus trap.
 
 ### Field and footer placement
 
@@ -458,65 +455,34 @@ Prose that survives none of the three is deleted. Text that restates its label, 
 
 **Uneven prose breaks a multi-column grid.** Side-by-side fields whose descriptions run to one line and three put their inputs on different baselines, and the row stops reading as a row. Give a row's fields the same treatment, or move the explained one to a full-width row of its own. Do not pad the shorter description until it matches.
 
-### Optional Delete in the edit footer
+### Optional example implementation
 
-- In edit mode, an optional icon-only Delete confirmation sits at the far left of that same footer row, with Cancel/Save grouped at the right.
-- Show it only when **both** `showDelete=true` and a callable `deleteAction` are supplied; never show it for creation or duplication.
-- Use ConfirmButton's native popover and a UTooltip, an accessible name, a record-specific confirmation title, and a concise consequence.
-- Opening/cancelling confirmation must not submit or clear the draft.
-- Block conflicting saves/cancellation during deletion; on failure keep the confirmation and input available for retry.
-- Delete is independent of whether edited fields are valid or dirty.
-- This shortcut suits a deletion whose consequence fits in a sentence; a cascade or a count that has to be shown moves to the modal container.
+The example's protected EntityForm supplies modal/page presentation, save/delete callbacks, completion events, and dirty cancellation. Its [component lifecycle and routing contract](../assets/example-app/docs/form-pattern.md) is relevant when adopting that implementation. Use native UForm or an existing host composition when that fits the workflow better.
 
-### Modal and page completion
+### Input recovery proportional to the task
 
-- Modal forms use the `open` model and close only after successful save/delete or accepted cancellation.
-- Page forms do not require `open`: successful save resets the dirty baseline and keeps the form mounted, while `saved`, `cancelled`, and `deleted` events let the host choose navigation, reset, or an empty state.
-- Use async save/delete callbacks for persistence only; navigate from completion events so the form can finish its pending/dirty lifecycle first.
-- Both presentations retain validation, error recovery, and dirty navigation protection.
-- After a deleted form unmounts, the host must provide a logical focus destination.
-
-```vue
-<EntityForm presentation="page" title="Edit workshop" mode="edit"
-  :state="draft" :schema="schema" :save="saveWorkshop"
-  show-delete :delete-action="deleteWorkshop"
-  :delete-title="`Delete ${record.name}?`"
-  @cancelled="returnToList" @deleted="returnToList">
-  <UFormField label="Name" name="name" required>
-    <UInput v-model="draft.name" />
-  </UFormField>
-</EntityForm>
-```
-
-### Protect the draft
-
-This applies to record editors. A settings form that reloads saved values owes none of it.
-
-- Create a working copy when opening an edit form.
-- Cancel must not change the original.
-- A failed save retains input.
-- Reset state intentionally when starting another record.
-- Focus the first field on open, retain the modal on validation failure, and protect dirty data when closing.
-- On small screens, keep the form scrollable and its actions reachable.
+- Keep entered values after a failed save and provide an understandable retry path. This applies to settings as well as record editors.
+- For explicit Save/Cancel, keep uncommitted edits separate from saved values so Cancel has its expected effect. Reset intentionally when switching records.
+- Add navigation guards or discard confirmation when leaving would lose meaningful work that is not already recoverable. Consider entry effort, existing autosave/recovery, and the clarity of the user's intent; a dirty flag alone does not establish the need for a prompt.
+- For a small, easily repeated edit or reliably recovered input, direct cancellation can be appropriate. Clean cancellation needs no prompt. When confirmation is warranted, use Keep editing / Discard changes.
+- Keep forms scrollable, actions reachable, and validation failures near their fields, with appropriate focus.
 
 ### Validation and submission
 
 - Use contextual submit labels: Create course / Create session and Save changes.
 - Validate on blur and submission; focus the first invalid field on an attempted invalid submit.
-- Disable submission while pending, when known invalid, and when an edit is unchanged.
+- Prevent duplicate submission while a save is pending. Disable Save for an unchanged edit as a recommended default.
+- Choose invalid-submit behavior for discoverability: allowing an attempted submit can reveal errors and focus the first invalid field; disabling known-invalid submission is appropriate when requirements and errors are already clear.
 - Make requirements/validation discoverable so a disabled button never leaves the user guessing.
 - Default to deferring optional relationship management until Edit; required relationships belong in both modes.
 - Add concise timing guidance only where necessary.
 - Keep one shared field/schema implementation even when an optional relationship section appears only after creation.
 
-### Addressable editors
+### Editor navigation
 
-- Editors use route queries (`?new=1`, `?edit=id`, `?duplicate=id`); browser Back closes editors opened through navigation, and direct URLs open them.
-- Closing a directly loaded editor removes its query rather than blindly navigating away.
-- Preserve unrelated query values and dirty input when rejecting navigation.
-- Use Keep editing / Discard changes for dirty cancellation in a record editor; clean cancellation needs no prompt, and neither does a settings form whose Cancel restores saved values.
-- Compact forms open in a modal from the list.
-- Evaluate a dedicated route for complex multi-step forms or roughly more than eight substantial fields rather than squeezing them into a modal.
+- Keep opening, completion, cancellation, and Back behavior predictable within the host's existing navigation model.
+- Use direct links when returning to or sharing an editor is useful; query parameters are one implementation choice.
+- Compact edits may fit a modal; use a dedicated page when complexity or supporting context warrants it.
 
 ## 7. Tables and mobile lists
 
@@ -777,7 +743,6 @@ Before adding a token to carry some part of your identity, check whether the ins
 - Follow section 5's loading and pending rules, including scoped busy feedback and reduced motion.
 - Use UEmpty for resolved no-records or no-matches results; field errors for validation; persistent nearby errors for failed saves/confirmation.
 - A collection composition must **let its host supply the creation action** for an empty result. A wrapper that hard-codes "No records yet" with nothing to do next does not merely miss this rule, it prevents every host that copies it from meeting the rule.
-- Preserve drafts for retry.
 - Disabled controls need an understandable reason where it is not apparent. A native `disabled` control fires no hover or focus events, so a tooltip attached to it can never open and is not a way to supply that reason. Either state the reason in adjacent visible text, or keep the control focusable with `aria-disabled`, an accessible name carrying the reason, and a guarded handler.
 - Missing/deleted entities get an unavailable state and a valid route to the collection.
 - Test all these states in both themes, not only the happy path.
@@ -831,7 +796,7 @@ The names below describe responsibilities, not a requirement to import the examp
 | ListItem | Supplied identity/link, metadata, leading/actions slots, selection and expansion models; row/card presentations |
 | DataTable | Supplied records, native columns/slots/API, title/link callbacks, bulk callbacks, card/table presentation, resolved empty-state contract, focus fallback, and CSV utility |
 | ConfirmButton | Prompt/consequence, async action, pending/error state, cancellation, completion and focus restoration |
-| EntityForm | Create/edit modal or page shell, supplied schema/state/save callback, fields slot, optional showDelete + deleteAction, dirty cancellation and submission state |
+| EntityForm | Create/edit modal or page shell, supplied fields/state/save callback and submission feedback; optional protected-editor contract documented with the example |
 | ActionMenu | Supplied record name/link and action callbacks; consistent menu order and confirmation handoff |
 | DetailPanel | Supplied heading and label/value facts, optional actions and value slots |
 | StatCard | Supplied label/value, optional genuine delta/progress and supporting content |
@@ -869,6 +834,10 @@ Keep the mechanical subset out of human review:
 
 ## 13. Review checklist
 
+Start with the common user journey and presentation. Apply the remaining checks to changed behavior; this is not a requirement to retrofit every subsystem during a focused UI task.
+
+- Can users complete the main task with discoverable controls and no unnecessary steps, prompts, or disabled dead ends?
+- Do spacing, alignment, typography, grouping, and responsive composition make the page clear and polished?
 - Can users identify the page, primary record, and next action without explanatory prose?
 - Are cards, lists, and tables chosen for the information relationship?
 - Does the page have visual contrast that carries meaning — supporting surfaces receding, exceptions marked, destinations and repeated concepts iconed, people shown as people — or is it uniformly flat?
@@ -879,7 +848,7 @@ Keep the mechanical subset out of human review:
 - Does that character stay out of the resting layer where signals live, sitting on the shell or on interaction rather than as a permanent mark on every card, and is it defined once in the theme rather than copied per page?
 - Are variants, vocabulary, icon behavior, and confirmation consistent?
 - Does every color on the page name a state or a role, with neutral doing the work wherever there is no such claim to make — and does each confirmation sit in the container its consequence actually requires?
-- Does New/Edit share fields and preserve input on failure?
+- Where forms are involved, are related fields and validation consistent, and does recovery follow section 6? Do prompts protect meaningful work without interrupting routine actions?
 - Can the page be scanned, or has explanation become its content — and is each surviving line there because a label could not carry it?
 - Do loading, empty, no-results, pending, and failure states work?
 - Do first-load skeletons preserve layout, refreshes retain context, and child-route loading leave shared navigation intact?

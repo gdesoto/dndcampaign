@@ -13,9 +13,9 @@ defineProps<{
 </script>
 
 <template>
-  <UCard>
+  <UCard variant="soft">
     <template #header>
-      <div class="flex items-center justify-between gap-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 class=" type-section">Recent activity</h2>
           <p class="text-sm text-muted">Latest changes across the campaign.</p>

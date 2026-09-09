@@ -26,15 +26,18 @@ const hasError = computed(() => Boolean(props.error))
 
 <template>
   <div v-if="pending && !hasData" aria-busy="true" aria-label="Loading content">
-    <slot name="loading">
-      <div class="grid gap-4 sm:grid-cols-2">
-        <UCard v-for="i in 3" :key="i" class="h-28 animate-pulse" />
-      </div>
-    </slot>
+    <p role="status" class="sr-only">Loading content…</p>
+    <div aria-hidden="true">
+      <slot name="loading">
+        <div class="grid gap-4 sm:grid-cols-2">
+          <USkeleton v-for="i in 3" :key="i" class="h-28" />
+        </div>
+      </slot>
+    </div>
   </div>
 
-  <UCard v-else-if="hasError && !hasData" class="text-center">
-    <p class="text-sm text-error">{{ errorMessage }}</p>
+  <UCard v-else-if="hasError && !hasData" variant="soft" class="text-center">
+    <p role="alert" class="text-sm text-error">{{ errorMessage }}</p>
     <div class="mt-4">
       <slot name="errorActions">
         <UButton variant="outline" @click="emit('retry')">Try again</UButton>
@@ -42,15 +45,15 @@ const hasError = computed(() => Boolean(props.error))
     </div>
   </UCard>
 
-  <UCard v-else-if="empty && !pending && !hasError" class="text-center">
-    <p class="text-sm text-muted">{{ noMatches ? 'No results match your filters.' : emptyMessage }}</p>
+  <UCard v-else-if="empty && !pending && !hasError" variant="soft" class="text-center">
+    <p role="status" class="text-sm text-muted">{{ noMatches ? 'No results match your filters.' : emptyMessage }}</p>
     <div class="mt-4">
       <UButton v-if="noMatches" color="neutral" variant="outline" @click="emit('clear')">Clear filters</UButton>
       <slot v-else name="emptyActions" />
     </div>
   </UCard>
 
-  <div v-else :aria-busy="pending" class="space-y-3">
+  <div v-else :aria-busy="pending" class="min-w-0 space-y-3">
     <p v-if="pending" role="status" class="text-sm text-muted">Refreshing… Showing previous results.</p>
     <UAlert v-if="hasError" color="error" :description="errorMessage" :actions="[{ label: 'Retry', color: 'neutral', variant: 'outline', onClick: () => emit('retry') }]" />
     <slot />

@@ -60,6 +60,8 @@ This is a client-rendered application (`ssr: false`). A production static host m
 
 ### Public contracts
 
+The [protected editor pattern](docs/form-pattern.md) documents this optional implementation. Choose it when potential loss of meaningful input warrants its guards; simpler or recoverable edits may use native UForm or a host composition.
+
 **EntityForm presentation/deletion:** `presentation` is `modal` (default) or `page`; `open` is optional for page forms. Page presentation shares the same form body without an overlay or repeated heading. The host handles `cancelled`/`deleted` for navigation or an empty state; `saved` keeps page forms mounted and resets their dirty baseline. Copy `EntityFormContainer.vue` and `ConfirmButton.vue` alongside `EntityForm.vue`. Both presentations need Vue Router for dirty navigation guards.
 
 Deletion is opt-in: `showDelete: true` **and** `deleteAction: () => unknown | Promise<unknown>` must be supplied, and mode must be `edit`. `deleteTitle` and `deleteDescription` customize the prompt/consequence. The tooltip-labeled icon sits left of Cancel/Save. Failures stay in the popover; pending deletion blocks conflicting actions. Callbacks perform persistence; navigate from `saved`/`deleted`/`cancelled`, not inside a pending callback. After unmount, the host owns focus placement. The live page example is `/gallery/forms`; modal examples are under `/gallery/components`.

@@ -387,6 +387,7 @@ const statBlockOptions = computed(() =>
   <CampaignListTemplate
     headline="Campaign Tool"
     title="Encounter tracker"
+    :count="encounters?.length"
     description="Track, run, and reuse encounter setups."
     action-label="New encounter"
     :action-disabled="!canWriteContent"
@@ -634,5 +635,4 @@ v-model:open="isTemplateModalOpen"
     </SharedEntityFormModal>
   </CampaignListTemplate>
 </template>
-
 

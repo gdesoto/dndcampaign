@@ -1,6 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { h } from 'vue'
+import { flushPromises } from '@vue/test-utils'
+import { defineComponent, h } from 'vue'
+import { z } from 'zod'
+import { UFormField, UInput } from '#components'
 import ResourceState from '../../app/components/shared/ResourceState.vue'
 import EntityFormModal from '../../app/components/shared/EntityFormModal.vue'
 import ListItemCard from '../../app/components/shared/ListItemCard.vue'
@@ -45,6 +48,50 @@ describe('SharedResourceState', () => {
 })
 
 describe('SharedEntityFormModal', () => {
+  it('focuses the first invalid field without submitting or discarding the draft', async () => {
+    const wrapper = await mountSuspended(EntityFormModal, {
+      attachTo: document.body,
+      props: { open: true, title: 'Create thing', state: { name: '' }, schema: z.object({ name: z.string().min(1, 'Name is required') }) },
+      slots: { default: defineComponent({ components: { UFormField, UInput }, template: '<UFormField label="Name" name="name"><UInput model-value="" /></UFormField>' }) },
+      global: { stubs: { UModal: { template: '<div><slot name="body" /></div>' } } },
+    })
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+    expect(wrapper.text()).toContain('Name is required')
+    expect(document.activeElement).toBe(wrapper.get('input').element)
+    expect(wrapper.emitted('submit')).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it('locks the form while deleting and keeps the draft and confirmation available after failure', async () => {
+    let rejectDelete!: (error: Error) => void
+    const deleteAction = vi.fn(() => new Promise<void>((_, reject) => { rejectDelete = reject }))
+    const close = vi.fn()
+    const wrapper = await mountSuspended(EntityFormModal, {
+      props: { open: true, title: 'Edit quest', state: { title: 'The watchtower' }, showDeleteAction: true, deleteAction },
+      global: { stubs: {
+        UModal: { template: '<div><slot name="body" /></div>' },
+        UPopover: { setup: () => ({ close }), template: '<div><slot /><slot name="content" :close="close" /></div>' },
+      } },
+    })
+    expect(wrapper.text()).toContain('Delete The watchtower?')
+    const confirm = wrapper.findAll('button').filter(button => button.text() === 'Delete').at(-1)!
+    await confirm.trigger('click')
+    expect(wrapper.get('fieldset').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeDefined()
+    rejectDelete(new Error('Please retry deletion'))
+    await flushPromises()
+    expect(wrapper.text()).toContain('Please retry deletion')
+    expect(wrapper.props('state')).toEqual({ title: 'The watchtower' })
+    expect(close).not.toHaveBeenCalled()
+    expect(wrapper.get('fieldset').attributes('disabled')).toBeUndefined()
+    deleteAction.mockResolvedValueOnce()
+    await confirm.trigger('click')
+    await flushPromises()
+    expect(close).toHaveBeenCalledOnce()
+    wrapper.unmount()
+  })
+
   it('blocks cancellation and conflicting deletion during save', async () => {
     const wrapper = await mountSuspended(EntityFormModal, {
       props: { open: true, title: 'Edit thing', state: { name: 'Draft' }, saving: true, showDeleteAction: true },

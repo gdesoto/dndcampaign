@@ -48,7 +48,7 @@ const props = withDefaults(defineProps<{
   confirmIcon: '',
   confirmLoading: false,
   disabled: false,
-  contentClass: 'w-56 p-3',
+  contentClass: 'w-72 max-w-[calc(100vw-2rem)] p-3',
   side: 'top',
   align: 'end',
   triggerLabel: 'Remove',
@@ -117,7 +117,7 @@ const confirm = async (close: () => void) => {
         <p v-if="!modal" class="text-sm text-muted">{{ message }}</p>
       </slot>
       <p v-if="actionError" role="alert" class="text-sm text-error">{{ actionError }}</p>
-      <div class="flex justify-end gap-2">
+      <div class="flex flex-wrap justify-end gap-2">
         <UButton ref="cancelButton" :disabled="busy" :size="cancelSize" :variant="cancelVariant" :color="cancelColor" @click="emit('cancel'); controls.close()">
           {{ cancelLabel }}
         </UButton>

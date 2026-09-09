@@ -68,12 +68,18 @@ const campaignHeaderDescription = computed(() => {
 
 const {
   navItems,
-  sectionTitle,
   breadcrumbItems,
 } = useCampaignNavigation(route, campaignId, campaign, activeSessionTitle, assetContext)
 
 const navLinks = computed(() => {
-  const items = navItems.value
+  const items = navItems.value.map(({ active: _active, ...item }) => ({
+    ...item,
+    exact: item.label === 'Overview',
+    // Nuxt's list index and detail records are siblings. Keep their section
+    // highlighted on detail routes; ordinary links use native router activation.
+    ...((item.label !== 'Overview' && route.path.startsWith(`${item.to}/`))
+      || (item.label === 'Sessions' && asset.value) ? { active: true } : {}),
+  }))
   const byLabel = new Map(items.map((item) => [item.label, item]))
 
   const sectionDefinitions = [
@@ -114,32 +120,38 @@ const navLinks = computed(() => {
 
 <template>
   <div class="theme-shell">
-    <div class="theme-overlay theme-overlay-noise" />
-    <div class="theme-overlay theme-overlay-pattern" />
+    <div class="theme-overlay theme-overlay-noise" aria-hidden="true" />
+    <div class="theme-overlay theme-overlay-pattern" aria-hidden="true" />
 
     <div class="relative z-10 min-h-screen">
       <AppHeader />
 
       <UDashboardGroup class="fixed inset-x-0 bottom-0 top-[var(--ui-header-height)]">
         <UDashboardSidebar
-id="dmvault-campaign-sidebar"
+          id="dmvault-campaign-sidebar"
           collapsible
           resizable
           :min-size="14"
           :default-size="18"
           :max-size="28"
           :collapsed-size="0"
+          :menu="{ title: 'Campaign navigation', description: 'Choose a campaign section.' }"
           :ui="{
-            root: 'min-h-0 h-full',
+            root: 'min-h-0 h-full min-w-0',
             footer: 'border-t border-default',
           }"
         >
-          <UNavigationMenu
-            :items="navLinks"
-            orientation="vertical"
-            class="w-full px-1 pb-2"
-            :ui="{ linkLabel: 'font-display tracking-[0.08em] uppercase text-md' }"
-          />
+          <template #default="{ collapsed }">
+            <UNavigationMenu
+              v-if="!collapsed"
+              :items="navLinks"
+              aria-label="Campaign sections"
+              highlight
+              orientation="vertical"
+              class="w-full px-1 pb-2"
+              :ui="{ linkLabel: 'font-display tracking-[0.08em] uppercase text-md' }"
+            />
+          </template>
 
           <template #footer="{ collapsed }">
             <CampaignPartyFooter v-if="campaignId && !collapsed" :key="campaignId" :campaign-id="campaignId" />
@@ -147,33 +159,34 @@ id="dmvault-campaign-sidebar"
         </UDashboardSidebar>
 
         <UDashboardPanel
-id="dmvault-campaign-main"
+          id="dmvault-campaign-main"
           class="overflow-hidden"
-          :ui="{ root: 'min-h-0 h-full' }"
+          :ui="{ root: 'min-h-0 h-full', body: 'min-h-0 p-3 sm:p-5' }"
         >
-          <UDashboardNavbar>
-            <template #left>
-              <div class="flex min-w-0 items-start gap-3">
-                <UDashboardSidebarCollapse size="xl" square class="hidden xl:inline-flex" />
-                <div class="min-w-0">
-                  <p class="font-display text-sm tracking-[0.08em] uppercase text-primary-500">
-                    {{ campaign?.name || 'Campaign' }} • {{ sectionTitle }}
-                  </p>
-                  <p class="text-xs text-muted">
-                    {{ campaignHeaderDescription }}
-                  </p>
+          <template #header>
+            <UDashboardNavbar :ui="{ root: 'h-auto min-h-(--ui-header-height) px-3 py-2 sm:px-5' }">
+              <template #left>
+                <div class="flex min-w-0 items-start gap-3">
+                  <UDashboardSidebarCollapse size="md" square />
+                  <div class="min-w-0">
+                    <p class="type-record break-words">
+                      {{ campaign?.name || 'Campaign' }}
+                    </p>
+                    <p class="text-xs text-muted">
+                      {{ campaignHeaderDescription }}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </template>
-          </UDashboardNavbar>
+              </template>
+            </UDashboardNavbar>
 
-          <div class="border-b border-default px-4 py-2 sm:px-6">
-            <UBreadcrumb :items="breadcrumbItems" />
-          </div>
-
-          <div class="h-full overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
-            <slot />
-          </div>
+            <div class="shrink-0 overflow-x-auto border-b border-default px-3 py-2 sm:px-5">
+              <UBreadcrumb :items="breadcrumbItems" class="min-w-max" />
+            </div>
+          </template>
+          <template #body>
+            <div class="min-w-0"><slot /></div>
+          </template>
         </UDashboardPanel>
       </UDashboardGroup>
     </div>

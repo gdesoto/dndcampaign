@@ -19,7 +19,7 @@ const valueModel = computed({
 </script>
 
 <template>
-  <UCard>
+  <UCard variant="soft">
     <template #header>
       <div>
         <h2 class=" type-section">Current status</h2>
@@ -27,18 +27,20 @@ const valueModel = computed({
       </div>
     </template>
     <div class="space-y-4">
-      <UTextarea
-        v-model="valueModel"
-        :rows="6"
-        :disabled="readonly"
-        placeholder="Where did we last leave the party?"
-      />
-      <p v-if="error" class="text-sm text-error">{{ error }}</p>
+      <UFormField label="Current story status" name="currentStatus">
+        <UTextarea
+          v-model="valueModel"
+          :rows="6"
+          :disabled="readonly || saving"
+          placeholder="Where did we last leave the party?"
+        />
+      </UFormField>
+      <p v-if="error" role="alert" class="text-sm text-error">{{ error }}</p>
     </div>
     <template #footer>
       <div class="flex flex-wrap items-center justify-between gap-3">
         <p class="text-xs text-muted">Last updated: {{ updatedAtLabel }}</p>
-        <UButton :loading="saving" :disabled="readonly" @click="emit('save')">Save status</UButton>
+        <UButton color="primary" variant="solid" :loading="saving" :disabled="readonly || saving" @click="emit('save')">Save status</UButton>
       </div>
     </template>
   </UCard>

@@ -51,19 +51,21 @@ useSeoMeta({
 </script>
 
 <template>
-  <div class="space-y-6">
-    <div v-if="pending && !campaign" class="space-y-3">
-      <UCard class="h-24 animate-pulse" />
-      <UCard class="h-16 animate-pulse" />
-    </div>
-
-    <UCard v-else-if="error" class="text-center">
-      <p class="text-sm text-error">Unable to load campaign shell.</p>
-      <UButton class="mt-4" variant="outline" @click="refreshCampaign">Try again</UButton>
-    </UCard>
-
-    <div v-else-if="campaign" class="space-y-4">
+  <SharedResourceState
+    :pending="pending"
+    :error="error"
+    :has-data="Boolean(campaign)"
+    error-message="Unable to load campaign workspace."
+    @retry="refreshCampaign"
+  >
+    <template #loading>
+      <div class="space-y-3">
+        <USkeleton class="h-24" />
+        <USkeleton class="h-16" />
+      </div>
+    </template>
+    <div v-if="campaign" class="min-w-0 space-y-4">
       <NuxtPage />
     </div>
-  </div>
+  </SharedResourceState>
 </template>

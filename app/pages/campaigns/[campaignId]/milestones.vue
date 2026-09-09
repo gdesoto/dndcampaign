@@ -123,6 +123,7 @@ const milestoneActions = (milestone: MilestoneItem): RecordAction[] => canWriteC
     <CampaignListTemplate
       headline="Milestones"
       title="Milestone board"
+      :count="milestones?.length"
       description="Track campaign progress, completion, and key beats."
       action-label="New milestone"
       action-icon="i-lucide-plus"
@@ -189,7 +190,7 @@ v-model:open="isEditOpen"
       :submit-label="editMode === 'create' ? 'Create' : 'Save'"
       :show-delete-action="editMode === 'edit'"
       :delete-loading="deletingMilestoneId === editForm.id"
-      @delete="deleteEditingMilestone"
+      :delete-action="deleteEditingMilestone"
       @submit="saveMilestone"
     >
       <UFormField label="Title" name="title">

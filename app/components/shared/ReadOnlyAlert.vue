@@ -12,7 +12,8 @@ withDefaults(
 
 <template>
   <UAlert
-    color="warning"
+    color="neutral"
+    icon="i-lucide-eye"
     variant="subtle"
     :title="title"
     :description="description"

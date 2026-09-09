@@ -183,6 +183,7 @@ const sessionActions = (entry: GlossaryEntry, link: GlossaryLink): RecordAction[
     <CampaignListTemplate
       headline="Glossary"
       title="World index"
+      :count="entries?.length"
       description="Track campaign entities, aliases, and linked sessions."
       action-label="New entry"
       action-icon="i-lucide-plus"
@@ -280,7 +281,7 @@ v-model:open="isEditOpen"
       :submit-label="editMode === 'create' ? 'Create' : 'Save'"
       :show-delete-action="editMode === 'edit'"
       :delete-loading="deletingEntryId === editForm.id"
-      @delete="deleteEditingEntry"
+      :delete-action="deleteEditingEntry"
       @submit="saveEntry"
     >
       <UFormField label="Type" name="type">

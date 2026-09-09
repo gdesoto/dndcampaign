@@ -89,7 +89,8 @@ const createSession = async () => {
   <div class="space-y-6">
     <CampaignListTemplate
       headline="Sessions"
-      title="Session log"
+        title="Session log"
+        :count="sessions?.length"
       description="Browse and open campaign sessions."
       action-label="New session"
       action-icon="i-lucide-plus"

@@ -13,6 +13,8 @@ Use this same `SKILL.md` entrypoint in Codex or Claude Code. Resolve bundled pat
 
 ## Apply to the host
 
+Prioritize task clarity, intuitive navigation, visual hierarchy, readable presentation, and efficient completion. Review the common user journey first. Apply safeguards in proportion to potential loss and existing recovery; a focused presentation or usability task does not imply building unrelated form infrastructure.
+
 1. Inspect project instructions, dependencies/lockfile, theme, layout, and relevant pages/components. Reuse existing compositions before adding another.
 2. Read the opening principles in [references/guidelines.md](references/guidelines.md), then use its review map for the relevant sections. This is the bundled design specification, not an upstream API manual.
 3. Distinguish **Fixed** interaction/accessibility invariants, **Default** conventions that can change centrally, and **Yours** identity decisions. Explicit user/project choices take precedence. Record deliberate default changes in existing project guidance rather than varying equivalent controls by page.
@@ -39,8 +41,7 @@ Prefer the available official Nuxt UI MCP server for component discovery, props,
 - Color names a state or a role; neutral carries everything that makes no such claim, including the trigger of a destructive action, whose color belongs on the confirmation's commit button. Support light, dark and system, default to system, and render preference-dependent controls inside `ClientOnly`.
 - Explanation is spent, not free. Make the label or the option names carry it; keep persistent help to the few fields where a value would otherwise be wrong; put background where the reader can go — a sentence for the whole group, a docs link, an expandable, or an info trigger, whichever fits, none of them required. A form where every control carries a paragraph cannot be scanned.
 - An unreachable hint is a broken trigger: give it a focusable named button, not permanent body text. Permanently visible is not the accessible form of deferred.
-- Share New/Edit fields and schema. Work on a draft, preserve it after failure, guard dirty navigation, block conflicting submissions, and navigate after completion. Cancel precedes Submit on desktop and mobile.
-- That draft protection is for record editors. A settings form holds values the server already has, so it may use a plain UForm and a Cancel that restores them with no prompt. The test is what Cancel destroys: work that exists nowhere else, or values already saved.
+- Reuse related New/Edit fields and validation. Keep Save disabled for unchanged edits as a recommended default; make invalid-submit behavior help users discover errors. Cancel precedes Submit on desktop and mobile. Use section 6 for input recovery and proportional cancellation safeguards; the example's protected EntityForm is optional.
 - Distinguish loading, refresh, pending, empty, no matches, and failure. Use real request state, retain context, offer retry, and never mislabel stale results as matching a new request.
 - Table/mobile/card presentations share one native row model and collection state. Export visible data columns from filtered/sorted results or explicitly selected filtered rows; retain CSV escaping/formula protection. Remote data needs an explicit server contract.
 - Child sections use real route links beneath a persistent entity header, with the active one carrying a native `highlight` indicator; local panels use native tabs. Preserve direct URLs, exact Overview matching, Back/Forward, and collapsed/mobile navigation.

@@ -98,12 +98,12 @@ describe('Campaign milestones page', () => {
             `,
           },
           SharedEntityFormModal: {
-            props: ['open', 'showDeleteAction'],
+            props: ['open', 'showDeleteAction', 'deleteAction'],
             emits: ['delete'],
             template: `
               <div>
                 <slot />
-                <button v-if="showDeleteAction" type="button" @click="$emit('delete')">Delete</button>
+                <button v-if="showDeleteAction" type="button" @click="deleteAction ? deleteAction() : $emit('delete')">Delete</button>
               </div>
             `,
           },

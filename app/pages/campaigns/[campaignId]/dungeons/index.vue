@@ -185,6 +185,7 @@ const dungeonActions = (dungeon: CampaignDungeonSummary): RecordAction[] => [
   <CampaignListTemplate
     headline="Campaign Tool"
     title="Dungeons"
+    :count="dungeons?.length"
     description="Generate and manage campaign dungeon maps."
     action-label="New dungeon"
     action-icon="i-lucide-plus"
