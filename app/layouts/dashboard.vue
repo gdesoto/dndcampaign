@@ -142,26 +142,7 @@ id="dmvault-campaign-sidebar"
           />
 
           <template #footer="{ collapsed }">
-            <div class="w-full px-3 py-2.5">
-              <div v-if="collapsed" class="flex justify-center">
-                <ClientOnly><UColorModeButton variant="ghost" size="xs" class="shrink-0" /></ClientOnly>
-              </div>
-
-              <div v-else class="space-y-2">
-                <div class="flex items-center justify-between gap-2">
-                  <p class="font-display text-[13px] uppercase tracking-[0.08em] text-[var(--ui-text-dimmed)]">
-                    Party
-                  </p>
-                  <ClientOnly><UColorModeButton variant="ghost" size="xs" class="shrink-0" /></ClientOnly>
-                </div>
-
-                <div class="flex items-center gap-1.5">
-                  <UBadge variant="outline" size="sm" color="primary" class="min-w-8 justify-center">DM</UBadge>
-                  <UBadge variant="soft" size="sm" color="neutral" class="min-w-8 justify-center">PC</UBadge>
-                  <UBadge variant="soft" size="sm" color="neutral" class="min-w-8 justify-center">PC</UBadge>
-                </div>
-              </div>
-            </div>
+            <CampaignPartyFooter v-if="campaignId && !collapsed" :key="campaignId" :campaign-id="campaignId" />
           </template>
         </UDashboardSidebar>
 
