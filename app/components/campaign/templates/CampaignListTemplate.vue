@@ -25,16 +25,14 @@ const hasAside = computed(() => Boolean(slots.aside))
 <template>
   <div class="space-y-6">
     <UPageHeader
-      :headline="headline"
       :title="title"
-      :description="description"
     >
       <template #links>
         <div class="flex items-center gap-2">
           <slot name="actions" />
           <UButton
             v-if="actionLabel"
-            size="lg"
+            size="md" color="primary" variant="solid"
             :icon="actionIcon || undefined"
             :disabled="actionDisabled"
             @click="emit('action')"

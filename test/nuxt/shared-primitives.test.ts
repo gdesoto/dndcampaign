@@ -7,6 +7,28 @@ import ListItemCard from '../../app/components/shared/ListItemCard.vue'
 import StatCard from '../../app/components/shared/StatCard.vue'
 
 describe('SharedResourceState', () => {
+  it('keeps content mounted through a refresh and a failed refresh', async () => {
+    const wrapper = await mountSuspended(ResourceState, {
+      props: { pending: true, hasData: true },
+      slots: { default: () => h('input', { value: 'Existing draft' }) },
+    })
+    const input = wrapper.find('input').element
+    expect(wrapper.text()).toContain('Refreshing')
+    await wrapper.setProps({ pending: false, error: new Error('Offline') })
+    expect(wrapper.find('input').element).toBe(input)
+    expect(wrapper.text()).toContain('Unable to load data.')
+  })
+
+  it('offers filter recovery instead of creation for no matches', async () => {
+    const wrapper = await mountSuspended(ResourceState, {
+      props: { pending: false, empty: true, noMatches: true },
+      slots: { emptyActions: () => h('button', 'Create first item') },
+    })
+    expect(wrapper.text()).not.toContain('Create first item')
+    await wrapper.find('button').trigger('click')
+    expect(wrapper.emitted('clear')).toBeTruthy()
+  })
+
   it('emits retry on default error action', async () => {
     const wrapper = await mountSuspended(ResourceState, {
       props: {
@@ -23,6 +45,18 @@ describe('SharedResourceState', () => {
 })
 
 describe('SharedEntityFormModal', () => {
+  it('blocks cancellation and conflicting deletion during save', async () => {
+    const wrapper = await mountSuspended(EntityFormModal, {
+      props: { open: true, title: 'Edit thing', state: { name: 'Draft' }, saving: true, showDeleteAction: true },
+      global: { stubs: { UModal: { template: '<div><slot name="body" /></div>' } } },
+    })
+    const cancel = wrapper.findAll('button').find(button => button.text() === 'Cancel')!
+    expect(cancel.attributes('disabled')).toBeDefined()
+    await cancel.trigger('click')
+    expect(wrapper.emitted('cancel')).toBeUndefined()
+    expect(wrapper.props('state')).toEqual({ name: 'Draft' })
+  })
+
   it('emits cancel from default footer actions', async () => {
     const wrapper = await mountSuspended(EntityFormModal, {
       props: {
@@ -37,7 +71,7 @@ describe('SharedEntityFormModal', () => {
           UModal: {
             props: ['open'],
             emits: ['update:open'],
-            template: '<div><slot name="content" /></div>',
+            template: '<div><slot name="body" /></div>',
           },
         },
       },
@@ -63,7 +97,7 @@ describe('SharedEntityFormModal', () => {
           UModal: {
             props: ['open', 'dismissible'],
             emits: ['update:open'],
-            template: '<div :data-dismissible="String(dismissible)"><slot name="content" /></div>',
+            template: '<div :data-dismissible="String(dismissible)"><slot name="body" /></div>',
           },
         },
       },
@@ -91,7 +125,7 @@ describe('SharedEntityFormModal', () => {
           UModal: {
             props: ['open'],
             emits: ['update:open'],
-            template: '<div><slot name="content" /></div>',
+            template: '<div><slot name="body" /></div>',
           },
         },
       },

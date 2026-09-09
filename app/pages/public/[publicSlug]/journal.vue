@@ -53,7 +53,6 @@ const nextPage = async () => {
   <UMain>
     <UPage>
       <div class="space-y-6">
-        <PublicCampaignHeader v-if="overview" :public-slug="publicSlug" :overview="overview" />
 
         <UCard>
           <template #header>
@@ -70,7 +69,7 @@ const nextPage = async () => {
                   class="flex-1"
                   placeholder="Search title, body, or tag"
                 />
-                <UButton type="submit" variant="outline">Search</UButton>
+                <UButton color="primary" type="submit" variant="outline">Search</UButton>
                 <UButton
                   v-if="search"
                   type="button"

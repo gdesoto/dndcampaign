@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { z } from 'zod'
+const profileSchema = z.object({ name: z.string().trim().min(1, 'Enter a display name.'), avatarUrl: z.union([z.literal(''), z.url('Enter a valid URL.')]) })
+const emailSchema = z.object({ newEmail: z.email('Enter a valid email.'), password: z.string().min(1, 'Enter your current password.') })
+const passwordSchema = z.object({ currentPassword: z.string().min(1, 'Enter your current password.'), newPassword: z.string().min(10, 'Use at least 10 characters.') })
 definePageMeta({ layout: 'default' })
 
 type AccountProfile = {
@@ -56,35 +60,40 @@ const revokeAction = reactive({
 const {
   data: profile,
   pending: profilePending,
+  error: profileError,
   refresh: refreshProfile,
 } = await useAsyncData<AccountProfile | null>('account-profile', async () => {
   const response = await account.getProfile()
-  if (!response) return null
+  if (!response) throw new Error('Unable to load profile.')
   return response.profile
 })
 
 const {
   data: sessions,
   pending: sessionsPending,
+  error: sessionsError,
   refresh: refreshSessions,
 } = await useAsyncData('account-sessions', async () => {
   const response = await account.listSessions()
-  if (!response) return []
+  if (!response) throw new Error('Unable to load sessions.')
   return response.sessions
 })
 
+const previousProfile = reactive({ name: '', avatarUrl: '', email: '' })
 watch(
   profile,
   (value) => {
     if (!value) return
-    profileForm.name = value.name
-    profileForm.avatarUrl = value.avatarUrl || ''
-    emailForm.newEmail = value.email
+    if (!profile.value || profileForm.name === '' || profileForm.name === previousProfile.name) profileForm.name = value.name
+    if (profileForm.avatarUrl === previousProfile.avatarUrl) profileForm.avatarUrl = value.avatarUrl || ''
+    if (!emailForm.newEmail || emailForm.newEmail === previousProfile.email) emailForm.newEmail = value.email
+    Object.assign(previousProfile, { name: value.name, avatarUrl: value.avatarUrl || '', email: value.email })
   },
   { immediate: true }
 )
 
 const saveProfile = async () => {
+  if (accountBusy.value) return
   profileAction.error = ''
   profileAction.success = ''
   profileAction.saving = true
@@ -104,6 +113,7 @@ const saveProfile = async () => {
 }
 
 const saveEmail = async () => {
+  if (accountBusy.value) return
   emailAction.error = ''
   emailAction.success = ''
   emailAction.saving = true
@@ -124,6 +134,7 @@ const saveEmail = async () => {
 }
 
 const savePassword = async () => {
+  if (accountBusy.value) return
   passwordAction.error = ''
   passwordAction.success = ''
   passwordAction.saving = true
@@ -160,6 +171,8 @@ const revokeOtherSessions = async () => {
   }
 }
 
+const accountBusy = computed(() => profileAction.saving || emailAction.saving || passwordAction.saving)
+useUnsavedChanges(() => Boolean(profile.value) && (profileForm.name !== previousProfile.name || profileForm.avatarUrl !== previousProfile.avatarUrl || emailForm.newEmail !== previousProfile.email || Boolean(emailForm.password || passwordForm.currentPassword || passwordForm.newPassword)), accountBusy)
 </script>
 
 <template>
@@ -179,30 +192,25 @@ const revokeOtherSessions = async () => {
             </div>
           </template>
 
-          <div v-if="profilePending" class="space-y-3">
+          <div v-if="profilePending && !profile" class="space-y-3">
             <div class="h-4 w-40 animate-pulse rounded bg-muted"/>
             <div class="h-10 w-full animate-pulse rounded bg-muted"/>
             <div class="h-10 w-full animate-pulse rounded bg-muted"/>
           </div>
 
-          <div v-else class="space-y-4">
+          <div v-else-if="profileError" class="space-y-3"><UAlert color="error" title="Unable to load profile" /><UButton @click="() => refreshProfile()">Retry</UButton></div>
+          <UForm v-else :state="profileForm" :schema="profileSchema" :disabled="accountBusy" class="space-y-4" @submit="saveProfile">
             <div class="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label class="mb-2 block text-sm text-muted">Display name</label>
-                <UInput v-model="profileForm.name" placeholder="Display name" />
-              </div>
-              <div>
-                <label class="mb-2 block text-sm text-muted">Avatar URL (optional)</label>
-                <UInput v-model="profileForm.avatarUrl" placeholder="https://..." />
-              </div>
+              <UFormField label="Display name" name="name"><UInput v-model="profileForm.name" placeholder="Display name"  /></UFormField>
+              <UFormField label="Avatar URL (optional)" name="avatarUrl"><UInput v-model="profileForm.avatarUrl" placeholder="https://..."  /></UFormField>
             </div>
             <p class="text-xs text-muted">Email: {{ profile?.email }}</p>
             <div class="flex flex-wrap items-center gap-3">
-              <UButton :loading="profileAction.saving" @click="saveProfile">Save profile</UButton>
+              <UButton :loading="profileAction.saving" type="submit" color="primary" variant="solid">Save profile</UButton>
               <p v-if="profileAction.success" class="text-sm text-success">{{ profileAction.success }}</p>
               <p v-if="profileAction.error" class="text-sm text-error">{{ profileAction.error }}</p>
             </div>
-          </div>
+          </UForm>
         </UCard>
 
         <UCard>
@@ -211,49 +219,38 @@ const revokeOtherSessions = async () => {
           </template>
 
           <div class="space-y-6">
-            <div class="space-y-3">
+            <UForm :state="emailForm" :schema="emailSchema" :disabled="accountBusy" class="space-y-3" @submit="saveEmail">
               <h3 class="text-sm font-semibold">Change email</h3>
               <div class="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label class="mb-2 block text-sm text-muted">New email</label>
-                  <UInput v-model="emailForm.newEmail" type="email" placeholder="you@example.com" />
-                </div>
-                <div>
-                  <label class="mb-2 block text-sm text-muted">Current password</label>
-                  <UInput v-model="emailForm.password" type="password" placeholder="••••••••••" />
-                </div>
+                <UFormField label="New email" name="newEmail"><UInput v-model="emailForm.newEmail" type="email" placeholder="you@example.com"  /></UFormField>
+                <UFormField label="Current password" name="password"><UInput v-model="emailForm.password" type="password" placeholder="••••••••••"  /></UFormField>
               </div>
               <div class="flex flex-wrap items-center gap-3">
-                <UButton :loading="emailAction.saving" @click="saveEmail">Update email</UButton>
+                <UButton :loading="emailAction.saving" type="submit" color="primary" variant="solid">Update email</UButton>
                 <p v-if="emailAction.success" class="text-sm text-success">{{ emailAction.success }}</p>
                 <p v-if="emailAction.error" class="text-sm text-error">{{ emailAction.error }}</p>
               </div>
-            </div>
+            </UForm>
 
             <USeparator />
 
-            <div class="space-y-3">
+            <UForm :state="passwordForm" :schema="passwordSchema" :disabled="accountBusy" class="space-y-3" @submit="savePassword">
               <h3 class="text-sm font-semibold">Change password</h3>
               <div class="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label class="mb-2 block text-sm text-muted">Current password</label>
-                  <UInput
+                <UFormField label="Current password" name="currentPassword"><UInput
+id="field-settings-vue-5"
                     v-model="passwordForm.currentPassword"
                     type="password"
                     placeholder="••••••••••"
-                  />
-                </div>
-                <div>
-                  <label class="mb-2 block text-sm text-muted">New password</label>
-                  <UInput v-model="passwordForm.newPassword" type="password" placeholder="••••••••••" />
-                </div>
+                   /></UFormField>
+                <UFormField label="New password" name="newPassword"><UInput v-model="passwordForm.newPassword" type="password" placeholder="••••••••••"  /></UFormField>
               </div>
               <div class="flex flex-wrap items-center gap-3">
-                <UButton :loading="passwordAction.saving" @click="savePassword">Update password</UButton>
+                <UButton :loading="passwordAction.saving" type="submit" color="primary" variant="solid">Update password</UButton>
                 <p v-if="passwordAction.success" class="text-sm text-success">{{ passwordAction.success }}</p>
                 <p v-if="passwordAction.error" class="text-sm text-error">{{ passwordAction.error }}</p>
               </div>
-            </div>
+            </UForm>
           </div>
         </UCard>
 
@@ -281,6 +278,7 @@ const revokeOtherSessions = async () => {
               <div class="h-9 w-full animate-pulse rounded bg-muted"/>
             </div>
 
+            <div v-else-if="sessionsError" class="space-y-3"><UAlert color="error" title="Unable to load active sessions" /><UButton @click="() => refreshSessions()">Retry</UButton></div>
             <div v-else-if="sessions?.length" class="space-y-2">
               <div
                 v-for="session in sessions"

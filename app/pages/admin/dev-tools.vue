@@ -205,16 +205,18 @@ const runN8nTest = async () => {
           <div class="space-y-4">
             <div class="grid gap-4 sm:grid-cols-2">
               <div>
-                <label class="mb-2 block text-sm text-muted">Campaign</label>
+                <label class="mb-2 block text-sm text-muted" for="field-admin-dev-tools-vue-1">Campaign</label>
                 <USelect
+id="field-admin-dev-tools-vue-1"
                   v-model="n8nForm.campaignId"
                   :items="campaignOptions"
                   placeholder="Select campaign"
                 />
               </div>
               <div>
-                <label class="mb-2 block text-sm text-muted">Session</label>
+                <label class="mb-2 block text-sm text-muted" for="field-admin-dev-tools-vue-2">Session</label>
                 <USelect
+id="field-admin-dev-tools-vue-2"
                   v-model="n8nForm.sessionId"
                   :items="sessionOptions"
                   :disabled="!n8nForm.campaignId"
@@ -222,12 +224,12 @@ const runN8nTest = async () => {
                 />
               </div>
               <div>
-                <label class="mb-2 block text-sm text-muted">Webhook URL override</label>
-                <UInput v-model="n8nForm.webhookUrlOverride" placeholder="https://n8n.example/webhook/..." />
+                <label class="mb-2 block text-sm text-muted" for="field-admin-dev-tools-vue-3">Webhook URL override</label>
+                <UInput id="field-admin-dev-tools-vue-3" v-model="n8nForm.webhookUrlOverride" placeholder="https://n8n.example/webhook/..." />
               </div>
               <div>
-                <label class="mb-2 block text-sm text-muted">Prompt profile (optional)</label>
-                <UInput v-model="n8nForm.promptProfile" placeholder="session-summary+highlights+quests..." />
+                <label class="mb-2 block text-sm text-muted" for="field-admin-dev-tools-vue-4">Prompt profile (optional)</label>
+                <UInput id="field-admin-dev-tools-vue-4" v-model="n8nForm.promptProfile" placeholder="session-summary+highlights+quests..." />
               </div>
             </div>
             <div class="flex items-center gap-2">
@@ -256,8 +258,9 @@ const runN8nTest = async () => {
           <div class="space-y-4">
             <div class="grid gap-4 sm:grid-cols-2">
               <div>
-                <label class="mb-2 block text-sm text-muted">Campaign (optional)</label>
+                <label class="mb-2 block text-sm text-muted" for="field-admin-dev-tools-vue-5">Campaign (optional)</label>
                 <USelect
+id="field-admin-dev-tools-vue-5"
                   v-model="migrateForm.campaignId"
                   :items="campaignOptions"
                   placeholder="All campaigns"

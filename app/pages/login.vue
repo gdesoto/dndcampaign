@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { z } from 'zod'
 import { resolveAuthRedirectPath } from '~/utils/auth-redirect'
+const schema = z.object({ email: z.email('Enter a valid email address.'), password: z.string().min(1, 'Enter your password.') })
 
 definePageMeta({ layout: 'auth' })
 
@@ -40,19 +42,17 @@ const onSubmit = async () => {
     </div>
 
     <UCard >
-      <form class="space-y-5" @submit.prevent="onSubmit">
-        <div>
-          <label class="mb-2 block text-sm text-default">Email</label>
-          <UInput v-model="form.email" type="email" placeholder="you@example.com" />
-        </div>
-        <div>
-          <label class="mb-2 block text-sm text-default">Password</label>
-          <UInput v-model="form.password" type="password" placeholder="••••••••" />
-        </div>
+      <UForm :state="form" :schema="schema" class="space-y-5" @submit="onSubmit">
+        <UFormField name="email" label="Email">
+          <UInput v-model="form.email" type="email" autocomplete="username" placeholder="you@example.com" />
+        </UFormField>
+        <UFormField name="password" label="Password">
+          <UInput v-model="form.password" type="password" autocomplete="current-password" placeholder="••••••••" />
+        </UFormField>
 
         <p v-if="errorMessage" class="text-sm text-error">{{ errorMessage }}</p>
 
-        <UButton type="submit" size="lg" :loading="isSubmitting" block>
+        <UButton type="submit" color="primary" variant="solid" size="lg" :loading="isSubmitting" block>
           Sign in
         </UButton>
 
@@ -62,7 +62,7 @@ const onSubmit = async () => {
             Create one
           </NuxtLink>
         </p>
-      </form>
+      </UForm>
     </UCard>
   </div>
 </template>

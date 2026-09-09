@@ -31,6 +31,7 @@ export const useCrudModal = <TForm extends Record<string, unknown>>(
     handler: (context: { mode: CrudModalMode; form: TForm }) => Promise<void>,
     fallbackMessage: string
   ) => {
+    if (isSaving.value) return
     error.value = ''
     isSaving.value = true
     try {

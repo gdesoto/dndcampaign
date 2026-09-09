@@ -278,6 +278,7 @@ type PublicAccessToggleField =
   | 'showJournal'
 
 const savePublicAccess = async (payload: Parameters<typeof publicAccessApi.updateSettings>[1]) => {
+  if (publicAction.saving || publicAction.regenerating) return
   publicAction.error = ''
   publicAction.success = ''
   publicAction.saving = true
@@ -302,6 +303,7 @@ const updatePublicToggle = async (key: PublicAccessToggleField, value: boolean) 
 }
 
 const regeneratePublicSlug = async () => {
+  if (publicAction.regenerating || publicAction.saving) return
   publicAction.error = ''
   publicAction.success = ''
   publicAction.regenerating = true
@@ -331,6 +333,9 @@ const copyPublicUrl = async () => {
     publicAction.error = 'Unable to copy public URL.'
   }
 }
+const transferDirty = computed(() => transferModalOpen.value && Boolean(transferForm.password || transferForm.confirmationText || transferForm.targetMemberId))
+const { confirmDiscard: confirmTransferDiscard } = useUnsavedChanges(transferDirty, () => transferModalOpen.value && transferAction.saving)
+const transferOpenModel = computed({ get: () => transferModalOpen.value, set: async (open: boolean) => { if (open || await confirmTransferDiscard()) transferModalOpen.value = open } })
 </script>
 
 <template>
@@ -541,7 +546,7 @@ const copyPublicUrl = async () => {
                 :model-value="publicAccessData.isEnabled"
                 label="Enable public campaign access"
                 description="Allow anonymous visitors to view enabled sections below."
-                :loading="publicAction.saving"
+                :loading="publicAction.saving" :disabled="publicAction.saving || publicAction.regenerating"
                 @update:model-value="(value) => updatePublicToggle('isEnabled', value)"
               />
             </div>
@@ -550,8 +555,9 @@ const copyPublicUrl = async () => {
               <USwitch
                 :model-value="publicAccessData.isListed"
                 label="List in public directory"
+                :disabled="!publicAccessData.isEnabled || publicAction.saving || publicAction.regenerating"
                 description="If enabled, this campaign can appear on the homepage sample and in the public campaign directory."
-                :disabled="!publicAccessData.isEnabled"
+
                 :loading="publicAction.saving"
                 @update:model-value="(value) => updatePublicToggle('isListed', value)"
               />
@@ -618,14 +624,7 @@ const copyPublicUrl = async () => {
               <UInput :model-value="publicAccessData.publicUrl" readonly />
               <div class="flex flex-wrap gap-2">
                 <UButton variant="outline" @click="copyPublicUrl">Copy URL</UButton>
-                <UButton
-                  color="warning"
-                  variant="soft"
-                  :loading="publicAction.regenerating"
-                  @click="regeneratePublicSlug"
-                >
-                  Regenerate URL
-                </UButton>
+                <SharedConfirmActionPopover trigger-label="Regenerate URL" message="Replace the public URL? Existing shared links will stop working." confirm-label="Regenerate URL" :confirm-loading="publicAction.regenerating" :disabled="publicAction.saving" @confirm="async ({ close }) => { await regeneratePublicSlug(); if (!publicAction.error) close() }" />
               </div>
               <p class="text-xs text-muted">Last updated: {{ formatDateTime(publicAccessData.updatedAt) }}</p>
             </div>
@@ -646,15 +645,17 @@ const copyPublicUrl = async () => {
     </CampaignListTemplate>
 
     <UModal
-      v-model:open="transferModalOpen"
+      v-model:open="transferOpenModel"
+      :dismissible="!transferAction.saving" :close="!transferAction.saving"
       title="Transfer campaign ownership"
       description="This action changes campaign ownership immediately and demotes you to collaborator."
     >
       <template #body>
-        <div class="space-y-4">
+        <fieldset :disabled="transferAction.saving" class="space-y-4">
           <div>
-            <label class="mb-2 block text-sm text-muted">New owner</label>
+            <label class="mb-2 block text-sm text-muted" for="field-campaigns--campaignId--settings-vue-1">New owner</label>
             <USelect
+id="field-campaigns--campaignId--settings-vue-1"
               v-model="transferForm.targetMemberId"
               :items="transferMemberOptions"
               placeholder="Select member"
@@ -662,23 +663,23 @@ const copyPublicUrl = async () => {
           </div>
 
           <div>
-            <label class="mb-2 block text-sm text-muted">Confirm with password</label>
-            <UInput v-model="transferForm.password" type="password" placeholder="••••••••••" />
+            <label class="mb-2 block text-sm text-muted" for="field-campaigns--campaignId--settings-vue-2">Confirm with password</label>
+            <UInput id="field-campaigns--campaignId--settings-vue-2" v-model="transferForm.password" type="password" placeholder="••••••••••" />
           </div>
 
           <div>
-            <label class="mb-2 block text-sm text-muted">Type TRANSFER to confirm</label>
-            <UInput v-model="transferForm.confirmationText" placeholder="TRANSFER" />
+            <label class="mb-2 block text-sm text-muted" for="field-campaigns--campaignId--settings-vue-3">Type TRANSFER to confirm</label>
+            <UInput id="field-campaigns--campaignId--settings-vue-3" v-model="transferForm.confirmationText" placeholder="TRANSFER" />
           </div>
 
           <p v-if="transferAction.error" class="text-sm text-error">{{ transferAction.error }}</p>
           <p v-if="transferAction.success" class="text-sm text-success">{{ transferAction.success }}</p>
-        </div>
+        </fieldset>
       </template>
 
       <template #footer>
         <div class="flex w-full justify-end gap-2">
-          <UButton variant="ghost" color="neutral" @click="() => { transferModalOpen = false }">Cancel</UButton>
+          <UButton variant="ghost" color="neutral" :disabled="transferAction.saving" @click="() => { transferOpenModel = false }">Cancel</UButton>
           <UButton color="warning" :loading="transferAction.saving" @click="transferOwnership">
             Transfer ownership
           </UButton>

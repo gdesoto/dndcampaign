@@ -11,9 +11,9 @@ useSeoMeta({ title: () => `Recap playlist | ${overview.value?.campaign.name || '
 <template>
   <div class="py-6">
     <UPage>
-      <UPageHeader :title="overview?.campaign.name || 'Recap playlist'" description="Watch or listen through the campaign, one session at a time.">
-        <template #links><UButton :to="`/public/${publicSlug}/recaps`" variant="outline" icon="i-lucide-arrow-left">All recaps</UButton></template>
-      </UPageHeader>
+      <section><h2 class="text-lg font-semibold">Recap playlist</h2>
+        <div><UButton :to="`/public/${publicSlug}/recaps`" variant="outline" icon="i-lucide-arrow-left">All recaps</UButton></div>
+      </section>
       <div class="py-6">
         <UCard v-if="pending" class="h-64 animate-pulse" aria-label="Loading recaps" />
         <UCard v-else-if="error">

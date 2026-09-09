@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { titledEntityFormSchema } from '~/utils/entity-form-schemas'
 import type {
   CampaignRequestCreateInput,
   CampaignRequestDecisionInput,
@@ -429,7 +430,9 @@ const decideRequest = async (requestId: string, decision: CampaignRequestDecisio
     </SharedResourceState>
 
     <SharedEntityFormModal
-      v-model:open="isCreateOpen"
+v-model:open="isCreateOpen"
+:schema="titledEntityFormSchema"
+      :state="form"
       title="Create request"
       description="Use public for player voting, or DM Only for creator + DM visibility."
       :saving="isSaving"
@@ -452,7 +455,9 @@ const decideRequest = async (requestId: string, decision: CampaignRequestDecisio
     </SharedEntityFormModal>
 
     <SharedEntityFormModal
-      v-model:open="isEditOpen"
+v-model:open="isEditOpen"
+:schema="titledEntityFormSchema"
+      :state="form"
       title="Edit request"
       description="You can edit only while the request is pending."
       :saving="isSaving"

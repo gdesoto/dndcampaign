@@ -4,11 +4,16 @@ import type { TableColumn } from '@nuxt/ui'
 definePageMeta({ layout: 'default' })
 
 const admin = useAdmin()
+const toast = useToast()
 
+const page = ref(1)
+const pageSize = 25
 const filters = reactive({
   search: '',
   archived: 'all' as 'all' | 'active' | 'archived',
 })
+
+watch(filters, () => { page.value = 1 }, { flush: 'sync' })
 
 const action = reactive({
   selectedCampaignId: '',
@@ -28,13 +33,13 @@ const {
   error,
   refresh,
 } = await useAsyncData(
-  () => `admin-campaigns-${filters.search}-${filters.archived}`,
+  () => `admin-campaigns-${filters.search}-${filters.archived}-${page.value}`,
   () =>
     admin.getCampaigns({
       search: filters.search || undefined,
       archived: filters.archived,
-      page: 1,
-      pageSize: 50,
+      page: page.value,
+      pageSize,
     })
 )
 
@@ -53,9 +58,9 @@ const campaignColumns: TableColumn<{
   { accessorKey: 'name', header: 'Name' },
   { accessorKey: 'ownerEmail', header: 'Owner email' },
   { accessorKey: 'isArchived', header: 'Archived' },
-  { accessorKey: 'memberCount', header: 'Members' },
-  { accessorKey: 'sessionCount', header: 'Sessions' },
-  { accessorKey: 'documentCount', header: 'Documents' },
+  { accessorKey: 'memberCount', header: 'Members', meta: { class: { th: 'text-right tabular-nums', td: 'text-right tabular-nums' } } },
+  { accessorKey: 'sessionCount', header: 'Sessions', meta: { class: { th: 'text-right tabular-nums', td: 'text-right tabular-nums' } } },
+  { accessorKey: 'documentCount', header: 'Documents', meta: { class: { th: 'text-right tabular-nums', td: 'text-right tabular-nums' } } },
   { accessorKey: 'updatedAt', header: 'Updated' },
   {
     id: 'openCampaign',
@@ -162,15 +167,22 @@ const refreshCampaigns = async () => {
 }
 
 const saveArchiveStatus = async () => {
-  if (!action.selectedCampaignId) return
+  if (!action.selectedCampaignId || action.savingArchive || action.savingTransfer) return
+  const id = action.selectedCampaignId
+  const previous = selectedCampaign.value?.isArchived ?? false
+  const name = selectedCampaign.value?.name || 'Campaign'
 
   action.error = ''
   action.success = ''
   action.savingArchive = true
 
   try {
-    await admin.updateCampaign(action.selectedCampaignId, { isArchived: action.isArchived })
+    await admin.updateCampaign(id, { isArchived: action.isArchived })
     action.success = 'Campaign status updated.'
+    toast.add({ title: `${name} ${action.isArchived ? 'archived' : 'restored'}`, color: 'success', duration: 8000, actions: [{ label: 'Undo', onClick: async () => {
+      try { await admin.updateCampaign(id, { isArchived: previous }); await refresh() }
+      catch (error) { toast.add({ title: 'Unable to undo', description: (error as Error).message, color: 'error', duration: 0 }) }
+    } }] })
     await refresh()
   } catch (saveError) {
     action.error = (saveError as Error).message || 'Unable to update campaign status.'
@@ -180,6 +192,7 @@ const saveArchiveStatus = async () => {
 }
 
 const transferOwner = async () => {
+  if (action.savingTransfer || action.savingArchive) return
   if (!action.selectedCampaignId || !action.transferOwnerUserId.trim()) {
     action.error = 'Target owner user id is required.'
     return
@@ -204,6 +217,10 @@ const transferOwner = async () => {
   }
 }
 
+const editRecord = (id: string) => {
+  action.selectedCampaignId = id
+  nextTick(() => { const heading = document.querySelector<HTMLElement>('#record-editor h2'); heading?.scrollIntoView({ block: 'center', behavior: 'instant' }); heading?.focus() })
+}
 const adminBreadcrumbItems = [
   { label: 'Admin', to: '/admin' },
   { label: 'Campaign management' },
@@ -226,16 +243,17 @@ const adminBreadcrumbItems = [
           </template>
 
           <div class="grid gap-3 md:grid-cols-3">
-            <UInput v-model="filters.search" placeholder="Campaign name or description" />
+            <UInput v-model="filters.search" aria-label="Search campaigns" placeholder="Campaign name or description" />
             <USelect
-              v-model="filters.archived"
+v-model="filters.archived"
+              aria-label="Campaign status"
               :items="[
                 { label: 'All campaigns', value: 'all' },
                 { label: 'Active only', value: 'active' },
                 { label: 'Archived only', value: 'archived' },
               ]"
             />
-            <UButton :loading="pending" @click="refreshCampaigns">Apply filters</UButton>
+            <UButton :loading="pending" @click="refreshCampaigns">Refresh</UButton>
           </div>
         </UCard>
 
@@ -247,7 +265,8 @@ const adminBreadcrumbItems = [
             </div>
           </template>
 
-          <UTable
+          <SharedResponsiveTable
+
             :data="campaigns.map((campaign) => ({
               ...campaign,
               ownerEmail: campaign.owner.email,
@@ -258,7 +277,9 @@ const adminBreadcrumbItems = [
             :loading="pending"
             empty="No campaigns found"
           >
+            <template #name-cell="{ row }"><NuxtLink :to="`/campaigns/${row.original.id}`" class="font-semibold">{{ row.original.name }}</NuxtLink></template>
             <template #openCampaign-cell="{ row }">
+              <UButton color="neutral" variant="ghost" icon="i-lucide-pencil" @click="editRecord(row.original.id)">Edit</UButton>
               <UButton
                 :to="`/campaigns/${row.original.id}`"
                 variant="ghost"
@@ -267,27 +288,32 @@ const adminBreadcrumbItems = [
                 label="Open campaign"
               />
             </template>
-          </UTable>
+          </SharedResponsiveTable>
 
+          <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <p class="text-sm text-muted">{{ campaignsData?.total ? (page - 1) * pageSize + 1 : 0 }}–{{ Math.min(page * pageSize, campaignsData?.total || 0) }} of {{ campaignsData?.total || 0 }}</p>
+            <UPagination v-model:page="page" :items-per-page="pageSize" :total="campaignsData?.total || 0" :disabled="pending" />
+          </div>
+          <UButton v-if="!campaigns.length && !pending && !error && filters.search" color="neutral" variant="outline" @click="filters.search = ''">Clear search</UButton>
           <p v-if="error" class="mt-3 text-sm text-error">{{ (error as Error).message }}</p>
         </UCard>
 
-        <UCard>
+        <UCard id="record-editor">
           <template #header>
-            <h2 class="text-lg font-semibold">Update campaign</h2>
+            <h2 tabindex="-1" class="text-lg font-semibold">Update campaign</h2>
           </template>
 
           <div class="space-y-4">
-            <USelect v-model="action.selectedCampaignId" :items="campaignOptions" />
+            <USelect v-model="action.selectedCampaignId" aria-label="Campaign" :disabled="action.savingTransfer || action.savingArchive" :items="campaignOptions" />
 
             <div class="grid gap-3 md:grid-cols-3">
-              <USwitch v-model="action.isArchived" label="Campaign archived" />
-              <UButton :loading="action.savingArchive" @click="saveArchiveStatus">Save status</UButton>
+              <UButton color="neutral" variant="outline" icon="i-lucide-archive" :disabled="!selectedCampaign || action.savingTransfer" :loading="action.savingArchive" @click="() => { action.isArchived = !selectedCampaign?.isArchived; saveArchiveStatus() }">{{ selectedCampaign?.isArchived ? 'Restore' : 'Archive' }}</UButton>
             </div>
 
             <div class="grid gap-3 md:grid-cols-[1fr_auto]">
               <USelectMenu
-                v-model="action.transferOwnerUserId"
+v-model="action.transferOwnerUserId"
+                aria-label="New owner" :disabled="action.savingTransfer || action.savingArchive"
                 value-key="value"
                 label-key="label"
                 :search-term="action.transferOwnerSearch"
@@ -297,9 +323,7 @@ const adminBreadcrumbItems = [
                 placeholder="Select new owner"
                 @update:search-term="queueTransferOwnerSearch"
               />
-              <UButton color="warning" :loading="action.savingTransfer" @click="transferOwner">
-                Transfer owner
-              </UButton>
+              <SharedConfirmActionPopover trigger-label="Transfer ownership" :message="`Transfer ownership of ${selectedCampaign?.name || 'this campaign'} to the selected user? The current owner will lose ownership.`" confirm-label="Transfer ownership" :disabled="!action.transferOwnerUserId || action.savingArchive" :confirm-loading="action.savingTransfer" @confirm="async ({ close }) => { await transferOwner(); if (!action.error) close() }" />
             </div>
 
             <p v-if="action.success" class="text-sm text-success">{{ action.success }}</p>

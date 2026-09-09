@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { namedEntityFormSchema } from '~/utils/entity-form-schemas'
 import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 definePageMeta({ layout: 'dashboard' })
 
@@ -59,7 +60,6 @@ const { data: entries, pending, refresh, error } = await useAsyncData(
   { watch: [activeType, search] }
 )
 
-const isInitialEntriesLoadPending = computed(() => pending.value && !entries.value)
 
 const {
   isOpen: isEditOpen,
@@ -198,11 +198,14 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
       </template>
 
       <SharedResourceState
-        :pending="isInitialEntriesLoadPending"
+:has-data="Boolean(entries?.length)"
+        :pending="pending"
         :error="error"
         :empty="!entries?.length"
         error-message="Unable to load glossary entries."
-        empty-message="No entries yet."
+        empty-message="No entries of this type yet."
+        :no-matches="Boolean(search)"
+        @clear="search = ''"
         @retry="refresh"
       >
         <template #loading>
@@ -271,7 +274,9 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
     </CampaignListTemplate>
 
     <SharedEntityFormModal
-      v-model:open="isEditOpen"
+v-model:open="isEditOpen"
+:schema="namedEntityFormSchema"
+      :state="editForm"
       :title="editMode === 'create' ? 'Create glossary entry' : 'Edit glossary entry'"
       description="Manage glossary entry details for this campaign."
       :saving="isSaving"

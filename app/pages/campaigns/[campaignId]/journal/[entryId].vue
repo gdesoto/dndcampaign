@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { titledEntityFormSchema } from '~/utils/entity-form-schemas'
 import type {
   CampaignJournalUpdateInput,
   CampaignJournalVisibilityInput,
@@ -224,6 +225,9 @@ const deleteEntry = async () => {
       color: 'success',
       icon: 'i-lucide-check',
     })
+    deleted.value = true
+    isEditOpen.value = false
+    await nextTick()
     await navigateTo(`/campaigns/${campaignId.value}/journal`)
   } catch (cause) {
     toast.add({
@@ -246,8 +250,12 @@ const holderUserId = ref(UNASSIGNED_HOLDER_VALUE)
 const transferVisibility = ref<'DM' | 'CAMPAIGN'>('DM')
 const actionLoading = ref(false)
 
+const contentBaseline = ref('')
+const deleted = ref(false)
+useUnsavedChanges(() => !deleted.value && form.contentMarkdown !== contentBaseline.value, () => !deleted.value && (isSavingDocument.value || isDeleting.value))
 watch(entry, (value) => {
-  form.contentMarkdown = value?.contentMarkdown || ''
+  if (form.contentMarkdown === contentBaseline.value) form.contentMarkdown = value?.contentMarkdown || ''
+  contentBaseline.value = value?.contentMarkdown || ''
   holderUserId.value = value?.holderUserId || UNASSIGNED_HOLDER_VALUE
   transferVisibility.value = value?.visibility === 'CAMPAIGN' ? 'CAMPAIGN' : 'DM'
   const canEditContent = Boolean(value?.canEdit && (!value?.isDiscoverable || canManageDiscoverables.value))
@@ -256,7 +264,7 @@ watch(entry, (value) => {
 }, { immediate: true })
 
 const saveDocument = async () => {
-  if (!entry.value || !canEditDocumentContent.value) return
+  if (!entry.value || !canEditDocumentContent.value || isSavingDocument.value || isDeleting.value) return
   isSavingDocument.value = true
   actionError.value = ''
   try {
@@ -542,7 +550,9 @@ const toggleArchive = async () => {
     </SharedResourceState>
 
     <SharedEntityFormModal
-      v-model:open="isEditOpen"
+v-model:open="isEditOpen"
+:schema="titledEntityFormSchema"
+      :state="{ form, formSessionIds }"
       title="Edit journal entry"
       description="Update title, visibility, and linked sessions."
       :saving="isSaving"

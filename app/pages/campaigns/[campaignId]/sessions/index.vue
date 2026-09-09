@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { sessionFormSchema } from '~/utils/entity-form-schemas'
 import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 import { formatSessionDate, serializeSessionDateInput } from '~/utils/session-date'
 definePageMeta({ layout: 'dashboard' })
@@ -19,7 +20,6 @@ const { data: sessions, pending, refresh, error } = await useAsyncData(
   () => request<SessionItem[]>(`/api/campaigns/${campaignId.value}/sessions`)
 )
 
-const isInitialSessionsLoadPending = computed(() => pending.value && !sessions.value)
 const showNewestFirst = ref(true)
 const orderedSessions = computed(() => {
   const sessionList = sessions.value || []
@@ -116,14 +116,15 @@ const createSession = async () => {
       </template>
 
       <SharedResourceState
-        :pending="isInitialSessionsLoadPending"
+:has-data="Boolean(sessions?.length)"
+        :pending="pending"
         :error="error"
         :empty="!sessions?.length"
         error-message="Unable to load sessions."
         empty-message="No sessions yet."
         @retry="refresh"
       >
-        <template #loading />
+        <template #loading><USkeleton class="h-32 w-full" /></template>
         <template #emptyActions>
           <UButton variant="outline" :disabled="!canWriteContent" @click="openCreate">Create your first session</UButton>
         </template>
@@ -158,7 +159,9 @@ const createSession = async () => {
     </CampaignListTemplate>
 
     <SharedEntityFormModal
-      v-model:open="isCreateOpen"
+v-model:open="isCreateOpen"
+:schema="sessionFormSchema"
+      :state="createForm"
       title="Create session"
       :saving="isCreating"
       :error="createError"

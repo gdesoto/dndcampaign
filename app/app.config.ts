@@ -17,34 +17,13 @@ export default defineAppConfig({
       slots: {
         base: 'font-display font-semibold tracking-widest uppercase transition-all cursor-pointer disabled:cursor-not-allowed aria-disabled:cursor-not-allowed',
       },
-      variants: {
-        variant: {
-          solid: {
-            base: 'bg-primary-500 text-neutral-950 border border-primary-400/65 hover:bg-primary-400 hover:border-primary-400/75 dark:border-primary-400',
-          },
-          outline: {
-            base: 'bg-primary-500/10 border border-primary-700/60 text-primary-600 hover:bg-primary-500/20 hover:border-primary-600/70 dark:border-primary-700 dark:hover:border-primary-600 dark:text-primary-400',
-          },
-          ghost: {
-            base: 'bg-transparent border border-[var(--ui-border-muted)] text-[var(--ui-text-muted)] hover:border-[var(--ui-border)] hover:text-[var(--ui-text)] dark:border-[var(--ui-border)] dark:hover:border-[var(--ui-border-accented)]',
-          },
-          soft: {
-            base: 'bg-[var(--ui-bg-accented)] border border-[var(--ui-border-muted)] text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-elevated)] hover:border-[var(--ui-border)] hover:text-[var(--ui-text)]',
-          },
-          subtle: {
-            base: 'bg-transparent border border-transparent text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-accented)] hover:text-[var(--ui-text)]',
-          },
-          link: {
-            base: 'bg-transparent border-transparent text-primary-700 hover:text-primary-500 p-0 dark:text-primary-600 dark:hover:text-primary-400',
-          },
-        },
-      },
       defaultVariants: {
         size: 'md',
-        color: 'primary',
+        color: 'neutral',
         variant: 'outline',
       },
       compoundVariants: [
+        { color: 'primary', variant: 'solid', class: { base: 'text-neutral-950' } },
         {
           color: 'error',
           variant: 'soft',
@@ -59,14 +38,14 @@ export default defineAppConfig({
       },
       defaultVariants: {
         size: 'sm',
-        color: 'primary',
+        color: 'neutral',
         variant: 'outline',
       },
     },
 
     card: {
       slots: {
-        root: 'bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-md overflow-hidden transition-colors hover:border-[var(--ui-border-accented)] relative group dmvault-card',
+        root: 'bg-elevated border border-default rounded-md overflow-hidden transition-colors hover:border-accented relative group dmvault-card',
         //header: 'px-4 py-2.5 border-b border-[var(--ui-border)] flex items-center justify-between',
         header: `${cardSectionPadding} border-b border-[var(--ui-border)] flex items-center justify-between [&>*]:w-full`,
         //body: 'p-4',

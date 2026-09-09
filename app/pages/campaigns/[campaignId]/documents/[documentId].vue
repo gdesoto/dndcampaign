@@ -357,7 +357,8 @@ const playbackReady = computed(() =>
 
 watch(
   () => document.value,
-  (value) => {
+  (value, previous) => {
+    if (previous && value?.id === previous.id && documentDirty.value && !restoring.value && !importing.value) return
     const nextContent = value?.currentVersion?.content || ''
     content.value = nextContent
     if (value?.type === 'TRANSCRIPT') {
@@ -888,6 +889,7 @@ watch(
 )
 
 const saveDocument = async () => {
+  if (documentBusy.value) return
   saveError.value = ''
   isSaving.value = true
   try {
@@ -924,6 +926,8 @@ const saveDocument = async () => {
 }
 
 const restoreVersion = async (versionId: string) => {
+  if (!await confirmDiscard()) return
+  restoring.value = true
   restoreError.value = ''
   try {
     await request(`/api/documents/${documentId.value}`, {
@@ -935,11 +939,11 @@ const restoreVersion = async (versionId: string) => {
   } catch (error) {
     restoreError.value =
       (error as Error & { message?: string }).message || 'Unable to restore version.'
-  }
+  } finally { restoring.value = false }
 }
 
 const importDocument = async () => {
-  if (!importFile.value || !document.value?.sessionId) return
+  if (!importFile.value || !document.value?.sessionId || !await confirmDiscard()) return
   importError.value = ''
   importing.value = true
   try {
@@ -1129,7 +1133,7 @@ const unlinkRecording = async () => {
 }
 
 const deleteDocument = async () => {
-  if (!document.value || document.value.type !== 'TRANSCRIPT') return
+  if (documentBusy.value || !document.value || document.value.type !== 'TRANSCRIPT') return
   deleteError.value = ''
   deleteLoading.value = true
   const sessionId = document.value.sessionId
@@ -1138,6 +1142,7 @@ const deleteDocument = async () => {
       method: 'DELETE',
     })
 
+    deleted.value = true
     if (returnTo.value) {
       await navigateTo(returnTo.value)
       return
@@ -1167,6 +1172,12 @@ const deleteDocumentWithClose = async (close: () => void) => {
 const fullTranscript = computed(() =>
   segmentsToPlainText(segments.value, { includeDisabled: false })
 )
+const deleted = ref(false)
+const restoring = ref(false)
+const documentBusy = computed(() => isSaving.value || restoring.value || importing.value || deleteLoading.value)
+const documentDirty = computed(() => document.value?.type === 'TRANSCRIPT' ? isDirty.value : content.value !== (document.value?.currentVersion?.content || ''))
+const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDirty.value, () => !deleted.value && documentBusy.value)
+
 </script>
 
 <template>
@@ -1181,12 +1192,12 @@ const fullTranscript = computed(() =>
       : 'Markdown-first session document editor with version history.'"
   >
 
-      <div v-if="pending" class="grid gap-4">
+      <div v-if="pending && !document" class="grid gap-4">
         <UCard class="h-32 animate-pulse" />
         <UCard class="h-52 animate-pulse" />
       </div>
 
-      <UCard v-else-if="error" class="text-center">
+      <UCard v-else-if="error && !document" class="text-center">
         <p class="text-sm text-error">Unable to load this document.</p>
         <UButton class="mt-4" variant="outline" @click="() => refresh()">Try again</UButton>
       </UCard>
@@ -1388,7 +1399,7 @@ const fullTranscript = computed(() =>
                   <UTooltip text="Redo (Ctrl+Shift+Z / Cmd+Shift+Z)">
                     <UButton size="xs" variant="ghost" icon="i-lucide-redo-2" :disabled="!canRedo" aria-label="Redo" @click="redoTranscriptChange" />
                   </UTooltip>
-                  <UButton :loading="isSaving" size="sm" class="ml-auto" @click="saveDocument">
+                  <UButton :disabled="restoring || importing || deleteLoading" :loading="isSaving" size="sm" class="ml-auto" @click="saveDocument">
                     Save version
                   </UButton>
                 </div>
@@ -1593,7 +1604,7 @@ const fullTranscript = computed(() =>
                 <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Import transcript</p>
                 <p class="text-xs text-dimmed">Accepts .txt, .md, .vtt formats.</p>
                 <UInput
-                  type="file"
+                  aria-label="Import document file" type="file"
                   accept=".txt,.md,.markdown,.vtt"
                   @change="importFile = ($event.target as HTMLInputElement).files?.[0] || null"
                 />
@@ -1712,7 +1723,8 @@ const fullTranscript = computed(() =>
                   <UButton
                     size="xs"
                     variant="outline"
-                    :disabled="document?.currentVersionId === version.id"
+                    :disabled="documentBusy || document?.currentVersionId === version.id"
+                    :loading="restoring"
                     @click="restoreVersion(version.id)"
                   >
                     Restore
@@ -1747,12 +1759,12 @@ const fullTranscript = computed(() =>
             </div>
           </template>
           <div class="space-y-4">
-            <UTextarea v-model="content" autoresize />
+            <UFormField label="Document content"><UTextarea v-model="content" :disabled="documentBusy" autoresize /></UFormField>
             <div class="flex flex-wrap items-center gap-3">
-              <UButton :loading="isSaving" @click="saveDocument">Save version</UButton>
+              <UButton :disabled="restoring || importing || deleteLoading" :loading="isSaving" @click="saveDocument">Save version</UButton>
               <div class="flex items-center gap-2">
                 <UInput
-                  type="file"
+                  aria-label="Import document file" type="file"
                   accept=".txt,.md,.markdown,.vtt"
                   @change="importFile = ($event.target as HTMLInputElement).files?.[0] || null"
                 />

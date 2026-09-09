@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { namedEntityFormSchema } from '~/utils/entity-form-schemas'
 definePageMeta({ layout: 'default' })
 
 type CampaignSummary = {
@@ -18,7 +19,6 @@ const { data: campaigns, pending, refresh, error } = await useAsyncData(
   () => request<CampaignSummary[]>('/api/campaigns')
 )
 
-const isInitialCampaignsLoadPending = computed(() => pending.value && !campaigns.value)
 
 const isCreateOpen = ref(false)
 const createForm = reactive({
@@ -77,14 +77,15 @@ const createCampaign = async () => {
 <template>
   <UPage>
     <div class="space-y-8">
-      <UPageHeader headline="Your world" title="Campaigns">
+      <UPageHeader title="Campaigns">
         <template #links>
-          <UButton @click="openCreate">New campaign</UButton>
+          <UButton color="primary" variant="solid" icon="i-lucide-plus" @click="openCreate">New campaign</UButton>
         </template>
       </UPageHeader>
 
       <SharedResourceState
-        :pending="isInitialCampaignsLoadPending"
+:has-data="Boolean(campaigns?.length)"
+        :pending="pending"
         :error="error"
         :empty="!campaigns?.length"
         error-message="Unable to load campaigns."
@@ -146,7 +147,9 @@ const createCampaign = async () => {
       </SharedResourceState>
 
       <SharedEntityFormModal
-        v-model:open="isCreateOpen"
+v-model:open="isCreateOpen"
+:schema="namedEntityFormSchema"
+        :state="createForm"
         title="Create campaign"
         :saving="isCreating"
         :error="createError"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { titledEntityFormSchema } from '~/utils/entity-form-schemas'
 import type {
   CampaignJournalCreateInput,
   CampaignJournalListQueryInput,
@@ -644,7 +645,9 @@ const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value
     </CampaignListTemplate>
 
     <SharedEntityFormModal
-      v-model:open="isCreateOpen"
+v-model:open="isCreateOpen"
+:schema="titledEntityFormSchema"
+      :state="form"
       title="Create journal entry"
       description="Set title and visibility. Write markdown on the entry page."
       :saving="isSaving"
@@ -679,7 +682,9 @@ const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value
     </SharedEntityFormModal>
 
     <SharedEntityFormModal
-      v-model:open="isEditOpen"
+v-model:open="isEditOpen"
+:schema="titledEntityFormSchema"
+      :state="form"
       title="Edit journal entry"
       description="Update title, visibility, and linked sessions."
       :saving="isSaving"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { titledEntityFormSchema } from '~/utils/entity-form-schemas'
 import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 import { useCampaignCalendar } from '~/composables/useCampaignCalendar'
 
@@ -70,7 +71,6 @@ const { data: calendarConfig } = await useAsyncData(
   () => calendarApi.getConfig(campaignId.value),
 )
 
-const isInitialQuestsLoadPending = computed(() => pending.value && !quests.value)
 const isCalendarEnabled = computed(() => Boolean(calendarConfig.value?.isEnabled))
 
 const statusOptions: Array<{ label: string; value: QuestStatus }> = [
@@ -456,7 +456,8 @@ const updateStatus = async (quest: QuestItem, status: QuestStatus) => {
       </template>
 
       <SharedResourceState
-        :pending="isInitialQuestsLoadPending"
+:has-data="Boolean(quests?.length)"
+        :pending="pending"
         :error="error"
         :empty="!quests?.length"
         error-message="Unable to load quests."
@@ -533,7 +534,9 @@ const updateStatus = async (quest: QuestItem, status: QuestStatus) => {
     </CampaignListTemplate>
 
     <SharedEntityFormModal
-      v-model:open="isEditOpen"
+v-model:open="isEditOpen"
+:schema="titledEntityFormSchema"
+      :state="editForm"
       :title="editMode === 'create' ? 'Create quest' : 'Edit quest'"
       :saving="isSaving"
       :error="editError"

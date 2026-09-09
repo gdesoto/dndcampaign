@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { namedEntityFormSchema } from '~/utils/entity-form-schemas'
 import type { EncounterCreateInput } from '#shared/schemas/encounter'
 
 const open = defineModel<boolean>('open', { default: false })
@@ -48,14 +49,16 @@ const submit = () => {
 
 <template>
   <SharedEntityFormModal
-    v-model:open="open"
+v-model:open="open"
+:schema="namedEntityFormSchema"
+    :state="form"
     title="Create encounter"
     submit-label="Create"
     :saving="props.saving"
     :error="props.error"
     @submit="submit"
   >
-    <UFormField label="Name">
+    <UFormField label="Name" name="name">
       <UInput v-model="form.name" placeholder="Bandit ambush at the bridge" />
     </UFormField>
 

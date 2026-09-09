@@ -74,7 +74,7 @@ const onSubmit = async (event: FormSubmitEvent<RegisterSchema>) => {
         <p v-if="errorMessage" class="text-sm text-error">{{ errorMessage }}</p>
 
         <div class="space-y-3">
-          <UButton type="submit" size="lg" :loading="isSubmitting" block>
+          <UButton color="primary" variant="solid" type="submit" size="lg" :loading="isSubmitting" block>
             Create account
           </UButton>
 

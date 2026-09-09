@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { titledEntityFormSchema } from '~/utils/entity-form-schemas'
 import { useCampaignCalendar } from '~/composables/useCampaignCalendar'
 
 definePageMeta({ layout: 'dashboard' })
@@ -861,7 +862,9 @@ const removeRange = async () => {
     </SharedResourceState>
 
     <SharedEntityFormModal
-      v-model:open="eventModalOpen"
+v-model:open="eventModalOpen"
+:schema="titledEntityFormSchema"
+      :state="eventForm"
       :title="eventMode === 'create' ? 'Create event' : 'Edit event'"
       :saving="eventAction.saving"
       :error="eventAction.error"

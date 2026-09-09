@@ -967,7 +967,8 @@ await refreshSummary()
     </SharedResourceState>
 
     <SharedEntityFormModal
-      v-model:open="isManageCombatantsOpen"
+v-model:open="isManageCombatantsOpen"
+      :state="{ manageCombatantMode, selectedStatBlockId, manageQuantity, copySourceCombatantId, customCombatantForm }"
       title="Manage combatants"
       submit-label="Add"
       :saving="isSavingManageCombatants"
@@ -1041,7 +1042,8 @@ await refreshSummary()
     </SharedEntityFormModal>
 
     <SharedEntityFormModal
-      v-model:open="isConditionModalOpen"
+v-model:open="isConditionModalOpen"
+      :state="{ conditionPreset, conditionForm }"
       :title="editingConditionId ? 'Edit condition' : 'Add condition'"
       submit-label="Save"
       :saving="isSavingCondition"
@@ -1074,7 +1076,8 @@ await refreshSummary()
     </SharedEntityFormModal>
 
     <SharedEntityFormModal
-      v-model:open="isCombatantEditOpen"
+v-model:open="isCombatantEditOpen"
+      :state="combatantForm"
       title="Edit combatant"
       submit-label="Save"
       :saving="isSavingCombatant"

@@ -36,6 +36,17 @@ Guidelines:
 - Use `app/components/shared/ConfirmActionPopover.vue` for destructive-action confirmations before creating inline `UPopover` confirms or using `window.confirm`.
 - Prefer component props to customize trigger and confirmation behavior (`message`, trigger label/icon/color/variant/size, confirm/cancel labels/colors/sizes, and loading states).
 - For icon-only triggers, set `triggerAriaLabel` and `:triggerShowLabel="false"` for accessibility and consistent behavior.
+- Keep destructive triggers neutral; use error color for the final destructive commit. Describe the affected record and irreversible consequence.
+- Prefer the async `action` prop for new callers. Reject on failure so the prompt retains its error and retry controls. Supply `focusFallback` when completion removes the trigger and there is a better destination than the page heading.
+
+### Forms and Collection State
+- Pass real `state` and a validation `schema` to `SharedEntityFormModal`. The modal protects changed drafts and prevents dismissal during submission.
+- Use `useUnsavedChanges` for persistent editors. Keep saved baselines separate from local drafts; a refresh after saving one section must not erase another section's edits.
+- Serialize conflicting saves, restores, imports, and deletes. Preserve user input after failure.
+- Give `SharedResourceState` the actual request pending state and `hasData` when useful content exists. Refreshes and refresh failures should retain that content.
+- Distinguish an empty collection from filtered no matches; use `noMatches` and `clear` for filter recovery.
+- Use `SharedResponsiveTable` for admin records requiring equivalent desktop and narrow-screen actions. Paginate against the server total, and reset the page when filters change.
+- Use native navigation links for route sections. Keep entity headers in persistent parent routes and use exact matching for Overview.
 
 ### Props and Events
 - Type all props and emitted events explicitly.
@@ -52,6 +63,8 @@ Guidelines:
 - Only use documented Nuxt UI config keys (`defaultVariants`, `slots`, `variants`, `compoundVariants`, etc.).
 - Verify component config key names before introducing new `ui.*` overrides.
 - Prefer design tokens/semantic classes over repeated one-off utility combinations.
+- Buttons default to neutral outline. Explicitly use primary solid for the main save/create action; use neutral ghost or outline for supporting controls. Badges default to neutral unless they convey a semantic status.
+- Decoration, character, and design whimsy are welcome throughout DM Vault. Cards default to custom elevated backgrounds, themed borders with hover accents, and the automatic `dmvault-card` shimmer. Preserve reduced-motion support and readable content when adding decorative effects.
 
 ## Styling and Tailwind
 - Use Tailwind utility classes consistently and keep class ordering readable.

@@ -3,11 +3,15 @@ definePageMeta({ layout: 'default' })
 
 const admin = useAdmin()
 
+const page = ref(1)
+const pageSize = 25
 const filters = reactive({
   search: '',
   status: 'all' as 'all' | 'active' | 'inactive',
   role: 'all' as 'all' | 'USER' | 'SYSTEM_ADMIN',
 })
+
+watch(filters, () => { page.value = 1 }, { flush: 'sync' })
 
 const action = reactive({
   selectedUserId: '',
@@ -24,14 +28,14 @@ const {
   error,
   refresh,
 } = await useAsyncData(
-  () => `admin-users-${filters.search}-${filters.status}-${filters.role}`,
+  () => `admin-users-${filters.search}-${filters.status}-${filters.role}-${page.value}`,
   () =>
     admin.getUsers({
       search: filters.search || undefined,
       status: filters.status,
       role: filters.role,
-      page: 1,
-      pageSize: 50,
+      page: page.value,
+      pageSize,
     })
 )
 
@@ -43,8 +47,9 @@ const userColumns = [
   { accessorKey: 'systemRole', header: 'Role' },
   { accessorKey: 'isActive', header: 'Active' },
   { accessorKey: 'lastLoginAt', header: 'Last login' },
-  { accessorKey: 'ownedCampaignCount', header: 'Owned campaigns' },
-  { accessorKey: 'memberCampaignCount', header: 'Member campaigns' },
+  { accessorKey: 'ownedCampaignCount', header: 'Owned campaigns', meta: { class: { th: 'text-right tabular-nums', td: 'text-right tabular-nums' } } },
+  { accessorKey: 'memberCampaignCount', header: 'Member campaigns', meta: { class: { th: 'text-right tabular-nums', td: 'text-right tabular-nums' } } },
+  { id: 'actions', header: 'Actions', meta: { class: { th: 'w-px', td: 'w-px whitespace-nowrap' } } },
 ]
 
 const selectedUser = computed(() =>
@@ -91,7 +96,7 @@ const refreshUsers = async () => {
 }
 
 const saveUser = async () => {
-  if (!action.selectedUserId) return
+  if (!action.selectedUserId || action.saving) return
 
   action.error = ''
   action.success = ''
@@ -118,6 +123,10 @@ const roleOptions = [
   { label: 'System admin', value: 'SYSTEM_ADMIN' },
 ]
 
+const editRecord = (id: string) => {
+  action.selectedUserId = id
+  nextTick(() => { const heading = document.querySelector<HTMLElement>('#record-editor h2'); heading?.scrollIntoView({ block: 'center', behavior: 'instant' }); heading?.focus() })
+}
 const adminBreadcrumbItems = [
   { label: 'Admin', to: '/admin' },
   { label: 'User management' },
@@ -140,9 +149,10 @@ const adminBreadcrumbItems = [
           </template>
 
           <div class="grid gap-3 md:grid-cols-4">
-            <UInput v-model="filters.search" placeholder="Name or email" />
+            <UInput v-model="filters.search" aria-label="Search users" placeholder="Name or email" />
             <USelect
-              v-model="filters.status"
+v-model="filters.status"
+              aria-label="Status"
               :items="[
                 { label: 'All statuses', value: 'all' },
                 { label: 'Active only', value: 'active' },
@@ -150,14 +160,15 @@ const adminBreadcrumbItems = [
               ]"
             />
             <USelect
-              v-model="filters.role"
+v-model="filters.role"
+              aria-label="Role"
               :items="[
                 { label: 'All roles', value: 'all' },
                 { label: 'Users', value: 'USER' },
                 { label: 'System admins', value: 'SYSTEM_ADMIN' },
               ]"
             />
-            <UButton :loading="pending" @click="refreshUsers">Apply filters</UButton>
+            <UButton :loading="pending" @click="refreshUsers">Refresh</UButton>
           </div>
         </UCard>
 
@@ -169,25 +180,31 @@ const adminBreadcrumbItems = [
             </div>
           </template>
 
-          <UTable
+          <SharedResponsiveTable
+
             :data="users.map((user) => ({ ...user, isActive: user.isActive ? 'Yes' : 'No', lastLoginAt: formatLastLogin(user.lastLoginAt) }))"
             :columns="userColumns"
             :loading="pending"
             empty="No users found"
-          />
+          ><template #actions-cell="{ row }"><UButton color="neutral" variant="ghost" icon="i-lucide-pencil" @click="editRecord(row.original.id)">Edit</UButton></template></SharedResponsiveTable>
 
+          <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <p class="text-sm text-muted">{{ usersData?.total ? (page - 1) * pageSize + 1 : 0 }}–{{ Math.min(page * pageSize, usersData?.total || 0) }} of {{ usersData?.total || 0 }}</p>
+            <UPagination v-model:page="page" :items-per-page="pageSize" :total="usersData?.total || 0" :disabled="pending" />
+          </div>
+          <UButton v-if="!users.length && !pending && !error && filters.search" color="neutral" variant="outline" @click="filters.search = ''">Clear search</UButton>
           <p v-if="error" class="mt-3 text-sm text-error">{{ (error as Error).message }}</p>
         </UCard>
 
-        <UCard>
+        <UCard id="record-editor">
           <template #header>
-            <h2 class="text-lg font-semibold">Update user</h2>
+            <h2 tabindex="-1" class="text-lg font-semibold">Update user</h2>
           </template>
 
           <div class="grid gap-3 md:grid-cols-4">
-            <USelect v-model="action.selectedUserId" :items="userOptions" />
-            <USelect v-model="action.systemRole" :items="roleOptions" />
-            <USwitch v-model="action.isActive" label="User is active" />
+            <USelect v-model="action.selectedUserId" aria-label="User" :disabled="action.saving" :items="userOptions" />
+            <USelect v-model="action.systemRole" aria-label="System role" :disabled="action.saving" :items="roleOptions" />
+            <USwitch v-model="action.isActive" :disabled="action.saving" label="User is active" />
             <UButton :loading="action.saving" @click="saveUser">Save user</UButton>
           </div>
 

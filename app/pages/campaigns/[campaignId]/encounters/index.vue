@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { namedEntityFormSchema } from '~/utils/entity-form-schemas'
 import type { EncounterSummary } from '#shared/types/encounter'
 import type { EncounterCreateInput } from '#shared/schemas/encounter'
 import type { CampaignCalendarConfigDto } from '~/composables/useCampaignCalendar'
@@ -36,7 +37,6 @@ const {
     watch: [() => filters.status, () => filters.type],
   },
 )
-const isInitialEncountersLoadPending = computed(() => pending.value && !encounters.value)
 const {
   data: statBlocks,
   pending: statBlocksPending,
@@ -46,7 +46,6 @@ const {
   () => `encounter-stat-blocks-${campaignId.value}`,
   () => statBlockApi.listStatBlocks(campaignId.value),
 )
-const isInitialStatBlocksLoadPending = computed(() => statBlocksPending.value && !statBlocks.value)
 const {
   data: templates,
   pending: templatesPending,
@@ -56,7 +55,6 @@ const {
   () => `encounter-templates-${campaignId.value}`,
   () => templateApi.listTemplates(campaignId.value),
 )
-const isInitialTemplatesLoadPending = computed(() => templatesPending.value && !templates.value)
 
 const isCreateOpen = ref(false)
 const createError = ref('')
@@ -411,7 +409,8 @@ const statBlockOptions = computed(() =>
     </template>
 
     <SharedResourceState
-      :pending="isInitialEncountersLoadPending"
+:has-data="Boolean(encounters?.length)"
+      :pending="pending"
       :error="error"
       :empty="!encounters?.length"
       error-message="Unable to load encounters."
@@ -459,7 +458,8 @@ const statBlockOptions = computed(() =>
         </div>
       </template>
       <SharedResourceState
-        :pending="isInitialStatBlocksLoadPending"
+:has-data="Boolean(statBlocks?.length)"
+        :pending="statBlocksPending"
         :error="statBlocksError"
         :empty="!statBlocks?.length"
         error-message="Unable to load encounter stat blocks."
@@ -501,7 +501,8 @@ const statBlockOptions = computed(() =>
         </div>
       </template>
       <SharedResourceState
-        :pending="isInitialTemplatesLoadPending"
+:has-data="Boolean(templates?.length)"
+        :pending="templatesPending"
         :error="templatesError"
         :empty="!templates?.length"
         error-message="Unable to load encounter templates."
@@ -528,7 +529,9 @@ const statBlockOptions = computed(() =>
     </UCard>
 
     <SharedEntityFormModal
-      v-model:open="isStatBlockModalOpen"
+v-model:open="isStatBlockModalOpen"
+:schema="namedEntityFormSchema"
+      :state="statBlockForm"
       :title="editingStatBlockId ? 'Edit stat block' : 'Create stat block'"
       submit-label="Save"
       :saving="isSavingStatBlock"
@@ -537,7 +540,7 @@ const statBlockOptions = computed(() =>
       @delete="deleteEditingStatBlock"
       @submit="saveStatBlock"
     >
-      <UFormField label="Name">
+      <UFormField label="Name" name="name">
         <UInput v-model="statBlockForm.name" placeholder="Goblin skirmisher" />
       </UFormField>
       <UFormField label="Challenge rating">
@@ -560,7 +563,9 @@ const statBlockOptions = computed(() =>
     </SharedEntityFormModal>
 
     <SharedEntityFormModal
-      v-model:open="isTemplateModalOpen"
+v-model:open="isTemplateModalOpen"
+:schema="namedEntityFormSchema"
+      :state="templateForm"
       :title="editingTemplateId ? 'Edit template' : 'Create template'"
       submit-label="Save"
       :saving="isSavingTemplate"
@@ -569,7 +574,7 @@ const statBlockOptions = computed(() =>
       @delete="deleteEditingTemplate"
       @submit="saveTemplate"
     >
-      <UFormField label="Name">
+      <UFormField label="Name" name="name">
         <UInput v-model="templateForm.name" placeholder="Bandit roadside ambush" />
       </UFormField>
       <UFormField label="Type">
@@ -593,7 +598,7 @@ const statBlockOptions = computed(() =>
             <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Row {{ index + 1 }}</p>
             <UButton size="xs" color="error" variant="ghost" @click="removeTemplateCombatantRow(index)">Remove</UButton>
           </div>
-          <UFormField label="Name">
+          <UFormField label="Name" name="name">
             <UInput v-model="combatant.name" placeholder="Bandit" />
           </UFormField>
           <div class="grid gap-2 sm:grid-cols-3">

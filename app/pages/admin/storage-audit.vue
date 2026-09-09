@@ -69,10 +69,10 @@ const artifactColumns: TableColumn<{
   { accessorKey: 'campaignName', header: 'Campaign' },
   { accessorKey: 'storageKey', header: 'Storage key' },
   { accessorKey: 'status', header: 'Status' },
-  { accessorKey: 'referencedCount', header: 'Refs' },
-  { accessorKey: 'byteSize', header: 'Size' },
+  { accessorKey: 'referencedCount', header: 'Refs', meta: { class: { th: 'text-right tabular-nums', td: 'text-right tabular-nums' } } },
+  { accessorKey: 'byteSize', header: 'Size', meta: { class: { th: 'text-right tabular-nums', td: 'text-right tabular-nums' } } },
   { accessorKey: 'createdAt', header: 'Created' },
-  { id: 'actions', header: 'Actions' },
+  { id: 'actions', header: 'Actions', meta: { class: { th: 'w-px', td: 'w-px whitespace-nowrap' } } },
 ]
 
 const orphanColumns: TableColumn<{
@@ -82,8 +82,8 @@ const orphanColumns: TableColumn<{
 }>[] = [
   { accessorKey: 'campaignName', header: 'Campaign' },
   { accessorKey: 'storageKey', header: 'Storage key' },
-  { accessorKey: 'byteSize', header: 'Size' },
-  { id: 'actions', header: 'Actions' },
+  { accessorKey: 'byteSize', header: 'Size', meta: { class: { th: 'text-right tabular-nums', td: 'text-right tabular-nums' } } },
+  { id: 'actions', header: 'Actions', meta: { class: { th: 'w-px', td: 'w-px whitespace-nowrap' } } },
 ]
 
 const documentColumns: TableColumn<{
@@ -101,12 +101,14 @@ const documentColumns: TableColumn<{
   { accessorKey: 'title', header: 'Title' },
   { accessorKey: 'type', header: 'Type' },
   { accessorKey: 'status', header: 'Status' },
-  { accessorKey: 'versionCount', header: 'Versions' },
+  { accessorKey: 'versionCount', header: 'Versions', meta: { class: { th: 'text-right tabular-nums', td: 'text-right tabular-nums' } } },
   { accessorKey: 'currentVersionId', header: 'Current version' },
   { accessorKey: 'latestVersionId', header: 'Latest version' },
-  { id: 'actions', header: 'Actions' },
+  { id: 'actions', header: 'Actions', meta: { class: { th: 'w-px', td: 'w-px whitespace-nowrap' } } },
 ]
 
+const auditHeading = useTemplateRef('auditHeading')
+const focusAudit = () => auditHeading.value?.focus()
 const runAudit = async () => {
   state.error = ''
   state.success = ''
@@ -121,6 +123,7 @@ const runFix = async (
     | { action: 'REPAIR_DOCUMENT_CURRENT_VERSION'; documentId: string }
     | { action: 'DELETE_EMPTY_DOCUMENT'; documentId: string }
 ) => {
+  if (state.fixingKey) throw new Error('Another fix is still running.')
   state.error = ''
   state.success = ''
   state.fixingKey = key
@@ -133,6 +136,7 @@ const runFix = async (
     await refresh()
   } catch (fixError) {
     state.error = (fixError as Error).message || 'Unable to apply fix.'
+    if (payload.action !== 'REPAIR_DOCUMENT_CURRENT_VERSION') throw fixError
   } finally {
     state.fixingKey = ''
   }
@@ -163,12 +167,13 @@ const adminBreadcrumbItems = [
       <div class="space-y-6">
         <UCard>
           <template #header>
-            <h2 class="text-lg font-semibold">Audit scope</h2>
+            <h2 ref="auditHeading" tabindex="-1" class="text-lg font-semibold">Audit scope</h2>
           </template>
 
           <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center">
             <USelect
-              v-model="filters.campaignId"
+v-model="filters.campaignId"
+              aria-label="Campaign"
               :items="campaignOptions"
               :loading="campaignsPending"
               placeholder="Choose a campaign"
@@ -178,7 +183,8 @@ const adminBreadcrumbItems = [
           </div>
         </UCard>
 
-        <div class="grid gap-4 md:grid-cols-4">
+        <USkeleton v-if="pending && !summary" class="h-24 w-full" />
+        <div v-else-if="summary" class="grid gap-4 md:grid-cols-4">
           <UCard>
             <p class="text-xs uppercase tracking-wide text-muted">Total issues</p>
             <p class="mt-2 text-2xl font-semibold">{{ summary?.totalIssues ?? 0 }}</p>
@@ -224,7 +230,7 @@ const adminBreadcrumbItems = [
             </div>
           </template>
 
-          <UTable
+          <SharedResponsiveTable
             :columns="artifactColumns"
             :data="
               artifactRows.map((row) => ({
@@ -243,13 +249,13 @@ const adminBreadcrumbItems = [
               </UBadge>
             </template>
             <template #actions-cell="{ row }">
-              <UButton
+              <SharedConfirmActionPopover
                 v-if="row.original.fixActions.includes('DELETE_UNREFERENCED_ARTIFACT')"
-                size="xs"
-                color="warning"
-                variant="ghost"
-                :loading="state.fixingKey === `artifact-${row.original.artifactId}`"
-                @click="
+                trigger-size="sm"
+                trigger-color="neutral"
+                trigger-variant="ghost"
+                 :disabled="Boolean(state.fixingKey)"
+                :action="() =>
                   runFix(
                     `artifact-${row.original.artifactId}`,
                     {
@@ -258,12 +264,10 @@ const adminBreadcrumbItems = [
                     }
                   )
                 "
-              >
-                Delete unreferenced
-              </UButton>
+               trigger-label="Delete unreferenced" confirm-label="Delete" :focus-fallback="focusAudit" :message="`Delete ${row.original.storageKey}? This cannot be undone.`" />
               <span v-else class="text-xs text-muted">No auto-fix</span>
             </template>
-          </UTable>
+          </SharedResponsiveTable>
         </UCard>
 
         <UCard>
@@ -274,7 +278,7 @@ const adminBreadcrumbItems = [
             </div>
           </template>
 
-          <UTable
+          <SharedResponsiveTable
             :columns="orphanColumns"
             :data="
               orphanStorageRows.map((row) => ({
@@ -287,12 +291,12 @@ const adminBreadcrumbItems = [
             empty="No orphaned storage files in this scope."
           >
             <template #actions-cell="{ row }">
-              <UButton
-                size="xs"
-                color="warning"
-                variant="ghost"
-                :loading="state.fixingKey === `orphan-${row.original.storageKey}`"
-                @click="
+              <SharedConfirmActionPopover
+                trigger-size="sm"
+                trigger-color="neutral"
+                trigger-variant="ghost"
+                 :disabled="Boolean(state.fixingKey)"
+                :action="() =>
                   runFix(
                     `orphan-${row.original.storageKey}`,
                     {
@@ -301,11 +305,9 @@ const adminBreadcrumbItems = [
                     }
                   )
                 "
-              >
-                Delete file
-              </UButton>
+               trigger-label="Delete file" confirm-label="Delete" :focus-fallback="focusAudit" :message="`Delete ${row.original.storageKey}? This cannot be undone.`" />
             </template>
-          </UTable>
+          </SharedResponsiveTable>
         </UCard>
 
         <UCard>
@@ -316,7 +318,7 @@ const adminBreadcrumbItems = [
             </div>
           </template>
 
-          <UTable
+          <SharedResponsiveTable
             :columns="documentColumns"
             :data="
               documentRows.map((row) => ({
@@ -353,13 +355,13 @@ const adminBreadcrumbItems = [
               >
                 Repair current version
               </UButton>
-              <UButton
+              <SharedConfirmActionPopover
                 v-else-if="row.original.fixActions.includes('DELETE_EMPTY_DOCUMENT')"
-                size="xs"
-                color="warning"
-                variant="ghost"
-                :loading="state.fixingKey === `document-delete-${row.original.documentId}`"
-                @click="
+                trigger-size="sm"
+                trigger-color="neutral"
+                trigger-variant="ghost"
+                 :disabled="Boolean(state.fixingKey)"
+                :action="() =>
                   runFix(
                     `document-delete-${row.original.documentId}`,
                     {
@@ -368,12 +370,10 @@ const adminBreadcrumbItems = [
                     }
                   )
                 "
-              >
-                Delete empty document
-              </UButton>
+               trigger-label="Delete empty document" confirm-label="Delete" :focus-fallback="focusAudit" :message="`Delete ${row.original.title}? This cannot be undone.`" />
               <span v-else class="text-xs text-muted">No action</span>
             </template>
-          </UTable>
+          </SharedResponsiveTable>
         </UCard>
       </div>
     </UMain>

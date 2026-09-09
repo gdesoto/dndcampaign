@@ -24,18 +24,16 @@ export const fail = (
   messageOrFields?: string | Record<string, string>,
   maybeFields?: Record<string, string>
 ): ApiResponse<null> => {
-  let statusCode: number
   let code: string
   let message: string
   let fields: Record<string, string> | undefined
 
   if (typeof eventOrStatusCode === 'number') {
-    statusCode = eventOrStatusCode
     code = statusOrCode as string
     message = codeOrMessage
     fields = messageOrFields as Record<string, string> | undefined
   } else {
-    statusCode = statusOrCode as number
+    const statusCode = statusOrCode as number
     code = codeOrMessage
     message = (messageOrFields as string) || ''
     fields = maybeFields

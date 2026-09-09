@@ -32,7 +32,7 @@ Every statement here sits at one of three levels. When a rule and an identity co
 
 Note what is *not* on the Fixed list: no color, no font, no radius, no pixel value. The example application's blue-and-slate, Public Sans, 4px-radius appearance is one instantiation, not the specification. A finance product with hairline borders and a near-square radius, and a campaign tracker with parchment surfaces and a display serif, can both satisfy every Fixed rule without compromise.
 
-One connective rule keeps identity and legibility from fighting. **Identity lives in what stays constant; signals live in what varies.** Spend the identity budget on the shell — background, typefaces, surface character, ornamental frame — and leave the varying layer alone. A campaign tracker may set its whole page on aged parchment; it may not give every card an ornate border, because then the semantic edge that marks an over-capacity encounter has nothing left to say. If an identity seems to require ornament on every instance of something, move the ornament up to the shell.
+One connective rule keeps identity and legibility from fighting. **Identity lives in what stays constant; signals live in what varies.** Spend the identity budget on the shell — background, typefaces, surface character, ornamental frame — and leave the varying layer alone. A campaign tracker may set its whole page on aged parchment; it may not give every card an ornate border at rest, because then the semantic edge that marks an over-capacity encounter has nothing left to say. Interaction is the exception: a treatment that appears only on hover, focus, or press may sit on every instance, because it is addressed to the one element the reader is already pointing at. If a *resting* ornament seems to be required on every instance of something, move it up to the shell or into the interaction layer — do not simply delete it.
 
 ### How to use this guide
 
@@ -45,7 +45,7 @@ One connective rule keeps identity and legibility from fighting. **Identity live
 ### Design priorities
 
 - The example application's identity is blue/slate with Public Sans. It is a demonstration of the principles, not a requirement of them; a host replaces it wholesale.
-- Warmth comes from considerate behavior and concise language first. Ornament is welcome where it does not compete with a signal.
+- Character and clarity are not a trade. Considerate behavior and concise language come first, and an identity that wants texture, ornament, an atmospheric ground, or a shimmer under the cursor may have all of them, provided none of it is mistakable for a signal.
 - Accessibility takes precedence over density.
 - Popover confirmation, modal confirmation, and reversible Archive deliberately differ by risk.
 - The portable toolkit is distinct from domain-specific demo adapters.
@@ -108,20 +108,21 @@ The **relationships** are the rule; the values are a default. A host may run the
 
 > Density is useful information per glance, not minimum whitespace.
 
-### Visual interest without decoration
+### Visual interest: signals and character
 
-Restraint is a constraint, not a goal. A guide made only of prohibitions produces a legible, uniform, and completely flat interface: every card the same weight, every label the same size, nothing for the eye to catch. Interest comes from **signals** — visual differences that stand for something — applied consistently.
+Restraint is a constraint, not a goal. A guide made only of prohibitions produces a legible, uniform, and completely dead interface: every card the same weight, every label the same size, nothing for the eye to catch and nothing that could only be this application. Two different things prevent that, and confusing them is how a guide like this one strips the life out of a product it was meant to sharpen. **Signals** are visual differences that stand for something. **Character** is visual difference that stands for nothing except the application's own identity. A serious interface needs both.
 
-**The test:** a signal varies with something real. Ask what it varies with; if the answer is "nothing, it looks the same on every card, every button, and every page," it is decoration.
+**The test:** ask what a visual difference varies with. Varying with the data makes it a per-record signal. Varying with what the element *is* makes it a per-type signal. Varying with nothing makes it character — which is legitimate, and governed by the rules below rather than deleted.
 
-Signals vary at one of two levels, and the two carry opposite disciplines:
-
-| Level | Varies with | Earns its keep by being | Examples |
+| Layer | Varies with | Earns its keep by being | Examples |
 | --- | --- | --- | --- |
 | Per record | the data in front of the reader | **rare** | Semantic edge, status color, avatar, progress |
 | Per type | what the control or panel *is* | **invariant** | Icon on an action or destination, surface weight by panel role, mono by value format |
+| Character | nothing — and that is the point | **constant, and never mistakable for a state** | Page ground and texture, ornamental frame, display face, a shimmer that sweeps a card under the cursor |
 
-A shadow on every card varies with nothing, so it is decoration. A leading icon on Publish does not vary by record — it is the same icon every time — and that is precisely its value: it varies by action, and only stays recognizable by never changing. An edge marking works the other way round: it is worth noticing because most cards do not have one. Applying a per-record signal to everything destroys it, and letting a per-type signal drift between pages destroys it just as thoroughly.
+A leading icon on Publish does not vary by record — it is the same icon every time — and that is precisely its value: it varies by action, and only stays recognizable by never changing. An edge marking works the other way round: it is worth noticing because most cards do not have one. Applying a per-record signal to everything destroys it, and letting a per-type signal drift between pages destroys it just as thoroughly.
+
+A shadow on every card varies with nothing, so it is character rather than a signal — but this guide has already spent shadow on surface weight, so using it as ornament takes a word out of the signal vocabulary. That is the real constraint on character: not that it must not exist, but that it must not spend a treatment a signal already needs.
 
 | Signal | Carries | Applied as |
 | --- | --- | --- |
@@ -134,6 +135,16 @@ A shadow on every card varies with nothing, so it is decoration. A leading icon 
 | Proportion | A quantity against its limit | Native UProgress for capacity and distribution, where the total is real |
 
 Each of these is already required to mean something elsewhere in this guide, so none of them introduces a new vocabulary to learn. What they add is contrast: a page where supporting panels recede, exceptions announce themselves, destinations are recognizable at a glance, and people have faces.
+
+#### Character is the third layer, and it is not optional
+
+An application whose every visual difference is load-bearing reads as corporate and lifeless no matter how correct its hierarchy, and correctness is not what makes someone want to open a tool a second time. A tabletop campaign tracker is entitled to gold that catches the light under the cursor, an inked ground, a frame with weight to it. The failure mode is never ornament as such; it is ornament a reader could mistake for a signal, or ornament crowding out the layer where signals live. Character earns its place under three conditions:
+
+- **It carries no state.** It draws on the identity's own palette rather than the semantic colors, and it appears identically on every member of its class. The moment a treatment is present on some records and absent on others, readers will decide it means something — at which point it must become a real signal or go.
+- **At rest it belongs to the constant layer**: the page ground and its texture, the shell's frame and rules, the display face, the surface treatment shared by a whole class of panels. An atmospheric background is character at its most useful, because the reader never scans the background for meaning.
+- **On interaction it may sit on every instance.** A hover, focus, or press treatment is transient and addressed to the one element the reader is already pointing at, so it cannot compete with the resting marks the eye sweeps a grid for. A golden shimmer crossing a card on hover is legitimate on every card; the same gold as a permanent border on every card is not, because the semantic edge marking an over-capacity encounter would then have nothing left to say.
+
+Whatever the treatment: it must not reduce the contrast of the content it sits under or behind, must not move layout, must honor `prefers-reduced-motion`, and must never be the only indication of anything — a hover shimmer is atmosphere, not the focus ring, and keyboard focus still gets its own visible treatment on the same element. Define it once in the theme or a shared component default. Ornament copied into three pages will disagree in two of them, and a guide that finds three disagreeing copies will delete all three.
 
 Icons deserve a specific rule, because the common failure is to apply half of it. Familiar universal actions — edit, copy, delete, play, pause — drop their text and keep an accessible name and a tooltip. That much is usually done. The other half is that a **labeled** button may also take a leading icon when its label names a stable, repeatable concept: Export, Publish, Archive, Filter, or a destination in the navigation. Do not invent an icon for a one-off phrase, and do not let an icon carry meaning its label does not.
 
@@ -830,7 +841,8 @@ Keep the mechanical subset out of human review:
 - Does the page have visual contrast that carries meaning — supporting surfaces receding, exceptions marked, destinations and repeated concepts iconed, people shown as people — or is it uniformly flat?
 - Is every per-type signal applied to its whole class — a full row of metric cards, every destination in a menu — rather than to a favoured member of it?
 - Does the application look like itself rather than like the example, and is that identity expressed in theme tokens and shared defaults rather than scattered per-page overrides?
-- Does any ornament sit on the shell rather than on every instance of a thing, leaving the varying layer free to carry signals?
+- Does the application have character of its own — ground, texture, face, ornament, something under the cursor — or would a reader call it competent and dead?
+- Does that character stay out of the resting layer where signals live, sitting on the shell or on interaction rather than as a permanent mark on every card, and is it defined once in the theme rather than copied per page?
 - Are variants, vocabulary, icon behavior, and confirmation consistent?
 - Does every color on the page name a state or a role, with neutral doing the work wherever there is no such claim to make — and does each confirmation sit in the container its consequence actually requires?
 - Does New/Edit share fields and preserve input on failure?

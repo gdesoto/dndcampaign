@@ -180,8 +180,8 @@ const importCharacter = async (payload: CharacterImportPayload) => {
       <template #body>
         <div class="space-y-4">
           <div>
-            <label class="mb-2 block text-sm text-muted">Name</label>
-            <UInput v-model="createForm.name" placeholder="Character name" />
+            <label class="mb-2 block text-sm text-muted" for="field-characters-index-vue-1">Name</label>
+            <UInput id="field-characters-index-vue-1" v-model="createForm.name" placeholder="Character name" />
           </div>
           <p v-if="createError" class="text-sm text-error">{{ createError }}</p>
         </div>

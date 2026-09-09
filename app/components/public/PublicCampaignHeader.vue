@@ -23,7 +23,7 @@ const props = defineProps<{
   overview: PublicOverview
 }>()
 
-const route = useRoute()
+const icons: Record<string, string> = { Characters: 'i-lucide-users', Recaps: 'i-lucide-play', Sessions: 'i-lucide-calendar', Glossary: 'i-lucide-book-open', Quests: 'i-lucide-scroll', Milestones: 'i-lucide-flag', Maps: 'i-lucide-map', Journal: 'i-lucide-notebook' }
 
 const sectionLinks = computed(() => {
   const base = `/public/${props.publicSlug}`
@@ -38,10 +38,10 @@ const sectionLinks = computed(() => {
     { key: 'showJournal', label: 'Journal', to: `${base}/journal` },
   ] as const
 
-  return sections.filter((section) => props.overview.sections[section.key]).map((section) => ({
+  return [{ label: 'Overview', to: base, exact: true, icon: 'i-lucide-layout-dashboard' }, ...sections.filter((section) => props.overview.sections[section.key]).map((section) => ({
     ...section,
-    active: route.path === section.to,
-  }))
+    icon: icons[section.label],
+  }))]
 })
 </script>
 
@@ -62,17 +62,7 @@ const sectionLinks = computed(() => {
         </p>
       </div>
 
-      <div class="flex flex-wrap gap-2">
-        <UButton
-          v-for="link in sectionLinks"
-          :key="link.to"
-          :to="link.to"
-          size="xs"
-          :variant="link.active ? 'solid' : 'outline'"
-        >
-          {{ link.label }}
-        </UButton>
-      </div>
+<nav aria-label="Public campaign sections" class="overflow-x-auto"><UNavigationMenu :items="sectionLinks" highlight class="min-w-max" /></nav>
     </div>
   </UCard>
 </template>

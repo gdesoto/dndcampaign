@@ -76,10 +76,10 @@ describe('Campaign milestones page', () => {
             `,
           },
           SharedResourceState: {
-            props: ['pending', 'error', 'empty'],
+            props: ['pending', 'error', 'empty', 'hasData'],
             template: `
               <div>
-                <slot v-if="pending" name="loading" />
+                <slot v-if="pending && !hasData" name="loading" />
                 <slot v-else-if="empty" name="emptyActions" />
                 <slot v-else />
               </div>
@@ -169,10 +169,10 @@ describe('Campaign milestones page', () => {
             `,
           },
           SharedResourceState: {
-            props: ['pending', 'error', 'empty'],
+            props: ['pending', 'error', 'empty', 'hasData'],
             template: `
               <div>
-                <div v-if="pending">Loading milestones</div>
+                <div v-if="pending && !hasData">Loading milestones</div>
                 <slot v-else-if="empty" name="emptyActions" />
                 <slot v-else />
               </div>

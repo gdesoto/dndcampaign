@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { namedEntityFormSchema } from '~/utils/entity-form-schemas'
 type CampaignEditForm = {
   name: string
   system: string
@@ -57,7 +58,9 @@ const descriptionModel = computed({
 
 <template>
   <SharedEntityFormModal
-    v-model:open="openModel"
+v-model:open="openModel"
+:schema="namedEntityFormSchema"
+    :state="form"
     title="Edit campaign"
     :saving="saving"
     :error="error"

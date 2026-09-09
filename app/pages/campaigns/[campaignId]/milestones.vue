@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { titledEntityFormSchema } from '~/utils/entity-form-schemas'
 import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 definePageMeta({ layout: 'dashboard' })
 
@@ -17,7 +18,6 @@ const { data: milestones, pending, refresh, error } = await useAsyncData(
   () => request<MilestoneItem[]>(`/api/campaigns/${campaignId.value}/milestones`)
 )
 
-const isInitialLoadPending = computed(() => pending.value && !milestones.value)
 
 const {
   isOpen: isEditOpen,
@@ -131,7 +131,8 @@ const deleteEditingMilestone = async () => {
       </template>
 
       <SharedResourceState
-        :pending="isInitialLoadPending"
+:has-data="Boolean(milestones?.length)"
+        :pending="pending"
         :error="error"
         :empty="!milestones?.length"
         error-message="Unable to load milestones."
@@ -173,7 +174,9 @@ const deleteEditingMilestone = async () => {
     </CampaignListTemplate>
 
     <SharedEntityFormModal
-      v-model:open="isEditOpen"
+v-model:open="isEditOpen"
+:schema="titledEntityFormSchema"
+      :state="editForm"
       :title="editMode === 'create' ? 'Create milestone' : 'Edit milestone'"
       :saving="isSaving"
       :error="editError"

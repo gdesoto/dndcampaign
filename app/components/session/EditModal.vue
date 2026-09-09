@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { sessionFormSchema } from '~/utils/entity-form-schemas'
 type SessionEditFormState = {
   title: string
   sessionNumber: string
@@ -31,28 +32,7 @@ const submit = () => {
 </script>
 
 <template>
-  <UModal v-model:open="openModel">
-    <template #content>
-      <UCard>
-        <template #header>
-          <h2 class="text-lg font-semibold">Edit session</h2>
-        </template>
-
-        <UForm :state="form" class="space-y-4" @submit.prevent="submit">
-          <SessionFormFields
-            :form="form"
-            @update:form="emit('update:form', $event)"
-          />
-
-          <p v-if="error" class="text-sm text-error">{{ error }}</p>
-
-          <div class="flex justify-end gap-3">
-            <UButton variant="ghost" color="neutral" @click="() => { openModel = false }">Cancel</UButton>
-            <UButton type="submit" :loading="saving">Save session</UButton>
-          </div>
-        </UForm>
-      </UCard>
-    </template>
-  </UModal>
+  <SharedEntityFormModal v-model:open="openModel" :schema="sessionFormSchema" :state="form" title="Edit session" :saving="saving" :error="error" submit-label="Save changes" @submit="submit">
+    <SessionFormFields :form="form" @update:form="emit('update:form', $event)" />
+  </SharedEntityFormModal>
 </template>
-

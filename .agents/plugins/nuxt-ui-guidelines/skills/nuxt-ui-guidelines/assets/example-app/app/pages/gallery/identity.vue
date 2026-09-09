@@ -9,6 +9,7 @@ const layers = [
   { layer: 'app/app.config.ts', owns: 'Semantic color aliases and shared component defaults.', mechanism: 'ui.colors, applied at runtime here so the switch needs no reload.' },
   { layer: 'UTheme', owns: 'Component slot classes and prop defaults for one subtree.', mechanism: 'Native provide/inject; outranks app.config, outranked by a component’s own ui and class props.' },
   { layer: 'A composition’s ui prop', owns: 'The single instance that genuinely differs.', mechanism: 'Unused by these identities — nothing here needed a one-off.' },
+  { layer: 'Character', owns: 'Ground, texture, ornament, and what happens under the cursor. Stands for nothing but the product.', mechanism: 'A class in main.css reached through a shared component default, so it cannot drift between pages. The campaign cards carry one.' },
 ];
 const unchanged = [
   'The action vocabulary: Open · Edit · Duplicate · Archive · Delete, in that order.',
@@ -74,7 +75,7 @@ useHead({ title: 'Identity' });
             <UTooltip text="Delete course"><UButton
               icon="i-lucide-trash-2"
               aria-label="Delete course"
-              color="error"
+              color="neutral"
               variant="ghost"
             /></UTooltip>
           </div>
@@ -165,7 +166,9 @@ variant="outline" />
       <p class="max-w-3xl text-data text-muted">
         Review each identity in light and dark, including hover, disabled, and error states. A
         look that cannot be expressed in the layers above is a reason to reconsider the look, or
-        to add a token for it, before scattering it across pages.
+        to add a token for it, before scattering it across pages. Hover a campaign card to see
+        the one treatment here that means nothing at all: character is a layer of its own, and an
+        application without it is competent and dead.
       </p>
     </section>
   </div>

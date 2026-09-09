@@ -18,7 +18,6 @@ const { milestoneStatusColor } = useCampaignStatusBadges()
   <UMain>
     <UPage>
       <div class="space-y-6">
-        <PublicCampaignHeader v-if="overview" :public-slug="publicSlug" :overview="overview" />
 
         <UCard>
           <template #header>

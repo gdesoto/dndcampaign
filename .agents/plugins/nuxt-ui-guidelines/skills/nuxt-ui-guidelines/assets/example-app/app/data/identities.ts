@@ -43,19 +43,19 @@ export const identities: Identity[] = [
     id: "campaign",
     label: "Campaign tracker",
     description:
-      "A tabletop campaign log: amber on stone, small caps for titles in Cinzel over Alegreya Sans, softer radii and a roomier page. The same tables, the same verbs, the same confirmations.",
+      "A tabletop campaign log: amber on stone, small caps for titles in Cinzel over Alegreya Sans, softer radii, a roomier page, and gold that catches the light as the cursor crosses a card. The same tables, the same verbs, the same confirmations.",
     icon: "i-lucide-dices",
     className: "identity-campaign",
     colors: { primary: "amber", neutral: "stone" },
     ui: {
-      card: { root: "ring-1 ring-primary/25", header: "bg-primary/5" },
+      card: { root: "ring-1 ring-primary/25 identity-sheen", header: "bg-primary/5" },
       badge: { base: "uppercase tracking-[0.08em]" },
       table: { th: "uppercase tracking-[0.08em] bg-primary/5" },
     },
     props: { badge: { variant: "subtle" } },
-    css: `/* app/assets/css/main.css */\n.identity-campaign {\n  --font-sans: var(--font-alegreya-sans);\n  --font-display: var(--font-cinzel);\n  --text-page-title: 1.5rem;\n  --text-metric: 1.75rem;\n  --spacing-page: 1.5rem;\n  --ui-radius: 0.625rem;\n}`,
+    css: `/* app/assets/css/main.css */\n.identity-campaign {\n  --font-sans: var(--font-alegreya-sans);\n  --font-display: var(--font-cinzel);\n  --text-page-title: 1.5rem;\n  --text-metric: 1.75rem;\n  --spacing-page: 1.5rem;\n  --ui-radius: 0.625rem;\n}\n\n/* Character: a sweep on hover only, clear at both ends, off under\n   reduced motion. Carries no state, so it may sit on every card. */\n.identity-sheen::after {\n  background-image: linear-gradient(105deg, transparent 44%,\n    color-mix(in oklab, var(--ui-primary) 16%, transparent) 50%,\n    transparent 56%);\n  background-size: 260% 100%;\n  background-position: 130% 0;\n  transition: background-position 700ms ease-out;\n}\n.identity-sheen:hover::after { background-position: -30% 0; }`,
     config: `ui: {\n  colors: { primary: 'amber', neutral: 'stone' },\n}`,
-    theme: `<UTheme\n  :ui="{\n    card: { root: 'ring-1 ring-primary/25', header: 'bg-primary/5' },\n    badge: { base: 'uppercase tracking-[0.08em]' },\n    table: { th: 'uppercase tracking-[0.08em] bg-primary/5' },\n  }"\n  :props="{ badge: { variant: 'subtle' } }"\n/>`,
+    theme: `<UTheme\n  :ui="{\n    card: { root: 'ring-1 ring-primary/25 identity-sheen', header: 'bg-primary/5' },\n    badge: { base: 'uppercase tracking-[0.08em]' },\n    table: { th: 'uppercase tracking-[0.08em] bg-primary/5' },\n  }"\n  :props="{ badge: { variant: 'subtle' } }"\n/>`,
   },
   {
     id: "coastal",

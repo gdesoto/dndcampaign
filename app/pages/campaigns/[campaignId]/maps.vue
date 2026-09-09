@@ -375,17 +375,19 @@ const applyReimport = async () => {
         </p>
       </UCard>
 
-      <div v-if="pending" class="space-y-3">
+      <div v-if="pending && !maps?.length" class="space-y-3">
         <USkeleton class="h-24 w-full" />
         <USkeleton class="h-[420px] w-full" />
       </div>
 
-      <UCard v-else-if="error" class="text-center">
+      <UCard v-else-if="error && !maps?.length" class="text-center">
         <p class="text-sm text-error">Unable to load campaign maps.</p>
         <UButton class="mt-3" variant="outline" @click="() => refresh()">Retry</UButton>
       </UCard>
 
-      <div v-else class="space-y-4">
+      <div v-else :aria-busy="pending" class="space-y-4">
+      <UAlert v-if="error" color="error" title="Unable to refresh maps" :actions="[{ label: 'Retry', onClick: () => refresh() }]" />
+      <p v-if="pending" role="status" class="text-sm text-muted">Refreshing maps…</p>
       <UCard>
         <template #header>
           <div class="flex flex-wrap items-center justify-between gap-2">
@@ -402,7 +404,6 @@ const applyReimport = async () => {
                 variant="ghost"
                 icon="i-lucide-filter"
                 :disabled="!selectedMapId"
-                title="Layers"
                 aria-label="Open map layer filters"
                 @click="() => { layerModalOpen = true }"
               />
@@ -412,7 +413,6 @@ const applyReimport = async () => {
                 variant="ghost"
                 icon="i-lucide-settings-2"
                 :disabled="!selectedMap"
-                title="Map settings"
                 @click="() => { mapSettingsModalOpen = true }"
               >
                 Map settings
@@ -423,9 +423,6 @@ const applyReimport = async () => {
                 variant="ghost"
                 icon="i-lucide-refresh-cw"
                 :disabled="!canWriteContent || !selectedMap"
-                :title="
-                  canWriteContent ? 'Re-import / update' : 'Read-only role cannot re-import maps'
-                "
                 @click="() => { reimportPanelOpen = true }"
               >
                 Re-import / update
@@ -433,7 +430,6 @@ const applyReimport = async () => {
               <UButton
                 size="sm"
                 :disabled="!canWriteContent || !selectedFeatureIds.length || !selectedMapId"
-                :title="canWriteContent ? undefined : 'Read-only role cannot stage glossary actions'"
                 @click="() => { stageOpen = true }"
               >
                 Stage for glossary ({{ selectedFeatureIds.length }})
@@ -442,7 +438,7 @@ const applyReimport = async () => {
           </div>
         </template>
 
-        <div v-if="viewerPending" class="space-y-2">
+        <div v-if="viewerPending && !viewer" class="space-y-2">
           <USkeleton class="h-[420px] w-full" />
         </div>
         <div v-else-if="viewer">

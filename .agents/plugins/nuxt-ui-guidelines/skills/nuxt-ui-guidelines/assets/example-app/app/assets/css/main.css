@@ -57,6 +57,44 @@ body {
   --ui-radius: 0.625rem;
   font-family: var(--font-sans);
 }
+/* Character, not a signal. On the campaign identity a warm sheen crosses a card
+   under the cursor. It sits on every card because it is transient and addressed
+   to the one the reader is pointing at, so it cannot compete with the resting
+   marks the eye sweeps a grid for. It carries no state, both ends of the sweep
+   leave the card clear so no wash ever sits over the text, and it stops entirely
+   under reduced motion. Ornament belongs here for the same reason tokens do:
+   defined once, it cannot drift between pages. */
+.identity-sheen {
+  position: relative;
+}
+.identity-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  background-image: linear-gradient(
+    105deg,
+    transparent 44%,
+    color-mix(in oklab, var(--ui-primary) 16%, transparent) 50%,
+    transparent 56%
+  );
+  background-size: 260% 100%;
+  background-position: 130% 0;
+  background-repeat: no-repeat;
+  transition: background-position 700ms ease-out;
+}
+.identity-sheen:hover::after {
+  background-position: -30% 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .identity-sheen::after,
+  .identity-sheen:hover::after {
+    transition: none;
+    background-position: 130% 0;
+  }
+}
 .identity-coastal {
   --font-sans: var(--font-nunito);
   --font-display: var(--font-fraunces);

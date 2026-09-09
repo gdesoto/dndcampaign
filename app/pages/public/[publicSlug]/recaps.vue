@@ -71,7 +71,6 @@ const playRecap = async (recapId: string) => {
   <UMain>
     <UPage>
       <div class="space-y-6">
-        <PublicCampaignHeader v-if="overview" :public-slug="publicSlug" :overview="overview" />
 
         <div v-if="pending" class="space-y-2">
           <div class="h-10 w-full animate-pulse rounded bg-muted"></div>

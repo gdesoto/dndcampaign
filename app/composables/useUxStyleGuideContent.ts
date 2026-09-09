@@ -1,4 +1,4 @@
-import type { TabsItem } from '@nuxt/ui'
+import type { DropdownMenuItem, TabsItem  } from '@nuxt/ui'
 
 export type Principle = {
   title: string
@@ -703,7 +703,7 @@ export const sessionPanels: Record<string, SessionPanel> = {
   },
 }
 
-export const questActionItems = [
+export const questActionItems: DropdownMenuItem[][] = [
   [
     { label: 'Pin to session prep', icon: 'i-lucide-pin' },
     { label: 'Link to current map', icon: 'i-lucide-map-pinned' },

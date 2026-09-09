@@ -75,7 +75,7 @@ const profileMenuItems = computed(() => [
   [
     {
       label: currentUser.value?.email || 'Account',
-      type: 'label',
+      type: 'label' as const,
     },
   ],
   [
@@ -128,7 +128,7 @@ const compactAccountMenuItems = computed(() => [
   [
     {
       label: `Current: ${colorModeLabel.value}`,
-      type: 'label',
+      type: 'label' as const,
     },
   ],
   ...profileMenuItems.value,

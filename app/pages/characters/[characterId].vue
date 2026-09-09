@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { preserveDraft } from '~/utils/preserve-draft'
 import type { CharacterImportPayload, CharacterImportRefreshPayload } from '~/utils/character-import'
 import { getCharacterImportErrorMessage } from '~/utils/character-import'
 
@@ -159,7 +160,9 @@ const startEditing = () => {
   isEditing.value = true
 }
 
-const stopEditing = () => {
+const stopEditing = async () => {
+  if (!await confirmDiscard()) return
+  syncFormState()
   isEditing.value = false
 }
 
@@ -233,18 +236,40 @@ const syncFormState = () => {
   spellsJson.value = JSON.stringify(sheet.value.spells || {}, null, 2)
 }
 
-watch(() => character.value, () => { if (character.value) syncFormState() }, { immediate: true })
+const draftState = computed(() => ({ basics: { ...basicsForm }, abilities: { ...abilityForm }, background: { ...backgroundForm }, appearance: { ...appearanceForm }, notes: { ...notesForm }, combat: { ...combatForm }, classes: classesForm.value, spells: spellsJson.value, hp: hpCurrentDraft.value }))
+const baseline = ref(JSON.stringify(draftState.value))
+watch(character, (value, previous) => {
+  if (!value) return
+  const draft = JSON.parse(JSON.stringify(draftState.value))
+  const oldBaseline = JSON.parse(baseline.value)
+  syncFormState()
+  const fresh = JSON.parse(JSON.stringify(draftState.value))
+  baseline.value = JSON.stringify(fresh)
+  if (previous?.id !== value.id) return
+  const merged = preserveDraft(draft, oldBaseline, fresh)
+  Object.assign(basicsForm, merged.basics)
+  Object.assign(abilityForm, merged.abilities)
+  Object.assign(backgroundForm, merged.background)
+  Object.assign(appearanceForm, merged.appearance)
+  Object.assign(notesForm, merged.notes)
+  Object.assign(combatForm, merged.combat)
+  classesForm.value = merged.classes
+  spellsJson.value = merged.spells
+  hpCurrentDraft.value = merged.hp
+}, { immediate: true })
 
 // ── Save handlers ─────────────────────────────────────────────────────────────
 
 const savingSection = ref('')
 const sectionError = ref('')
+const { confirmDiscard } = useUnsavedChanges(() => JSON.stringify(draftState.value) !== baseline.value, () => Boolean(savingSection.value))
 
 const saveSection = async (section: string, payload: unknown) => {
-  if (!canEdit.value) return
+  if (!canEdit.value || savingSection.value) return
   sectionError.value = ''
   savingSection.value = section
   try {
+    if (section === 'BASICS') await request(`/api/characters/${characterId.value}`, { method: 'PATCH', body: { name: basicsForm.name, status: character.value?.status || undefined } })
     await request(`/api/characters/${characterId.value}`, { method: 'PATCH', body: { section, payload } })
     await refresh()
   } catch (err) {
@@ -255,11 +280,7 @@ const saveSection = async (section: string, payload: unknown) => {
 }
 
 const saveBasics = async () => {
-  if (!canEdit.value) return
-  await request(`/api/characters/${characterId.value}`, {
-    method: 'PATCH',
-    body: { name: basicsForm.name, status: character.value?.status || undefined },
-  })
+  if (!canEdit.value || savingSection.value) return
   await saveSection('BASICS', {
     name: basicsForm.name,
     playerName: basicsForm.playerName,
@@ -272,8 +293,9 @@ const saveBasics = async () => {
 
 // HP current: always-interactive, auto-saves without entering edit mode
 const saveHpQuick = async () => {
-  if (!canEdit.value) return
+  if (!canEdit.value || savingSection.value) return
   if (hpCurrentDraft.value === hpData.value.current) return
+  savingSection.value = 'HIT_POINTS'
   try {
     await request(`/api/characters/${characterId.value}`, {
       method: 'PATCH',
@@ -283,22 +305,22 @@ const saveHpQuick = async () => {
       },
     })
     await refresh()
-  } catch { /* silent — the input stays editable */ }
+  } catch (error) { sectionError.value = (error as Error).message || 'Unable to save hit points.' } finally { savingSection.value = '' }
 }
 
 // Inspiration: always-interactive toggle
 const saveInspiration = async () => {
-  if (!canEdit.value) return
+  if (!canEdit.value || savingSection.value) return
   try {
     await request(`/api/characters/${characterId.value}`, {
       method: 'PATCH',
       body: { section: 'BASICS', payload: { ...basicsForm } },
     })
-  } catch { /* silent */ }
+  } catch (error) { sectionError.value = (error as Error).message || 'Unable to save inspiration.' }
 }
 
 const saveCombatStats = async () => {
-  if (!canEdit.value) return
+  if (!canEdit.value || savingSection.value) return
   sectionError.value = ''
   savingSection.value = 'COMBAT'
   try {
@@ -325,7 +347,7 @@ const saveCombatStats = async () => {
 }
 
 const saveBiography = async () => {
-  if (!canEdit.value) return
+  if (!canEdit.value || savingSection.value) return
   sectionError.value = ''
   savingSection.value = 'BIOGRAPHY'
   try {
@@ -432,7 +454,7 @@ const refreshImport = async (payload: CharacterImportRefreshPayload) => {
 }
 
 const deleteCharacter = async () => {
-  if (!canEdit.value) return
+  if (!canEdit.value || savingSection.value) return
   await request(`/api/characters/${characterId.value}`, { method: 'DELETE' })
   router.push('/characters')
 }
@@ -453,7 +475,7 @@ const attachToCampaign = async () => {
 }
 
 const updateCampaignLink = async (link: CampaignLink, status: CampaignLink['status']) => {
-  if (!canEdit.value) return
+  if (!canEdit.value || savingSection.value) return
   await request(`/api/campaigns/${link.campaignId}/characters/${link.characterId}`, {
     method: 'PATCH',
     body: { status },
@@ -462,7 +484,7 @@ const updateCampaignLink = async (link: CampaignLink, status: CampaignLink['stat
 }
 
 const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void) => {
-  if (!canEdit.value) return
+  if (!canEdit.value || savingSection.value) return
   await request(`/api/campaigns/${link.campaignId}/characters/${link.characterId}`, { method: 'DELETE' })
   await refresh()
   close()
@@ -510,7 +532,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
 
               <!-- View mode: read-only identity -->
               <div v-if="!isEditing" class="min-w-0 flex-1">
-                <p class="text-[10px] font-display uppercase tracking-[0.3em] text-dimmed">Character</p>
+                <p class="text-xs font-display uppercase tracking-[0.3em] text-dimmed">Character</p>
                 <h1 class="mt-0.5 font-display text-3xl font-semibold tracking-tight text-highlighted">
                   {{ character.name }}
                 </h1>
@@ -553,31 +575,31 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
 
               <!-- Edit mode: identity form inline -->
               <div v-else class="min-w-0 flex-1 space-y-3">
-                <p class="text-[10px] font-display uppercase tracking-[0.3em] text-dimmed">Editing identity</p>
+                <h1 class="text-2xl font-display font-semibold">{{ character.name }}</h1>
                 <div class="grid gap-3 sm:grid-cols-2">
                   <div class="sm:col-span-2">
-                    <label class="mb-1 block text-xs text-muted">Character name</label>
-                    <UInput v-model="basicsForm.name" />
+                    <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-1">Character name</label>
+                    <UInput id="field-characters--characterId--vue-1" v-model="basicsForm.name" />
                   </div>
                   <div>
-                    <label class="mb-1 block text-xs text-muted">Player name</label>
-                    <UInput v-model="basicsForm.playerName" />
+                    <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-2">Player name</label>
+                    <UInput id="field-characters--characterId--vue-2" v-model="basicsForm.playerName" />
                   </div>
                   <div>
-                    <label class="mb-1 block text-xs text-muted">Alignment</label>
-                    <UInput v-model="basicsForm.alignment" />
+                    <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-3">Alignment</label>
+                    <UInput id="field-characters--characterId--vue-3" v-model="basicsForm.alignment" />
                   </div>
                   <div>
-                    <label class="mb-1 block text-xs text-muted">Level</label>
-                    <UInput v-model.number="basicsForm.level" type="number" min="1" max="20" />
+                    <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-4">Level</label>
+                    <UInput id="field-characters--characterId--vue-4" v-model.number="basicsForm.level" type="number" min="1" max="20" />
                   </div>
                   <div>
-                    <label class="mb-1 block text-xs text-muted">Experience points</label>
-                    <UInput v-model.number="basicsForm.experience" type="number" min="0" />
+                    <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-5">Experience points</label>
+                    <UInput id="field-characters--characterId--vue-5" v-model.number="basicsForm.experience" type="number" min="0" />
                   </div>
                 </div>
                 <div class="flex items-center gap-3">
-                  <USwitch v-model="basicsForm.inspiration" />
+                  <USwitch v-model="basicsForm.inspiration" aria-label="Inspiration" />
                   <span class="text-sm text-muted">Inspiration</span>
                 </div>
                 <UButton size="sm" :loading="savingSection === 'BASICS'" @click="saveBasics">
@@ -631,7 +653,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                 :key="ab.key"
                 class="flex flex-col items-center rounded-lg border border-default bg-accented p-2.5 text-center"
               >
-                <p class="text-[9px] font-display uppercase tracking-[0.18em] text-dimmed">{{ ab.label }}</p>
+                <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">{{ ab.label }}</p>
                 <p class="my-1 font-display text-2xl font-bold text-highlighted">{{ getAbilityTotal(abilityScores[ab.key]) }}</p>
                 <div
                   class="w-full rounded border px-1.5 py-0.5 text-center text-xs font-semibold font-display"
@@ -645,16 +667,17 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
             </div>
             <!-- Edit mode: ability score inputs -->
             <div v-else class="space-y-3">
-              <p class="text-[10px] font-display uppercase tracking-[0.22em] text-dimmed">Ability Scores</p>
+              <p class="text-xs font-display uppercase tracking-[0.22em] text-dimmed">Ability Scores</p>
               <div class="grid grid-cols-3 gap-2 sm:grid-cols-6">
                 <div
                   v-for="ab in abilities"
                   :key="ab.key"
                   class="flex flex-col items-center rounded-lg border border-default bg-accented p-2.5 text-center"
                 >
-                  <p class="text-[9px] font-display uppercase tracking-[0.18em] text-dimmed">{{ ab.label }}</p>
+                  <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">{{ ab.label }}</p>
                   <UInput
                     v-model.number="(abilityForm as Record<string,number>)[ab.key]"
+                    :aria-label="`${ab.label} ability score`"
                     type="number"
                     min="1"
                     max="30"
@@ -693,12 +716,13 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
               <div class="rounded-lg border border-default bg-accented px-4 py-3">
                 <div class="flex items-center gap-4">
                   <div class="shrink-0">
-                    <p class="text-[9px] font-display uppercase tracking-[0.18em] text-dimmed">Hit Points</p>
+                    <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Hit Points</p>
                     <div class="mt-1 flex items-baseline gap-1.5">
                       <input
                         v-model.number="hpCurrentDraft"
                         type="number"
-                        class="w-14 appearance-none bg-transparent font-display text-2xl font-bold text-highlighted outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        aria-label="Current hit points"
+                        class="focus-visible:ring-2 focus-visible:ring-primary w-14 appearance-none bg-transparent font-display text-2xl font-bold text-highlighted outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         :readonly="!canEdit"
                         @blur="saveHpQuick"
                         @keydown.enter.prevent="saveHpQuick"
@@ -711,26 +735,26 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                     <div class="h-2 overflow-hidden rounded-full bg-elevated">
                       <div class="h-full rounded-full transition-all duration-500" :class="hpBarColor" :style="{ width: `${hpData.percent}%` }" />
                     </div>
-                    <p class="mt-1 text-right text-[9px] text-dimmed">{{ hpData.percent }}%</p>
+                    <p class="mt-1 text-right text-xs text-dimmed">{{ hpData.percent }}%</p>
                   </div>
                 </div>
               </div>
               <!-- AC, Initiative, Speed, Prof Bonus -->
               <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                 <div class="flex flex-col items-center justify-center rounded-lg border border-default bg-accented p-3 text-center">
-                  <p class="text-[9px] font-display uppercase tracking-[0.18em] text-dimmed">AC</p>
+                  <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">AC</p>
                   <p class="mt-1 font-display text-2xl font-bold text-highlighted">{{ defensesData.ac ?? '—' }}</p>
                 </div>
                 <div class="flex flex-col items-center justify-center rounded-lg border border-default bg-accented p-3 text-center">
-                  <p class="text-[9px] font-display uppercase tracking-[0.18em] text-dimmed">Initiative</p>
+                  <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Initiative</p>
                   <p class="mt-1 font-display text-2xl font-bold text-highlighted">{{ fmtMod(defensesData.initiative) }}</p>
                 </div>
                 <div class="flex flex-col items-center justify-center rounded-lg border border-default bg-accented p-3 text-center">
-                  <p class="text-[9px] font-display uppercase tracking-[0.18em] text-dimmed">Speed</p>
+                  <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Speed</p>
                   <p class="mt-1 font-display text-2xl font-bold text-highlighted">{{ defensesData.speed }}<span class="text-base font-normal text-dimmed"> ft</span></p>
                 </div>
                 <div class="flex flex-col items-center justify-center rounded-lg border border-default bg-accented p-3 text-center">
-                  <p class="text-[9px] font-display uppercase tracking-[0.18em] text-dimmed">Prof. Bonus</p>
+                  <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Prof. Bonus</p>
                   <p class="mt-1 font-display text-2xl font-bold text-highlighted">+{{ proficiencyBonus }}</p>
                 </div>
               </div>
@@ -738,27 +762,27 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
 
             <!-- Edit mode: combat stat inputs -->
             <div v-else class="space-y-3">
-              <p class="text-[10px] font-display uppercase tracking-[0.22em] text-dimmed">Combat stats</p>
+              <p class="text-xs font-display uppercase tracking-[0.22em] text-dimmed">Combat stats</p>
               <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                 <div>
-                  <label class="mb-1 block text-xs text-muted">Max HP</label>
-                  <UInput v-model.number="combatForm.maxHp" type="number" min="1" />
+                  <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-6">Max HP</label>
+                  <UInput id="field-characters--characterId--vue-6" v-model.number="combatForm.maxHp" type="number" min="1" />
                 </div>
                 <div>
-                  <label class="mb-1 block text-xs text-muted">Temp HP</label>
-                  <UInput v-model.number="combatForm.tempHp" type="number" min="0" />
+                  <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-7">Temp HP</label>
+                  <UInput id="field-characters--characterId--vue-7" v-model.number="combatForm.tempHp" type="number" min="0" />
                 </div>
                 <div>
-                  <label class="mb-1 block text-xs text-muted">Armor Class</label>
-                  <UInput v-model.number="combatForm.ac" type="number" min="1" />
+                  <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-8">Armor Class</label>
+                  <UInput id="field-characters--characterId--vue-8" v-model.number="combatForm.ac" type="number" min="1" />
                 </div>
                 <div>
-                  <label class="mb-1 block text-xs text-muted">Initiative</label>
-                  <UInput v-model.number="combatForm.initiative" type="number" />
+                  <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-9">Initiative</label>
+                  <UInput id="field-characters--characterId--vue-9" v-model.number="combatForm.initiative" type="number" />
                 </div>
                 <div>
-                  <label class="mb-1 block text-xs text-muted">Speed (ft.)</label>
-                  <UInput v-model.number="combatForm.speed" type="number" min="0" />
+                  <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-10">Speed (ft.)</label>
+                  <UInput id="field-characters--characterId--vue-10" v-model.number="combatForm.speed" type="number" min="0" />
                 </div>
               </div>
               <UButton size="sm" :loading="savingSection === 'COMBAT'" @click="saveCombatStats">
@@ -778,7 +802,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
             <UCard>
               <template #header>
                 <div class="flex items-center justify-between">
-                  <p class="text-[10px] font-display uppercase tracking-[0.22em] text-dimmed">Classes</p>
+                  <p class="text-xs font-display uppercase tracking-[0.22em] text-dimmed">Classes</p>
                   <UButton v-if="isEditing && !showAddClass" size="xs" variant="ghost" @click="openAddClass">
                     <UIcon name="i-lucide-plus" class="mr-1 h-3.5 w-3.5" />
                     Add
@@ -803,7 +827,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                       </div>
                     </div>
                     <div class="flex shrink-0 items-center gap-2">
-                      <span v-if="cls.hitDie" class="text-[10px] font-display uppercase tracking-wider text-dimmed">d{{ cls.hitDie }}</span>
+                      <span v-if="cls.hitDie" class="text-xs font-display uppercase tracking-wider text-dimmed">d{{ cls.hitDie }}</span>
                       <UBadge v-if="cls.level" color="primary" variant="soft" size="sm">Lv {{ cls.level }}</UBadge>
                       <UButton
                         v-if="isEditing"
@@ -827,20 +851,20 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                 <div v-if="isEditing && showAddClass" class="space-y-3 rounded-lg border border-default bg-accented/20 p-3">
                   <div class="grid gap-2 sm:grid-cols-2">
                     <div>
-                      <label class="mb-1 block text-xs text-muted">Class</label>
-                      <UInput v-model="newClassForm.name" placeholder="e.g. Monk" size="sm" />
+                      <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-11">Class</label>
+                      <UInput id="field-characters--characterId--vue-11" v-model="newClassForm.name" placeholder="e.g. Monk" size="sm" />
                     </div>
                     <div>
-                      <label class="mb-1 block text-xs text-muted">Subclass</label>
-                      <UInput v-model="newClassForm.subclass" placeholder="optional" size="sm" />
+                      <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-12">Subclass</label>
+                      <UInput id="field-characters--characterId--vue-12" v-model="newClassForm.subclass" placeholder="optional" size="sm" />
                     </div>
                     <div>
-                      <label class="mb-1 block text-xs text-muted">Level</label>
-                      <UInput v-model.number="newClassForm.level" type="number" min="1" max="20" size="sm" />
+                      <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-13">Level</label>
+                      <UInput id="field-characters--characterId--vue-13" v-model.number="newClassForm.level" type="number" min="1" max="20" size="sm" />
                     </div>
                     <div>
-                      <label class="mb-1 block text-xs text-muted">Hit Die</label>
-                      <UInput v-model.number="newClassForm.hitDie" type="number" placeholder="e.g. 8" size="sm" />
+                      <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-14">Hit Die</label>
+                      <UInput id="field-characters--characterId--vue-14" v-model.number="newClassForm.hitDie" type="number" placeholder="e.g. 8" size="sm" />
                     </div>
                   </div>
                   <div class="flex gap-2">
@@ -860,7 +884,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
             <!-- Biography card -->
             <UCard>
               <template #header>
-                <p class="text-[10px] font-display uppercase tracking-[0.22em] text-dimmed">Biography</p>
+                <p class="text-xs font-display uppercase tracking-[0.22em] text-dimmed">Biography</p>
               </template>
 
               <!-- VIEW MODE: readable display -->
@@ -888,7 +912,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                   class="grid gap-4 sm:grid-cols-2"
                 >
                   <div v-if="backgroundForm.traits" class="space-y-1.5">
-                    <p class="text-[9px] font-display uppercase tracking-[0.18em] text-dimmed">Personality</p>
+                    <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Personality</p>
                     <ul class="space-y-1">
                       <li
                         v-for="t in backgroundForm.traits.split('\n').filter(Boolean)"
@@ -901,7 +925,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                     </ul>
                   </div>
                   <div v-if="backgroundForm.ideals" class="space-y-1.5">
-                    <p class="text-[9px] font-display uppercase tracking-[0.18em] text-dimmed">Ideals</p>
+                    <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Ideals</p>
                     <ul class="space-y-1">
                       <li
                         v-for="t in backgroundForm.ideals.split('\n').filter(Boolean)"
@@ -914,7 +938,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                     </ul>
                   </div>
                   <div v-if="backgroundForm.bonds" class="space-y-1.5">
-                    <p class="text-[9px] font-display uppercase tracking-[0.18em] text-dimmed">Bonds</p>
+                    <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Bonds</p>
                     <ul class="space-y-1">
                       <li
                         v-for="t in backgroundForm.bonds.split('\n').filter(Boolean)"
@@ -927,7 +951,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                     </ul>
                   </div>
                   <div v-if="backgroundForm.flaws" class="space-y-1.5">
-                    <p class="text-[9px] font-display uppercase tracking-[0.18em] text-dimmed">Flaws</p>
+                    <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Flaws</p>
                     <ul class="space-y-1">
                       <li
                         v-for="t in backgroundForm.flaws.split('\n').filter(Boolean)"
@@ -947,46 +971,46 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                   class="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4"
                 >
                   <div v-if="appearanceData.gender" class="space-y-0.5">
-                    <p class="text-[9px] font-display uppercase tracking-[0.14em] text-dimmed">Gender</p>
+                    <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Gender</p>
                     <p class="text-xs text-highlighted">{{ appearanceData.gender }}</p>
                   </div>
                   <div v-if="appearanceData.age" class="space-y-0.5">
-                    <p class="text-[9px] font-display uppercase tracking-[0.14em] text-dimmed">Age</p>
+                    <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Age</p>
                     <p class="text-xs text-highlighted">{{ appearanceData.age }}</p>
                   </div>
                   <div v-if="appearanceData.height" class="space-y-0.5">
-                    <p class="text-[9px] font-display uppercase tracking-[0.14em] text-dimmed">Height</p>
+                    <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Height</p>
                     <p class="text-xs text-highlighted">{{ appearanceData.height }}</p>
                   </div>
                   <div v-if="appearanceData.weight" class="space-y-0.5">
-                    <p class="text-[9px] font-display uppercase tracking-[0.14em] text-dimmed">Weight</p>
+                    <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Weight</p>
                     <p class="text-xs text-highlighted">{{ appearanceData.weight }}</p>
                   </div>
                   <div v-if="appearanceData.eyes" class="space-y-0.5">
-                    <p class="text-[9px] font-display uppercase tracking-[0.14em] text-dimmed">Eyes</p>
+                    <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Eyes</p>
                     <p class="text-xs text-highlighted">{{ appearanceData.eyes }}</p>
                   </div>
                   <div v-if="appearanceData.hair" class="space-y-0.5">
-                    <p class="text-[9px] font-display uppercase tracking-[0.14em] text-dimmed">Hair</p>
+                    <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Hair</p>
                     <p class="text-xs text-highlighted">{{ appearanceData.hair }}</p>
                   </div>
                   <div v-if="appearanceData.skin" class="col-span-2 space-y-0.5">
-                    <p class="text-[9px] font-display uppercase tracking-[0.14em] text-dimmed">Skin</p>
+                    <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Skin</p>
                     <p class="text-xs text-highlighted">{{ appearanceData.skin }}</p>
                   </div>
                   <div v-if="appearanceData.faith" class="space-y-0.5">
-                    <p class="text-[9px] font-display uppercase tracking-[0.14em] text-dimmed">Faith</p>
+                    <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Faith</p>
                     <p class="text-xs text-highlighted">{{ appearanceData.faith }}</p>
                   </div>
                 </div>
 
                 <!-- Backstory -->
                 <div v-if="notesForm.backstory" class="space-y-1.5">
-                  <p class="text-[9px] font-display uppercase tracking-[0.18em] text-dimmed">Backstory</p>
+                  <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Backstory</p>
                   <p class="text-xs leading-relaxed text-muted">{{ notesForm.backstory }}</p>
                 </div>
                 <div v-if="notesForm.other" class="space-y-1.5">
-                  <p class="text-[9px] font-display uppercase tracking-[0.18em] text-dimmed">Notes</p>
+                  <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Notes</p>
                   <p class="text-xs leading-relaxed text-muted">{{ notesForm.other }}</p>
                 </div>
               </div>
@@ -994,60 +1018,60 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
               <!-- EDIT MODE: form fields -->
               <div v-else class="space-y-5">
                 <div class="space-y-3">
-                  <p class="text-[9px] font-display uppercase tracking-[0.18em] text-dimmed">Background</p>
+                  <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Background</p>
                   <div class="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <label class="mb-1 block text-xs text-muted">Background name</label>
-                      <UInput v-model="backgroundForm.name" />
+                      <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-15">Background name</label>
+                      <UInput id="field-characters--characterId--vue-15" v-model="backgroundForm.name" />
                     </div>
                     <div>
-                      <label class="mb-1 block text-xs text-muted">Background feature</label>
-                      <UInput v-model="backgroundForm.feature" placeholder="e.g. Heart of Darkness" />
+                      <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-16">Background feature</label>
+                      <UInput id="field-characters--characterId--vue-16" v-model="backgroundForm.feature" placeholder="e.g. Heart of Darkness" />
                     </div>
                   </div>
                   <div class="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <label class="mb-1 block text-xs text-muted">Personality traits</label>
-                      <UTextarea v-model="backgroundForm.traits" :rows="3" placeholder="One per line" />
+                      <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-17">Personality traits</label>
+                      <UTextarea id="field-characters--characterId--vue-17" v-model="backgroundForm.traits" :rows="3" placeholder="One per line" />
                     </div>
                     <div>
-                      <label class="mb-1 block text-xs text-muted">Ideals</label>
-                      <UTextarea v-model="backgroundForm.ideals" :rows="3" placeholder="One per line" />
+                      <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-18">Ideals</label>
+                      <UTextarea id="field-characters--characterId--vue-18" v-model="backgroundForm.ideals" :rows="3" placeholder="One per line" />
                     </div>
                     <div>
-                      <label class="mb-1 block text-xs text-muted">Bonds</label>
-                      <UTextarea v-model="backgroundForm.bonds" :rows="3" placeholder="One per line" />
+                      <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-19">Bonds</label>
+                      <UTextarea id="field-characters--characterId--vue-19" v-model="backgroundForm.bonds" :rows="3" placeholder="One per line" />
                     </div>
                     <div>
-                      <label class="mb-1 block text-xs text-muted">Flaws</label>
-                      <UTextarea v-model="backgroundForm.flaws" :rows="3" placeholder="One per line" />
+                      <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-20">Flaws</label>
+                      <UTextarea id="field-characters--characterId--vue-20" v-model="backgroundForm.flaws" :rows="3" placeholder="One per line" />
                     </div>
                   </div>
                 </div>
 
                 <div class="space-y-3">
-                  <p class="text-[9px] font-display uppercase tracking-[0.18em] text-dimmed">Appearance</p>
+                  <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Appearance</p>
                   <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <div><label class="mb-1 block text-xs text-muted">Age</label><UInput v-model="appearanceForm.age" /></div>
-                    <div><label class="mb-1 block text-xs text-muted">Height</label><UInput v-model="appearanceForm.height" /></div>
-                    <div><label class="mb-1 block text-xs text-muted">Weight</label><UInput v-model="appearanceForm.weight" /></div>
-                    <div><label class="mb-1 block text-xs text-muted">Gender</label><UInput v-model="appearanceForm.gender" /></div>
-                    <div><label class="mb-1 block text-xs text-muted">Eyes</label><UInput v-model="appearanceForm.eyes" /></div>
-                    <div><label class="mb-1 block text-xs text-muted">Hair</label><UInput v-model="appearanceForm.hair" /></div>
-                    <div><label class="mb-1 block text-xs text-muted">Skin</label><UInput v-model="appearanceForm.skin" /></div>
-                    <div><label class="mb-1 block text-xs text-muted">Faith</label><UInput v-model="appearanceForm.faith" /></div>
+                    <div><label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-21">Age</label><UInput id="field-characters--characterId--vue-21" v-model="appearanceForm.age" /></div>
+                    <div><label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-22">Height</label><UInput id="field-characters--characterId--vue-22" v-model="appearanceForm.height" /></div>
+                    <div><label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-23">Weight</label><UInput id="field-characters--characterId--vue-23" v-model="appearanceForm.weight" /></div>
+                    <div><label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-24">Gender</label><UInput id="field-characters--characterId--vue-24" v-model="appearanceForm.gender" /></div>
+                    <div><label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-25">Eyes</label><UInput id="field-characters--characterId--vue-25" v-model="appearanceForm.eyes" /></div>
+                    <div><label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-26">Hair</label><UInput id="field-characters--characterId--vue-26" v-model="appearanceForm.hair" /></div>
+                    <div><label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-27">Skin</label><UInput id="field-characters--characterId--vue-27" v-model="appearanceForm.skin" /></div>
+                    <div><label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-28">Faith</label><UInput id="field-characters--characterId--vue-28" v-model="appearanceForm.faith" /></div>
                   </div>
                 </div>
 
                 <div class="space-y-3">
-                  <p class="text-[9px] font-display uppercase tracking-[0.18em] text-dimmed">Backstory & Notes</p>
+                  <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Backstory & Notes</p>
                   <div>
-                    <label class="mb-1 block text-xs text-muted">Backstory</label>
-                    <UTextarea v-model="notesForm.backstory" :rows="5" />
+                    <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-29">Backstory</label>
+                    <UTextarea id="field-characters--characterId--vue-29" v-model="notesForm.backstory" :rows="5" />
                   </div>
                   <div>
-                    <label class="mb-1 block text-xs text-muted">Other notes</label>
-                    <UTextarea v-model="notesForm.other" :rows="3" />
+                    <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-30">Other notes</label>
+                    <UTextarea id="field-characters--characterId--vue-30" v-model="notesForm.other" :rows="3" />
                   </div>
                 </div>
               </div>
@@ -1065,7 +1089,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
             <UCard>
               <template #header>
                 <div>
-                  <p class="text-[10px] font-display uppercase tracking-[0.22em] text-dimmed">Campaign links</p>
+                  <p class="text-xs font-display uppercase tracking-[0.22em] text-dimmed">Campaign links</p>
                   <p class="mt-0.5 text-xs text-muted">Manage membership</p>
                 </div>
               </template>
@@ -1142,7 +1166,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
             <!-- Species card (sidebar) -->
             <UCard v-if="(sheet.race as Record<string,unknown>)?.name">
               <template #header>
-                <p class="text-[10px] font-display uppercase tracking-[0.22em] text-dimmed">Species</p>
+                <p class="text-xs font-display uppercase tracking-[0.22em] text-dimmed">Species</p>
               </template>
               <div class="space-y-2">
                 <p class="font-display text-sm font-semibold text-highlighted">
@@ -1173,20 +1197,20 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
           <!-- Spells (only shown if there's data or in edit mode) -->
           <UCard v-if="hasSpellData || isEditing">
             <template #header>
-              <p class="text-[10px] font-display uppercase tracking-[0.22em] text-dimmed">Spells</p>
+              <p class="text-xs font-display uppercase tracking-[0.22em] text-dimmed">Spells</p>
             </template>
 
             <!-- View: formatted display -->
             <div v-if="!isEditing" class="space-y-4">
               <div v-if="(sheet.spells as Record<string,unknown>)?.slots" class="space-y-2">
-                <p class="text-[9px] font-display uppercase tracking-[0.14em] text-dimmed">Spell Slots</p>
+                <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Spell Slots</p>
                 <div class="flex flex-wrap gap-2">
                   <div
                     v-for="(slotData, level) in (sheet.spells as Record<string,unknown>).slots as Record<string,unknown>"
                     :key="level"
                     class="flex flex-col items-center rounded-lg border border-default bg-accented px-3 py-2 text-center"
                   >
-                    <p class="text-[9px] font-display uppercase tracking-[0.12em] text-dimmed">Lv {{ level }}</p>
+                    <p class="text-xs font-display uppercase tracking-[0.12em] text-dimmed">Lv {{ level }}</p>
                     <p class="mt-0.5 font-display text-base font-bold text-highlighted">
                       {{ (slotData as Record<string,unknown>)?.remaining ?? slotData }}
                       <span class="text-xs text-dimmed">/ {{ (slotData as Record<string,unknown>)?.max ?? slotData }}</span>
@@ -1195,7 +1219,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                 </div>
               </div>
               <div v-if="Array.isArray((sheet.spells as Record<string,unknown>)?.prepared) && ((sheet.spells as Record<string,unknown>).prepared as unknown[]).length" class="space-y-1.5">
-                <p class="text-[9px] font-display uppercase tracking-[0.14em] text-dimmed">Prepared</p>
+                <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Prepared</p>
                 <div class="flex flex-wrap gap-1.5">
                   <UBadge v-for="spell in (sheet.spells as Record<string,unknown>).prepared as Record<string,unknown>[]" :key="String(spell.name || spell)" variant="soft" color="primary" size="sm">
                     {{ spell.name || spell }}
@@ -1203,7 +1227,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                 </div>
               </div>
               <div v-if="Array.isArray((sheet.spells as Record<string,unknown>)?.known) && ((sheet.spells as Record<string,unknown>).known as unknown[]).length" class="space-y-1.5">
-                <p class="text-[9px] font-display uppercase tracking-[0.14em] text-dimmed">Known</p>
+                <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Known</p>
                 <div class="flex flex-wrap gap-1.5">
                   <UBadge v-for="spell in (sheet.spells as Record<string,unknown>).known as Record<string,unknown>[]" :key="String(spell.name || spell)" variant="subtle" color="neutral" size="sm">
                     {{ spell.name || spell }}
@@ -1214,7 +1238,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
 
             <!-- Edit: JSON editor -->
             <div v-else class="space-y-2">
-              <UTextarea v-model="spellsJson" :rows="8" />
+              <UTextarea v-model="spellsJson" aria-label="Spells" :rows="8" />
             </div>
 
             <template v-if="isEditing" #footer>
@@ -1227,13 +1251,13 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
           <!-- Inventory (always shown) -->
           <UCard>
             <template #header>
-              <p class="text-[10px] font-display uppercase tracking-[0.22em] text-dimmed">Inventory</p>
+              <p class="text-xs font-display uppercase tracking-[0.22em] text-dimmed">Inventory</p>
             </template>
 
             <div class="space-y-5">
               <!-- Currency -->
               <div class="space-y-2">
-                <p class="text-[9px] font-display uppercase tracking-[0.14em] text-dimmed">Currency</p>
+                <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Currency</p>
                 <div class="grid grid-cols-5 gap-2">
                   <div
                     v-for="coin in [
@@ -1247,7 +1271,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                     class="flex flex-col items-center rounded-lg border p-2.5 text-center"
                     :class="coin.borderClass"
                   >
-                    <p class="text-[9px] font-display uppercase tracking-[0.14em]" :class="coin.textClass">{{ coin.abbr }}</p>
+                    <p class="text-xs font-display uppercase tracking-[0.14em]" :class="coin.textClass">{{ coin.abbr }}</p>
                     <p class="mt-0.5 font-display text-lg font-bold text-highlighted">
                       {{ (((sheet.inventory as Record<string,unknown>)?.currency as Record<string,unknown>) || {})[coin.key] ?? 0 }}
                     </p>
@@ -1257,7 +1281,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
 
               <!-- Items -->
               <div class="space-y-2">
-                <p class="text-[9px] font-display uppercase tracking-[0.14em] text-dimmed">Items</p>
+                <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Items</p>
                 <div
                   v-if="Array.isArray(sheet.equipment) && (sheet.equipment as unknown[]).length"
                   class="divide-y divide-default overflow-hidden rounded-lg border border-default"

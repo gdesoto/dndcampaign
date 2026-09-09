@@ -952,8 +952,9 @@ const { formatBytes } = useFormatBytes()
             </div>
             <div v-if="transcribeForm.diarize" class="grid gap-4 sm:grid-cols-2">
               <div>
-                <label class="mb-2 block text-sm text-muted">Speaker config</label>
+                <label class="mb-2 block text-sm text-muted" for="field-campaigns--campaignId--recordings--recordingId--vue-1">Speaker config</label>
                 <USelect
+id="field-campaigns--campaignId--recordings--recordingId--vue-1"
                   v-model="transcribeForm.speakerConfigMode"
                   :items="[
                     { label: 'Number of speakers', value: 'numSpeakers' },
@@ -962,12 +963,13 @@ const { formatBytes } = useFormatBytes()
                 />
               </div>
               <div v-if="transcribeForm.speakerConfigMode === 'numSpeakers'">
-                <label class="mb-2 block text-sm text-muted">Speakers</label>
-                <UInput v-model="transcribeForm.numSpeakers" type="number" min="1" max="32" />
+                <label class="mb-2 block text-sm text-muted" for="field-campaigns--campaignId--recordings--recordingId--vue-2">Speakers</label>
+                <UInput id="field-campaigns--campaignId--recordings--recordingId--vue-2" v-model="transcribeForm.numSpeakers" type="number" min="1" max="32" />
               </div>
               <div v-else>
-                <label class="mb-2 block text-sm text-muted">Diarization threshold</label>
+                <label class="mb-2 block text-sm text-muted" for="field-campaigns--campaignId--recordings--recordingId--vue-3">Diarization threshold</label>
                 <UInput
+id="field-campaigns--campaignId--recordings--recordingId--vue-3"
                   v-model="transcribeForm.diarizationThreshold"
                   type="number"
                   min="0.1"
@@ -984,8 +986,9 @@ const { formatBytes } = useFormatBytes()
               <span class="text-sm">Tag audio events (laughter, footsteps, etc.)</span>
             </div>
             <div>
-              <label class="mb-2 block text-sm text-muted">Keyterms</label>
+              <label class="mb-2 block text-sm text-muted" for="field-campaigns--campaignId--recordings--recordingId--vue-4">Keyterms</label>
               <UTextarea
+id="field-campaigns--campaignId--recordings--recordingId--vue-4"
                 v-model="transcribeForm.keyterms"
                 :rows="3"
                 placeholder="Comma or line separated terms to bias the transcript."
@@ -1084,8 +1087,8 @@ const { formatBytes } = useFormatBytes()
         </template>
         <div class="space-y-4">
           <div>
-            <label class="mb-2 block text-sm text-muted">Transcription ID</label>
-            <UInput v-model="importTranscriptionId" placeholder="e.g. nJn7Iy1UFLm5T0aEpd7L" />
+            <label class="mb-2 block text-sm text-muted" for="field-campaigns--campaignId--recordings--recordingId--vue-5">Transcription ID</label>
+            <UInput id="field-campaigns--campaignId--recordings--recordingId--vue-5" v-model="importTranscriptionId" placeholder="e.g. nJn7Iy1UFLm5T0aEpd7L" />
           </div>
           <p v-if="importError" class="text-sm text-error">{{ importError }}</p>
         </div>

@@ -32,13 +32,12 @@ const filteredGlossary = computed(() => {
   <UMain>
     <UPage>
       <div class="space-y-6">
-        <PublicCampaignHeader v-if="overview" :public-slug="publicSlug" :overview="overview" />
 
         <UCard>
           <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
               <h2 class="text-lg font-semibold">Glossary</h2>
-              <USelect v-model="glossaryFilter" :items="glossaryFilterOptions" class="w-40" />
+              <USelect aria-label="Entry type" v-model="glossaryFilter" :items="glossaryFilterOptions" class="w-40" />
             </div>
           </template>
 
@@ -52,7 +51,10 @@ const filteredGlossary = computed(() => {
             <UButton variant="outline" @click="() => refresh()">Try again</UButton>
           </div>
 
-          <div v-else-if="!filteredGlossary.length" class="text-sm text-muted">No glossary entries match this type.</div>
+          <div v-else-if="!filteredGlossary.length" class="space-y-3 text-sm text-muted">
+            <p>{{ glossary?.length ? 'No entries match this type.' : 'No public glossary entries yet.' }}</p>
+            <UButton v-if="glossaryFilter !== 'ALL'" color="neutral" variant="outline" @click="glossaryFilter = 'ALL'">Clear filters</UButton>
+          </div>
 
           <div v-else class="space-y-3">
             <div

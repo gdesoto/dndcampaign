@@ -52,7 +52,7 @@ export function createTestDbContext({
     }
 
     if (seed) {
-      execSync('node prisma/seed.mjs', {
+      execSync('node --import tsx prisma/seed.ts', {
         cwd: rootDir,
         env,
         stdio,

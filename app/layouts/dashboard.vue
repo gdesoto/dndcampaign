@@ -108,6 +108,7 @@ const navLinks = computed(() => {
 
       <UDashboardGroup class="fixed inset-x-0 bottom-0 top-[var(--ui-header-height)]">
         <UDashboardSidebar
+id="dmvault-campaign-sidebar"
           collapsible
           resizable
           :min-size="14"
@@ -129,7 +130,7 @@ const navLinks = computed(() => {
           <template #footer="{ collapsed }">
             <div class="w-full px-3 py-2.5">
               <div v-if="collapsed" class="flex justify-center">
-                <UColorModeButton variant="ghost" size="xs" class="shrink-0" />
+                <ClientOnly><UColorModeButton variant="ghost" size="xs" class="shrink-0" /></ClientOnly>
               </div>
 
               <div v-else class="space-y-2">
@@ -137,7 +138,7 @@ const navLinks = computed(() => {
                   <p class="font-display text-[13px] uppercase tracking-[0.12em] text-[var(--ui-text-dimmed)]">
                     Party
                   </p>
-                  <UColorModeButton variant="ghost" size="xs" class="shrink-0" />
+                  <ClientOnly><UColorModeButton variant="ghost" size="xs" class="shrink-0" /></ClientOnly>
                 </div>
 
                 <div class="flex items-center gap-1.5">
@@ -151,11 +152,12 @@ const navLinks = computed(() => {
         </UDashboardSidebar>
 
         <UDashboardPanel
+id="dmvault-campaign-main"
           class="overflow-hidden"
           :ui="{ root: 'min-h-0 h-full' }"
         >
           <UDashboardNavbar>
-            <template #leading>
+            <template #left>
               <div class="flex min-w-0 items-start gap-3">
                 <UDashboardSidebarCollapse size="xl" square class="hidden xl:inline-flex" />
                 <div class="min-w-0">

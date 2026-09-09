@@ -42,7 +42,6 @@ const sections = computed(() => {
         </UCard>
 
         <template v-else-if="overview">
-          <PublicCampaignHeader :public-slug="publicSlug" :overview="overview" />
 
           <UAlert
             color="info"

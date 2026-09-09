@@ -99,9 +99,10 @@ const adminBreadcrumbItems = [
           </template>
 
           <div class="grid gap-3 md:grid-cols-3">
-            <UInput v-model="filters.search" placeholder="Search action, actor, summary, campaign" />
+            <UInput v-model="filters.search" aria-label="search" placeholder="Search action, actor, summary, campaign" />
             <USelect
-              v-model="filters.scope"
+v-model="filters.scope"
+              aria-label="Activity scope"
               :items="[
                 { label: 'All scopes', value: 'all' },
                 { label: 'Campaign', value: 'CAMPAIGN' },
@@ -109,9 +110,9 @@ const adminBreadcrumbItems = [
                 { label: 'System', value: 'SYSTEM' },
               ]"
             />
-            <UInput v-model="filters.action" placeholder="Exact action (optional)" />
-            <UInput v-model="filters.from" type="date" placeholder="From (YYYY-MM-DD)" />
-            <UInput v-model="filters.to" type="date" placeholder="To (YYYY-MM-DD)" />
+            <UInput v-model="filters.action" aria-label="Action" placeholder="Exact action (optional)" />
+            <UInput v-model="filters.from" aria-label="From date" type="date" placeholder="From (YYYY-MM-DD)" />
+            <UInput v-model="filters.to" aria-label="To date" type="date" placeholder="To (YYYY-MM-DD)" />
             <UButton :loading="pending" @click="applyFilters">Apply filters</UButton>
           </div>
         </UCard>
@@ -124,7 +125,7 @@ const adminBreadcrumbItems = [
             </div>
           </template>
 
-          <UTable :data="tableRows" :columns="columns" :loading="pending" empty="No activity logs found" />
+          <SharedResponsiveTable :data="tableRows" :columns="columns" :loading="pending" empty="No activity logs found" />
           <p v-if="error" class="mt-3 text-sm text-error">{{ (error as Error).message }}</p>
 
           <div class="mt-4 flex items-center justify-end gap-2">

@@ -1,5 +1,7 @@
 <script setup lang="ts">
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
+  focusFallback?: () => void
+  action?: () => Promise<unknown>
   message?: string
   confirmLabel?: string
   cancelLabel?: string
@@ -23,6 +25,8 @@ withDefaults(defineProps<{
   triggerIcon?: string
   triggerShowLabel?: boolean
 }>(), {
+  action: undefined,
+  focusFallback: undefined,
   message: 'Are you sure?',
   confirmLabel: 'Confirm',
   cancelLabel: 'Cancel',
@@ -30,8 +34,8 @@ withDefaults(defineProps<{
   cancelColor: 'neutral',
   confirmVariant: 'solid',
   cancelVariant: 'ghost',
-  confirmSize: 'xs',
-  cancelSize: 'xs',
+  confirmSize: 'sm',
+  cancelSize: 'sm',
   confirmIcon: '',
   confirmLoading: false,
   disabled: false,
@@ -39,8 +43,8 @@ withDefaults(defineProps<{
   side: 'top',
   align: 'end',
   triggerLabel: 'Remove',
-  triggerAriaLabel: 'Confirm action',
-  triggerColor: 'error',
+  triggerAriaLabel: '',
+  triggerColor: 'neutral',
   triggerVariant: 'ghost',
   triggerSize: 'xs',
   triggerIcon: '',
@@ -51,18 +55,53 @@ const emit = defineEmits<{
   cancel: []
   confirm: [{ close: () => void }]
 }>()
+const open = ref(false)
+const running = ref(false)
+const actionError = ref('')
+const busy = computed(() => running.value || props.confirmLoading)
+const cancelButton = useTemplateRef('cancelButton')
+let trigger: HTMLElement | null = null
+const focusCancel = (event: Event) => {
+  event.preventDefault()
+  trigger = document.activeElement as HTMLElement | null
+  nextTick(() => cancelButton.value?.$el?.focus())
+}
+const focusSurvivor = () => {
+  if (props.focusFallback) { props.focusFallback(); return }
+  const heading = document.querySelector<HTMLElement>('main h1')
+  heading?.setAttribute('tabindex', '-1')
+  heading?.focus()
+}
+const restoreFocus = (event: Event) => {
+  if (trigger?.isConnected) return
+  event.preventDefault()
+  nextTick(focusSurvivor)
+}
+const confirm = async (close: () => void) => {
+  if (busy.value) return
+  actionError.value = ''
+  const complete = () => { close(); nextTick(() => { if (!trigger?.isConnected) focusSurvivor() }) }
+  if (!props.action) { emit('confirm', { close: complete }); return }
+  running.value = true
+  try { await props.action(); complete() }
+  catch (error) { actionError.value = (error as Error).message || 'Unable to complete action. Try again.' }
+  finally {
+    running.value = false
+    if (actionError.value) await nextTick(() => cancelButton.value?.$el?.focus())
+  }
+}
 </script>
 
 <template>
-  <UPopover :content="{ side, align }" :ui="{ content: contentClass }">
+  <UPopover v-model:open="open" :dismissible="!busy" :content="{ side, align, onOpenAutoFocus: focusCancel, onCloseAutoFocus: restoreFocus }" :ui="{ content: contentClass }">
     <slot name="trigger">
       <UButton
         :size="triggerSize"
         :color="triggerColor"
         :variant="triggerVariant"
         :icon="triggerIcon || undefined"
-        :aria-label="triggerAriaLabel"
-        :disabled="disabled"
+        :aria-label="triggerAriaLabel || triggerLabel"
+        :disabled="disabled || busy"
       >
         <template v-if="triggerShowLabel">
           {{ triggerLabel }}
@@ -75,8 +114,9 @@ const emit = defineEmits<{
         <slot name="content">
           <p class="text-sm text-muted">{{ message }}</p>
         </slot>
+        <p v-if="actionError" role="alert" class="text-sm text-error">{{ actionError }}</p>
         <div class="flex justify-end gap-2">
-          <UButton :size="cancelSize" :variant="cancelVariant" :color="cancelColor" @click="emit('cancel'); close()">
+          <UButton ref="cancelButton" :disabled="busy" :size="cancelSize" :variant="cancelVariant" :color="cancelColor" @click="emit('cancel'); close()">
             {{ cancelLabel }}
           </UButton>
           <UButton
@@ -84,8 +124,8 @@ const emit = defineEmits<{
             :variant="confirmVariant"
             :color="confirmColor"
             :icon="confirmIcon || undefined"
-            :loading="confirmLoading"
-            @click="emit('confirm', { close })"
+            :loading="busy"
+            @click="confirm(close)"
           >
             {{ confirmLabel }}
           </UButton>
