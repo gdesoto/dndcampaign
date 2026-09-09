@@ -159,8 +159,8 @@ const milestoneActions = (milestone: MilestoneItem): RecordAction[] => canWriteC
             <template #header>
               <div class="flex items-center justify-between gap-3">
                 <div>
-                  <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Milestone</p>
-                  <h3 class="text-lg font-semibold">{{ milestone.title }}</h3>
+                  <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Milestone</p>
+                  <h3 class=" type-record">{{ milestone.title }}</h3>
                 </div>
                 <SharedActionMenu :name="milestone.title" :items="milestoneActions(milestone)" :disabled="Boolean(deletingMilestoneId)" />
               </div>

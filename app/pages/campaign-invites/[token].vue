@@ -96,7 +96,7 @@ const switchAccount = async () => {
     <UMain>
       <UCard>
         <template #header>
-          <h2 class="text-lg font-semibold">Invite acceptance</h2>
+          <h2 class=" type-section">Invite acceptance</h2>
         </template>
 
         <div class="space-y-4">

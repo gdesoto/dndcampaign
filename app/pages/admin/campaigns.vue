@@ -244,9 +244,9 @@ const campaignActions = (id: string): RecordAction[] => [
 
     <UMain>
       <div class="space-y-6">
-        <UCard>
+        <UCard variant="soft">
           <template #header>
-            <h2 class="text-lg font-semibold">Search campaigns</h2>
+            <h2 class=" type-section">Search campaigns</h2>
           </template>
 
           <SharedFilterToolbar label="Filter campaigns">
@@ -273,7 +273,7 @@ const campaignActions = (id: string): RecordAction[] => [
         <UCard>
           <template #header>
             <div class="flex items-center justify-between gap-3">
-              <h2 class="text-lg font-semibold">Campaigns</h2>
+              <h2 class=" type-section">Campaigns</h2>
               <UBadge color="neutral" variant="subtle">{{ campaignsData?.total || 0 }} total</UBadge>
             </div>
           </template>
@@ -308,7 +308,7 @@ const campaignActions = (id: string): RecordAction[] => [
 
         <UCard id="record-editor">
           <template #header>
-            <h2 tabindex="-1" class="text-lg font-semibold">Update campaign</h2>
+            <h2 tabindex="-1" class=" type-section">Update campaign</h2>
           </template>
 
           <div class="space-y-4">

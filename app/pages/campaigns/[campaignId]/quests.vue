@@ -440,7 +440,7 @@ const updateStatus = async (quest: QuestItem, status: QuestStatus) => {
       </template>
 
       <template #filters>
-        <UCard>
+        <UCard variant="soft">
           <SharedFilterToolbar label="Filter quests">
             <UFormField label="Category" name="typeFilter">
               <USelect v-model="selectedTypeFilter" class="w-full" :items="typeFilterOptions" />
@@ -476,7 +476,7 @@ const updateStatus = async (quest: QuestItem, status: QuestStatus) => {
         <div v-if="quests?.length" class="space-y-6">
           <section class="space-y-3">
             <div class="flex items-center justify-between">
-              <h2 class="text-base font-semibold">Active and on hold quests</h2>
+              <h2 class=" type-section">Active and on hold quests</h2>
               <span class="text-xs text-muted">{{ primaryQuests.length }} shown</span>
             </div>
             <div v-if="primaryQuests.length" class="grid gap-4 sm:grid-cols-2">
@@ -505,7 +505,7 @@ const updateStatus = async (quest: QuestItem, status: QuestStatus) => {
 
           <section class="space-y-3">
             <div class="flex items-center justify-between">
-              <h2 class="text-base font-semibold">Completed and failed quests</h2>
+              <h2 class=" type-section">Completed and failed quests</h2>
               <span class="text-xs text-muted">{{ closedQuests.length }} shown</span>
             </div>
             <div v-if="closedQuests.length" class="grid gap-4 sm:grid-cols-2">

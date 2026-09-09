@@ -21,7 +21,7 @@ const { milestoneStatusColor } = useCampaignStatusBadges()
 
         <UCard>
           <template #header>
-            <h2 class="text-lg font-semibold">Milestones</h2>
+            <h2 class=" type-section">Milestones</h2>
           </template>
 
           <div v-if="pending" class="space-y-2">

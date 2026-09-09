@@ -93,7 +93,7 @@ const recapActions = computed<RecordAction[]>(() => {
     <template #header>
       <div class="flex items-center justify-between gap-3">
         <div>
-          <h2 class="text-lg font-semibold">Session recaps</h2>
+          <h2 class=" type-section">Session recaps</h2>
           <p class="text-sm text-muted">
             {{
               workflowMode
@@ -134,7 +134,7 @@ const recapActions = computed<RecordAction[]>(() => {
         class="flex flex-col gap-3 rounded-md border border-default bg-elevated/40 p-3 sm:flex-row sm:items-center sm:justify-between"
       >
         <div class="min-w-0">
-          <p class="text-xs uppercase tracking-[0.2em] text-muted">{{ kindLabel }} recap</p>
+          <p class="text-xs uppercase tracking-[0.08em] text-muted">{{ kindLabel }} recap</p>
           <p class="truncate text-sm text-muted">
             {{
               recapFile?.name
@@ -156,7 +156,7 @@ const recapActions = computed<RecordAction[]>(() => {
       </div>
 
       <div v-if="hasRecap && recap" class="rounded-md border border-default bg-elevated/30 p-3">
-        <p class="text-xs uppercase tracking-[0.2em] text-muted">{{ recap.mimeType.startsWith('video/') ? 'Video recap' : 'Audio recap' }}</p>
+        <p class="text-xs uppercase tracking-[0.08em] text-muted">{{ recap.mimeType.startsWith('video/') ? 'Video recap' : 'Audio recap' }}</p>
         <div class="mt-2 grid gap-2 text-sm text-muted sm:grid-cols-2">
           <p><span class="text-muted">File:</span> {{ recap.filename || 'Unknown' }}</p>
           <p><span class="text-muted">Type:</span> {{ recap.mimeType || 'Unknown' }}</p>
@@ -193,7 +193,7 @@ const recapActions = computed<RecordAction[]>(() => {
         <SharedActionMenu v-if="recap" :name="recap.filename || 'recap'" :items="recapActions" :disabled="recapUploading || recapDeleting" />
       </div>
 
-      <UCard v-if="recapPlaybackUrl">
+      <UCard v-if="recapPlaybackUrl" variant="soft">
         <div class="flex items-center justify-between gap-3 text-xs text-muted">
           <span>Recap is playing in the global player.</span>
           <UButton size="xs" variant="ghost" @click="emit('open-player')">
@@ -211,7 +211,7 @@ const recapActions = computed<RecordAction[]>(() => {
     <template #content>
       <UCard>
         <template #header>
-          <h3 class="text-base font-semibold">Replace {{ kindLabel.toLowerCase() }} recap</h3>
+          <h3 class=" type-record">Replace {{ kindLabel.toLowerCase() }} recap</h3>
         </template>
 
         <div class="space-y-4">

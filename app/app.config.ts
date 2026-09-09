@@ -15,7 +15,7 @@ export default defineAppConfig({
 
     button: {
       slots: {
-        base: 'font-display font-semibold tracking-widest uppercase transition-all cursor-pointer disabled:cursor-not-allowed aria-disabled:cursor-not-allowed',
+        base: 'font-display font-semibold tracking-[0.08em] uppercase transition-all cursor-pointer disabled:cursor-not-allowed aria-disabled:cursor-not-allowed',
       },
       defaultVariants: {
         size: 'md',
@@ -45,16 +45,23 @@ export default defineAppConfig({
 
     card: {
       slots: {
-        root: 'bg-elevated border border-default rounded-md overflow-hidden transition-colors hover:border-accented relative group dmvault-card',
+        root: 'rounded-md overflow-hidden relative',
         //header: 'px-4 py-2.5 border-b border-[var(--ui-border)] flex items-center justify-between',
-        header: `${cardSectionPadding} border-b border-[var(--ui-border)] flex items-center justify-between [&>*]:w-full`,
+        header: `${cardSectionPadding} flex items-center justify-between [&>*]:w-full`,
         //body: 'p-4',
         body: cardSectionPadding,
         //footer: 'px-4 py-2 border-t border-[var(--ui-border)] flex gap-2 justify-end',
-        footer: `${cardSectionPadding} border-t border-[var(--ui-border)] flex gap-2 justify-end`,
+        footer: `${cardSectionPadding} flex gap-2 justify-end`,
+      },
+      variants: {
+        variant: {
+          outline: { root: 'bg-elevated ring ring-default divide-y divide-muted dmvault-card' },
+          soft: { root: 'bg-muted/45 ring-0 divide-y divide-muted' },
+          subtle: { root: 'bg-muted/45 ring ring-muted divide-y divide-muted' },
+        },
       },
       defaultVariants: {
-        variant: 'subtle',
+        variant: 'outline',
       },
     },
 
@@ -63,7 +70,7 @@ export default defineAppConfig({
         root: 'flex flex-col',
         list: 'flex border-b border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-0', // px-6
         trigger: // grow justify-center
-          'rounded-none font-display tracking-[0.1em] uppercase text-[var(--ui-text-dimmed)] px-3.5 py-2.5 border-b-2 border-transparent -mb-px transition-all cursor-pointer hover:text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-accented)]/60 data-[state=active]:rounded-none data-[state=active]:text-primary data-[state=active]:bg-[var(--ui-bg-accented)] data-[state=active]:border-primary-500',
+          'rounded-none font-display tracking-[0.08em] uppercase text-[var(--ui-text-dimmed)] px-3.5 py-2.5 border-b-2 border-transparent -mb-px transition-all cursor-pointer hover:text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-accented)]/60 data-[state=active]:rounded-none data-[state=active]:text-primary data-[state=active]:bg-[var(--ui-bg-accented)] data-[state=active]:border-primary-500',
         indicator: 'hidden',
         label: 'truncate text-inherit',
         content: 'outline-none',
@@ -170,8 +177,8 @@ export default defineAppConfig({
       slots: {
         root: 'relative pb-4 pt-0 border-b border-[var(--ui-border)]',
         wrapper: 'flex flex-col gap-10 lg:flex-row lg:items-start lg:justify-between',
-        headline: 'mb-1 text-sm uppercase tracking-[0.3em] text-[var(--ui-text-dimmed)] font-display',
-        title: 'text-2xl font-display font-semibold text-[var(--ui-text-highlighted)]',
+        headline: 'mb-1 text-sm uppercase tracking-[0.08em] text-[var(--ui-text-dimmed)] font-display',
+        title: 'type-title text-[length:var(--text-title)] sm:text-[length:var(--text-title)] font-semibold',
         description: 'text-sm text-[var(--ui-text-muted)]',
         links: 'flex flex-wrap items-center gap-1.5',
       },

@@ -17,7 +17,7 @@ defineProps<{
     <template #header>
       <div class="flex items-center justify-between gap-4">
         <div>
-          <h2 class="text-lg font-semibold">Recent activity</h2>
+          <h2 class=" type-section">Recent activity</h2>
           <p class="text-sm text-muted">Latest changes across the campaign.</p>
         </div>
         <UButton variant="outline" :to="`/campaigns/${campaignId}/sessions`">View sessions</UButton>

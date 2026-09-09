@@ -48,7 +48,7 @@ const applyManualInitiative = (combatantId: string) => {
   <UCard>
     <template #header>
       <div class="flex items-center justify-between gap-2">
-        <h2 class="text-base font-semibold">Initiative board</h2>
+        <h2 class=" type-section">Initiative board</h2>
         <div class="flex items-center gap-2">
           <span class="text-xs text-muted">{{ props.combatants.length }} combatants</span>
           <UButton size="xs" variant="outline" :disabled="!props.canWrite" @click="emit('manage')">Manage combatants</UButton>

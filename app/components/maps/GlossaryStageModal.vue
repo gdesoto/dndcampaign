@@ -161,8 +161,8 @@ const commit = async () => {
       <UCard class="max-h-[80vh] overflow-hidden">
         <template #header>
           <div>
-            <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Glossary staging</p>
-            <h2 class="mt-1 text-lg font-semibold">Review feature actions</h2>
+            <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Glossary staging</p>
+            <h2 class="mt-1 type-section">Review feature actions</h2>
           </div>
         </template>
 
@@ -173,12 +173,12 @@ const commit = async () => {
             <USkeleton class="h-20 w-full" />
           </div>
           <template v-else>
-            <UCard v-for="item in items" :key="item.featureId" class="theme-panel">
+            <UCard v-for="item in items" :key="item.featureId" variant="soft" class="theme-panel">
               <div class="space-y-3">
                 <div class="flex items-center justify-between gap-2">
                   <div>
                     <p class="text-sm font-semibold">{{ item.featureName }}</p>
-                    <p class="text-xs uppercase tracking-[0.2em] text-dimmed">{{ item.featureType }}</p>
+                    <p class="text-xs uppercase tracking-[0.08em] text-dimmed">{{ item.featureType }}</p>
                   </div>
                   <UBadge :color="item.hasConflict ? 'warning' : 'success'" variant="subtle">
                     {{ item.hasConflict ? 'Conflict detected' : 'No conflict' }}

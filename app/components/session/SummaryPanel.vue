@@ -59,7 +59,7 @@ const summaryFileModel = computed({
     <UCard>
       <template #header>
         <div>
-          <h2 class="text-lg font-semibold">n8n summarization</h2>
+          <h2 class=" type-section">n8n summarization</h2>
           <p class="text-sm text-muted">
             Send the transcript to n8n and review summary content.
           </p>
@@ -92,8 +92,8 @@ const summaryFileModel = computed({
           </span>
         </div>
         <div v-if="summaryPendingText" class="space-y-2">
-          <p class="text-xs uppercase tracking-[0.2em] text-muted">Pending summary</p>
-          <p class="whitespace-pre-line text-sm text-muted">
+          <p class="text-xs uppercase tracking-[0.08em] text-muted">Pending summary</p>
+          <p class="whitespace-pre-line reading-copy text-muted">
             {{ summaryPendingText }}
           </p>
           <UButton size="sm" variant="outline" @click="emit('apply-pending-summary')">
@@ -101,13 +101,13 @@ const summaryFileModel = computed({
           </UButton>
         </div>
         <div v-if="summaryHighlights.length" class="space-y-2">
-          <p class="text-xs uppercase tracking-[0.2em] text-muted">Key moments</p>
+          <p class="text-xs uppercase tracking-[0.08em] text-muted">Key moments</p>
           <ul class="list-disc space-y-1 pl-5 text-sm text-muted">
             <li v-for="highlight in summaryHighlights" :key="String(highlight)">{{ highlight }}</li>
           </ul>
         </div>
         <div v-if="summarySessionTags.length" class="space-y-2">
-          <p class="text-xs uppercase tracking-[0.2em] text-muted">Session tags</p>
+          <p class="text-xs uppercase tracking-[0.08em] text-muted">Session tags</p>
           <div class="flex flex-wrap gap-2">
             <UBadge
               v-for="tag in summarySessionTags"
@@ -121,13 +121,13 @@ const summaryFileModel = computed({
           </div>
         </div>
         <div v-if="summaryNotableDialogue.length" class="space-y-2">
-          <p class="text-xs uppercase tracking-[0.2em] text-muted">Notable dialogue</p>
+          <p class="text-xs uppercase tracking-[0.08em] text-muted">Notable dialogue</p>
           <ul class="list-disc space-y-1 pl-5 text-sm text-muted">
             <li v-for="line in summaryNotableDialogue" :key="String(line)">{{ line }}</li>
           </ul>
         </div>
         <div v-if="summaryConcreteFacts.length" class="space-y-2">
-          <p class="text-xs uppercase tracking-[0.2em] text-muted">Concrete facts</p>
+          <p class="text-xs uppercase tracking-[0.08em] text-muted">Concrete facts</p>
           <ul class="list-disc space-y-1 pl-5 text-sm text-muted">
             <li v-for="fact in summaryConcreteFacts" :key="String(fact)">{{ fact }}</li>
           </ul>
@@ -140,7 +140,7 @@ const summaryFileModel = computed({
       <template #header>
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="min-w-0">
-            <h2 class="text-lg font-semibold">Summary</h2>
+            <h2 class=" type-section">Summary</h2>
             <p class="text-sm text-muted">
               Write a recap or import one.
             </p>

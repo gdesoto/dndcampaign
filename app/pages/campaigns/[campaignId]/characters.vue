@@ -25,12 +25,12 @@ type CharacterLink = {
         playerName?: string
       }
       abilityScores?: {
-        str?: number
-        dex?: number
-        con?: number
-        int?: number
-        wis?: number
-        cha?: number
+        str?: number | { total?: number; base?: number }
+        dex?: number | { total?: number; base?: number }
+        con?: number | { total?: number; base?: number }
+        int?: number | { total?: number; base?: number }
+        wis?: number | { total?: number; base?: number }
+        cha?: number | { total?: number; base?: number }
       }
     }
   }
@@ -134,8 +134,9 @@ const initialsFor = (name: string) =>
     .map((part) => part[0]?.toUpperCase() || '')
     .join('')
 
-const abilityScoreFor = (link: CharacterLink, key: AbilityKey) =>
-  link.character.sheetJson?.abilityScores?.[key]
+const abilityScoreFor = (link: CharacterLink, key: AbilityKey) => {
+  return characterAbilityScore(link.character.sheetJson?.abilityScores?.[key])
+}
 
 const abilityModFor = (score?: number) => {
   if (typeof score !== 'number') return null
@@ -191,7 +192,7 @@ const characterActions = (link: CharacterLink): RecordAction[] => [
         </template>
       </UPageHeader>
 
-      <UCard>
+      <UCard variant="soft">
         <div class="space-y-3">
           <div class="flex flex-wrap gap-2">
             <USelectMenu
@@ -251,7 +252,7 @@ const characterActions = (link: CharacterLink): RecordAction[] => [
                   class="border border-[var(--ui-border-accented)]/70"
                 />
                 <div class="space-y-1">
-                  <h3 class="font-display text-lg tracking-[0.02em] uppercase text-[var(--ui-text-highlighted)]">
+                  <h3 class="uppercase text-[var(--ui-text-highlighted)] type-record">
                     <NuxtLink :to="`/characters/${link.character.id}`" class="hover:underline">{{ link.character.name }}</NuxtLink>
                   </h3>
                   <p class="text-sm italic text-[var(--ui-text-muted)]">{{ subtitleFor(link) }}</p>
@@ -284,18 +285,15 @@ const characterActions = (link: CharacterLink): RecordAction[] => [
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
-              <div
+            <div class="grid grid-cols-3 gap-2 xl:grid-cols-6">
+              <CharacterAbilityStat
                 v-for="ability in abilityOrder"
                 :key="ability.key"
-                class="rounded border border-[var(--ui-border)] bg-[var(--ui-bg-accented)]/45 px-2 py-2 text-center"
-              >
-                <p class="font-display text-[11px] text-[var(--ui-text-highlighted)]">
-                  {{ abilityScoreFor(link, ability.key) ?? '—' }}
-                </p>
-                <p class="text-[11px] text-primary-500">{{ abilityModFor(abilityScoreFor(link, ability.key)) ?? '—' }}</p>
-                <p class="text-[10px] uppercase tracking-[0.14em] text-[var(--ui-text-muted)]">{{ ability.label }}</p>
-              </div>
+                :label="ability.label"
+                :score="abilityScoreFor(link, ability.key)"
+                :modifier="abilityModFor(abilityScoreFor(link, ability.key))"
+                compact
+              />
             </div>
           </div>
 

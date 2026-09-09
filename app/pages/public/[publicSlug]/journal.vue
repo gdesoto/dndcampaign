@@ -58,7 +58,7 @@ const nextPage = async () => {
           <template #header>
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 class="text-lg font-semibold">Journal</h2>
+                <h2 class=" type-section">Journal</h2>
                 <p class="text-sm text-muted">
                   Public journal only includes entries shared with campaign visibility.
                 </p>
@@ -104,7 +104,7 @@ const nextPage = async () => {
               class="rounded-lg border border-default bg-elevated/20 p-4"
             >
               <div class="flex flex-wrap items-center justify-between gap-2">
-                <h3 class="text-base font-semibold">{{ entry.title }}</h3>
+                <h3 class=" type-record">{{ entry.title }}</h3>
                 <p class="text-xs text-muted">
                   {{ new Date(entry.updatedAt).toLocaleString() }}
                 </p>

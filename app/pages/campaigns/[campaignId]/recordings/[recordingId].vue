@@ -650,7 +650,7 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
         <UCard >
           <template #header>
             <div>
-              <h2 class="text-lg font-semibold">Playback</h2>
+              <h2 class=" type-section">Playback</h2>
               <p class="text-sm text-muted">
                 Streamed directly from storage.
               </p>
@@ -676,7 +676,7 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
           <template #header>
             <div class="flex items-start justify-between gap-4">
               <div>
-                <h2 class="text-lg font-semibold">Transcription</h2>
+                <h2 class=" type-section">Transcription</h2>
                 <p class="text-sm text-muted">
                   Start a speech-to-text job and review outputs.
                 </p>
@@ -724,7 +724,7 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
                   class="flex flex-wrap items-center justify-between gap-2 rounded-md border border-default bg-default/40 px-3 py-2"
                 >
                   <div>
-                    <p class="text-xs uppercase tracking-[0.2em] text-muted">
+                    <p class="text-xs uppercase tracking-[0.08em] text-muted">
                       {{ artifact.format }}
                     </p>
                     <p class="text-xs text-muted">
@@ -780,7 +780,7 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
         >
           <template #header>
             <div>
-              <h2 class="text-lg font-semibold">Subtitles (VTT)</h2>
+              <h2 class=" type-section">Subtitles (VTT)</h2>
               <p class="text-sm text-muted">
                 Upload a WebVTT file to display subtitles during playback.
               </p>
@@ -832,7 +832,7 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
               Current subtitles: {{ vttFileName }}
             </div>
             <div v-if="vttHistory?.length" class="space-y-2 rounded-md border border-default bg-elevated/30 px-3 py-2 text-xs text-default">
-              <p class="text-[11px] uppercase tracking-[0.2em] text-muted">Subtitle history</p>
+              <p class="text-xs uppercase tracking-[0.08em] text-muted">Subtitle history</p>
               <div
                 v-for="item in vttHistory"
                 :key="item.id"
@@ -842,13 +842,13 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
                   <p class="font-semibold">
                     {{ item.storageKey.split('/').pop() }}
                   </p>
-                  <p class="text-[11px] text-muted">
+                  <p class="text-xs text-muted">
                     {{ new Date(item.createdAt).toLocaleString() }}
                   </p>
                 </div>
                 <span
                   v-if="item.id === recording?.vttArtifactId"
-                  class="rounded-full bg-success/20 px-2 py-0.5 text-[11px] text-success"
+                  class="rounded-full bg-success/20 px-2 py-0.5 text-xs text-success"
                 >
                   In use
                 </span>
@@ -870,25 +870,25 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
         <UCard >
           <template #header>
             <div>
-              <h2 class="text-lg font-semibold">Details</h2>
+              <h2 class=" type-section">Details</h2>
               <p class="text-sm text-muted">Recording metadata.</p>
             </div>
           </template>
           <div class="grid gap-4 text-sm text-default sm:grid-cols-2">
             <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-muted">Kind</p>
+              <p class="text-xs uppercase tracking-[0.08em] text-muted">Kind</p>
               <p class="mt-1 font-semibold">{{ recording.kind }}</p>
             </div>
             <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-muted">Size</p>
+              <p class="text-xs uppercase tracking-[0.08em] text-muted">Size</p>
               <p class="mt-1 font-semibold">{{ formatBytes(recording.byteSize) }}</p>
             </div>
             <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-muted">Mime type</p>
+              <p class="text-xs uppercase tracking-[0.08em] text-muted">Mime type</p>
               <p class="mt-1 font-semibold">{{ recording.mimeType }}</p>
             </div>
             <div>
-              <p class="text-xs uppercase tracking-[0.2em] text-muted">Uploaded</p>
+              <p class="text-xs uppercase tracking-[0.08em] text-muted">Uploaded</p>
               <p class="mt-1 font-semibold">{{ new Date(recording.createdAt).toLocaleString() }}</p>
             </div>
           </div>
@@ -906,7 +906,7 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
         <UCard>
           <template #header>
             <div>
-              <h2 class="text-lg font-semibold">Start transcription</h2>
+              <h2 class=" type-section">Start transcription</h2>
               <p class="text-sm text-muted">
                 Configure the ElevenLabs transcription request.
               </p>
@@ -1048,7 +1048,7 @@ id="field-campaigns--campaignId--recordings--recordingId--vue-4"
       <UCard>
         <template #header>
           <div>
-            <h2 class="text-lg font-semibold">Import transcription</h2>
+            <h2 class=" type-section">Import transcription</h2>
             <p class="text-sm text-muted">
               Paste an ElevenLabs transcription ID to fetch its outputs.
             </p>

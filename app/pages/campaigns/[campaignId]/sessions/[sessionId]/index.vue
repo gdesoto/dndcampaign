@@ -61,7 +61,7 @@ const {
       <template #header>
         <div class="flex items-start justify-between gap-4">
           <div>
-            <h2 class="font-display text-lg font-semibold tracking-[0.06em]">Session overview</h2>
+            <h2 class=" type-section">Session overview</h2>
             <p class="text-sm text-muted">Key details at a glance.</p>
           </div>
           <SessionStepLinkButton
@@ -74,28 +74,28 @@ const {
         <div>
           <div class="flex items-center gap-1.5">
             <UIcon name="i-twemoji-game-die" class="size-3.5 shrink-0" />
-            <p class="font-display text-xs uppercase tracking-[0.2em] text-muted">Session #</p>
+            <p class="font-display text-xs uppercase tracking-[0.08em] text-muted">Session #</p>
           </div>
           <p class="mt-1 font-semibold">{{ form.sessionNumber || '-' }}</p>
         </div>
         <div>
           <div class="flex items-center gap-1.5">
             <UIcon name="i-twemoji-spiral-calendar" class="size-3.5 shrink-0" />
-            <p class="font-display text-xs uppercase tracking-[0.2em] text-muted">Played at</p>
+            <p class="font-display text-xs uppercase tracking-[0.08em] text-muted">Played at</p>
           </div>
           <p class="mt-1 font-semibold">{{ form.playedAt || 'Unscheduled' }}</p>
         </div>
         <div>
           <div class="flex items-center gap-1.5">
             <UIcon name="i-twemoji-mage" class="size-3.5 shrink-0" />
-            <p class="font-display text-xs uppercase tracking-[0.2em] text-muted">Dungeon Master</p>
+            <p class="font-display text-xs uppercase tracking-[0.08em] text-muted">Dungeon Master</p>
           </div>
           <p class="mt-1 font-semibold">{{ sessionDungeonMasterLabel }}</p>
         </div>
         <div class="sm:col-span-3">
           <div class="flex items-center gap-1.5">
             <UIcon name="i-twemoji-memo" class="size-3.5 shrink-0" />
-            <p class="font-display text-xs uppercase tracking-[0.2em] text-muted">Notes</p>
+            <p class="font-display text-xs uppercase tracking-[0.08em] text-muted">Notes</p>
           </div>
           <p class="mt-1 text-sm text-muted">
             {{ form.notes || 'No notes added yet.' }}
@@ -109,7 +109,7 @@ const {
         <template #header>
           <div class="flex items-start justify-between gap-3">
             <div>
-              <h2 class="font-display text-lg font-semibold tracking-[0.06em]">Transcript</h2>
+              <h2 class=" type-section">Transcript</h2>
               <p class="text-sm text-muted">Latest transcript content.</p>
             </div>
             <SessionStepLinkButton
@@ -137,7 +137,7 @@ const {
         <template #header>
           <div class="flex items-start justify-between gap-3">
             <div>
-              <h2 class="font-display text-lg font-semibold tracking-[0.06em]">Summary</h2>
+              <h2 class=" type-section">Summary</h2>
               <p class="text-sm text-muted">Current session summary.</p>
             </div>
             <SessionStepLinkButton

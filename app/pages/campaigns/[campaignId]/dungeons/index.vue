@@ -223,7 +223,7 @@ const dungeonActions = (dungeon: CampaignDungeonSummary): RecordAction[] => [
         <div class="space-y-3">
           <div class="flex items-start justify-between gap-3">
             <div>
-              <h3 class="text-base font-semibold"><NuxtLink :to="`/campaigns/${campaignId}/dungeons/${dungeon.id}`" class="hover:underline">{{ dungeon.name }}</NuxtLink></h3>
+              <h3 class=" type-record"><NuxtLink :to="`/campaigns/${campaignId}/dungeons/${dungeon.id}`" class="hover:underline">{{ dungeon.name }}</NuxtLink></h3>
               <p class="text-xs text-muted">{{ dungeon.theme }} • seed: {{ dungeon.seed }}</p>
             </div>
             <UBadge :label="dungeon.status" variant="subtle" color="neutral" />

@@ -49,8 +49,8 @@ const sectionLinks = computed(() => {
   <UCard>
     <div class="space-y-4">
       <div class="space-y-1">
-        <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Public Campaign</p>
-        <h1 class="text-2xl font-semibold">{{ overview.campaign.name }}</h1>
+        <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Public Campaign</p>
+        <h1 class=" type-title">{{ overview.campaign.name }}</h1>
         <p class="text-sm text-muted">
           {{ overview.campaign.system }}
           <template v-if="overview.campaign.dungeonMasterName">

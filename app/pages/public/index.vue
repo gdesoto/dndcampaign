@@ -29,8 +29,8 @@ const {
         <UCard>
           <div class="space-y-4">
             <div>
-              <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Public Directory</p>
-              <h1 class="mt-2 text-2xl font-semibold">Discover public campaigns</h1>
+              <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Public Directory</p>
+              <h1 class="mt-2 type-title">Discover public campaigns</h1>
               <p class="text-sm text-muted">
                 Browse campaigns that owners chose to list publicly.
               </p>

@@ -55,8 +55,8 @@ const statusCards = computed(() => [
 </script>
 
 <template>
-  <UCard class="sm:hidden">
-    <div class="theme-accent mb-4 font-display text-sm tracking-[0.4em] uppercase">
+  <UCard variant="soft" class="sm:hidden">
+    <div class="theme-accent mb-4 font-display text-sm tracking-[0.08em] uppercase">
       Status
     </div>
     <div class="space-y-2 text-sm">
@@ -79,15 +79,16 @@ const statusCards = computed(() => [
 
   <div class="hidden gap-4 sm:grid md:grid-cols-2 xl:grid-cols-5">
     <UCard
-      v-for="card in statusCards"
+v-for="card in statusCards"
       :key="card.id"
+      variant="soft"
       :class="mode === 'workflow' && activeStep === card.id ? 'ring-2 ring-primary/40' : ''"
       :ui="{ body: 'p-4' }"
     >
       <div class="flex items-start justify-between gap-3">
         <div class="flex items-center gap-1.5">
           <UIcon :name="card.icon" class="size-3.5 shrink-0" />
-          <p class="font-display text-xs uppercase tracking-[0.2em] text-muted">{{ card.label }}</p>
+          <p class="font-display text-xs uppercase tracking-[0.08em] text-muted">{{ card.label }}</p>
         </div>
         <SessionStepLinkButton
           :step="card.id"

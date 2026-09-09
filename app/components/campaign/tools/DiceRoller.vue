@@ -186,9 +186,9 @@ const resetBuilder = () => {
       <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_180px] lg:items-start">
         <div class="space-y-5">
           <div>
-            <p class="text-xs uppercase tracking-[0.25em] text-dimmed">Dice Roller</p>
-            <h2 class="mt-1 text-xl font-semibold">Roll checks and damage quickly</h2>
-            <h3 class="mt-2 text-muted">Build a Roll</h3>
+            <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Dice Roller</p>
+            <h2 class="mt-1 type-section">Roll checks and damage quickly</h2>
+            <h3 class="mt-2 text-muted type-record">Build a Roll</h3>
           </div>
 
           <div class="grid gap-4 sm:grid-cols-2">
@@ -323,7 +323,7 @@ const resetBuilder = () => {
         </div>
 
         <div class="space-y-2 lg:sticky lg:top-6">
-          <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Quick Roll</p>
+          <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Quick Roll</p>
           <div class="flex flex-col gap-2">
             <UButton
               v-for="preset in presetNotations"
@@ -344,7 +344,7 @@ const resetBuilder = () => {
     <UCard :ui="{ body: 'p-4' }">
         <template #header>
           <div class="flex items-center justify-between gap-2">
-            <p class="text-xs uppercase tracking-[0.2em] text-dimmed">History</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-dimmed">History</p>
             <UButton
               color="neutral"
               variant="soft"
@@ -358,8 +358,9 @@ const resetBuilder = () => {
         </template>
         <div v-if="history.length" class="space-y-2">
           <UCard
-            v-for="item in history"
+v-for="item in history"
             :key="item.id"
+            variant="soft"
             :ui="{ body: 'p-3' }"
           >
             <div class="space-y-3">
@@ -367,7 +368,7 @@ const resetBuilder = () => {
                 <div class="min-w-0 space-y-1">
                   <p
                     v-if="item.id === history[0]?.id"
-                    class="text-xs uppercase tracking-[0.2em] text-dimmed"
+                    class="text-xs uppercase tracking-[0.08em] text-dimmed"
                   >
                     Latest roll
                   </p>

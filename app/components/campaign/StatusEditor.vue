@@ -22,7 +22,7 @@ const valueModel = computed({
   <UCard>
     <template #header>
       <div>
-        <h2 class="text-lg font-semibold">Current status</h2>
+        <h2 class=" type-section">Current status</h2>
         <p class="text-sm text-muted">Update where the story left off.</p>
       </div>
     </template>

@@ -105,8 +105,8 @@ const importCharacter = async (payload: CharacterImportPayload) => {
         <template #header>
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Characters</p>
-              <h1 class="mt-2 text-2xl font-semibold">Player Character Roster</h1>
+              <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Characters</p>
+              <h1 class="mt-2 type-title">Player Character Roster</h1>
               <p class="mt-2 text-sm text-muted">Manage PCs shared across campaigns.</p>
             </div>
             <div class="flex flex-wrap gap-2">
@@ -139,8 +139,8 @@ const importCharacter = async (payload: CharacterImportPayload) => {
           <template #header>
             <div class="flex items-center justify-between gap-3">
               <div>
-                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">PC</p>
-                <h3 class="text-lg font-semibold">{{ character.name }}</h3>
+                <p class="text-xs uppercase tracking-[0.08em] text-dimmed">PC</p>
+                <h3 class=" type-record">{{ character.name }}</h3>
                 <p v-if="character.status" class="text-xs text-muted">{{ character.status }}</p>
                 <UBadge
                   :color="character.isOwner ? 'primary' : 'neutral'"

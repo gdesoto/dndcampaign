@@ -9,7 +9,7 @@ const props = defineProps<{
 <template>
   <UCard>
     <template #header>
-      <h2 class="text-base font-semibold">Event timeline</h2>
+      <h2 class=" type-section">Event timeline</h2>
     </template>
 
     <div v-if="props.events.length" class="space-y-2 text-sm">

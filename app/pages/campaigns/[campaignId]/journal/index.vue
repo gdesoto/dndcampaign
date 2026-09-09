@@ -489,7 +489,7 @@ const entryActions = (entry: CampaignJournalEntryListItem): RecordAction[] => [
       </template>
 
       <template #filters>
-        <UCard>
+        <UCard variant="soft">
           <UTabs v-model="selectedTab" :items="visibleTabItems" :content="false" />
           <div class="mt-4 grid gap-3 md:grid-cols-4">
             <USelect
@@ -553,7 +553,7 @@ const entryActions = (entry: CampaignJournalEntryListItem): RecordAction[] => [
           <template #header>
             <div class="flex items-center justify-between gap-3">
               <div class="space-y-1">
-                <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Journal entry</p>
+                <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Journal entry</p>
                 <NuxtLink
                   class="text-base font-semibold text-primary hover:underline"
                   :to="`/campaigns/${campaignId}/journal/${entry.id}`"
@@ -617,7 +617,7 @@ const entryActions = (entry: CampaignJournalEntryListItem): RecordAction[] => [
         <UCard class="overflow-hidden lg:sticky lg:top-6 lg:max-h-[calc(100vh-1.5rem)]">
           <template #header>
             <div class="flex items-center justify-between">
-              <h2 class="text-base font-semibold">Recent Notifications</h2>
+              <h2 class=" type-section">Recent Notifications</h2>
               <UButton variant="ghost" size="xs" icon="i-lucide-refresh-cw" :loading="notificationsPending" @click="() => refreshNotifications()">
                 Refresh
               </UButton>

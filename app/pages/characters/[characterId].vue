@@ -531,20 +531,20 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
               </div>
 
               <!-- View mode: read-only identity -->
-              <div v-if="!isEditing" class="min-w-0 flex-1">
-                <p class="text-xs font-display uppercase tracking-[0.3em] text-dimmed">Character</p>
-                <h1 class="mt-0.5 font-display text-3xl font-semibold tracking-tight text-highlighted">
+              <div v-if="!isEditing" class="min-w-0 flex-1 basis-48">
+                <p class="type-label">Character</p>
+                <h1 class="mt-0.5 text-highlighted type-title">
                   {{ character.name }}
                 </h1>
                 <p
                   v-if="getCharacterClasses || (sheet.race as Record<string,unknown>)?.name"
-                  class="mt-1 text-[11px] font-display uppercase tracking-[0.14em] text-dimmed"
+                  class="mt-1 type-label"
                 >
                   <span v-if="getCharacterClasses">{{ getCharacterClasses }}</span>
                   <span v-if="getCharacterClasses && (sheet.race as Record<string,unknown>)?.name" class="mx-1.5 opacity-40">·</span>
                   <span v-if="(sheet.race as Record<string,unknown>)?.name">{{ (sheet.race as Record<string,unknown>).name as string }}</span>
                 </p>
-                <p v-if="basicsForm.playerName" class="mt-0.5 text-[11px] text-dimmed">
+                <p v-if="basicsForm.playerName" class="mt-0.5 text-xs text-dimmed">
                   Played by {{ basicsForm.playerName }}
                 </p>
                 <div class="mt-2.5 flex flex-wrap items-center gap-2">
@@ -560,7 +560,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                   <!-- Inspiration: always-interactive toggle -->
                   <button
                     v-if="canEdit || basicsForm.inspiration"
-                    class="flex cursor-pointer items-center gap-1.5 rounded border px-2 py-0.5 text-[11px] font-display uppercase tracking-widest transition-colors"
+                    class="flex cursor-pointer items-center gap-1.5 rounded border px-2 py-0.5 text-xs font-display uppercase tracking-[0.08em] transition-colors"
                     :class="basicsForm.inspiration
                       ? 'border-warning-600/50 bg-warning-500/15 text-warning-300'
                       : 'border-default bg-transparent text-dimmed hover:border-accented hover:text-muted'"
@@ -574,8 +574,8 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
               </div>
 
               <!-- Edit mode: identity form inline -->
-              <div v-else class="min-w-0 flex-1 space-y-3">
-                <h1 class="text-2xl font-display font-semibold">{{ character.name }}</h1>
+              <div v-else class="min-w-0 flex-1 basis-48 space-y-3">
+                <h1 class=" type-title">{{ character.name }}</h1>
                 <div class="grid gap-3 sm:grid-cols-2">
                   <div class="sm:col-span-2">
                     <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-1">Character name</label>
@@ -648,33 +648,24 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
             <!-- Ability Scores ───────────────────────────────────────────────── -->
             <!-- View mode: 6 stat boxes in a row -->
             <div v-if="!isEditing" class="grid grid-cols-3 gap-2 sm:grid-cols-6">
-              <div
+              <CharacterAbilityStat
                 v-for="ab in abilities"
                 :key="ab.key"
-                class="flex flex-col items-center rounded-lg border border-default bg-accented p-2.5 text-center"
-              >
-                <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">{{ ab.label }}</p>
-                <p class="my-1 font-display text-2xl font-bold text-highlighted">{{ getAbilityTotal(abilityScores[ab.key]) }}</p>
-                <div
-                  class="w-full rounded border px-1.5 py-0.5 text-center text-xs font-semibold font-display"
-                  :class="abilityMod(getAbilityTotal(abilityScores[ab.key])) >= 0
-                    ? 'border-success-700/40 bg-success-500/10 text-success-400'
-                    : 'border-error-700/40 bg-error-500/10 text-error-400'"
-                >
-                  {{ fmtMod(abilityMod(getAbilityTotal(abilityScores[ab.key]))) }}
-                </div>
-              </div>
+                :label="ab.label"
+                :score="getAbilityTotal(abilityScores[ab.key])"
+                :modifier="fmtMod(abilityMod(getAbilityTotal(abilityScores[ab.key])))"
+              />
             </div>
             <!-- Edit mode: ability score inputs -->
             <div v-else class="space-y-3">
-              <p class="text-xs font-display uppercase tracking-[0.22em] text-dimmed">Ability Scores</p>
+              <p class="type-label">Ability Scores</p>
               <div class="grid grid-cols-3 gap-2 sm:grid-cols-6">
                 <div
                   v-for="ab in abilities"
                   :key="ab.key"
-                  class="flex flex-col items-center rounded-lg border border-default bg-accented p-2.5 text-center"
+                  class="flex flex-col items-center sheet-compartment p-2.5 text-center"
                 >
-                  <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">{{ ab.label }}</p>
+                  <p class="type-label">{{ ab.label }}</p>
                   <UInput
                     v-model.number="(abilityForm as Record<string,number>)[ab.key]"
                     :aria-label="`${ab.label} ability score`"
@@ -686,8 +677,8 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                   <div
                     class="w-full rounded border px-1.5 py-0.5 text-center text-xs font-semibold font-display"
                     :class="abilityMod(((abilityForm as Record<string,number>)[ab.key] ?? 10)) >= 0
-                      ? 'border-success-700/40 bg-success-500/10 text-success-400'
-                      : 'border-error-700/40 bg-error-500/10 text-error-400'"
+                      ? 'border-muted bg-transparent text-default'
+                      : 'border-muted bg-transparent text-default'"
                   >
                     {{ fmtMod(abilityMod(((abilityForm as Record<string,number>)[ab.key] ?? 10))) }}
                   </div>
@@ -713,16 +704,16 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
             <!-- View mode: full-width HP bar + 4 stat tiles -->
             <div v-if="!isEditing" class="space-y-2.5">
               <!-- HP: always-interactive, horizontal bar -->
-              <div class="rounded-lg border border-default bg-accented px-4 py-3">
+              <div class="sheet-compartment px-4 py-3">
                 <div class="flex items-center gap-4">
                   <div class="shrink-0">
-                    <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Hit Points</p>
+                    <p class="type-label">Hit Points</p>
                     <div class="mt-1 flex items-baseline gap-1.5">
                       <input
                         v-model.number="hpCurrentDraft"
                         type="number"
                         aria-label="Current hit points"
-                        class="focus-visible:ring-2 focus-visible:ring-primary w-14 appearance-none bg-transparent font-display text-2xl font-bold text-highlighted outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        class="focus-visible:ring-2 focus-visible:ring-primary w-14 appearance-none bg-transparent type-metric text-highlighted outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         :readonly="!canEdit"
                         @blur="saveHpQuick"
                         @keydown.enter.prevent="saveHpQuick"
@@ -741,28 +732,28 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
               </div>
               <!-- AC, Initiative, Speed, Prof Bonus -->
               <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-                <div class="flex flex-col items-center justify-center rounded-lg border border-default bg-accented p-3 text-center">
-                  <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">AC</p>
-                  <p class="mt-1 font-display text-2xl font-bold text-highlighted">{{ defensesData.ac ?? '—' }}</p>
+                <div class="flex flex-col items-center justify-center sheet-compartment p-3 text-center">
+                  <p class="type-label">AC</p>
+                  <p class="mt-1 type-metric text-highlighted">{{ defensesData.ac ?? '—' }}</p>
                 </div>
-                <div class="flex flex-col items-center justify-center rounded-lg border border-default bg-accented p-3 text-center">
-                  <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Initiative</p>
-                  <p class="mt-1 font-display text-2xl font-bold text-highlighted">{{ fmtMod(defensesData.initiative) }}</p>
+                <div class="flex flex-col items-center justify-center sheet-compartment p-3 text-center">
+                  <p class="type-label">Initiative</p>
+                  <p class="mt-1 type-metric text-highlighted">{{ fmtMod(defensesData.initiative) }}</p>
                 </div>
-                <div class="flex flex-col items-center justify-center rounded-lg border border-default bg-accented p-3 text-center">
-                  <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Speed</p>
-                  <p class="mt-1 font-display text-2xl font-bold text-highlighted">{{ defensesData.speed }}<span class="text-base font-normal text-dimmed"> ft</span></p>
+                <div class="flex flex-col items-center justify-center sheet-compartment p-3 text-center">
+                  <p class="type-label">Speed</p>
+                  <p class="mt-1 type-metric text-highlighted">{{ defensesData.speed }}<span class="text-base font-normal text-dimmed"> ft</span></p>
                 </div>
-                <div class="flex flex-col items-center justify-center rounded-lg border border-default bg-accented p-3 text-center">
-                  <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Prof. Bonus</p>
-                  <p class="mt-1 font-display text-2xl font-bold text-highlighted">+{{ proficiencyBonus }}</p>
+                <div class="flex flex-col items-center justify-center sheet-compartment p-3 text-center">
+                  <p class="type-label">Prof. Bonus</p>
+                  <p class="mt-1 type-metric text-highlighted">+{{ proficiencyBonus }}</p>
                 </div>
               </div>
             </div>
 
             <!-- Edit mode: combat stat inputs -->
             <div v-else class="space-y-3">
-              <p class="text-xs font-display uppercase tracking-[0.22em] text-dimmed">Combat stats</p>
+              <p class="type-label">Combat stats</p>
               <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                 <div>
                   <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-6">Max HP</label>
@@ -802,7 +793,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
             <UCard>
               <template #header>
                 <div class="flex items-center justify-between">
-                  <p class="text-xs font-display uppercase tracking-[0.22em] text-dimmed">Classes</p>
+                  <h2 class="type-section">Classes</h2>
                   <UButton v-if="isEditing && !showAddClass" size="xs" variant="ghost" @click="openAddClass">
                     <UIcon name="i-lucide-plus" class="mr-1 h-3.5 w-3.5" />
                     Add
@@ -823,11 +814,11 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                       <div class="flex items-center gap-2">
                         <UIcon name="i-lucide-swords" class="h-3.5 w-3.5 shrink-0 text-primary-400" />
                         <span class="font-display text-sm font-semibold text-highlighted">{{ cls.name }}</span>
-                        <span v-if="cls.subclass" class="text-[11px] text-dimmed">— {{ cls.subclass }}</span>
+                        <span v-if="cls.subclass" class="text-xs text-dimmed">— {{ cls.subclass }}</span>
                       </div>
                     </div>
                     <div class="flex shrink-0 items-center gap-2">
-                      <span v-if="cls.hitDie" class="text-xs font-display uppercase tracking-wider text-dimmed">d{{ cls.hitDie }}</span>
+                      <span v-if="cls.hitDie" class="text-xs font-display uppercase tracking-[0.08em]r text-dimmed">d{{ cls.hitDie }}</span>
                       <UBadge v-if="cls.level" color="primary" variant="soft" size="sm">Lv {{ cls.level }}</UBadge>
                       <UButton
                         v-if="isEditing"
@@ -848,7 +839,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                 </p>
 
                 <!-- Add class form (edit mode only) -->
-                <div v-if="isEditing && showAddClass" class="space-y-3 rounded-lg border border-default bg-accented/20 p-3">
+                <div v-if="isEditing && showAddClass" class="space-y-3 sheet-compartment/20 p-3">
                   <div class="grid gap-2 sm:grid-cols-2">
                     <div>
                       <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-11">Class</label>
@@ -884,7 +875,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
             <!-- Biography card -->
             <UCard>
               <template #header>
-                <p class="text-xs font-display uppercase tracking-[0.22em] text-dimmed">Biography</p>
+                <h2 class="type-section">Biography</h2>
               </template>
 
               <!-- VIEW MODE: readable display -->
@@ -912,12 +903,12 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                   class="grid gap-4 sm:grid-cols-2"
                 >
                   <div v-if="backgroundForm.traits" class="space-y-1.5">
-                    <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Personality</p>
+                    <p class="type-label">Personality</p>
                     <ul class="space-y-1">
                       <li
                         v-for="t in backgroundForm.traits.split('\n').filter(Boolean)"
                         :key="t"
-                        class="flex gap-2 text-xs text-muted"
+                        class="flex gap-2 reading-copy text-default"
                       >
                         <span class="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary-500/60" />
                         {{ t }}
@@ -925,12 +916,12 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                     </ul>
                   </div>
                   <div v-if="backgroundForm.ideals" class="space-y-1.5">
-                    <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Ideals</p>
+                    <p class="type-label">Ideals</p>
                     <ul class="space-y-1">
                       <li
                         v-for="t in backgroundForm.ideals.split('\n').filter(Boolean)"
                         :key="t"
-                        class="flex gap-2 text-xs text-muted"
+                        class="flex gap-2 reading-copy text-default"
                       >
                         <span class="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary-500/60" />
                         {{ t }}
@@ -938,12 +929,12 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                     </ul>
                   </div>
                   <div v-if="backgroundForm.bonds" class="space-y-1.5">
-                    <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Bonds</p>
+                    <p class="type-label">Bonds</p>
                     <ul class="space-y-1">
                       <li
                         v-for="t in backgroundForm.bonds.split('\n').filter(Boolean)"
                         :key="t"
-                        class="flex gap-2 text-xs text-muted"
+                        class="flex gap-2 reading-copy text-default"
                       >
                         <span class="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary-500/60" />
                         {{ t }}
@@ -951,12 +942,12 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                     </ul>
                   </div>
                   <div v-if="backgroundForm.flaws" class="space-y-1.5">
-                    <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Flaws</p>
+                    <p class="type-label">Flaws</p>
                     <ul class="space-y-1">
                       <li
                         v-for="t in backgroundForm.flaws.split('\n').filter(Boolean)"
                         :key="t"
-                        class="flex gap-2 text-xs text-muted"
+                        class="flex gap-2 reading-copy text-default"
                       >
                         <span class="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary-500/60" />
                         {{ t }}
@@ -971,46 +962,46 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                   class="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4"
                 >
                   <div v-if="appearanceData.gender" class="space-y-0.5">
-                    <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Gender</p>
+                    <p class="type-label">Gender</p>
                     <p class="text-xs text-highlighted">{{ appearanceData.gender }}</p>
                   </div>
                   <div v-if="appearanceData.age" class="space-y-0.5">
-                    <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Age</p>
+                    <p class="type-label">Age</p>
                     <p class="text-xs text-highlighted">{{ appearanceData.age }}</p>
                   </div>
                   <div v-if="appearanceData.height" class="space-y-0.5">
-                    <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Height</p>
+                    <p class="type-label">Height</p>
                     <p class="text-xs text-highlighted">{{ appearanceData.height }}</p>
                   </div>
                   <div v-if="appearanceData.weight" class="space-y-0.5">
-                    <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Weight</p>
+                    <p class="type-label">Weight</p>
                     <p class="text-xs text-highlighted">{{ appearanceData.weight }}</p>
                   </div>
                   <div v-if="appearanceData.eyes" class="space-y-0.5">
-                    <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Eyes</p>
+                    <p class="type-label">Eyes</p>
                     <p class="text-xs text-highlighted">{{ appearanceData.eyes }}</p>
                   </div>
                   <div v-if="appearanceData.hair" class="space-y-0.5">
-                    <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Hair</p>
+                    <p class="type-label">Hair</p>
                     <p class="text-xs text-highlighted">{{ appearanceData.hair }}</p>
                   </div>
                   <div v-if="appearanceData.skin" class="col-span-2 space-y-0.5">
-                    <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Skin</p>
+                    <p class="type-label">Skin</p>
                     <p class="text-xs text-highlighted">{{ appearanceData.skin }}</p>
                   </div>
                   <div v-if="appearanceData.faith" class="space-y-0.5">
-                    <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Faith</p>
+                    <p class="type-label">Faith</p>
                     <p class="text-xs text-highlighted">{{ appearanceData.faith }}</p>
                   </div>
                 </div>
 
                 <!-- Backstory -->
                 <div v-if="notesForm.backstory" class="space-y-1.5">
-                  <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Backstory</p>
+                  <p class="type-label">Backstory</p>
                   <p class="text-xs leading-relaxed text-muted">{{ notesForm.backstory }}</p>
                 </div>
                 <div v-if="notesForm.other" class="space-y-1.5">
-                  <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Notes</p>
+                  <p class="type-label">Notes</p>
                   <p class="text-xs leading-relaxed text-muted">{{ notesForm.other }}</p>
                 </div>
               </div>
@@ -1018,7 +1009,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
               <!-- EDIT MODE: form fields -->
               <div v-else class="space-y-5">
                 <div class="space-y-3">
-                  <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Background</p>
+                  <p class="type-label">Background</p>
                   <div class="grid gap-3 sm:grid-cols-2">
                     <div>
                       <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-15">Background name</label>
@@ -1050,7 +1041,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                 </div>
 
                 <div class="space-y-3">
-                  <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Appearance</p>
+                  <p class="type-label">Appearance</p>
                   <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <div><label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-21">Age</label><UInput id="field-characters--characterId--vue-21" v-model="appearanceForm.age" /></div>
                     <div><label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-22">Height</label><UInput id="field-characters--characterId--vue-22" v-model="appearanceForm.height" /></div>
@@ -1064,7 +1055,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                 </div>
 
                 <div class="space-y-3">
-                  <p class="text-xs font-display uppercase tracking-[0.18em] text-dimmed">Backstory & Notes</p>
+                  <p class="type-label">Backstory & Notes</p>
                   <div>
                     <label class="mb-1 block text-xs text-muted" for="field-characters--characterId--vue-29">Backstory</label>
                     <UTextarea id="field-characters--characterId--vue-29" v-model="notesForm.backstory" :rows="5" />
@@ -1089,7 +1080,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
             <UCard>
               <template #header>
                 <div>
-                  <p class="text-xs font-display uppercase tracking-[0.22em] text-dimmed">Campaign links</p>
+                  <p class="type-label">Campaign links</p>
                   <p class="mt-0.5 text-xs text-muted">Manage membership</p>
                 </div>
               </template>
@@ -1098,7 +1089,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                   <div
                     v-for="link in character.campaignLinks"
                     :key="link.id"
-                    class="space-y-2 rounded-lg border border-default bg-accented/30 px-3 py-2.5"
+                    class="space-y-2 sheet-compartment/30 px-3 py-2.5"
                   >
                     <div class="flex items-center justify-between gap-2">
                       <p class="min-w-0 truncate text-sm font-semibold text-highlighted">{{ link.campaign.name }}</p>
@@ -1166,7 +1157,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
             <!-- Species card (sidebar) -->
             <UCard v-if="(sheet.race as Record<string,unknown>)?.name">
               <template #header>
-                <p class="text-xs font-display uppercase tracking-[0.22em] text-dimmed">Species</p>
+                <h2 class="type-section">Species</h2>
               </template>
               <div class="space-y-2">
                 <p class="font-display text-sm font-semibold text-highlighted">
@@ -1197,20 +1188,20 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
           <!-- Spells (only shown if there's data or in edit mode) -->
           <UCard v-if="hasSpellData || isEditing">
             <template #header>
-              <p class="text-xs font-display uppercase tracking-[0.22em] text-dimmed">Spells</p>
+              <h2 class="type-section">Spells</h2>
             </template>
 
             <!-- View: formatted display -->
             <div v-if="!isEditing" class="space-y-4">
               <div v-if="(sheet.spells as Record<string,unknown>)?.slots" class="space-y-2">
-                <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Spell Slots</p>
+                <p class="type-label">Spell Slots</p>
                 <div class="flex flex-wrap gap-2">
                   <div
                     v-for="(slotData, level) in (sheet.spells as Record<string,unknown>).slots as Record<string,unknown>"
                     :key="level"
-                    class="flex flex-col items-center rounded-lg border border-default bg-accented px-3 py-2 text-center"
+                    class="flex flex-col items-center sheet-compartment px-3 py-2 text-center"
                   >
-                    <p class="text-xs font-display uppercase tracking-[0.12em] text-dimmed">Lv {{ level }}</p>
+                    <p class="type-label">Lv {{ level }}</p>
                     <p class="mt-0.5 font-display text-base font-bold text-highlighted">
                       {{ (slotData as Record<string,unknown>)?.remaining ?? slotData }}
                       <span class="text-xs text-dimmed">/ {{ (slotData as Record<string,unknown>)?.max ?? slotData }}</span>
@@ -1219,7 +1210,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                 </div>
               </div>
               <div v-if="Array.isArray((sheet.spells as Record<string,unknown>)?.prepared) && ((sheet.spells as Record<string,unknown>).prepared as unknown[]).length" class="space-y-1.5">
-                <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Prepared</p>
+                <p class="type-label">Prepared</p>
                 <div class="flex flex-wrap gap-1.5">
                   <UBadge v-for="spell in (sheet.spells as Record<string,unknown>).prepared as Record<string,unknown>[]" :key="String(spell.name || spell)" variant="soft" color="primary" size="sm">
                     {{ spell.name || spell }}
@@ -1227,7 +1218,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                 </div>
               </div>
               <div v-if="Array.isArray((sheet.spells as Record<string,unknown>)?.known) && ((sheet.spells as Record<string,unknown>).known as unknown[]).length" class="space-y-1.5">
-                <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Known</p>
+                <p class="type-label">Known</p>
                 <div class="flex flex-wrap gap-1.5">
                   <UBadge v-for="spell in (sheet.spells as Record<string,unknown>).known as Record<string,unknown>[]" :key="String(spell.name || spell)" variant="subtle" color="neutral" size="sm">
                     {{ spell.name || spell }}
@@ -1251,13 +1242,13 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
           <!-- Inventory (always shown) -->
           <UCard>
             <template #header>
-              <p class="text-xs font-display uppercase tracking-[0.22em] text-dimmed">Inventory</p>
+              <h2 class="type-section">Inventory</h2>
             </template>
 
             <div class="space-y-5">
               <!-- Currency -->
               <div class="space-y-2">
-                <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Currency</p>
+                <p class="type-label">Currency</p>
                 <div class="grid grid-cols-5 gap-2">
                   <div
                     v-for="coin in [
@@ -1271,7 +1262,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                     class="flex flex-col items-center rounded-lg border p-2.5 text-center"
                     :class="coin.borderClass"
                   >
-                    <p class="text-xs font-display uppercase tracking-[0.14em]" :class="coin.textClass">{{ coin.abbr }}</p>
+                    <p class="text-xs font-display uppercase tracking-[0.08em]" :class="coin.textClass">{{ coin.abbr }}</p>
                     <p class="mt-0.5 font-display text-lg font-bold text-highlighted">
                       {{ (((sheet.inventory as Record<string,unknown>)?.currency as Record<string,unknown>) || {})[coin.key] ?? 0 }}
                     </p>
@@ -1281,7 +1272,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
 
               <!-- Items -->
               <div class="space-y-2">
-                <p class="text-xs font-display uppercase tracking-[0.14em] text-dimmed">Items</p>
+                <p class="type-label">Items</p>
                 <div
                   v-if="Array.isArray(sheet.equipment) && (sheet.equipment as unknown[]).length"
                   class="divide-y divide-default overflow-hidden rounded-lg border border-default"

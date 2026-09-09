@@ -139,10 +139,10 @@ const createSession = async () => {
               <template #header>
                 <div class="flex items-center justify-between gap-3">
                   <div>
-                    <p class="text-xs uppercase tracking-[0.2em] text-muted">
+                    <p class="text-xs uppercase tracking-[0.08em] text-muted">
                       Session {{ session.sessionNumber ?? '—' }}
                     </p>
-                    <h3 class="text-lg font-semibold">{{ session.title }}</h3>
+                    <h3 class=" type-record">{{ session.title }}</h3>
                   </div>
                   <span class="text-xs text-muted">
                     {{ formatSessionDate(session.playedAt) }}

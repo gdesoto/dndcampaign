@@ -346,7 +346,7 @@ const transferOpenModel = computed({ get: () => transferModalOpen.value, set: as
       description="Manage campaign rules, members, public access, and ownership actions."
     >
       <template #filters>
-        <UCard>
+        <UCard variant="soft">
           <UTabs v-model="activeTab" :items="tabs" :content="false" />
         </UCard>
       </template>
@@ -371,7 +371,7 @@ const transferOpenModel = computed({ get: () => transferModalOpen.value, set: as
           <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 class="text-lg font-semibold">Members</h2>
+                <h2 class=" type-section">Members</h2>
                 <p class="text-sm text-muted">Invite users, manage roles, and transfer ownership.</p>
               </div>
               <UButton
@@ -454,7 +454,7 @@ const transferOpenModel = computed({ get: () => transferModalOpen.value, set: as
 
           <UCard>
           <template #header>
-            <h3 class="text-base font-semibold">Invite member</h3>
+            <h3 class=" type-record">Invite member</h3>
           </template>
 
           <div class="grid gap-4 sm:grid-cols-[1fr_180px_auto]">
@@ -475,7 +475,7 @@ const transferOpenModel = computed({ get: () => transferModalOpen.value, set: as
 
           <UCard>
           <template #header>
-            <h3 class="text-base font-semibold">Pending invites</h3>
+            <h3 class=" type-record">Pending invites</h3>
           </template>
 
           <div v-if="!memberData?.pendingInvites?.length" class="text-sm text-muted">
@@ -517,7 +517,7 @@ const transferOpenModel = computed({ get: () => transferModalOpen.value, set: as
           <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 class="text-lg font-semibold">Public Access</h2>
+                <h2 class=" type-section">Public Access</h2>
                 <p class="text-sm text-muted">Control what anonymous visitors can read from this campaign.</p>
               </div>
             </div>
@@ -564,7 +564,7 @@ const transferOpenModel = computed({ get: () => transferModalOpen.value, set: as
             </div>
 
             <div class="space-y-3">
-              <h3 class="text-sm font-semibold uppercase tracking-wide text-muted">Public sections</h3>
+              <h3 class="uppercase text-muted type-record">Public sections</h3>
 
               <div class="grid gap-3 sm:grid-cols-2">
                 <USwitch
@@ -620,7 +620,7 @@ const transferOpenModel = computed({ get: () => transferModalOpen.value, set: as
             </div>
 
             <div class="rounded-lg border border-default bg-muted/20 p-4 space-y-3">
-              <p class="text-xs uppercase tracking-wide text-muted">Public URL</p>
+              <p class="text-xs uppercase tracking-[0.08em] text-muted">Public URL</p>
               <UInput :model-value="publicAccessData.publicUrl" readonly />
               <div class="flex flex-wrap gap-2">
                 <UButton variant="outline" @click="copyPublicUrl">Copy URL</UButton>
@@ -638,7 +638,7 @@ const transferOpenModel = computed({ get: () => transferModalOpen.value, set: as
 
       <UCard v-else>
         <template #header>
-          <h2 class="text-lg font-semibold">Danger Zone</h2>
+          <h2 class=" type-section">Danger Zone</h2>
         </template>
         <p class="text-sm text-muted">Additional destructive campaign actions will be added in a later milestone.</p>
       </UCard>

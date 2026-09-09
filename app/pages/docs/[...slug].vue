@@ -40,7 +40,7 @@ const tocLinks = computed(() =>
           :key="`${entry?.slug}-${index}`"
           class="rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-4"
         >
-          <h2 class="font-display text-sm uppercase tracking-[0.08em] text-[var(--ui-text-muted)]">
+          <h2 class="uppercase text-[var(--ui-text-muted)] type-section">
             Section {{ index + 1 }}
           </h2>
           <p class="mt-2 text-sm leading-relaxed text-[var(--ui-text)]">{{ paragraph }}</p>
@@ -52,7 +52,7 @@ const tocLinks = computed(() =>
       <UPageAside>
         <UCard>
           <template #header>
-            <h3 class="font-display text-xs uppercase tracking-[0.1em] text-[var(--ui-text-dimmed)]">On This Page</h3>
+            <h3 class="uppercase text-[var(--ui-text-dimmed)] type-record">On This Page</h3>
           </template>
 
           <ul class="space-y-2 text-sm">

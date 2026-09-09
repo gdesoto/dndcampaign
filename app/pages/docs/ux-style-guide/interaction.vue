@@ -15,7 +15,7 @@ const { interactionGuidelines, questActionItems, shortcutExamples, feedbackState
     <UPageBody class="space-y-8">
       <UCard>
         <template #header>
-          <h2 class="font-display text-xl tracking-[0.03em] text-[var(--ui-text-highlighted)]">Hover, click, and focus behavior</h2>
+          <h2 class="text-[var(--ui-text-highlighted)] type-section">Hover, click, and focus behavior</h2>
         </template>
 
         <ul class="space-y-3 text-sm leading-6 text-[var(--ui-text-muted)]">
@@ -28,7 +28,7 @@ const { interactionGuidelines, questActionItems, shortcutExamples, feedbackState
 
       <UCard class="self-start">
         <template #header>
-          <h2 class="font-display text-xl tracking-[0.03em] text-[var(--ui-text-highlighted)]">Action hierarchy in interactive contexts</h2>
+          <h2 class="text-[var(--ui-text-highlighted)] type-section">Action hierarchy in interactive contexts</h2>
         </template>
         <p class="mb-4 text-sm leading-6 text-[var(--ui-text-muted)]">
           Primary actions should stay dominant when time pressure is high, while secondary and destructive actions remain discoverable but clearly de-emphasized.
@@ -49,7 +49,7 @@ const { interactionGuidelines, questActionItems, shortcutExamples, feedbackState
 
       <UCard>
         <template #header>
-          <h2 class="font-display text-xl tracking-[0.03em] text-[var(--ui-text-highlighted)]">Demonstration: scoped row actions and inline feedback</h2>
+          <h2 class="text-[var(--ui-text-highlighted)] type-section">Demonstration: scoped row actions and inline feedback</h2>
         </template>
 
         <div class="grid gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
@@ -75,9 +75,9 @@ const { interactionGuidelines, questActionItems, shortcutExamples, feedbackState
             </div>
           </div>
 
-          <UCard class="self-start">
+          <UCard variant="soft" class="self-start">
             <template #header>
-              <h3 class="font-display text-lg text-[var(--ui-text-highlighted)]">Why it works</h3>
+              <h3 class="text-[var(--ui-text-highlighted)] type-record">Why it works</h3>
             </template>
             <p class="text-sm leading-6 text-[var(--ui-text-muted)]">
               The action model stays clear under pressure: the main row still means “open this thread,” icon-only controls get tooltips, and save state appears next to the thing that changed.
@@ -88,7 +88,7 @@ const { interactionGuidelines, questActionItems, shortcutExamples, feedbackState
 
       <UCard>
         <template #header>
-          <h2 class="font-display text-xl tracking-[0.03em] text-[var(--ui-text-highlighted)]">Suggested shortcuts</h2>
+          <h2 class="text-[var(--ui-text-highlighted)] type-section">Suggested shortcuts</h2>
         </template>
 
         <div class="grid gap-3 md:grid-cols-2">

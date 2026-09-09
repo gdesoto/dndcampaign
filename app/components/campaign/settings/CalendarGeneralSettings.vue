@@ -282,7 +282,7 @@ onMounted(() => {
   <UCard>
     <template #header>
       <div class="space-y-1">
-        <h2 class="text-lg font-semibold">General</h2>
+        <h2 class=" type-section">General</h2>
         <p class="text-sm text-muted">
           Configure the campaign fantasy calendar, templates, and current in-world date.
         </p>
@@ -329,10 +329,10 @@ onMounted(() => {
       </div>
 
       <div class="grid gap-6 lg:grid-cols-2">
-        <UCard>
+        <UCard variant="soft">
           <template #header>
             <div class="flex items-center justify-between gap-2">
-              <h3 class="font-semibold">Weekdays</h3>
+              <h3 class=" type-record">Weekdays</h3>
               <UButton size="xs" variant="outline" :disabled="!canEdit" @click="addWeekday">Add weekday</UButton>
             </div>
           </template>
@@ -344,8 +344,8 @@ onMounted(() => {
               </colgroup>
               <thead>
                 <tr>
-                  <th class="pb-1 text-left text-xs uppercase tracking-wide text-muted font-medium">Name</th>
-                  <th class="w-px pb-1 text-left text-xs uppercase tracking-wide text-muted font-medium">Actions</th>
+                  <th class="pb-1 text-left text-xs uppercase tracking-[0.08em] text-muted font-medium">Name</th>
+                  <th class="w-px pb-1 text-left text-xs uppercase tracking-[0.08em] text-muted font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -399,10 +399,10 @@ onMounted(() => {
           </div>
         </UCard>
 
-        <UCard>
+        <UCard variant="soft">
           <template #header>
             <div class="flex items-center justify-between gap-2">
-              <h3 class="font-semibold">Months</h3>
+              <h3 class=" type-record">Months</h3>
               <UButton size="xs" variant="outline" :disabled="!canEdit" @click="addMonth">Add month</UButton>
             </div>
           </template>
@@ -415,9 +415,9 @@ onMounted(() => {
               </colgroup>
               <thead>
                 <tr>
-                  <th class="pb-1 text-left text-xs uppercase tracking-wide text-muted font-medium">Name</th>
-                  <th class="pb-1 text-left text-xs uppercase tracking-wide text-muted font-medium">Length</th>
-                  <th class="w-px pb-1 text-left text-xs uppercase tracking-wide text-muted font-medium">Actions</th>
+                  <th class="pb-1 text-left text-xs uppercase tracking-[0.08em] text-muted font-medium">Name</th>
+                  <th class="pb-1 text-left text-xs uppercase tracking-[0.08em] text-muted font-medium">Length</th>
+                  <th class="w-px pb-1 text-left text-xs uppercase tracking-[0.08em] text-muted font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -475,10 +475,10 @@ onMounted(() => {
         </UCard>
       </div>
 
-      <UCard>
+      <UCard variant="soft">
         <template #header>
           <div class="flex items-center justify-between gap-2">
-            <h3 class="font-semibold">Moons</h3>
+            <h3 class=" type-record">Moons</h3>
             <UButton size="xs" variant="outline" :disabled="!canEdit" @click="addMoon">Add moon</UButton>
           </div>
         </template>
@@ -495,10 +495,10 @@ onMounted(() => {
             </colgroup>
             <thead>
               <tr>
-                <th class="pb-1 text-left text-xs uppercase tracking-wide text-muted font-medium">Name</th>
-                <th class="pb-1 text-left text-xs uppercase tracking-wide text-muted font-medium">Cycle length</th>
-                <th class="pb-1 text-left text-xs uppercase tracking-wide text-muted font-medium">Phase offset</th>
-                <th class="w-px pb-1 text-left text-xs uppercase tracking-wide text-muted font-medium">Actions</th>
+                <th class="pb-1 text-left text-xs uppercase tracking-[0.08em] text-muted font-medium">Name</th>
+                <th class="pb-1 text-left text-xs uppercase tracking-[0.08em] text-muted font-medium">Cycle length</th>
+                <th class="pb-1 text-left text-xs uppercase tracking-[0.08em] text-muted font-medium">Phase offset</th>
+                <th class="w-px pb-1 text-left text-xs uppercase tracking-[0.08em] text-muted font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -542,33 +542,33 @@ onMounted(() => {
         </div>
       </UCard>
 
-      <UCard>
+      <UCard variant="soft">
         <template #header>
-          <h3 class="font-semibold">Reference Year + Current Date</h3>
+          <h3 class=" type-record">Reference Year + Current Date</h3>
         </template>
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div class="space-y-1">
-            <p class="text-xs uppercase tracking-wide text-muted">Calendar name</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-muted">Calendar name</p>
             <UInput v-model="draft.name" :disabled="!canEdit" />
           </div>
           <div class="space-y-1">
-            <p class="text-xs uppercase tracking-wide text-muted">Starting year</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-muted">Starting year</p>
             <UInput v-model.number="draft.startingYear" type="number" :disabled="!canEdit" />
           </div>
           <div class="space-y-1">
-            <p class="text-xs uppercase tracking-wide text-muted">First weekday index</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-muted">First weekday index</p>
             <USelect v-model="draft.firstWeekdayIndex" :items="weekdayOptions" :disabled="!canEdit" />
           </div>
           <div class="space-y-1">
-            <p class="text-xs uppercase tracking-wide text-muted">Current year</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-muted">Current year</p>
             <UInput v-model.number="draft.currentYear" type="number" :disabled="!canEdit" />
           </div>
           <div class="space-y-1">
-            <p class="text-xs uppercase tracking-wide text-muted">Current month</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-muted">Current month</p>
             <USelect v-model="draft.currentMonth" :items="monthOptions" :disabled="!canEdit" />
           </div>
           <div class="space-y-1">
-            <p class="text-xs uppercase tracking-wide text-muted">Current day</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-muted">Current day</p>
             <UInput
               v-model.number="draft.currentDay"
               type="number"

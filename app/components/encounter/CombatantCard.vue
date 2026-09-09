@@ -22,7 +22,7 @@ const actions = computed<RecordAction[]>(() => props.canWrite ? [
     <template #header>
       <div class="flex items-center justify-between">
         <div class="space-y-1">
-          <h3 class="text-sm font-semibold">{{ props.combatant.name }}</h3>
+          <h3 class=" type-record">{{ props.combatant.name }}</h3>
           <p class="text-xs text-muted">{{ props.combatant.side }} · {{ props.combatant.sourceType }}</p>
         </div>
         <div class="flex items-center gap-2">

@@ -34,8 +34,8 @@ const features = [
   <div class="space-y-16">
     <!-- Hero -->
     <div class="theme-reveal max-w-3xl space-y-6">
-      <p class="font-display text-xs tracking-[0.35em] uppercase text-primary-500">Dungeon Master Vault</p>
-      <h1 class="font-display text-4xl font-semibold leading-tight text-highlighted sm:text-5xl">
+      <p class="font-display text-xs tracking-[0.08em] uppercase text-primary-500">Dungeon Master Vault</p>
+      <h1 class="leading-tight text-highlighted type-title">
         Run smarter campaigns<br class="hidden sm:block"> with one home base
       </h1>
       <p class="max-w-2xl text-base leading-relaxed text-muted">

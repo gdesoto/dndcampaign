@@ -29,8 +29,8 @@ const localValue = computed({
   <UCard>
     <template #header>
       <div>
-        <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Layers</p>
-        <h3 class="mt-1 text-base font-semibold">Viewer toggles</h3>
+        <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Layers</p>
+        <h3 class="mt-1 type-record">Viewer toggles</h3>
       </div>
     </template>
     <UCheckboxGroup

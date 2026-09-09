@@ -62,7 +62,7 @@ const recordingActions = (recording: RecordingItem): RecordAction[] => [
     <template #header>
       <div class="flex items-start justify-between gap-3">
         <div>
-          <h2 class="text-lg font-semibold">Recordings</h2>
+          <h2 class=" type-section">Recordings</h2>
           <p class="text-sm text-muted">
             {{ workflowMode ? 'Upload and review session media.' : 'Playback available media.' }}
           </p>

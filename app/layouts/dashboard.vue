@@ -149,7 +149,7 @@ id="dmvault-campaign-sidebar"
 
               <div v-else class="space-y-2">
                 <div class="flex items-center justify-between gap-2">
-                  <p class="font-display text-[13px] uppercase tracking-[0.12em] text-[var(--ui-text-dimmed)]">
+                  <p class="font-display text-[13px] uppercase tracking-[0.08em] text-[var(--ui-text-dimmed)]">
                     Party
                   </p>
                   <ClientOnly><UColorModeButton variant="ghost" size="xs" class="shrink-0" /></ClientOnly>

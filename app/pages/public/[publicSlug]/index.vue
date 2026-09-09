@@ -52,7 +52,7 @@ const sections = computed(() => {
 
           <UCard>
             <template #header>
-              <h2 class="text-lg font-semibold">Available sections</h2>
+              <h2 class=" type-section">Available sections</h2>
             </template>
 
             <div class="flex flex-wrap gap-2">

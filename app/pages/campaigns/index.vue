@@ -119,10 +119,10 @@ const createCampaign = async () => {
               <template #header>
                 <div class="flex items-start justify-between gap-3">
                   <div class="space-y-1">
-                    <p class="font-display text-[10px] uppercase tracking-[0.18em] text-muted">
+                    <p class="font-display text-xs uppercase tracking-[0.08em] text-muted">
                       {{ systemLabelFor(campaign) }}
                     </p>
-                    <h3 class="font-display text-lg uppercase tracking-[0.02em] text-highlighted">
+                    <h3 class="uppercase text-highlighted type-record">
                       {{ campaign.name }}
                     </h3>
                   </div>

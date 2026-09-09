@@ -66,7 +66,7 @@ watch([mounted, () => props.recaps], ([ready, recaps]) => {
   <UCard>
     <template #header>
       <div>
-        <h2 class="text-lg font-semibold">{{ title || 'Recap playlist' }}</h2>
+        <h2 class=" type-section">{{ title || 'Recap playlist' }}</h2>
         <p class="text-sm text-muted">{{ description || 'Watch or listen to session recaps across the campaign.' }}</p>
       </div>
     </template>
@@ -110,8 +110,8 @@ watch([mounted, () => props.recaps], ([ready, recaps]) => {
             </div>
           </div>
         </div>
-        <UCard class="text-xs">
-          <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Now playing</p>
+        <UCard variant="soft" class="text-xs">
+          <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Now playing</p>
           <p class="mt-2 text-sm font-semibold">
             {{ recaps.find((item) => item.id === selectedRecapId)?.session.title || 'Pick a recap' }}
           </p>

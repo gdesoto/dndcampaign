@@ -48,8 +48,8 @@ const onSubmit = async (event: FormSubmitEvent<RegisterSchema>) => {
 <template>
   <div class="mx-auto flex max-w-3xl flex-col gap-8">
     <div>
-      <p class="text-xs uppercase tracking-[0.3em] text-muted">Get started</p>
-      <h1 class="mt-3 text-3xl font-semibold">Create your campaign account</h1>
+      <p class="text-xs uppercase tracking-[0.08em] text-muted">Get started</p>
+      <h1 class="mt-3 type-title">Create your campaign account</h1>
       <p class="mt-2 text-sm text-muted">Register to manage campaigns, sessions, and world notes.</p>
     </div>
 

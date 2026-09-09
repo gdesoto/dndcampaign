@@ -36,7 +36,7 @@ const filteredGlossary = computed(() => {
         <UCard>
           <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
-              <h2 class="text-lg font-semibold">Glossary</h2>
+              <h2 class=" type-section">Glossary</h2>
               <USelect aria-label="Entry type" v-model="glossaryFilter" :items="glossaryFilterOptions" class="w-40" />
             </div>
           </template>

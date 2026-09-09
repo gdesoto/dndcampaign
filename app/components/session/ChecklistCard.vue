@@ -11,10 +11,10 @@ defineProps<{
 </script>
 
 <template>
-  <UCard>
+  <UCard variant="soft">
     <template #header>
       <div>
-        <h3 class="text-sm font-semibold">Session checklist</h3>
+        <h3 class=" type-record">Session checklist</h3>
         <p class="text-xs text-muted">Track the workflow steps.</p>
       </div>
     </template>

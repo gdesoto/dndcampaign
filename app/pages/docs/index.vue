@@ -17,8 +17,8 @@ const { docsEntries } = useUiRefreshDocs()
         <UCard v-for="entry in docsEntries" :key="entry.slug">
           <template #header>
             <div class="space-y-1">
-              <p class="text-xs uppercase tracking-[0.2em] text-[var(--ui-text-dimmed)]">Guide</p>
-              <h2 class="text-base font-semibold text-[var(--ui-text-highlighted)]">{{ entry.title }}</h2>
+              <p class="text-xs uppercase tracking-[0.08em] text-[var(--ui-text-dimmed)]">Guide</p>
+              <h2 class="text-[var(--ui-text-highlighted)] type-section">{{ entry.title }}</h2>
             </div>
           </template>
 

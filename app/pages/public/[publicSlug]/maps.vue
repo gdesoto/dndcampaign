@@ -86,7 +86,7 @@ const openLayerModal = () => {
         <UCard>
           <template #header>
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <h2 class="text-lg font-semibold">Maps</h2>
+              <h2 class=" type-section">Maps</h2>
               <div class="flex flex-wrap items-center gap-2">
                 <UCheckbox
                   v-model="glossaryPointsOnly"
@@ -140,7 +140,7 @@ const openLayerModal = () => {
 
             <div v-if="viewerPending" class="h-96 animate-pulse rounded-lg bg-muted" />
 
-            <UCard v-else-if="viewerError || !mapViewer" class="space-y-3">
+            <UCard variant="soft" v-else-if="viewerError || !mapViewer" class="space-y-3">
               <p class="text-sm text-error">Unable to load the selected public map viewer.</p>
               <UButton variant="outline" @click="() => refreshViewer()">Try again</UButton>
             </UCard>

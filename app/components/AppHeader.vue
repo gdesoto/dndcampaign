@@ -120,8 +120,8 @@ const compactAccountMenuItems = computed(() => [
           <UIcon name="i-heroicons-sparkles" class="h-5 w-5" />
         </div>
         <div>
-          <div class="font-display text-lg tracking-[0.2em] uppercase">DM Vault</div>
-          <div class="theme-text-muted text-xs uppercase tracking-[0.4em]">Campaign Desk</div>
+          <div class="font-display text-lg tracking-[0.08em] uppercase">DM Vault</div>
+          <div class="theme-text-muted text-xs uppercase tracking-[0.08em]">Campaign Desk</div>
         </div>
       </NuxtLink>
     </template>

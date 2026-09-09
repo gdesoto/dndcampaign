@@ -820,7 +820,7 @@ const confirmStatusAction = async (action: 'reset' | 'abandon') => {
 
             <UCard>
               <template #header>
-                <h2 class="text-base font-semibold">Add note</h2>
+                <h2 class=" type-section">Add note</h2>
               </template>
               <div class="flex flex-wrap gap-2">
                 <UInput v-model="noteDraft" class="min-w-[16rem] flex-1" placeholder="Track a quick note" />
@@ -836,7 +836,7 @@ const confirmStatusAction = async (action: 'reset' | 'abandon') => {
 
             <UCard>
               <template #header>
-                <h2 class="text-base font-semibold">Active combatant</h2>
+                <h2 class=" type-section">Active combatant</h2>
               </template>
               <div v-if="activeCombatant" class="space-y-2">
                 <p class="text-sm font-medium">{{ activeCombatant.name }}</p>
@@ -889,7 +889,7 @@ const confirmStatusAction = async (action: 'reset' | 'abandon') => {
 
             <UCard>
               <template #header>
-                <h2 class="text-base font-semibold">Encounter settings</h2>
+                <h2 class=" type-section">Encounter settings</h2>
               </template>
               <div class="space-y-3">
                 <UFormField label="Linked session">
@@ -901,10 +901,11 @@ const confirmStatusAction = async (action: 'reset' | 'abandon') => {
                 </UFormField>
 
                 <UCard
-                  v-if="calendarConfig?.isEnabled"
+v-if="calendarConfig?.isEnabled"
+                  variant="soft"
                   :ui="{ body: 'space-y-3 p-3' }"
                 >
-                  <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Calendar link</p>
+                  <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Calendar link</p>
                   <div class="grid gap-2 sm:grid-cols-3">
                     <UFormField label="Year">
                       <UInput v-model.number="encounterSettings.calendarYear" type="number" />
@@ -939,7 +940,7 @@ const confirmStatusAction = async (action: 'reset' | 'abandon') => {
 
             <UCard>
               <template #header>
-                <h2 class="text-base font-semibold">Quest & milestone shortcuts</h2>
+                <h2 class=" type-section">Quest & milestone shortcuts</h2>
               </template>
               <div class="space-y-3">
                 <div class="flex flex-wrap gap-2">

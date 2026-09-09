@@ -13,7 +13,7 @@ const props = defineProps<{
 <template>
   <UCard>
     <template #header>
-      <h2 class="text-base font-semibold">Encounter summary</h2>
+      <h2 class=" type-section">Encounter summary</h2>
     </template>
 
     <div v-if="props.summary" class="grid gap-2 text-sm md:grid-cols-2">

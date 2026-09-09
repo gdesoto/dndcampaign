@@ -66,9 +66,18 @@ Guidelines:
 - Verify component config key names before introducing new `ui.*` overrides.
 - Prefer design tokens/semantic classes over repeated one-off utility combinations.
 - Buttons default to neutral outline. Explicitly use primary solid for the main save/create action; use neutral ghost or outline for supporting controls. Badges default to neutral unless they convey a semantic status.
-- Decoration, character, and design whimsy are welcome throughout DM Vault. Cards default to custom elevated backgrounds, themed borders with hover accents, and the automatic `dmvault-card` shimmer. Preserve reduced-motion support and readable content when adding decorative effects.
+- Decoration, character, and design whimsy are welcome throughout DM Vault. Main cards retain elevated backgrounds, themed frames, and the restrained `dmvault-card` top shimmer; supporting surfaces remain quieter. Preserve reduced-motion support and readable content when adding decorative effects.
 
 ## Styling and Tailwind
+
+### Typography and surface roles
+- Preserve Cinzel headings, Crimson Pro body copy, parchment, and character-sheet ornament.
+- Use `type-title` for page titles, `type-section` for section headings, `type-record` for record names, `type-label` for short engraved labels, and `type-metric` for key values. Their relative-unit scale lives in `main.css`.
+- Use `reading-copy` for narrative passages. Essential labels and metadata must be at least 12px; use restrained 0.08em tracking on short uppercase labels and tabular figures for comparable values.
+- Main content uses the default outlined `UCard`, with the themed frame and restrained top shimmer. Supporting panels (filters, metrics, tools) and nested cards use native `variant="soft"`; use `subtle` when a supporting panel needs a boundary. Reserve shadows for overlays.
+- Separate internal content with spacing or dividers before adding another card. Static containers do not brighten their entire border on hover.
+- Character stat boxes deliberately retain a printed-sheet structure: label, prominent score, framed modifier. Use `CharacterAbilityStat` for compact and full displays and `sheet-compartment` for matching inset combat fields. The outer sheet and ornamental section dividers carry the stronger decoration.
+
 - Use Tailwind utility classes consistently and keep class ordering readable.
 - Prefer shared patterns over copy-pasted class strings.
 - Avoid inline styles unless required for dynamic one-off values.

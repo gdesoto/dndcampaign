@@ -33,7 +33,7 @@ function formatUpdatedAt(dateStr: string) {
   <UCard>
     <template #header>
       <div>
-        <h2 class="font-display text-base font-semibold tracking-[0.06em] uppercase text-highlighted">
+        <h2 class="uppercase text-highlighted type-section">
           {{ title }}
         </h2>
         <p v-if="description" class="mt-0.5 text-sm text-muted">{{ description }}</p>

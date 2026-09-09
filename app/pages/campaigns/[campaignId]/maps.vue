@@ -369,7 +369,7 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
 
       <UCard v-if="!hasImportedMaps && canWriteContent">
       <template #header>
-        <h2 class="text-lg font-semibold">Import Azgaar export</h2>
+        <h2 class=" type-section">Import Azgaar export</h2>
       </template>
       <MapsImportForm
         :name="importName"
@@ -406,7 +406,7 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
       <UCard>
         <template #header>
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <h2 class="text-lg font-semibold">Map viewer</h2>
+            <h2 class=" type-section">Map viewer</h2>
             <div class="flex flex-wrap items-center gap-2">
               <UCheckbox
                 v-model="glossaryPointsOnly"
@@ -452,9 +452,9 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
         </div>
         <p v-else class="text-sm text-muted">Select a map to load the viewer.</p>
 
-        <UCard class="mt-4">
+        <UCard variant="soft" class="mt-4">
           <template #header>
-            <h3 class="text-base font-semibold">Selection</h3>
+            <h3 class=" type-record">Selection</h3>
           </template>
           <div class="space-y-2">
             <div class="flex flex-wrap gap-2">
@@ -495,7 +495,7 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
       <UCard>
         <template #header>
           <div class="flex items-center justify-between">
-            <h2 class="text-base font-semibold">Maps</h2>
+            <h2 class=" type-section">Maps</h2>
             <UBadge variant="subtle">{{ maps?.length || 0 }}</UBadge>
           </div>
         </template>
@@ -512,7 +512,7 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
               @click="selectedMapId = map.id"
             >
               <span class="block text-sm font-semibold">{{ map.name }}</span>
-              <span class="block text-[11px] uppercase tracking-[0.2em] text-dimmed">
+              <span class="block text-xs uppercase tracking-[0.08em] text-dimmed">
                 v{{ map.importVersion }} · {{ map.status }}
               </span>
             </button>
@@ -556,7 +556,7 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
       <template #content>
         <UCard>
           <template #header>
-            <h3 class="text-base font-semibold">Map settings</h3>
+            <h3 class=" type-record">Map settings</h3>
           </template>
           <div v-if="selectedMap" class="space-y-3">
             <UFormField label="Map name">
@@ -601,7 +601,7 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
       <template #content>
         <UCard>
           <template #header>
-            <h3 class="text-base font-semibold">Re-import / update</h3>
+            <h3 class=" type-record">Re-import / update</h3>
           </template>
           <div class="space-y-3">
             <UFileUpload
@@ -640,7 +640,7 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
       <template #content>
         <UCard>
           <template #header>
-            <h3 class="text-lg font-semibold">Import Azgaar export</h3>
+            <h3 class=" type-record">Import Azgaar export</h3>
           </template>
           <MapsImportForm
             :name="importName"
@@ -667,7 +667,7 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
       <template #content>
         <UCard>
           <template #header>
-            <h3 class="text-lg font-semibold">Apply re-import strategy</h3>
+            <h3 class=" type-record">Apply re-import strategy</h3>
           </template>
           <div v-if="reimportPreview" class="space-y-3">
             <div class="grid gap-2 sm:grid-cols-2">

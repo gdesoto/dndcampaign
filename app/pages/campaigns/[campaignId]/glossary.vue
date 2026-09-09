@@ -197,7 +197,7 @@ const sessionActions = (entry: GlossaryEntry, link: GlossaryLink): RecordAction[
       </template>
 
       <template #filters>
-        <UCard>
+        <UCard variant="soft">
           <SharedFilterToolbar label="Filter glossary">
             <UFormField label="Search glossary" name="glossarySearch">
               <UInput v-model="search" placeholder="Name, alias, or description" icon="i-lucide-search" class="w-full" />
@@ -237,8 +237,8 @@ const sessionActions = (entry: GlossaryEntry, link: GlossaryLink): RecordAction[
             <template #header>
               <div class="flex items-center justify-between gap-3">
                 <div>
-                  <p class="text-xs uppercase tracking-[0.2em] text-dimmed">{{ entry.type }}</p>
-                  <h3 class="text-lg font-semibold">{{ entry.name }}</h3>
+                  <p class="text-xs uppercase tracking-[0.08em] text-dimmed">{{ entry.type }}</p>
+                  <h3 class=" type-record">{{ entry.name }}</h3>
                   <p v-if="entry.aliases" class="text-xs text-muted">Aliases: {{ entry.aliases }}</p>
                 </div>
                 <SharedActionMenu :name="entry.name" :items="entryActions(entry)" />
@@ -246,7 +246,7 @@ const sessionActions = (entry: GlossaryEntry, link: GlossaryLink): RecordAction[
             </template>
             <p class="text-sm whitespace-pre-line text-default">{{ entry.description }}</p>
             <div class="mt-4 space-y-2">
-              <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Linked sessions</p>
+              <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Linked sessions</p>
               <div v-if="entry.sessions.length" class="flex flex-wrap gap-2">
                 <div v-for="link in entry.sessions" :key="link.id" class="flex items-center gap-1">
                   <NuxtLink :to="`/campaigns/${campaignId}/sessions/${link.sessionId}`" class="text-sm text-primary hover:underline">{{ link.session.title }}</NuxtLink>

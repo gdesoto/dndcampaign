@@ -637,7 +637,7 @@ onBeforeUnmount(() => {
       }"
     >
       <p class="font-semibold text-default">{{ hoverState.name }}</p>
-      <p class="uppercase tracking-[0.2em] text-dimmed">{{ hoverState.type }}</p>
+      <p class="uppercase tracking-[0.08em] text-dimmed">{{ hoverState.type }}</p>
     </div>
     <div
       v-if="!isReady && !mapError"

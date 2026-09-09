@@ -14,7 +14,7 @@ const emit = defineEmits<{
 <template>
   <UCard>
     <template #header>
-      <h2 class="text-base font-semibold">Template picker</h2>
+      <h2 class=" type-section">Template picker</h2>
     </template>
 
     <div v-if="props.templates.length" class="space-y-2">

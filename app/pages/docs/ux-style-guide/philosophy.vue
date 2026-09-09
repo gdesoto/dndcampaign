@@ -25,8 +25,8 @@ const tocLinks: NavigationMenuItem[] = [
           <UCard v-for="principle in principles" :key="principle.title">
             <template #header>
               <div class="space-y-1">
-                <p class="text-[11px] uppercase tracking-[0.18em] text-[var(--ui-primary)]/80">{{ principle.source }}</p>
-                <h2 class="font-display text-lg tracking-[0.03em] text-[var(--ui-text-highlighted)]">{{ principle.title }}</h2>
+                <p class="text-xs uppercase tracking-[0.08em] text-[var(--ui-primary)]/80">{{ principle.source }}</p>
+                <h2 class="text-[var(--ui-text-highlighted)] type-section">{{ principle.title }}</h2>
               </div>
             </template>
 
@@ -42,7 +42,7 @@ const tocLinks: NavigationMenuItem[] = [
         <UCard class="self-start">
           <template #header>
             <div class="space-y-1">
-              <h2 class="font-display text-xl tracking-[0.04em] text-[var(--ui-text-highlighted)]">Demonstration: philosophy in one screen</h2>
+              <h2 class="text-[var(--ui-text-highlighted)] type-section">Demonstration: philosophy in one screen</h2>
               <p class="text-sm text-[var(--ui-text-muted)]">A campaign summary that makes urgency, tone, and the next move obvious immediately.</p>
             </div>
           </template>
@@ -50,8 +50,8 @@ const tocLinks: NavigationMenuItem[] = [
           <div class="space-y-4">
             <div class="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg-accented)] p-5">
               <div class="space-y-2">
-                <p class="text-xs uppercase tracking-[0.18em] text-[var(--ui-text-dimmed)]">Campaign overview preview</p>
-                <h3 class="font-display text-xl tracking-[0.04em] text-[var(--ui-text-highlighted)]">Emberfall: Bells Beneath the Archive</h3>
+                <p class="text-xs uppercase tracking-[0.08em] text-[var(--ui-text-dimmed)]">Campaign overview preview</p>
+                <h3 class="text-[var(--ui-text-highlighted)] type-record">Emberfall: Bells Beneath the Archive</h3>
                 <div class="flex flex-wrap gap-2">
                   <UBadge color="warning" variant="outline" label="Session tonight" />
                   <UBadge color="info" variant="outline" label="1 blocked quest" />
@@ -67,11 +67,12 @@ const tocLinks: NavigationMenuItem[] = [
 
             <div class="grid gap-3 lg:grid-cols-3">
               <UCard
-                v-for="card in dashboardPreviewCards"
+v-for="card in dashboardPreviewCards"
                 :key="card.title"
+                variant="soft"
                 class="self-start"
               >
-                <p class="text-[11px] uppercase tracking-[0.18em] text-[var(--ui-primary)]/75">{{ card.eyebrow }}</p>
+                <p class="text-xs uppercase tracking-[0.08em] text-[var(--ui-primary)]/75">{{ card.eyebrow }}</p>
                 <p class="mt-2 font-display text-base text-[var(--ui-text-highlighted)]">{{ card.title }}</p>
                 <p class="mt-2 text-sm leading-6 text-[var(--ui-text-muted)]">{{ card.detail }}</p>
               </UCard>
@@ -85,7 +86,7 @@ const tocLinks: NavigationMenuItem[] = [
       <UPageAside>
         <UCard>
           <template #header>
-            <h3 class="font-display text-xs uppercase tracking-[0.1em] text-[var(--ui-text-dimmed)]">On This Page</h3>
+            <h3 class="uppercase text-[var(--ui-text-dimmed)] type-record">On This Page</h3>
           </template>
 
           <UNavigationMenu :items="tocLinks" orientation="vertical" :ui="{ linkLabel: 'font-display tracking-[0.08em] uppercase text-[11px]' }" />

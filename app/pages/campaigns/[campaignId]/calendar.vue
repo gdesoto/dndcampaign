@@ -570,7 +570,7 @@ const removeRange = async () => {
 
       <UCard v-if="!isCalendarEnabled">
         <template #header>
-          <h2 class="text-lg font-semibold">Fantasy calendar is disabled</h2>
+          <h2 class=" type-section">Fantasy calendar is disabled</h2>
         </template>
         <p class="text-sm text-muted">
           Enable and configure the calendar from Settings &gt; General to start tracking in-world dates.
@@ -585,7 +585,7 @@ const removeRange = async () => {
           <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 class="text-lg font-semibold">{{ yearMonthLabel }}</h2>
+                <h2 class=" type-section">{{ yearMonthLabel }}</h2>
                 <p class="text-sm text-muted">Current in-world date: {{ currentDateLabel }}</p>
               </div>
               <div class="flex items-center gap-2">
@@ -599,7 +599,7 @@ const removeRange = async () => {
             <div
               v-for="(weekday, index) in weekdayNames"
               :key="`weekday-label-${index}`"
-              class="rounded-md border border-default bg-muted/30 px-2 py-1 text-xs font-medium uppercase tracking-wide text-muted"
+              class="rounded-md border border-default bg-muted/30 px-2 py-1 text-xs font-medium uppercase tracking-[0.08em] text-muted"
             >
               {{ weekday }}
             </div>
@@ -621,7 +621,7 @@ const removeRange = async () => {
                 @click="selectedDay = cellDay"
               >
                 <div class="font-semibold">{{ cellDay }}</div>
-                <div class="mt-1 flex flex-col items-start gap-1 text-[11px]">
+                <div class="mt-1 flex flex-col items-start gap-1 text-xs">
                   <div
                     v-if="daySessionMap.get(cellDay)?.length"
                     class="flex flex-wrap items-center gap-1"
@@ -653,7 +653,7 @@ const removeRange = async () => {
           <UCard>
             <template #header>
               <div class="flex items-center justify-between gap-2">
-                <h3 class="font-semibold">Events: day {{ selectedDay }}</h3>
+                <h3 class=" type-record">Events: day {{ selectedDay }}</h3>
                 <UButton
                   v-if="canEditCalendar"
                   size="xs"
@@ -678,7 +678,7 @@ const removeRange = async () => {
               >
                 <div class="flex items-start justify-between gap-2">
                   <div>
-                    <p class="text-xs uppercase tracking-wide text-muted">Session range</p>
+                    <p class="text-xs uppercase tracking-[0.08em] text-muted">Session range</p>
                     <p class="text-sm font-semibold">{{ range.session?.title || `Session ${range.sessionId}` }}</p>
                   </div>
                   <UButton size="xs" variant="outline" @click="jumpToRangeStart(range)">Go to start</UButton>
@@ -704,7 +704,7 @@ const removeRange = async () => {
 
           <UCard>
             <template #header>
-              <h3 class="font-semibold">Current date</h3>
+              <h3 class=" type-record">Current date</h3>
             </template>
 
             <div class="space-y-3">
@@ -749,7 +749,7 @@ const removeRange = async () => {
 
       <UCard v-if="isCalendarEnabled" class="mt-4">
         <template #header>
-          <h3 class="font-semibold">Session ranges</h3>
+          <h3 class=" type-record">Session ranges</h3>
         </template>
 
         <div class="grid gap-4 xl:grid-cols-[1.1fr_1fr]">

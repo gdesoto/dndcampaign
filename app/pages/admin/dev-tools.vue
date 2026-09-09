@@ -166,8 +166,8 @@ const runN8nTest = async () => {
           <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Developer panel</p>
-                <h2 class="mt-1 text-lg font-semibold">Server runtime config</h2>
+                <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Developer panel</p>
+                <h2 class="mt-1 type-section">Server runtime config</h2>
               </div>
               <UButton size="sm" variant="outline" :loading="runtimeConfigPending" @click="() => refreshRuntimeConfig()">
                 Refresh
@@ -198,8 +198,8 @@ const runN8nTest = async () => {
         <UCard>
           <template #header>
             <div>
-              <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Developer panel</p>
-              <h2 class="mt-1 text-lg font-semibold">n8n webhook test</h2>
+              <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Developer panel</p>
+              <h2 class="mt-1 type-section">n8n webhook test</h2>
             </div>
           </template>
           <div class="space-y-4">
@@ -251,8 +251,8 @@ id="field-admin-dev-tools-vue-2"
         <UCard>
           <template #header>
             <div>
-              <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Developer panel</p>
-              <h2 class="mt-1 text-lg font-semibold">Character migration</h2>
+              <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Developer panel</p>
+              <h2 class="mt-1 type-section">Character migration</h2>
             </div>
           </template>
           <div class="space-y-4">

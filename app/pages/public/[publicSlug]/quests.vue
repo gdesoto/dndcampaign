@@ -71,7 +71,7 @@ const getExpirationLabel = (quest: PublicQuest) => {
 
         <UCard>
           <template #header>
-            <h2 class="text-lg font-semibold">Quests</h2>
+            <h2 class=" type-section">Quests</h2>
           </template>
 
           <div v-if="pending" class="space-y-2">

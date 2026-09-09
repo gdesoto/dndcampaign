@@ -45,7 +45,7 @@ const formatSessionSummaryDate = (session: SessionSummary) =>
     <UCard>
       <template #header>
         <div class="flex items-center justify-between">
-          <h3 class="text-sm font-semibold">Recent sessions</h3>
+          <h3 class=" type-record">Recent sessions</h3>
           <UButton size="xs" variant="outline" :to="`/campaigns/${campaignId}/sessions`">View all</UButton>
         </div>
       </template>
@@ -70,7 +70,7 @@ const formatSessionSummaryDate = (session: SessionSummary) =>
     <UCard>
       <template #header>
         <div class="flex items-center justify-between">
-          <h3 class="text-sm font-semibold">Active quests</h3>
+          <h3 class=" type-record">Active quests</h3>
           <UButton size="xs" variant="outline" :to="`/campaigns/${campaignId}/quests`">View all</UButton>
         </div>
       </template>
@@ -95,7 +95,7 @@ const formatSessionSummaryDate = (session: SessionSummary) =>
     <UCard>
       <template #header>
         <div class="flex items-center justify-between">
-          <h3 class="text-sm font-semibold">Milestones</h3>
+          <h3 class=" type-record">Milestones</h3>
           <UButton size="xs" variant="outline" :to="`/campaigns/${campaignId}/milestones`">View all</UButton>
         </div>
       </template>

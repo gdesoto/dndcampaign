@@ -21,6 +21,11 @@
   --font-sans: "Crimson Pro", Georgia, serif;
   --font-display: "Cinzel", serif;
   --font-mono: "JetBrains Mono", monospace;
+  --text-title: 1.5rem;
+  --text-section: 1.125rem;
+  --text-record: 1rem;
+  --text-label: 0.75rem;
+  --text-metric: 1.75rem;
 
   --color-primary-50: #fdf6e3;
   --color-primary-100: #faeac0;
@@ -207,7 +212,77 @@ body {
   background: var(--theme-bg);
   color: var(--ui-text);
   min-height: 100vh;
+  font-size: 1rem;
+  line-height: 1.5;
 }
+
+/* Shared type roles retain the engraved headings and readable book face. */
+@utility type-title {
+  font-family: var(--font-display);
+  font-size: var(--text-title);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  color: var(--ui-text-highlighted);
+  overflow-wrap: anywhere;
+}
+@utility type-section {
+  font-family: var(--font-display);
+  font-size: var(--text-section);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  color: var(--ui-text-highlighted);
+}
+@utility type-record {
+  font-family: var(--font-display);
+  font-size: var(--text-record);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  color: var(--ui-text-highlighted);
+}
+@utility type-label {
+  font-family: var(--font-display);
+  font-size: var(--text-label);
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ui-text-muted);
+}
+@utility type-metric {
+  font-family: var(--font-display);
+  font-size: var(--text-metric);
+  font-weight: 600;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+@utility sheet-compartment {
+  border: 1px solid var(--ui-border-muted);
+  border-radius: 0.375rem;
+  background: color-mix(in srgb, var(--ui-bg-muted) 55%, transparent);
+}
+@utility reading-copy {
+  font-size: 1rem;
+  line-height: 1.65;
+  overflow-wrap: break-word;
+}
+
+/* Rendered journal/editor prose shares the book-text rhythm in both themes. */
+.prose {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--ui-text);
+}
+.prose :where(h1, h2, h3) {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ui-text-highlighted);
+}
+.prose :where(h1, h2) { font-size: var(--text-section); }
+.prose :where(h3) { font-size: var(--text-record); }
 
 .font-display {
   font-family: var(--theme-font-display);

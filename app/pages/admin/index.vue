@@ -33,15 +33,15 @@ const adminBreadcrumbItems = [{ label: 'Admin' }]
       <div class="space-y-6">
         <div class="grid gap-4 md:grid-cols-3">
           <UCard>
-            <p class="text-xs uppercase tracking-wide text-muted">Total users</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-muted">Total users</p>
             <p class="mt-2 text-2xl font-semibold">{{ overview?.totals?.users ?? '-' }}</p>
           </UCard>
           <UCard>
-            <p class="text-xs uppercase tracking-wide text-muted">Total campaigns</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-muted">Total campaigns</p>
             <p class="mt-2 text-2xl font-semibold">{{ overview?.totals?.campaigns ?? '-' }}</p>
           </UCard>
           <UCard>
-            <p class="text-xs uppercase tracking-wide text-muted">DAU / WAU</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-muted">DAU / WAU</p>
             <p class="mt-2 text-2xl font-semibold">
               {{ overview?.totals?.dau ?? '-' }} / {{ overview?.totals?.wau ?? '-' }}
             </p>
@@ -50,7 +50,7 @@ const adminBreadcrumbItems = [{ label: 'Admin' }]
 
         <UCard>
           <template #header>
-            <h2 class="text-lg font-semibold">Admin areas</h2>
+            <h2 class=" type-section">Admin areas</h2>
           </template>
 
           <div class="grid gap-3 md:grid-cols-4">

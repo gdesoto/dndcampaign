@@ -9,8 +9,8 @@ const valueLabel = () => `${current.value} of ${maximum.value} hit points`
 <template>
   <div class="space-y-2">
     <div class="flex items-end justify-between gap-2">
-      <p class="font-display text-[10px] uppercase tracking-[0.2em] text-muted">Hit Points</p>
-      <p class="font-display text-sm text-highlighted">{{ current ?? '—' }}<template v-if="maximum !== undefined"> / {{ maximum }}</template></p>
+      <p class="type-label">Hit Points</p>
+      <p class="font-display text-xl font-semibold tabular-nums text-highlighted">{{ current ?? '—' }}<template v-if="maximum !== undefined"> / {{ maximum }}</template></p>
     </div>
     <UProgress v-if="proportion !== undefined" :model-value="proportion" :max="maximum" color="success" size="sm" :aria-label="`Hit points for ${name}`" :get-value-text="valueLabel" />
   </div>

@@ -29,8 +29,8 @@ const actions = computed<RecordAction[]>(() => [
   <UCard>
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Encounter runtime</p>
-        <h1 class="text-2xl font-semibold">{{ props.name }}</h1>
+        <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Encounter runtime</p>
+        <h1 class=" type-title">{{ props.name }}</h1>
         <p class="text-sm text-muted">Status: {{ props.status }} · Round {{ props.round }}</p>
       </div>
 

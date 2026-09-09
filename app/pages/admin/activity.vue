@@ -93,9 +93,9 @@ const adminBreadcrumbItems = [
 
     <UMain>
       <div class="space-y-6">
-        <UCard>
+        <UCard variant="soft">
           <template #header>
-            <h2 class="text-lg font-semibold">Filter activity</h2>
+            <h2 class=" type-section">Filter activity</h2>
           </template>
 
           <SharedFilterToolbar label="Filter activity">
@@ -132,7 +132,7 @@ const adminBreadcrumbItems = [
         <UCard>
           <template #header>
             <div class="flex items-center justify-between gap-3">
-              <h2 class="text-lg font-semibold">Entries</h2>
+              <h2 class=" type-section">Entries</h2>
               <UBadge color="neutral" variant="subtle">{{ total }} total</UBadge>
             </div>
           </template>

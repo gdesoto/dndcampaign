@@ -269,7 +269,7 @@ const openFullPlayer = () => {
     <UCard class="pointer-events-auto">
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Now playing</p>
+          <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Now playing</p>
           <p class="font-semibold">{{ state.source?.title }}</p>
           <p v-if="state.source?.subtitle" class="text-xs text-muted">{{ state.source?.subtitle }}</p>
         </div>
@@ -303,7 +303,7 @@ const openFullPlayer = () => {
       <div class="pointer-events-auto space-y-4 p-4">
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Player</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Player</p>
             <p class="text-lg font-semibold">{{ state.source?.title || 'Media player' }}</p>
             <p v-if="state.source?.subtitle" class="text-xs text-muted">{{ state.source?.subtitle }}</p>
           </div>

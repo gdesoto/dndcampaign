@@ -49,7 +49,7 @@ const selectedSuggestionJobIdModel = computed({
   <UCard>
     <template #header>
       <div>
-        <h2 class="text-lg font-semibold">Suggestion generation</h2>
+        <h2 class=" type-section">Suggestion generation</h2>
         <p class="text-sm text-muted">
           Generate and review suggestions from the current session summary.
         </p>

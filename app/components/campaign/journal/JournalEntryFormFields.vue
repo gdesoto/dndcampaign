@@ -130,7 +130,7 @@ const emit = defineEmits<{
       v-if="extractedCustomTags.length || extractedGlossaryMentions.length"
       class="space-y-2"
     >
-      <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Extracted tags</p>
+      <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Extracted tags</p>
       <div class="flex flex-wrap gap-2">
         <UBadge v-for="tag in extractedCustomTags" :key="`custom-${tag}`" color="neutral" variant="soft">
           #{{ tag }}

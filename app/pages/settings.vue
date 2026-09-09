@@ -185,8 +185,8 @@ useUnsavedChanges(() => Boolean(profile.value) && (profileForm.name !== previous
           <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p class="text-xs uppercase tracking-[0.3em] text-dimmed">Profile</p>
-                <h2 class="mt-1 text-lg font-semibold">Account profile</h2>
+                <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Profile</p>
+                <h2 class="mt-1 type-section">Account profile</h2>
               </div>
               <UBadge color="neutral" variant="subtle">{{ profile?.systemRole || 'USER' }}</UBadge>
             </div>
@@ -215,12 +215,12 @@ useUnsavedChanges(() => Boolean(profile.value) && (profileForm.name !== previous
 
         <UCard>
           <template #header>
-            <h2 class="text-lg font-semibold">Security</h2>
+            <h2 class=" type-section">Security</h2>
           </template>
 
           <div class="space-y-6">
             <UForm :state="emailForm" :schema="emailSchema" :disabled="accountBusy" class="space-y-3" @submit="saveEmail">
-              <h3 class="text-sm font-semibold">Change email</h3>
+              <h3 class=" type-record">Change email</h3>
               <div class="grid gap-4 sm:grid-cols-2">
                 <UFormField label="New email" name="newEmail"><UInput v-model="emailForm.newEmail" type="email" placeholder="you@example.com"  /></UFormField>
                 <UFormField label="Current password" name="password"><UInput v-model="emailForm.password" type="password" placeholder="••••••••••"  /></UFormField>
@@ -235,7 +235,7 @@ useUnsavedChanges(() => Boolean(profile.value) && (profileForm.name !== previous
             <USeparator />
 
             <UForm :state="passwordForm" :schema="passwordSchema" :disabled="accountBusy" class="space-y-3" @submit="savePassword">
-              <h3 class="text-sm font-semibold">Change password</h3>
+              <h3 class=" type-record">Change password</h3>
               <div class="grid gap-4 sm:grid-cols-2">
                 <UFormField label="Current password" name="currentPassword"><UInput
 id="field-settings-vue-5"
@@ -257,7 +257,7 @@ id="field-settings-vue-5"
         <UCard>
           <template #header>
             <div class="flex flex-wrap items-center justify-between gap-3">
-              <h2 class="text-lg font-semibold">Active sessions</h2>
+              <h2 class=" type-section">Active sessions</h2>
               <UButton
                 size="sm"
                 variant="outline"

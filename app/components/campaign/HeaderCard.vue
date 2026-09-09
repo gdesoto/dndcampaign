@@ -10,7 +10,7 @@ defineProps<{
   <UCard>
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div class="min-w-0 flex-1 space-y-3">
-        <p class="font-display text-xs uppercase tracking-[0.3em] text-dimmed">
+        <p class="font-display text-xs uppercase tracking-[0.08em] text-dimmed">
           <span>{{ system }}</span>
           <span v-if="dungeonMasterName" class="mx-2 text-muted">•</span>
           <span v-if="dungeonMasterName">DM: {{ dungeonMasterName }}</span>

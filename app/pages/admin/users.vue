@@ -143,9 +143,9 @@ const adminBreadcrumbItems = [
 
     <UMain>
       <div class="space-y-6">
-        <UCard>
+        <UCard variant="soft">
           <template #header>
-            <h2 class="text-lg font-semibold">Search users</h2>
+            <h2 class=" type-section">Search users</h2>
           </template>
 
           <SharedFilterToolbar label="Filter users">
@@ -183,7 +183,7 @@ const adminBreadcrumbItems = [
         <UCard>
           <template #header>
             <div class="flex items-center justify-between gap-3">
-              <h2 class="text-lg font-semibold">Users</h2>
+              <h2 class=" type-section">Users</h2>
               <UBadge color="neutral" variant="subtle">{{ usersData?.total || 0 }} total</UBadge>
             </div>
           </template>
@@ -209,7 +209,7 @@ const adminBreadcrumbItems = [
 
         <UCard id="record-editor">
           <template #header>
-            <h2 tabindex="-1" class="text-lg font-semibold">Update user</h2>
+            <h2 tabindex="-1" class=" type-section">Update user</h2>
           </template>
 
           <div class="grid gap-3 md:grid-cols-4">

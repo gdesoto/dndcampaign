@@ -34,8 +34,8 @@ const onSubmit = async () => {
 <template>
   <div class="mx-auto flex max-w-3xl flex-col gap-8">
     <div>
-      <p class="text-xs uppercase tracking-[0.3em] text-muted">Welcome back</p>
-      <h1 class="mt-3 text-3xl font-semibold">Sign in to your campaign desk</h1>
+      <p class="text-xs uppercase tracking-[0.08em] text-muted">Welcome back</p>
+      <h1 class="mt-3 type-title">Sign in to your campaign desk</h1>
       <p class="mt-2 text-sm text-muted">
         Use your account credentials to access your campaigns.
       </p>

@@ -59,16 +59,16 @@ const alertActions: ButtonProps[] = [
       <UCard>
         <template #header>
           <div class="space-y-1">
-            <h2 class="font-display text-xl tracking-[0.03em] text-highlighted">Quest tracker cards</h2>
+            <h2 class="text-highlighted type-section">Quest tracker cards</h2>
             <p class="text-sm text-muted">{{ trackerExamples[0]?.summary }}</p>
           </div>
         </template>
 
         <div class="grid gap-3 lg:grid-cols-2">
-          <UCard class="self-start">
+          <UCard variant="soft" class="self-start">
             <template #header>
               <div class="flex items-center justify-between gap-3">
-                <h3 class="font-display text-base text-highlighted">Recover the Moonstone Lens</h3>
+                <h3 class="text-highlighted type-record">Recover the Moonstone Lens</h3>
                 <UBadge color="success" variant="outline" label="Active" />
               </div>
             </template>
@@ -79,15 +79,15 @@ const alertActions: ButtonProps[] = [
           </UCard>
 
           <div class="grid gap-3">
-            <UCard class="self-start">
+            <UCard variant="soft" class="self-start">
               <template #header>
-                <h3 class="font-display text-base text-highlighted">Current Arc</h3>
+                <h3 class="text-highlighted type-record">Current Arc</h3>
               </template>
               <p class="text-sm leading-6 text-muted">The bells wake what the city buried.</p>
             </UCard>
-            <UCard class="self-start">
+            <UCard variant="soft" class="self-start">
               <template #header>
-                <h3 class="font-display text-base text-highlighted">Session Prep</h3>
+                <h3 class="text-highlighted type-record">Session Prep</h3>
               </template>
               <ul class="space-y-2 text-sm leading-6 text-muted">
                 <li>Flooded chapel reveal</li>
@@ -102,19 +102,19 @@ const alertActions: ButtonProps[] = [
       <UCard>
         <template #header>
           <div class="space-y-1">
-            <h2 class="font-display text-xl tracking-[0.03em] text-highlighted">NPC directory cards</h2>
+            <h2 class="text-highlighted type-section">NPC directory cards</h2>
             <p class="text-sm text-muted">{{ trackerExamples[1]?.summary }}</p>
           </div>
         </template>
 
         <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          <UCard v-for="npc in npcExamples" :key="npc.name" class="self-start">
+          <UCard v-for="npc in npcExamples" :key="npc.name" variant="soft" class="self-start">
             <div class="flex items-start justify-between gap-3">
               <div class="flex items-start gap-3">
                 <UAvatar :icon="avatarIconForNpc(npc.name)" :alt="npc.name" size="md" />
                 <div class="space-y-1">
-                  <h3 class="font-display text-base text-highlighted">{{ npc.name }}</h3>
-                  <p class="text-[11px] uppercase tracking-[0.18em] text-dimmed">{{ npc.faction }}</p>
+                  <h3 class="text-highlighted type-record">{{ npc.name }}</h3>
+                  <p class="text-xs uppercase tracking-[0.08em] text-dimmed">{{ npc.faction }}</p>
                 </div>
               </div>
               <UBadge color="info" variant="outline" :label="npc.status" />
@@ -136,7 +136,7 @@ const alertActions: ButtonProps[] = [
       <UCard>
         <template #header>
           <div class="space-y-1">
-            <h2 class="font-display text-xl tracking-[0.03em] text-highlighted">UAvatar and UAvatarGroup</h2>
+            <h2 class="text-highlighted type-section">UAvatar and UAvatarGroup</h2>
             <p class="text-sm text-muted">
               Use Twemoji icon avatars for fast-recognition placeholders in party strips, ownership rows, and NPC cluster views.
             </p>
@@ -144,9 +144,9 @@ const alertActions: ButtonProps[] = [
         </template>
 
         <div class="grid gap-4 lg:grid-cols-3">
-          <UCard class="self-start">
+          <UCard variant="soft" class="self-start">
             <template #header>
-              <h3 class="font-display text-base text-highlighted">UAvatar variants</h3>
+              <h3 class="text-highlighted type-record">UAvatar variants</h3>
             </template>
 
             <div class="space-y-4">
@@ -165,9 +165,9 @@ const alertActions: ButtonProps[] = [
             </div>
           </UCard>
 
-          <UCard class="self-start">
+          <UCard variant="soft" class="self-start">
             <template #header>
-              <h3 class="font-display text-base text-highlighted">UAvatarGroup party strip</h3>
+              <h3 class="text-highlighted type-record">UAvatarGroup party strip</h3>
             </template>
 
             <div class="space-y-4">
@@ -183,9 +183,9 @@ const alertActions: ButtonProps[] = [
             </div>
           </UCard>
 
-          <UCard class="self-start">
+          <UCard variant="soft" class="self-start">
             <template #header>
-              <h3 class="font-display text-base text-highlighted">UAvatarGroup overflow</h3>
+              <h3 class="text-highlighted type-record">UAvatarGroup overflow</h3>
             </template>
 
             <div class="space-y-4">
@@ -213,7 +213,7 @@ const alertActions: ButtonProps[] = [
 
       <UCard>
         <template #header>
-          <h2 class="font-display text-xl tracking-[0.03em] text-highlighted">UModal: short focused workflows</h2>
+          <h2 class="text-highlighted type-section">UModal: short focused workflows</h2>
         </template>
 
         <div class="space-y-4">
@@ -240,15 +240,15 @@ const alertActions: ButtonProps[] = [
 
       <UCard>
         <template #header>
-          <h2 class="font-display text-xl tracking-[0.03em] text-highlighted">UTabs and UTable</h2>
+          <h2 class="text-highlighted type-section">UTabs and UTable</h2>
         </template>
 
         <div class="space-y-4">
           <UTabs v-model="activeSessionTab" :items="sessionTabs" :content="false" class="w-full" />
 
-          <UCard class="self-start">
+          <UCard variant="soft" class="self-start">
             <template #header>
-              <h3 class="font-display text-base text-highlighted">{{ activeSessionPanel.title }}</h3>
+              <h3 class="text-highlighted type-record">{{ activeSessionPanel.title }}</h3>
             </template>
 
             <p class="text-sm leading-6 text-muted">{{ activeSessionPanel.description }}</p>
@@ -263,12 +263,12 @@ const alertActions: ButtonProps[] = [
 
       <UCard>
         <template #header>
-          <h2 class="font-display text-xl tracking-[0.03em] text-highlighted">UButton options for campaign flows</h2>
+          <h2 class="text-highlighted type-section">UButton options for campaign flows</h2>
         </template>
 
         <div class="space-y-5">
           <div class="space-y-2">
-            <p class="text-xs uppercase tracking-[0.16em] text-dimmed">Variants</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Variants</p>
             <div class="flex flex-wrap gap-2">
               <UButton v-for="variant in buttonVariants" :key="`button-variant-${variant}`" :variant="variant" color="primary">
                 {{ labelize(variant) }}
@@ -277,7 +277,7 @@ const alertActions: ButtonProps[] = [
           </div>
 
           <div class="space-y-2">
-            <p class="text-xs uppercase tracking-[0.16em] text-dimmed">Semantic colors</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Semantic colors</p>
             <div class="flex flex-wrap gap-2">
               <UButton
                 v-for="color in semanticColors"
@@ -291,7 +291,7 @@ const alertActions: ButtonProps[] = [
           </div>
 
           <div class="space-y-2">
-            <p class="text-xs uppercase tracking-[0.16em] text-dimmed">Sizes</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Sizes</p>
             <div class="flex flex-wrap items-center gap-2">
               <UButton
                 v-for="size in controlSizes"
@@ -305,7 +305,7 @@ const alertActions: ButtonProps[] = [
           </div>
 
           <div class="space-y-2">
-            <p class="text-xs uppercase tracking-[0.16em] text-dimmed">States and compositions</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-dimmed">States and compositions</p>
             <div class="flex flex-wrap items-center gap-2">
               <UButton loading loading-auto>Saving note</UButton>
               <UButton disabled variant="outline">Disabled action</UButton>
@@ -319,7 +319,7 @@ const alertActions: ButtonProps[] = [
 
       <UCard class="self-start">
         <template #header>
-          <h2 class="font-display text-xl tracking-[0.03em] text-highlighted">Fast note capture</h2>
+          <h2 class="text-highlighted type-section">Fast note capture</h2>
         </template>
         <div class="space-y-3">
           <UInput placeholder="Suspicion about the harbor ledger" />
@@ -333,12 +333,12 @@ const alertActions: ButtonProps[] = [
 
       <UCard>
         <template #header>
-          <h2 class="font-display text-xl tracking-[0.03em] text-highlighted">UBadge options for status signaling</h2>
+          <h2 class="text-highlighted type-section">UBadge options for status signaling</h2>
         </template>
 
         <div class="space-y-5">
           <div class="space-y-2">
-            <p class="text-xs uppercase tracking-[0.16em] text-dimmed">Variants</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Variants</p>
             <div class="flex flex-wrap gap-2">
               <UBadge
                 v-for="variant in badgeVariants"
@@ -351,7 +351,7 @@ const alertActions: ButtonProps[] = [
           </div>
 
           <div class="space-y-2">
-            <p class="text-xs uppercase tracking-[0.16em] text-dimmed">Semantic colors</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Semantic colors</p>
             <div class="flex flex-wrap gap-2">
               <UBadge
                 v-for="color in semanticColors"
@@ -364,7 +364,7 @@ const alertActions: ButtonProps[] = [
           </div>
 
           <div class="space-y-2">
-            <p class="text-xs uppercase tracking-[0.16em] text-dimmed">Sizes and icon/avatar options</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Sizes and icon/avatar options</p>
             <div class="flex flex-wrap items-center gap-2">
               <UBadge v-for="size in controlSizes" :key="`badge-size-${size}`" :size="size" color="warning" label="Urgent" />
             </div>
@@ -380,7 +380,7 @@ const alertActions: ButtonProps[] = [
 
       <UCard>
         <template #header>
-          <h2 class="font-display text-xl tracking-[0.03em] text-highlighted">UAlert options for campaign feedback</h2>
+          <h2 class="text-highlighted type-section">UAlert options for campaign feedback</h2>
         </template>
 
         <div class="space-y-4">
@@ -421,32 +421,32 @@ const alertActions: ButtonProps[] = [
 
       <UCard>
         <template #header>
-          <h2 class="font-display text-xl tracking-[0.03em] text-highlighted">Character quick-reference and notes</h2>
+          <h2 class="text-highlighted type-section">Character quick-reference and notes</h2>
         </template>
 
         <div class="grid gap-4 lg:grid-cols-[1fr_0.95fr] lg:items-start">
-          <UCard class="self-start">
+          <UCard variant="soft" class="self-start">
             <template #header>
-              <h3 class="font-display text-lg text-highlighted">Character quick-reference</h3>
+              <h3 class="text-highlighted type-record">Character quick-reference</h3>
             </template>
 
             <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <div v-for="stat in characterStats" :key="stat.label" class="rounded-lg border border-default bg-accented p-3">
-                <p class="text-[11px] uppercase tracking-[0.18em] text-dimmed">{{ stat.label }}</p>
+                <p class="text-xs uppercase tracking-[0.08em] text-dimmed">{{ stat.label }}</p>
                 <p class="mt-1 font-display text-lg text-highlighted">{{ stat.value }}</p>
               </div>
             </div>
           </UCard>
 
-          <UCard class="self-start">
+          <UCard variant="soft" class="self-start">
             <template #header>
-              <h3 class="font-display text-lg text-highlighted">Recent player notes</h3>
+              <h3 class="text-highlighted type-record">Recent player notes</h3>
             </template>
 
             <div class="space-y-2">
-              <UCard v-for="note in playerNotes" :key="note.title" class="self-start">
+              <UCard v-for="note in playerNotes" :key="note.title" variant="soft" class="self-start">
                 <p class="text-sm font-medium text-default">{{ note.title }}</p>
-                <p class="mt-1 text-xs uppercase tracking-[0.14em] text-dimmed">{{ note.meta }}</p>
+                <p class="mt-1 text-xs uppercase tracking-[0.08em] text-dimmed">{{ note.meta }}</p>
               </UCard>
             </div>
           </UCard>

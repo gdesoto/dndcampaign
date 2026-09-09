@@ -1,5 +1,5 @@
 <template>
-  <UCard class="transition hover:shadow-lg">
+  <UCard class="transition-colors">
     <template v-if="$slots.header" #header>
       <slot name="header" />
     </template>

@@ -44,7 +44,7 @@ watch([selectedId, playlist], async ([id]) => {
         </div>
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 class="font-display text-2xl text-highlighted">{{ selected?.session.title || (error ? 'Recap unavailable' : 'Choose a recap') }}</h2>
+            <h2 class="text-highlighted type-section">{{ selected?.session.title || (error ? 'Recap unavailable' : 'Choose a recap') }}</h2>
             <p v-if="selected" class="mt-1 text-sm text-muted">Session {{ selected.session.sessionNumber ?? '-' }} · {{ formatSessionDate(selected.session.playedAt) }}</p>
           </div>
           <CampaignRecapLinks v-if="selected" :base-path="basePath" :recap-id="selected.id" hide-open />
@@ -63,7 +63,7 @@ watch([selectedId, playlist], async ([id]) => {
       </section>
       <UCard class="min-w-0">
         <template #header>
-          <h2 class="font-semibold text-highlighted">Session recaps</h2>
+          <h2 class="text-highlighted type-section">Session recaps</h2>
           <p class="text-xs text-muted">Oldest to newest · {{ selectedIndex + 1 }} / {{ playlist.length }}</p>
         </template>
         <ol class="max-h-[70vh] space-y-2 overflow-y-auto" aria-label="Session recap playlist">

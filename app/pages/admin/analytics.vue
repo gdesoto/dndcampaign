@@ -128,7 +128,7 @@ const adminBreadcrumbItems = [
       <div class="space-y-6">
         <UCard>
           <template #header>
-            <h2 class="text-lg font-semibold">Analytics range</h2>
+            <h2 class=" type-section">Analytics range</h2>
           </template>
 
           <div class="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
@@ -149,15 +149,15 @@ const adminBreadcrumbItems = [
 
         <div v-if="activeTab === 'overview'" class="grid gap-4 md:grid-cols-3">
           <UCard>
-            <p class="text-xs uppercase tracking-wide text-muted">Total users</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-muted">Total users</p>
             <p class="mt-2 text-2xl font-semibold">{{ overviewData.totals.users }}</p>
           </UCard>
           <UCard>
-            <p class="text-xs uppercase tracking-wide text-muted">Total campaigns</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-muted">Total campaigns</p>
             <p class="mt-2 text-2xl font-semibold">{{ overviewData.totals.campaigns }}</p>
           </UCard>
           <UCard>
-            <p class="text-xs uppercase tracking-wide text-muted">DAU / WAU</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-muted">DAU / WAU</p>
             <p class="mt-2 text-2xl font-semibold">{{ overviewData.totals.dau }} / {{ overviewData.totals.wau }}</p>
           </UCard>
         </div>
@@ -165,7 +165,7 @@ const adminBreadcrumbItems = [
         <UCard v-else-if="activeTab === 'usage'">
           <template #header>
             <div class="flex items-center justify-between gap-3">
-              <h2 class="text-lg font-semibold">Campaign usage</h2>
+              <h2 class=" type-section">Campaign usage</h2>
               <UButton :to="usageCsvUrl" external variant="outline" icon="i-lucide-download">
                 Export CSV
               </UButton>
@@ -191,7 +191,7 @@ const adminBreadcrumbItems = [
         <UCard v-else>
           <template #header>
             <div class="flex items-center justify-between gap-3">
-              <h2 class="text-lg font-semibold">Job success rates</h2>
+              <h2 class=" type-section">Job success rates</h2>
               <UButton :to="jobsCsvUrl" external variant="outline" icon="i-lucide-download">
                 Export CSV
               </UButton>
@@ -201,13 +201,13 @@ const adminBreadcrumbItems = [
           <div v-if="jobsPending" class="text-sm text-muted">Loading job metrics...</div>
           <div v-else class="space-y-4">
             <div class="grid gap-4 md:grid-cols-2">
-              <UCard>
-                <p class="text-xs uppercase tracking-wide text-muted">Transcription success</p>
+              <UCard variant="soft">
+                <p class="text-xs uppercase tracking-[0.08em] text-muted">Transcription success</p>
                 <p class="mt-2 text-2xl font-semibold">{{ (jobsData.transcription.successRate * 100).toFixed(1) }}%</p>
                 <p class="text-xs text-muted">{{ jobsData.transcription.completed }} completed / {{ jobsData.transcription.total }} total</p>
               </UCard>
-              <UCard>
-                <p class="text-xs uppercase tracking-wide text-muted">Summary success</p>
+              <UCard variant="soft">
+                <p class="text-xs uppercase tracking-[0.08em] text-muted">Summary success</p>
                 <p class="mt-2 text-2xl font-semibold">{{ (jobsData.summary.successRate * 100).toFixed(1) }}%</p>
                 <p class="text-xs text-muted">{{ jobsData.summary.completed }} completed / {{ jobsData.summary.total }} total</p>
               </UCard>

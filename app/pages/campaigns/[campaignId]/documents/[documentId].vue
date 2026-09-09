@@ -1212,7 +1212,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
             <div class="space-y-2">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <h2 class="text-lg font-semibold">Transcript editor</h2>
+                  <h2 class=" type-section">Transcript editor</h2>
                   <p class="text-sm text-muted">Segmented editing with audio sync and search.</p>
                 </div>
                 <div class="flex items-center gap-1">
@@ -1316,7 +1316,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                         />
                         <template #content="{ close }">
                           <div class="space-y-1">
-                            <p class="px-1 text-[11px] font-medium uppercase tracking-[0.2em] text-muted">
+                            <p class="px-1 text-xs font-medium uppercase tracking-[0.08em] text-muted">
                               Swap Speaker
                             </p>
                             <div v-if="speakerPresetOptions.length" class="max-h-48 space-y-1 overflow-y-auto pr-1">
@@ -1380,7 +1380,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
             <UCard>
               <template #header>
                 <div>
-                  <h2 class="text-lg font-semibold">Transcript tools</h2>
+                  <h2 class=" type-section">Transcript tools</h2>
                   <p class="text-sm text-muted">Search, filter, edit, and navigate transcript segments.</p>
                 </div>
               </template>
@@ -1468,7 +1468,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                 <!-- Collapsible: Advanced Filters -->
                 <div v-show="showAdvancedFilters" class="space-y-3 rounded-lg border border-default bg-elevated p-3">
                   <div class="space-y-2">
-                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-muted">Speakers</p>
+                    <p class="text-xs font-medium uppercase tracking-[0.08em] text-muted">Speakers</p>
                     <USelectMenu
                       v-model="speakerFilterSelection"
                       size="xs"
@@ -1480,7 +1480,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                     />
                   </div>
                   <div class="space-y-2">
-                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-muted">Time Range</p>
+                    <p class="text-xs font-medium uppercase tracking-[0.08em] text-muted">Time Range</p>
                     <UFieldGroup class="w-full">
                       <UInput
                         v-model="startTimeFilter"
@@ -1507,7 +1507,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                     </UFieldGroup>
                   </div>
                   <div class="space-y-2">
-                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-muted">Duration</p>
+                    <p class="text-xs font-medium uppercase tracking-[0.08em] text-muted">Duration</p>
                     <UFieldGroup class="w-full">
                       <UInput
                         v-model="minLengthFilter"
@@ -1538,7 +1538,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                 <!-- Collapsible: Bulk Edit -->
                 <div v-show="showBulkEdit" class="space-y-3 rounded-lg border border-default bg-elevated p-3">
                   <div class="space-y-2">
-                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-muted">Set Speaker</p>
+                    <p class="text-xs font-medium uppercase tracking-[0.08em] text-muted">Set Speaker</p>
                     <UFieldGroup class="w-full">
                       <USelectMenu
                         v-model="selectedSpeakerPreset"
@@ -1557,7 +1557,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                     </div>
                   </div>
                   <div class="space-y-2">
-                    <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-muted">Enable / Disable</p>
+                    <p class="text-xs font-medium uppercase tracking-[0.08em] text-muted">Enable / Disable</p>
                     <div class="flex flex-wrap items-center gap-2">
                       <UButton size="xs" variant="outline" :disabled="!selectedSegmentIds.length" @click="applyDisableToSelection(true)">Disable selected</UButton>
                       <UButton size="xs" variant="outline" :disabled="!selectedSegmentIds.length" @click="applyDisableToSelection(false)">Enable selected</UButton>
@@ -1574,14 +1574,14 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
           <UCard>
             <template #header>
               <div>
-                <h2 class="text-lg font-semibold">Manage transcript</h2>
+                <h2 class=" type-section">Manage transcript</h2>
                 <p class="text-sm text-muted">Configure audio link, import files, and manage this transcript.</p>
               </div>
             </template>
             <div class="space-y-4">
               <!-- Audio link -->
               <div class="space-y-2 rounded-lg border border-default bg-elevated/30 p-3">
-                <p class="text-xs uppercase tracking-[0.2em] text-muted">Audio link</p>
+                <p class="text-xs uppercase tracking-[0.08em] text-muted">Audio link</p>
                 <USelect
                   v-model="selectedRecordingId"
                   :items="recordingOptions"
@@ -1601,7 +1601,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
 
               <!-- Import transcript -->
               <div class="space-y-2 rounded-lg border border-default bg-elevated/30 p-3">
-                <p class="text-xs uppercase tracking-[0.2em] text-muted">Import transcript</p>
+                <p class="text-xs uppercase tracking-[0.08em] text-muted">Import transcript</p>
                 <p class="text-xs text-muted">Accepts .txt, .md, .vtt formats.</p>
                 <UInput
                   aria-label="Import document file" type="file"
@@ -1621,7 +1621,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
 
               <!-- Subtitles -->
               <div class="space-y-2 rounded-lg border border-default bg-elevated/30 p-3">
-                <p class="text-xs uppercase tracking-[0.2em] text-muted">Subtitles</p>
+                <p class="text-xs uppercase tracking-[0.08em] text-muted">Subtitles</p>
                 <USelect
                   v-model="selectedSubtitleRecordingId"
                   :items="videoOptions"
@@ -1642,7 +1642,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
 
               <!-- Danger zone -->
               <div v-if="canManageDocument" class="space-y-2 rounded-lg border border-error/30 bg-error/5 p-3">
-                <p class="text-xs uppercase tracking-[0.2em] text-muted">Danger zone</p>
+                <p class="text-xs uppercase tracking-[0.08em] text-muted">Danger zone</p>
                 <SharedConfirmActionPopover
                   message="Delete this transcript document?"
                   confirm-label="Delete transcript"
@@ -1673,7 +1673,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
             <template #header>
               <div class="flex items-start justify-between gap-3">
                 <div>
-                  <h2 class="text-lg font-semibold">Transcript preview</h2>
+                  <h2 class=" type-section">Transcript preview</h2>
                   <p class="text-sm text-muted">Read-only view of the full transcript text.</p>
                 </div>
                 <UButton
@@ -1698,7 +1698,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
           <UCard>
             <template #header>
               <div>
-                <h2 class="text-lg font-semibold">Version history</h2>
+                <h2 class=" type-section">Version history</h2>
                 <p class="text-sm text-muted">
                   Restore any previous version.
                 </p>
@@ -1752,7 +1752,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
         <UCard>
           <template #header>
             <div>
-              <h2 class="text-lg font-semibold">Editor</h2>
+              <h2 class=" type-section">Editor</h2>
               <p class="text-sm text-muted">
                 Markdown-first editor with version tracking.
               </p>
@@ -1786,7 +1786,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
         <UCard>
           <template #header>
             <div>
-              <h2 class="text-lg font-semibold">Version history</h2>
+              <h2 class=" type-section">Version history</h2>
               <p class="text-sm text-muted">
                 Restore any previous version.
               </p>

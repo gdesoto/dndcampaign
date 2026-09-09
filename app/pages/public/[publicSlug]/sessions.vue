@@ -22,7 +22,7 @@ const {
 
         <UCard>
           <template #header>
-            <h2 class="text-lg font-semibold">Sessions</h2>
+            <h2 class=" type-section">Sessions</h2>
           </template>
 
           <div v-if="pending" class="space-y-2">

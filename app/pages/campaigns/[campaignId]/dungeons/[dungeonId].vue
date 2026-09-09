@@ -688,7 +688,7 @@ onBeforeUnmount(() => {
         <template #left>
           <div class="space-y-4">
             <UCard :ui="{ body: 'p-4 space-y-3' }">
-              <h3 class="text-sm font-semibold">Generator Settings</h3>
+              <h3 class=" type-record">Generator Settings</h3>
               <div class="grid grid-cols-3 gap-2">
                 <UButton size="xs" variant="soft" :disabled="mutationBusy || !canWriteContent" @click="applyPreset('small_one_shot')">One-shot</UButton>
                 <UButton size="xs" variant="soft" :disabled="mutationBusy || !canWriteContent" @click="applyPreset('mega_wing')">Mega wing</UButton>
@@ -810,7 +810,7 @@ onBeforeUnmount(() => {
 
         <div class="space-y-4">
           <UCard :ui="{ body: 'p-4' }">
-            <h3 class="text-sm font-semibold">Map Summary</h3>
+            <h3 class=" type-record">Map Summary</h3>
             <p class="mt-2 text-sm text-muted">
               {{ dungeon.map.width }}x{{ dungeon.map.height }} grid •
               {{ dungeon.map.rooms.length }} rooms •
@@ -836,7 +836,7 @@ onBeforeUnmount(() => {
           />
 
           <UCard :ui="{ body: 'p-4' }">
-            <h3 class="text-sm font-semibold">Map Legend</h3>
+            <h3 class=" type-record">Map Legend</h3>
             <div class="mt-3 grid gap-3 md:grid-cols-2">
               <div class="space-y-2 text-sm">
                 <p class="font-medium">Geometry</p>
@@ -875,7 +875,7 @@ onBeforeUnmount(() => {
         <template #right>
           <div class="space-y-4 xl:sticky xl:top-28">
             <UCard :ui="{ body: 'p-4' }">
-              <h3 class="text-sm font-semibold">Selected Room</h3>
+              <h3 class=" type-record">Selected Room</h3>
               <div v-if="selectedRoom" class="mt-2 space-y-1 text-sm">
                 <p class="font-medium">Room {{ selectedRoom.roomNumber }}</p>
                 <p class="text-xs text-muted">
@@ -888,7 +888,7 @@ onBeforeUnmount(() => {
             </UCard>
 
             <UCard :ui="{ body: 'p-4 space-y-3' }">
-              <h3 class="text-sm font-semibold">Export</h3>
+              <h3 class=" type-record">Export</h3>
               <div class="grid grid-cols-2 gap-2">
                 <UFormField label="Format">
                   <USelect
@@ -923,7 +923,7 @@ onBeforeUnmount(() => {
 
             <UCard :ui="{ body: 'p-4 space-y-3' }">
               <div class="flex items-center justify-between">
-                <h3 class="text-sm font-semibold">Snapshots</h3>
+                <h3 class=" type-record">Snapshots</h3>
                 <UButton
                   size="xs"
                   variant="outline"
@@ -958,7 +958,7 @@ onBeforeUnmount(() => {
             </UCard>
 
             <UCard :ui="{ body: 'p-4 space-y-3' }">
-              <h3 class="text-sm font-semibold">Room Metadata</h3>
+              <h3 class=" type-record">Room Metadata</h3>
               <template v-if="selectedRoomMeta">
                 <UFormField label="Name">
                   <UInput v-model="roomEditor.name" :disabled="mutationBusy || !canWriteContent" />
@@ -1009,7 +1009,7 @@ onBeforeUnmount(() => {
             </UCard>
 
             <UCard :ui="{ body: 'p-4 space-y-3' }">
-              <h3 class="text-sm font-semibold">Map Edit Tools</h3>
+              <h3 class=" type-record">Map Edit Tools</h3>
               <p class="text-xs text-muted">Basic geometry tools for milestone 3.</p>
               <div class="grid grid-cols-2 gap-2">
                 <UFormField label="Add X"><UInput v-model.number="roomAction.addX" type="number" :disabled="mutationBusy || !canWriteContent" /></UFormField>
@@ -1055,7 +1055,7 @@ onBeforeUnmount(() => {
             </UCard>
 
             <UCard :ui="{ body: 'p-4 space-y-3' }">
-              <h3 class="text-sm font-semibold">Links</h3>
+              <h3 class=" type-record">Links</h3>
               <div class="grid grid-cols-2 gap-2">
                 <UFormField label="Type">
                   <USelect

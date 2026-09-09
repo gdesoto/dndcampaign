@@ -428,7 +428,7 @@ const statBlockOptions = computed(() =>
           <SharedListItemCard>
             <template #header>
               <div class="flex items-center justify-between gap-2">
-                <h3 class="text-lg font-semibold">{{ encounter.name }}</h3>
+                <h3 class=" type-record">{{ encounter.name }}</h3>
                 <UBadge :color="statusColor(encounter.status)" variant="soft">{{ encounter.status }}</UBadge>
               </div>
             </template>
@@ -451,7 +451,7 @@ const statBlockOptions = computed(() =>
       <template #header>
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 class="text-base font-semibold">Stat block library</h2>
+            <h2 class=" type-section">Stat block library</h2>
             <p class="text-sm text-muted">Reusable campaign-local NPC and monster definitions.</p>
           </div>
           <UButton :disabled="!canWriteContent" variant="outline" @click="openCreateStatBlock">New stat block</UButton>
@@ -494,7 +494,7 @@ const statBlockOptions = computed(() =>
       <template #header>
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h2 class="text-base font-semibold">Encounter template library</h2>
+            <h2 class=" type-section">Encounter template library</h2>
             <p class="text-sm text-muted">Save reusable encounter setups with participant rows.</p>
           </div>
           <UButton :disabled="!canWriteContent" variant="outline" @click="openCreateTemplate">New template</UButton>
@@ -595,7 +595,7 @@ v-model:open="isTemplateModalOpen"
           class="space-y-2 rounded-md border border-default/70 p-3"
         >
           <div class="flex items-center justify-between">
-            <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Row {{ index + 1 }}</p>
+            <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Row {{ index + 1 }}</p>
             <UButton size="xs" color="error" variant="ghost" @click="removeTemplateCombatantRow(index)">Remove</UButton>
           </div>
           <UFormField label="Name" name="name">

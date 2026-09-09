@@ -61,7 +61,7 @@ const selectedSubtitleRecordingIdModel = computed({
       <template #header>
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="min-w-0">
-            <h2 class="text-lg font-semibold">Transcript</h2>
+            <h2 class=" type-section">Transcript</h2>
             <p class="text-sm text-muted">
               Review the transcript and open the editor for full editing.
             </p>
@@ -147,7 +147,7 @@ const selectedSubtitleRecordingIdModel = computed({
     <UCard>
       <template #header>
         <div>
-          <h2 class="text-lg font-semibold">Transcription tools</h2>
+          <h2 class=" type-section">Transcription tools</h2>
           <p class="text-sm text-muted">
             Start transcription, create/import a transcript, or attach subtitles.
           </p>

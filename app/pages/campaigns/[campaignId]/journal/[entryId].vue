@@ -402,7 +402,7 @@ const toggleArchive = async () => {
         <UCard class="flex min-h-[28rem] flex-col lg:min-h-[28rem]" :ui="{ body: 'flex-1 min-h-0' }">
           <template #header>
             <div class="flex items-center justify-between gap-3">
-              <h3 class="text-sm font-semibold uppercase tracking-[0.2em] text-dimmed">Entry</h3>
+              <h3 class="uppercase text-dimmed type-record">Entry</h3>
               <div class="flex items-center gap-2">
                 <UButton
                   v-if="documentMode === 'edit' && canEditDocumentContent"
@@ -455,7 +455,7 @@ const toggleArchive = async () => {
         <template #aside>
           <UCard>
             <template #header>
-              <h3 class="text-sm font-semibold">Details</h3>
+              <h3 class=" type-record">Details</h3>
             </template>
             <div class="flex flex-wrap items-center gap-2">
               <UBadge :color="visibilityColor(entry!.visibility)" variant="soft">
@@ -468,7 +468,7 @@ const toggleArchive = async () => {
             <p class="mt-3 text-xs text-muted">Updated {{ new Date(entry!.updatedAt).toLocaleString() }}</p>
 
             <div v-if="entry?.sessions.length" class="mt-4 space-y-2">
-              <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Linked sessions</p>
+              <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Linked sessions</p>
               <div class="flex flex-wrap gap-2">
                 <UBadge
                   v-for="session in entry.sessions"
@@ -482,7 +482,7 @@ const toggleArchive = async () => {
             </div>
 
             <div v-if="entry?.tags.length" class="mt-4 space-y-2">
-              <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Tags</p>
+              <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Tags</p>
               <div class="flex flex-wrap gap-2">
                 <UBadge
                   v-for="tag in entry.tags"
@@ -498,7 +498,7 @@ const toggleArchive = async () => {
 
           <UCard v-if="entry?.isDiscoverable">
             <template #header>
-              <h3 class="text-sm font-semibold">Discoverable Actions</h3>
+              <h3 class=" type-record">Discoverable Actions</h3>
             </template>
             <div class="space-y-3">
               <USelect
@@ -533,7 +533,7 @@ const toggleArchive = async () => {
 
           <UCard>
             <template #header>
-              <h3 class="text-sm font-semibold">History</h3>
+              <h3 class=" type-record">History</h3>
             </template>
             <div v-if="!(history?.items.length)" class="text-sm text-muted">No discovery or transfer events yet.</div>
             <div v-else class="max-h-72 space-y-2 overflow-y-auto pr-1">
