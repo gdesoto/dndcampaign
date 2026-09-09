@@ -52,42 +52,41 @@ const userColumns = [
   { id: 'actions', header: 'Actions', meta: { class: { th: 'w-px', td: 'w-px whitespace-nowrap' } } },
 ]
 
-const selectedUser = computed(() =>
-  users.value.find((user) => user.id === action.selectedUserId) || null
+const selectedUser = shallowRef<(typeof users.value)[number] | null>(null)
+const userDraft = useEditorDraft(
+  () => ({ systemRole: action.systemRole, isActive: action.isActive }),
+  value => Object.assign(action, value),
 )
-
-const userOptions = computed(() =>
-  users.value.map((user) => ({
-    label: `${user.name} (${user.email})`,
-    value: user.id,
-  }))
-)
-
-watch(
-  selectedUser,
-  (value) => {
-    if (!value) return
-    action.systemRole = value.systemRole
-    action.isActive = value.isActive
-  },
-  { immediate: true }
-)
-
-watch(
-  users,
-  (list) => {
-    if (!list.length) {
-      action.selectedUserId = ''
-      return
-    }
-
-    const exists = list.some((user) => user.id === action.selectedUserId)
-    if (!exists) {
-      action.selectedUserId = list[0]?.id || ''
-    }
-  },
-  { immediate: true }
-)
+const { confirmDiscard } = useUnsavedChanges(userDraft.dirty, () => action.saving)
+const userOptions = computed(() => {
+  const available = [...users.value]
+  if (selectedUser.value && !available.some(user => user.id === selectedUser.value?.id)) available.unshift(selectedUser.value)
+  return available.map(user => ({ label: `${user.name} (${user.email})`, value: user.id }))
+})
+const loadUser = (user: (typeof users.value)[number]) => {
+  selectedUser.value = user
+  action.selectedUserId = user.id
+  userDraft.sync({ systemRole: user.systemRole, isActive: user.isActive }, user.id)
+}
+watch(users, list => {
+  if (action.saving) return
+  const current = list.find(user => user.id === action.selectedUserId)
+  if (current) loadUser(current)
+  else if (!selectedUser.value && list[0]) loadUser(list[0])
+  // Keep the editor bound to its record when filters or pagination hide it.
+}, { immediate: true })
+const selectUser = async (id: string) => {
+  if (id === action.selectedUserId || !await confirmDiscard()) return
+  const user = users.value.find(item => item.id === id)
+  if (!user || action.saving) return
+  loadUser(user)
+  action.error = ''
+  action.success = ''
+}
+const selectedUserModel = computed({
+  get: () => action.selectedUserId,
+  set: (id: string) => { void selectUser(id) },
+})
 
 const refreshUsers = async () => {
   action.error = ''
@@ -100,13 +99,13 @@ const saveUser = async () => {
 
   action.error = ''
   action.success = ''
+  const submitted = userDraft.snapshot()
+  const userId = action.selectedUserId
   action.saving = true
 
   try {
-    await admin.updateUser(action.selectedUserId, {
-      systemRole: action.systemRole,
-      isActive: action.isActive,
-    })
+    await admin.updateUser(userId, submitted)
+    userDraft.accept(submitted)
     action.success = 'User updated successfully.'
     await refresh()
   } catch (saveError) {
@@ -123,8 +122,9 @@ const roleOptions = [
   { label: 'System admin', value: 'SYSTEM_ADMIN' },
 ]
 
-const editRecord = (id: string) => {
-  action.selectedUserId = id
+const editRecord = async (id: string) => {
+  await selectUser(id)
+  if (action.selectedUserId !== id) return
   nextTick(() => { const heading = document.querySelector<HTMLElement>('#record-editor h2'); heading?.scrollIntoView({ block: 'center', behavior: 'instant' }); heading?.focus() })
 }
 const adminBreadcrumbItems = [
@@ -202,10 +202,10 @@ v-model="filters.role"
           </template>
 
           <div class="grid gap-3 md:grid-cols-4">
-            <USelect v-model="action.selectedUserId" aria-label="User" :disabled="action.saving" :items="userOptions" />
+            <USelect v-model="selectedUserModel" aria-label="User" :disabled="action.saving" :items="userOptions" />
             <USelect v-model="action.systemRole" aria-label="System role" :disabled="action.saving" :items="roleOptions" />
             <USwitch v-model="action.isActive" :disabled="action.saving" label="User is active" />
-            <UButton :loading="action.saving" @click="saveUser">Save user</UButton>
+            <UButton :disabled="!selectedUser || !userDraft.dirty.value" :loading="action.saving" @click="saveUser">Save user</UButton>
           </div>
 
           <p v-if="action.success" class="mt-3 text-sm text-success">{{ action.success }}</p>

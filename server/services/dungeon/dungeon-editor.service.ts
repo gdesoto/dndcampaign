@@ -96,52 +96,34 @@ const withDungeonAccess = async (
     },
   })
 
-const syncRoomRowsToMap = async (dungeonId: string, rooms: DungeonRoomGeometry[]) => {
-  const existing = await prisma.campaignDungeonRoom.findMany({
-    where: { dungeonId },
-    select: {
-      id: true,
-      roomNumber: true,
-      name: true,
-      description: true,
-      gmNotes: true,
-      playerNotes: true,
-      readAloud: true,
-      tagsJson: true,
-      state: true,
-    },
-  })
-  const byNumber = new Map(existing.map((room) => [room.roomNumber, room]))
-
+const syncRoomRowsToMap = async (dungeonId: string, previousRooms: DungeonRoomGeometry[], map: DungeonMapData) => {
   await prisma.$transaction(async (tx) => {
-    await tx.campaignDungeonRoom.deleteMany({
-      where: { dungeonId },
+    const existing = await tx.campaignDungeonRoom.findMany({ where: { dungeonId } })
+    const byNumber = new Map(existing.map(room => [room.roomNumber, room]))
+    // Geometry ids survive movement and renumbering; database ids preserve notes and links.
+    const byGeometryId = new Map(previousRooms.map(room => [room.id, byNumber.get(room.roomNumber)]))
+    const retainedIds = map.rooms.flatMap(room => {
+      const current = byGeometryId.get(room.id)
+      return current ? [current.id] : []
     })
-
-    if (!rooms.length) return
-
-    for (const room of rooms) {
-      const current = byNumber.get(room.roomNumber)
-      await tx.campaignDungeonRoom.create({
-        data: {
-          dungeonId,
-          roomNumber: room.roomNumber,
-          name: current?.name || `Room ${room.roomNumber}`,
-          description: current?.description ?? null,
-          gmNotes: current?.gmNotes ?? null,
-          playerNotes: current?.playerNotes ?? null,
-          readAloud: current?.readAloud ?? null,
-          tagsJson: current?.tagsJson ?? [],
-          state: current?.state ?? 'UNSEEN',
-          boundsJson: {
-            x: room.x,
-            y: room.y,
-            width: room.width,
-            height: room.height,
-          },
-        },
-      })
+    await tx.campaignDungeonRoom.deleteMany({ where: { dungeonId, id: { notIn: retainedIds } } })
+    // Vacate unique room numbers before applying a permutation.
+    for (const [index, id] of retainedIds.entries()) {
+      await tx.campaignDungeonRoom.update({ where: { id }, data: { roomNumber: -index - 1 } })
     }
+    for (const room of map.rooms) {
+      const current = byGeometryId.get(room.id)
+      const data = {
+        roomNumber: room.roomNumber,
+        boundsJson: { x: room.x, y: room.y, width: room.width, height: room.height },
+      }
+      if (current) {
+        await tx.campaignDungeonRoom.update({ where: { id: current.id }, data })
+      } else {
+        await tx.campaignDungeonRoom.create({ data: { ...data, dungeonId, name: `Room ${room.roomNumber}`, tagsJson: [] } })
+      }
+    }
+    await tx.campaignDungeon.update({ where: { id: dungeonId }, data: { mapJson: map } })
   })
 }
 
@@ -497,16 +479,13 @@ export class DungeonEditorService {
       }
     }
 
-    let map = parseDungeonMap(access.mapJson)
+    const previousMap = parseDungeonMap(access.mapJson)
+    let map = previousMap
     for (const action of input.actions) {
       map = applyMapAction(map, action)
     }
 
-    await prisma.campaignDungeon.update({
-      where: { id: access.id },
-      data: { mapJson: map },
-    })
-    await syncRoomRowsToMap(access.id, map.rooms)
+    await syncRoomRowsToMap(access.id, previousMap.rooms, map)
     await activityLogService.log({
       actorUserId: userId,
       campaignId,

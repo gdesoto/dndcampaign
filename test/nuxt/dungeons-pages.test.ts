@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import MapCanvas from '../../app/components/dungeon/MapCanvas.vue'
+import type { DungeonMapData } from '../../shared/types/dungeon'
 import { ref } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import DungeonsPage from '../../app/pages/campaigns/[campaignId]/dungeons/index.vue'
@@ -234,5 +236,28 @@ describe('Dungeon pages', () => {
     expect(wrapper.text()).toContain('Export')
     expect(wrapper.text()).toContain('Snapshots')
     expect(wrapper.find('[data-test="map-canvas-stub"]').exists()).toBe(true)
+  })
+})
+
+describe('Dungeon map keyboard controls', () => {
+  it('names zoom controls and supports keyboard zoom, pan, and fit', async () => {
+    const wrapper = await mountSuspended(MapCanvas, {
+      props: { map: dungeonDetailFixture.map as DungeonMapData },
+    })
+    expect(wrapper.find('button[aria-label="Zoom in"]').exists()).toBe(true)
+    expect(wrapper.find('button[aria-label="Zoom out"]').exists()).toBe(true)
+    expect(wrapper.find('[aria-label="Select dungeon room"]').exists()).toBe(true)
+    const map = wrapper.get('[aria-label="Dungeon map controls"]')
+    expect(map.attributes('tabindex')).toBe('0')
+    const transform = () => wrapper.get('svg > g').attributes('transform')
+    const initial = transform()
+    await map.trigger('keydown', { key: '+' })
+    expect(transform()).not.toBe(initial)
+    const zoomed = transform()
+    await map.trigger('keydown', { key: 'ArrowRight' })
+    expect(transform()).not.toBe(zoomed)
+    await map.trigger('keydown', { key: 'Home' })
+    expect(transform()).toBe(initial)
+    wrapper.unmount()
   })
 })

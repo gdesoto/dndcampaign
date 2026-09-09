@@ -195,11 +195,10 @@ const deleteMap = async (mapId: string) => {
   }
 }
 
-const deleteMapWithClose = async (mapId: string, close: () => void) => {
+const confirmDeleteMap = async (mapId: string) => {
+  if (deletingMapId.value) throw new Error('Another map deletion is in progress.')
   await deleteMap(mapId)
-  if (!deleteError.value) {
-    close()
-  }
+  if (deleteError.value) throw new Error(deleteError.value)
 }
 
 const activeLayers = ref<MapFeatureType[]>(['burg', 'marker'])
@@ -537,12 +536,12 @@ const applyReimport = async () => {
                 trigger-label="Delete"
                 trigger-size="xs"
                 trigger-variant="ghost"
-                trigger-color="error"
+                trigger-color="neutral"
                 confirm-label="Delete map"
                 confirm-icon="i-lucide-trash-2"
                 :confirm-loading="deletingMapId === map.id"
                 :disabled="!canWriteContent"
-                @confirm="({ close }) => deleteMapWithClose(map.id, close)"
+                :action="() => confirmDeleteMap(map.id)"
               />
             </div>
           </div>
@@ -603,12 +602,12 @@ const applyReimport = async () => {
                 :message='`Delete map "${selectedMap?.name || "selected map"}"? This removes its imported files, features, and map glossary links.`'
                 trigger-label="Delete map"
                 trigger-variant="ghost"
-                trigger-color="error"
+                trigger-color="neutral"
                 confirm-label="Delete map"
                 confirm-icon="i-lucide-trash-2"
                 :confirm-loading="deletingMapId === selectedMapId"
                 :disabled="!canWriteContent || !selectedMapId"
-                @confirm="({ close }) => deleteMapWithClose(selectedMapId, close)"
+                :action="() => confirmDeleteMap(selectedMapId)"
               />
               <p v-if="mapSaveError" class="text-sm text-error">{{ mapSaveError }}</p>
             </div>

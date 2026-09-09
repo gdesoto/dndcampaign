@@ -214,6 +214,21 @@ describe('dungeon API routes', () => {
       },
     )
     expect(patchMapResponse.status).toBe(200)
+    const renumberResponse = await fetch(
+      `${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}/map`,
+      {
+        method: 'PATCH',
+        headers: { cookie: cookies.owner, 'content-type': 'application/json' },
+        body: JSON.stringify({ actions: [{ type: 'RENUMBER_ROOMS', mode: 'AUTO' }] }),
+      },
+    )
+    expect(renumberResponse.status).toBe(200)
+    const retainedRoom = await prisma.campaignDungeonRoom.findUnique({ where: { id: roomRowId } })
+    expect(retainedRoom).toMatchObject({ name: 'Edited Room', gmNotes: 'Secret lever behind statue', state: 'EXPLORED' })
+    const retainedLink = await prisma.campaignDungeonLink.findFirst({
+      where: { dungeonId, targetId: encounterFromRoomPayload.data.encounterId },
+    })
+    expect(retainedLink?.roomId).toBe(roomRowId)
 
     const createLinkResponse = await fetch(
       `${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}/links`,

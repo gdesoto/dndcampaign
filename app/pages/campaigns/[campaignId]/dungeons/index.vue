@@ -39,6 +39,7 @@ const importForm = reactive({
   payload: '',
 })
 
+const retainedDungeons = useRetainedResource<Awaited<ReturnType<typeof dungeonApi.listDungeons>>>(() => campaignId.value)
 const {
   data: dungeons,
   pending,
@@ -46,8 +47,10 @@ const {
   refresh,
 } = await useAsyncData(
   () => `dungeons-${campaignId.value}`,
-  () => dungeonApi.listDungeons(campaignId.value),
+  () => retainedDungeons.load(() => dungeonApi.listDungeons(campaignId.value)),
+  { default: retainedDungeons.get },
 )
+retainedDungeons.seed(dungeons.value)
 const canCreateDungeon = computed(() =>
   !!form.name.trim()
   && (selectedThemeOption.value !== 'custom' || !!customTheme.value.trim()),
@@ -73,14 +76,14 @@ const resetForm = () => {
 }
 
 const openCreate = () => {
-  if (!canWriteContent.value) return
+  if (!canWriteContent.value || isCreating.value || isImporting.value) return
   createError.value = ''
   resetForm()
   isCreateOpen.value = true
 }
 
 const openImport = () => {
-  if (!canWriteContent.value) return
+  if (!canWriteContent.value || isCreating.value || isImporting.value) return
   importError.value = ''
   importForm.nameOverride = ''
   importForm.payload = ''
@@ -88,7 +91,8 @@ const openImport = () => {
 }
 
 const createDungeon = async () => {
-  if (!canWriteContent.value) return
+  if (!canWriteContent.value || isCreating.value || isImporting.value) return
+  if (!canCreateDungeon.value) { createError.value = 'Enter a name and theme.'; return }
   isCreating.value = true
   createError.value = ''
 
@@ -128,7 +132,8 @@ const createDungeon = async () => {
 }
 
 const importDungeon = async () => {
-  if (!canWriteContent.value) return
+  if (!canWriteContent.value || isCreating.value || isImporting.value) return
+  if (!importForm.payload.trim()) { importError.value = 'Paste a dungeon export.'; return }
   isImporting.value = true
   importError.value = ''
   try {
@@ -155,15 +160,16 @@ const importDungeon = async () => {
   }
 }
 
-const deleteDungeonWithClose = async (dungeon: CampaignDungeonSummary, close: () => void) => {
+const deleteDungeon = async (dungeon: CampaignDungeonSummary) => {
+  if (deletingDungeonId.value) throw new Error('Another dungeon deletion is in progress.')
   deleteError.value = ''
   deletingDungeonId.value = dungeon.id
   try {
     await dungeonApi.deleteDungeon(campaignId.value, dungeon.id)
     await refresh()
-    close()
   } catch (cause) {
     deleteError.value = (cause as Error).message || 'Unable to delete dungeon.'
+    throw cause
   } finally {
     deletingDungeonId.value = ''
   }
@@ -198,21 +204,12 @@ const deleteDungeonWithClose = async (dungeon: CampaignDungeonSummary, close: ()
       />
     </template>
 
-    <UCard v-if="pending" :ui="{ body: 'p-6' }">
-      <p class="text-sm text-muted">Loading dungeons...</p>
-    </UCard>
-
-    <UCard v-else-if="error" :ui="{ body: 'p-6' }">
-      <p class="text-sm text-error">Unable to load dungeons.</p>
-      <UButton class="mt-3" variant="outline" @click="() => refresh()">Try again</UButton>
-    </UCard>
-
-    <UCard v-else-if="!(dungeons || []).length" :ui="{ body: 'p-6' }">
-      <p class="text-sm text-muted">No dungeons yet.</p>
-      <UButton v-if="canWriteContent" class="mt-3" @click="openCreate">Create first dungeon</UButton>
-    </UCard>
-
-    <div v-else class="grid gap-4 md:grid-cols-2">
+    <SharedResourceState
+:pending="pending" :has-data="Boolean(dungeons?.length)" :error="error"
+      :empty="!dungeons?.length" error-message="Unable to load dungeons." empty-message="No dungeons yet."
+      @retry="refresh">
+      <template #emptyActions><UButton v-if="canWriteContent" @click="openCreate">Create first dungeon</UButton></template>
+      <div class="grid gap-4 md:grid-cols-2">
       <UCard
         v-for="dungeon in (dungeons as CampaignDungeonSummary[])"
         :key="dungeon.id"
@@ -245,20 +242,23 @@ const deleteDungeonWithClose = async (dungeon: CampaignDungeonSummary, close: ()
               trigger-label="Delete"
               trigger-size="xs"
               trigger-variant="ghost"
-              trigger-color="error"
+              trigger-color="neutral"
               confirm-label="Delete dungeon"
               confirm-icon="i-lucide-trash-2"
               :confirm-loading="deletingDungeonId === dungeon.id"
-              @confirm="({ close }) => deleteDungeonWithClose(dungeon, close)"
+              :action="() => deleteDungeon(dungeon)"
             />
           </div>
         </div>
       </UCard>
     </div>
+    </SharedResourceState>
     <p v-if="deleteError" class="text-sm text-error">{{ deleteError }}</p>
 
-    <UModal v-model:open="isCreateOpen" title="Create dungeon">
-      <template #body>
+    <SharedEntityFormModal
+v-model:open="isCreateOpen" title="Create dungeon"
+      :state="{ ...form, selectedThemeOption, customTheme }" :saving="isCreating" :error="createError"
+      submit-label="Create dungeon" @submit="createDungeon">
         <div class="space-y-4">
           <UFormField label="Name" required>
             <UInput v-model="form.name" placeholder="Ancient catacombs" />
@@ -292,19 +292,13 @@ const deleteDungeonWithClose = async (dungeon: CampaignDungeonSummary, close: ()
               <p v-if="seedValidationMessage" class="text-xs text-warning">{{ seedValidationMessage }}</p>
             </div>
           </UFormField>
-          <p v-if="createError" class="text-sm text-error">{{ createError }}</p>
         </div>
-      </template>
-      <template #footer>
-        <div class="flex justify-end gap-2">
-           <UButton variant="ghost" @click="() => { isCreateOpen = false }">Cancel</UButton>
-          <UButton :loading="isCreating" :disabled="!canCreateDungeon" @click="createDungeon">Create</UButton>
-        </div>
-      </template>
-    </UModal>
+    </SharedEntityFormModal>
 
-    <UModal v-model:open="isImportOpen" title="Import dungeon JSON">
-      <template #body>
+    <SharedEntityFormModal
+v-model:open="isImportOpen" title="Import dungeon JSON"
+      :state="importForm" :saving="isImporting" :error="importError"
+      submit-label="Import" @submit="importDungeon">
         <div class="space-y-4">
           <UFormField label="Name override (optional)">
             <UInput v-model="importForm.nameOverride" placeholder="Use imported name if blank" />
@@ -316,18 +310,8 @@ const deleteDungeonWithClose = async (dungeon: CampaignDungeonSummary, close: ()
               placeholder="Paste the full JSON export document here"
             />
           </UFormField>
-          <p v-if="importError" class="text-sm text-error">{{ importError }}</p>
         </div>
-      </template>
-      <template #footer>
-        <div class="flex justify-end gap-2">
-           <UButton variant="ghost" @click="() => { isImportOpen = false }">Cancel</UButton>
-          <UButton :loading="isImporting" :disabled="!importForm.payload.trim()" @click="importDungeon">
-            Import
-          </UButton>
-        </div>
-      </template>
-    </UModal>
+    </SharedEntityFormModal>
   </CampaignListTemplate>
 </template>
 

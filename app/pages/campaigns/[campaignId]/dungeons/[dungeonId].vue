@@ -23,7 +23,11 @@ const isExporting = ref(false)
 const isPublishing = ref(false)
 const isCreatingEncounter = ref(false)
 const deletingLinkId = ref('')
-const selectedRoomId = ref<string | null>(null)
+const currentRoomId = ref<string | null>(null)
+const selectedRoomId = computed({
+  get: () => currentRoomId.value,
+  set: (id: string | null) => { void selectRoom(id) },
+})
 const selectedDoorId = ref<string | null>(null)
 const activeDetailsTab = ref<'rooms' | 'corridors' | 'doors' | 'traps' | 'encounters' | 'treasure' | 'zones'>('rooms')
 const showPlayerSafe = ref(false)
@@ -104,33 +108,29 @@ const configDraft = reactive<DungeonGeneratorConfigInput>({
   },
 })
 
-watch(
-  () => dungeon.value,
-  (value) => {
-    if (!value) return
-    editState.name = value.name
-    editState.theme = value.theme
-    editState.seed = value.seed
-    editState.status = value.status
-
-    configDraft.gridType = value.config.gridType
-    configDraft.width = value.config.width
-    configDraft.height = value.config.height
-    configDraft.cellSize = value.config.cellSize
-    configDraft.theme = value.config.theme
-    configDraft.layout = { ...value.config.layout }
-    configDraft.doors = { ...value.config.doors }
-    configDraft.content = { ...value.config.content }
-    if (['ruins', 'cavern', 'sewer', 'crypt'].includes(value.theme)) {
-      selectedThemeOption.value = value.theme as DungeonThemeOption
-      customTheme.value = ''
-    } else {
-      selectedThemeOption.value = 'custom'
-      customTheme.value = value.theme
-    }
+const settingsDraft = useEditorDraft(
+  () => ({ ...editState, config: JSON.parse(JSON.stringify(configDraft)) as DungeonGeneratorConfigInput, selectedTheme: selectedThemeOption.value, customTheme: customTheme.value }),
+  value => {
+    Object.assign(editState, { name: value.name, theme: value.theme, seed: value.seed, status: value.status })
+    Object.assign(configDraft, value.config)
+    selectedThemeOption.value = value.selectedTheme
+    customTheme.value = value.customTheme
   },
-  { immediate: true },
 )
+watch(dungeon, value => {
+  if (!value) return
+  const knownTheme = ['ruins', 'cavern', 'sewer', 'crypt'].includes(value.theme)
+  settingsDraft.sync({
+    name: value.name, theme: value.theme, seed: value.seed, status: value.status,
+    config: JSON.parse(JSON.stringify(value.config)),
+    selectedTheme: knownTheme ? value.theme as DungeonThemeOption : 'custom',
+    customTheme: knownTheme ? '' : value.theme,
+  }, value.id)
+}, { immediate: true })
+
+const mutationBusy = computed(() => isSaving.value || isGenerating.value || isRegenerating.value
+  || isSavingRoom.value || isPatchingMap.value || isCreatingLink.value || isCreatingSnapshot.value
+  || !!restoringSnapshotId.value || isPublishing.value || isCreatingEncounter.value || !!deletingLinkId.value)
 
 const resolveTheme = () =>
   selectedThemeOption.value === 'custom'
@@ -138,12 +138,15 @@ const resolveTheme = () =>
     : selectedThemeOption.value
 
 const saveSettings = async () => {
-  if (!canWriteContent.value) return
+  if (!canWriteContent.value || mutationBusy.value) return
   const resolvedTheme = resolveTheme()
   if (!resolvedTheme) {
     actionError.value = 'Custom theme is required.'
     return
   }
+  editState.theme = resolvedTheme
+  configDraft.theme = resolvedTheme
+  const submitted = settingsDraft.snapshot()
   isSaving.value = true
   actionError.value = ''
   try {
@@ -158,6 +161,7 @@ const saveSettings = async () => {
         theme: resolvedTheme,
       },
     })
+    settingsDraft.accept(submitted)
     await refresh()
   } catch (cause) {
     actionError.value = (cause as Error).message || 'Unable to save dungeon settings.'
@@ -167,7 +171,7 @@ const saveSettings = async () => {
 }
 
 const generate = async () => {
-  if (!canWriteContent.value) return
+  if (!canWriteContent.value || mutationBusy.value || !await confirmRoomDiscard()) return
   const resolvedTheme = resolveTheme()
   if (!resolvedTheme) {
     actionError.value = 'Custom theme is required.'
@@ -184,7 +188,8 @@ const generate = async () => {
         theme: resolvedTheme,
       },
     })
-    await refresh()
+    roomDraft.discard()
+    await Promise.all([refresh(), refreshRooms()])
   } catch (cause) {
     actionError.value = (cause as Error).message || 'Unable to generate dungeon map.'
   } finally {
@@ -193,7 +198,7 @@ const generate = async () => {
 }
 
 const regenerate = async (scope: CampaignDungeonRegenerateScope) => {
-  if (!canWriteContent.value) return
+  if (!canWriteContent.value || mutationBusy.value || !await confirmRoomDiscard()) return
   isRegenerating.value = true
   actionError.value = ''
   try {
@@ -202,7 +207,8 @@ const regenerate = async (scope: CampaignDungeonRegenerateScope) => {
       preserveLocks: true,
       seed: editState.seed,
     })
-    await refresh()
+    roomDraft.discard()
+    await Promise.all([refresh(), refreshRooms()])
   } catch (cause) {
     actionError.value = (cause as Error).message || 'Unable to regenerate dungeon map.'
   } finally {
@@ -314,32 +320,39 @@ const exportForm = reactive({
   includeGmLayer: true,
 })
 
-watch(
-  () => selectedRoomMeta.value,
-  (value) => {
-    roomEditor.name = value?.name || ''
-    roomEditor.description = value?.description || ''
-    roomEditor.gmNotes = value?.gmNotes || ''
-    roomEditor.playerNotes = value?.playerNotes || ''
-    roomEditor.readAloud = value?.readAloud || ''
-    roomEditor.state = value?.state || 'UNSEEN'
-    if (selectedRoom.value) {
-      roomAction.resizeWidth = selectedRoom.value.width
-      roomAction.resizeHeight = selectedRoom.value.height
-    }
-  },
-  { immediate: true },
-)
+const roomDraft = useEditorDraft(() => ({ ...roomEditor }), value => Object.assign(roomEditor, value))
+const { confirmDiscard: confirmRoomDiscard } = useUnsavedChanges(roomDraft.dirty, mutationBusy)
+const { confirmDiscard: confirmSettingsDiscard } = useUnsavedChanges(settingsDraft.dirty, mutationBusy)
+useUnsavedChanges(() => Boolean(newLink.targetId.trim()), mutationBusy)
+const selectRoom = async (id: string | null) => {
+  if (id === currentRoomId.value || !await confirmRoomDiscard()) return
+  roomDraft.discard()
+  currentRoomId.value = id
+}
+watch(selectedRoomMeta, value => {
+  // A transient refresh must not erase a room draft when the selected room is absent.
+  if (!value && roomDraft.dirty.value) return
+  roomDraft.sync({
+    name: value?.name || '', description: value?.description || '', gmNotes: value?.gmNotes || '',
+    playerNotes: value?.playerNotes || '', readAloud: value?.readAloud || '', state: value?.state || 'UNSEEN',
+  }, value?.id || '')
+  if (selectedRoom.value) {
+    roomAction.resizeWidth = selectedRoom.value.width
+    roomAction.resizeHeight = selectedRoom.value.height
+  }
+}, { immediate: true })
 
 const patchMap = async (actions: DungeonMapPatchActionInput[]) => {
-  if (!canWriteContent.value) return
+  if (!canWriteContent.value || mutationBusy.value) return
   isPatchingMap.value = true
   actionError.value = ''
   try {
     await dungeonApi.patchMap(campaignId.value, dungeonId.value, { actions })
     await Promise.all([refresh(), refreshRooms()])
+    return true
   } catch (cause) {
     actionError.value = (cause as Error).message || 'Unable to update dungeon map.'
+    return false
   } finally {
     isPatchingMap.value = false
   }
@@ -383,18 +396,19 @@ const resizeSelectedRoom = async () => {
 }
 
 const removeSelectedRoom = async () => {
-  if (!selectedRoom.value) return
-  await patchMap([
+  if (!selectedRoom.value || !await confirmRoomDiscard()) return
+  const removed = await patchMap([
     {
       type: 'REMOVE_ROOM',
       roomId: selectedRoom.value.id,
     },
   ])
-  selectedRoomId.value = null
+  if (removed) { roomDraft.discard(); currentRoomId.value = null }
 }
 
 const saveRoomMetadata = async () => {
-  if (!canWriteContent.value || !selectedRoomMeta.value) return
+  if (!canWriteContent.value || !selectedRoomMeta.value || mutationBusy.value) return
+  const submitted = roomDraft.snapshot()
   isSavingRoom.value = true
   actionError.value = ''
   try {
@@ -406,6 +420,7 @@ const saveRoomMetadata = async () => {
       readAloud: roomEditor.readAloud || null,
       state: roomEditor.state,
     })
+    roomDraft.accept(submitted)
     await refreshRooms()
   } catch (cause) {
     actionError.value = (cause as Error).message || 'Unable to save room metadata.'
@@ -415,7 +430,7 @@ const saveRoomMetadata = async () => {
 }
 
 const createLink = async () => {
-  if (!canWriteContent.value) return
+  if (!canWriteContent.value || mutationBusy.value) return
   isCreatingLink.value = true
   actionError.value = ''
   try {
@@ -434,7 +449,7 @@ const createLink = async () => {
 }
 
 const deleteLink = async (linkId: string) => {
-  if (!canWriteContent.value) return
+  if (!canWriteContent.value || mutationBusy.value) return
   deletingLinkId.value = linkId
   actionError.value = ''
   try {
@@ -448,7 +463,7 @@ const deleteLink = async (linkId: string) => {
 }
 
 const createSnapshot = async () => {
-  if (!canWriteContent.value) return
+  if (!canWriteContent.value || mutationBusy.value) return
   isCreatingSnapshot.value = true
   actionError.value = ''
   try {
@@ -464,11 +479,14 @@ const createSnapshot = async () => {
 }
 
 const restoreSnapshot = async (snapshotId: string) => {
-  if (!canWriteContent.value) return
+  if (!canWriteContent.value || mutationBusy.value) return
+  if (!await confirmSettingsDiscard() || !await confirmRoomDiscard()) return
   restoringSnapshotId.value = snapshotId
   actionError.value = ''
   try {
     await dungeonApi.restoreSnapshot(campaignId.value, dungeonId.value, snapshotId)
+    settingsDraft.discard()
+    roomDraft.discard()
     await Promise.all([refresh(), refreshRooms(), refreshLinks()])
   } catch (cause) {
     actionError.value = (cause as Error).message || 'Unable to restore snapshot.'
@@ -514,7 +532,7 @@ const exportDungeon = async () => {
 }
 
 const publishDungeon = async () => {
-  if (!canWriteContent.value) return
+  if (!canWriteContent.value || mutationBusy.value) return
   isPublishing.value = true
   actionError.value = ''
   try {
@@ -577,6 +595,7 @@ const createEncounterFromRoom = async () => {
       throw new Error('Encounter creation returned an empty response.')
     }
     await refreshLinks()
+    isCreatingEncounter.value = false
     await navigateTo(`/campaigns/${campaignId.value}/encounters/${result.encounterId}`)
   } catch (cause) {
     actionError.value = (cause as Error).message || 'Unable to create encounter from room.'
@@ -586,6 +605,7 @@ const createEncounterFromRoom = async () => {
 }
 
 const onKeydownHandler = (event: KeyboardEvent) => {
+  if (mutationBusy.value || (event.target instanceof HTMLElement && event.target.closest('input, textarea, select, [contenteditable=true]'))) return
   if (event.altKey && event.key === '1') activeDetailsTab.value = 'rooms'
   if (event.altKey && event.key === '2') activeDetailsTab.value = 'corridors'
   if (event.altKey && event.key === '3') activeDetailsTab.value = 'doors'
@@ -606,7 +626,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <fieldset :disabled="mutationBusy" class="min-w-0 space-y-6">
     <UPageHeader
       title="Dungeon Detail"
       :description="dungeon ? `${dungeon.theme} • ${dungeon.seed}` : 'Loading dungeon...'"
@@ -622,7 +642,7 @@ onBeforeUnmount(() => {
             Back
           </UButton>
           <UButton
-            :disabled="!canWriteContent"
+            :disabled="mutationBusy || !canWriteContent"
             :loading="isGenerating"
             icon="i-lucide-sparkles"
             @click="generate"
@@ -630,7 +650,7 @@ onBeforeUnmount(() => {
             Generate
           </UButton>
           <UButton
-            :disabled="!canWriteContent"
+            :disabled="mutationBusy || !canWriteContent"
             :loading="isPublishing"
             variant="outline"
             :icon="editState.status === 'READY' ? 'i-lucide-eye-off' : 'i-lucide-eye'"
@@ -670,17 +690,17 @@ onBeforeUnmount(() => {
             <UCard :ui="{ body: 'p-4 space-y-3' }">
               <h3 class="text-sm font-semibold">Generator Settings</h3>
               <div class="grid grid-cols-3 gap-2">
-                <UButton size="xs" variant="soft" :disabled="!canWriteContent" @click="applyPreset('small_one_shot')">One-shot</UButton>
-                <UButton size="xs" variant="soft" :disabled="!canWriteContent" @click="applyPreset('mega_wing')">Mega wing</UButton>
-                <UButton size="xs" variant="soft" :disabled="!canWriteContent" @click="applyPreset('story')">Story</UButton>
+                <UButton size="xs" variant="soft" :disabled="mutationBusy || !canWriteContent" @click="applyPreset('small_one_shot')">One-shot</UButton>
+                <UButton size="xs" variant="soft" :disabled="mutationBusy || !canWriteContent" @click="applyPreset('mega_wing')">Mega wing</UButton>
+                <UButton size="xs" variant="soft" :disabled="mutationBusy || !canWriteContent" @click="applyPreset('story')">Story</UButton>
               </div>
               <UFormField label="Name">
-                <UInput v-model="editState.name" :disabled="!canWriteContent" />
+                <UInput v-model="editState.name" :disabled="mutationBusy || !canWriteContent" />
               </UFormField>
               <UFormField label="Theme">
                 <USelect
                   v-model="selectedThemeOption"
-                  :disabled="!canWriteContent"
+                  :disabled="mutationBusy || !canWriteContent"
                   :items="dungeonThemeOptions"
                 />
                 <p class="mt-1 text-xs text-muted">
@@ -688,15 +708,15 @@ onBeforeUnmount(() => {
                 </p>
               </UFormField>
               <UFormField v-if="selectedThemeOption === 'custom'" label="Custom theme">
-                <UInput v-model="customTheme" :disabled="!canWriteContent" placeholder="volcanic forge" />
+                <UInput v-model="customTheme" :disabled="mutationBusy || !canWriteContent" placeholder="volcanic forge" />
               </UFormField>
               <UFormField label="Seed">
-                <UInput v-model="editState.seed" :disabled="!canWriteContent" />
+                <UInput v-model="editState.seed" :disabled="mutationBusy || !canWriteContent" />
               </UFormField>
               <UFormField label="Status">
                 <USelect
                   v-model="editState.status"
-                  :disabled="!canWriteContent"
+                  :disabled="mutationBusy || !canWriteContent"
                   :items="[
                     { label: 'Draft', value: 'DRAFT' },
                     { label: 'Ready', value: 'READY' },
@@ -706,33 +726,33 @@ onBeforeUnmount(() => {
               </UFormField>
               <div class="grid grid-cols-2 gap-2">
                 <UFormField label="Width">
-                  <UInput v-model.number="configDraft.width" type="number" :disabled="!canWriteContent" />
+                  <UInput v-model.number="configDraft.width" type="number" :disabled="mutationBusy || !canWriteContent" />
                 </UFormField>
                 <UFormField label="Height">
-                  <UInput v-model.number="configDraft.height" type="number" :disabled="!canWriteContent" />
+                  <UInput v-model.number="configDraft.height" type="number" :disabled="mutationBusy || !canWriteContent" />
                 </UFormField>
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <UFormField label="Room density">
-                  <UInput v-model.number="configDraft.layout.roomDensity" type="number" step="0.01" :disabled="!canWriteContent" />
+                  <UInput v-model.number="configDraft.layout.roomDensity" type="number" step="0.01" :disabled="mutationBusy || !canWriteContent" />
                 </UFormField>
                 <UFormField label="Door frequency">
-                  <UInput v-model.number="configDraft.doors.doorFrequency" type="number" step="0.01" :disabled="!canWriteContent" />
+                  <UInput v-model.number="configDraft.doors.doorFrequency" type="number" step="0.01" :disabled="mutationBusy || !canWriteContent" />
                 </UFormField>
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <UFormField label="Min room">
-                  <UInput v-model.number="configDraft.layout.minRoomSize" type="number" :disabled="!canWriteContent" />
+                  <UInput v-model.number="configDraft.layout.minRoomSize" type="number" :disabled="mutationBusy || !canWriteContent" />
                 </UFormField>
                 <UFormField label="Max room">
-                  <UInput v-model.number="configDraft.layout.maxRoomSize" type="number" :disabled="!canWriteContent" />
+                  <UInput v-model.number="configDraft.layout.maxRoomSize" type="number" :disabled="mutationBusy || !canWriteContent" />
                 </UFormField>
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <UFormField label="Corridor layout">
                   <USelect
                     v-model="configDraft.layout.corridorStyle"
-                    :disabled="!canWriteContent"
+                    :disabled="mutationBusy || !canWriteContent"
                     :items="[
                       { label: 'Straight', value: 'STRAIGHT' },
                       { label: 'Winding', value: 'WINDING' },
@@ -741,28 +761,28 @@ onBeforeUnmount(() => {
                   />
                 </UFormField>
                 <UFormField label="Connectivity">
-                  <UInput v-model.number="configDraft.layout.connectivityStrictness" type="number" step="0.05" :disabled="!canWriteContent" />
+                  <UInput v-model.number="configDraft.layout.connectivityStrictness" type="number" step="0.05" :disabled="mutationBusy || !canWriteContent" />
                 </UFormField>
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <UFormField label="Trap density">
-                  <UInput v-model.number="configDraft.content.trapDensity" type="number" step="0.01" :disabled="!canWriteContent" />
+                  <UInput v-model.number="configDraft.content.trapDensity" type="number" step="0.01" :disabled="mutationBusy || !canWriteContent" />
                 </UFormField>
                 <UFormField label="Encounter density">
-                  <UInput v-model.number="configDraft.content.encounterDensity" type="number" step="0.01" :disabled="!canWriteContent" />
+                  <UInput v-model.number="configDraft.content.encounterDensity" type="number" step="0.01" :disabled="mutationBusy || !canWriteContent" />
                 </UFormField>
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <UFormField label="Secret room chance">
-                  <UInput v-model.number="configDraft.layout.secretRoomChance" type="number" step="0.01" :disabled="!canWriteContent" />
+                  <UInput v-model.number="configDraft.layout.secretRoomChance" type="number" step="0.01" :disabled="mutationBusy || !canWriteContent" />
                 </UFormField>
                 <UFormField label="Secret door chance">
-                  <UInput v-model.number="configDraft.doors.secretDoorChance" type="number" step="0.01" :disabled="!canWriteContent" />
+                  <UInput v-model.number="configDraft.doors.secretDoorChance" type="number" step="0.01" :disabled="mutationBusy || !canWriteContent" />
                 </UFormField>
               </div>
               <div class="flex flex-wrap gap-2">
                 <UButton
-                  :disabled="!canWriteContent"
+                  :disabled="mutationBusy || !canWriteContent"
                   :loading="isSaving"
                   variant="outline"
                   @click="saveSettings"
@@ -771,10 +791,10 @@ onBeforeUnmount(() => {
                 </UButton>
                 <UDropdownMenu
                   :items="regenerationItems"
-                  :disabled="!canWriteContent || isRegenerating"
+                  :disabled="mutationBusy || !canWriteContent || isRegenerating"
                 >
                   <UButton
-                    :disabled="!canWriteContent"
+                    :disabled="mutationBusy || !canWriteContent"
                     :loading="isRegenerating"
                     variant="soft"
                     icon="i-lucide-refresh-cw"
@@ -907,7 +927,7 @@ onBeforeUnmount(() => {
                 <UButton
                   size="xs"
                   variant="outline"
-                  :disabled="!canWriteContent"
+                  :disabled="mutationBusy || !canWriteContent"
                   :loading="isCreatingSnapshot"
                   @click="createSnapshot"
                 >
@@ -927,7 +947,7 @@ onBeforeUnmount(() => {
                   <UButton
                     size="xs"
                     variant="ghost"
-                    :disabled="!canWriteContent"
+                    :disabled="mutationBusy || !canWriteContent"
                     :loading="restoringSnapshotId === snapshot.id"
                     @click="restoreSnapshot(snapshot.id)"
                   >
@@ -941,12 +961,12 @@ onBeforeUnmount(() => {
               <h3 class="text-sm font-semibold">Room Metadata</h3>
               <template v-if="selectedRoomMeta">
                 <UFormField label="Name">
-                  <UInput v-model="roomEditor.name" :disabled="!canWriteContent" />
+                  <UInput v-model="roomEditor.name" :disabled="mutationBusy || !canWriteContent" />
                 </UFormField>
                 <UFormField label="State">
                   <USelect
                     v-model="roomEditor.state"
-                    :disabled="!canWriteContent"
+                    :disabled="mutationBusy || !canWriteContent"
                     :items="[
                       { label: 'Unseen', value: 'UNSEEN' },
                       { label: 'Explored', value: 'EXPLORED' },
@@ -956,19 +976,19 @@ onBeforeUnmount(() => {
                   />
                 </UFormField>
                 <UFormField label="Description">
-                  <UTextarea v-model="roomEditor.description" :disabled="!canWriteContent" :rows="3" />
+                  <UTextarea v-model="roomEditor.description" :disabled="mutationBusy || !canWriteContent" :rows="3" />
                 </UFormField>
                 <UFormField label="GM notes">
-                  <UTextarea v-model="roomEditor.gmNotes" :disabled="!canWriteContent" :rows="3" />
+                  <UTextarea v-model="roomEditor.gmNotes" :disabled="mutationBusy || !canWriteContent" :rows="3" />
                 </UFormField>
                 <UFormField label="Player notes">
-                  <UTextarea v-model="roomEditor.playerNotes" :disabled="!canWriteContent" :rows="2" />
+                  <UTextarea v-model="roomEditor.playerNotes" :disabled="mutationBusy || !canWriteContent" :rows="2" />
                 </UFormField>
                 <UFormField label="Read-aloud">
-                  <UTextarea v-model="roomEditor.readAloud" :disabled="!canWriteContent" :rows="2" />
+                  <UTextarea v-model="roomEditor.readAloud" :disabled="mutationBusy || !canWriteContent" :rows="2" />
                 </UFormField>
                 <UButton
-                  :disabled="!canWriteContent"
+                  :disabled="mutationBusy || !canWriteContent"
                   :loading="isSavingRoom"
                   size="sm"
                   @click="saveRoomMetadata"
@@ -976,7 +996,7 @@ onBeforeUnmount(() => {
                   Save metadata
                 </UButton>
                 <UButton
-                  :disabled="!canWriteContent"
+                  :disabled="mutationBusy || !canWriteContent"
                   :loading="isCreatingEncounter"
                   size="sm"
                   variant="soft"
@@ -992,43 +1012,43 @@ onBeforeUnmount(() => {
               <h3 class="text-sm font-semibold">Map Edit Tools</h3>
               <p class="text-xs text-muted">Basic geometry tools for milestone 3.</p>
               <div class="grid grid-cols-2 gap-2">
-                <UFormField label="Add X"><UInput v-model.number="roomAction.addX" type="number" :disabled="!canWriteContent" /></UFormField>
-                <UFormField label="Add Y"><UInput v-model.number="roomAction.addY" type="number" :disabled="!canWriteContent" /></UFormField>
-                <UFormField label="Add W"><UInput v-model.number="roomAction.addWidth" type="number" :disabled="!canWriteContent" /></UFormField>
-                <UFormField label="Add H"><UInput v-model.number="roomAction.addHeight" type="number" :disabled="!canWriteContent" /></UFormField>
+                <UFormField label="Add X"><UInput v-model.number="roomAction.addX" type="number" :disabled="mutationBusy || !canWriteContent" /></UFormField>
+                <UFormField label="Add Y"><UInput v-model.number="roomAction.addY" type="number" :disabled="mutationBusy || !canWriteContent" /></UFormField>
+                <UFormField label="Add W"><UInput v-model.number="roomAction.addWidth" type="number" :disabled="mutationBusy || !canWriteContent" /></UFormField>
+                <UFormField label="Add H"><UInput v-model.number="roomAction.addHeight" type="number" :disabled="mutationBusy || !canWriteContent" /></UFormField>
               </div>
-              <UButton :disabled="!canWriteContent" :loading="isPatchingMap" size="sm" variant="outline" @click="addRoom">
+              <UButton :disabled="mutationBusy || !canWriteContent" :loading="isPatchingMap" size="sm" variant="outline" @click="addRoom">
                 Add room
               </UButton>
               <div class="grid grid-cols-2 gap-2">
-                <UFormField label="Delta X"><UInput v-model.number="roomAction.deltaX" type="number" :disabled="!canWriteContent || !selectedRoom" /></UFormField>
-                <UFormField label="Delta Y"><UInput v-model.number="roomAction.deltaY" type="number" :disabled="!canWriteContent || !selectedRoom" /></UFormField>
-                <UFormField label="Resize W"><UInput v-model.number="roomAction.resizeWidth" type="number" :disabled="!canWriteContent || !selectedRoom" /></UFormField>
-                <UFormField label="Resize H"><UInput v-model.number="roomAction.resizeHeight" type="number" :disabled="!canWriteContent || !selectedRoom" /></UFormField>
+                <UFormField label="Delta X"><UInput v-model.number="roomAction.deltaX" type="number" :disabled="mutationBusy || !canWriteContent || !selectedRoom" /></UFormField>
+                <UFormField label="Delta Y"><UInput v-model.number="roomAction.deltaY" type="number" :disabled="mutationBusy || !canWriteContent || !selectedRoom" /></UFormField>
+                <UFormField label="Resize W"><UInput v-model.number="roomAction.resizeWidth" type="number" :disabled="mutationBusy || !canWriteContent || !selectedRoom" /></UFormField>
+                <UFormField label="Resize H"><UInput v-model.number="roomAction.resizeHeight" type="number" :disabled="mutationBusy || !canWriteContent || !selectedRoom" /></UFormField>
               </div>
               <div class="flex flex-wrap gap-2">
-                <UButton :disabled="!canWriteContent || !selectedRoom" :loading="isPatchingMap" size="sm" variant="soft" @click="moveSelectedRoom">
+                <UButton :disabled="mutationBusy || !canWriteContent || !selectedRoom" :loading="isPatchingMap" size="sm" variant="soft" @click="moveSelectedRoom">
                   Move room
                 </UButton>
-                <UButton :disabled="!canWriteContent || !selectedRoom" :loading="isPatchingMap" size="sm" variant="soft" @click="resizeSelectedRoom">
+                <UButton :disabled="mutationBusy || !canWriteContent || !selectedRoom" :loading="isPatchingMap" size="sm" variant="soft" @click="resizeSelectedRoom">
                   Resize room
                 </UButton>
-                <UButton :disabled="!canWriteContent || !selectedRoom" :loading="isPatchingMap" size="sm" color="error" variant="outline" @click="removeSelectedRoom">
+                <UButton :disabled="mutationBusy || !canWriteContent || !selectedRoom" :loading="isPatchingMap" size="sm" color="error" variant="outline" @click="removeSelectedRoom">
                   Remove room
                 </UButton>
-                <UButton :disabled="!canWriteContent" :loading="isPatchingMap" size="sm" variant="outline" @click="renumberRooms">
+                <UButton :disabled="mutationBusy || !canWriteContent" :loading="isPatchingMap" size="sm" variant="outline" @click="renumberRooms">
                   Renumber rooms
                 </UButton>
-                <UButton :disabled="!canWriteContent || !selectedRoom" :loading="isPatchingMap" size="sm" variant="outline" @click="paintZone('SAFE')">
+                <UButton :disabled="mutationBusy || !canWriteContent || !selectedRoom" :loading="isPatchingMap" size="sm" variant="outline" @click="paintZone('SAFE')">
                   Paint safe zone
                 </UButton>
-                <UButton :disabled="!canWriteContent || !selectedRoom" :loading="isPatchingMap" size="sm" variant="outline" @click="paintZone('HAZARD')">
+                <UButton :disabled="mutationBusy || !canWriteContent || !selectedRoom" :loading="isPatchingMap" size="sm" variant="outline" @click="paintZone('HAZARD')">
                   Paint hazard zone
                 </UButton>
-                <UButton :disabled="!canWriteContent || !selectedDoorId" :loading="isPatchingMap" size="sm" variant="outline" @click="toggleDoorLock">
+                <UButton :disabled="mutationBusy || !canWriteContent || !selectedDoorId" :loading="isPatchingMap" size="sm" variant="outline" @click="toggleDoorLock">
                   Toggle door lock
                 </UButton>
-                <UButton :disabled="!canWriteContent || !selectedDoorId" :loading="isPatchingMap" size="sm" variant="outline" @click="toggleDoorSecret">
+                <UButton :disabled="mutationBusy || !canWriteContent || !selectedDoorId" :loading="isPatchingMap" size="sm" variant="outline" @click="toggleDoorSecret">
                   Toggle door secret
                 </UButton>
               </div>
@@ -1040,7 +1060,7 @@ onBeforeUnmount(() => {
                 <UFormField label="Type">
                   <USelect
                     v-model="newLink.linkType"
-                    :disabled="!canWriteContent"
+                    :disabled="mutationBusy || !canWriteContent"
                     :items="[
                       { label: 'Quest', value: 'QUEST' },
                       { label: 'Session', value: 'SESSION' },
@@ -1053,16 +1073,16 @@ onBeforeUnmount(() => {
                 <UFormField label="Room (optional)">
                   <USelect
                     v-model="newLink.roomId"
-                    :disabled="!canWriteContent"
+                    :disabled="mutationBusy || !canWriteContent"
                     :items="roomSelectItems"
                   />
                 </UFormField>
               </div>
               <UFormField label="Target id">
-                <UInput v-model="newLink.targetId" :disabled="!canWriteContent" placeholder="quest-id / session-id / etc" />
+                <UInput v-model="newLink.targetId" :disabled="mutationBusy || !canWriteContent" placeholder="quest-id / session-id / etc" />
               </UFormField>
               <UButton
-                :disabled="!canWriteContent || !newLink.targetId.trim()"
+                :disabled="mutationBusy || !canWriteContent || !newLink.targetId.trim()"
                 :loading="isCreatingLink"
                 size="sm"
                 @click="createLink"
@@ -1084,7 +1104,7 @@ onBeforeUnmount(() => {
                     size="xs"
                     color="error"
                     variant="ghost"
-                    :disabled="!canWriteContent"
+                    :disabled="mutationBusy || !canWriteContent"
                     :loading="deletingLinkId === link.id"
                     @click="deleteLink(link.id)"
                   >
@@ -1184,6 +1204,6 @@ onBeforeUnmount(() => {
         </template>
       </UPage>
     </template>
-  </div>
+  </fieldset>
 </template>
 

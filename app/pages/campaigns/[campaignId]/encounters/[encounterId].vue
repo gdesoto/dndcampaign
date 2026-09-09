@@ -12,6 +12,7 @@ const runtimeApi = useEncounterRuntime()
 const templateApi = useEncounterTemplates()
 const statBlockApi = useEncounterStatBlocks()
 
+const retainedEncounter = useRetainedResource<Awaited<ReturnType<typeof detailApi.getEncounter>>>(() => encounterId.value)
 const {
   data: encounter,
   pending,
@@ -19,8 +20,10 @@ const {
   refresh,
 } = await useAsyncData(
   () => `encounter-${encounterId.value}`,
-  () => detailApi.getEncounter(encounterId.value),
+  () => retainedEncounter.load(() => detailApi.getEncounter(encounterId.value)),
+  { default: retainedEncounter.get },
 )
+retainedEncounter.seed(encounter.value)
 
 const { data: templates, refresh: refreshTemplates } = await useAsyncData(
   () => `encounter-templates-inline-${campaignId.value}`,
@@ -79,7 +82,6 @@ const summary = ref<EncounterSummaryReport | null>(null)
 const summaryPending = ref(false)
 const actionError = ref('')
 const noteDraft = ref('')
-const initialLoading = computed(() => pending.value && !encounter.value)
 const preferredActiveCombatantId = ref<string | null>(null)
 
 const activeIndex = computed(() => encounter.value?.currentTurnIndex || 0)
@@ -364,7 +366,8 @@ const saveCombatantEditor = async () => {
 
 const deleteCombatant = async (combatantId: string) => {
   if (!canWriteContent.value) return
-  await withAction(() => runtimeApi.deleteCombatant(encounterId.value, combatantId))
+  await runtimeApi.deleteCombatant(encounterId.value, combatantId)
+  await refreshPreservingUiState()
 }
 
 const runStatusAction = async (action: 'start' | 'pause' | 'resume' | 'complete' | 'abandon' | 'reset') => {
@@ -540,7 +543,7 @@ const deleteCondition = async (conditionId: string) => {
 }
 
 const saveEncounterSettings = async () => {
-  if (!canWriteContent.value || !encounter.value) return
+  if (!canWriteContent.value || !encounter.value || isSavingEncounterSettings.value) return
   const toNullableInt = (value: number | null) =>
     typeof value === 'number' && Number.isFinite(value) ? Math.trunc(value) : null
   const calendarYear = toNullableInt(encounterSettings.calendarYear)
@@ -560,6 +563,7 @@ const saveEncounterSettings = async () => {
     return
   }
 
+  const submitted = settingsDraft.snapshot()
   isSavingEncounterSettings.value = true
   await withAction(async () => {
     await detailApi.updateEncounter(encounterId.value, {
@@ -568,6 +572,7 @@ const saveEncounterSettings = async () => {
       calendarMonth: hasAllDateParts ? calendarMonth : null,
       calendarDay: hasAllDateParts ? calendarDay : null,
     })
+    settingsDraft.accept(submitted)
   })
   isSavingEncounterSettings.value = false
 }
@@ -698,14 +703,19 @@ const standardConditionOptions = [
   { label: 'Custom condition', value: 'CUSTOM' },
 ]
 
+const settingsDraft = useEditorDraft(() => ({ ...encounterSettings }), value => Object.assign(encounterSettings, value))
+useUnsavedChanges(settingsDraft.dirty, isSavingEncounterSettings)
+
 watch(
   () => encounter.value,
   (value) => {
     if (!value) return
-    encounterSettings.sessionId = value.sessionId || ''
-    encounterSettings.calendarYear = value.calendarYear ?? null
-    encounterSettings.calendarMonth = value.calendarMonth ?? null
-    encounterSettings.calendarDay = value.calendarDay ?? null
+    if (!isSavingEncounterSettings.value) settingsDraft.sync({
+      sessionId: value.sessionId || '',
+      calendarYear: value.calendarYear ?? null,
+      calendarMonth: value.calendarMonth ?? null,
+      calendarDay: value.calendarDay ?? null,
+    }, value.id)
     const indexed = [...(value.combatants || [])]
       .sort((left, right) => left.sortOrder - right.sortOrder)[value.currentTurnIndex]
     preferredActiveCombatantId.value = indexed?.id || preferredActiveCombatantId.value
@@ -741,7 +751,8 @@ await refreshSummary()
 <template>
   <div class="space-y-6">
     <SharedResourceState
-      :pending="initialLoading"
+      :pending="pending"
+      :has-data="Boolean(encounter)"
       :error="error"
       :empty="!encounter"
       error-message="Unable to load encounter."
@@ -796,8 +807,8 @@ await refreshSummary()
                 :key="combatant.id"
                 :combatant="combatant"
                 :can-write="canWriteContent"
+                :delete-action="deleteCombatant"
                 @edit="openCombatantEditor(combatant)"
-                @delete="deleteCombatant"
               />
             </div>
 

@@ -4,11 +4,11 @@ import type { EncounterCombatant } from '#shared/types/encounter'
 const props = defineProps<{
   combatant: EncounterCombatant
   canWrite?: boolean
+  deleteAction: (id: string) => Promise<unknown>
 }>()
 
 const emit = defineEmits<{
   edit: [combatantId: string]
-  delete: [combatantId: string]
 }>()
 </script>
 
@@ -28,12 +28,12 @@ const emit = defineEmits<{
           <SharedConfirmActionPopover
             v-if="props.canWrite"
             trigger-label="Delete"
-            trigger-color="error"
+            trigger-color="neutral"
             trigger-variant="soft"
             :trigger-show-label="true"
-            message="Remove this combatant from the encounter?"
+            :message="`Remove ${props.combatant.name} from this encounter? This cannot be undone.`"
             confirm-label="Delete"
-            @confirm="emit('delete', props.combatant.id)"
+            :action="() => deleteAction(props.combatant.id)"
           />
         </div>
       </div>

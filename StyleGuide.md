@@ -42,8 +42,10 @@ Guidelines:
 ### Forms and Collection State
 - Pass real `state` and a validation `schema` to `SharedEntityFormModal`. The modal protects changed drafts and prevents dismissal during submission.
 - Use `useUnsavedChanges` for persistent editors. Keep saved baselines separate from local drafts; a refresh after saving one section must not erase another section's edits.
+- Use `useEditorDraft` to merge server refreshes into untouched fields. Capture submitted values before saving and accept that snapshot only after success. Preserve record identity through polling, pagination, and map edits; explicitly confirm before replacing a dirty editor with another record.
 - Serialize conflicting saves, restores, imports, and deletes. Preserve user input after failure.
 - Give `SharedResourceState` the actual request pending state and `hasData` when useful content exists. Refreshes and refresh failures should retain that content.
+- When request errors clear Nuxt async data, use `useRetainedResource` with an exact resource/filter key and its `get` callback as the async-data default. Seed hydrated data and never reuse another scope's results after a failed request.
 - Distinguish an empty collection from filtered no matches; use `noMatches` and `clear` for filter recovery.
 - Use `SharedResponsiveTable` for admin records requiring equivalent desktop and narrow-screen actions. Paginate against the server total, and reset the page when filters change.
 - Use native navigation links for route sections. Keep entity headers in persistent parent routes and use exact matching for Overview.

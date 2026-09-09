@@ -146,6 +146,7 @@ const {
   () => journalApi.listNotifications(campaignId.value, { page: 1, pageSize: 8 }),
 )
 
+const retainedEntries = useRetainedResource<Awaited<ReturnType<typeof journalApi.listEntries>>>(() => `${campaignId.value}:${JSON.stringify(listQuery.value)}`)
 const {
   data: listResponse,
   pending,
@@ -157,13 +158,14 @@ const {
   async () => {
     listError.value = ''
     try {
-      return await journalApi.listEntries(campaignId.value, listQuery.value)
+      return await retainedEntries.load(() => journalApi.listEntries(campaignId.value, listQuery.value))
     } catch (cause) {
       listError.value = (cause as Error).message || 'Unable to load journal entries.'
       throw cause
     }
   },
   {
+    default: retainedEntries.get,
     watch: [
       selectedTab,
       selectedSessionId,
@@ -178,10 +180,22 @@ const {
   },
 )
 
+retainedEntries.seed(listResponse.value)
 const entries = computed(() => listResponse.value?.items || [])
 const isEmpty = computed(() => entries.value.length === 0)
-const hasLoadedAtLeastOnce = computed(() => Array.isArray(listResponse.value?.items))
-const showLoadingState = computed(() => pending.value && !hasLoadedAtLeastOnce.value)
+const hasFilters = computed(() => Boolean(search.value.trim() || selectedSessionId.value !== ALL_FILTER_VALUE
+  || selectedTag.value !== ALL_FILTER_VALUE || filterDiscoverable.value || filterHeldByMe.value
+  || filterArchivedOnly.value || filterRecentlyDiscovered.value || filterIncludeArchived.value))
+const clearFilters = () => {
+  search.value = ''
+  selectedSessionId.value = ALL_FILTER_VALUE
+  selectedTag.value = ALL_FILTER_VALUE
+  filterDiscoverable.value = false
+  filterHeldByMe.value = false
+  filterArchivedOnly.value = false
+  filterRecentlyDiscovered.value = false
+  filterIncludeArchived.value = false
+}
 
 const sessionItems = computed(() =>
   (sessions.value || []).map((session) => ({
@@ -411,7 +425,8 @@ const saveEdit = async () => {
 
 const actionLoadingByEntryId = reactive<Record<string, boolean>>({})
 
-const deleteEntry = async (entry: CampaignJournalEntryListItem) => {
+const deleteEntry = async (entry: CampaignJournalEntryListItem, reportFailure = false) => {
+  if (actionLoadingByEntryId[entry.id]) return false
   actionLoadingByEntryId[entry.id] = true
   try {
     await journalApi.deleteEntry(campaignId.value, entry.id)
@@ -422,6 +437,7 @@ const deleteEntry = async (entry: CampaignJournalEntryListItem) => {
       color: 'success',
       icon: 'i-lucide-check',
     })
+    return true
   } catch (cause) {
     const message = (cause as Error).message || 'Unable to delete journal entry.'
     toast.add({
@@ -430,6 +446,8 @@ const deleteEntry = async (entry: CampaignJournalEntryListItem) => {
       color: 'error',
       icon: 'i-lucide-alert-circle',
     })
+    if (reportFailure) throw cause
+    return false
   } finally {
     actionLoadingByEntryId[entry.id] = false
   }
@@ -437,8 +455,7 @@ const deleteEntry = async (entry: CampaignJournalEntryListItem) => {
 
 const deleteEditingEntry = async () => {
   if (!editTarget.value?.canDelete) return
-  await deleteEntry(editTarget.value)
-  isEditOpen.value = false
+  if (await deleteEntry(editTarget.value)) isEditOpen.value = false
 }
 
 const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value}/journal/${entryId}`)
@@ -501,11 +518,14 @@ const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value
       </template>
 
       <SharedResourceState
-        :pending="showLoadingState"
+        :pending="pending"
+        :has-data="Boolean(entries.length)"
+        :no-matches="hasFilters"
         :error="error || listError"
         :empty="isEmpty"
         error-message="Unable to load journal entries."
         empty-message="No entries in this view."
+        @clear="clearFilters"
         @retry="refresh"
       >
       <template #loading>
@@ -598,7 +618,7 @@ const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value
             <SharedConfirmActionPopover
               v-if="entry.canDelete && !entry.canEdit"
               trigger-label="Delete"
-              trigger-color="error"
+              trigger-color="neutral"
               trigger-variant="ghost"
               trigger-size="xs"
               trigger-icon="i-lucide-trash-2"
@@ -607,7 +627,7 @@ const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value
               confirm-color="error"
               :confirm-loading="Boolean(actionLoadingByEntryId[entry.id])"
               :message="`Delete '${entry.title}'? This action cannot be undone.`"
-              @confirm="({ close }) => { deleteEntry(entry); close() }"
+              :action="() => deleteEntry(entry, true)"
             />
           </div>
         </SharedListItemCard>

@@ -73,16 +73,32 @@ const campaignColumns: TableColumn<{
   },
 ]
 
-const campaignOptions = computed(() =>
-  campaigns.value.map((campaign) => ({
-    label: `${campaign.name} (${campaign.owner.email})`,
-    value: campaign.id,
-  }))
+const selectedCampaign = shallowRef<(typeof campaigns.value)[number] | null>(null)
+const campaignBusy = computed(() => action.savingArchive || action.savingTransfer)
+const { confirmDiscard } = useUnsavedChanges(
+  () => Boolean(action.transferOwnerUserId || action.transferOwnerSearch.trim()), campaignBusy,
 )
-
-const selectedCampaign = computed(() =>
-  campaigns.value.find((campaign) => campaign.id === action.selectedCampaignId) || null
-)
+const campaignOptions = computed(() => {
+  const available = [...campaigns.value]
+  if (selectedCampaign.value && !available.some(item => item.id === selectedCampaign.value?.id)) available.unshift(selectedCampaign.value)
+  return available.map(item => ({ label: `${item.name} (${item.owner.email})`, value: item.id }))
+})
+const selectCampaign = async (id: string) => {
+  if (id === action.selectedCampaignId || !await confirmDiscard()) return
+  const campaign = campaigns.value.find(item => item.id === id)
+  if (!campaign || campaignBusy.value) return
+  selectedCampaign.value = campaign
+  action.selectedCampaignId = id
+  action.isArchived = campaign.isArchived
+  action.transferOwnerUserId = ''
+  action.transferOwnerSearch = ''
+  action.error = ''
+  action.success = ''
+}
+const selectedCampaignModel = computed({
+  get: () => action.selectedCampaignId,
+  set: (id: string) => { void selectCampaign(id) },
+})
 
 const transferOwnerUserOptions = ref<Array<{ label: string; value: string }>>([])
 let transferOwnerSearchTimer: ReturnType<typeof setTimeout> | null = null
@@ -125,30 +141,15 @@ const queueTransferOwnerSearch = (value: string) => {
   }, 250)
 }
 
-watch(
-  campaigns,
-  (list) => {
-    if (!list.length) {
-      action.selectedCampaignId = ''
-      return
-    }
-
-    const exists = list.some((campaign) => campaign.id === action.selectedCampaignId)
-    if (!exists) {
-      action.selectedCampaignId = list[0]?.id || ''
-    }
-  },
-  { immediate: true }
-)
-
-watch(
-  selectedCampaign,
-  (campaign) => {
-    if (!campaign) return
-    action.isArchived = campaign.isArchived
-  },
-  { immediate: true }
-)
+watch(campaigns, list => {
+  const current = list.find(item => item.id === action.selectedCampaignId)
+  if (current) selectedCampaign.value = current
+  else if (!selectedCampaign.value && list[0]) {
+    selectedCampaign.value = list[0]
+    action.selectedCampaignId = list[0].id
+  }
+  if (selectedCampaign.value && !campaignBusy.value) action.isArchived = selectedCampaign.value.isArchived
+}, { immediate: true })
 
 onMounted(async () => {
   await loadTransferOwnerOptions('')
@@ -217,8 +218,9 @@ const transferOwner = async () => {
   }
 }
 
-const editRecord = (id: string) => {
-  action.selectedCampaignId = id
+const editRecord = async (id: string) => {
+  await selectCampaign(id)
+  if (action.selectedCampaignId !== id) return
   nextTick(() => { const heading = document.querySelector<HTMLElement>('#record-editor h2'); heading?.scrollIntoView({ block: 'center', behavior: 'instant' }); heading?.focus() })
 }
 const adminBreadcrumbItems = [
@@ -304,7 +306,7 @@ v-model="filters.archived"
           </template>
 
           <div class="space-y-4">
-            <USelect v-model="action.selectedCampaignId" aria-label="Campaign" :disabled="action.savingTransfer || action.savingArchive" :items="campaignOptions" />
+            <USelect v-model="selectedCampaignModel" aria-label="Campaign" :disabled="action.savingTransfer || action.savingArchive" :items="campaignOptions" />
 
             <div class="grid gap-3 md:grid-cols-3">
               <UButton color="neutral" variant="outline" icon="i-lucide-archive" :disabled="!selectedCampaign || action.savingTransfer" :loading="action.savingArchive" @click="() => { action.isArchived = !selectedCampaign?.isArchived; saveArchiveStatus() }">{{ selectedCampaign?.isArchived ? 'Restore' : 'Archive' }}</UButton>

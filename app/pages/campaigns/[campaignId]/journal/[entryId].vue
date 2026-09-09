@@ -214,8 +214,8 @@ const saveEdit = async () => {
 }
 
 const isDeleting = ref(false)
-const deleteEntry = async () => {
-  if (!entry.value?.canDelete) return
+const deleteEntry = async (reportFailure = false) => {
+  if (!entry.value?.canDelete || isDeleting.value) return
   isDeleting.value = true
   try {
     await journalApi.deleteEntry(campaignId.value, entryId.value)
@@ -236,6 +236,7 @@ const deleteEntry = async () => {
       color: 'error',
       icon: 'i-lucide-alert-circle',
     })
+    if (reportFailure) throw cause
   } finally {
     isDeleting.value = false
   }
@@ -384,7 +385,7 @@ const toggleArchive = async () => {
             <SharedConfirmActionPopover
               v-if="entry?.canDelete && !entry?.canEdit"
               trigger-label="Delete"
-              trigger-color="error"
+              trigger-color="neutral"
               trigger-variant="outline"
               trigger-size="sm"
               trigger-icon="i-lucide-trash-2"
@@ -393,7 +394,7 @@ const toggleArchive = async () => {
               confirm-color="error"
               :confirm-loading="isDeleting"
               :message="`Delete '${entry.title}'? This action cannot be undone.`"
-              @confirm="({ close }) => { deleteEntry(); close() }"
+              :action="() => deleteEntry(true)"
             />
           </div>
         </template>

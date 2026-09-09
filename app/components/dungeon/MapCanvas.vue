@@ -216,6 +216,20 @@ const trapPoints = computed(() =>
     })
     .filter((item): item is { id: string; points: string } => Boolean(item)),
 )
+const mapHelpId = useId()
+const onMapKeydown = (event: KeyboardEvent) => {
+  if (event.target !== event.currentTarget) return
+  const step = event.shiftKey ? 100 : 40
+  if (event.key === 'ArrowLeft') setPan(panX.value + step, panY.value)
+  else if (event.key === 'ArrowRight') setPan(panX.value - step, panY.value)
+  else if (event.key === 'ArrowUp') setPan(panX.value, panY.value + step)
+  else if (event.key === 'ArrowDown') setPan(panX.value, panY.value - step)
+  else if (event.key === '+' || event.key === '=') zoomAroundCenter(0.1)
+  else if (event.key === '-') zoomAroundCenter(-0.1)
+  else if (event.key === 'Home') fitMap()
+  else return
+  event.preventDefault()
+}
 const labeledRooms = computed(() => (props.showLabels === false ? [] : props.map.rooms))
 </script>
 
@@ -226,16 +240,28 @@ const labeledRooms = computed(() => (props.showLabels === false ? [] : props.map
         Zoom {{ Math.round(zoom * 100) }}% • {{ map.width }}x{{ map.height }} cells
       </p>
       <div class="flex items-center gap-1">
-        <UButton size="xs" variant="ghost" icon="i-lucide-minus" @click="zoomAroundCenter(-0.1)" />
-        <UButton size="xs" variant="ghost" icon="i-lucide-plus" @click="zoomAroundCenter(0.1)" />
+        <UButton size="xs" variant="ghost" icon="i-lucide-minus" aria-label="Zoom out" @click="zoomAroundCenter(-0.1)" />
+        <UButton size="xs" variant="ghost" icon="i-lucide-plus" aria-label="Zoom in" @click="zoomAroundCenter(0.1)" />
         <UButton size="xs" variant="ghost" icon="i-lucide-locate-fixed" @click="centerMap">Center</UButton>
         <UButton size="xs" variant="ghost" icon="i-lucide-expand" @click="fitMap">Fit</UButton>
       </div>
     </div>
 
+    <div class="space-y-2 border-b border-default p-3">
+      <USelect
+aria-label="Select dungeon room" :model-value="selectedRoomId || '__none__'"
+        :items="[{ label: 'No room selected', value: '__none__' }, ...map.rooms.map(room => ({ label: `Room ${room.roomNumber}`, value: room.id }))]"
+        @update:model-value="value => emit('update:selectedRoomId', value === '__none__' ? null : value)" />
+      <p :id="mapHelpId" class="text-xs text-muted">Focus the map to pan with arrow keys, zoom with + or −, and fit with Home.</p>
+    </div>
     <div
       ref="containerRef"
-      class="relative h-[540px] touch-none overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(154,125,88,0.25),_rgba(38,30,21,0.7)_68%)]"
+      tabindex="0"
+      role="region"
+      aria-label="Dungeon map controls"
+      :aria-describedby="mapHelpId"
+      class="relative h-[540px] focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 touch-none overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(154,125,88,0.25),_rgba(38,30,21,0.7)_68%)]"
+      @keydown="onMapKeydown"
       @wheel="onWheel"
       @pointerdown="beginDrag"
       @pointermove="onDrag"
@@ -354,6 +380,8 @@ const labeledRooms = computed(() => (props.showLabels === false ? [] : props.map
       <div class="absolute bottom-3 right-3 rounded-md border border-default bg-default/90 p-2 backdrop-blur">
         <svg
           ref="miniMapRef"
+          role="img"
+          aria-label="Dungeon overview; use the map controls to pan with the keyboard"
           :width="180"
           :height="180"
           class="block cursor-crosshair"
