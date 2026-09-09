@@ -21,6 +21,7 @@ All source paths below are relative to `assets/example-app/`. Read the relevant 
 | Operational workflows | app/pages/courses/sections.vue, app/pages/courses/requests.vue | /courses/sections, /courses/requests |
 | Persistent detail with related records and child routes | app/pages/courses/[id].vue, app/pages/courses/[id]/ | /courses/:id and child sections |
 | Planning cards, alternate views and detail | app/pages/planning/ | /planning and /planning/:id |
+| Settings, and where explanatory prose belongs | app/pages/settings.vue | /settings, from the account menu |
 | Shared design specification | ../../references/guidelines.md, app/pages/guide.vue | /guide |
 | Portable source | app/components/kit/ | See component gallery |
 | Domain fields and orchestration | app/components/demo/, app/composables/, app/utils/ | Follow relevant page imports |

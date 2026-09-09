@@ -290,6 +290,7 @@ Color is a claim about meaning, not a way to make a control look important. Each
 - Use native UTooltip, not browser `title` attributes or a custom tooltip, for ambiguous controls such as Show or hide columns, Export CSV, Expand details, and Actions for [record].
 - Keep hints concise but do not enforce a two-word limit that removes scope.
 - Tooltips must work on hover and keyboard focus without blocking the underlying control, and must never be the only source of essential information on touch.
+- A tooltip or popover the keyboard cannot reach is a defect in its trigger, not a reason to abandon deferred disclosure and print its content on the page. See *Explanatory prose has to earn its place*.
 
 ```vue
 <UTooltip text="Edit course details">
@@ -416,10 +417,16 @@ Place toasts bottom-right on desktop and bottom-center below md. Respect safe-ar
 
 ## 6. Shared forms
 
+Most of this section governs **record editors**: forms that create or change an entity, where the input exists only in the form and losing it loses work. EntityForm, the protected draft, and the dirty-cancellation prompt all exist for that case.
+
+A **settings or preferences form** is the other kind, and it is not a lesser version of the first. Its values are already persisted, every field holds a current value the moment the page opens, and Cancel means *restore what is saved* rather than *discard what I wrote*. Such a form may own a plain UForm rather than EntityForm — it has no create, duplicate or delete lifecycle to share — and a Cancel that restores the last saved values needs no prompt, because pressing it loses nothing. Do not add a confirmation to make it look consistent with the record editors: a prompt that guards nothing is what teaches a reader to dismiss the prompts that guard something.
+
+**The test is what Cancel destroys.** If it discards work that exists nowhere else, protect it. If it restores values the server already holds, let it act. Say which kind a form is once, where the form is defined, rather than deciding again per field.
+
 ### One field/schema implementation
 
 - Use one entity field component and one schema for New and Edit.
-- EntityForm owns the UForm shell, footer, pending state, submission error, and optional modal container.
+- EntityForm owns the UForm shell, footer, pending state, submission error, and optional modal container, for the record editors described above.
 - Entity-specific fields, state, and persistence are supplied by the caller.
 - Support `presentation="modal"` (default) and `presentation="page"` without duplicating fields, validation, or footer markup.
 - A page form renders inline without a dialog, overlay, or focus trap; the page owns its heading, layout, and navigation.
@@ -430,6 +437,26 @@ Place toasts bottom-right on desktop and bottom-center below md. Respect safe-ar
 - Preserve shared field order.
 - In the footer, place neutral-outline Cancel immediately before primary-solid Submit, right-aligned on desktop.
 - On mobile retain this order and allow wider buttons to improve interaction; do not reverse their positions.
+
+### Explanatory prose has to earn its place
+
+A page where every control carries a paragraph reads as thorough and behaves as unusable. The prose is uniform grey, there is nothing to scan, and the two sentences that mattered are buried among twenty that did not — so the reader skips all of them. Explanation is a cost like any other density decision, and it is spent, not free.
+
+Ask three questions in order, and stop at the first that answers.
+
+1. **Can the control say it itself?** This is the best outcome, because it removes the prose rather than relocating it. A specific label beats a vague label with a description under it. Name the options rather than explaining them — *Individual — lower cost* needs no sentence. Put the unit in the label or the field, show format with a placeholder, and let a sensible default carry the recommendation.
+2. **Does the reader need it before they act?** If a reasonable person would otherwise enter a wrong value or misjudge a consequence, give it one short line of persistent help. This is an exception with a budget, not a per-field default.
+3. **Otherwise it is background**, and belongs somewhere the reader can *go*, rather than somewhere they must walk *through*.
+
+For that third case there is no single required mechanism. Choose by how much there is and how often it is wanted: one sentence introducing a whole group instead of one per field; a link to documentation that can hold the full story; an expandable *About these settings* the reader opens once; an info trigger revealing a tooltip or popover beside the control. An info icon is one option, not the house style, and a page that grows a row of them has usually just moved the wall of text behind twenty separate clicks.
+
+Prose that survives none of the three is deleted. Text that restates its label, explains the self-evident, or is kept because it might help someone once is not documentation; it is what makes the lines that matter invisible.
+
+**Grouping beats repetition.** One sentence at the top of a section routinely replaces six field descriptions, because most of what those descriptions repeat is the shared context, not the individual field. Prefer explaining the group.
+
+**Permanently visible is not the accessible form of deferred.** Deferred disclosure is fully accessible when its trigger is real: a focusable `<button type="button">` with an accessible name, associated with `aria-describedby`, reachable by keyboard and usable on touch. A hint nobody can reach has a broken trigger, not a broken idea. Promoting it to permanent body text is a *separate design decision*, and one that has to be justified on its own merits — applied across a whole form it trades one defect for two: prose nobody reads, and a layout that no longer scans.
+
+**Uneven prose breaks a multi-column grid.** Side-by-side fields whose descriptions run to one line and three put their inputs on different baselines, and the row stops reading as a row. Give a row's fields the same treatment, or move the explained one to a full-width row of its own. Do not pad the shorter description until it matches.
 
 ### Optional Delete in the edit footer
 
@@ -463,6 +490,8 @@ Place toasts bottom-right on desktop and bottom-center below md. Respect safe-ar
 
 ### Protect the draft
 
+This applies to record editors. A settings form that reloads saved values owes none of it.
+
 - Create a working copy when opening an edit form.
 - Cancel must not change the original.
 - A failed save retains input.
@@ -485,7 +514,7 @@ Place toasts bottom-right on desktop and bottom-center below md. Respect safe-ar
 - Editors use route queries (`?new=1`, `?edit=id`, `?duplicate=id`); browser Back closes editors opened through navigation, and direct URLs open them.
 - Closing a directly loaded editor removes its query rather than blindly navigating away.
 - Preserve unrelated query values and dirty input when rejecting navigation.
-- Use Keep editing / Discard changes for dirty cancellation; clean cancellation needs no prompt.
+- Use Keep editing / Discard changes for dirty cancellation in a record editor; clean cancellation needs no prompt, and neither does a settings form whose Cancel restores saved values.
 - Compact forms open in a modal from the list.
 - Evaluate a dedicated route for complex multi-step forms or roughly more than eight substantial fields rather than squeezing them into a modal.
 
@@ -732,7 +761,7 @@ Before adding a token to carry some part of your identity, check whether the ins
 - Use native links for navigation and native buttons for commands.
 - Give icon-only buttons accessible names; show labels for fields and meaningful table headers.
 - Make touch actions at least 44px in coarse-pointer/mobile contexts.
-- Tooltips must not contain essential information unavailable on touch.
+- Tooltips must not contain essential information unavailable on touch. Fixing an unreachable hint means giving it a focusable, named trigger — not promoting it to permanent visible text, which is a different design and usually a worse one.
 - Keep content usable at 200% zoom and with reduced motion.
 
 ### Compact content; comfortable controls
@@ -851,6 +880,7 @@ Keep the mechanical subset out of human review:
 - Are variants, vocabulary, icon behavior, and confirmation consistent?
 - Does every color on the page name a state or a role, with neutral doing the work wherever there is no such claim to make — and does each confirmation sit in the container its consequence actually requires?
 - Does New/Edit share fields and preserve input on failure?
+- Can the page be scanned, or has explanation become its content — and is each surviving line there because a label could not carry it?
 - Do loading, empty, no-results, pending, and failure states work?
 - Do first-load skeletons preserve layout, refreshes retain context, and child-route loading leave shared navigation intact?
 - Are busy states scoped and accessible, reduced motion respected, conflicting actions blocked, and failure/retry paths free of stuck indicators or misleading stale results?

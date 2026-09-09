@@ -57,8 +57,13 @@ const snippets = [
   "<UCard><template #header>{{ session.title }}</template><p>{{ session.scheduledAt }}</p><template #footer><UAvatarGroup><!-- participants --></UAvatarGroup></template></UCard>",
   "<!-- UUser is the person recipe: identity, one line of context, then status and actions. -->\n<UUser :name=\"person.name\" :description=\"person.email\" :avatar=\"{ alt: person.name }\" size=\"sm\" />\n<InlineStatus :label=\"person.enrolled ? 'Enrolled' : 'No courses'\" :color=\"person.enrolled ? 'success' : 'warning'\" />",
   "<UCard><div v-for=\"total in totals\" :key=\"total.label\" class=\"flex items-baseline justify-between gap-4 py-1\"><span class=\"text-muted\">{{ total.label }}</span><span class=\"font-medium tabular-nums\">{{ total.count }}</span></div></UCard>",
-  "<StatCard label=\"Section seats\" :value=\"capacity.enrolled + ' of ' + capacity.total\" :delta=\"capacity.available + ' available'\" :max=\"capacity.total\" :segments=\"[\n  { label: 'Enrolled', value: capacity.enrolled, color: 'primary' },\n  { label: 'Pending requests', value: capacity.pending, color: 'warning' },\n  { label: 'Available', value: capacity.available, color: 'neutral' }\n]\" />"
+  "<StatCard label=\"Section seats\" :value=\"capacity.enrolled + ' of ' + capacity.total\" :delta=\"capacity.available + ' available'\" :max=\"capacity.total\" :segments=\"[\n  { label: 'Enrolled', value: capacity.enrolled, color: 'primary' },\n  { label: 'Pending requests', value: capacity.pending, color: 'warning' },\n  { label: 'Available', value: capacity.available, color: 'neutral' }\n]\" />",
+  "<!-- The label answers it: no description. -->\n<UFormField label=\"Sync interval in minutes\"><UInput v-model=\"interval\" /></UFormField>\n\n<!-- Needed before acting, so it stays visible. The validation error replaces it. -->\n<UFormField label=\"Delete completed records after\" help=\"Deleted records cannot be recovered.\"><USelect v-model=\"retention\" :items=\"retentions\" /></UFormField>\n\n<!-- Background: announced through the description, shown on demand. -->\n<UFormField label=\"Export format\" :description=\"background\" :ui=\"{ description: 'sr-only' }\">\n  <template #hint><UPopover><UButton type=\"button\" icon=\"i-lucide-info\" aria-label=\"About export formats\" color=\"neutral\" variant=\"ghost\" size=\"xs\" />\n    <template #content><p class=\"max-w-xs p-3 text-sm text-muted\">{{ background }}</p></template></UPopover></template>\n  <USelect v-model=\"format\" :items=\"formats\" />\n</UFormField>"
 ];
+// The same three fields, explained twice over and then once where it counts.
+const verbose = ref(false);
+const demo = reactive({ interval: '30', retention: '90', format: 'csv' });
+const exportBackground = 'CSV flattens each record to one row and drops its relationships, which suits a spreadsheet. JSON keeps the nested structure, which suits another system reading the file.';
 useHead({ title: 'Layout recipes' });
 </script>
 <template>
@@ -266,6 +271,60 @@ label="Open session"
 to="/planning/g1"
 color="neutral"
 variant="outline" /></div></template></UCard>
+    </Example>
+    <Example
+title="Explained field · label / visible line / deferred"
+rule="Explanation is spent, not free. Let the label carry it, keep a visible line only where a wrong value costs something, and defer the rest."
+rationale="A description under every field reads as thorough and scans as a wall — the two lines that mattered are lost among the ones that did not. Toggle the switch to see the same three fields both ways. The third field never changes what it says to a screen reader; only whether a sighted reader has to walk through it."
+contract="UFormField: help is the visible line and the validation error replaces it; description is wired to the control's aria-describedby, so ui.description 'sr-only' keeps it announced while a UPopover on a real UButton shows it on demand. That popover is one deferred mechanism, not the required one — a sentence for the whole group or a documentation link often beats it."
+source="https://ui.nuxt.com/docs/components/form-field"
+:code="snippets[13]!">
+      <div class="space-y-3">
+        <USwitch v-model="verbose" label="Explain every field" />
+        <div class="space-y-3 rounded-lg border border-default p-3">
+          <UFormField
+            label="Sync interval in minutes"
+            :description="verbose ? 'How often the server checks for new messages on the configured schedule.' : undefined"
+          >
+            <UInput v-model="demo.interval" class="w-full sm:w-72" />
+          </UFormField>
+          <UFormField
+            label="Delete completed records after"
+            :description="verbose ? 'Choose how long completed records are kept before the scheduled cleanup removes them from storage permanently and irreversibly.' : undefined"
+            :help="verbose ? undefined : 'Deleted records cannot be recovered.'"
+          >
+            <USelect
+              v-model="demo.retention"
+              :items="[{ label: '30 days', value: '30' }, { label: '90 days', value: '90' }, { label: 'Keep indefinitely', value: 'never' }]"
+              class="w-full sm:w-72"
+            />
+          </UFormField>
+          <UFormField
+            label="Export format"
+            :description="exportBackground"
+            :ui="{ description: verbose ? '' : 'sr-only', labelWrapper: 'justify-start' }"
+          >
+            <template v-if="!verbose" #hint>
+              <UPopover>
+                <UButton
+                  type="button"
+                  icon="i-lucide-info"
+                  aria-label="About export formats"
+                  color="neutral"
+                  variant="ghost"
+                  size="xs"
+                />
+                <template #content><p class="max-w-xs p-3 text-sm text-muted">{{ exportBackground }}</p></template>
+              </UPopover>
+            </template>
+            <USelect
+              v-model="demo.format"
+              :items="[{ label: 'CSV — opens in a spreadsheet', value: 'csv' }, { label: 'JSON — keeps related records', value: 'json' }]"
+              class="w-full sm:w-72"
+            />
+          </UFormField>
+        </div>
+      </div>
     </Example>
   </div>
 </template>

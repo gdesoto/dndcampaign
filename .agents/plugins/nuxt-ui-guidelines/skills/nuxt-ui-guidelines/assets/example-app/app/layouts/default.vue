@@ -52,6 +52,7 @@ const user = { name: "Alex Morgan", email: "alex.morgan@example.edu" };
 const accountMenu = computed(() => [
   [{ label: user.email, type: "label" as const }],
   [
+    { label: "Profile and settings", icon: "i-lucide-settings", to: "/settings" },
     { label: "Guidelines", icon: "i-lucide-book-open", to: "/guide" },
     { label: "Component gallery", icon: "i-lucide-panels-top-left", to: "/gallery/components" },
   ],
