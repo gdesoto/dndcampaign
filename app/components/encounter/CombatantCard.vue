@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { RecordAction } from '~/types/actions'
 import type { EncounterCombatant } from '#shared/types/encounter'
 
 const props = defineProps<{
@@ -10,6 +11,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   edit: [combatantId: string]
 }>()
+const actions = computed<RecordAction[]>(() => props.canWrite ? [
+  { label: 'Edit', icon: 'i-lucide-pencil', action: () => emit('edit', props.combatant.id) },
+  { label: 'Remove from encounter', icon: 'i-lucide-trash-2', destructive: true, action: () => props.deleteAction(props.combatant.id), confirmation: { message: `Remove ${props.combatant.name} from this encounter? This cannot be undone.`, label: 'Remove' } },
+] : [])
 </script>
 
 <template>
@@ -24,17 +29,7 @@ const emit = defineEmits<{
           <UBadge :color="props.combatant.isDefeated ? 'error' : 'neutral'" variant="soft">
             {{ props.combatant.isDefeated ? 'Defeated' : 'Active' }}
           </UBadge>
-          <UButton v-if="props.canWrite" size="xs" variant="outline" @click="emit('edit', props.combatant.id)">Edit</UButton>
-          <SharedConfirmActionPopover
-            v-if="props.canWrite"
-            trigger-label="Delete"
-            trigger-color="neutral"
-            trigger-variant="soft"
-            :trigger-show-label="true"
-            :message="`Remove ${props.combatant.name} from this encounter? This cannot be undone.`"
-            confirm-label="Delete"
-            :action="() => deleteAction(props.combatant.id)"
-          />
+          <SharedActionMenu :name="combatant.name" :items="actions" />
         </div>
       </div>
     </template>

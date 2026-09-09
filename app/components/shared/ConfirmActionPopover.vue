@@ -1,5 +1,11 @@
 <script setup lang="ts">
+import { createReusableTemplate } from '@vueuse/core'
+
+const [DefineContent, ReuseContent] = createReusableTemplate<{ controls: { close: () => void } }>()
 const props = withDefaults(defineProps<{
+  reference?: HTMLElement
+  hideTrigger?: boolean
+  modal?: boolean
   focusFallback?: () => void
   action?: () => Promise<unknown>
   message?: string
@@ -25,6 +31,9 @@ const props = withDefaults(defineProps<{
   triggerIcon?: string
   triggerShowLabel?: boolean
 }>(), {
+  reference: undefined,
+  hideTrigger: false,
+  modal: false,
   action: undefined,
   focusFallback: undefined,
   message: 'Are you sure?',
@@ -55,15 +64,16 @@ const emit = defineEmits<{
   cancel: []
   confirm: [{ close: () => void }]
 }>()
-const open = ref(false)
+const open = defineModel<boolean>('open', { default: false })
 const running = ref(false)
 const actionError = ref('')
+watch(open, (isOpen) => { if (isOpen) actionError.value = '' })
 const busy = computed(() => running.value || props.confirmLoading)
 const cancelButton = useTemplateRef('cancelButton')
 let trigger: HTMLElement | null = null
 const focusCancel = (event: Event) => {
   event.preventDefault()
-  trigger = document.activeElement as HTMLElement | null
+  trigger = props.reference || document.activeElement as HTMLElement | null
   nextTick(() => cancelButton.value?.$el?.focus())
 }
 const focusSurvivor = () => {
@@ -73,6 +83,14 @@ const focusSurvivor = () => {
   heading?.focus()
 }
 const restoreFocus = (event: Event) => {
+  if (props.reference) {
+    event.preventDefault()
+    nextTick(() => {
+      if (props.reference?.isConnected) props.reference.focus()
+      else focusSurvivor()
+    })
+    return
+  }
   if (trigger?.isConnected) return
   event.preventDefault()
   nextTick(focusSurvivor)
@@ -93,7 +111,35 @@ const confirm = async (close: () => void) => {
 </script>
 
 <template>
-  <UPopover v-model:open="open" :dismissible="!busy" :content="{ side, align, onOpenAutoFocus: focusCancel, onCloseAutoFocus: restoreFocus }" :ui="{ content: contentClass }">
+  <DefineContent v-slot="{ controls }">
+    <div class="space-y-3">
+      <slot name="content">
+        <p v-if="!modal" class="text-sm text-muted">{{ message }}</p>
+      </slot>
+      <p v-if="actionError" role="alert" class="text-sm text-error">{{ actionError }}</p>
+      <div class="flex justify-end gap-2">
+        <UButton ref="cancelButton" :disabled="busy" :size="cancelSize" :variant="cancelVariant" :color="cancelColor" @click="emit('cancel'); controls.close()">
+          {{ cancelLabel }}
+        </UButton>
+        <UButton
+          :size="confirmSize"
+          :variant="confirmVariant"
+          :color="confirmColor"
+          :icon="confirmIcon || undefined"
+          :loading="busy"
+          @click="confirm(controls.close)"
+        >
+          {{ confirmLabel }}
+        </UButton>
+      </div>
+    </div>
+
+  </DefineContent>
+  <UModal v-if="modal" v-model:open="open" :title="confirmLabel" :description="message" :dismissible="!busy" :close="false" :content="{ onOpenAutoFocus: focusCancel, onCloseAutoFocus: restoreFocus }">
+    <template #body><ReuseContent :controls="{ close: () => { open = false } }" /></template>
+  </UModal>
+  <UPopover v-else v-model:open="open" :reference="reference" :dismissible="!busy" :content="{ side, align, onOpenAutoFocus: focusCancel, onCloseAutoFocus: restoreFocus }" :ui="{ content: contentClass }">
+    <template v-if="!hideTrigger" #default>
     <slot name="trigger">
       <UButton
         :size="triggerSize"
@@ -108,29 +154,8 @@ const confirm = async (close: () => void) => {
         </template>
       </UButton>
     </slot>
-
-    <template #content="{ close }">
-      <div class="space-y-3">
-        <slot name="content">
-          <p class="text-sm text-muted">{{ message }}</p>
-        </slot>
-        <p v-if="actionError" role="alert" class="text-sm text-error">{{ actionError }}</p>
-        <div class="flex justify-end gap-2">
-          <UButton ref="cancelButton" :disabled="busy" :size="cancelSize" :variant="cancelVariant" :color="cancelColor" @click="emit('cancel'); close()">
-            {{ cancelLabel }}
-          </UButton>
-          <UButton
-            :size="confirmSize"
-            :variant="confirmVariant"
-            :color="confirmColor"
-            :icon="confirmIcon || undefined"
-            :loading="busy"
-            @click="confirm(close)"
-          >
-            {{ confirmLabel }}
-          </UButton>
-        </div>
-      </div>
     </template>
+
+    <template #content="{ close }"><ReuseContent :controls="{ close }" /></template>
   </UPopover>
 </template>

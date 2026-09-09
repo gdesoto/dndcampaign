@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { RecordAction } from '~/types/actions'
 import { getFirstNameTerm } from '#shared/utils/name'
 import type { CampaignAccess } from '#shared/types/campaign-workflow'
 import CampaignDetailTemplate from '~/components/campaign/templates/CampaignDetailTemplate.vue'
@@ -368,19 +369,9 @@ const deleteTranscriptionArtifact = async (jobId: string, artifactId: string) =>
   } catch (error) {
     artifactDeleteError.value =
       (error as Error & { message?: string }).message || 'Unable to delete artifact.'
+    throw error
   } finally {
     artifactDeleteLoadingById[artifactId] = false
-  }
-}
-
-const deleteTranscriptionArtifactWithClose = async (
-  jobId: string,
-  artifactId: string,
-  close: () => void
-) => {
-  await deleteTranscriptionArtifact(jobId, artifactId)
-  if (!artifactDeleteError.value) {
-    close()
   }
 }
 
@@ -599,6 +590,10 @@ const startPlayback = async () => {
 }
 
 const { formatBytes } = useFormatBytes()
+const artifactActions = (jobId: string, artifact: TranscriptionArtifact): RecordAction[] => [
+  { label: 'Download', icon: 'i-lucide-download', to: `/api/artifacts/${artifact.artifact.id}/stream`, target: '_blank' },
+  ...(canManageRecording.value ? [{ label: 'Delete output', icon: 'i-lucide-trash-2', destructive: true, action: () => deleteTranscriptionArtifact(jobId, artifact.artifact.id), confirmation: { message: `Delete this ${artifact.format} transcription output file? This cannot be undone.` } }] : []),
+]
 </script>
 
 <template>
@@ -761,33 +756,7 @@ const { formatBytes } = useFormatBytes()
                       :items="videoOptions"
                       placeholder="Select video"
                     />
-                    <UButton
-                      size="xs"
-                      variant="ghost"
-                      :to="`/api/artifacts/${artifact.artifact.id}/stream`"
-                      target="_blank"
-                    >
-                      Download
-                    </UButton>
-                    <SharedConfirmActionPopover
-                      v-if="canManageRecording"
-                      message="Delete this transcription output file?"
-                      confirm-label="Delete output"
-                      confirm-icon="i-lucide-trash-2"
-                      :confirm-loading="artifactDeleteLoadingById[artifact.artifact.id] || false"
-                      @confirm="({ close }) => deleteTranscriptionArtifactWithClose(job.id, artifact.artifact.id, close)"
-                    >
-                      <template #trigger>
-                        <UButton
-                          size="xs"
-                          color="error"
-                          variant="ghost"
-                          :loading="artifactDeleteLoadingById[artifact.artifact.id] || false"
-                        >
-                          Delete
-                        </UButton>
-                      </template>
-                    </SharedConfirmActionPopover>
+                    <SharedActionMenu :name="`${artifact.format} output`" :items="artifactActions(job.id, artifact)" :disabled="artifactDeleteLoadingById[artifact.artifact.id]" />
                   </div>
                 </div>
               </div>

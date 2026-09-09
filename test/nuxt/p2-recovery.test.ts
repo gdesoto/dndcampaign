@@ -54,7 +54,7 @@ describe('asynchronous confirmation recovery', () => {
     await confirm.trigger('click')
     expect(action).toHaveBeenCalledTimes(1)
     expect(cancel.attributes('disabled')).toBeDefined()
-    expect(wrapper.attributes('data-dismissible')).toBe('false')
+    expect(wrapper.get('[data-dismissible]').attributes('data-dismissible')).toBe('false')
     rejectAction(new Error('Unable to delete record'))
     await flushPromises()
     expect(wrapper.find('[role="alert"]').text()).toBe('Unable to delete record')

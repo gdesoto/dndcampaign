@@ -746,6 +746,10 @@ onBeforeUnmount(() => {
 })
 
 await refreshSummary()
+const confirmStatusAction = async (action: 'reset' | 'abandon') => {
+  await runStatusAction(action)
+  if (actionError.value) throw new Error(actionError.value)
+}
 </script>
 
 <template>
@@ -766,12 +770,12 @@ await refreshSummary()
           :status="encounter.status"
           :round="encounter.currentRound"
           :can-write="canWriteContent"
+          :abandon-action="() => confirmStatusAction('abandon')"
+          :reset-action="() => confirmStatusAction('reset')"
           @start="runStatusAction('start')"
           @pause="runStatusAction('pause')"
           @resume="runStatusAction('resume')"
           @complete="runStatusAction('complete')"
-          @abandon="runStatusAction('abandon')"
-          @reset="runStatusAction('reset')"
           @refresh="refreshPreservingUiState"
         />
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { RecordAction } from '~/types/actions'
 import type { DungeonCreateInput, DungeonImportInput } from '#shared/schemas/dungeon'
 import type { CampaignDungeonSummary } from '#shared/types/dungeon'
 import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
@@ -174,6 +175,10 @@ const deleteDungeon = async (dungeon: CampaignDungeonSummary) => {
     deletingDungeonId.value = ''
   }
 }
+const dungeonActions = (dungeon: CampaignDungeonSummary): RecordAction[] => [
+  { label: 'Open dungeon', icon: 'i-lucide-arrow-up-right', to: `/campaigns/${campaignId.value}/dungeons/${dungeon.id}` },
+  ...(dungeon.canDelete ? [{ label: 'Delete dungeon', icon: 'i-lucide-trash-2', destructive: true, action: () => deleteDungeon(dungeon), confirmation: { modal: true, message: `Delete ${dungeon.name}? This removes its rooms, links, and snapshots.` } }] : []),
+]
 </script>
 
 <template>
@@ -218,7 +223,7 @@ const deleteDungeon = async (dungeon: CampaignDungeonSummary) => {
         <div class="space-y-3">
           <div class="flex items-start justify-between gap-3">
             <div>
-              <h3 class="text-base font-semibold">{{ dungeon.name }}</h3>
+              <h3 class="text-base font-semibold"><NuxtLink :to="`/campaigns/${campaignId}/dungeons/${dungeon.id}`" class="hover:underline">{{ dungeon.name }}</NuxtLink></h3>
               <p class="text-xs text-muted">{{ dungeon.theme }} • seed: {{ dungeon.seed }}</p>
             </div>
             <UBadge :label="dungeon.status" variant="subtle" color="neutral" />
@@ -228,27 +233,7 @@ const deleteDungeon = async (dungeon: CampaignDungeonSummary) => {
             Rooms: {{ dungeon.roomCount }} • Updated {{ new Date(dungeon.updatedAt).toLocaleString() }}
           </div>
 
-          <div class="flex flex-wrap items-center gap-2">
-            <UButton
-              variant="outline"
-              :to="`/campaigns/${campaignId}/dungeons/${dungeon.id}`"
-              icon="i-lucide-arrow-right"
-            >
-              Open dungeon
-            </UButton>
-            <SharedConfirmActionPopover
-              v-if="dungeon.canDelete"
-              :message='`Delete dungeon "${dungeon.name}"? This removes its rooms, links, and snapshots.`'
-              trigger-label="Delete"
-              trigger-size="xs"
-              trigger-variant="ghost"
-              trigger-color="neutral"
-              confirm-label="Delete dungeon"
-              confirm-icon="i-lucide-trash-2"
-              :confirm-loading="deletingDungeonId === dungeon.id"
-              :action="() => deleteDungeon(dungeon)"
-            />
-          </div>
+          <div class="flex justify-end"><SharedActionMenu :name="dungeon.name" :items="dungeonActions(dungeon)" :disabled="Boolean(deletingDungeonId)" /></div>
         </div>
       </UCard>
     </div>

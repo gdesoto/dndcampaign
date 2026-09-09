@@ -1,3 +1,4 @@
+import { actionMenuStub } from '../helpers/action-menu'
 import { expect, it, vi } from 'vitest'
 import { defineComponent, h, ref, type Component } from 'vue'
 import { flushPromises } from '@vue/test-utils'
@@ -40,6 +41,7 @@ it.each(['recording', 'transcript', 'recap'] as const)('keeps the %s confirmatio
     },
   }), {
     global: { stubs: {
+      SharedActionMenu: actionMenuStub,
       UPopover: {
         props: ['dismissible'], setup: () => ({ close }),
         template: '<div data-confirmation :data-dismissible="dismissible"><slot /><slot name="content" :close="close" /></div>',

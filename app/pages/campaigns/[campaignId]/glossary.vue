@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { RecordAction } from '~/types/actions'
 import { namedEntityFormSchema } from '~/utils/entity-form-schemas'
 import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 definePageMeta({ layout: 'dashboard' })
@@ -158,6 +159,23 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
   await request(`/api/glossary/${entry.id}/sessions/${sessionId}`, { method: 'DELETE' })
   await refresh()
 }
+const toast = useToast()
+const entryActions = (entry: GlossaryEntry): RecordAction[] => [
+  ...(entry.type === 'PC' && entry.campaignCharacters?.[0] ? [{ label: 'Open character sheet', icon: 'i-lucide-user', to: `/characters/${entry.campaignCharacters[0].character.id}` }] : []),
+  ...(canWriteContent.value ? [
+    { label: 'Edit', icon: 'i-lucide-pencil', action: () => openEdit(entry) },
+    { label: 'Delete', icon: 'i-lucide-trash-2', destructive: true, action: () => deleteEntry(entry), confirmation: { message: `Delete ${entry.name}? This cannot be undone.` } },
+  ] : []),
+]
+const sessionActions = (entry: GlossaryEntry, link: GlossaryLink): RecordAction[] => canWriteContent.value ? [{
+  label: 'Unlink session', icon: 'i-lucide-unlink', action: async () => {
+    await unlinkSession(entry, link.sessionId)
+    toast.add({ title: 'Session unlinked', actions: [{ label: 'Undo', onClick: async () => {
+      try { await linkSession(entry, link.sessionId) }
+      catch { toast.add({ title: 'Unable to restore session link', color: 'error' }) }
+    } }] })
+  },
+}] : []
 </script>
 
 <template>
@@ -229,33 +247,17 @@ const unlinkSession = async (entry: GlossaryEntry, sessionId: string) => {
                   <h3 class="text-lg font-semibold">{{ entry.name }}</h3>
                   <p v-if="entry.aliases" class="text-xs text-muted">Aliases: {{ entry.aliases }}</p>
                 </div>
-                <div class="flex gap-2">
-                  <UButton
-                    v-if="entry.type === 'PC' && entry.campaignCharacters?.length"
-                    size="xs"
-                    variant="outline"
-                    :to="`/characters/${entry.campaignCharacters?.[0]?.character.id || ''}`"
-                  >
-                    View character
-                  </UButton>
-                  <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="openEdit(entry)">Edit</UButton>
-                </div>
+                <SharedActionMenu :name="entry.name" :items="entryActions(entry)" />
               </div>
             </template>
             <p class="text-sm whitespace-pre-line text-default">{{ entry.description }}</p>
             <div class="mt-4 space-y-2">
               <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Linked sessions</p>
               <div v-if="entry.sessions.length" class="flex flex-wrap gap-2">
-                <UButton
-                  v-for="link in entry.sessions"
-                  :key="link.id"
-                  size="xs"
-                  variant="outline"
-                  :disabled="!canWriteContent"
-                  @click="unlinkSession(entry, link.sessionId)"
-                >
-                {{ link.session.title }}
-              </UButton>
+                <div v-for="link in entry.sessions" :key="link.id" class="flex items-center gap-1">
+                  <NuxtLink :to="`/campaigns/${campaignId}/sessions/${link.sessionId}`" class="text-sm text-primary hover:underline">{{ link.session.title }}</NuxtLink>
+                  <SharedActionMenu :name="link.session.title" :items="sessionActions(entry, link)" />
+                </div>
               </div>
               <div v-else class="text-xs text-muted">No sessions linked yet.</div>
               <div class="flex gap-2">

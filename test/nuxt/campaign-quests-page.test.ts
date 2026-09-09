@@ -1,3 +1,5 @@
+import { config } from '@vue/test-utils'
+import { actionMenuStub } from '../helpers/action-menu'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
@@ -89,6 +91,8 @@ vi.mock('~/composables/useCampaignPageContext', () => ({
     request: mockRequest,
   }),
 }))
+
+config.global.stubs.SharedActionMenu = actionMenuStub
 
 describe('Campaign quests page', () => {
   beforeEach(() => {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { RecordAction } from '~/types/actions'
 import type { TableColumn } from '@nuxt/ui'
 
 definePageMeta({ layout: 'default' })
@@ -64,7 +65,7 @@ const campaignColumns: TableColumn<{
   { accessorKey: 'updatedAt', header: 'Updated' },
   {
     id: 'openCampaign',
-    header: 'Campaign',
+    header: 'Actions',
     meta: {
       class: {
         td: 'text-right',
@@ -227,6 +228,10 @@ const adminBreadcrumbItems = [
   { label: 'Admin', to: '/admin' },
   { label: 'Campaign management' },
 ]
+const campaignActions = (id: string): RecordAction[] => [
+  { label: 'Open campaign', icon: 'i-lucide-external-link', to: `/campaigns/${id}` },
+  { label: 'Edit campaign', icon: 'i-lucide-pencil', action: () => editRecord(id) },
+]
 </script>
 
 <template>
@@ -281,14 +286,7 @@ v-model="filters.archived"
           >
             <template #name-cell="{ row }"><NuxtLink :to="`/campaigns/${row.original.id}`" class="font-semibold">{{ row.original.name }}</NuxtLink></template>
             <template #openCampaign-cell="{ row }">
-              <UButton color="neutral" variant="ghost" icon="i-lucide-pencil" @click="editRecord(row.original.id)">Edit</UButton>
-              <UButton
-                :to="`/campaigns/${row.original.id}`"
-                variant="ghost"
-                size="xs"
-                icon="i-lucide-external-link"
-                label="Open campaign"
-              />
+              <SharedActionMenu class="justify-end" :name="row.original.name" :items="campaignActions(row.original.id)" />
             </template>
           </SharedResponsiveTable>
 

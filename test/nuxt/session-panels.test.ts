@@ -1,3 +1,5 @@
+import { config } from '@vue/test-utils'
+import { actionMenuStub } from '../helpers/action-menu'
 import { describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import StatusCards from '../../app/components/session/StatusCards.vue'
@@ -5,6 +7,8 @@ import SummaryPanel from '../../app/components/session/SummaryPanel.vue'
 import SuggestionsPanel from '../../app/components/session/SuggestionsPanel.vue'
 import RecapPanel from '../../app/components/session/RecapPanel.vue'
 import TranscriptPanel from '../../app/components/session/TranscriptPanel.vue'
+
+config.global.stubs.SharedActionMenu = actionMenuStub
 
 const clickByText = async (wrapper: Awaited<ReturnType<typeof mountSuspended>>, text: string) => {
   const button = wrapper.findAll('button').find((candidate: any) => candidate.text().trim() === text)
@@ -140,6 +144,7 @@ describe('SessionRecapPanel', () => {
       },
       global: {
         stubs: {
+          SharedActionMenu: actionMenuStub,
           SharedConfirmActionPopover: {
             props: ['action'],
             template: `
@@ -169,7 +174,6 @@ describe('SessionRecapPanel', () => {
 
     expect(wrapper.text()).toContain(mimeType.startsWith('video/') ? 'Video recap' : 'Audio recap')
     await clickByText(wrapper, 'Play recap')
-    await clickByText(wrapper, 'Delete recap')
     await clickByText(wrapper, 'Confirm delete recap')
 
     expect(wrapper.emitted('upload-recap')).toBeTruthy()

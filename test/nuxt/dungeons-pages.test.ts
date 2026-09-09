@@ -1,3 +1,5 @@
+import { config } from '@vue/test-utils'
+import { actionMenuStub } from '../helpers/action-menu'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import MapCanvas from '../../app/components/dungeon/MapCanvas.vue'
 import type { DungeonMapData } from '../../shared/types/dungeon'
@@ -138,6 +140,8 @@ const dungeonDetailFixture = {
   },
   playerView: null,
 }
+
+config.global.stubs.SharedActionMenu = actionMenuStub
 
 describe('Dungeon pages', () => {
   beforeEach(() => {

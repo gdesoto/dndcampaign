@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { RecordAction } from '~/types/actions'
 import { titledEntityFormSchema } from '~/utils/entity-form-schemas'
 import type {
   CampaignRequestCreateInput,
@@ -227,12 +228,13 @@ const saveEdit = async () => {
 const actionLoadingByRequestId = reactive<Record<string, boolean>>({})
 const moderationNotesByRequestId = reactive<Record<string, string>>({})
 
-const withRequestAction = async (requestId: string, action: () => Promise<void>) => {
+const withRequestAction = async (requestId: string, action: () => Promise<void>, reportFailure = false) => {
   actionLoadingByRequestId[requestId] = true
   try {
     await action()
     await refresh()
   } catch (requestError) {
+    if (reportFailure) throw requestError
     const errorMessage = (requestError as Error).message || 'Request action failed.'
     toast.add({
       title: 'Request action failed',
@@ -277,7 +279,7 @@ const cancelRequest = async (requestId: string) => {
       color: 'success',
       icon: 'i-lucide-check',
     })
-  })
+  }, true)
 }
 
 const decideRequest = async (requestId: string, decision: CampaignRequestDecisionInput['decision']) => {
@@ -298,6 +300,10 @@ const decideRequest = async (requestId: string, decision: CampaignRequestDecisio
     moderationNotesByRequestId[requestId] = ''
   })
 }
+const requestActions = (request: CampaignRequestListItem): RecordAction[] => [
+  ...(request.canEdit ? [{ label: 'Edit', icon: 'i-lucide-pencil', action: () => openEdit(request) }] : []),
+  ...(request.canCancel ? [{ label: 'Cancel request', icon: 'i-lucide-x', destructive: true, action: () => cancelRequest(request.id), confirmation: { message: `Cancel ${request.title}? This closes the request.`, label: 'Cancel request' } }] : []),
+]
 </script>
 
 <template>
@@ -375,26 +381,7 @@ const decideRequest = async (requestId: string, decision: CampaignRequestDecisio
               {{ request.viewerHasVoted ? 'Remove vote' : 'Vote' }}
             </UButton>
 
-            <UButton
-              v-if="request.canEdit"
-              size="xs"
-              variant="outline"
-              :disabled="actionLoadingByRequestId[request.id]"
-              @click="openEdit(request)"
-            >
-              Edit
-            </UButton>
-
-            <UButton
-              v-if="request.canCancel"
-              size="xs"
-              color="warning"
-              variant="soft"
-              :loading="actionLoadingByRequestId[request.id]"
-              @click="cancelRequest(request.id)"
-            >
-              Cancel
-            </UButton>
+            <SharedActionMenu :name="request.title" :items="requestActions(request)" :disabled="actionLoadingByRequestId[request.id]" />
           </div>
 
           <div v-if="request.canModerate" class="mt-4 space-y-2">

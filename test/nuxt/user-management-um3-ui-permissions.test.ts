@@ -1,3 +1,5 @@
+import { config } from '@vue/test-utils'
+import { actionMenuStub } from '../helpers/action-menu'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { ref } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
@@ -20,6 +22,8 @@ mockNuxtImport('useAsyncData', () => async (_key: string | (() => string), handl
   error: ref(null),
   refresh: vi.fn(async () => undefined),
 }))
+
+config.global.stubs.SharedActionMenu = actionMenuStub
 
 describe('UM-3 UI permission states', () => {
   beforeEach(() => {
@@ -155,7 +159,6 @@ describe('UM-3 UI permission states', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('Shared access warning')
     expect(wrapper.text()).toContain('may lose access')
 
     const removeButtons = wrapper.findAll('button').filter((button) => button.text().trim() === 'Remove')

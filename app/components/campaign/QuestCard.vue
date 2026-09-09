@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { RecordAction } from '~/types/actions'
 type QuestType = 'CAMPAIGN' | 'GUILD' | 'CHARACTER'
 type QuestTrack = 'MAIN' | 'SIDE'
 type QuestStatus = 'ACTIVE' | 'COMPLETED' | 'FAILED' | 'ON_HOLD'
@@ -36,7 +37,8 @@ type QuestStatusOption = {
   value: QuestStatus
 }
 
-defineProps<{
+const props = defineProps<{
+  deleteAction?: () => Promise<unknown>
   quest: QuestCardItem
   canWriteContent: boolean
   statusOptions: QuestStatusOption[]
@@ -53,6 +55,11 @@ const emit = defineEmits<{
   edit: [quest: QuestCardItem]
   'update-status': [quest: QuestCardItem, status: QuestStatus]
 }>()
+const actions = computed<RecordAction[]>(() => props.canWriteContent ? [
+  { label: 'Edit', icon: 'i-lucide-pencil', action: () => emit('edit', props.quest) },
+  ...(props.deleteAction ? [{ label: 'Delete', icon: 'i-lucide-trash-2', destructive: true, action: props.deleteAction, confirmation: { message: `Delete quest "${props.quest.title}"? This cannot be undone.` } }] : []),
+] : [])
+
 </script>
 
 <template>
@@ -63,7 +70,7 @@ const emit = defineEmits<{
           <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Quest</p>
           <h3 class="text-lg font-semibold">{{ quest.title }}</h3>
         </div>
-        <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="emit('edit', quest)">Edit</UButton>
+        <SharedActionMenu :name="quest.title" :items="actions" />
       </div>
     </template>
 

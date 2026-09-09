@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { RecordAction } from '~/types/actions'
 import type {
   CampaignMapSummaryDto,
   CampaignMapViewerDto,
@@ -161,13 +162,20 @@ const saveMapMeta = async () => {
   }
 }
 
+const settingPrimary = ref(false)
 const setPrimary = async (mapId: string) => {
+  if (settingPrimary.value) throw new Error('A primary map update is already in progress.')
   if (!canWriteContent.value) return
-  await request(`/api/campaigns/${campaignId.value}/maps/${mapId}`, {
-    method: 'PATCH',
-    body: { action: 'set-primary' },
-  })
-  await refresh()
+  settingPrimary.value = true
+  try {
+    await request(`/api/campaigns/${campaignId.value}/maps/${mapId}`, {
+      method: 'PATCH',
+      body: { action: 'set-primary' },
+    })
+    await refresh()
+  } finally {
+    settingPrimary.value = false
+  }
 }
 
 const deleteError = ref('')
@@ -330,6 +338,14 @@ const applyReimport = async () => {
     reimporting.value = false
   }
 }
+const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
+  { label: 'Map settings', icon: 'i-lucide-settings-2', action: async () => { selectedMapId.value = map.id; await nextTick(); mapSettingsModalOpen.value = true } },
+  ...(canWriteContent.value ? [
+    { label: 'Re-import / update', icon: 'i-lucide-refresh-cw', action: async () => { selectedMapId.value = map.id; await nextTick(); reimportPanelOpen.value = true } },
+    ...(!map.isPrimary ? [{ label: 'Set primary', icon: 'i-lucide-star', action: () => setPrimary(map.id) }] : []),
+    { label: 'Delete map', icon: 'i-lucide-trash-2', destructive: true, action: () => confirmDeleteMap(map.id), confirmation: { modal: true, message: `Delete ${map.name}? This removes its imported files, features, and map glossary links.` } },
+  ] : []),
+]
 </script>
 
 <template>
@@ -406,26 +422,7 @@ const applyReimport = async () => {
                 aria-label="Open map layer filters"
                 @click="() => { layerModalOpen = true }"
               />
-              <UButton
-                size="sm"
-                color="neutral"
-                variant="ghost"
-                icon="i-lucide-settings-2"
-                :disabled="!selectedMap"
-                @click="() => { mapSettingsModalOpen = true }"
-              >
-                Map settings
-              </UButton>
-              <UButton
-                size="sm"
-                color="neutral"
-                variant="ghost"
-                icon="i-lucide-refresh-cw"
-                :disabled="!canWriteContent || !selectedMap"
-                @click="() => { reimportPanelOpen = true }"
-              >
-                Re-import / update
-              </UButton>
+              <SharedActionMenu v-if="selectedMap" :name="selectedMap.name" :items="mapActions(selectedMap)" :disabled="Boolean(deletingMapId) || savingMap || reimporting || settingPrimary" />
               <UButton
                 size="sm"
                 :disabled="!canWriteContent || !selectedFeatureIds.length || !selectedMapId"
@@ -521,28 +518,7 @@ const applyReimport = async () => {
             </button>
             <div class="flex items-center gap-2">
               <UBadge v-if="map.isPrimary" color="success" variant="subtle">Primary</UBadge>
-              <UButton
-                v-else
-                size="xs"
-                variant="ghost"
-                color="neutral"
-                :disabled="!canWriteContent"
-                @click.stop="setPrimary(map.id)"
-              >
-                Set primary
-              </UButton>
-              <SharedConfirmActionPopover
-                :message='`Delete map "${map.name}"? This removes its imported files, features, and map glossary links.`'
-                trigger-label="Delete"
-                trigger-size="xs"
-                trigger-variant="ghost"
-                trigger-color="neutral"
-                confirm-label="Delete map"
-                confirm-icon="i-lucide-trash-2"
-                :confirm-loading="deletingMapId === map.id"
-                :disabled="!canWriteContent"
-                :action="() => confirmDeleteMap(map.id)"
-              />
+              <SharedActionMenu :name="map.name" :items="mapActions(map)" :disabled="Boolean(deletingMapId) || savingMap || reimporting || settingPrimary" />
             </div>
           </div>
           <p v-if="!maps?.length" class="text-sm text-muted">No maps imported yet.</p>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { RecordAction } from '~/types/actions'
 import { titledEntityFormSchema } from '~/utils/entity-form-schemas'
 import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 definePageMeta({ layout: 'dashboard' })
@@ -110,6 +111,11 @@ const deleteEditingMilestone = async () => {
   await deleteMilestone(milestone)
   isEditOpen.value = false
 }
+const milestoneActions = (milestone: MilestoneItem): RecordAction[] => canWriteContent.value ? [
+  { label: 'Edit', icon: 'i-lucide-pencil', action: () => openEdit(milestone) },
+  { label: 'Delete', icon: 'i-lucide-trash-2', destructive: true, action: () => deleteMilestone(milestone), confirmation: { message: `Delete milestone "${milestone.title}"? This cannot be undone.` } },
+] : []
+
 </script>
 
 <template>
@@ -156,7 +162,7 @@ const deleteEditingMilestone = async () => {
                   <p class="text-xs uppercase tracking-[0.2em] text-dimmed">Milestone</p>
                   <h3 class="text-lg font-semibold">{{ milestone.title }}</h3>
                 </div>
-                <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="openEdit(milestone)">Edit</UButton>
+                <SharedActionMenu :name="milestone.title" :items="milestoneActions(milestone)" :disabled="Boolean(deletingMilestoneId)" />
               </div>
             </template>
             <p class="text-sm whitespace-pre-line text-default">{{ milestone.description || 'Add details about this milestone.' }}</p>

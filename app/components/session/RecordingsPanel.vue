@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { RecordAction } from '~/types/actions'
 type RecordingItem = {
   id: string
   kind: 'AUDIO' | 'VIDEO'
@@ -48,6 +49,12 @@ const selectedKindModel = computed({
   set: (value: 'AUDIO' | 'VIDEO') => emit('update:selectedKind', value),
 })
 const { formatBytes } = useFormatBytes()
+const recordingActions = (recording: RecordingItem): RecordAction[] => [
+  { label: 'Open', icon: 'i-lucide-arrow-up-right', to: `/campaigns/${props.campaignId}/recordings/${recording.id}` },
+  ...(props.workflowMode ? [{ label: 'Transcribe', icon: 'i-lucide-file-text', to: `/campaigns/${props.campaignId}/recordings/${recording.id}?transcribe=1` }] : []),
+  ...(props.canManageRecordings && props.deleteRecording ? [{ label: 'Delete', icon: 'i-lucide-trash-2', destructive: true, action: () => props.deleteRecording!(recording.id), confirmation: { message: `Delete recording "${recording.filename}"? This permanently removes its file.` } }] : []),
+]
+
 </script>
 
 <template>
@@ -109,7 +116,7 @@ const { formatBytes } = useFormatBytes()
         >
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p class="text-sm font-semibold">{{ recording.filename }}</p>
+              <NuxtLink :to="`/campaigns/${campaignId}/recordings/${recording.id}`" class="text-sm font-semibold">{{ recording.filename }}</NuxtLink>
               <p class="text-xs text-dimmed">
                 {{ recording.kind }} - {{ formatBytes(recording.byteSize) }} - {{ new Date(recording.createdAt).toLocaleString() }}
               </p>
@@ -123,42 +130,7 @@ const { formatBytes } = useFormatBytes()
               >
                 Play
               </UButton>
-              <UButton
-                v-if="workflowMode"
-                size="xs"
-                variant="outline"
-                :to="`/campaigns/${campaignId}/recordings/${recording.id}?transcribe=1`"
-              >
-                Transcribe
-              </UButton>
-              <UButton
-                size="xs"
-                variant="outline"
-                :to="`/campaigns/${campaignId}/recordings/${recording.id}`"
-              >
-                Open
-              </UButton>
-              <SharedConfirmActionPopover
-                v-if="canManageRecordings && deleteRecording"
-                :message="`Delete recording ${recording.filename}? This permanently removes its file.`"
-                confirm-label="Delete"
-                confirm-icon="i-lucide-trash-2"
-                :confirm-loading="deletingRecordingId === recording.id"
-                :disabled="Boolean(deletingRecordingId)"
-                :action="() => deleteRecording!(recording.id)"
-              >
-                <template #trigger>
-                  <UButton
-                    size="xs"
-                    color="neutral"
-                    variant="outline"
-                    :loading="deletingRecordingId === recording.id"
-                    :disabled="Boolean(deletingRecordingId)"
-                  >
-                    Delete
-                  </UButton>
-                </template>
-              </SharedConfirmActionPopover>
+              <SharedActionMenu :name="recording.filename" :items="recordingActions(recording)" :disabled="Boolean(deletingRecordingId)" />
             </div>
           </div>
 

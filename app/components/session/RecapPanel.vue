@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { RecordAction } from '~/types/actions'
+import { recapWatchLink } from '~/utils/recap-links'
 import type { SessionRecapRecording } from '#shared/types/session-workflow'
 
 type WorkflowStep = 'recordings' | 'transcription' | 'summary' | 'recap'
@@ -35,6 +37,7 @@ const recapFileModel = computed({
   set: (value: File | null | undefined) => emit('update:recapFile', value ?? null),
 })
 
+const toast = useToast()
 const mediaKinds = ['AUDIO', 'VIDEO'] as const
 const kindLabel = computed(() => props.selectedKind === 'VIDEO' ? 'Video' : 'Audio')
 const acceptedTypes = computed(() => props.selectedKind === 'VIDEO'
@@ -65,6 +68,23 @@ watch(
     }
   }
 )
+
+const recapActions = computed<RecordAction[]>(() => {
+  const recap = props.recap
+  if (!recap) return []
+  const url = props.campaignId ? recapWatchLink(`/campaigns/${props.campaignId}`, recap.id) : ''
+  return [
+    ...(url ? [
+      { label: 'Open playlist', icon: 'i-lucide-list-video', to: url },
+      { label: 'Copy campaign link', icon: 'i-lucide-link', action: async () => { await navigator.clipboard.writeText(new URL(url, window.location.origin).href); toast.add({ title: 'Campaign link copied', color: 'success' }) } },
+    ] : []),
+    ...(props.workflowMode ? [{ label: 'Replace recap', icon: 'i-lucide-refresh-cw', action: openReplaceModal }] : []),
+    ...(props.workflowMode && props.deleteRecap ? [{ label: 'Delete', icon: 'i-lucide-trash-2', destructive: true, action: async () => {
+      if (props.recap?.id !== recap.id) throw new Error('The selected recap changed. Close this prompt and choose the recap again.')
+      await props.deleteRecap!()
+    }, confirmation: { label: 'Delete recap', message: `Delete recap "${recap.filename}"? This permanently removes its file.` } }] : []),
+  ]
+})
 
 </script>
 
@@ -146,7 +166,7 @@ watch(
       </div>
 
       <div class="flex flex-wrap items-center gap-2 sm:justify-end">
-        <CampaignRecapLinks v-if="campaignId && recap" :base-path="`/campaigns/${campaignId}`" :recap-id="recap.id" />
+
         <UButton
           v-if="workflowMode && !hasRecap"
           size="sm"
@@ -158,18 +178,7 @@ watch(
         >
           Upload recap
         </UButton>
-        <UButton
-          v-if="workflowMode && hasRecap"
-          size="sm"
-          variant="outline"
-          icon="i-lucide-refresh-cw"
-          :loading="recapUploading"
-          :disabled="recapUploading || recapDeleting"
-          class="w-full sm:w-auto"
-          @click="openReplaceModal"
-        >
-          Replace recap
-        </UButton>
+
         <UButton
           size="sm"
           variant="outline"
@@ -181,30 +190,7 @@ watch(
         >
           Play recap
         </UButton>
-        <SharedConfirmActionPopover
-          v-if="workflowMode && hasRecap && deleteRecap"
-          :message="`Delete ${kindLabel.toLowerCase()} recap ${recap?.filename || 'file'}? This permanently removes its file.`"
-          confirm-label="Delete recap"
-          confirm-icon="i-lucide-trash-2"
-          :confirm-loading="recapDeleting"
-          :disabled="recapUploading"
-          content-class="w-64 p-3"
-          :action="deleteRecap"
-        >
-          <template #trigger>
-            <UButton
-              size="sm"
-              variant="ghost"
-              color="neutral"
-              icon="i-lucide-trash-2"
-              :loading="recapDeleting"
-              :disabled="recapUploading || recapDeleting"
-              class="w-full sm:w-auto"
-            >
-              Delete recap
-            </UButton>
-          </template>
-        </SharedConfirmActionPopover>
+        <SharedActionMenu v-if="recap" :name="recap.filename || 'recap'" :items="recapActions" :disabled="recapUploading || recapDeleting" />
       </div>
 
       <UCard v-if="recapPlaybackUrl">

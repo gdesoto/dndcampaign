@@ -1,3 +1,5 @@
+import { config } from '@vue/test-utils'
+import { actionMenuStub } from '../helpers/action-menu'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
@@ -64,6 +66,8 @@ const entry = {
   canEdit: true,
   canDelete: true,
 }
+
+config.global.stubs.SharedActionMenu = actionMenuStub
 
 describe('campaign journal page', () => {
   const formStubs = {

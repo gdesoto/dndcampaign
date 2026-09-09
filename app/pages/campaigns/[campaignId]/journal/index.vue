@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { RecordAction } from '~/types/actions'
 import { titledEntityFormSchema } from '~/utils/entity-form-schemas'
 import type {
   CampaignJournalCreateInput,
@@ -458,7 +459,12 @@ const deleteEditingEntry = async () => {
   if (await deleteEntry(editTarget.value)) isEditOpen.value = false
 }
 
-const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value}/journal/${entryId}`)
+const entryActions = (entry: CampaignJournalEntryListItem): RecordAction[] => [
+  { label: 'Open', icon: 'i-lucide-arrow-up-right', to: `/campaigns/${campaignId.value}/journal/${entry.id}` },
+  ...(entry.canEdit ? [{ label: 'Edit', icon: 'i-lucide-pencil', action: () => openEdit(entry) }] : []),
+  ...(entry.canDelete ? [{ label: 'Delete', icon: 'i-lucide-trash-2', destructive: true, action: () => deleteEntry(entry, true), confirmation: { message: `Delete "${entry.title}"? This cannot be undone.` } }] : []),
+]
+
 </script>
 
 <template>
@@ -556,9 +562,12 @@ const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value
                 </NuxtLink>
                 <p class="text-xs text-muted">By {{ entry.authorName }}</p>
               </div>
-              <UBadge :color="visibilityColor(entry.visibility)" variant="soft" size="sm">
-                {{ visibilityLabelMap[entry.visibility] }}
-              </UBadge>
+              <div class="flex items-center gap-2">
+                <UBadge :color="visibilityColor(entry.visibility)" variant="soft" size="sm">
+                  {{ visibilityLabelMap[entry.visibility] }}
+                </UBadge>
+                <SharedActionMenu :name="entry.title" :items="entryActions(entry)" :disabled="Boolean(actionLoadingByEntryId[entry.id])" />
+              </div>
             </div>
           </template>
 
@@ -599,37 +608,7 @@ const openEntry = (entryId: string) => navigateTo(`/campaigns/${campaignId.value
             Updated {{ new Date(entry.updatedAt).toLocaleString() }}
           </div>
 
-          <div class="mt-4 flex flex-wrap gap-2">
-            <UButton
-              size="xs"
-              variant="outline"
-              @click="() => { void openEntry(entry.id) }"
-            >
-              Open
-            </UButton>
-            <UButton
-              v-if="entry.canEdit"
-              size="xs"
-              variant="outline"
-              @click="openEdit(entry)"
-            >
-              Edit
-            </UButton>
-            <SharedConfirmActionPopover
-              v-if="entry.canDelete && !entry.canEdit"
-              trigger-label="Delete"
-              trigger-color="neutral"
-              trigger-variant="ghost"
-              trigger-size="xs"
-              trigger-icon="i-lucide-trash-2"
-              trigger-aria-label="Delete journal entry"
-              confirm-label="Delete"
-              confirm-color="error"
-              :confirm-loading="Boolean(actionLoadingByEntryId[entry.id])"
-              :message="`Delete '${entry.title}'? This action cannot be undone.`"
-              :action="() => deleteEntry(entry, true)"
-            />
-          </div>
+
         </SharedListItemCard>
       </div>
       </SharedResourceState>

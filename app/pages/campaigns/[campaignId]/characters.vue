@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { RecordAction } from '~/types/actions'
 definePageMeta({ layout: 'dashboard' })
 
 type CharacterLink = {
@@ -93,19 +94,13 @@ const removeLink = async (link: CharacterLink) => {
   await refresh()
 }
 
-const removeLinkWithClose = async (link: CharacterLink, close: () => void) => {
-  await removeLink(link)
-  close()
-}
+
 
 const availableAttachCharacters = computed(() =>
   (allCharacters.value || []).filter((character) => character.canEdit)
 )
 
-const statusOptions = [
-  { label: 'Active', value: 'ACTIVE' },
-  { label: 'Inactive', value: 'INACTIVE' },
-]
+
 
 type AbilityKey = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha'
 
@@ -155,6 +150,26 @@ const initiativeFor = (link: CharacterLink) => {
   const modifier = Math.floor((dex - 10) / 2)
   return modifier >= 0 ? `+${modifier}` : String(modifier)
 }
+const toast = useToast()
+const changeStatus = async (link: CharacterLink) => {
+  const previous = link.status
+  const targetCampaignId = campaignId.value
+  await updateStatus(link, previous === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE')
+  toast.add({ title: 'Character status updated', actions: [{ label: 'Undo', onClick: async () => {
+    try {
+      await request(`/api/campaigns/${targetCampaignId}/characters/${link.character.id}`, { method: 'PATCH', body: { status: previous } })
+      if (campaignId.value === targetCampaignId) await refresh()
+    }
+    catch { toast.add({ title: 'Unable to restore character status', color: 'error' }) }
+  } }] })
+}
+const characterActions = (link: CharacterLink): RecordAction[] => [
+  { label: 'Open character sheet', icon: 'i-lucide-user', to: `/characters/${link.character.id}` },
+  ...(canWriteContent.value ? [
+    { label: link.status === 'ACTIVE' ? 'Mark inactive' : 'Mark active', icon: 'i-lucide-circle-check', action: () => changeStatus(link) },
+    { label: 'Remove from campaign', icon: 'i-lucide-unlink', destructive: true, disabled: !link.character.isOwner, description: !link.character.isOwner ? 'Only the character owner can remove this link.' : undefined, action: () => removeLink(link), confirmation: { label: 'Remove', modal: Boolean(link.accessImpact?.warningRequired), message: `Remove ${link.character.name} from this campaign? The character itself will remain.${link.accessImpact?.warningRequired ? ` Up to ${link.accessImpact.impactedUserCount} non-owner members may lose access to this character.` : ''}` } },
+  ] : []),
+]
 </script>
 
 <template>
@@ -236,7 +251,7 @@ const initiativeFor = (link: CharacterLink) => {
                 />
                 <div class="space-y-1">
                   <h3 class="font-display text-lg tracking-[0.02em] uppercase text-[var(--ui-text-highlighted)]">
-                    {{ link.character.name }}
+                    <NuxtLink :to="`/characters/${link.character.id}`" class="hover:underline">{{ link.character.name }}</NuxtLink>
                   </h3>
                   <p class="text-sm italic text-[var(--ui-text-muted)]">{{ subtitleFor(link) }}</p>
                   <p class="text-xs text-[var(--ui-text-dimmed)]">{{ ownerLineFor(link) }}</p>
@@ -257,13 +272,7 @@ const initiativeFor = (link: CharacterLink) => {
                   </div>
                 </div>
               </div>
-              <UButton
-                size="xs"
-                variant="outline"
-                icon="i-lucide-star"
-                :to="`/characters/${link.character.id}`"
-                aria-label="Open character sheet"
-              />
+              <SharedActionMenu :name="link.character.name" :items="characterActions(link)" />
             </div>
 
             <div class="space-y-2">
@@ -301,47 +310,7 @@ const initiativeFor = (link: CharacterLink) => {
               </div>
             </div>
           </div>
-          <template #footer>
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <USelect
-                :items="statusOptions"
-                :model-value="link.status"
-                size="xs"
-                :disabled="!canWriteContent"
-                @update:model-value="(value) => updateStatus(link, value as CharacterLink['status'])"
-              />
-              <SharedConfirmActionPopover
-                v-if="canWriteContent && link.character.isOwner"
-                message="Remove character link?"
-                content-class="w-72 p-3"
-                confirm-label="Remove"
-                confirm-icon="i-lucide-trash-2"
-                @confirm="({ close }) => removeLinkWithClose(link, close)"
-              >
-                <template #trigger>
-                  <UButton size="xs" color="error" variant="ghost">Remove</UButton>
-                </template>
-                <template #content>
-                  <div class="space-y-3">
-                    <p class="text-sm text-muted">
-                      Remove {{ link.character.name }} from this campaign?
-                    </p>
-                    <UAlert
-                      v-if="link.accessImpact?.warningRequired"
-                      color="warning"
-                      variant="subtle"
-                      title="Shared access warning"
-                      :description="`Up to ${link.accessImpact.impactedUserCount} non-owner member(s) may lose access to this character after removal.`"
-                    />
-                  </div>
-                </template>
-              </SharedConfirmActionPopover>
-              <UTooltip v-else-if="canWriteContent && !link.character.isOwner" text="Only the character owner can remove this link.">
-                <UButton size="xs" color="error" variant="ghost" disabled>Remove</UButton>
-              </UTooltip>
-              <UButton v-else size="xs" color="error" variant="ghost" disabled>Remove</UButton>
-            </div>
-          </template>
+
         </UCard>
       </div>
     </div>

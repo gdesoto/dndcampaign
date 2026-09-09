@@ -1,3 +1,5 @@
+import { config } from '@vue/test-utils'
+import { actionMenuStub } from '../helpers/action-menu'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
@@ -31,6 +33,8 @@ mockNuxtImport('useAsyncData', () => async (_key: string | (() => string), _hand
   error: mockError,
   refresh: mockRefresh,
 }))
+
+config.global.stubs.SharedActionMenu = actionMenuStub
 
 describe('Campaign milestones page', () => {
   beforeEach(() => {
