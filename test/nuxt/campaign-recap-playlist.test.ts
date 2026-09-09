@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { flushPromises } from '@vue/test-utils'
 import RecapPlaylist from '../../app/components/campaign/RecapPlaylist.vue'
 
 describe('CampaignRecapPlaylist', () => {
@@ -15,7 +16,7 @@ describe('CampaignRecapPlaylist', () => {
     const wrapper = await mountSuspended(RecapPlaylist, { props: {
       recaps, selectedRecapId: 'r1', playbackUrl: '', loading: false,
       deleting: false, error: '', deleteError: '', canDelete: false,
-    } })
+    }, global: { stubs: { UTooltip: { template: '<div><slot /></div>' } } } })
     expect(wrapper.emitted('select')?.[0]).toEqual(['r2'])
     await wrapper.setProps({ selectedRecapId: 'r2' })
     const resume = wrapper.findAll('button').find(button => button.text() === 'Resume at 2:03')
@@ -25,7 +26,11 @@ describe('CampaignRecapPlaylist', () => {
     wrapper.unmount()
   })
   it.each(['audio/mpeg', 'video/mp4'])('emits playback actions for %s recaps', async (mimeType) => {
+    const deleteAction = vi.fn().mockResolvedValue(undefined)
+    const settle = async () => { await flushPromises(); await new Promise(resolve => setTimeout(resolve, 250)); await flushPromises() }
     const wrapper = await mountSuspended(RecapPlaylist, {
+      attachTo: document.body,
+      global: { stubs: { UTooltip: { template: '<div><slot /></div>' } } },
       props: {
         campaignId: 'c1',
         recaps: [
@@ -48,25 +53,35 @@ describe('CampaignRecapPlaylist', () => {
         deleting: false,
         error: '',
         deleteError: '',
+        canDelete: true,
+        deleteAction,
       },
     })
 
     expect(wrapper.text()).toContain(mimeType.startsWith('video/') ? 'Video' : 'Audio')
     const buttons = wrapper.findAll('button')
     const playButton = buttons.find((button) => button.text().trim() === 'Play')
-    const deleteButton = buttons.find((button) => button.text().trim() === 'Delete')
     const openPlayerButton = buttons.find((button) => button.text().trim() === 'Open player')
 
     expect(playButton).toBeDefined()
-    expect(deleteButton).toBeDefined()
     expect(openPlayerButton).toBeDefined()
 
     await playButton!.trigger('click')
-    await deleteButton!.trigger('click')
     await openPlayerButton!.trigger('click')
 
     expect(wrapper.emitted('play')?.[0]).toEqual(['r1'])
-    expect(wrapper.emitted('delete')?.[0]).toEqual(['r1'])
     expect(wrapper.emitted('open-player')).toBeTruthy()
+    await wrapper.get('button[aria-label="Actions for Session One recap"]').trigger('click')
+    await settle()
+    const deleteItem = [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(item => item.textContent?.includes('Delete'))!
+    deleteItem.click()
+    await settle()
+    expect(deleteAction).not.toHaveBeenCalled()
+    expect(document.body.textContent).toContain('Its file will be permanently removed.')
+    const confirm = [...document.querySelectorAll<HTMLButtonElement>('button')].find(button => button.textContent?.trim() === 'Delete recap')!
+    confirm.click()
+    await settle()
+    expect(deleteAction).toHaveBeenCalledWith('r1')
+    wrapper.unmount()
   })
 })

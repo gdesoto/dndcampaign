@@ -45,7 +45,7 @@ export const useCampaignOverviewMetrics = (
   )
 
   const recentQuests = computed(() =>
-    sortByDate(quests.value || [], (quest) => quest.updatedAt || quest.createdAt).slice(0, 5)
+    sortByDate((quests.value || []).filter(quest => quest.status === 'ACTIVE'), (quest) => quest.updatedAt || quest.createdAt).slice(0, 5)
   )
 
   const recentMilestones = computed(() =>

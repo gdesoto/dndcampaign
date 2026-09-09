@@ -54,6 +54,9 @@ Guidelines:
 - Campaign list/detail templates share `CampaignPageHeader`: one title, optional neutral result count, and wrapping trailing actions. Pass counts only when data is available; use server totals for paginated collections. Detail back links belong in the header by default.
 - Use the shared entity modal's `deleteAction` callback for asynchronous deletion so failures stay in the confirmation. Reject on failure; the caller owns successful completion and navigation. `recordName` and `deleteMessage` can describe scope beyond the form's name/title.
 - Read-only notices are neutral context. Ordinary totals stay neutral; use semantic metric colors only for a meaningful outcome or exception, with explanatory text.
+- Overview summaries use `SharedSummarySection` for a heading, drill-in link, and independent request states. Prefer divided list rows inside it over nested record cards. Metric destinations use `SharedStatCard`'s `to` prop.
+- Keep the overview's sessions, quests, and milestones in three equal desktop columns regardless of current item counts, with consistent header placement. Preserve the activity timeline and give the campaign description a distinct narrative surface. Familiar edit controls may be icon-only with accessible names and tooltips; omit routine page refresh actions when saves already refresh affected data.
+- Story status is readable before editing. Preserve its draft across refreshes and unrelated saves, disable unchanged saves, and return focus to Edit after cancellation or completion. Use `useOverviewResource` for overview data with scope-specific retained results; unavailable counts must not appear as zero.
 
 ### Props and Events
 - Type all props and emitted events explicitly.

@@ -24,7 +24,7 @@ describe('useCampaignOverviewMetrics', () => {
     expect(metrics.activeQuestCount.value).toBe(1)
     expect(metrics.openMilestoneCount.value).toBe(1)
     expect(metrics.recentSessions.value.map((item) => item.id)).toEqual(['s2', 's1'])
-    expect(metrics.recentQuests.value.map((item) => item.id)).toEqual(['q1', 'q2'])
+    expect(metrics.recentQuests.value.map((item) => item.id)).toEqual(['q1'])
     expect(metrics.questStatusColor('FAILED')).toBe('error')
   })
 })

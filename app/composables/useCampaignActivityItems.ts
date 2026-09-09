@@ -30,7 +30,7 @@ export const useCampaignActivityItems = (
         id: `activity-log-${entry.id}`,
         date: entry.createdAt,
         title: String(entry.action || 'campaign activity')
-          .replace(/_/g, ' ')
+          .replace(/[._]/g, ' ')
           .toLowerCase()
           .replace(/\b\w/g, (c) => c.toUpperCase()),
         description: entry.summary || `Campaign activity at ${formatDateTime(entry.createdAt)}.`,

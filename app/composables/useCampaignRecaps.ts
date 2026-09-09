@@ -8,10 +8,7 @@ export const useCampaignRecaps = (
   const { request } = useApi()
   const player = useMediaPlayer()
 
-  const { data: recaps, refresh: refreshRecaps } = useAsyncData(
-    () => `campaign-recaps-${campaignId.value}`,
-    () => request<CampaignRecapItem[]>(`/api/campaigns/${campaignId.value}/recaps`)
-  )
+  const { data: recaps, pending: recapsPending, error: recapsError, refresh: refreshRecaps } = useOverviewResource<CampaignRecapItem[]>(campaignId, 'recaps', () => `/api/campaigns/${campaignId.value}/recaps`)
 
   const selectedRecapId = ref('')
   const recapPlaybackUrl = ref('')
@@ -43,6 +40,8 @@ export const useCampaignRecaps = (
   )
 
   const playRecap = async (recapId: string) => {
+    if (recapLoading.value || recapDeleting.value) return
+    selectedRecapId.value = recapId
     recapError.value = ''
     recapLoading.value = true
     try {
@@ -74,33 +73,20 @@ export const useCampaignRecaps = (
   }
 
   const deleteRecap = async (recapId: string) => {
+    if (recapDeleting.value || recapLoading.value) return
     recapDeleteError.value = ''
     recapDeleting.value = true
-    const previousRecaps = recaps.value ? [...recaps.value] : undefined
-    const previousSelectedRecapId = selectedRecapId.value
-    const previousPlaybackUrl = recapPlaybackUrl.value
-
-    if (recaps.value) {
-      recaps.value = recaps.value.filter((item) => item.id !== recapId)
-    }
-    if (selectedRecapId.value === recapId) {
-      recapPlaybackUrl.value = ''
-      selectedRecapId.value = recapsSortedBySessionNumber.value[0]?.id || ''
-    }
     try {
       await request(`/api/recaps/${recapId}`, { method: 'DELETE' })
+      if (selectedRecapId.value === recapId) recapPlaybackUrl.value = ''
       await refreshRecaps()
       if (afterRecapMutation) {
         await afterRecapMutation()
       }
     } catch (error) {
-      if (previousRecaps) {
-        recaps.value = previousRecaps
-      }
-      selectedRecapId.value = previousSelectedRecapId
-      recapPlaybackUrl.value = previousPlaybackUrl
       recapDeleteError.value =
         (error as Error & { message?: string }).message || 'Unable to delete recap.'
+      throw error
     } finally {
       recapDeleting.value = false
     }
@@ -108,6 +94,8 @@ export const useCampaignRecaps = (
 
   return {
     recaps,
+    recapsPending,
+    recapsError,
     recapsSortedBySessionNumber,
     selectedRecapId,
     recapPlaybackUrl,
