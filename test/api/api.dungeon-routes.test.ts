@@ -2,6 +2,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
+import sharp from 'sharp'
 import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
 import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
 
@@ -404,7 +405,7 @@ describe('dungeon API routes', () => {
     expect(restoredRoom.y).toBe(10)
   })
 
-  it('exports JSON/SVG, supports import, and rejects oversized import payloads', async () => {
+  it('exports JSON/SVG/PNG/PDF, supports import, and rejects oversized import payloads', async () => {
     const addSecretRoomResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}/map`, {
       method: 'PATCH',
       headers: {
@@ -490,6 +491,26 @@ describe('dungeon API routes', () => {
     const exportPngPayload = await exportPngResponse.json()
     expect(exportPngPayload.data.filename.endsWith('.png')).toBe(true)
     expect(exportPngPayload.data.encoding).toBe('base64')
+    expect(exportPngPayload.data.contentType).toBe('image/png')
+    const pngBuffer = Buffer.from(exportPngPayload.data.content, 'base64')
+    const pngMetadata = await sharp(pngBuffer).metadata()
+    expect(pngMetadata.format).toBe('png')
+    expect(pngMetadata.width).toBe(playerDocument.dungeon.map.width * playerDocument.dungeon.map.cellSize)
+    expect(pngMetadata.height).toBe(playerDocument.dungeon.map.height * playerDocument.dungeon.map.cellSize)
+    // Decode the full image and compare it with the player-safe SVG, not just its header.
+    const pngPixels = await sharp(pngBuffer).ensureAlpha().raw().toBuffer()
+    const svgPixels = await sharp(Buffer.from(exportSvgPayload.data.content)).ensureAlpha().raw().toBuffer()
+    expect(pngPixels.equals(svgPixels)).toBe(true)
+
+    const viewerPngResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}`, {
+      method: 'PATCH',
+      headers: { cookie: cookies.viewer, 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'export', format: 'PNG', playerSafe: false, includeGmLayer: true }),
+    })
+    expect(viewerPngResponse.status).toBe(200)
+    const viewerPngPayload = await viewerPngResponse.json()
+    const viewerPixels = await sharp(Buffer.from(viewerPngPayload.data.content, 'base64')).ensureAlpha().raw().toBuffer()
+    expect(viewerPixels.equals(pngPixels)).toBe(true)
 
     const exportPdfResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}`, {
       method: 'PATCH',
@@ -507,6 +528,13 @@ describe('dungeon API routes', () => {
     const exportPdfPayload = await exportPdfResponse.json()
     expect(exportPdfPayload.data.filename.endsWith('.pdf')).toBe(true)
     expect(exportPdfPayload.data.encoding).toBe('base64')
+    expect(exportPdfPayload.data.contentType).toBe('application/pdf')
+    const pdfContent = Buffer.from(exportPdfPayload.data.content, 'base64').toString('latin1')
+    expect(pdfContent.startsWith('%PDF-')).toBe(true)
+    expect(pdfContent.trimEnd().endsWith('%%EOF')).toBe(true)
+    expect(pdfContent).toMatch(/\/Type\s*\/Page\b/)
+    expect(pdfContent).toMatch(/\/Subtype\s*\/Image\b/)
+    expect(pdfContent).toMatch(/\/BaseFont\s*\/Helvetica\b/)
 
     const viewerForcedSafeExportResponse = await fetch(
       `${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}`,

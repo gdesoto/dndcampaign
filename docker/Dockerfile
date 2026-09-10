@@ -18,6 +18,10 @@ RUN npx prisma generate
 RUN yarn build
 
 FROM base AS runtime
+# Sharp uses Fontconfig and system fonts to rasterize dungeon room labels.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends fontconfig fonts-dejavu-core \
+  && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV NITRO_PORT=3000
