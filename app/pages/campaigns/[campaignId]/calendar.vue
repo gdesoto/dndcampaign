@@ -3,6 +3,7 @@ import { titledEntityFormSchema } from '~/utils/entity-form-schemas'
 import { useCampaignCalendar } from '~/composables/useCampaignCalendar'
 import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 import CalendarDateFields from '~/components/campaign/CalendarDateFields.vue'
+import type { CampaignCalendarEvent } from '#shared/types/calendar'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -219,6 +220,23 @@ const dayEventCountMap = computed(() => {
   }
   return map
 })
+
+const dayEventsMap = computed(() => {
+  const map = new Map<number, CampaignCalendarEvent[]>()
+  for (const event of calendarView.value?.events || []) {
+    const events = map.get(event.day) || []
+    events.push(event)
+    map.set(event.day, events)
+  }
+  return map
+})
+
+const sessionTooltip = (session: SessionItem) =>
+  `Session ${session.sessionNumber ?? '?'}: ${session.title}`
+const eventTooltip = (day: number) => {
+  const events = dayEventsMap.value.get(day) || []
+  return `${events.length > 1 ? 'Events' : 'Event'}: ${events.map(event => event.title).join(', ')}`
+}
 
 const eventModalOpen = ref(false)
 const eventMode = ref<'create' | 'edit'>('create')
@@ -627,22 +645,39 @@ const removeRange = async () => {
                     v-if="daySessionMap.get(cellDay)?.length"
                     class="flex flex-wrap items-center gap-1"
                   >
-                    <span v-for="session in daySessionMap.get(cellDay)" :key="session.id" class="inline-flex items-center gap-1 rounded-sm bg-accented px-1 py-0.5 text-default"><UIcon name="i-lucide-book-open" class="size-3" aria-hidden="true" /> {{ session.sessionNumber ?? '?' }}</span>
+                    <UTooltip v-for="session in daySessionMap.get(cellDay)" :key="session.id" :text="sessionTooltip(session)">
+                      <UBadge color="info" variant="soft" size="xs" class="gap-1">
+                        <UIcon name="i-lucide-book-open" class="size-3" aria-hidden="true" />
+                        {{ session.sessionNumber ?? '?' }}
+                      </UBadge>
+                    </UTooltip>
                   </div>
-                  <span
+                  <UTooltip
                     v-if="dayEventCountMap.get(cellDay)"
-                    class="inline-flex items-center gap-1 text-muted"
+                    :text="eventTooltip(cellDay)"
                   >
-                    <UIcon name="i-lucide-sparkles" class="size-3" aria-hidden="true" /> {{ dayEventCountMap.get(cellDay) }} Event{{ dayEventCountMap.get(cellDay)! > 1 ? 's' : '' }}
-                  </span>
+                    <UBadge color="warning" variant="soft" size="xs" class="gap-1">
+                      <UIcon name="i-lucide-sparkles" class="size-3" aria-hidden="true" />
+                      {{ dayEventCountMap.get(cellDay) }} Event{{ dayEventCountMap.get(cellDay)! > 1 ? 's' : '' }}
+                    </UBadge>
+                  </UTooltip>
                 </div>
               </button>
             </template>
           </div></div>
           <div class="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted">
-            <span class="inline-flex items-center gap-1"><UIcon name="i-lucide-book-open" aria-hidden="true" />Session</span>
-            <span class="inline-flex items-center gap-1"><UIcon name="i-lucide-sparkles" aria-hidden="true" />Event</span>
-            <span class="inline-flex items-center gap-1"><UIcon name="i-lucide-calendar-check" aria-hidden="true" />Current date</span>
+            <UBadge color="info" variant="soft" size="xs" class="gap-1">
+              <UIcon name="i-lucide-book-open" aria-hidden="true" />
+              Session
+            </UBadge>
+            <UBadge color="warning" variant="soft" size="xs" class="gap-1">
+              <UIcon name="i-lucide-sparkles" aria-hidden="true" />
+              Event
+            </UBadge>
+            <UBadge color="primary" variant="outline" size="xs" class="gap-1">
+              <UIcon name="i-lucide-calendar-check" aria-hidden="true" />
+              Current date
+            </UBadge>
           </div>
         </UCard>
 
