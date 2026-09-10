@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'admin' })
 
 const admin = useAdmin()
 
@@ -127,21 +127,13 @@ const editRecord = async (id: string) => {
   if (action.selectedUserId !== id) return
   nextTick(() => { const heading = document.querySelector<HTMLElement>('#record-editor h2'); heading?.scrollIntoView({ block: 'center', behavior: 'instant' }); heading?.focus() })
 }
-const adminBreadcrumbItems = [
-  { label: 'Admin', to: '/admin' },
-  { label: 'User management' },
-]
 </script>
 
 <template>
   <UPage>
-    <UPageHeader headline="Admin" title="User management">
-      <template #default>
-        <UBreadcrumb :items="adminBreadcrumbItems" />
-      </template>
-    </UPageHeader>
+    <UPageHeader title="User management" />
 
-    <UMain>
+    <UPageBody>
       <div class="space-y-6">
         <UCard variant="soft">
           <template #header>
@@ -182,7 +174,7 @@ const adminBreadcrumbItems = [
 
         <UCard>
           <template #header>
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
               <h2 class=" type-section">Users</h2>
               <UBadge color="neutral" variant="subtle">{{ usersData?.total || 0 }} total</UBadge>
             </div>
@@ -216,13 +208,13 @@ const adminBreadcrumbItems = [
             <USelect v-model="selectedUserModel" aria-label="User" :disabled="action.saving" :items="userOptions" />
             <USelect v-model="action.systemRole" aria-label="System role" :disabled="action.saving" :items="roleOptions" />
             <USwitch v-model="action.isActive" :disabled="action.saving" label="User is active" />
-            <UButton :disabled="!selectedUser || !userDraft.dirty.value" :loading="action.saving" @click="saveUser">Save user</UButton>
+            <UButton color="primary" variant="solid" :disabled="!selectedUser || !userDraft.dirty.value" :loading="action.saving" @click="saveUser">Save user</UButton>
           </div>
 
           <p v-if="action.success" class="mt-3 text-sm text-success">{{ action.success }}</p>
           <p v-if="action.error" class="mt-3 text-sm text-error">{{ action.error }}</p>
         </UCard>
       </div>
-    </UMain>
+    </UPageBody>
   </UPage>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'admin' })
 
 const admin = useAdmin()
 
@@ -110,30 +110,22 @@ const jobsCsvUrl = computed(() =>
   })
 )
 
-const adminBreadcrumbItems = [
-  { label: 'Admin', to: '/admin' },
-  { label: 'Analytics and reporting' },
-]
 </script>
 
 <template>
   <UPage>
-    <UPageHeader headline="Admin" title="Analytics and reporting">
-      <template #default>
-        <UBreadcrumb :items="adminBreadcrumbItems" />
-      </template>
-    </UPageHeader>
+    <UPageHeader title="Analytics and reporting" />
 
-    <UMain>
+    <UPageBody>
       <div class="space-y-6">
-        <UCard>
+        <UCard variant="soft">
           <template #header>
             <h2 class=" type-section">Analytics range</h2>
           </template>
 
-          <div class="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-            <UInput v-model="filters.from" type="date" placeholder="From (YYYY-MM-DD)" />
-            <UInput v-model="filters.to" type="date" placeholder="To (YYYY-MM-DD)" />
+          <div class="grid items-end gap-3 md:grid-cols-[1fr_1fr_auto]">
+            <UFormField label="From date"><UInput v-model="filters.from" type="date" class="w-full" /></UFormField>
+            <UFormField label="To date"><UInput v-model="filters.to" type="date" class="w-full" /></UFormField>
             <UButton
               :loading="overviewPending || usagePending || jobsPending"
               @click="refreshActive"
@@ -150,21 +142,21 @@ const adminBreadcrumbItems = [
         <div v-if="activeTab === 'overview'" class="grid gap-4 md:grid-cols-3">
           <UCard>
             <p class="text-xs uppercase tracking-[0.08em] text-muted">Total users</p>
-            <p class="mt-2 text-2xl font-semibold">{{ overviewData.totals.users }}</p>
+            <p class="mt-2 type-metric tabular-nums">{{ overviewData.totals.users }}</p>
           </UCard>
           <UCard>
             <p class="text-xs uppercase tracking-[0.08em] text-muted">Total campaigns</p>
-            <p class="mt-2 text-2xl font-semibold">{{ overviewData.totals.campaigns }}</p>
+            <p class="mt-2 type-metric tabular-nums">{{ overviewData.totals.campaigns }}</p>
           </UCard>
           <UCard>
             <p class="text-xs uppercase tracking-[0.08em] text-muted">DAU / WAU</p>
-            <p class="mt-2 text-2xl font-semibold">{{ overviewData.totals.dau }} / {{ overviewData.totals.wau }}</p>
+            <p class="mt-2 type-metric tabular-nums">{{ overviewData.totals.dau }} / {{ overviewData.totals.wau }}</p>
           </UCard>
         </div>
 
         <UCard v-else-if="activeTab === 'usage'">
           <template #header>
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
               <h2 class=" type-section">Campaign usage</h2>
               <UButton :to="usageCsvUrl" external variant="outline" icon="i-lucide-download">
                 Export CSV
@@ -190,7 +182,7 @@ const adminBreadcrumbItems = [
 
         <UCard v-else>
           <template #header>
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
               <h2 class=" type-section">Job success rates</h2>
               <UButton :to="jobsCsvUrl" external variant="outline" icon="i-lucide-download">
                 Export CSV
@@ -203,12 +195,12 @@ const adminBreadcrumbItems = [
             <div class="grid gap-4 md:grid-cols-2">
               <UCard variant="soft">
                 <p class="text-xs uppercase tracking-[0.08em] text-muted">Transcription success</p>
-                <p class="mt-2 text-2xl font-semibold">{{ (jobsData.transcription.successRate * 100).toFixed(1) }}%</p>
+                <p class="mt-2 type-metric tabular-nums">{{ (jobsData.transcription.successRate * 100).toFixed(1) }}%</p>
                 <p class="text-xs text-muted">{{ jobsData.transcription.completed }} completed / {{ jobsData.transcription.total }} total</p>
               </UCard>
               <UCard variant="soft">
                 <p class="text-xs uppercase tracking-[0.08em] text-muted">Summary success</p>
-                <p class="mt-2 text-2xl font-semibold">{{ (jobsData.summary.successRate * 100).toFixed(1) }}%</p>
+                <p class="mt-2 type-metric tabular-nums">{{ (jobsData.summary.successRate * 100).toFixed(1) }}%</p>
                 <p class="text-xs text-muted">{{ jobsData.summary.completed }} completed / {{ jobsData.summary.total }} total</p>
               </UCard>
             </div>
@@ -228,6 +220,6 @@ const adminBreadcrumbItems = [
           </div>
         </UCard>
       </div>
-    </UMain>
+    </UPageBody>
   </UPage>
 </template>

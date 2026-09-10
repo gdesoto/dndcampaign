@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'admin' })
 
 const admin = useAdmin()
 const { formatBytes } = useFormatBytes()
@@ -149,21 +149,13 @@ const statusColor = (status: string) => {
   return 'error'
 }
 
-const adminBreadcrumbItems = [
-  { label: 'Admin', to: '/admin' },
-  { label: 'Storage audit' },
-]
 </script>
 
 <template>
   <UPage>
-    <UPageHeader headline="Admin" title="Storage audit">
-      <template #default>
-        <UBreadcrumb :items="adminBreadcrumbItems" />
-      </template>
-    </UPageHeader>
+    <UPageHeader title="Storage audit" />
 
-    <UMain>
+    <UPageBody>
       <div class="space-y-6">
         <UCard>
           <template #header>
@@ -187,19 +179,19 @@ v-model="filters.campaignId"
         <div v-else-if="summary" class="grid gap-4 md:grid-cols-4">
           <UCard>
             <p class="text-xs uppercase tracking-[0.08em] text-muted">Total issues</p>
-            <p class="mt-2 text-2xl font-semibold">{{ summary?.totalIssues ?? 0 }}</p>
+            <p class="mt-2 type-metric tabular-nums">{{ summary?.totalIssues ?? 0 }}</p>
           </UCard>
           <UCard>
             <p class="text-xs uppercase tracking-[0.08em] text-muted">Fixable issues</p>
-            <p class="mt-2 text-2xl font-semibold">{{ summary?.fixableIssues ?? 0 }}</p>
+            <p class="mt-2 type-metric tabular-nums">{{ summary?.fixableIssues ?? 0 }}</p>
           </UCard>
           <UCard>
             <p class="text-xs uppercase tracking-[0.08em] text-muted">Artifacts missing files</p>
-            <p class="mt-2 text-2xl font-semibold">{{ summary?.artifacts.missingFile ?? 0 }}</p>
+            <p class="mt-2 type-metric tabular-nums">{{ summary?.artifacts.missingFile ?? 0 }}</p>
           </UCard>
           <UCard>
             <p class="text-xs uppercase tracking-[0.08em] text-muted">Orphan storage files</p>
-            <p class="mt-2 text-2xl font-semibold">{{ summary?.storage.orphanFiles ?? 0 }}</p>
+            <p class="mt-2 type-metric tabular-nums">{{ summary?.storage.orphanFiles ?? 0 }}</p>
           </UCard>
         </div>
 
@@ -224,7 +216,7 @@ v-model="filters.campaignId"
 
         <UCard>
           <template #header>
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
               <h2 class=" type-section">Artifact integrity</h2>
               <UBadge color="neutral" variant="subtle">{{ artifactRows.length }} rows</UBadge>
             </div>
@@ -273,7 +265,7 @@ v-model="filters.campaignId"
 
         <UCard>
           <template #header>
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
               <h2 class=" type-section">Orphan storage files</h2>
               <UBadge color="neutral" variant="subtle">{{ orphanStorageRows.length }} rows</UBadge>
             </div>
@@ -314,7 +306,7 @@ v-model="filters.campaignId"
 
         <UCard>
           <template #header>
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
               <h2 class=" type-section">Document integrity</h2>
               <UBadge color="neutral" variant="subtle">{{ documentRows.length }} rows</UBadge>
             </div>
@@ -379,6 +371,6 @@ v-model="filters.campaignId"
           </SharedResponsiveTable>
         </UCard>
       </div>
-    </UMain>
+    </UPageBody>
   </UPage>
 </template>

@@ -49,6 +49,7 @@ Guidelines:
 - Distinguish an empty collection from filtered no matches; use `noMatches` and `clear` for filter recovery.
 - Use `SharedResponsiveTable` for admin records requiring equivalent desktop and narrow-screen actions. Paginate against the server total, and reset the page when filters change.
 - Use native navigation links for route sections. Keep entity headers in persistent parent routes and use exact matching for Overview.
+- Admin routes use the dedicated `admin` layout: grouped route navigation, fully collapsible sidebar, persistent breadcrumbs and account/appearance controls, and native dashboard-panel body scrolling. Keep its storage keys separate from campaign panels and reuse the global theme. Developer tools remain development-only.
 - Dashboard content scrolls in `UDashboardPanel`'s native body slot; keep navbar and breadcrumbs in its header slot. Do not add a full-height scroller beneath fixed-height chrome.
 - Sidebar links use native router activation with exact Overview matching. The campaign shell explicitly keeps a section active for its sibling detail routes (Nuxt index routes are not their matched ancestors), and keeps Sessions active for document/recording routes.
 - Campaign list/detail templates share `CampaignPageHeader`: one title, optional neutral result count, and wrapping trailing actions. Pass counts only when data is available; use server totals for paginated collections. Detail back links belong in the header by default.

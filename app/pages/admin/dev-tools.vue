@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'admin' })
 
 type RuntimeConfigSnapshot = {
   generatedAt: string
@@ -21,7 +21,6 @@ type SessionOption = {
 const isDev = import.meta.dev
 const { request } = useApi()
 
-const adminBreadcrumbItems = [{ label: 'Admin', to: '/admin' }, { label: 'Dev Tools' }]
 
 const n8nForm = reactive({
   webhookUrlOverride: '',
@@ -154,13 +153,9 @@ const runN8nTest = async () => {
 
 <template>
   <UPage>
-    <UPageHeader headline="Admin" title="Dev Tools">
-      <template #default>
-        <UBreadcrumb :items="adminBreadcrumbItems" />
-      </template>
-    </UPageHeader>
+    <UPageHeader title="Dev Tools" />
 
-    <UMain>
+    <UPageBody>
       <div v-if="isDev" class="space-y-6">
         <UCard>
           <template #header>
@@ -289,6 +284,6 @@ id="field-admin-dev-tools-vue-5"
       <UCard v-else>
         <p class="text-sm text-muted">Dev tools are available only in development mode.</p>
       </UCard>
-    </UMain>
+    </UPageBody>
   </UPage>
 </template>

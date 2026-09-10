@@ -1,5 +1,5 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'admin' })
 
 const admin = useAdmin()
 
@@ -77,21 +77,13 @@ const goNext = async () => {
   await refresh()
 }
 
-const adminBreadcrumbItems = [
-  { label: 'Admin', to: '/admin' },
-  { label: 'Activity log' },
-]
 </script>
 
 <template>
   <UPage>
-    <UPageHeader headline="Admin" title="Activity log">
-      <template #default>
-        <UBreadcrumb :items="adminBreadcrumbItems" />
-      </template>
-    </UPageHeader>
+    <UPageHeader title="Activity log" />
 
-    <UMain>
+    <UPageBody>
       <div class="space-y-6">
         <UCard variant="soft">
           <template #header>
@@ -131,7 +123,7 @@ const adminBreadcrumbItems = [
 
         <UCard>
           <template #header>
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
               <h2 class=" type-section">Entries</h2>
               <UBadge color="neutral" variant="subtle">{{ total }} total</UBadge>
             </div>
@@ -147,6 +139,6 @@ const adminBreadcrumbItems = [
           </div>
         </UCard>
       </div>
-    </UMain>
+    </UPageBody>
   </UPage>
 </template>

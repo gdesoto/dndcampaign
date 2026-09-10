@@ -4,10 +4,13 @@ Start with the common user journey and presentation. Scale checks to the change;
 
 Inspect changed interactions in a browser at desktop and narrow mobile widths, in light/dark themes. HTTP 200 from a SPA proves only shell delivery. Do not claim browser verification without a browser pass.
 
+This pass is not optional and not the same as making the change. Re-read the guideline sections the change touched, examine the rendered result rather than the intent, and compare it to the host's existing identity and patterns as well as to the specification. Type checking, linting, and a successful build verify none of this.
+
 | Area | Exercise |
 | --- | --- |
 | User journey | Purpose and next action apparent; discoverable navigation; efficient completion; no unnecessary prompts, steps, or disabled dead ends |
 | Presentation | Hierarchy, spacing, alignment, typography, grouping, visual character, and responsive composition; useful information remains easy to scan |
+| Carriers | Each piece of meaning held by the most direct instrument — status as a badge, proportion as a progress element, a person as an avatar and a name, a destination or repeated concept as an icon with its label, parallel facts as aligned rows or a table — rather than described in a sentence; per-record signals stay rare, per-type signals cover a whole class, and character stays out of the resting layer |
 | Forms, when changed | Clear fields and errors; unchanged-edit Save gating by default; invalid-submit behavior makes errors discoverable; failed save retains input; expected completion/Cancel behavior; prompts only where meaningful work could be lost without recovery |
 | Confirmation, when warranted | Container matches what must be shown (sentence versus count/cascade/pending); initial Cancel focus; duplicate/conflicting action protection; failed prompt stays open; removal restores meaningful focus |
 | Collections | Filter/search resets page and selection; sort/selection across pages/expansion/visibility; shared state across viewport/view changes; empty versus no matches and recovery |
@@ -20,4 +23,4 @@ Inspect changed interactions in a browser at desktop and narrow mobile widths, i
 
 Check for blanket `toast.clear()`, HTML `title` used as a tooltip, icon controls without names, oversized secondary headings, lost focus after bulk actions, and inconsistent breadcrumb roots. Interpret findings in context; do not enforce a wrapper count or fixed visual skin.
 
-Record discrepancies between specification and implementation as gaps. Do not weaken the specification to bless incidental example behavior or treat a build as visual/accessibility verification.
+Report which of these were exercised and which were not. Record discrepancies between specification and implementation as gaps. Do not weaken the specification to bless incidental example behavior or treat a build as visual/accessibility verification.

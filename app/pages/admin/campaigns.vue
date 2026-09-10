@@ -2,7 +2,7 @@
 import type { RecordAction } from '~/types/actions'
 import type { TableColumn } from '@nuxt/ui'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'admin' })
 
 const admin = useAdmin()
 const toast = useToast()
@@ -224,10 +224,6 @@ const editRecord = async (id: string) => {
   if (action.selectedCampaignId !== id) return
   nextTick(() => { const heading = document.querySelector<HTMLElement>('#record-editor h2'); heading?.scrollIntoView({ block: 'center', behavior: 'instant' }); heading?.focus() })
 }
-const adminBreadcrumbItems = [
-  { label: 'Admin', to: '/admin' },
-  { label: 'Campaign management' },
-]
 const campaignActions = (id: string): RecordAction[] => [
   { label: 'Open campaign', icon: 'i-lucide-external-link', to: `/campaigns/${id}` },
   { label: 'Edit campaign', icon: 'i-lucide-pencil', action: () => editRecord(id) },
@@ -236,13 +232,9 @@ const campaignActions = (id: string): RecordAction[] => [
 
 <template>
   <UPage>
-    <UPageHeader headline="Admin" title="Campaign management">
-      <template #default>
-        <UBreadcrumb :items="adminBreadcrumbItems" />
-      </template>
-    </UPageHeader>
+    <UPageHeader title="Campaign management" />
 
-    <UMain>
+    <UPageBody>
       <div class="space-y-6">
         <UCard variant="soft">
           <template #header>
@@ -272,7 +264,7 @@ const campaignActions = (id: string): RecordAction[] => [
 
         <UCard>
           <template #header>
-            <div class="flex items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
               <h2 class=" type-section">Campaigns</h2>
               <UBadge color="neutral" variant="subtle">{{ campaignsData?.total || 0 }} total</UBadge>
             </div>
@@ -339,6 +331,6 @@ v-model="action.transferOwnerUserId"
           </div>
         </UCard>
       </div>
-    </UMain>
+    </UPageBody>
   </UPage>
 </template>

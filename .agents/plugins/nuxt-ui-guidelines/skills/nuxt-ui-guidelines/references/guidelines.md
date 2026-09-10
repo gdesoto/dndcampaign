@@ -140,6 +140,16 @@ A shadow on every card varies with nothing, so it is character rather than a sig
 
 Each of these is already required to mean something elsewhere in this guide, so none of them introduces a new vocabulary to learn. What they add is contrast: a page where supporting panels recede, exceptions announce themselves, destinations are recognizable at a glance, and people have faces.
 
+#### Text is a carrier, not the default carrier
+
+There is a failure mode this section exists to prevent, and it is by far the most common one: reaching for a sentence when the page already had a better instrument. A status becomes a word inside a paragraph instead of a badge; a proportion becomes "18 of 24 seats" in running text instead of a figure beside a progress element; an owner becomes a name instead of a face and a name; a destination becomes a bare link instead of an icon and a label; a set of parallel facts becomes prose instead of an aligned label/value block. Each substitution is individually defensible. Together they produce a wall of grey text that is complete, unreadable at a glance, and indistinguishable from every other application built the same way.
+
+Restraint governs *how much* is on the page, not *which medium* carries it. Cutting a decorative trend chart and cutting the avatar beside a person's name are not the same act: the first removes something that stood for nothing, the second removes a signal and leaves the reader to parse a name. Before writing a sentence, check the table above and ask what this piece of meaning varies with. If it varies with the data, a per-record signal already carries it — status color, semantic edge, progress, avatar. If it varies with what the element is, a per-type signal already carries it — an icon on the action or destination, mono on a formatted value, surface weight on a supporting panel. In either case the sentence is redundant rather than thorough.
+
+**Structure counts as non-text.** An aligned label/value body, a table, a compact total, a count beside a title, a group heading with its records indented under it — each carries a relationship that prose has to spell out at several times the length and with none of the scannability.
+
+None of this licenses ornament for its own sake; every rule above still applies, and a signal invented for a page that has nothing to signal is still noise. What it rules out is the opposite reflex: **a page that is legible, correct, and made entirely of paragraphs has failed this section rather than passed it.** Producing no violations is not the standard, and adding nothing is not the safe choice.
+
 #### Character is the third layer, and it is not optional
 
 An application whose every visual difference is load-bearing reads as corporate and lifeless no matter how correct its hierarchy, and correctness is not what makes someone want to open a tool a second time. A tabletop campaign tracker is entitled to gold that catches the light under the cursor, an inked ground, a frame with weight to it. The failure mode is never ornament as such; it is ornament a reader could mistake for a signal, or ornament crowding out the layer where signals live. Character earns its place under three conditions:
@@ -448,6 +458,8 @@ Ask three questions in order, and stop at the first that answers.
 For that third case there is no single required mechanism. Choose by how much there is and how often it is wanted: one sentence introducing a whole group instead of one per field; a link to documentation that can hold the full story; an expandable *About these settings* the reader opens once; an info trigger revealing a tooltip or popover beside the control. An info icon is one option, not the house style, and a page that grows a row of them has usually just moved the wall of text behind twenty separate clicks.
 
 Prose that survives none of the three is deleted. Text that restates its label, explains the self-evident, or is kept because it might help someone once is not documentation; it is what makes the lines that matter invisible.
+
+**Deleting prose is only half the move.** The meaning it was carrying usually still needs a home, and that home is rarely another sentence. A status word becomes a badge; a proportion becomes a progress element beside its figure; an owner becomes an avatar and a name; parallel facts become an aligned label/value block or a table; a repeated concept becomes an icon with its label. Cutting the explanation without giving its meaning a carrier trades a wall of text for a page that is merely emptier. See *Visual interest: signals and character* in section 2.
 
 **Grouping beats repetition.** One sentence at the top of a section routinely replaces six field descriptions, because most of what those descriptions repeat is the shared context, not the individual field. Prefer explaining the group.
 
@@ -836,11 +848,24 @@ Keep the mechanical subset out of human review:
 
 Start with the common user journey and presentation. Apply the remaining checks to changed behavior; this is not a requirement to retrofit every subsystem during a focused UI task.
 
+### Confirm the work before reporting it
+
+Making the change is not finishing it. A change is finished when it has been checked against this guide and against the host's own identity, by examining the result rather than recalling the intent. Run this pass every time, before reporting anything as done.
+
+1. **Re-read the sections the change actually touched** — not the whole guide, and not from memory. The review map exists so this stays cheap.
+2. **Look at the rendered result**, at desktop and narrow widths and in both themes. A rule present in the source is not a rule visible on the page: grounds, contrast, spacing, and overflow all fail silently, and type checking, linting, and a successful build are not visual or accessibility verification.
+3. **Walk the checklist below** for the areas changed, deliberately including the visual-contrast and explanatory-prose questions. Those two are the most often skipped, because a flat, wordy page raises no error anywhere.
+4. **Compare the change to the host's established identity and patterns**, not only to this document. A change that satisfies every rule here and looks nothing like the rest of the application has still failed.
+5. **State what was checked, what was not, and what was found and left unfixed.** Record gaps rather than describing checks that did not happen.
+
+### The checks
+
 - Can users complete the main task with discoverable controls and no unnecessary steps, prompts, or disabled dead ends?
 - Do spacing, alignment, typography, grouping, and responsive composition make the page clear and polished?
 - Can users identify the page, primary record, and next action without explanatory prose?
 - Are cards, lists, and tables chosen for the information relationship?
 - Does the page have visual contrast that carries meaning — supporting surfaces receding, exceptions marked, destinations and repeated concepts iconed, people shown as people — or is it uniformly flat?
+- Is each piece of meaning carried by the most direct instrument available — status as a badge, proportion as a progress element, a person as an avatar and a name, a destination as an icon with its label, parallel facts as aligned rows or a table — rather than described in a sentence because a sentence was faster to write?
 - Is every per-type signal applied to its whole class — a full row of metric cards, every destination in a menu — rather than to a favoured member of it?
 - Does the application look like itself rather than like the example, and is that identity expressed in theme tokens and shared defaults rather than scattered per-page overrides?
 - If the application has a patterned or gradient ground, does every surface carrying text — cards, tables, list rows, inputs, menus, popovers — have a flat background of its own, including the *quiet* variants a component library ships translucent?
@@ -864,6 +889,7 @@ Start with the common user journey and presentation. Apply the remaining checks 
 - Can representative kit components be copied into a clean compatible host without demo imports, with their theme/dependency requirements documented?
 - Do filters, sorting, selection, expansion, pagination and CSV export work together and preserve state across viewport changes?
 - Have type checking, linting, focused behavior tests, and a production build passed for application-code changes?
+- Has the finished result been viewed in a browser and re-checked against the sections it touches and the host's existing patterns, with anything found and left unfixed reported as a gap?
 
 ### Verify the implementation, not just the document
 
