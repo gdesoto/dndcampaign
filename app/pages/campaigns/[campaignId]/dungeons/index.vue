@@ -183,17 +183,16 @@ const dungeonActions = (dungeon: CampaignDungeonSummary): RecordAction[] => [
 
 <template>
   <CampaignListTemplate
-    headline="Campaign Tool"
     title="Dungeons"
     :count="dungeons?.length"
-    description="Generate and manage campaign dungeon maps."
-    action-label="New dungeon"
+    :action-label="canWriteContent ? 'New dungeon' : ''"
     action-icon="i-lucide-plus"
     :action-disabled="!canWriteContent"
     @action="openCreate"
   >
     <template #actions>
       <UButton
+        v-if="canWriteContent"
         icon="i-lucide-file-up"
         variant="outline"
         :disabled="!canWriteContent"
@@ -223,18 +222,19 @@ const dungeonActions = (dungeon: CampaignDungeonSummary): RecordAction[] => [
       >
         <div class="space-y-3">
           <div class="flex items-start justify-between gap-3">
-            <div>
-              <h3 class=" type-record"><NuxtLink :to="`/campaigns/${campaignId}/dungeons/${dungeon.id}`" class="hover:underline">{{ dungeon.name }}</NuxtLink></h3>
-              <p class="text-xs text-muted">{{ dungeon.theme }} • seed: {{ dungeon.seed }}</p>
+            <div class="min-w-0">
+              <h2 class="type-record flex items-start gap-2"><UIcon name="i-lucide-castle" class="mt-0.5 size-4 shrink-0 text-muted" aria-hidden="true" /><NuxtLink :to="`/campaigns/${campaignId}/dungeons/${dungeon.id}`" class="break-words hover:underline">{{ dungeon.name }}</NuxtLink></h2>
+              <UBadge color="neutral" variant="soft" class="mt-2">{{ dungeon.theme }}</UBadge>
             </div>
-            <UBadge :label="dungeon.status" variant="subtle" color="neutral" />
+            <SharedActionMenu :name="dungeon.name" :items="dungeonActions(dungeon)" :disabled="Boolean(deletingDungeonId)" />
           </div>
 
-          <div class="text-xs text-muted">
-            Rooms: {{ dungeon.roomCount }} • Updated {{ new Date(dungeon.updatedAt).toLocaleString() }}
+          <div class="flex flex-wrap items-center gap-3 text-xs text-muted">
+            <UBadge :label="dungeon.status.charAt(0) + dungeon.status.slice(1).toLowerCase()" variant="soft" color="neutral" />
+            <span class="flex items-center gap-1"><UIcon name="i-lucide-door-open" class="size-4" aria-hidden="true" />{{ dungeon.roomCount }} rooms</span>
+            <time :datetime="dungeon.updatedAt">Updated {{ new Date(dungeon.updatedAt).toLocaleDateString() }}</time>
           </div>
 
-          <div class="flex justify-end"><SharedActionMenu :name="dungeon.name" :items="dungeonActions(dungeon)" :disabled="Boolean(deletingDungeonId)" /></div>
         </div>
       </UCard>
     </div>
@@ -254,9 +254,6 @@ v-model:open="isCreateOpen" title="Create dungeon"
               v-model="selectedThemeOption"
               :items="dungeonThemeOptions"
             />
-            <p class="mt-1 text-xs text-muted">
-              Theme influences the dungeon's generated style and content flavor.
-            </p>
           </UFormField>
           <UFormField v-if="selectedThemeOption === 'custom'" label="Custom theme" required>
             <UInput

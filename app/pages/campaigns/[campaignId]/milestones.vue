@@ -2,6 +2,7 @@
 import type { RecordAction } from '~/types/actions'
 import { titledEntityFormSchema } from '~/utils/entity-form-schemas'
 import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
+import CampaignProgressBadge from '~/components/campaign/ProgressBadge.vue'
 definePageMeta({ layout: 'dashboard' })
 
 type MilestoneItem = {
@@ -36,6 +37,8 @@ const {
 }))
 
 const deletingMilestoneId = ref<string | null>(null)
+const completingId = ref('')
+const completionError = ref('')
 
 const openCreate = () => {
   if (!canWriteContent.value) return
@@ -76,16 +79,22 @@ const saveMilestone = async () => {
 }
 
 const toggleComplete = async (milestone: MilestoneItem) => {
-  if (!canWriteContent.value) return
+  if (!canWriteContent.value || completingId.value) return
+  completingId.value = milestone.id
+  completionError.value = ''
   const next = !milestone.isComplete
-  await request(`/api/milestones/${milestone.id}`, {
+  try {
+    await request(`/api/milestones/${milestone.id}`, {
     method: 'PATCH',
     body: {
       isComplete: next,
       completedAt: next ? new Date().toISOString() : null,
     },
   })
-  await refresh()
+    await refresh()
+  } catch (cause) {
+    completionError.value = (cause as Error).message || 'Unable to update milestone.'
+  } finally { completingId.value = '' }
 }
 
 const deleteMilestone = async (milestone: MilestoneItem) => {
@@ -121,11 +130,9 @@ const milestoneActions = (milestone: MilestoneItem): RecordAction[] => canWriteC
 <template>
   <div class="space-y-6">
     <CampaignListTemplate
-      headline="Milestones"
-      title="Milestone board"
+      title="Milestones"
       :count="milestones?.length"
-      description="Track campaign progress, completion, and key beats."
-      action-label="New milestone"
+      :action-label="canWriteContent ? 'New milestone' : ''"
       action-icon="i-lucide-plus"
       :action-disabled="!canWriteContent"
       @action="openCreate"
@@ -138,7 +145,7 @@ const milestoneActions = (milestone: MilestoneItem): RecordAction[] => canWriteC
       </template>
 
       <SharedResourceState
-:has-data="Boolean(milestones?.length)"
+        :has-data="Boolean(milestones)"
         :pending="pending"
         :error="error"
         :empty="!milestones?.length"
@@ -152,26 +159,25 @@ const milestoneActions = (milestone: MilestoneItem): RecordAction[] => canWriteC
           </div>
         </template>
         <template #emptyActions>
-          <UButton variant="outline" :disabled="!canWriteContent" @click="openCreate">Create your first milestone</UButton>
+          <UButton v-if="canWriteContent" variant="outline" @click="openCreate">Create your first milestone</UButton>
         </template>
 
+        <p v-if="completionError" role="alert" class="text-sm text-error">{{ completionError }}</p>
         <div class="grid gap-4 sm:grid-cols-2">
           <SharedListItemCard v-for="milestone in milestones" :key="milestone.id">
             <template #header>
               <div class="flex items-center justify-between gap-3">
-                <div>
-                  <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Milestone</p>
-                  <h3 class=" type-record">{{ milestone.title }}</h3>
+                <div class="flex min-w-0 items-start gap-2">
+                  <UIcon name="i-lucide-flag" class="mt-0.5 size-4 shrink-0 text-muted" aria-hidden="true" />
+                  <h2 class="type-record break-words">{{ milestone.title }}</h2>
                 </div>
                 <SharedActionMenu :name="milestone.title" :items="milestoneActions(milestone)" :disabled="Boolean(deletingMilestoneId)" />
               </div>
             </template>
-            <p class="text-sm whitespace-pre-line text-default">{{ milestone.description || 'Add details about this milestone.' }}</p>
-            <div class="mt-4 flex items-center justify-between gap-3">
-              <span class="text-xs text-muted">
-                {{ milestone.isComplete ? 'Completed' : 'In progress' }}
-              </span>
-              <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="toggleComplete(milestone)">
+            <p v-if="milestone.description" class="reading-copy whitespace-pre-line text-default">{{ milestone.description }}</p>
+            <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+              <CampaignProgressBadge :status="milestone.isComplete ? 'COMPLETED' : 'IN_PROGRESS'" />
+              <UButton v-if="canWriteContent" size="sm" :icon="milestone.isComplete ? 'i-lucide-rotate-ccw' : 'i-lucide-check'" variant="outline" :loading="completingId === milestone.id" :disabled="Boolean(completingId || deletingMilestoneId)" @click="toggleComplete(milestone)">
                 {{ milestone.isComplete ? 'Mark incomplete' : 'Mark complete' }}
               </UButton>
             </div>
@@ -181,8 +187,8 @@ const milestoneActions = (milestone: MilestoneItem): RecordAction[] => canWriteC
     </CampaignListTemplate>
 
     <SharedEntityFormModal
-v-model:open="isEditOpen"
-:schema="titledEntityFormSchema"
+      v-model:open="isEditOpen"
+      :schema="titledEntityFormSchema"
       :state="editForm"
       :title="editMode === 'create' ? 'Create milestone' : 'Edit milestone'"
       :saving="isSaving"
@@ -191,6 +197,7 @@ v-model:open="isEditOpen"
       :show-delete-action="editMode === 'edit'"
       :delete-loading="deletingMilestoneId === editForm.id"
       :delete-action="deleteEditingMilestone"
+      :record-name="editForm.title"
       @submit="saveMilestone"
     >
       <UFormField label="Title" name="title">

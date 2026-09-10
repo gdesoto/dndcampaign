@@ -628,11 +628,9 @@ onBeforeUnmount(() => {
 <template>
   <fieldset :disabled="mutationBusy" class="min-w-0 space-y-6">
     <UPageHeader
-      title="Dungeon Detail"
-      :description="dungeon ? `${dungeon.theme} • ${dungeon.seed}` : 'Loading dungeon...'"
-      headline="Dungeon Builder"
+      :title="dungeon?.name || 'Dungeon'"
     >
-      <template #right>
+      <template #links>
         <div class="flex flex-wrap gap-2">
           <UButton
             variant="outline"
@@ -684,7 +682,7 @@ onBeforeUnmount(() => {
     </UCard>
 
     <template v-else-if="dungeon">
-      <UPage :ui="{ left: 'hidden xl:block xl:col-span-3', center: 'xl:col-span-6', right: 'xl:col-span-3' }">
+      <UPage :ui="{ root: 'flex flex-col gap-4 lg:flex xl:grid xl:grid-cols-12 xl:gap-4', left: 'min-w-0 order-2 xl:order-1 xl:col-span-3', center: 'min-w-0 order-1 xl:order-2 xl:col-span-6', right: 'min-w-0 order-3 xl:col-span-3' }">
         <template #left>
           <div class="space-y-4">
             <UCard :ui="{ body: 'p-4 space-y-3' }">
@@ -703,9 +701,6 @@ onBeforeUnmount(() => {
                   :disabled="mutationBusy || !canWriteContent"
                   :items="dungeonThemeOptions"
                 />
-                <p class="mt-1 text-xs text-muted">
-                  Theme influences generated map appearance and flavor text.
-                </p>
               </UFormField>
               <UFormField v-if="selectedThemeOption === 'custom'" label="Custom theme">
                 <UInput v-model="customTheme" :disabled="mutationBusy || !canWriteContent" placeholder="volcanic forge" />
@@ -820,11 +815,7 @@ onBeforeUnmount(() => {
               {{ dungeon.map.encounters.length }} encounters •
               {{ dungeon.map.treasures.length }} treasure
             </p>
-            <p class="mt-1 text-xs text-muted">
-              Generator {{ dungeon.map.metadata.algorithmVersion }} •
-              hash {{ dungeon.map.metadata.configHash }} •
-              {{ new Date(dungeon.map.metadata.generatedAt).toLocaleString() }}
-            </p>
+            <time :datetime="dungeon.map.metadata.generatedAt" class="mt-1 block text-xs tabular-nums text-muted">Generated {{ new Date(dungeon.map.metadata.generatedAt).toLocaleString() }}</time>
             <div class="mt-3">
               <USwitch v-model="showPlayerSafe" label="Player-safe map mode" />
             </div>
@@ -1010,7 +1001,6 @@ onBeforeUnmount(() => {
 
             <UCard :ui="{ body: 'p-4 space-y-3' }">
               <h3 class=" type-record">Map Edit Tools</h3>
-              <p class="text-xs text-muted">Basic geometry tools for milestone 3.</p>
               <div class="grid grid-cols-2 gap-2">
                 <UFormField label="Add X"><UInput v-model.number="roomAction.addX" type="number" :disabled="mutationBusy || !canWriteContent" /></UFormField>
                 <UFormField label="Add Y"><UInput v-model.number="roomAction.addY" type="number" :disabled="mutationBusy || !canWriteContent" /></UFormField>
@@ -1117,6 +1107,7 @@ onBeforeUnmount(() => {
             <UCard :ui="{ body: 'p-4' }">
               <UTabs
                 v-model="activeDetailsTab"
+                :ui="{ list: 'flex-wrap', trigger: 'flex-none' }"
                 :items="[
                   { label: `Rooms (${dungeon.map.rooms.length})`, value: 'rooms' },
                   { label: `Corridors (${dungeon.map.corridors.length})`, value: 'corridors' },
@@ -1149,14 +1140,16 @@ onBeforeUnmount(() => {
                 </div>
               </div>
               <div v-else-if="activeDetailsTab === 'doors'" class="mt-3 max-h-[280px] space-y-2 overflow-y-auto text-sm">
-                <div
+                <button
                   v-for="door in dungeon.map.doors"
                   :key="door.id"
-                  class="cursor-pointer rounded-md border border-default px-3 py-2"
+                  type="button"
+                  class="w-full rounded-md border border-default px-3 py-2 text-left hover:bg-elevated"
+                  :aria-pressed="selectedDoorId === door.id"
                   @click="selectedDoorId = door.id"
                 >
                   {{ door.id }} • x:{{ door.x }}, y:{{ door.y }} • {{ door.isLocked ? 'Locked' : 'Unlocked' }}
-                </div>
+                </button>
               </div>
               <div v-else-if="activeDetailsTab === 'traps'" class="mt-3 max-h-[280px] space-y-2 overflow-y-auto text-sm">
                 <div
@@ -1206,4 +1199,3 @@ onBeforeUnmount(() => {
     </template>
   </fieldset>
 </template>
-

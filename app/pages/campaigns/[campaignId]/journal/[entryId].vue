@@ -354,6 +354,7 @@ const toggleArchive = async () => {
   <div class="space-y-6">
     <SharedResourceState
       :pending="pending"
+      :has-data="Boolean(entry)"
       :error="error"
       :empty="!entry"
       error-message="Unable to load journal entry."
@@ -373,15 +374,14 @@ const toggleArchive = async () => {
       >
         <template #actions>
           <div class="flex items-center gap-2">
-            <UButton
+            <UTooltip text="Edit entry details"><UButton
               v-if="entry?.canEdit"
               size="sm"
               variant="outline"
               icon="i-lucide-settings-2"
+              aria-label="Edit entry details"
               @click="openEdit"
-            >
-              Settings
-            </UButton>
+            /></UTooltip>
             <SharedConfirmActionPopover
               v-if="entry?.canDelete && !entry?.canEdit"
               trigger-label="Delete"
@@ -401,32 +401,18 @@ const toggleArchive = async () => {
 
         <UCard class="flex min-h-[28rem] flex-col lg:min-h-[28rem]" :ui="{ body: 'flex-1 min-h-0' }">
           <template #header>
-            <div class="flex items-center justify-between gap-3">
-              <h3 class="uppercase text-dimmed type-record">Entry</h3>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <UTabs v-model="documentMode" :content="false" :items="[{ label: 'Preview', value: 'preview', icon: 'i-lucide-eye' }, { label: 'Edit', value: 'edit', icon: 'i-lucide-pencil', disabled: !canEditDocumentContent }]" aria-label="Journal content view" />
               <div class="flex items-center gap-2">
                 <UButton
                   v-if="documentMode === 'edit' && canEditDocumentContent"
                   size="sm"
                   color="primary"
+                  icon="i-lucide-save"
                   :loading="isSavingDocument"
                   @click="saveDocument"
                 >
-                  Save Journal
-                </UButton>
-                <UButton
-                  size="sm"
-                  :variant="documentMode === 'edit' ? 'solid' : 'outline'"
-                  :disabled="!canEditDocumentContent"
-                   @click="() => { documentMode = 'edit' }"
-                >
-                  Edit
-                </UButton>
-                <UButton
-                  size="sm"
-                  :variant="documentMode === 'preview' ? 'solid' : 'outline'"
-                   @click="() => { documentMode = 'preview' }"
-                >
-                  Preview
+                  Save journal
                 </UButton>
               </div>
             </div>
@@ -443,12 +429,9 @@ const toggleArchive = async () => {
               placeholder="Use markdown with #tags and [[Glossary Name]] mentions."
               @update:model-value="form.contentMarkdown = $event"
             />
-            <p class="text-xs text-muted">
-              Tip: use <code>#customTag</code> for custom tags and <code>[[Glossary Name]]</code> to link glossary terms.
-            </p>
           </div>
           <div v-else class="prose prose-sm h-full max-w-none overflow-y-auto">
-            <MDC :value="entry?.contentMarkdown || '_No content._'" tag="article" />
+            <MDC :value="form.contentMarkdown || '_No content._'" tag="article" />
           </div>
         </UCard>
 
@@ -503,6 +486,7 @@ const toggleArchive = async () => {
             <div class="space-y-3">
               <USelect
                 v-model="holderUserId"
+                aria-label="Entry holder"
                 class="w-full"
                 :items="[{ label: 'Unassigned', value: UNASSIGNED_HOLDER_VALUE }, ...memberItems]"
                 placeholder="Select holder"
@@ -510,6 +494,7 @@ const toggleArchive = async () => {
               />
               <USelect
                 v-model="transferVisibility"
+                aria-label="Transfer visibility"
                 class="w-full"
                 :items="[
                   { label: 'DM', value: 'DM' },
@@ -589,4 +574,3 @@ v-model:open="isEditOpen"
     </SharedEntityFormModal>
   </div>
 </template>
-

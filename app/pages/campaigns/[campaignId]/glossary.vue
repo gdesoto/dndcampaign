@@ -181,11 +181,9 @@ const sessionActions = (entry: GlossaryEntry, link: GlossaryLink): RecordAction[
 <template>
   <div class="space-y-6">
     <CampaignListTemplate
-      headline="Glossary"
-      title="World index"
+      title="Glossary"
       :count="entries?.length"
-      description="Track campaign entities, aliases, and linked sessions."
-      action-label="New entry"
+      :action-label="canWriteContent ? 'New entry' : ''"
       action-icon="i-lucide-plus"
       :action-disabled="!canWriteContent"
       @action="openCreate"
@@ -198,7 +196,7 @@ const sessionActions = (entry: GlossaryEntry, link: GlossaryLink): RecordAction[
       </template>
 
       <template #filters>
-        <UCard variant="soft">
+        <UCard class="bg-muted">
           <SharedFilterToolbar label="Filter glossary">
             <UFormField label="Search glossary" name="glossarySearch">
               <UInput v-model="search" placeholder="Name, alias, or description" icon="i-lucide-search" class="w-full" />
@@ -211,7 +209,7 @@ const sessionActions = (entry: GlossaryEntry, link: GlossaryLink): RecordAction[
       </template>
 
       <SharedResourceState
-:has-data="Boolean(entries?.length)"
+        :has-data="Boolean(entries)"
         :pending="pending"
         :error="error"
         :empty="!entries?.length"
@@ -227,7 +225,7 @@ const sessionActions = (entry: GlossaryEntry, link: GlossaryLink): RecordAction[
           </div>
         </template>
         <template #emptyActions>
-          <UButton variant="outline" :disabled="!canWriteContent" @click="openCreate">Create your first entry</UButton>
+          <UButton v-if="canWriteContent" icon="i-lucide-plus" variant="outline" @click="openCreate">Create your first entry</UButton>
         </template>
 
         <div class="grid gap-4 sm:grid-cols-2">
@@ -237,16 +235,19 @@ const sessionActions = (entry: GlossaryEntry, link: GlossaryLink): RecordAction[
           >
             <template #header>
               <div class="flex items-center justify-between gap-3">
-                <div>
-                  <p class="text-xs uppercase tracking-[0.08em] text-dimmed">{{ entry.type }}</p>
-                  <h3 class=" type-record">{{ entry.name }}</h3>
+                <div class="flex min-w-0 items-start gap-3">
+                  <UAvatar v-if="entry.type === 'PC' || entry.type === 'NPC'" :alt="entry.name" size="md" />
+                  <UIcon v-else :name="entry.type === 'LOCATION' ? 'i-lucide-map-pin' : 'i-lucide-gem'" class="mt-1 size-5 shrink-0 text-muted" aria-hidden="true" />
+                  <div class="min-w-0">
+                  <h2 class="type-record break-words">{{ entry.name }}</h2>
                   <p v-if="entry.aliases" class="text-xs text-muted">Aliases: {{ entry.aliases }}</p>
+                  </div>
                 </div>
                 <SharedActionMenu :name="entry.name" :items="entryActions(entry)" />
               </div>
             </template>
-            <p class="text-sm whitespace-pre-line text-default">{{ entry.description }}</p>
-            <div class="mt-4 space-y-2">
+            <p v-if="entry.description" class="reading-copy whitespace-pre-line text-default">{{ entry.description }}</p>
+            <div v-if="entry.sessions.length || canWriteContent" class="mt-4 space-y-2">
               <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Linked sessions</p>
               <div v-if="entry.sessions.length" class="flex flex-wrap gap-2">
                 <div v-for="link in entry.sessions" :key="link.id" class="flex items-center gap-1">
@@ -254,9 +255,9 @@ const sessionActions = (entry: GlossaryEntry, link: GlossaryLink): RecordAction[
                   <SharedActionMenu :name="link.session.title" :items="sessionActions(entry, link)" />
                 </div>
               </div>
-              <div v-else class="text-xs text-muted">No sessions linked yet.</div>
-              <div class="flex gap-2">
+              <div v-if="canWriteContent" class="flex gap-2">
                 <USelect
+                  :aria-label="`Link a session to ${entry.name}`"
                   :items="(sessions || []).map((session) => ({ label: session.title, value: session.id }))"
                   placeholder="Link a session..."
                   :disabled="!canWriteContent"
@@ -275,7 +276,6 @@ v-model:open="isEditOpen"
 :schema="namedEntityFormSchema"
       :state="editForm"
       :title="editMode === 'create' ? 'Create glossary entry' : 'Edit glossary entry'"
-      description="Manage glossary entry details for this campaign."
       :saving="isSaving"
       :error="editError"
       :submit-label="editMode === 'create' ? 'Create' : 'Save'"

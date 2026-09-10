@@ -2,10 +2,37 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import ActionMenu from '../../app/components/shared/ActionMenu.vue'
+import { defineComponent, h } from 'vue'
+import { TooltipProvider } from 'reka-ui'
 
 const wrappers: Awaited<ReturnType<typeof mountSuspended>>[] = []
 afterEach(() => { wrappers.splice(0).forEach(wrapper => wrapper.unmount()); document.body.innerHTML = '' })
 const settle = async () => { await flushPromises(); await new Promise(resolve => setTimeout(resolve, 250)); await flushPromises() }
+
+it('ignores pointer-restored focus but shows the tooltip for keyboard focus', async () => {
+  const wrapper = await mountSuspended(defineComponent({
+    setup: () => () => h(TooltipProvider, { delayDuration: 0 }, {
+      default: () => h(ActionMenu, { name: 'Test record', items: [{ label: 'Edit', action: vi.fn() }] }),
+    }),
+  }), { attachTo: document.body })
+  wrappers.push(wrapper)
+  const trigger = wrapper.get('button[aria-label="Actions for Test record"]')
+  const nativeMatches = trigger.element.matches.bind(trigger.element)
+  let keyboardFocus = false
+  const matches = vi.spyOn(trigger.element, 'matches').mockImplementation(selector => selector === ':focus-visible' ? keyboardFocus : nativeMatches(selector))
+  try {
+    await trigger.trigger('focus')
+    await settle()
+    expect(document.querySelector('[role="tooltip"]')).toBeNull()
+    await trigger.trigger('blur')
+    keyboardFocus = true
+    await trigger.trigger('focus')
+    await settle()
+    expect(document.querySelector('[role="tooltip"]')?.textContent).toContain('Actions for Test record')
+  } finally {
+    matches.mockRestore()
+  }
+})
 
 it.each([false, true])('hands focus to confirmation, retains failure, retries and restores the trigger (modal=%s)', async (modal) => {
   let reject!: (error: Error) => void

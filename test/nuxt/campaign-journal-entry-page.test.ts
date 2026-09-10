@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import JournalEntryPage from '../../app/pages/campaigns/[campaignId]/journal/[entryId].vue'
 
@@ -87,6 +87,7 @@ const discoverableEntry = {
 
 describe('campaign journal entry page', () => {
   const formStubs = {
+    UTooltip: { template: '<span><slot /></span>' },
     USelect: {
       props: ['modelValue'],
       emits: ['update:modelValue'],
@@ -151,5 +152,20 @@ describe('campaign journal entry page', () => {
     expect(wrapper.text()).toContain('Archive')
     expect(wrapper.text()).toContain('History')
     expect(wrapper.text()).toContain('DISCOVERED')
+  })
+
+  it('previews unsaved content without saving the entry', async () => {
+    mockGetEntry.mockResolvedValue({ ...discoverableEntry, isDiscoverable: false })
+    const wrapper = await mountSuspended(JournalEntryPage, {
+      global: { stubs: { ...formStubs, MDC: { props: ['value'], template: '<article>{{ value }}</article>' } } },
+    })
+    const viewTabs = wrapper.findComponent({ name: 'UTabs' })
+    viewTabs.vm.$emit('update:modelValue', 'edit')
+    await nextTick()
+    await wrapper.get('textarea').setValue('An unsaved discovery')
+    viewTabs.vm.$emit('update:modelValue', 'preview')
+    await nextTick()
+    expect(wrapper.get('article').text()).toBe('An unsaved discovery')
+    expect(mockUpdateEntry).not.toHaveBeenCalled()
   })
 })

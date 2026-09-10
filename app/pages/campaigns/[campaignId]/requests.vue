@@ -12,7 +12,6 @@ import type {
   CampaignRequestListItem,
   CampaignRequestStatus,
   CampaignRequestType,
-  CampaignRequestVisibility,
 } from '#shared/types/campaign-requests'
 
 definePageMeta({ layout: 'dashboard' })
@@ -108,9 +107,6 @@ const statusColor = (status: CampaignRequestStatus) => {
   if (status === 'CANCELED') return 'neutral'
   return 'warning'
 }
-
-const visibilityColor = (visibility: CampaignRequestVisibility) =>
-  visibility === 'PUBLIC' ? 'primary' : 'neutral'
 
 const typeLabelMap: Record<CampaignRequestType, string> = {
   ITEM: 'Item',
@@ -308,14 +304,14 @@ const requestActions = (request: CampaignRequestListItem): RecordAction[] => [
 
 <template>
   <div class="space-y-8">
-    <UPageHeader headline="Requests" title="DM request board">
-      <template #links>
-        <UButton icon="i-lucide-plus" @click="openCreate">New request</UButton>
+    <CampaignPageHeader title="Requests" :count="requests.length">
+      <template #actions>
+        <UButton icon="i-lucide-plus" color="primary" variant="solid" @click="openCreate">New request</UButton>
       </template>
-    </UPageHeader>
+    </CampaignPageHeader>
 
-    <UCard>
-      <UTabs v-model="selectedTab" :items="visibleTabItems" :content="false" />
+    <UCard class="bg-muted">
+      <UTabs v-model="selectedTab" :items="visibleTabItems" :content="false" :ui="{ list: 'flex-wrap', trigger: 'flex-none' }" />
     </UCard>
 
     <SharedResourceState
@@ -338,17 +334,16 @@ const requestActions = (request: CampaignRequestListItem): RecordAction[] => [
       <div class="grid gap-4 sm:grid-cols-2">
         <SharedListItemCard v-for="request in requests" :key="request.id">
           <template #header>
-            <div class="flex items-center justify-between gap-3">
-              <div class="space-y-1">
-                <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Request</p>
-                <h3 class=" type-record">{{ request.title }}</h3>
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div class="min-w-0 space-y-1">
+                <h2 class="type-record flex items-start gap-2"><UIcon name="i-lucide-inbox" class="mt-0.5 size-4 shrink-0 text-muted" aria-hidden="true" /><span class="break-words">{{ request.title }}</span></h2>
                 <p class="text-xs text-muted">By {{ request.createdByName }}</p>
               </div>
               <div class="flex flex-wrap justify-end gap-2">
                 <UBadge :color="statusColor(request.status)" variant="soft" size="sm">
                   {{ statusLabelMap[request.status] }}
                 </UBadge>
-                <UBadge :color="visibilityColor(request.visibility)" variant="soft" size="sm">
+                <UBadge color="neutral" :icon="request.visibility === 'PUBLIC' ? 'i-lucide-users' : 'i-lucide-lock-keyhole'" variant="soft" size="sm">
                   {{ request.visibility === 'PUBLIC' ? 'Public' : 'DM Only' }}
                 </UBadge>
                 <UBadge color="neutral" variant="soft" size="sm">
@@ -358,7 +353,7 @@ const requestActions = (request: CampaignRequestListItem): RecordAction[] => [
             </div>
           </template>
 
-          <p class="text-sm whitespace-pre-line text-default">{{ request.description }}</p>
+          <p class="reading-copy whitespace-pre-line text-default">{{ request.description }}</p>
 
           <div class="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted">
             <span v-if="request.visibility === 'PUBLIC'">Votes: {{ request.voteCount }}</span>
@@ -372,6 +367,8 @@ const requestActions = (request: CampaignRequestListItem): RecordAction[] => [
           <div class="mt-4 flex flex-wrap gap-2">
             <UButton
               v-if="request.visibility === 'PUBLIC'"
+              icon="i-lucide-thumbs-up"
+              :aria-pressed="request.viewerHasVoted"
               size="xs"
               variant="outline"
               :disabled="!request.canVote || actionLoadingByRequestId[request.id]"
@@ -396,6 +393,8 @@ const requestActions = (request: CampaignRequestListItem): RecordAction[] => [
               <UButton
                 size="xs"
                 color="success"
+                icon="i-lucide-check"
+                variant="soft"
                 :loading="actionLoadingByRequestId[request.id]"
                 @click="decideRequest(request.id, 'APPROVED')"
               >
@@ -404,6 +403,7 @@ const requestActions = (request: CampaignRequestListItem): RecordAction[] => [
               <UButton
                 size="xs"
                 color="error"
+                icon="i-lucide-x"
                 variant="soft"
                 :loading="actionLoadingByRequestId[request.id]"
                 @click="decideRequest(request.id, 'DENIED')"

@@ -351,14 +351,11 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
 <template>
   <div class="space-y-6">
     <CampaignListTemplate
-      headline="Maps"
-      title="Import and explore maps"
-      description="Import Azgaar exports, review features, and stage glossary links."
+      title="Maps"
+      :count="maps?.length"
     >
       <template #actions>
-        <UBadge v-if="selectedMap" color="primary" variant="subtle">
-          Active map: {{ selectedMap.name }}
-        </UBadge>
+        <UButton v-if="hasImportedMaps && canWriteContent" icon="i-lucide-file-up" color="primary" variant="solid" @click="importModalOpen = true">Import map</UButton>
       </template>
       <template #notice>
         <SharedReadOnlyAlert
@@ -406,7 +403,7 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
       <UCard>
         <template #header>
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <h2 class=" type-section">Map viewer</h2>
+            <h2 class="type-section break-words">{{ selectedMap?.name || 'Map viewer' }}</h2>
             <div class="flex flex-wrap items-center gap-2">
               <UCheckbox
                 v-model="glossaryPointsOnly"
@@ -425,6 +422,7 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
               <SharedActionMenu v-if="selectedMap" :name="selectedMap.name" :items="mapActions(selectedMap)" :disabled="Boolean(deletingMapId) || savingMap || reimporting || settingPrimary" />
               <UButton
                 size="sm"
+                icon="i-lucide-book-plus"
                 :disabled="!canWriteContent || !selectedFeatureIds.length || !selectedMapId"
                 @click="() => { stageOpen = true }"
               >
@@ -452,7 +450,7 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
         </div>
         <p v-else class="text-sm text-muted">Select a map to load the viewer.</p>
 
-        <UCard variant="soft" class="mt-4">
+        <UCard variant="soft" class="mt-4 bg-muted">
           <template #header>
             <h3 class=" type-record">Selection</h3>
           </template>
@@ -462,7 +460,7 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
                 v-for="feature in selectedFeatureLabels"
                 :key="feature.id"
                 variant="subtle"
-                color="secondary"
+                color="neutral"
               >
                 {{ feature.name }} ({{ feature.type }})
               </UBadge>
@@ -495,23 +493,24 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
       <UCard>
         <template #header>
           <div class="flex items-center justify-between">
-            <h2 class=" type-section">Maps</h2>
-            <UBadge variant="subtle">{{ maps?.length || 0 }}</UBadge>
+            <h2 class="type-section">Map library</h2>
+            <UBadge color="neutral" variant="soft">{{ maps?.length || 0 }}</UBadge>
           </div>
         </template>
         <div class="space-y-2">
           <div
             v-for="map in maps || []"
             :key="map.id"
-            class="flex w-full items-center justify-between rounded-md border border-default bg-elevated/50 px-3 py-2 text-left transition-colors hover:bg-elevated/70"
+            class="flex w-full items-center justify-between gap-2 rounded-md border border-default bg-elevated px-3 py-2 text-left transition-colors hover:bg-muted"
             :class="selectedMapId === map.id ? 'ring-2 ring-primary/40' : ''"
           >
             <button
               type="button"
               class="min-w-0 flex-1 text-left"
+              :aria-pressed="selectedMapId === map.id"
               @click="selectedMapId = map.id"
             >
-              <span class="block text-sm font-semibold">{{ map.name }}</span>
+              <span class="flex items-center gap-2 text-sm font-semibold"><UIcon name="i-lucide-map" class="size-4 shrink-0 text-muted" aria-hidden="true" />{{ map.name }}</span>
               <span class="block text-xs uppercase tracking-[0.08em] text-dimmed">
                 v{{ map.importVersion }} · {{ map.status }}
               </span>
@@ -543,7 +542,7 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
       title="Viewer layers"
       description="Show or hide map feature layers in the viewer."
     >
-      <template #content>
+      <template #body>
         <MapsLayerPanel v-model="activeLayers" />
       </template>
     </UModal>
@@ -553,11 +552,8 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
       title="Map settings"
       description="Edit the selected map name and status."
     >
-      <template #content>
+      <template #body>
         <UCard>
-          <template #header>
-            <h3 class=" type-record">Map settings</h3>
-          </template>
           <div v-if="selectedMap" class="space-y-3">
             <UFormField label="Map name">
               <UInput v-model="mapEditName" :disabled="!canWriteContent" />
@@ -598,11 +594,8 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
       title="Re-import / update"
       description="Upload replacement files, preview map diffs, and then apply a strategy."
     >
-      <template #content>
+      <template #body>
         <UCard>
-          <template #header>
-            <h3 class=" type-record">Re-import / update</h3>
-          </template>
           <div class="space-y-3">
             <UFileUpload
               v-model="reimportFiles"
@@ -637,11 +630,8 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
       title="Import Azgaar export"
       description="Import a full Azgaar JSON export with optional SVG and GeoJSON artifacts."
     >
-      <template #content>
+      <template #body>
         <UCard>
-          <template #header>
-            <h3 class=" type-record">Import Azgaar export</h3>
-          </template>
           <MapsImportForm
             :name="importName"
             :primary="importPrimary"
@@ -664,11 +654,8 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
       title="Apply re-import strategy"
       description="Review map diff and apply a re-import strategy to update this map."
     >
-      <template #content>
+      <template #body>
         <UCard>
-          <template #header>
-            <h3 class=" type-record">Apply re-import strategy</h3>
-          </template>
           <div v-if="reimportPreview" class="space-y-3">
             <div class="grid gap-2 sm:grid-cols-2">
               <UAlert color="info" variant="subtle" :description="`Added features: ${reimportPreview.diff.added}`" />

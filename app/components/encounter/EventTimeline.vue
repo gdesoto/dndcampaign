@@ -4,6 +4,7 @@ import type { EncounterEvent } from '#shared/types/encounter'
 const props = defineProps<{
   events: EncounterEvent[]
 }>()
+const items = computed(() => props.events.map(event => ({ ...event, title: event.summary })))
 </script>
 
 <template>
@@ -12,14 +13,14 @@ const props = defineProps<{
       <h2 class=" type-section">Event timeline</h2>
     </template>
 
-    <div v-if="props.events.length" class="space-y-2 text-sm">
-      <div v-for="event in props.events" :key="event.id" class="rounded-md border border-default p-2">
-        <div class="flex items-center justify-between gap-2">
-          <strong>{{ event.summary }}</strong>
-          <span class="text-xs text-muted">{{ new Date(event.createdAt).toLocaleTimeString() }}</span>
-        </div>
-        <p class="text-xs text-muted">{{ event.eventType }}</p>
-      </div>
+    <div v-if="items.length" class="max-h-96 overflow-y-auto pr-3" tabindex="0" role="region" aria-label="Encounter event history">
+      <UTimeline :items="items" size="xs">
+        <template #indicator><UIcon name="i-lucide-history" class="size-3" aria-hidden="true" /></template>
+        <template #wrapper="{ item }">
+          <p class="text-sm text-default">{{ item.summary }}</p>
+          <time :datetime="item.createdAt" class="mt-1 block text-xs tabular-nums text-muted">{{ new Date(item.createdAt).toLocaleString() }}</time>
+        </template>
+      </UTimeline>
     </div>
     <p v-else class="text-sm text-muted">No encounter events yet.</p>
   </UCard>

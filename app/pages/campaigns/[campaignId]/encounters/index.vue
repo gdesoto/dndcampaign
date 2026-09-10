@@ -354,7 +354,7 @@ const statusColor = (status: EncounterSummary['status']) => {
   if (status === 'PAUSED') return 'warning'
   if (status === 'COMPLETED') return 'neutral'
   if (status === 'ABANDONED') return 'error'
-  return 'secondary'
+  return 'info'
 }
 
 const encounterTypeOptions = [
@@ -385,11 +385,9 @@ const statBlockOptions = computed(() =>
 
 <template>
   <CampaignListTemplate
-    headline="Campaign Tool"
-    title="Encounter tracker"
+    title="Encounters"
     :count="encounters?.length"
-    description="Track, run, and reuse encounter setups."
-    action-label="New encounter"
+    :action-label="canWriteContent ? 'New encounter' : ''"
     :action-disabled="!canWriteContent"
     @action="openCreate"
   >
@@ -410,12 +408,14 @@ const statBlockOptions = computed(() =>
     </template>
 
     <SharedResourceState
-:has-data="Boolean(encounters?.length)"
+      :has-data="Boolean(encounters)"
+      :no-matches="filters.status !== 'ALL' || filters.type !== 'ALL'"
       :pending="pending"
       :error="error"
       :empty="!encounters?.length"
       error-message="Unable to load encounters."
       empty-message="No encounters yet."
+      @clear="filters.status = 'ALL'; filters.type = 'ALL'"
       @retry="refresh"
     >
       <template #loading>
@@ -429,11 +429,11 @@ const statBlockOptions = computed(() =>
           <SharedListItemCard>
             <template #header>
               <div class="flex items-center justify-between gap-2">
-                <h3 class=" type-record">{{ encounter.name }}</h3>
-                <UBadge :color="statusColor(encounter.status)" variant="soft">{{ encounter.status }}</UBadge>
+                <h2 class="type-record flex min-w-0 items-start gap-2"><UIcon name="i-lucide-swords" class="mt-0.5 size-4 shrink-0 text-muted" aria-hidden="true" /><span class="break-words">{{ encounter.name }}</span></h2>
+                <UBadge :color="statusColor(encounter.status)" variant="soft" class="shrink-0">{{ encounter.status.charAt(0) + encounter.status.slice(1).toLowerCase() }}</UBadge>
               </div>
             </template>
-            <p class="text-sm text-muted">{{ encounter.type }} · Round {{ encounter.currentRound }}</p>
+            <div class="flex flex-wrap items-center gap-3 text-sm text-muted"><UBadge color="neutral" variant="soft">{{ encounterTypeOptions.find(option => option.value === encounter.type)?.label }}</UBadge><span class="font-mono tabular-nums">Round {{ encounter.currentRound }}</span></div>
           </SharedListItemCard>
         </NuxtLink>
       </div>
@@ -453,9 +453,8 @@ const statBlockOptions = computed(() =>
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 class=" type-section">Stat block library</h2>
-            <p class="text-sm text-muted">Reusable campaign-local NPC and monster definitions.</p>
           </div>
-          <UButton :disabled="!canWriteContent" variant="outline" @click="openCreateStatBlock">New stat block</UButton>
+          <UButton v-if="canWriteContent" icon="i-lucide-plus" variant="outline" @click="openCreateStatBlock">New stat block</UButton>
         </div>
       </template>
       <SharedResourceState
@@ -483,7 +482,7 @@ const statBlockOptions = computed(() =>
               </p>
             </div>
             <div class="flex gap-2">
-              <UButton :disabled="!canWriteContent" size="xs" variant="outline" @click="openEditStatBlock(statBlock.id)">Edit</UButton>
+              <UTooltip text="Edit stat block"><UButton v-if="canWriteContent" :aria-label="`Edit ${statBlock.name}`" icon="i-lucide-pencil" color="neutral" variant="ghost" @click="openEditStatBlock(statBlock.id)" /></UTooltip>
             </div>
           </div>
         </div>
@@ -496,9 +495,8 @@ const statBlockOptions = computed(() =>
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 class=" type-section">Encounter template library</h2>
-            <p class="text-sm text-muted">Save reusable encounter setups with participant rows.</p>
           </div>
-          <UButton :disabled="!canWriteContent" variant="outline" @click="openCreateTemplate">New template</UButton>
+          <UButton v-if="canWriteContent" icon="i-lucide-plus" variant="outline" @click="openCreateTemplate">New template</UButton>
         </div>
       </template>
       <SharedResourceState
@@ -518,10 +516,10 @@ const statBlockOptions = computed(() =>
           >
             <div>
               <p class="font-medium">{{ template.name }}</p>
-              <p class="text-xs text-muted">{{ template.type }} · {{ template.combatants.length }} row(s)</p>
+              <p class="text-xs text-muted">{{ encounterTypeOptions.find(option => option.value === template.type)?.label }} · {{ template.combatants.length }} combatant groups</p>
             </div>
             <div class="flex gap-2">
-              <UButton :disabled="!canWriteContent" size="xs" variant="outline" @click="openEditTemplate(template.id)">Edit</UButton>
+              <UTooltip text="Edit template"><UButton v-if="canWriteContent" :aria-label="`Edit ${template.name}`" icon="i-lucide-pencil" color="neutral" variant="ghost" @click="openEditTemplate(template.id)" /></UTooltip>
             </div>
           </div>
         </div>
@@ -635,4 +633,3 @@ v-model:open="isTemplateModalOpen"
     </SharedEntityFormModal>
   </CampaignListTemplate>
 </template>
-

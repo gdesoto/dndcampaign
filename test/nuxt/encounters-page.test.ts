@@ -89,7 +89,7 @@ describe('Campaign encounters page', () => {
 
     expect(wrapper.text()).toContain('Read-only access')
     const button = wrapper.findAll('button').find((entry) => entry.text().includes('New encounter'))
-    expect(button?.attributes('disabled')).toBeDefined()
+    expect(button).toBeUndefined()
   })
 
   it('renders encounter entries from API', async () => {
@@ -102,7 +102,7 @@ describe('Campaign encounters page', () => {
     })
 
     expect(wrapper.text()).toContain('Roadside Ambush')
-    expect(wrapper.text()).toContain('PLANNED')
+    expect(wrapper.text()).toContain('Planned')
     expect(wrapper.text()).toContain('Stat block library')
     expect(wrapper.text()).toContain('Encounter template library')
   })

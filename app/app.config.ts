@@ -130,12 +130,6 @@ export default defineAppConfig({
       ],
     },
 
-    dropdownMenu: {
-      slots: {
-        content: 'rounded-md border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] shadow-2xl',
-      },
-    },
-
     tooltip: {
       slots: {
         content:

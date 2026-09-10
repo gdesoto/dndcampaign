@@ -6,11 +6,8 @@ definePageMeta({ layout: 'dashboard' })
 
 <template>
   <CampaignListTemplate
-    headline="Tools"
     title="Dice roller"
-    description="Roll for checks, saves, attacks, and custom formulas."
   >
     <CampaignToolsDiceRoller />
   </CampaignListTemplate>
 </template>
-

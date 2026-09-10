@@ -86,7 +86,7 @@ describe('Campaign requests page', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('DM request board')
+    expect(wrapper.text()).toContain('Requests')
     expect(wrapper.text()).not.toContain('Moderation Queue')
     expect(wrapper.text()).toContain('Need a silvered weapon')
   })

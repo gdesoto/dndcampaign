@@ -71,6 +71,7 @@ config.global.stubs.SharedActionMenu = actionMenuStub
 
 describe('campaign journal page', () => {
   const formStubs = {
+    UTooltip: { template: '<span><slot /></span>' },
     USelect: {
       props: ['modelValue'],
       emits: ['update:modelValue'],
@@ -142,11 +143,11 @@ describe('campaign journal page', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('Campaign journal')
+    expect(wrapper.text()).toContain('Journal')
     expect(wrapper.text()).not.toContain('DM-visible')
     expect(wrapper.text()).toContain('Journal Entry One')
     expect(wrapper.text()).toContain('Open')
-    expect(wrapper.text()).toContain('Recent Notifications')
+    expect(wrapper.text()).toContain('Notifications')
     expect(wrapper.text()).toContain('Discoverable only')
     expect(wrapper.text()).toContain('Held by me')
     expect(wrapper.text()).toContain('Include archived')

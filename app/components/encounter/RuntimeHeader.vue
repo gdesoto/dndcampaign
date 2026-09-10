@@ -29,16 +29,15 @@ const actions = computed<RecordAction[]>(() => [
   <UCard>
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Encounter runtime</p>
-        <h1 class=" type-title">{{ props.name }}</h1>
-        <p class="text-sm text-muted">Status: {{ props.status }} · Round {{ props.round }}</p>
+        <h1 class="type-title break-words">{{ props.name }}</h1>
+        <div class="mt-2 flex items-center gap-3"><UBadge :color="status === 'ACTIVE' ? 'success' : status === 'PAUSED' ? 'warning' : status === 'ABANDONED' ? 'error' : status === 'PLANNED' ? 'info' : 'neutral'" variant="soft">{{ status.charAt(0) + status.slice(1).toLowerCase() }}</UBadge><span class="font-mono text-sm tabular-nums text-muted">Round {{ round }}</span></div>
       </div>
 
       <div class="flex flex-wrap gap-2">
-        <UButton v-if="props.status === 'PLANNED'" :disabled="!props.canWrite" @click="emit('start')">Start</UButton>
+        <UButton v-if="props.status === 'PLANNED'" icon="i-lucide-play" :disabled="!props.canWrite" @click="emit('start')">Start</UButton>
         <UButton v-if="props.status === 'ACTIVE'" :disabled="!props.canWrite" color="warning" @click="emit('pause')">Pause</UButton>
         <UButton v-if="props.status === 'PAUSED'" :disabled="!props.canWrite" color="primary" @click="emit('resume')">Resume</UButton>
-        <UButton :disabled="!props.canWrite" color="neutral" @click="emit('complete')">Complete</UButton>
+        <UButton :disabled="!props.canWrite" icon="i-lucide-check" color="neutral" variant="outline" @click="emit('complete')">Complete</UButton>
         <SharedActionMenu :name="name" :items="actions" />
       </div>
     </div>

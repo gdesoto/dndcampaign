@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CampaignRecapItem } from '#shared/types/campaign-overview'
+definePageMeta({ layout: 'dashboard' })
 
 const { campaignId, request } = useCampaignPageContext()
 const { data: recaps, pending, error, refresh } = await useAsyncData(
@@ -10,10 +11,10 @@ const resolvePlayback = (id: string) => request<{ url: string }>(`/api/recaps/${
 </script>
 
 <template>
-  <UPage>
-    <UPageHeader title="Recap playlist" description="Watch or listen through your campaign, one session at a time.">
-      <template #links><UButton :to="`/campaigns/${campaignId}`" variant="outline" icon="i-lucide-arrow-left">Campaign overview</UButton></template>
-    </UPageHeader>
+  <div class="space-y-4">
+    <CampaignPageHeader title="Recap playlist" :count="recaps?.length">
+      <template #actions><UButton :to="`/campaigns/${campaignId}`" variant="outline" icon="i-lucide-arrow-left">Campaign overview</UButton></template>
+    </CampaignPageHeader>
     <div class="py-6">
       <UCard v-if="pending" class="h-64 animate-pulse" aria-label="Loading recaps" />
       <UCard v-else-if="error">
@@ -22,5 +23,5 @@ const resolvePlayback = (id: string) => request<{ url: string }>(`/api/recaps/${
       </UCard>
       <CampaignRecapWatch v-else :key="campaignId" :recaps="recaps" :base-path="`/campaigns/${campaignId}`" :resolve-playback="resolvePlayback" />
     </div>
-  </UPage>
+  </div>
 </template>

@@ -47,9 +47,9 @@ const applyManualInitiative = (combatantId: string) => {
 <template>
   <UCard>
     <template #header>
-      <div class="flex items-center justify-between gap-2">
+      <div class="flex flex-wrap items-center justify-between gap-2">
         <h2 class=" type-section">Initiative board</h2>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <span class="text-xs text-muted">{{ props.combatants.length }} combatants</span>
           <UButton size="xs" variant="outline" :disabled="!props.canWrite" @click="emit('manage')">Manage combatants</UButton>
         </div>
@@ -60,21 +60,16 @@ const applyManualInitiative = (combatantId: string) => {
       <div
         v-for="(combatant, index) in props.combatants"
         :key="combatant.id"
-        role="button"
-        tabindex="0"
-        class="flex w-full items-center justify-between rounded-md border p-2 text-left"
+        class="flex w-full flex-wrap items-center justify-between gap-2 rounded-md border p-2 text-left"
         :class="index === props.activeIndex ? 'border-primary bg-primary/5' : 'border-default'"
-        :aria-disabled="!props.canWrite"
-        @click="props.canWrite && emit('select', combatant.id)"
-        @keydown.enter.prevent="props.canWrite && emit('select', combatant.id)"
-        @keydown.space.prevent="props.canWrite && emit('select', combatant.id)"
       >
-        <span class="font-medium">{{ index + 1 }}. {{ combatant.name }}</span>
+        <button type="button" class="min-w-0 flex-1 rounded-sm text-left font-medium focus-visible:outline-2 focus-visible:outline-primary" :disabled="!props.canWrite" :aria-pressed="index === props.activeIndex" @click="emit('select', combatant.id)">{{ index + 1 }}. {{ combatant.name }}</button>
         <div class="flex items-center gap-2">
           <div class="flex items-center gap-1">
             <UButton
               size="xs"
               icon="i-lucide-chevron-up"
+              :aria-label="`Move ${combatant.name} up`"
               variant="ghost"
               :disabled="!props.canWrite || index === 0"
               @click.stop="emit('move', { combatantId: combatant.id, direction: 'up' })"
@@ -82,6 +77,7 @@ const applyManualInitiative = (combatantId: string) => {
             <UButton
               size="xs"
               icon="i-lucide-chevron-down"
+              :aria-label="`Move ${combatant.name} down`"
               variant="ghost"
               :disabled="!props.canWrite || index === props.combatants.length - 1"
               @click.stop="emit('move', { combatantId: combatant.id, direction: 'down' })"
@@ -101,6 +97,7 @@ const applyManualInitiative = (combatantId: string) => {
               class="w-20"
               :disabled="!props.canWrite"
               placeholder="Init"
+              :aria-label="`Initiative for ${combatant.name}`"
               @click.stop
               @keydown.enter.prevent.stop="applyManualInitiative(combatant.id)"
             />

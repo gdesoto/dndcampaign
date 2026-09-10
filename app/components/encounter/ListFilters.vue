@@ -29,7 +29,7 @@ const typeOptions = [
 </script>
 
 <template>
-  <UCard>
+  <UCard class="bg-muted">
     <div class="grid gap-3 md:grid-cols-2">
       <UFormField label="Status">
         <USelect

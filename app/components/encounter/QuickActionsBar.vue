@@ -29,10 +29,10 @@ const rollItems = [
   <UCard>
     <div class="flex flex-wrap gap-2">
       <UDropdownMenu :items="rollItems">
-        <UButton :disabled="!props.canWrite">Roll initiative</UButton>
+        <UButton icon="i-lucide-dices" variant="outline" :disabled="!props.canWrite">Roll initiative</UButton>
       </UDropdownMenu>
-      <UButton :disabled="!props.canWrite" variant="outline" @click="emit('rewind')">Previous turn</UButton>
-      <UButton :disabled="!props.canWrite" @click="emit('advance')">Next turn</UButton>
+      <UButton icon="i-lucide-arrow-left" :disabled="!props.canWrite" variant="outline" @click="emit('rewind')">Previous turn</UButton>
+      <UButton trailing-icon="i-lucide-arrow-right" :disabled="!props.canWrite" variant="outline" @click="emit('advance')">Next turn</UButton>
     </div>
   </UCard>
 </template>

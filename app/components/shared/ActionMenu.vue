@@ -84,7 +84,7 @@ const menuItems = computed<DropdownMenuItem[][]>(() => {
       :disabled="disabled || running || confirmationOpen"
       :content="{ align: 'end', onCloseAutoFocus: afterMenuClose }"
     >
-      <UTooltip v-model:open="tooltipOpen" :disabled="menuOpen || confirmationOpen" :text="`Actions for ${name}`">
+      <UTooltip v-model:open="tooltipOpen" ignore-non-keyboard-focus :disabled="menuOpen || confirmationOpen" :text="`Actions for ${name}`">
         <UButton
           ref="trigger"
           icon="i-lucide-ellipsis-vertical"

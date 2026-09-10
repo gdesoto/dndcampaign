@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { titledEntityFormSchema } from '~/utils/entity-form-schemas'
+import { questFormSchema } from '~/utils/quest-form-schema'
 import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 import { useCampaignCalendar } from '~/composables/useCampaignCalendar'
 
@@ -424,11 +424,10 @@ const updateStatus = async (quest: QuestItem, status: QuestStatus) => {
 <template>
   <div class="space-y-6">
     <CampaignListTemplate
-      headline="Quests"
-      title="Quest tracker"
+      title="Quests"
       :count="quests ? filteredQuests.length : undefined"
       description="Track quest category, main or side status, rewards, sources, and expiration dates."
-      action-label="New quest"
+      :action-label="canWriteContent ? 'New quest' : ''"
       action-icon="i-lucide-plus"
       :action-disabled="!canWriteContent"
       @action="openCreate"
@@ -441,7 +440,7 @@ const updateStatus = async (quest: QuestItem, status: QuestStatus) => {
       </template>
 
       <template #filters>
-        <UCard variant="soft">
+        <UCard variant="soft" class="bg-muted">
           <SharedFilterToolbar label="Filter quests">
             <UFormField label="Category" name="typeFilter">
               <USelect v-model="selectedTypeFilter" class="w-full" :items="typeFilterOptions" />
@@ -457,12 +456,13 @@ const updateStatus = async (quest: QuestItem, status: QuestStatus) => {
       </template>
 
       <SharedResourceState
-:has-data="Boolean(quests?.length)"
+        :has-data="Boolean(quests)"
         :pending="pending"
         :error="error"
-        :empty="!quests?.length"
+        :empty="!filteredQuests.length" :no-matches="Boolean(quests?.length) && !filteredQuests.length"
         error-message="Unable to load quests."
         empty-message="No quests yet."
+        @clear="selectedTypeFilter = 'ALL'; selectedTrackFilter = 'ALL'; selectedStatusFilter = 'ALL'"
         @retry="refresh"
       >
         <template #loading>
@@ -471,11 +471,11 @@ const updateStatus = async (quest: QuestItem, status: QuestStatus) => {
           </div>
         </template>
         <template #emptyActions>
-          <UButton variant="outline" :disabled="!canWriteContent" @click="openCreate">Create your first quest</UButton>
+          <UButton v-if="canWriteContent" variant="outline" @click="openCreate">Create your first quest</UButton>
         </template>
 
         <div v-if="quests?.length" class="space-y-6">
-          <section class="space-y-3">
+          <section v-if="primaryQuests.length" class="space-y-3">
             <div class="flex items-center justify-between">
               <h2 class=" type-section">Active and on hold quests</h2>
               <span class="text-xs text-muted">{{ primaryQuests.length }} shown</span>
@@ -504,7 +504,7 @@ const updateStatus = async (quest: QuestItem, status: QuestStatus) => {
             </UCard>
           </section>
 
-          <section class="space-y-3">
+          <section v-if="closedQuests.length" class="space-y-3">
             <div class="flex items-center justify-between">
               <h2 class=" type-section">Completed and failed quests</h2>
               <span class="text-xs text-muted">{{ closedQuests.length }} shown</span>
@@ -538,7 +538,7 @@ const updateStatus = async (quest: QuestItem, status: QuestStatus) => {
 
     <SharedEntityFormModal
 v-model:open="isEditOpen"
-:schema="titledEntityFormSchema"
+:schema="questFormSchema"
       :state="editForm"
       :title="editMode === 'create' ? 'Create quest' : 'Edit quest'"
       :saving="isSaving"
@@ -549,7 +549,7 @@ v-model:open="isEditOpen"
       :delete-action="deleteEditingQuest"
       @submit="saveQuest"
     >
-      <UFormField label="Title" name="title">
+      <UFormField label="Title" name="title" required>
         <UInput v-model="editForm.title" />
       </UFormField>
 
@@ -571,11 +571,11 @@ v-model:open="isEditOpen"
         </UFormField>
       </div>
 
-      <UFormField v-if="editForm.sourceType === 'FREE_TEXT'" label="Source" name="sourceText">
+      <UFormField v-if="editForm.sourceType === 'FREE_TEXT'" label="Source" name="sourceText" required>
         <UInput v-model="editForm.sourceText" placeholder="Who or what issued this quest?" />
       </UFormField>
 
-        <UFormField v-if="editForm.sourceType === 'NPC'" label="NPC source" name="sourceNpcId">
+        <UFormField v-if="editForm.sourceType === 'NPC'" label="NPC source" name="sourceNpcId" required>
           <USelect
             v-model="editForm.sourceNpcId"
             class="w-full"
@@ -588,6 +588,7 @@ v-model:open="isEditOpen"
         v-if="editForm.sourceType === 'CAMPAIGN_CHARACTER'"
         label="Campaign character source"
         name="sourceCharacterId"
+        required
       >
         <USelect
           v-model="editForm.sourceCharacterId"

@@ -823,8 +823,8 @@ const confirmStatusAction = async (action: 'reset' | 'abandon') => {
                 <h2 class=" type-section">Add note</h2>
               </template>
               <div class="flex flex-wrap gap-2">
-                <UInput v-model="noteDraft" class="min-w-[16rem] flex-1" placeholder="Track a quick note" />
-                <UButton :disabled="!canWriteContent || !noteDraft.trim()" @click="addNote">Add note</UButton>
+                <UInput v-model="noteDraft" class="min-w-0 flex-1" aria-label="Encounter note" placeholder="Track a quick note" />
+                <UButton icon="i-lucide-plus" variant="outline" :disabled="!canWriteContent || !noteDraft.trim()" @click="addNote">Add note</UButton>
               </div>
             </UCard>
           </div>
@@ -841,7 +841,7 @@ const confirmStatusAction = async (action: 'reset' | 'abandon') => {
               <div v-if="activeCombatant" class="space-y-2">
                 <p class="text-sm font-medium">{{ activeCombatant.name }}</p>
                 <div class="flex flex-wrap items-end gap-2">
-                  <UInput v-model.number="hpModifier" type="number" class="w-24" />
+                  <UInput v-model.number="hpModifier" type="number" class="w-24" aria-label="Hit point amount" />
                   <UButton :disabled="!canWriteContent || !activeCombatant" color="error" variant="soft" @click="quickApplyDamage">Damage</UButton>
                   <UButton :disabled="!canWriteContent || !activeCombatant" color="success" variant="soft" @click="quickApplyHeal">Heal</UButton>
                 </div>

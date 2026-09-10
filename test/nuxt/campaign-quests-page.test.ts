@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import QuestsPage from '../../app/pages/campaigns/[campaignId]/quests.vue'
+import { questFormSchema } from '../../app/utils/quest-form-schema'
 
 const mockRequest = vi.fn()
 const mockRefresh = vi.fn(async () => undefined)
@@ -145,7 +146,8 @@ describe('Campaign quests page', () => {
             `,
           },
           SharedEntityFormModal: {
-            props: ['open'],
+            name: 'SharedEntityFormModal',
+            props: ['open', 'schema', 'state'],
             template: '<div><slot /></div>',
           },
           SharedReadOnlyAlert: {
@@ -202,6 +204,9 @@ describe('Campaign quests page', () => {
     })
 
     expect(wrapper.text()).toContain('Recover the seal')
+    const modal = wrapper.findComponent({ name: 'SharedEntityFormModal' })
+    expect(modal.props('schema')).toBe(questFormSchema)
+    expect(questFormSchema.safeParse({ ...modal.props('state'), title: 'New quest' }).success).toBe(false)
     expect(wrapper.text()).toContain('Campaign')
     expect(wrapper.text()).toContain('Main quest')
     expect(wrapper.text()).toContain('Guildmaster Tovin')

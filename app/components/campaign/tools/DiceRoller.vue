@@ -186,9 +186,7 @@ const resetBuilder = () => {
       <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_180px] lg:items-start">
         <div class="space-y-5">
           <div>
-            <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Dice Roller</p>
-            <h2 class="mt-1 type-section">Roll checks and damage quickly</h2>
-            <h3 class="mt-2 text-muted type-record">Build a Roll</h3>
+            <h2 class="type-section flex items-center gap-2"><UIcon name="i-lucide-dices" class="size-5 text-muted" aria-hidden="true" />Build a roll</h2>
           </div>
 
           <div class="grid gap-4 sm:grid-cols-2">
@@ -248,7 +246,8 @@ const resetBuilder = () => {
                 v-for="die in dieTypeOptions"
                 :key="die.value"
                 :color="builderSides === die.value ? 'primary' : 'neutral'"
-                :variant="builderSides === die.value ? 'solid' : 'outline'"
+                :variant="builderSides === die.value ? 'soft' : 'outline'"
+                :aria-pressed="builderSides === die.value"
                 size="lg"
                 @click="() => { builderSides = die.value }"
               >
@@ -261,7 +260,8 @@ const resetBuilder = () => {
             <div class="flex flex-wrap gap-2">
               <UButton
                 :color="builderMode === 'normal' ? 'primary' : 'neutral'"
-                :variant="builderMode === 'normal' ? 'solid' : 'outline'"
+                :variant="builderMode === 'normal' ? 'soft' : 'outline'"
+                :aria-pressed="builderMode === 'normal'"
                 size="lg"
                 @click="() => { builderMode = 'normal' }"
               >
@@ -269,7 +269,8 @@ const resetBuilder = () => {
               </UButton>
               <UButton
                 :color="builderMode === 'advantage' ? 'primary' : 'neutral'"
-                :variant="builderMode === 'advantage' ? 'solid' : 'outline'"
+                :variant="builderMode === 'advantage' ? 'soft' : 'outline'"
+                :aria-pressed="builderMode === 'advantage'"
                 size="lg"
                 @click="() => { builderMode = 'advantage' }"
               >
@@ -277,7 +278,8 @@ const resetBuilder = () => {
               </UButton>
               <UButton
                 :color="builderMode === 'disadvantage' ? 'primary' : 'neutral'"
-                :variant="builderMode === 'disadvantage' ? 'solid' : 'outline'"
+                :variant="builderMode === 'disadvantage' ? 'soft' : 'outline'"
+                :aria-pressed="builderMode === 'disadvantage'"
                 size="lg"
                 @click="() => { builderMode = 'disadvantage' }"
               >
@@ -286,11 +288,10 @@ const resetBuilder = () => {
             </div>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <UButton size="lg" icon="i-lucide-dice-5" @click="rollFromBuilder">Roll {{ builderExpression }}</UButton>
+            <UButton size="lg" color="primary" variant="solid" icon="i-lucide-dice-5" @click="rollFromBuilder">Roll {{ builderExpression }}</UButton>
             <UButton size="lg" color="neutral" variant="outline" icon="i-lucide-rotate-ccw" @click="resetBuilder">
               Reset
             </UButton>
-            <UBadge color="neutral" variant="subtle">Expression: {{ builderExpression }}</UBadge>
           </div>
           <div class="space-y-3">
             <UButton
@@ -298,6 +299,7 @@ const resetBuilder = () => {
               variant="ghost"
               size="sm"
               :icon="advancedOpen ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+              :aria-expanded="advancedOpen"
               @click="() => { advancedOpen = !advancedOpen }"
             >
               {{ advancedOpen ? 'Hide advanced notation' : 'Advanced: type notation' }}
@@ -306,6 +308,7 @@ const resetBuilder = () => {
               <UFormField label="Notation expression" name="notation" help="Examples: d20+5, 2d6+3, 4d8-2">
                 <UInput
                   v-model="notation"
+                  :aria-invalid="Boolean(notationError)"
                   placeholder="e.g. 2d6+3"
                   @keydown.enter.prevent="rollNotation()"
                 />
@@ -314,6 +317,7 @@ const resetBuilder = () => {
             </div>
             <UAlert
               v-if="notationError"
+              role="alert"
               color="error"
               variant="subtle"
               title="Invalid notation"
@@ -344,7 +348,7 @@ const resetBuilder = () => {
     <UCard :ui="{ body: 'p-4' }">
         <template #header>
           <div class="flex items-center justify-between gap-2">
-            <p class="text-xs uppercase tracking-[0.08em] text-dimmed">History</p>
+            <h2 class="type-section">History</h2>
             <UButton
               color="neutral"
               variant="soft"
@@ -361,6 +365,7 @@ const resetBuilder = () => {
 v-for="item in history"
             :key="item.id"
             variant="soft"
+            class="bg-muted"
             :ui="{ body: 'p-3' }"
           >
             <div class="space-y-3">

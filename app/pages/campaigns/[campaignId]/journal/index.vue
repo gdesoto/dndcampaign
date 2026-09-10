@@ -470,10 +470,9 @@ const entryActions = (entry: CampaignJournalEntryListItem): RecordAction[] => [
 <template>
   <div class="space-y-6">
     <CampaignListTemplate
-      headline="Journal"
-      title="Campaign journal"
-      description="Track notes, discoveries, and tagged session details."
-      action-label="New entry"
+      title="Journal"
+      :count="entries.length"
+      :action-label="canWriteContent ? 'New entry' : ''"
       action-icon="i-lucide-plus"
       :action-disabled="!canWriteContent"
       @action="openCreate"
@@ -489,11 +488,12 @@ const entryActions = (entry: CampaignJournalEntryListItem): RecordAction[] => [
       </template>
 
       <template #filters>
-        <UCard variant="soft">
+        <UCard class="bg-muted">
           <UTabs v-model="selectedTab" :items="visibleTabItems" :content="false" />
           <div class="mt-4 grid gap-3 md:grid-cols-4">
             <USelect
               v-model="selectedSessionId"
+              aria-label="Filter journal by session"
               :items="[{ label: 'All sessions', value: ALL_FILTER_VALUE }, ...sessionItems]"
               :loading="sessionsPending"
               :disabled="Boolean(sessionsError)"
@@ -501,6 +501,7 @@ const entryActions = (entry: CampaignJournalEntryListItem): RecordAction[] => [
             />
             <USelect
               v-model="selectedTag"
+              aria-label="Filter journal by tag"
               :items="[{ label: 'All tags', value: ALL_FILTER_VALUE }, ...tagItems]"
               :loading="tagsPending"
               :disabled="Boolean(tagsError)"
@@ -508,6 +509,7 @@ const entryActions = (entry: CampaignJournalEntryListItem): RecordAction[] => [
             />
             <UInput
               v-model="search"
+              aria-label="Search journal"
               class="md:col-span-2"
               icon="i-lucide-search"
               placeholder="Search title, markdown, or tag text"
@@ -540,7 +542,7 @@ const entryActions = (entry: CampaignJournalEntryListItem): RecordAction[] => [
         </div>
       </template>
       <template #emptyActions>
-        <UButton variant="outline" :disabled="!canWriteContent" @click="openCreate">
+        <UButton v-if="canWriteContent" icon="i-lucide-plus" variant="outline" @click="openCreate">
           Create first entry
         </UButton>
       </template>
@@ -551,15 +553,16 @@ const entryActions = (entry: CampaignJournalEntryListItem): RecordAction[] => [
           :key="entry.id"
         >
           <template #header>
-            <div class="flex items-center justify-between gap-3">
-              <div class="space-y-1">
-                <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Journal entry</p>
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div class="min-w-0 space-y-1">
+                <h2 class="type-record flex items-start gap-2"><UIcon name="i-lucide-notebook-pen" class="mt-0.5 size-4 shrink-0 text-muted" aria-hidden="true" />
                 <NuxtLink
-                  class="text-base font-semibold text-primary hover:underline"
+                  class="break-words text-highlighted hover:underline"
                   :to="`/campaigns/${campaignId}/journal/${entry.id}`"
                 >
                   {{ entry.title }}
                 </NuxtLink>
+                </h2>
                 <p class="text-xs text-muted">By {{ entry.authorName }}</p>
               </div>
               <div class="flex items-center gap-2">
@@ -571,8 +574,8 @@ const entryActions = (entry: CampaignJournalEntryListItem): RecordAction[] => [
             </div>
           </template>
 
-          <div class="prose prose-sm max-h-32 max-w-none overflow-hidden">
-            <MDC :value="entry.contentMarkdown || '_No content._'" tag="article" />
+          <div v-if="entry.contentMarkdown" class="prose prose-sm max-h-32 max-w-none overflow-hidden">
+            <MDC :value="entry.contentMarkdown" tag="article" />
           </div>
 
           <div class="mt-3 flex flex-wrap gap-2">
@@ -617,10 +620,8 @@ const entryActions = (entry: CampaignJournalEntryListItem): RecordAction[] => [
         <UCard class="overflow-hidden lg:sticky lg:top-6 lg:max-h-[calc(100vh-1.5rem)]">
           <template #header>
             <div class="flex items-center justify-between">
-              <h2 class=" type-section">Recent Notifications</h2>
-              <UButton variant="ghost" size="xs" icon="i-lucide-refresh-cw" :loading="notificationsPending" @click="() => refreshNotifications()">
-                Refresh
-              </UButton>
+              <h2 class="type-section">Notifications</h2>
+              <UTooltip text="Refresh notifications"><UButton variant="ghost" color="neutral" aria-label="Refresh notifications" icon="i-lucide-refresh-cw" :loading="notificationsPending" @click="() => refreshNotifications()" /></UTooltip>
             </div>
           </template>
           <div v-if="notificationsPending" class="text-sm text-muted">Loading notifications...</div>

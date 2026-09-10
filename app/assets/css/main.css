@@ -117,10 +117,10 @@
 
   --ui-primary: var(--color-primary-500);
   --ui-secondary: var(--color-info-500);
-  --ui-success: var(--color-success-500);
-  --ui-info: var(--color-info-500);
-  --ui-warning: var(--color-warning-500);
-  --ui-error: var(--color-error-500);
+  --ui-success: var(--color-success-300);
+  --ui-info: var(--color-info-300);
+  --ui-warning: var(--color-warning-300);
+  --ui-error: var(--color-error-300);
   --ui-radius: 0.25rem;
 
   /* Compatibility tokens for pre-v2 theme classes */
@@ -168,10 +168,10 @@
 
   --ui-primary: var(--color-primary-500);
   --ui-secondary: var(--color-info-500);
-  --ui-success: var(--color-success-500);
-  --ui-info: var(--color-info-500);
-  --ui-warning: var(--color-warning-500);
-  --ui-error: var(--color-error-500);
+  --ui-success: var(--color-success-700);
+  --ui-info: var(--color-info-700);
+  --ui-warning: var(--color-warning-700);
+  --ui-error: var(--color-error-700);
 
   /* Compatibility tokens for pre-v2 theme classes */
   --theme-bg:

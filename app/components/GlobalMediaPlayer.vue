@@ -236,13 +236,13 @@ const openFullPlayer = () => {
         <div v-if="showInline" class="rounded-lg border border-default bg-elevated/40 p-3">
           <div class="flex items-center gap-2">
             <UTooltip text="Skip back 5 seconds">
-              <UButton size="xs" variant="ghost" icon="i-lucide-rotate-ccw" @click="player.seek(Math.max(0, state.currentTime - 5))" />
+              <UButton size="xs" variant="ghost" icon="i-lucide-rotate-ccw" aria-label="Skip back 5 seconds" @click="player.seek(Math.max(0, state.currentTime - 5))" />
             </UTooltip>
             <UButton size="xs" variant="outline" :aria-label="state.isPlaying ? 'Pause playback' : 'Play media'" @click="player.toggle">
               <UIcon :name="state.isPlaying ? 'i-heroicons-pause' : 'i-heroicons-play'" />
             </UButton>
             <UTooltip text="Skip forward 30 seconds">
-              <UButton size="xs" variant="ghost" icon="i-lucide-rotate-cw" @click="player.seek(state.currentTime + 30)" />
+              <UButton size="xs" variant="ghost" icon="i-lucide-rotate-cw" aria-label="Skip forward 30 seconds" @click="player.seek(state.currentTime + 30)" />
             </UTooltip>
             <input
               class="min-w-0 flex-1 accent-primary"
@@ -256,7 +256,7 @@ const openFullPlayer = () => {
             >
             <span class="shrink-0 text-xs tabular-nums text-dimmed">{{ formatTime(state.currentTime) }} / {{ formatTime(state.duration) }}</span>
             <UTooltip text="Open full player">
-              <UButton size="xs" variant="ghost" icon="i-lucide-maximize-2" @click="openFullPlayer" />
+              <UButton size="xs" variant="ghost" icon="i-lucide-maximize-2" aria-label="Open full player" @click="openFullPlayer" />
             </UTooltip>
           </div>
           <p class="mt-1 truncate text-xs text-muted">{{ state.source?.title }}</p>
@@ -277,10 +277,10 @@ const openFullPlayer = () => {
           <UButton size="lg" variant="outline" :aria-label="state.isPlaying ? 'Pause playback' : 'Play media'" @click="player.toggle">
             <UIcon :name="state.isPlaying ? 'i-heroicons-pause' : 'i-heroicons-play'" />
           </UButton>
-          <UButton size="lg" variant="ghost" class="ml-3" @click="player.openDrawer">
+          <UButton size="lg" variant="ghost" class="ml-3" aria-label="Open full player" @click="player.openDrawer">
             <UIcon name="i-lucide-maximize-2" />
           </UButton>
-          <UButton size="lg" variant="ghost" @click="player.stop">
+          <UButton size="lg" variant="ghost" aria-label="Close media player" @click="player.stop">
             <UIcon name="i-lucide-x" />
           </UButton>
         </div>
@@ -307,7 +307,7 @@ const openFullPlayer = () => {
             <p class="text-lg font-semibold">{{ state.source?.title || 'Media player' }}</p>
             <p v-if="state.source?.subtitle" class="text-xs text-muted">{{ state.source?.subtitle }}</p>
           </div>
-          <UButton size="lg" variant="subtle" @click="player.closeDrawer">
+          <UButton size="lg" variant="subtle" aria-label="Minimize media player" @click="player.closeDrawer">
             <UIcon name="i-lucide-minimize-2" />
           </UButton>
         </div>
