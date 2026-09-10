@@ -45,7 +45,9 @@ const mountComponent = async () =>
     },
     global: {
       stubs: {
+        UTooltip: { template: '<span><slot /></span>' },
         UCard: { template: '<div><slot name="header" /><slot /></div>' },
+        UForm: { emits: ['submit'], template: '<form @submit.prevent="$emit(\'submit\')"><slot /></form>' },
         UAlert: { template: '<div><slot /></div>' },
         UInput: {
           props: ['modelValue'],
@@ -72,7 +74,7 @@ const mountComponent = async () =>
         UModal: {
           props: ['open'],
           emits: ['update:open'],
-          template: '<div v-if="open"><slot /><slot name="footer" /></div>',
+          template: '<div v-if="open"><slot name="body" /><slot name="footer" /></div>',
         },
       },
     },
@@ -101,7 +103,8 @@ describe('CalendarGeneralSettings', () => {
 
     const saveButton = wrapper.findAll('button').find((button) => button.text().includes('Save calendar settings'))
     expect(saveButton).toBeDefined()
-    await saveButton!.trigger('click')
+    await wrapper.find('input').setValue('New calendar')
+    await wrapper.find('form').trigger('submit')
     await flushPromises()
 
     expect(upsertConfig).toHaveBeenCalledTimes(1)
@@ -129,6 +132,46 @@ describe('CalendarGeneralSettings', () => {
 
     expect(applyTemplate).toHaveBeenCalledTimes(1)
     expect(applyTemplate).toHaveBeenCalledWith('cmp-1', { templateId: 'earth' })
+  })
+
+  it('preserves edits after a failed save and can discard back to saved values', async () => {
+    upsertConfig.mockRejectedValueOnce(new Error('Save failed'))
+    const wrapper = await mountComponent()
+    await flushPromises()
+    await wrapper.find('input').setValue('Unsaved calendar')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+    expect(wrapper.find('input').element.value).toBe('Unsaved calendar')
+    expect(wrapper.text()).toContain('Save failed')
+    await wrapper.findAll('button').find(button => button.text() === 'Discard changes')!.trigger('click')
+    expect(wrapper.find('input').element.value).toBe('Calendar')
+    wrapper.unmount()
+  })
+
+  it('keeps template confirmation open after failure for retry', async () => {
+    applyTemplate.mockRejectedValueOnce(new Error('Template failed'))
+    const wrapper = await mountComponent()
+    await flushPromises()
+    await wrapper.findAll('button').find(button => button.text() === 'Apply template')!.trigger('click')
+    await wrapper.findAll('button').filter(button => button.text() === 'Apply template').at(-1)!.trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('Template failed')
+    expect(wrapper.findAll('button').filter(button => button.text() === 'Apply template')).toHaveLength(2)
+    await wrapper.findAll('button').filter(button => button.text() === 'Apply template').at(-1)!.trigger('click')
+    await flushPromises()
+    expect(applyTemplate).toHaveBeenCalledTimes(2)
+    expect(wrapper.findAll('button').filter(button => button.text() === 'Apply template')).toHaveLength(1)
+    wrapper.unmount()
+  })
+
+  it('does not mutate saved nested data when generating a draft name', async () => {
+    const wrapper = await mountComponent()
+    await flushPromises()
+    await wrapper.findAll('button').find(button => button.text() === 'Generate')!.trigger('click')
+    await flushPromises()
+    expect(baseConfig.weekdays[0]!.name).toBe('Moonday')
+    expect(wrapper.findAll('input').some(input => input.element.value === 'Stormday')).toBe(true)
+    wrapper.unmount()
   })
 
   it('generates a weekday name from UI action', async () => {

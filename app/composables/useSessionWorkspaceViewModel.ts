@@ -166,6 +166,7 @@ export async function useSessionWorkspaceViewModel() {
 
   const {
     suggestionSending,
+    suggestionApplying,
     suggestionSendError,
     suggestionActionError,
     selectedSuggestionJobId,
@@ -200,7 +201,7 @@ export async function useSessionWorkspaceViewModel() {
     transcriptDeleting,
     transcriptDeleteError,
     saveTranscript,
-    saveSummary,
+    saveSummary: persistSummary,
     importTranscript,
     importSummary,
     deleteTranscript,
@@ -215,17 +216,15 @@ export async function useSessionWorkspaceViewModel() {
     refreshSummary: sessionInvalidation.afterSummaryMutation,
   }))
 
-  watch(
-    () => session.value,
-    (value) => {
-      form.title = value?.title || ''
-      form.sessionNumber = value?.sessionNumber?.toString() || ''
-      form.playedAt = value?.playedAt ? value.playedAt.slice(0, 10) : ''
-      form.guestDungeonMasterName = value?.guestDungeonMasterName || ''
-      form.notes = value?.notes || ''
-    },
-    { immediate: true }
-  )
+  const sessionDraft = useEditorDraft(() => ({ ...form }), value => Object.assign(form, value))
+  watch(() => session.value, value => {
+    if (!value) return
+    sessionDraft.sync({
+      title: value.title || '', sessionNumber: value.sessionNumber?.toString() || '',
+      playedAt: value.playedAt?.slice(0, 10) || '',
+      guestDungeonMasterName: value.guestDungeonMasterName || '', notes: value.notes || '',
+    }, value.id)
+  }, { immediate: true })
 
   const sessionDungeonMasterLabel = computed(() =>
     session.value?.guestDungeonMasterName
@@ -296,13 +295,15 @@ export async function useSessionWorkspaceViewModel() {
     { immediate: true }
   )
 
-  watch(
-    () => summaryDoc.value,
-    (value) => {
-      summaryForm.content = value?.currentVersion?.content || ''
-    },
-    { immediate: true }
-  )
+  const summaryDraft = useEditorDraft(() => ({ ...summaryForm }), value => Object.assign(summaryForm, value))
+  watch([sessionId, summaryDoc], ([id, value]) => {
+    summaryDraft.sync({ content: value?.currentVersion?.content || '' }, id)
+  }, { immediate: true })
+  const saveSummary = async () => {
+    if (!canWriteContent.value || summarySaving.value || summaryImporting.value) return
+    const submitted = summaryDraft.snapshot()
+    if (await persistSummary()) summaryDraft.accept(submitted)
+  }
 
   const sessionNavigationItems = computed<TimelineItem[]>(() => [
     {
@@ -315,19 +316,19 @@ export async function useSessionWorkspaceViewModel() {
       title: 'Recordings',
       description: hasRecordings.value ? 'Upload complete' : 'Upload audio/video',
       value: 'recordings',
-      icon: hasRecordings.value ? 'i-lucide-check-circle' : 'i-lucide-upload',
+      icon: 'i-lucide-mic',
     },
     {
       title: 'Transcription',
       description: hasTranscript.value ? 'Review & edit transcript' : 'Await transcript',
       value: 'transcription',
-      icon: hasTranscript.value ? 'i-lucide-file-text' : 'i-lucide-wand-2',
+      icon: 'i-lucide-scroll-text',
     },
     {
       title: 'Summary',
       description: hasSummary.value ? 'Generate and review summary' : 'Send to n8n',
       value: 'summary',
-      icon: hasSummary.value ? 'i-lucide-check-circle' : 'i-lucide-sparkles',
+      icon: 'i-lucide-book-open',
     },
     {
       title: 'Suggestions',
@@ -339,7 +340,7 @@ export async function useSessionWorkspaceViewModel() {
       title: 'Recap',
       description: hasRecap.value ? 'Recap attached' : 'Upload audio or video recap',
       value: 'recap',
-      icon: hasRecap.value ? 'i-lucide-check-circle' : 'i-lucide-mic',
+      icon: 'i-lucide-headphones',
     },
   ])
 
@@ -396,7 +397,8 @@ export async function useSessionWorkspaceViewModel() {
   )
 
   const saveSession = async () => {
-    if (!canWriteContent.value) return
+    if (!canWriteContent.value || isSaving.value) return
+    const submitted = sessionDraft.snapshot()
     saveError.value = ''
     isSaving.value = true
     try {
@@ -410,6 +412,7 @@ export async function useSessionWorkspaceViewModel() {
           notes: form.notes || null,
         },
       })
+      sessionDraft.accept(submitted)
       await sessionInvalidation.afterSessionMutation()
       toast.add({
         title: 'Session saved',
@@ -427,6 +430,7 @@ export async function useSessionWorkspaceViewModel() {
 
   const openEditSession = () => {
     if (!canWriteContent.value) return
+    sessionDraft.discard()
     isEditSessionOpen.value = true
   }
 
@@ -450,6 +454,7 @@ export async function useSessionWorkspaceViewModel() {
   }
 
   return {
+    summaryDirty: summaryDraft.dirty,
     route,
     campaignId,
     sessionId,
@@ -518,6 +523,7 @@ export async function useSessionWorkspaceViewModel() {
     sendSummaryToN8n,
     applyPendingSummary,
     suggestionSending,
+    suggestionApplying,
     suggestionSendError,
     suggestionActionError,
     selectedSuggestionJobId,

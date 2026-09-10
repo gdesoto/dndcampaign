@@ -67,6 +67,7 @@ export function useSessionDocuments(options: UseSessionDocumentsOptions) {
   }
 
   const saveSummary = async () => {
+    if (summarySaving.value || summaryImporting.value) return false
     summaryError.value = ''
     summarySaving.value = true
     try {
@@ -82,9 +83,11 @@ export function useSessionDocuments(options: UseSessionDocumentsOptions) {
         })
       }
       await options.refreshSummary()
+      return true
     } catch (error) {
       summaryError.value =
         (error as Error & { message?: string }).message || 'Unable to save summary.'
+      return false
     } finally {
       summarySaving.value = false
     }
@@ -128,7 +131,7 @@ export function useSessionDocuments(options: UseSessionDocumentsOptions) {
       },
       options.refreshTranscript
     )
-    transcriptFile.value = null
+    if (!transcriptImportError.value) transcriptFile.value = null
   }
 
   const importSummary = async () => {
@@ -143,7 +146,7 @@ export function useSessionDocuments(options: UseSessionDocumentsOptions) {
       },
       options.refreshSummary
     )
-    summaryFile.value = null
+    if (!summaryImportError.value) summaryFile.value = null
   }
 
   const deleteTranscript = async () => {

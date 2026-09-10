@@ -99,35 +99,38 @@ const selectedSubtitleRecordingIdModel = computed({
       </template>
       <div class="space-y-4">
         <UButton
+          v-if="transcriptDoc"
           size="xs"
           variant="outline"
-          class="w-full justify-center"
+          :aria-expanded="showFullTranscriptModel"
+          class="justify-center"
           @click="() => { showFullTranscriptModel = !showFullTranscriptModel }"
         >
           {{ showFullTranscriptModel ? 'Hide full transcript' : 'Show full transcript' }}
         </UButton>
         <p
-          class="whitespace-pre-line text-sm text-muted"
+          class="whitespace-pre-line reading-copy text-default wrap-anywhere"
           :class="showFullTranscriptModel ? 'max-h-96 overflow-y-auto' : ''"
         >
           {{ showFullTranscriptModel ? fullTranscript : transcriptPreview }}
         </p>
-        <div class="rounded-lg border border-dashed border-muted-200 p-4">
+        <div v-if="canManageTranscript" class="rounded-lg bg-accented/40 p-4">
           <div class="space-y-3">
             <p class="text-sm font-semibold">Attach subtitles to a video</p>
             <p class="text-sm text-muted">
-              Do this after a transcript has been added.
+              {{ !transcriptDoc ? 'Add a transcript before attaching subtitles.' : !videoOptions.length ? 'Upload a video recording to attach subtitles.' : 'Use the saved transcript as captions for this video.' }}
             </p>
             <div class="flex flex-wrap items-center gap-3">
               <USelect
                 v-model="selectedSubtitleRecordingIdModel"
                 :items="videoOptions"
+                aria-label="Video for subtitles"
                 placeholder="Select video"
                 size="sm"
               />
               <UButton
                 variant="outline"
-                :disabled="!selectedSubtitleRecordingIdModel"
+                :disabled="!canManageTranscript || !transcriptDoc || !selectedSubtitleRecordingIdModel || transcriptDeleting"
                 :loading="subtitleAttachLoading"
                 @click="emit('attach-subtitles')"
               >
@@ -144,7 +147,7 @@ const selectedSubtitleRecordingIdModel = computed({
         </p>
       </div>
     </UCard>
-    <UCard>
+    <UCard v-if="canManageTranscript" variant="soft">
       <template #header>
         <div>
           <h2 class=" type-section">Transcription tools</h2>
@@ -155,9 +158,9 @@ const selectedSubtitleRecordingIdModel = computed({
       </template>
       <div class="space-y-4">
         <div class="grid gap-4 lg:grid-cols-3">
-          <div class="rounded-lg border border-dashed border-muted-200 p-4">
+          <div class="rounded-lg bg-accented/40 p-4">
             <div class="space-y-2">
-              <p class="text-sm font-semibold">1. Start from a recording</p>
+              <p class="text-sm font-semibold">From a recording</p>
               <p class="text-sm text-muted">
                 Open a recording to start transcription and monitor jobs.
               </p>
@@ -167,6 +170,7 @@ const selectedSubtitleRecordingIdModel = computed({
                   :key="recording.id"
                   size="sm"
                   variant="outline"
+                  class="max-w-full whitespace-normal text-left wrap-anywhere"
                   :to="`/campaigns/${campaignId}/recordings/${recording.id}?transcribe=1`"
                 >
                   Transcribe {{ recording.filename }}
@@ -174,9 +178,9 @@ const selectedSubtitleRecordingIdModel = computed({
               </div>
             </div>
           </div>
-          <div class="rounded-lg border border-dashed border-muted-200 p-4">
+          <div class="rounded-lg bg-accented/40 p-4">
             <div class="space-y-3">
-              <p class="text-sm font-semibold">2. Create a transcript from scratch</p>
+              <p class="text-sm font-semibold">Write from scratch</p>
               <UButton
                 variant="outline"
                 class="w-full justify-center"
@@ -187,18 +191,18 @@ const selectedSubtitleRecordingIdModel = computed({
               <p v-if="transcriptError" class="text-sm text-error">{{ transcriptError }}</p>
             </div>
           </div>
-          <div class="rounded-lg border border-dashed border-muted-200 p-4">
+          <div class="rounded-lg bg-accented/40 p-4">
             <div class="space-y-3">
-              <p class="text-sm font-semibold">3. Import a transcript file</p>
+              <p class="text-sm font-semibold">Import a file</p>
               <div class="grid gap-3">
-                <UFileUpload
+                <SharedFilePicker
                   v-model="transcriptFileModel"
+                  :disabled="transcriptImporting || transcriptDeleting"
                   accept=".txt,.md,.markdown,.vtt"
-                  variant="button"
                   label="Select transcript file"
-                  :preview="false"
                 />
                 <UButton
+                  :disabled="!transcriptFile || transcriptDeleting"
                   :loading="transcriptImporting"
                   variant="outline"
                   class="w-full justify-center"

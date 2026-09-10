@@ -58,23 +58,23 @@ const notesModel = computed({
 
 <template>
   <UFormField label="Title" name="title">
-    <UInput v-model="titleModel" :disabled="disabled" placeholder="This Is Why Taverns Have Rules" />
+    <UInput v-model="titleModel" class="w-full" :disabled="disabled" placeholder="This Is Why Taverns Have Rules" />
   </UFormField>
 
   <div class="grid gap-4 sm:grid-cols-2">
     <UFormField label="Session number" name="sessionNumber">
-      <UInput v-model="sessionNumberModel" :disabled="disabled" type="number" />
+      <UInput v-model="sessionNumberModel" class="w-full" :disabled="disabled" type="number" />
     </UFormField>
     <UFormField label="Played at" name="playedAt">
-      <UInput v-model="playedAtModel" :disabled="disabled" type="date" />
+      <UInput v-model="playedAtModel" class="w-full" :disabled="disabled" type="date" />
     </UFormField>
   </div>
 
   <UFormField label="Guest dungeon master" name="guestDungeonMasterName">
-    <UInput v-model="guestDungeonMasterNameModel" :disabled="disabled" placeholder="Optional guest DM" />
+    <UInput v-model="guestDungeonMasterNameModel" class="w-full" :disabled="disabled" placeholder="Optional guest DM" />
   </UFormField>
 
   <UFormField label="Notes" name="notes">
-    <UTextarea v-model="notesModel" :disabled="disabled" :rows="notesRows" />
+    <UTextarea v-model="notesModel" class="w-full" :disabled="disabled" :rows="notesRows" />
   </UFormField>
 </template>

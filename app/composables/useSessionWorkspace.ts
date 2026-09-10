@@ -9,6 +9,8 @@ type UseSessionWorkspaceOptions = {
 
 export async function useSessionWorkspace(options: UseSessionWorkspaceOptions) {
   const { request } = useApi()
+  const resourceKey = () => `session-workspace-${options.sessionId.value}`
+  const retained = useRetainedResource<SessionWorkspace | null>(resourceKey)
 
   const {
     data: workspace,
@@ -16,9 +18,11 @@ export async function useSessionWorkspace(options: UseSessionWorkspaceOptions) {
     error,
     refresh: refreshWorkspace,
   } = await useAsyncData(
-    () => `session-workspace-${options.sessionId.value}`,
-    () => request<SessionWorkspace>(`/api/sessions/${options.sessionId.value}/workspace`)
+    resourceKey,
+    () => retained.load(() => request<SessionWorkspace>(`/api/sessions/${options.sessionId.value}/workspace`)),
+    { default: retained.get }
   )
+  retained.seed(workspace.value)
 
   const session = computed(() => workspace.value?.session)
   const recordings = computed(() => workspace.value?.recordings)

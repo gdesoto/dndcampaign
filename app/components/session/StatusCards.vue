@@ -19,84 +19,62 @@ const statusCards = computed(() => [
   {
     id: 'recordings' as const,
     label: 'Recordings',
-    icon: 'i-twemoji-studio-microphone',
+    icon: 'i-lucide-mic',
+    ready: false,
     value: String(props.recordingsCount),
     hint: props.recordingsCount ? 'Media uploaded.' : 'Add media files.',
   },
   {
     id: 'transcription' as const,
     label: 'Transcript',
-    icon: 'i-twemoji-scroll',
+    icon: 'i-lucide-scroll-text',
+    ready: props.transcriptStatus === 'Available',
     value: props.transcriptStatus,
     hint: props.transcriptStatus === 'Available' ? 'Ready to review.' : 'Awaiting transcript.',
   },
   {
     id: 'summary' as const,
     label: 'Summary',
-    icon: 'i-twemoji-memo',
+    icon: 'i-lucide-book-open',
+    ready: props.summaryStatus === 'Available',
     value: props.summaryStatus,
     hint: props.summaryStatus === 'Available' ? 'Capture key beats.' : 'Generate summary.',
   },
   {
     id: 'suggestions' as const,
     label: 'Suggestions',
-    icon: 'i-twemoji-sparkles',
+    icon: 'i-lucide-sparkles',
+    ready: props.suggestionStatus === 'Applied',
     value: props.suggestionStatus || 'Not started',
-    hint: props.suggestionStatus === 'Ready for review' ? 'Review changes.' : 'Generate suggestions.',
+    hint: props.suggestionStatus === 'Ready for review' ? 'Review suggested changes.' : props.suggestionStatus === 'Failed' ? 'Generation failed. Try again.' : props.suggestionStatus === 'Applied' ? 'Changes applied.' : 'Generate suggestions.',
   },
   {
     id: 'recap' as const,
     label: 'Recap',
-    icon: 'i-twemoji-clapper-board',
+    icon: 'i-lucide-headphones',
+    ready: props.recapStatus === 'Attached',
     value: props.recapStatus,
     hint: props.recapStatus === 'Attached' ? 'Ready to play.' : 'Upload recap.',
   },
-])
+].map(card => ({
+  ...card,
+  color: card.id === 'suggestions' && props.suggestionStatus === 'Ready for review' ? 'warning' as const
+    : card.id === 'suggestions' && props.suggestionStatus === 'Failed' ? 'error' as const
+      : card.id === 'suggestions' && ['Processing', 'Queued', 'Sent'].includes(props.suggestionStatus || '') ? 'info' as const
+        : card.ready ? 'success' as const : 'neutral' as const,
+})))
 </script>
 
 <template>
-  <UCard variant="soft" class="sm:hidden">
-    <div class="theme-accent mb-4 font-display text-sm tracking-[0.08em] uppercase">
-      Status
-    </div>
-    <div class="space-y-2 text-sm">
-      <div
-        v-for="card in statusCards"
-        :key="card.id"
-        class="flex items-center justify-between gap-2 rounded-lg border border-default p-2"
-      >
-        <span>{{ card.label }}</span>
-        <div class="flex items-center gap-2">
-          <span class="font-semibold">{{ card.value }}</span>
-          <SessionStepLinkButton
-            :step="card.id"
-            @open="emit('jump-step', card.id)"
-          />
-        </div>
+  <section aria-label="Session materials" class="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+    <UCard v-for="card in statusCards" :key="card.id" variant="soft" :ui="{ body: 'grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:p-4' }">
+      <div class="flex min-w-0 items-center gap-2">
+        <UIcon :name="card.icon" class="size-4 shrink-0 text-muted" aria-hidden="true" />
+        <h2 class="type-label text-muted">{{ card.label }}</h2>
       </div>
-    </div>
-  </UCard>
-
-  <div class="hidden gap-4 sm:grid md:grid-cols-2 xl:grid-cols-5">
-    <UCard
-v-for="card in statusCards"
-      :key="card.id"
-      variant="soft"
-      :class="mode === 'workflow' && activeStep === card.id ? 'ring-2 ring-primary/40' : ''"
-      :ui="{ body: 'p-4' }"
-    >
-      <div class="flex items-start justify-between gap-3">
-        <div class="flex items-center gap-1.5">
-          <UIcon :name="card.icon" class="size-3.5 shrink-0" />
-          <p class="font-display text-xs uppercase tracking-[0.08em] text-muted">{{ card.label }}</p>
-        </div>
-        <SessionStepLinkButton
-          :step="card.id"
-          @open="emit('jump-step', card.id)"
-        />
-      </div>
-      <p class="mt-2 text-lg font-semibold">{{ card.value }}</p>
-      <p class="text-xs text-muted">{{ card.hint }}</p>
+      <UBadge :color="card.color" variant="subtle" class="max-w-28 whitespace-normal sm:col-span-2 sm:row-start-2 sm:mt-1 sm:max-w-none sm:justify-self-start">{{ card.value }}</UBadge>
+      <SessionStepLinkButton :step="card.id" class="sm:col-start-2 sm:row-start-1" @open="emit('jump-step', card.id)" />
+      <p class="hidden text-xs text-muted sm:col-span-2 sm:block">{{ card.hint }}</p>
     </UCard>
-  </div>
+  </section>
 </template>

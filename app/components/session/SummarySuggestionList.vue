@@ -15,6 +15,7 @@ type SuggestionGroup = {
 type SessionSuggestion = SuggestionItem | null
 
 const props = defineProps<{
+  readonly?: boolean
   suggestionGroups: SuggestionGroup[]
   sessionSuggestion: SessionSuggestion
 }>()
@@ -126,7 +127,7 @@ watch(
     >
       <div class="flex items-center justify-between gap-2">
         <p class="text-sm font-semibold">Session suggestion</p>
-        <UBadge variant="soft" color="primary" size="sm">
+        <UBadge variant="soft" color="neutral" size="sm">
           {{ sessionSuggestion.action }}
         </UBadge>
       </div>
@@ -134,6 +135,8 @@ watch(
         <div v-if="sessionSuggestion.payload.title || drafts[sessionSuggestion.id]?.title !== undefined">
           <p class="text-xs uppercase tracking-[0.08em] text-muted">Title</p>
           <UInput
+            :disabled="readonly"
+            aria-label="Suggested session title"
             :model-value="String(draftFor(sessionSuggestion).title || '')"
             class="mt-1"
             @update:model-value="updateField(sessionSuggestion.id, 'title', $event)"
@@ -142,6 +145,8 @@ watch(
         <div v-if="sessionSuggestion.payload.notes || drafts[sessionSuggestion.id]?.notes !== undefined">
           <p class="text-xs uppercase tracking-[0.08em] text-muted">Notes</p>
           <UTextarea
+            :disabled="readonly"
+            aria-label="Suggested session notes"
             :model-value="String(draftFor(sessionSuggestion).notes || '')"
             :rows="4"
             class="mt-1"
@@ -153,7 +158,7 @@ watch(
         <UButton
           size="xs"
           variant="outline"
-          :disabled="sessionSuggestion.status !== 'PENDING' || typeof draftFor(sessionSuggestion).title !== 'string'"
+          :disabled="readonly || sessionSuggestion.status !== 'PENDING' || typeof draftFor(sessionSuggestion).title !== 'string'"
           @click="applySessionField(sessionSuggestion, 'title')"
         >
           Apply title
@@ -161,7 +166,7 @@ watch(
         <UButton
           size="xs"
           variant="outline"
-          :disabled="sessionSuggestion.status !== 'PENDING' || typeof draftFor(sessionSuggestion).notes !== 'string'"
+          :disabled="readonly || sessionSuggestion.status !== 'PENDING' || typeof draftFor(sessionSuggestion).notes !== 'string'"
           @click="applySessionField(sessionSuggestion, 'notes')"
         >
           Apply notes
@@ -169,7 +174,7 @@ watch(
         <UButton
           size="xs"
           variant="outline"
-          :disabled="sessionSuggestion.status !== 'PENDING'"
+          :disabled="readonly || sessionSuggestion.status !== 'PENDING'"
           @click="applySuggestion(sessionSuggestion)"
         >
           Apply
@@ -178,7 +183,7 @@ watch(
           size="xs"
           variant="ghost"
           color="neutral"
-          :disabled="sessionSuggestion.status !== 'PENDING'"
+          :disabled="readonly || sessionSuggestion.status !== 'PENDING'"
           @click="emit('discard-suggestion', sessionSuggestion.id)"
         >
           Discard
@@ -193,7 +198,7 @@ watch(
     >
       <div class="flex items-center justify-between gap-2">
         <p class="text-sm font-semibold">{{ group.label }}</p>
-        <UBadge variant="soft" color="primary" size="sm">
+        <UBadge variant="soft" color="neutral" size="sm">
           {{ group.items.length }}
         </UBadge>
       </div>
@@ -214,7 +219,7 @@ watch(
                 <UButton
                   size="xs"
                   variant="outline"
-                  :disabled="suggestion.status !== 'PENDING'"
+                  :disabled="readonly || suggestion.status !== 'PENDING'"
                   @click="applySuggestion(suggestion)"
                 >
                   Apply
@@ -223,7 +228,7 @@ watch(
                 size="xs"
                 variant="ghost"
                 color="neutral"
-                :disabled="suggestion.status !== 'PENDING'"
+                :disabled="readonly || suggestion.status !== 'PENDING'"
                 @click="emit('discard-suggestion', suggestion.id)"
               >
                 Discard
@@ -238,6 +243,8 @@ watch(
                 <p class="text-xs uppercase tracking-[0.08em] text-muted">{{ field }}</p>
                 <UTextarea
                   v-if="typeof fieldValue === 'string' && (fieldValue.length > 40 || field.includes('description') || field.includes('notes'))"
+                  :disabled="readonly"
+                  :aria-label="field"
                   :model-value="String(fieldValue)"
                   :rows="3"
                   class="mt-1"
@@ -245,19 +252,25 @@ watch(
                 />
                 <USelect
                   v-else-if="typeof fieldValue === 'string' && enumOptionsFor(suggestion, field)"
+                  :disabled="readonly"
                   :items="enumOptionsFor(suggestion, field)!"
+                  :aria-label="field"
                   :model-value="String(fieldValue)"
                   class="mt-1"
                   @update:model-value="updateField(suggestion.id, field, String($event || ''))"
                 />
                 <UInput
                   v-else-if="typeof fieldValue === 'string'"
+                  :disabled="readonly"
+                  :aria-label="field"
                   :model-value="String(fieldValue)"
                   class="mt-1"
                   @update:model-value="updateField(suggestion.id, field, $event)"
                 />
                 <UInput
                   v-else-if="typeof fieldValue === 'number'"
+                  :disabled="readonly"
+                  :aria-label="field"
                   :model-value="String(fieldValue)"
                   type="number"
                   class="mt-1"
@@ -265,6 +278,8 @@ watch(
                 />
                 <div v-else-if="typeof fieldValue === 'boolean'" class="mt-1">
                   <UCheckbox
+                    :disabled="readonly"
+                    :aria-label="field"
                     :model-value="Boolean(fieldValue)"
                     @update:model-value="updateField(suggestion.id, field, Boolean($event))"
                   />

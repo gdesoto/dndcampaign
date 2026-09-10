@@ -15,14 +15,22 @@ type SessionItem = {
 
 const { campaignId, request, canWriteContent } = useCampaignPageContext()
 
+const resourceKey = () => `sessions-${campaignId.value}`
+const retained = useRetainedResource<SessionItem[] | null>(resourceKey)
 const { data: sessions, pending, refresh, error } = await useAsyncData(
-  () => `sessions-${campaignId.value}`,
-  () => request<SessionItem[]>(`/api/campaigns/${campaignId.value}/sessions`)
+  resourceKey,
+  () => retained.load(() => request<SessionItem[]>(`/api/campaigns/${campaignId.value}/sessions`)),
+  { default: retained.get }
 )
+retained.seed(sessions.value)
 
+const search = ref('')
 const showNewestFirst = ref(true)
 const orderedSessions = computed(() => {
-  const sessionList = sessions.value || []
+  const query = search.value.trim().toLocaleLowerCase()
+  const sessionList = (sessions.value || []).filter(session =>
+    `${session.title} ${session.sessionNumber ?? ''} ${session.notes ?? ''}`.toLocaleLowerCase().includes(query)
+  )
   return showNewestFirst.value ? [...sessionList].reverse() : sessionList
 })
 const toggleSessionOrder = () => {
@@ -41,7 +49,7 @@ const createError = ref('')
 const isCreating = ref(false)
 
 const openCreate = () => {
-  if (!canWriteContent.value) return
+  if (!canWriteContent.value || isCreating.value) return
   createError.value = ''
   createForm.title = ''
   createForm.sessionNumber = ''
@@ -52,7 +60,7 @@ const openCreate = () => {
 }
 
 const createSession = async () => {
-  if (!canWriteContent.value) return
+  if (!canWriteContent.value || isCreating.value) return
   createError.value = ''
   isCreating.value = true
   try {
@@ -97,17 +105,17 @@ const createSession = async () => {
       :action-disabled="!canWriteContent"
       @action="openCreate"
     >
-      <template #actions>
-        <UTooltip :text="showNewestFirst ? 'Show oldest sessions first' : 'Show newest sessions first'">
-          <UButton
-            size="lg"
-            variant="outline"
-            icon="i-lucide-arrow-up-down"
-            square
-            :aria-label="showNewestFirst ? 'Show oldest sessions first' : 'Show newest sessions first'"
-            @click="toggleSessionOrder"
-          />
-        </UTooltip>
+      <template #filters>
+        <UCard variant="soft">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <UFormField label="Search sessions" name="sessionSearch" class="w-full sm:max-w-sm">
+              <UInput v-model="search" icon="i-lucide-search" placeholder="Title, number, or notes" class="w-full" />
+            </UFormField>
+            <UButton color="neutral" variant="outline" icon="i-lucide-arrow-up-down" @click="toggleSessionOrder">
+              {{ showNewestFirst ? 'Newest first' : 'Oldest first' }}
+            </UButton>
+          </div>
+        </UCard>
       </template>
       <template #notice>
         <SharedReadOnlyAlert
@@ -120,42 +128,44 @@ const createSession = async () => {
 :has-data="Boolean(sessions?.length)"
         :pending="pending"
         :error="error"
-        :empty="!sessions?.length"
+        :empty="!orderedSessions.length"
+        :no-matches="Boolean(sessions?.length && search.trim())"
         error-message="Unable to load sessions."
         empty-message="No sessions yet."
         @retry="refresh"
+        @clear="search = ''"
       >
         <template #loading><USkeleton class="h-32 w-full" /></template>
         <template #emptyActions>
           <UButton variant="outline" :disabled="!canWriteContent" @click="openCreate">Create your first session</UButton>
         </template>
 
-        <div class="grid gap-4 sm:grid-cols-2">
-          <NuxtLink
-            v-for="session in orderedSessions"
-            :key="session.id"
-            :to="`/campaigns/${campaignId}/sessions/${session.id}`"
-          >
-            <SharedListItemCard>
-              <template #header>
-                <div class="flex items-center justify-between gap-3">
-                  <div>
-                    <p class="text-xs uppercase tracking-[0.08em] text-muted">
-                      Session {{ session.sessionNumber ?? '—' }}
-                    </p>
-                    <h3 class=" type-record">{{ session.title }}</h3>
-                  </div>
-                  <span class="text-xs text-muted">
-                    {{ formatSessionDate(session.playedAt) }}
-                  </span>
+        <UCard :ui="{ body: 'p-0 sm:p-0' }">
+          <ol class="divide-y divide-default">
+            <li v-for="session in orderedSessions" :key="session.id">
+              <NuxtLink
+                :to="`/campaigns/${campaignId}/sessions/${session.id}`"
+                class="group flex min-w-0 items-start gap-4 p-4 sm:p-5 hover:bg-accented/50 focus-visible:outline-2 focus-visible:outline-primary focus-visible:-outline-offset-2"
+              >
+                <div class="flex size-14 shrink-0 flex-col items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary" aria-hidden="true">
+                  <span class="type-label">Session</span>
+                  <span class="type-section tabular-nums">{{ session.sessionNumber ?? '—' }}</span>
                 </div>
-              </template>
-              <p class="text-sm text-default line-clamp-2">
-                {{ session.notes || 'Add notes to capture what happened.' }}
-              </p>
-            </SharedListItemCard>
-          </NuxtLink>
-        </div>
+                <div class="min-w-0 flex-1 space-y-1">
+                  <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                    <h2 class="type-record text-highlighted wrap-break-word">{{ session.title }}<span class="sr-only"> · Session {{ session.sessionNumber ?? 'unnumbered' }}</span></h2>
+                    <span class="inline-flex items-center gap-1.5 text-xs text-muted">
+                      <UIcon name="i-lucide-calendar-days" class="size-4" aria-hidden="true" />
+                      {{ formatSessionDate(session.playedAt) }}
+                    </span>
+                  </div>
+                  <p class="line-clamp-2 text-sm text-muted">{{ session.notes || 'No session notes yet.' }}</p>
+                  <span class="inline-flex items-center gap-1 text-xs text-muted group-hover:text-highlighted">Open session <UIcon name="i-lucide-arrow-right" class="size-3.5" aria-hidden="true" /></span>
+                </div>
+              </NuxtLink>
+            </li>
+          </ol>
+        </UCard>
       </SharedResourceState>
     </CampaignListTemplate>
 

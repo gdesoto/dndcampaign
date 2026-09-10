@@ -8,8 +8,8 @@ const props = withDefaults(
     ariaLabel?: string
   }>(),
   {
-    tooltip: 'Open step',
-    ariaLabel: 'Open step',
+    tooltip: '',
+    ariaLabel: '',
   }
 )
 
@@ -17,18 +17,20 @@ const emit = defineEmits<{
   open: [step: SessionStep]
 }>()
 
+const label = computed(() => `Open ${props.step === 'transcription' ? 'transcript' : props.step}`)
+
 const onClick = () => {
   emit('open', props.step)
 }
 </script>
 
 <template>
-  <UTooltip :text="tooltip" :content="{ side: 'left' }">
+  <UTooltip :text="tooltip || label" :content="{ side: 'left' }">
     <UButton
-      size="xs"
+      size="sm"
       variant="ghost"
       icon="i-lucide-square-arrow-out-up-right"
-      :aria-label="ariaLabel"
+      :aria-label="ariaLabel || label"
       @click="onClick"
     />
   </UTooltip>

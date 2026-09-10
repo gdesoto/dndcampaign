@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useCampaignCalendar, type CampaignCalendarConfigDto } from '~/composables/useCampaignCalendar'
+import { calendarConfigUpsertSchema } from '#shared/schemas/calendar'
 import type { CalendarTemplateId } from '#shared/types/calendar'
 
 const props = defineProps<{
@@ -45,9 +46,9 @@ const toDraft = (config: CampaignCalendarConfigDto | null): CalendarDraft => {
     currentYear: config.currentYear,
     currentMonth: config.currentMonth,
     currentDay: config.currentDay,
-    weekdays: [...config.weekdays],
-    months: [...config.months],
-    moons: [...config.moons],
+    weekdays: config.weekdays.map(item => ({ ...item })),
+    months: config.months.map(item => ({ ...item })),
+    moons: config.moons.map(item => ({ ...item })),
   }
 }
 
@@ -61,6 +62,9 @@ const templateOptions = [
 
 const state = reactive({
   loading: true,
+  loaded: false,
+  loadError: '',
+  templateError: '',
   saving: false,
   applyingTemplate: false,
   generatingKey: '',
@@ -71,9 +75,22 @@ const state = reactive({
 
 const selectedTemplate = ref<CalendarTemplateId>('earth')
 const templateConfirmOpen = ref(false)
-const disableConfirmOpen = ref(false)
 const config = ref<CampaignCalendarConfigDto | null>(null)
 const draft = reactive<CalendarDraft>(makeDefaultDraft())
+
+const baseline = ref(JSON.stringify(draft))
+const dirty = computed(() => state.loaded && JSON.stringify(draft) !== baseline.value)
+const busy = computed(() => state.loading || state.saving || state.applyingTemplate || Boolean(state.generatingKey))
+const editingDisabled = computed(() => !props.canEdit || busy.value)
+useUnsavedChanges(dirty, busy)
+const discardChanges = () => {
+  if (busy.value) return
+  Object.assign(draft, JSON.parse(baseline.value))
+  state.saveError = ''
+  state.saveSuccess = ''
+}
+const templateCancel = useTemplateRef('templateCancel')
+const focusTemplateCancel = (event: Event) => { event.preventDefault(); templateCancel.value?.$el?.focus() }
 
 const monthOptions = computed(() =>
   draft.months.map((month, index) => ({
@@ -114,17 +131,19 @@ const resetFromConfig = (nextConfig: CampaignCalendarConfigDto | null) => {
   const next = toDraft(nextConfig)
   Object.assign(draft, next)
   normalizeDraft()
+  baseline.value = JSON.stringify(draft)
 }
 
 const loadConfig = async () => {
   state.loading = true
-  state.saveError = ''
+  state.loadError = ''
   try {
     const current = await calendarApi.getConfig(props.campaignId)
     resetFromConfig(current)
+    state.loaded = true
   }
   catch (error) {
-    state.saveError = (error as Error).message || 'Unable to load calendar settings.'
+    state.loadError = (error as Error).message || 'Unable to load calendar settings.'
   }
   finally {
     state.loading = false
@@ -132,23 +151,16 @@ const loadConfig = async () => {
 }
 
 const saveConfig = async () => {
+  if (editingDisabled.value || !dirty.value) return
+  const parsed = calendarConfigUpsertSchema.safeParse(draft)
+  if (!parsed.success) { state.saveError = parsed.error.issues[0]?.message || 'Check the calendar fields.'; return }
   state.saveError = ''
   state.saveSuccess = ''
   state.saving = true
   normalizeDraft()
   try {
-    const saved = await calendarApi.upsertConfig(props.campaignId, {
-      isEnabled: draft.isEnabled,
-      name: draft.name,
-      startingYear: draft.startingYear,
-      firstWeekdayIndex: draft.firstWeekdayIndex,
-      currentYear: draft.currentYear,
-      currentMonth: draft.currentMonth,
-      currentDay: draft.currentDay,
-      weekdays: draft.weekdays,
-      months: draft.months,
-      moons: draft.moons,
-    })
+    const saved = await calendarApi.upsertConfig(props.campaignId, parsed.data)
+    if (!saved) throw new Error('Unable to save calendar settings.')
     resetFromConfig(saved)
     state.saveSuccess = 'Calendar settings saved.'
   }
@@ -201,6 +213,7 @@ const generateName = async (
   kind: 'weekday' | 'month' | 'moon',
   index: number,
 ) => {
+  if (editingDisabled.value) return
   state.generatingKey = `${kind}-${index}`
   state.saveError = ''
   try {
@@ -220,21 +233,10 @@ const generateName = async (
   }
 }
 
-const onEnableToggle = (value: boolean) => {
-  if (!value && draft.isEnabled) {
-    disableConfirmOpen.value = true
-    return
-  }
-  draft.isEnabled = value
-}
-
-const confirmDisable = () => {
-  draft.isEnabled = false
-  disableConfirmOpen.value = false
-}
-
 const openTemplateConfirmation = () => {
-  if (!state.hasExistingConfig || !config.value) {
+  if (editingDisabled.value) return
+  state.templateError = ''
+  if (!state.hasExistingConfig && !dirty.value) {
     void applyTemplate()
     return
   }
@@ -242,20 +244,24 @@ const openTemplateConfirmation = () => {
 }
 
 const applyTemplate = async () => {
+  if (editingDisabled.value) return
+  state.templateError = ''
   state.applyingTemplate = true
   state.saveError = ''
   state.saveSuccess = ''
   try {
     const applied = await calendarApi.applyTemplate(props.campaignId, { templateId: selectedTemplate.value })
+    if (!applied) throw new Error('Unable to apply template.')
     resetFromConfig(applied)
+    templateConfirmOpen.value = false
     state.saveSuccess = 'Template applied.'
   }
   catch (error) {
-    state.saveError = (error as Error).message || 'Unable to apply template.'
+    state.templateError = (error as Error).message || 'Unable to apply template.'
+    state.saveError = state.templateError
   }
   finally {
     state.applyingTemplate = false
-    templateConfirmOpen.value = false
   }
 }
 
@@ -279,339 +285,102 @@ onMounted(() => {
 </script>
 
 <template>
+  <div class="space-y-4">
   <UCard>
     <template #header>
-      <div class="space-y-1">
-        <h2 class=" type-section">General</h2>
-        <p class="text-sm text-muted">
-          Configure the campaign fantasy calendar, templates, and current in-world date.
-        </p>
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="space-y-1">
+          <h2 class="type-section flex items-center gap-2"><UIcon name="i-lucide-calendar-days" class="size-5 text-primary" aria-hidden="true" /> Campaign calendar</h2>
+          <p class="text-sm text-muted">Set the rhythm of your world, from its days and seasons to its moons.</p>
+        </div>
+        <UBadge v-if="dirty" color="neutral" variant="subtle">Unsaved changes</UBadge>
       </div>
     </template>
-
-    <div v-if="state.loading" class="space-y-2">
-      <div class="h-10 w-full animate-pulse rounded bg-muted" />
-      <div class="h-10 w-full animate-pulse rounded bg-muted" />
-      <div class="h-10 w-full animate-pulse rounded bg-muted" />
-    </div>
-
-    <div v-else class="space-y-6">
-      <SharedReadOnlyAlert
-        v-if="!canEdit"
-        description="You can view calendar settings, but only owner and collaborators can edit."
-      />
-
-      <div class="rounded-lg border border-default p-4 space-y-4">
-        <USwitch
-          :model-value="draft.isEnabled"
-          label="Enable campaign fantasy calendar"
-          description="Turn on custom in-world calendar rules for this campaign."
-          :disabled="!canEdit"
-          @update:model-value="onEnableToggle"
-        />
-
-        <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
-          <USelect
-            v-model="selectedTemplate"
-            :items="templateOptions"
-            :disabled="!canEdit"
-          />
-          <UButton
-            color="warning"
-            variant="soft"
-            :disabled="!canEdit"
-            :loading="state.applyingTemplate"
-            @click="openTemplateConfirmation"
-          >
-            {{ canShowTemplateStarter ? 'Start from template' : 'Apply template' }}
-          </UButton>
+    <SharedResourceState :pending="state.loading" :error="state.loadError" :has-data="state.loaded" error-message="Unable to load calendar settings." @retry="loadConfig">
+      <SharedReadOnlyAlert v-if="!canEdit" class="mb-4" description="Only the owner and collaborators can edit the campaign calendar." />
+      <UForm :state="draft" :schema="calendarConfigUpsertSchema" :disabled="editingDisabled" class="space-y-6" @submit="saveConfig">
+        <div class="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-4">
+          <USwitch v-model="draft.isEnabled" label="Enable fantasy calendar" description="Use custom dates throughout this campaign. Changes take effect when saved." :disabled="editingDisabled" />
+          <div class="grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+            <UFormField label="Calendar template" description="Applying a template saves its calendar immediately.">
+              <USelect v-model="selectedTemplate" :items="templateOptions" class="w-full" :disabled="editingDisabled" />
+            </UFormField>
+            <UButton color="neutral" variant="outline" icon="i-lucide-wand-sparkles" :disabled="editingDisabled" :loading="state.applyingTemplate" @click="openTemplateConfirmation">{{ canShowTemplateStarter ? 'Start from template' : 'Apply template' }}</UButton>
+          </div>
         </div>
-      </div>
-
-      <div class="grid gap-6 lg:grid-cols-2">
+        <section class="space-y-4" aria-labelledby="calendar-date-title">
+          <h3 id="calendar-date-title" class="type-record">Name and current date</h3>
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <UFormField label="Calendar name" name="name" required><UInput v-model="draft.name" class="w-full" /></UFormField>
+            <UFormField label="Starting year" name="startingYear"><UInput v-model.number="draft.startingYear" type="number" class="w-full" /></UFormField>
+            <UFormField label="First weekday" name="firstWeekdayIndex"><USelect v-model="draft.firstWeekdayIndex" :items="weekdayOptions" class="w-full" /></UFormField>
+            <UFormField label="Current year" name="currentYear"><UInput v-model.number="draft.currentYear" type="number" class="w-full" /></UFormField>
+            <UFormField label="Current month" name="currentMonth"><USelect v-model="draft.currentMonth" :items="monthOptions" class="w-full" /></UFormField>
+            <UFormField label="Current day" name="currentDay"><UInput v-model.number="draft.currentDay" type="number" :min="1" :max="maxCurrentDay" class="w-full" /></UFormField>
+          </div>
+        </section>
         <UCard variant="soft">
-          <template #header>
-            <div class="flex items-center justify-between gap-2">
-              <h3 class=" type-record">Weekdays</h3>
-              <UButton size="xs" variant="outline" :disabled="!canEdit" @click="addWeekday">Add weekday</UButton>
+          <template #header><div class="flex flex-wrap items-center justify-between gap-3"><div><h3 class="type-record flex items-center gap-2"><UIcon name="i-lucide-sun" class="size-4 text-primary" aria-hidden="true" /> Weekdays</h3><p class="mt-1 text-sm text-muted">Days repeat in the order shown.</p></div><UButton color="neutral" variant="outline" icon="i-lucide-plus" :disabled="editingDisabled" @click="addWeekday">Add weekday</UButton></div></template>
+          <p v-if="!draft.weekdays.length" class="text-sm text-muted">No weekdays configured. Add a weekday to begin.</p>
+          <div class="divide-y divide-default">
+            <div v-for="(item, index) in draft.weekdays" :key="index" class="grid items-end gap-3 py-4 first:pt-0 last:pb-0 lg:grid-cols-[minmax(0,1fr)_auto]">
+              <div class="grid gap-3 ">
+                <UFormField :label="'Weekday ' + (index + 1) + ' name'" :name="'weekdays.' + index + '.name'" required><UInput v-model="item.name" class="w-full" /></UFormField>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <UTooltip text="Move up"><UButton color="neutral" variant="outline" icon="i-lucide-chevron-up" :aria-label="'Move weekday ' + (index + 1) + ' up'" :disabled="editingDisabled || index === 0" @click="moveItem(draft.weekdays, index, -1)" /></UTooltip>
+                <UTooltip text="Move down"><UButton color="neutral" variant="outline" icon="i-lucide-chevron-down" :aria-label="'Move weekday ' + (index + 1) + ' down'" :disabled="editingDisabled || index === draft.weekdays.length - 1" @click="moveItem(draft.weekdays, index, 1)" /></UTooltip>
+                <UButton color="neutral" variant="soft" icon="i-lucide-sparkles" :loading="state.generatingKey === 'weekday-' + index" :disabled="editingDisabled" @click="generateName('weekday', index)">Generate</UButton>
+                <UTooltip text="Remove weekday"><UButton color="neutral" variant="ghost" icon="i-lucide-trash-2" :aria-label="'Remove weekday ' + (index + 1)" :disabled="editingDisabled || draft.weekdays.length <= 1" @click="removeWeekday(index)" /></UTooltip>
+              </div>
             </div>
-          </template>
-          <div class="overflow-x-auto">
-            <table class="w-full border-separate border-spacing-y-2">
-              <colgroup>
-                <col>
-                <col class="w-px">
-              </colgroup>
-              <thead>
-                <tr>
-                  <th class="pb-1 text-left text-xs uppercase tracking-[0.08em] text-muted font-medium">Name</th>
-                  <th class="w-px pb-1 text-left text-xs uppercase tracking-[0.08em] text-muted font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(weekday, index) in draft.weekdays" :key="`weekday-${index}`" class="align-middle">
-                  <td class="pr-2">
-                    <UInput v-model="weekday.name" :disabled="!canEdit" />
-                  </td>
-                  <td class="whitespace-nowrap">
-                    <div class="inline-flex items-center gap-2">
-                      <UButton
-                        size="md"
-                        variant="outline"
-                        icon="i-lucide-chevron-up"
-                        aria-label="Move weekday up"
-                        :disabled="!canEdit || index === 0"
-                        @click="moveItem(draft.weekdays, index, -1)"
-                      />
-                      <UButton
-                        size="md"
-                        variant="outline"
-                        icon="i-lucide-chevron-down"
-                        aria-label="Move weekday down"
-                        :disabled="!canEdit || index === draft.weekdays.length - 1"
-                        @click="moveItem(draft.weekdays, index, 1)"
-                      />
-                      <UButton
-                        size="xs"
-                        variant="soft"
-                        :loading="state.generatingKey === `weekday-${index}`"
-                        :disabled="!canEdit"
-                        @click="generateName('weekday', index)"
-                      >
-                        Generate
-                      </UButton>
-                      <SharedConfirmActionPopover
-                        message="Remove this weekday?"
-                        confirm-label="Remove"
-                        confirm-icon="i-lucide-trash-2"
-                        trigger-aria-label="Remove weekday"
-                        trigger-icon="i-lucide-trash-2"
-                        :trigger-show-label="false"
-                        trigger-size="md"
-                        :disabled="!canEdit || draft.weekdays.length <= 1"
-                        @confirm="({ close }) => { removeWeekday(index); close() }"
-                      />
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         </UCard>
-
         <UCard variant="soft">
-          <template #header>
-            <div class="flex items-center justify-between gap-2">
-              <h3 class=" type-record">Months</h3>
-              <UButton size="xs" variant="outline" :disabled="!canEdit" @click="addMonth">Add month</UButton>
+          <template #header><div class="flex flex-wrap items-center justify-between gap-3"><div><h3 class="type-record flex items-center gap-2"><UIcon name="i-lucide-leaf" class="size-4 text-primary" aria-hidden="true" /> Months</h3><p class="mt-1 text-sm text-muted">Set each month’s name and length in days.</p></div><UButton color="neutral" variant="outline" icon="i-lucide-plus" :disabled="editingDisabled" @click="addMonth">Add month</UButton></div></template>
+          <p v-if="!draft.months.length" class="text-sm text-muted">No months configured. Add a month to begin.</p>
+          <div class="divide-y divide-default">
+            <div v-for="(item, index) in draft.months" :key="index" class="grid items-end gap-3 py-4 first:pt-0 last:pb-0 lg:grid-cols-[minmax(0,1fr)_auto]">
+              <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_8rem]">
+                <UFormField :label="'Month ' + (index + 1) + ' name'" :name="'months.' + index + '.name'" required><UInput v-model="item.name" class="w-full" /></UFormField>
+                <UFormField label="Days" :name="'months.' + index + '.length'"><UInput v-model.number="item.length" type="number" :min="1" :max="999" class="w-full" /></UFormField>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <UTooltip text="Move up"><UButton color="neutral" variant="outline" icon="i-lucide-chevron-up" :aria-label="'Move month ' + (index + 1) + ' up'" :disabled="editingDisabled || index === 0" @click="moveItem(draft.months, index, -1)" /></UTooltip>
+                <UTooltip text="Move down"><UButton color="neutral" variant="outline" icon="i-lucide-chevron-down" :aria-label="'Move month ' + (index + 1) + ' down'" :disabled="editingDisabled || index === draft.months.length - 1" @click="moveItem(draft.months, index, 1)" /></UTooltip>
+                <UButton color="neutral" variant="soft" icon="i-lucide-sparkles" :loading="state.generatingKey === 'month-' + index" :disabled="editingDisabled" @click="generateName('month', index)">Generate</UButton>
+                <UTooltip text="Remove month"><UButton color="neutral" variant="ghost" icon="i-lucide-trash-2" :aria-label="'Remove month ' + (index + 1)" :disabled="editingDisabled || draft.months.length <= 1" @click="removeMonth(index)" /></UTooltip>
+              </div>
             </div>
-          </template>
-          <div class="overflow-x-auto">
-            <table class="w-full border-separate border-spacing-y-2">
-              <colgroup>
-                <col>
-                <col class="w-24">
-                <col class="w-px">
-              </colgroup>
-              <thead>
-                <tr>
-                  <th class="pb-1 text-left text-xs uppercase tracking-[0.08em] text-muted font-medium">Name</th>
-                  <th class="pb-1 text-left text-xs uppercase tracking-[0.08em] text-muted font-medium">Length</th>
-                  <th class="w-px pb-1 text-left text-xs uppercase tracking-[0.08em] text-muted font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(month, index) in draft.months" :key="`month-${index}`" class="align-middle">
-                  <td class="pr-2">
-                    <UInput v-model="month.name" :disabled="!canEdit" />
-                  </td>
-                  <td class="pr-2">
-                    <UInput v-model.number="month.length" type="number" min="1" max="999" :disabled="!canEdit" />
-                  </td>
-                  <td class="whitespace-nowrap">
-                    <div class="inline-flex items-center gap-2">
-                      <UButton
-                        size="md"
-                        variant="outline"
-                        icon="i-lucide-chevron-up"
-                        aria-label="Move month up"
-                        :disabled="!canEdit || index === 0"
-                        @click="moveItem(draft.months, index, -1)"
-                      />
-                      <UButton
-                        size="md"
-                        variant="outline"
-                        icon="i-lucide-chevron-down"
-                        aria-label="Move month down"
-                        :disabled="!canEdit || index === draft.months.length - 1"
-                        @click="moveItem(draft.months, index, 1)"
-                      />
-                      <UButton
-                        size="xs"
-                        variant="soft"
-                        :loading="state.generatingKey === `month-${index}`"
-                        :disabled="!canEdit"
-                        @click="generateName('month', index)"
-                      >
-                        Generate
-                      </UButton>
-                      <SharedConfirmActionPopover
-                        message="Remove this month?"
-                        confirm-label="Remove"
-                        confirm-icon="i-lucide-trash-2"
-                        trigger-aria-label="Remove month"
-                        trigger-icon="i-lucide-trash-2"
-                        :trigger-show-label="false"
-                        trigger-size="md"
-                        :disabled="!canEdit || draft.months.length <= 1"
-                        @confirm="({ close }) => { removeMonth(index); close() }"
-                      />
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         </UCard>
-      </div>
-
-      <UCard variant="soft">
-        <template #header>
-          <div class="flex items-center justify-between gap-2">
-            <h3 class=" type-record">Moons</h3>
-            <UButton size="xs" variant="outline" :disabled="!canEdit" @click="addMoon">Add moon</UButton>
+        <UCard variant="soft">
+          <template #header><div class="flex flex-wrap items-center justify-between gap-3"><div><h3 class="type-record flex items-center gap-2"><UIcon name="i-lucide-moon-star" class="size-4 text-primary" aria-hidden="true" /> Moons</h3><p class="mt-1 text-sm text-muted">Track lunar cycles and their starting offsets.</p></div><UButton color="neutral" variant="outline" icon="i-lucide-plus" :disabled="editingDisabled" @click="addMoon">Add moon</UButton></div></template>
+          <p v-if="!draft.moons.length" class="text-sm text-muted">No moons configured. Add a moon to begin.</p>
+          <div class="divide-y divide-default">
+            <div v-for="(item, index) in draft.moons" :key="index" class="grid items-end gap-3 py-4 first:pt-0 last:pb-0 lg:grid-cols-[minmax(0,1fr)_auto]">
+              <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_8rem_8rem]">
+                <UFormField :label="'Moon ' + (index + 1) + ' name'" :name="'moons.' + index + '.name'" required><UInput v-model="item.name" class="w-full" /></UFormField>
+                <UFormField label="Cycle (days)" :name="'moons.' + index + '.cycleLength'"><UInput v-model.number="item.cycleLength" type="number" :min="1" :max="9999" class="w-full" /></UFormField>
+                <UFormField label="Offset (days)" :name="'moons.' + index + '.phaseOffset'"><UInput v-model.number="item.phaseOffset" type="number" :min="0" :max="9999" class="w-full" /></UFormField>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <UButton color="neutral" variant="soft" icon="i-lucide-sparkles" :loading="state.generatingKey === 'moon-' + index" :disabled="editingDisabled" @click="generateName('moon', index)">Generate</UButton>
+                <UTooltip text="Remove moon"><UButton color="neutral" variant="ghost" icon="i-lucide-trash-2" :aria-label="'Remove moon ' + (index + 1)" :disabled="editingDisabled" @click="removeMoon(index)" /></UTooltip>
+              </div>
+            </div>
           </div>
-        </template>
-        <div v-if="!draft.moons.length" class="text-sm text-muted">
-          No moons configured.
+        </UCard>
+        <div class="sticky bottom-0 z-10 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-default bg-default p-4 shadow-sm">
+          <div aria-live="polite"><p v-if="state.saveError" role="alert" class="text-sm text-error">{{ state.saveError }}</p><p v-else-if="state.saveSuccess && !dirty" class="text-sm text-success">{{ state.saveSuccess }}</p><p v-else class="text-sm text-muted">{{ dirty ? 'Your changes are ready to save.' : 'Calendar settings are up to date.' }}</p></div>
+          <div class="flex flex-wrap gap-2"><UButton color="neutral" variant="outline" :disabled="editingDisabled || !dirty" @click="discardChanges">Discard changes</UButton><UButton type="submit" color="primary" variant="solid" icon="i-lucide-save" :disabled="editingDisabled || !dirty" :loading="state.saving">Save calendar settings</UButton></div>
         </div>
-        <div v-else class="overflow-x-auto">
-          <table class="w-full border-separate border-spacing-y-2">
-            <colgroup>
-              <col>
-              <col class="w-28">
-              <col class="w-28">
-              <col class="w-px">
-            </colgroup>
-            <thead>
-              <tr>
-                <th class="pb-1 text-left text-xs uppercase tracking-[0.08em] text-muted font-medium">Name</th>
-                <th class="pb-1 text-left text-xs uppercase tracking-[0.08em] text-muted font-medium">Cycle length</th>
-                <th class="pb-1 text-left text-xs uppercase tracking-[0.08em] text-muted font-medium">Phase offset</th>
-                <th class="w-px pb-1 text-left text-xs uppercase tracking-[0.08em] text-muted font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(moon, index) in draft.moons" :key="`moon-${index}`" class="align-middle">
-                <td class="pr-2">
-                  <UInput v-model="moon.name" :disabled="!canEdit" />
-                </td>
-                <td class="pr-2">
-                  <UInput v-model.number="moon.cycleLength" type="number" min="1" max="9999" :disabled="!canEdit" />
-                </td>
-                <td class="pr-2">
-                  <UInput v-model.number="moon.phaseOffset" type="number" min="0" max="9999" :disabled="!canEdit" />
-                </td>
-                <td class="whitespace-nowrap">
-                  <div class="inline-flex items-center gap-2">
-                    <UButton
-                      size="xs"
-                      variant="soft"
-                      :loading="state.generatingKey === `moon-${index}`"
-                      :disabled="!canEdit"
-                      @click="generateName('moon', index)"
-                    >
-                      Generate
-                    </UButton>
-                    <SharedConfirmActionPopover
-                      message="Remove this moon?"
-                      confirm-label="Remove"
-                      confirm-icon="i-lucide-trash-2"
-                      trigger-aria-label="Remove moon"
-                      trigger-icon="i-lucide-trash-2"
-                      :trigger-show-label="false"
-                      trigger-size="md"
-                      :disabled="!canEdit"
-                      @confirm="({ close }) => { removeMoon(index); close() }"
-                    />
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </UCard>
-
-      <UCard variant="soft">
-        <template #header>
-          <h3 class=" type-record">Reference Year + Current Date</h3>
-        </template>
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div class="space-y-1">
-            <p class="text-xs uppercase tracking-[0.08em] text-muted">Calendar name</p>
-            <UInput v-model="draft.name" :disabled="!canEdit" />
-          </div>
-          <div class="space-y-1">
-            <p class="text-xs uppercase tracking-[0.08em] text-muted">Starting year</p>
-            <UInput v-model.number="draft.startingYear" type="number" :disabled="!canEdit" />
-          </div>
-          <div class="space-y-1">
-            <p class="text-xs uppercase tracking-[0.08em] text-muted">First weekday index</p>
-            <USelect v-model="draft.firstWeekdayIndex" :items="weekdayOptions" :disabled="!canEdit" />
-          </div>
-          <div class="space-y-1">
-            <p class="text-xs uppercase tracking-[0.08em] text-muted">Current year</p>
-            <UInput v-model.number="draft.currentYear" type="number" :disabled="!canEdit" />
-          </div>
-          <div class="space-y-1">
-            <p class="text-xs uppercase tracking-[0.08em] text-muted">Current month</p>
-            <USelect v-model="draft.currentMonth" :items="monthOptions" :disabled="!canEdit" />
-          </div>
-          <div class="space-y-1">
-            <p class="text-xs uppercase tracking-[0.08em] text-muted">Current day</p>
-            <UInput
-              v-model.number="draft.currentDay"
-              type="number"
-              min="1"
-              :max="maxCurrentDay"
-              :disabled="!canEdit"
-            />
-          </div>
-        </div>
-      </UCard>
-
-      <div class="flex flex-wrap items-center gap-3">
-        <UButton :disabled="!canEdit" :loading="state.saving" @click="saveConfig">Save calendar settings</UButton>
-        <UButton variant="ghost" color="neutral" :loading="state.loading" @click="loadConfig">Reload</UButton>
-        <p v-if="state.saveSuccess" class="text-sm text-success">{{ state.saveSuccess }}</p>
-        <p v-if="state.saveError" class="text-sm text-error">{{ state.saveError }}</p>
-      </div>
-    </div>
+      </UForm>
+    </SharedResourceState>
   </UCard>
-
-  <UModal
-    v-model:open="disableConfirmOpen"
-    title="Disable fantasy calendar?"
-    description="Disabling keeps saved data, but calendar features will be inactive until re-enabled."
-  >
-    <template #footer>
-      <div class="flex w-full justify-end gap-2">
-        <UButton variant="ghost" color="neutral" @click="() => { disableConfirmOpen = false }">Cancel</UButton>
-        <UButton color="error" @click="confirmDisable">Disable</UButton>
-      </div>
-    </template>
+  <UModal v-model:open="templateConfirmOpen" title="Replace campaign calendar?" description="This immediately replaces the saved weekdays, months, moons, and current date. Unsaved calendar changes will also be lost." :close="false" :dismissible="!state.applyingTemplate" :content="{ onOpenAutoFocus: focusTemplateCancel }">
+    <template #body><p class="text-sm text-muted">Selected template: <strong class="text-highlighted">{{ templateOptions.find(item => item.value === selectedTemplate)?.label }}</strong></p><p v-if="state.templateError" role="alert" class="mt-3 text-sm text-error">{{ state.templateError }}</p></template>
+    <template #footer><div class="flex w-full justify-end gap-2"><UButton ref="templateCancel" color="neutral" variant="outline" :disabled="state.applyingTemplate" @click="templateConfirmOpen = false">Cancel</UButton><UButton color="error" variant="solid" :loading="state.applyingTemplate" :disabled="state.applyingTemplate" @click="applyTemplate">Apply template</UButton></div></template>
   </UModal>
-
-  <UModal
-    v-model:open="templateConfirmOpen"
-    title="Overwrite current calendar configuration?"
-    description="Applying a template replaces weekdays, months, moons, and current date settings."
-  >
-    <template #footer>
-      <div class="flex w-full justify-end gap-2">
-        <UButton variant="ghost" color="neutral" @click="() => { templateConfirmOpen = false }">Cancel</UButton>
-        <UButton color="warning" :loading="state.applyingTemplate" @click="applyTemplate">Apply template</UButton>
-      </div>
-    </template>
-  </UModal>
+  </div>
 </template>

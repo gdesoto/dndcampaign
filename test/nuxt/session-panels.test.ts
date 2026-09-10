@@ -37,7 +37,7 @@ describe('SessionStatusCards', () => {
       },
     })
 
-    const openButtons = wrapper.findAll('button[aria-label="Open step"]')
+    const openButtons = wrapper.findAll('button[aria-label="Open recordings"]')
     expect(openButtons.length).toBeGreaterThan(0)
     await openButtons[0]!.trigger('click')
 
@@ -50,6 +50,7 @@ describe('SessionSummaryPanel', () => {
     const wrapper = await mountSuspended(SummaryPanel, {
       props: {
         campaignId: 'c1',
+        canEdit: true, canGenerate: true, dirty: true,
         selectedSummaryJobId: '',
         summaryJobOptions: [],
         summarySending: false,
@@ -73,11 +74,16 @@ describe('SessionSummaryPanel', () => {
       },
     })
 
-    await clickByText(wrapper, 'Send transcript to n8n')
+    await clickByText(wrapper, 'Generate summary')
     await clickByText(wrapper, 'Save summary')
 
     expect(wrapper.emitted('send-to-n8n')).toBeTruthy()
     expect(wrapper.emitted('save-summary')).toBeTruthy()
+    await wrapper.setProps({ canEdit: false, canGenerate: false })
+    await clickByText(wrapper, 'Generate summary')
+    await clickByText(wrapper, 'Save summary')
+    expect(wrapper.emitted('send-to-n8n')).toHaveLength(1)
+    expect(wrapper.emitted('save-summary')).toHaveLength(1)
   })
 })
 
@@ -85,6 +91,7 @@ describe('SessionSuggestionsPanel', () => {
   it('emits generation and review actions', async () => {
     const wrapper = await mountSuspended(SuggestionsPanel, {
       props: {
+        canGenerate: true,
         selectedSuggestionJobId: '',
         suggestionJobOptions: [],
         suggestionSending: false,
@@ -100,6 +107,10 @@ describe('SessionSuggestionsPanel', () => {
 
     await clickByText(wrapper, 'Generate suggestions')
     expect(wrapper.emitted('generate-suggestions')).toBeTruthy()
+    await wrapper.setProps({ hasSummary: false })
+    await clickByText(wrapper, 'Generate suggestions')
+    expect(wrapper.emitted('generate-suggestions')).toHaveLength(1)
+    expect(wrapper.text()).toContain('Save a summary before generating suggestions.')
   })
 })
 
@@ -109,7 +120,7 @@ describe('SessionRecapPanel', () => {
     const video = { ...audio, id: 'video', filename: 'recap.mp4', mimeType: 'video/mp4' }
     const wrapper = await mountSuspended(RecapPanel, {
       props: {
-        workflowMode: true, recap: audio, recaps: [audio, video], selectedKind: 'AUDIO',
+        workflowMode: true, canManage: true, recap: audio, recaps: [audio, video], selectedKind: 'AUDIO',
         recapFile: null, recapUploading: false, recapPlaybackLoading: false, recapDeleting: false,
         recapPlaybackUrl: '', recapError: '', recapDeleteError: '', hasRecap: true,
       },
@@ -128,7 +139,7 @@ describe('SessionRecapPanel', () => {
     const deleteRecap = vi.fn().mockResolvedValue(undefined)
     const wrapper = await mountSuspended(RecapPanel, {
       props: {
-        workflowMode: true,
+        workflowMode: true, canManage: true,
         deleteRecap,
         recap: null,
         recaps: [],
@@ -160,6 +171,10 @@ describe('SessionRecapPanel', () => {
 
     expect(wrapper.find('input[type="file"]').attributes('accept')).toContain(mimeType)
     await clickByText(wrapper, 'Upload recap')
+    await wrapper.setProps({ canManage: false })
+    expect(wrapper.find('input[type="file"]').exists()).toBe(false)
+    expect(wrapper.findAll('button').some(button => button.text().trim() === 'Upload recap')).toBe(false)
+    await wrapper.setProps({ canManage: true })
 
     await wrapper.setProps({
       recap: {
@@ -187,12 +202,13 @@ describe('SessionTranscriptPanel', () => {
     const wrapper = await mountSuspended(TranscriptPanel, {
       props: {
         campaignId: 'c1',
+        canManageTranscript: true,
         recordings: [{ id: 'r1', filename: 'recording.mp3' }],
         transcriptDoc: { id: 'd1' },
         transcriptError: '',
         transcriptImportError: '',
         transcriptImporting: false,
-        transcriptFile: null,
+        transcriptFile: new File(['text'], 'transcript.txt', { type: 'text/plain' }),
         showFullTranscript: false,
         transcriptPreview: 'Preview',
         fullTranscript: 'Full text',

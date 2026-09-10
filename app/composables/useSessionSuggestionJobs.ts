@@ -10,6 +10,7 @@ export function useSessionSuggestionJobs(options: UseSessionSuggestionJobsOption
   const { request } = useApi()
 
   const suggestionSending = ref(false)
+  const suggestionApplying = ref(false)
   const suggestionSendError = ref('')
   const suggestionActionError = ref('')
 
@@ -70,6 +71,7 @@ export function useSessionSuggestionJobs(options: UseSessionSuggestionJobsOption
   const suggestionGroups = computed(() => {
     const groups: Record<string, SessionSummarySuggestion[]> = {}
     for (const suggestion of suggestionItems.value) {
+      if (suggestion.entityType === 'SESSION') continue
       const key = suggestion.entityType
       if (!groups[key]) groups[key] = []
       groups[key].push(suggestion)
@@ -78,6 +80,7 @@ export function useSessionSuggestionJobs(options: UseSessionSuggestionJobsOption
   })
 
   const generateSuggestions = async () => {
+    if (suggestionSending.value || suggestionApplying.value) return
     if (!options.summaryDoc.value) {
       suggestionSendError.value = 'Summary is required before generating suggestions.'
       return
@@ -103,6 +106,8 @@ export function useSessionSuggestionJobs(options: UseSessionSuggestionJobsOption
   }
 
   const applySuggestion = async (input: { suggestionId: string; payload: Record<string, unknown> }) => {
+    if (suggestionSending.value || suggestionApplying.value) return
+    suggestionApplying.value = true
     suggestionActionError.value = ''
     try {
       await request(`/api/summaries/suggestions/${input.suggestionId}`, {
@@ -117,10 +122,14 @@ export function useSessionSuggestionJobs(options: UseSessionSuggestionJobsOption
     } catch (error) {
       suggestionActionError.value =
         (error as Error & { message?: string }).message || 'Unable to apply suggestion.'
+    } finally {
+      suggestionApplying.value = false
     }
   }
 
   const discardSuggestion = async (suggestionId: string) => {
+    if (suggestionSending.value || suggestionApplying.value) return
+    suggestionApplying.value = true
     suggestionActionError.value = ''
     try {
       await request(`/api/summaries/suggestions/${suggestionId}`, {
@@ -132,11 +141,14 @@ export function useSessionSuggestionJobs(options: UseSessionSuggestionJobsOption
     } catch (error) {
       suggestionActionError.value =
         (error as Error & { message?: string }).message || 'Unable to discard suggestion.'
+    } finally {
+      suggestionApplying.value = false
     }
   }
 
   return {
     suggestionSending,
+    suggestionApplying,
     suggestionSendError,
     suggestionActionError,
     selectedSuggestionJobId,

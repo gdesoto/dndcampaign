@@ -46,6 +46,7 @@ const {
   summaryActionError,
   summaryForm,
   summarySaving,
+  summaryDirty,
   summaryDoc,
   summaryFile,
   summaryImporting,
@@ -54,6 +55,7 @@ const {
   selectedSuggestionJobId,
   suggestionJobOptions,
   suggestionSending,
+  suggestionApplying,
   hasSummary,
   suggestionStatusColor,
   suggestionStatusLabel,
@@ -101,6 +103,7 @@ const currentStep = computed(() =>
 const returnToPath = computed(
   () => `/campaigns/${campaignId.value}/sessions/${sessionId.value}/${currentStep.value}`
 )
+useUnsavedChanges(summaryDirty, () => summarySaving.value || summaryImporting.value)
 </script>
 
 <template>
@@ -161,6 +164,9 @@ const returnToPath = computed(
 
     <div v-else-if="currentStep === 'summary'" class="space-y-4">
       <SessionSummaryPanel
+        :dirty="summaryDirty"
+        :can-edit="canWriteContent"
+        :can-generate="canRunSummary"
         :campaign-id="campaignId"
         :return-to-path="returnToPath"
         :selected-summary-job-id="selectedSummaryJobId"
@@ -197,9 +203,11 @@ const returnToPath = computed(
 
     <div v-else-if="currentStep === 'suggestions'" class="space-y-4">
       <SessionSuggestionsPanel
+        :can-generate="canRunSummary"
         :selected-suggestion-job-id="selectedSuggestionJobId"
         :suggestion-job-options="suggestionJobOptions"
         :suggestion-sending="suggestionSending"
+        :applying="suggestionApplying"
         :has-summary="hasSummary"
         :suggestion-status-color="suggestionStatusColor"
         :suggestion-status-label="suggestionStatusLabel"
@@ -219,6 +227,7 @@ const returnToPath = computed(
     <div v-else-if="currentStep === 'recap'" class="space-y-4">
       <SessionRecapPanel
         v-model:selected-kind="selectedRecapKind"
+        :can-manage="canUploadRecording"
         :campaign-id="campaignId"
         :workflow-mode="true"
         :recap="recap"

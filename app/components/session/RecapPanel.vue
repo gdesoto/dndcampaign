@@ -6,6 +6,7 @@ import type { SessionRecapRecording } from '#shared/types/session-workflow'
 type WorkflowStep = 'recordings' | 'transcription' | 'summary' | 'recap'
 
 const props = defineProps<{
+  canManage?: boolean
   deleteRecap?: () => Promise<unknown>
   campaignId?: string
   workflowMode: boolean
@@ -47,6 +48,11 @@ const hasKind = (kind: 'AUDIO' | 'VIDEO') => props.recaps.some((item) =>
   (item.mimeType.startsWith('video/') ? 'VIDEO' : 'AUDIO') === kind
 )
 const isReplaceModalOpen = ref(false)
+const cancelReplacement = useTemplateRef('cancelReplacement')
+const focusCancel = (event: Event) => {
+  event.preventDefault()
+  cancelReplacement.value?.$el?.focus()
+}
 watch(() => props.selectedKind, () => { isReplaceModalOpen.value = false })
 const { formatBytes } = useFormatBytes()
 
@@ -56,7 +62,7 @@ const openReplaceModal = () => {
 }
 
 const submitReplace = () => {
-  if (!recapFileModel.value) return
+  if (!recapFileModel.value || props.recapUploading || props.recapDeleting || !props.canManage) return
   emit('upload-recap')
 }
 
@@ -78,8 +84,8 @@ const recapActions = computed<RecordAction[]>(() => {
       { label: 'Open playlist', icon: 'i-lucide-list-video', to: url },
       { label: 'Copy campaign link', icon: 'i-lucide-link', action: async () => { await navigator.clipboard.writeText(new URL(url, window.location.origin).href); toast.add({ title: 'Campaign link copied', color: 'success' }) } },
     ] : []),
-    ...(props.workflowMode ? [{ label: 'Replace recap', icon: 'i-lucide-refresh-cw', action: openReplaceModal }] : []),
-    ...(props.workflowMode && props.deleteRecap ? [{ label: 'Delete', icon: 'i-lucide-trash-2', destructive: true, action: async () => {
+    ...(props.workflowMode && props.canManage ? [{ label: 'Replace recap', icon: 'i-lucide-refresh-cw', action: openReplaceModal }] : []),
+    ...(props.workflowMode && props.canManage && props.deleteRecap ? [{ label: 'Delete', icon: 'i-lucide-trash-2', destructive: true, action: async () => {
       if (props.recap?.id !== recap.id) throw new Error('The selected recap changed. Close this prompt and choose the recap again.')
       await props.deleteRecap!()
     }, confirmation: { label: 'Delete recap', message: `Delete recap "${recap.filename}"? This permanently removes its file.` } }] : []),
@@ -118,7 +124,8 @@ const recapActions = computed<RecordAction[]>(() => {
         <UButton
           v-for="kind in mediaKinds"
           :key="kind"
-          :variant="selectedKind === kind ? 'solid' : 'outline'"
+          :variant="selectedKind === kind ? 'soft' : 'outline'"
+          :color="selectedKind === kind ? 'primary' : 'neutral'"
           :aria-pressed="selectedKind === kind"
           :icon="kind === 'VIDEO' ? 'i-lucide-video' : 'i-lucide-headphones'"
           :disabled="recapUploading || recapDeleting || recapPlaybackLoading"
@@ -130,34 +137,20 @@ const recapActions = computed<RecordAction[]>(() => {
       <p v-if="workflowMode" class="text-xs text-muted">One audio and one video recap per session, up to 512 MB each. Replacing a recap only replaces the same media type. Video formats: MP4, WebM, Ogg.</p>
       <p v-if="!hasRecap" class="text-sm text-muted">No {{ kindLabel.toLowerCase() }} recap uploaded.</p>
       <div
-        v-if="workflowMode && !hasRecap"
+        v-if="workflowMode && canManage && !hasRecap"
         class="flex flex-col gap-3 rounded-md border border-default bg-elevated/40 p-3 sm:flex-row sm:items-center sm:justify-between"
       >
-        <div class="min-w-0">
-          <p class="text-xs uppercase tracking-[0.08em] text-muted">{{ kindLabel }} recap</p>
-          <p class="truncate text-sm text-muted">
-            {{
-              recapFile?.name
-                || (hasRecap ? 'A recap is currently attached.' : 'No file selected')
-            }}
-          </p>
-        </div>
-
-        <UFileUpload
+        <SharedFilePicker
           v-model="recapFileModel"
           :accept="acceptedTypes"
-          variant="button"
-          size="sm"
-          :dropzone="false"
-          :preview="false"
           label="Choose file"
-          class="shrink-0"
+          class="w-full"
         />
       </div>
 
       <div v-if="hasRecap && recap" class="rounded-md border border-default bg-elevated/30 p-3">
         <p class="text-xs uppercase tracking-[0.08em] text-muted">{{ recap.mimeType.startsWith('video/') ? 'Video recap' : 'Audio recap' }}</p>
-        <div class="mt-2 grid gap-2 text-sm text-muted sm:grid-cols-2">
+        <div class="mt-2 grid min-w-0 gap-2 text-sm text-muted wrap-anywhere sm:grid-cols-2">
           <p><span class="text-muted">File:</span> {{ recap.filename || 'Unknown' }}</p>
           <p><span class="text-muted">Type:</span> {{ recap.mimeType || 'Unknown' }}</p>
           <p><span class="text-muted">Size:</span> {{ formatBytes(recap.byteSize) }}</p>
@@ -168,10 +161,12 @@ const recapActions = computed<RecordAction[]>(() => {
       <div class="flex flex-wrap items-center gap-2 sm:justify-end">
 
         <UButton
-          v-if="workflowMode && !hasRecap"
+          v-if="workflowMode && canManage && !hasRecap"
           size="sm"
           icon="i-lucide-upload"
-          :disabled="!recapFile"
+          color="primary"
+          variant="solid"
+          :disabled="!recapFile || recapDeleting"
           :loading="recapUploading"
           class="w-full sm:w-auto"
           @click="emit('upload-recap')"
@@ -207,38 +202,27 @@ const recapActions = computed<RecordAction[]>(() => {
     </div>
   </UCard>
 
-  <UModal v-model:open="isReplaceModalOpen">
-    <template #content>
-      <UCard>
-        <template #header>
-          <h3 class=" type-record">Replace {{ kindLabel.toLowerCase() }} recap</h3>
-        </template>
-
-        <div class="space-y-4">
-          <UFileUpload
-            v-model="recapFileModel"
-            :accept="acceptedTypes"
-            variant="button"
-            size="sm"
-            :dropzone="false"
-            :preview="false"
-            label="Choose replacement"
-            :disabled="recapUploading || recapDeleting"
-          />
-
-          <p class="text-sm text-muted">
-            {{ recapFile?.name || 'No file selected.' }}
-          </p>
-
-          <div class="flex justify-end gap-2">
-            <UButton variant="ghost" color="neutral" :disabled="recapUploading || recapDeleting" @click="() => { isReplaceModalOpen = false }">Cancel</UButton>
-            <UButton :disabled="!recapFile" :loading="recapUploading" @click="submitReplace">
-              Replace recap
-            </UButton>
-          </div>
-        </div>
-      </UCard>
+  <UModal
+    v-model:open="isReplaceModalOpen"
+    :title="`Replace ${kindLabel.toLowerCase()} recap`"
+    :description="`This permanently replaces ‘${recap?.filename || 'the current recap'}’. The other media type stays attached.`"
+    :dismissible="!recapUploading && !recapDeleting"
+    :close="false"
+    :content="{ onOpenAutoFocus: focusCancel }"
+  >
+    <template #body>
+      <div class="space-y-4">
+        <UFormField label="Replacement file" name="recapReplacement">
+          <SharedFilePicker v-model="recapFileModel" :accept="acceptedTypes" label="Choose replacement" :disabled="recapUploading || recapDeleting" />
+        </UFormField>
+        <p v-if="recapError" role="alert" class="text-sm text-error">{{ recapError }}</p>
+      </div>
+    </template>
+    <template #footer>
+      <div class="flex w-full flex-wrap justify-end gap-2">
+        <UButton ref="cancelReplacement" color="neutral" variant="outline" :disabled="recapUploading || recapDeleting" @click="isReplaceModalOpen = false">Cancel</UButton>
+        <UButton color="error" variant="solid" :disabled="!recapFile || recapDeleting || !canManage" :loading="recapUploading" @click="submitReplace">Replace recap</UButton>
+      </div>
     </template>
   </UModal>
 </template>
-

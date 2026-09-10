@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatSessionDate } from '~/utils/session-date'
 const {
   campaignId,
   canUploadRecording,
@@ -40,7 +41,7 @@ const {
   loadRecapPlayback,
   deleteRecap,
   openSessionSection,
-  form,
+  session,
 } = await useSessionWorkspaceViewModel()
 </script>
 
@@ -57,50 +58,33 @@ const {
       @jump-step="openSessionSection"
     />
 
-    <UCard>
-      <template #header>
-        <div class="flex items-start justify-between gap-4">
+    <UCard class="session-story">
+      <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_16rem]">
+        <section class="min-w-0">
+          <div class="mb-4 flex items-center gap-3 text-primary">
+            <UIcon name="i-lucide-feather" class="size-5" aria-hidden="true" />
+            <h2 class="type-section text-highlighted">Session notes</h2>
+            <span class="h-px flex-1 bg-primary/20" aria-hidden="true" />
+          </div>
+          <p class="reading-copy whitespace-pre-wrap text-default wrap-break-word">{{ session?.notes || 'No notes added yet. Edit this session to capture the story.' }}</p>
+        </section>
+        <dl class="space-y-4 border-t border-primary/20 pt-4 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6">
           <div>
-            <h2 class=" type-section">Session overview</h2>
-            <p class="text-sm text-muted">Key details at a glance.</p>
+            <dt class="type-label text-muted">Session</dt>
+            <dd class="type-metric tabular-nums text-highlighted">{{ session?.sessionNumber ?? '—' }}</dd>
           </div>
-          <SessionStepLinkButton
-            step="recordings"
-            @open="openSessionSection('recordings')"
-          />
-        </div>
-      </template>
-      <div class="grid gap-4 sm:grid-cols-3 text-sm">
-        <div>
-          <div class="flex items-center gap-1.5">
-            <UIcon name="i-twemoji-game-die" class="size-3.5 shrink-0" />
-            <p class="font-display text-xs uppercase tracking-[0.08em] text-muted">Session #</p>
+          <div>
+            <dt class="type-label text-muted">Played on</dt>
+            <dd class="mt-1 text-sm text-highlighted">{{ formatSessionDate(session?.playedAt) }}</dd>
           </div>
-          <p class="mt-1 font-semibold">{{ form.sessionNumber || '-' }}</p>
-        </div>
-        <div>
-          <div class="flex items-center gap-1.5">
-            <UIcon name="i-twemoji-spiral-calendar" class="size-3.5 shrink-0" />
-            <p class="font-display text-xs uppercase tracking-[0.08em] text-muted">Played at</p>
+          <div>
+            <dt class="type-label text-muted">Dungeon Master</dt>
+            <dd class="mt-2 flex items-center gap-2 text-sm text-highlighted">
+              <UAvatar :alt="sessionDungeonMasterLabel" size="xs" />
+              {{ sessionDungeonMasterLabel }}
+            </dd>
           </div>
-          <p class="mt-1 font-semibold">{{ form.playedAt || 'Unscheduled' }}</p>
-        </div>
-        <div>
-          <div class="flex items-center gap-1.5">
-            <UIcon name="i-twemoji-mage" class="size-3.5 shrink-0" />
-            <p class="font-display text-xs uppercase tracking-[0.08em] text-muted">Dungeon Master</p>
-          </div>
-          <p class="mt-1 font-semibold">{{ sessionDungeonMasterLabel }}</p>
-        </div>
-        <div class="sm:col-span-3">
-          <div class="flex items-center gap-1.5">
-            <UIcon name="i-twemoji-memo" class="size-3.5 shrink-0" />
-            <p class="font-display text-xs uppercase tracking-[0.08em] text-muted">Notes</p>
-          </div>
-          <p class="mt-1 text-sm text-muted">
-            {{ form.notes || 'No notes added yet.' }}
-          </p>
-        </div>
+        </dl>
       </div>
     </UCard>
 
@@ -119,7 +103,7 @@ const {
           </div>
         </template>
         <div class="space-y-3">
-          <p class="whitespace-pre-line text-sm text-muted">{{ transcriptPreview }}</p>
+          <p class="whitespace-pre-line reading-copy text-default">{{ transcriptPreview }}</p>
           <div class="flex flex-wrap gap-2">
             <UButton
               v-if="transcriptDoc?.id"
@@ -210,3 +194,9 @@ const {
     />
   </div>
 </template>
+
+<style scoped>
+.session-story {
+  background-image: radial-gradient(ellipse at top right, color-mix(in srgb, var(--ui-primary) 12%, transparent), transparent 65%);
+}
+</style>

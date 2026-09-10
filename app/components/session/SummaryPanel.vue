@@ -2,6 +2,9 @@
 type UiColor = 'error' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'neutral'
 
 const props = defineProps<{
+  dirty?: boolean
+  canEdit?: boolean
+  canGenerate?: boolean
   campaignId: string
   returnToPath?: string
   selectedSummaryJobId: string
@@ -58,20 +61,60 @@ const summaryFileModel = computed({
   <div class="space-y-4">
     <UCard>
       <template #header>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="min-w-0">
+            <h2 class=" type-section">Summary</h2>
+            <p class="text-sm text-muted">
+              Write a recap or import one.
+            </p>
+          </div>
+          <UButton
+            v-if="summaryDocId"
+            variant="outline"
+            size="sm"
+            :to="`/campaigns/${campaignId}/documents/${summaryDocId}`"
+          >
+            Open editor
+          </UButton>
+        </div>
+      </template>
+      <div class="space-y-4">
+        <UFormField label="Summary text" name="summaryText">
+          <UTextarea v-model="summaryContentModel" :rows="8" class="w-full" :disabled="canEdit === false || summarySaving || summaryImporting" />
+        </UFormField>
+        <div class="flex flex-wrap items-center gap-3">
+          <UButton color="primary" variant="solid" icon="i-lucide-save" :disabled="canEdit === false || dirty === false || !summaryContent.trim() || summaryImporting || summarySending" :loading="summarySaving" @click="emit('save-summary')">Save summary</UButton>
+        </div>
+        <p v-if="dirty" class="text-xs text-muted">Save your edits before importing or applying another summary.</p>
+        <div class="grid items-end gap-3 sm:grid-cols-[1fr_auto]">
+          <SharedFilePicker
+            v-model="summaryFileModel"
+            :disabled="canEdit === false || summaryImporting || summarySaving || summarySending"
+            accept=".txt,.md,.markdown"
+            label="Select summary file"
+          />
+          <UButton :disabled="canEdit === false || dirty || !summaryFile || summarySaving || summarySending" :loading="summaryImporting" variant="outline" @click="emit('import-summary')">
+            Import file
+          </UButton>
+        </div>
+        <p v-if="summaryError" class="text-sm text-error">{{ summaryError }}</p>
+        <p v-if="summaryImportError" class="text-sm text-error">{{ summaryImportError }}</p>
+      </div>
+    </UCard>
+    <UCard variant="soft">
+      <template #header>
         <div>
-          <h2 class=" type-section">n8n summarization</h2>
+          <h2 class="type-section flex items-center gap-2"><UIcon name="i-lucide-sparkles" class="size-5 text-primary" aria-hidden="true" /> Generate a summary</h2>
           <p class="text-sm text-muted">
-            Send the transcript to n8n and review summary content.
+            Turn the transcript into key moments, dialogue, and story notes.
           </p>
         </div>
       </template>
       <div class="space-y-4">
         <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
-          <USelect
-            v-model="selectedSummaryJobIdModel"
-            :items="summaryJobOptions"
-            placeholder="Select summary job"
-          />
+          <UFormField label="Summary job" name="selectedSummaryJobIdModel">
+            <USelect v-model="selectedSummaryJobIdModel" :items="summaryJobOptions" placeholder="No job selected" class="w-full" />
+          </UFormField>
           <UButton size="sm" variant="outline" @click="emit('refresh-jobs')">
             Refresh jobs
           </UButton>
@@ -79,24 +122,26 @@ const summaryFileModel = computed({
         <div class="flex flex-wrap items-center gap-3">
           <UButton
             :loading="summarySending"
-            :disabled="!hasTranscript"
+            :disabled="!hasTranscript || canGenerate === false || summarySaving || summaryImporting"
+            icon="i-lucide-sparkles"
             @click="emit('send-to-n8n')"
           >
-            Send transcript to n8n
+            Generate summary
           </UButton>
           <UBadge variant="soft" :color="summaryStatusColor" size="sm">
             {{ summaryStatusLabel }}
           </UBadge>
-          <span v-if="summaryTrackingId" class="text-xs text-muted">
+          <span v-if="summaryTrackingId" class="font-mono text-xs text-muted wrap-anywhere">
             {{ summaryTrackingId }}
           </span>
         </div>
+        <p v-if="!hasTranscript" class="text-sm text-muted">Add a transcript before generating a summary.</p>
         <div v-if="summaryPendingText" class="space-y-2">
           <p class="text-xs uppercase tracking-[0.08em] text-muted">Pending summary</p>
           <p class="whitespace-pre-line reading-copy text-muted">
             {{ summaryPendingText }}
           </p>
-          <UButton size="sm" variant="outline" @click="emit('apply-pending-summary')">
+          <UButton size="sm" variant="outline" :disabled="canGenerate === false || dirty || summarySaving || summaryImporting || summarySending" @click="emit('apply-pending-summary')">
             Apply summary
           </UButton>
         </div>
@@ -134,46 +179,6 @@ const summaryFileModel = computed({
         </div>
         <p v-if="summarySendError" class="text-sm text-error">{{ summarySendError }}</p>
         <p v-if="summaryActionError" class="text-sm text-error">{{ summaryActionError }}</p>
-      </div>
-    </UCard>
-    <UCard>
-      <template #header>
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div class="min-w-0">
-            <h2 class=" type-section">Summary</h2>
-            <p class="text-sm text-muted">
-              Write a recap or import one.
-            </p>
-          </div>
-          <UButton
-            v-if="summaryDocId"
-            variant="outline"
-            size="sm"
-            :to="`/campaigns/${campaignId}/documents/${summaryDocId}`"
-          >
-            Open editor
-          </UButton>
-        </div>
-      </template>
-      <div class="space-y-4">
-        <UTextarea v-model="summaryContentModel" :rows="5" />
-        <div class="flex flex-wrap items-center gap-3">
-          <UButton :loading="summarySaving" @click="emit('save-summary')">Save summary</UButton>
-        </div>
-        <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
-          <UFileUpload
-            v-model="summaryFileModel"
-            accept=".txt,.md,.markdown"
-            variant="button"
-            label="Select summary file"
-            :preview="false"
-          />
-          <UButton :loading="summaryImporting" variant="outline" @click="emit('import-summary')">
-            Import file
-          </UButton>
-        </div>
-        <p v-if="summaryError" class="text-sm text-error">{{ summaryError }}</p>
-        <p v-if="summaryImportError" class="text-sm text-error">{{ summaryImportError }}</p>
       </div>
     </UCard>
   </div>

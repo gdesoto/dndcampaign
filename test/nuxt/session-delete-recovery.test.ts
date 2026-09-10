@@ -35,7 +35,7 @@ it.each(['recording', 'transcript', 'recap'] as const)('keeps the %s confirmatio
       } else {
         const controls = useSessionRecap({ sessionId: ref('s1'), selectedRecapKind: ref('AUDIO'), recap: ref(media), refreshRecap: refresh })
         panel = RecapPanel
-        props = { workflowMode: true, recap: media, recaps: [media], selectedKind: 'AUDIO', recapFile: null, recapUploading: false, recapPlaybackLoading: false, recapDeleting: false, recapPlaybackUrl: '', recapError: '', recapDeleteError: '', hasRecap: true, deleteRecap: controls.deleteRecap }
+        props = { workflowMode: true, canManage: true, recap: media, recaps: [media], selectedKind: 'AUDIO', recapFile: null, recapUploading: false, recapPlaybackLoading: false, recapDeleting: false, recapPlaybackUrl: '', recapError: '', recapDeleteError: '', hasRecap: true, deleteRecap: controls.deleteRecap }
       }
       return () => h(panel, props)
     },

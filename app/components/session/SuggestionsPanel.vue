@@ -17,6 +17,8 @@ type SessionSuggestion = SuggestionItem | null
 type UiColor = 'error' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'neutral'
 
 const props = defineProps<{
+  applying?: boolean
+  canGenerate?: boolean
   selectedSuggestionJobId: string
   suggestionJobOptions: Array<{ label: string; value: string }>
   suggestionSending: boolean
@@ -49,27 +51,28 @@ const selectedSuggestionJobIdModel = computed({
   <UCard>
     <template #header>
       <div>
-        <h2 class=" type-section">Suggestion generation</h2>
+        <h2 class="type-section flex items-center gap-2"><UIcon name="i-lucide-git-merge" class="size-5 text-primary" aria-hidden="true" /> Story suggestions</h2>
         <p class="text-sm text-muted">
           Generate and review suggestions from the current session summary.
         </p>
       </div>
     </template>
     <div class="space-y-4">
-      <div class="grid gap-3 sm:grid-cols-[1fr_auto]">
-        <USelect
-          v-model="selectedSuggestionJobIdModel"
-          :items="suggestionJobOptions"
-          placeholder="Select suggestion job"
-        />
-        <UButton size="sm" variant="outline" @click="emit('refresh-jobs')">
+      <div class="grid items-end gap-3 sm:grid-cols-[1fr_auto]">
+        <UFormField label="Suggestion job" name="selectedSuggestionJobIdModel">
+            <USelect v-model="selectedSuggestionJobIdModel" :disabled="applying || suggestionSending" :items="suggestionJobOptions" placeholder="No job selected" class="w-full" />
+          </UFormField>
+        <UButton size="sm" variant="outline" :disabled="applying || suggestionSending" @click="emit('refresh-jobs')">
           Refresh jobs
         </UButton>
       </div>
       <div class="flex flex-wrap items-center gap-3">
         <UButton
           :loading="suggestionSending"
-          :disabled="!hasSummary"
+          :disabled="!hasSummary || canGenerate === false || applying"
+          color="primary"
+          variant="solid"
+          icon="i-lucide-sparkles"
           @click="emit('generate-suggestions')"
         >
           Generate suggestions
@@ -77,12 +80,15 @@ const selectedSuggestionJobIdModel = computed({
         <UBadge variant="soft" :color="suggestionStatusColor" size="sm">
           {{ suggestionStatusLabel }}
         </UBadge>
-        <span v-if="suggestionTrackingId" class="text-xs text-muted">
+        <span v-if="suggestionTrackingId" class="font-mono text-xs text-muted wrap-anywhere">
           {{ suggestionTrackingId }}
         </span>
       </div>
 
+      <p v-if="!hasSummary" class="text-sm text-muted">Save a summary before generating suggestions.</p>
+      <p v-if="applying" role="status" class="text-sm text-muted">Saving suggestion changes…</p>
       <SessionSummarySuggestionList
+        :readonly="canGenerate === false || applying || suggestionSending"
         :suggestion-groups="suggestionGroups"
         :session-suggestion="sessionSuggestion"
         @apply-suggestion="emit('apply-suggestion', $event)"

@@ -76,20 +76,20 @@ const recordingActions = (recording: RecordingItem): RecordAction[] => [
     </template>
 
     <div class="space-y-4">
-      <div v-if="workflowMode" class="space-y-4">
+      <div v-if="workflowMode && canManageRecordings" class="space-y-4 rounded-lg bg-accented/40 p-4">
         <div class="grid gap-4 sm:grid-cols-2">
           <UFormField label="File" name="selectedFile">
-            <UFileUpload
+            <SharedFilePicker
               v-model="selectedFileModel"
+              :disabled="isUploading || Boolean(deletingRecordingId)"
               accept="audio/*,video/*"
-              variant="button"
               label="Select recording"
-              :preview="false"
             />
           </UFormField>
-          <UFormField label="Kind" name="selectedKind">
+          <UFormField label="Media type" name="selectedKind">
             <USelect
               v-model="selectedKindModel"
+              :disabled="isUploading || Boolean(deletingRecordingId)"
               :items="[
                 { label: 'Audio', value: 'AUDIO' },
                 { label: 'Video', value: 'VIDEO' },
@@ -98,39 +98,40 @@ const recordingActions = (recording: RecordingItem): RecordAction[] => [
           </UFormField>
         </div>
 
-        <div class="flex items-center gap-3">
-          <UButton :loading="isUploading" @click="emit('upload-recording')">Upload recording</UButton>
+        <div class="flex flex-wrap items-center gap-3">
+          <UButton color="primary" variant="solid" icon="i-lucide-upload" :disabled="!selectedFile || Boolean(deletingRecordingId)" :loading="isUploading" @click="emit('upload-recording')">Upload recording</UButton>
           <span v-if="isUploading" class="text-xs text-muted">Uploading...</span>
           <p v-if="uploadError" class="text-sm text-error">{{ uploadError }}</p>
         </div>
       </div>
 
-      <p v-if="workflowMode && playbackError" class="text-sm text-error">{{ playbackError }}</p>
+      <p v-if="playbackError" class="text-sm text-error">{{ playbackError }}</p>
       <p v-if="deleteError" class="text-sm text-error">{{ deleteError }}</p>
 
       <div v-if="recordings?.length" class="space-y-3">
         <div
           v-for="recording in recordings"
           :key="recording.id"
-          class="rounded-lg border border-default bg-elevated/30 p-4"
+          class="border-b border-default py-4 last:border-b-0"
         >
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <NuxtLink :to="`/campaigns/${campaignId}/recordings/${recording.id}`" class="text-sm font-semibold">{{ recording.filename }}</NuxtLink>
+            <div class="min-w-0 flex-1">
+              <NuxtLink :to="`/campaigns/${campaignId}/recordings/${recording.id}`" class="type-record text-highlighted wrap-anywhere">{{ recording.filename }}</NuxtLink>
               <p class="text-xs text-muted">
                 {{ recording.kind }} - {{ formatBytes(recording.byteSize) }} - {{ new Date(recording.createdAt).toLocaleString() }}
               </p>
             </div>
             <div class="flex flex-wrap gap-2">
               <UButton
-                size="xs"
+                size="sm"
+                icon="i-lucide-play"
                 variant="outline"
                 :loading="playbackLoading[recording.id]"
                 @click="emit('play-recording', recording.id)"
               >
                 Play
               </UButton>
-              <SharedActionMenu :name="recording.filename" :items="recordingActions(recording)" :disabled="Boolean(deletingRecordingId)" />
+              <SharedActionMenu :name="recording.filename" :items="recordingActions(recording)" :disabled="isUploading || Boolean(deletingRecordingId)" />
             </div>
           </div>
 

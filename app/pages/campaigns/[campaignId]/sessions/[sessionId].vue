@@ -7,10 +7,9 @@ const {
   campaignId,
   session,
   error,
+  pending,
   canWriteContent,
-  currentSection,
   sessionNavigationItems,
-  openSessionSection,
   openEditSession,
   refreshSession,
   sessionHeaderDescription,
@@ -58,27 +57,19 @@ useSeoMeta({
       </UButton>
     </template>
 
-    <UCard v-if="error" class="text-center">
-      <p class="text-sm text-error">Unable to load this session.</p>
-      <UButton class="mt-4" variant="outline" @click="refreshSession">Try again</UButton>
-    </UCard>
-
-    <div v-else class="space-y-6">
+    <SharedResourceState :pending="pending" :error="error" :has-data="Boolean(session)" :empty="!session" empty-message="This session is unavailable." error-message="Unable to load this session." @retry="refreshSession">
       <SharedReadOnlyAlert
         v-if="!canWriteContent"
         description="Your role can view this session workspace but cannot make changes."
       />
       <div class="space-y-6">
         <SessionWorkflowTimeline
-          :active-step="currentSection"
           :items="sessionNavigationItems"
-          @update:active-step="openSessionSection"
-          @step-selected="openSessionSection"
         />
 
         <NuxtPage />
       </div>
-    </div>
+    </SharedResourceState>
 
     <SessionEditModal
       v-model:open="isEditSessionOpen"
@@ -90,4 +81,3 @@ useSeoMeta({
     />
   </CampaignDetailTemplate>
 </template>
-

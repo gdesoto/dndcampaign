@@ -2,7 +2,6 @@
 import type { TimelineItem } from '@nuxt/ui'
 
 const props = defineProps<{
-  activeStep: string
   items: TimelineItem[]
 }>()
 
@@ -12,7 +11,7 @@ const links = computed(() => props.items.map(item => ({ label: item.title, icon:
 </script>
 
 <template>
-  <nav aria-label="Session sections" class="overflow-x-auto">
-    <UNavigationMenu :items="links" highlight class="min-w-max" />
+  <nav aria-label="Session sections" class="min-w-0 rounded-lg border border-default bg-elevated/50 p-1">
+    <UNavigationMenu :items="links" highlight :ui="{ list: 'flex-wrap', link: 'min-h-11' }" />
   </nav>
 </template>

@@ -40,12 +40,13 @@ test('login and navigate campaign, session, and transcript editor', async ({ pag
   await expect(page).toHaveURL(/\/characters$/)
   await expect(page.getByRole('heading', { name: 'Player Character Roster' })).toBeVisible()
 
-  await page.getByRole('link', { name: 'Campaigns' }).click()
+  await page.getByRole('link', { name: 'Campaigns', exact: true }).click()
   await expect(page).toHaveURL(/\/campaigns$/)
 
   await page.locator('a').filter({ hasText: 'The Ashen Vale' }).first().click()
   await expect(page).toHaveURL(/\/campaigns\/[^/]+$/)
-  await expect(page.getByRole('heading', { name: 'The Ashen Vale' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Overview', exact: true })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'breadcrumb' })).toContainText('The Ashen Vale')
 
   await page.getByRole('link', { name: 'Sessions' }).first().click()
   await expect(page).toHaveURL(/\/campaigns\/[^/]+\/sessions$/)
@@ -61,7 +62,7 @@ test('login and navigate campaign, session, and transcript editor', async ({ pag
 
   await gotoWithRetry(page, sessionHref)
   await expect(page).toHaveURL(/\/campaigns\/[^/]+\/sessions\/[^/]+$/)
-  await expect(page.getByRole('heading', { name: 'Session overview' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Session notes', exact: true })).toBeVisible()
 
   await gotoWithRetry(page, `${sessionHref}/transcription`)
   await expect(page).toHaveURL(/\/campaigns\/[^/]+\/sessions\/[^/]+\/transcription$/)
