@@ -11,6 +11,7 @@ let campaignId = ''
 let sessionId = ''
 let cookie = ''
 let recapId = ''
+let publicSlug = ''
 const recapIds: Record<string, string> = {}
 
 const upload = (mimeType: string) => {
@@ -52,7 +53,7 @@ describe('audio and video session recaps', () => {
   })
 
   it('keeps both recap kinds, replaces only the matching kind, and streams each independently', async () => {
-    for (const mimeType of ['audio/mpeg', 'video/mp4', 'video/webm', 'video/ogg', 'audio/mpeg']) {
+    for (const mimeType of ['audio/mpeg', 'video/mp4', 'audio/mpeg', 'video/mp4']) {
       const response = await upload(mimeType)
       expect(response.status).toBe(200)
       const { data } = await response.json()
@@ -74,33 +75,57 @@ describe('audio and video session recaps', () => {
       expect(stream.status).toBe(206)
       expect(stream.headers.get('content-type')).toContain(mimeType)
       expect(await stream.text()).toBe('recap')
-      if (mimeType === 'video/mp4') {
+      if (mimeType === 'video/mp4' && !publicSlug) {
         const settings = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public/access`, {
           method: 'PATCH', headers: { cookie, 'content-type': 'application/json' },
           body: JSON.stringify({ isEnabled: true, showRecaps: true }),
         })
         expect(settings.status).toBe(200)
         const { data: access } = await settings.json()
+        publicSlug = access.publicSlug
         const publicRecaps = await fetch(`${baseUrl}/api/public/campaigns/${access.publicSlug}/recaps`)
         expect(publicRecaps.status).toBe(200)
         expect((await publicRecaps.json()).data).toEqual(expect.arrayContaining([
           expect.objectContaining({ id: recapId, mimeType: 'video/mp4' }),
           expect.objectContaining({ id: recapIds.AUDIO, mimeType: 'audio/mpeg' }),
         ]))
-        const publicStream = await fetch(`${baseUrl}/api/public/campaigns/${access.publicSlug}/recaps/${recapId}/stream`)
-        expect(publicStream.status).toBe(200)
-        expect(publicStream.headers.get('content-type')).toContain('video/mp4')
-        expect(await publicStream.text()).toBe('recap media bytes')
         const ranged = await fetch(`${baseUrl}/api/public/campaigns/${access.publicSlug}/recaps/${recapId}/stream`, { headers: { range: 'bytes=6-10' } })
         expect(ranged.status).toBe(206)
+        expect(ranged.headers.get('content-type')).toContain('video/mp4')
         expect(ranged.headers.get('content-range')).toBe('bytes 6-10/17')
         expect(await ranged.text()).toBe('media')
-        const invalid = await fetch(`${baseUrl}/api/public/campaigns/${access.publicSlug}/recaps/${recapId}/stream`, { headers: { range: 'bytes=999-' } })
-        expect(invalid.status).toBe(416)
-        expect(invalid.headers.get('content-range')).toBe('bytes */17')
-        await invalid.text()
       }
     }
+  })
+
+  it('streams the full public video recap', async () => {
+    const response = await fetch(`${baseUrl}/api/public/campaigns/${publicSlug}/recaps/${recapIds.VIDEO}/stream`)
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toContain('video/mp4')
+    expect(await response.text()).toBe('recap media bytes')
+  })
+
+  it('rejects an out-of-bounds public recap range', async () => {
+    const response = await fetch(`${baseUrl}/api/public/campaigns/${publicSlug}/recaps/${recapIds.VIDEO}/stream`, { headers: { range: 'bytes=999-' } })
+    expect(response.status).toBe(416)
+    expect(response.headers.get('content-range')).toBe('bytes */17')
+    await response.text()
+  })
+
+  it.each(['video/webm', 'video/ogg'])('supports uploading and streaming %s recaps', async (mimeType) => {
+    const response = await upload(mimeType)
+    expect(response.status).toBe(200)
+    const { data } = await response.json()
+    expect(data.mimeType).toBe(mimeType)
+    expect(data.kind).toBe('VIDEO')
+    expect(data.id).toBe(recapIds.VIDEO)
+    const playback = await fetch(`${baseUrl}/api/recaps/${data.id}/playback/url`, { headers: { cookie } })
+    expect(playback.status).toBe(200)
+    const payload = await playback.json()
+    const stream = await fetch(`${baseUrl}${payload.data.url}`, { headers: { cookie, range: 'bytes=0-4' } })
+    expect(stream.status).toBe(206)
+    expect(stream.headers.get('content-type')).toContain(mimeType)
+    expect(await stream.text()).toBe('recap')
   })
 
   it('returns both recaps in the session list and workspace', async () => {
