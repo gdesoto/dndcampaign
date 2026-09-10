@@ -65,7 +65,6 @@ const items = computed(() => [
       ><UTooltip :text="'Actions for ' + name"><UButton
         ref="menuTrigger"
         icon="i-lucide-ellipsis-vertical"
-        size="xs"
         :aria-label="'Actions for ' + name"
         color="neutral"
         variant="ghost"

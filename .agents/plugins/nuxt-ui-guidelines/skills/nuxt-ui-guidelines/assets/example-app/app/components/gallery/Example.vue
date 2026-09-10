@@ -37,7 +37,6 @@ async function copy() {
           target="_blank"
           label="Nuxt UI documentation"
           variant="link"
-          size="xs"
         /><UTooltip text="Copy example"
           ><UButton
             icon="i-lucide-copy"

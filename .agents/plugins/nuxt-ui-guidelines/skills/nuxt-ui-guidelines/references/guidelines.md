@@ -738,7 +738,7 @@ Before adding a token to carry some part of your identity, check whether the ins
 - All controls must be keyboard reachable, with a visible focus indicator.
 - Use native links for navigation and native buttons for commands.
 - Give icon-only buttons accessible names; show labels for fields and meaningful table headers.
-- Make touch actions at least 44px in coarse-pointer/mobile contexts.
+- Use `md` as the recommended default for mobile buttons and form controls that support it. Check rendered target size and spacing for comfortable, accurate activation; the size label alone does not establish accessibility.
 - Tooltips must not contain essential information unavailable on touch. Fixing an unreachable hint means giving it a focusable, named trigger — not promoting it to permanent visible text, which is a different design and usually a worse one.
 - Keep content usable at 200% zoom and with reduced motion.
 
@@ -746,7 +746,10 @@ Before adding a token to carry some part of your identity, check whether the ins
 
 - Keep compact content separate from comfortable targets: use 12px mobile page padding, tight metadata gaps, and compact metric grids without shrinking controls.
 - Center icon-only buttons in both axes using Nuxt UI's native square variant; inspect the entire hover/focus background, not just the icon.
-- Apply touch sizing through shared component defaults and the `--spacing-touch` theme token, not a blanket rule that enlarges every button without preserving its alignment.
+- When a Nuxt UI component offers a `size` prop, use it as the primary method of controlling size. Native size variants coordinate text, icons, padding, and embedded controls.
+- Customize the meaning of size labels (`xs`, `sm`, `md`, `lg`, `xl`, and any supported alternatives) in that component's global `app.config.ts` configuration so equivalent controls stay consistent throughout the app. Set the usual size with `defaultVariants.size`; keep any deliberate responsive size-variant styling there too, rather than adding per-instance dimension overrides.
+- Avoid specific dimensions that stretch controls independently of their content. For components without a size prop, use their native theme slots and shared configuration, adjusting spacing and alignment together.
+- Inspect icon-only buttons, adjacent actions, and embedded input controls at mobile widths. Increase native size or surrounding spacing when needed; preserve non-overlapping targets and readable input text.
 - Avoid repeating a long description in a collapsed mobile row when expansion already provides it.
 
 ### Recoverable and understandable states

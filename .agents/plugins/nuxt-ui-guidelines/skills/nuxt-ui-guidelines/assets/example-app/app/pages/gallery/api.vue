@@ -81,7 +81,6 @@ async function copy(code: string) {
         :label="component.name"
         color="neutral"
         variant="outline"
-        size="xs"
       />
     </nav>
     <UEmpty
@@ -175,7 +174,6 @@ description="Try a component name, prop, event, or a different category." />
               :aria-label="`Copy ${component.name} example`"
               color="neutral"
               variant="ghost"
-              size="xs"
               @click="copy(component.example)"
             />
           </div>

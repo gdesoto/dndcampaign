@@ -20,7 +20,6 @@
   --text-metric: 1.5rem;
   --text-metric--line-height: 2rem;
   --spacing-page: 1.25rem;
-  --spacing-touch: 2.75rem;
   --spacing-toast-form-clearance: 6rem;
 }
 :root {
@@ -217,23 +216,7 @@ body {
     animation: none;
   }
 }
-@media (pointer: coarse), (max-width: 767px) {
-  .touch-target {
-    min-height: var(--spacing-touch);
-    min-width: var(--spacing-touch);
-  }
-  .touch-number {
-    padding-inline: var(--spacing-touch);
-  }
-  button[role="checkbox"] {
-    position: relative;
-  }
-  button[role="checkbox"]::after {
-    content: "";
-    position: absolute;
-    inset: -0.875rem;
-  }
-}
+
 .guide {
   max-width: 78ch;
   line-height: 1.75;

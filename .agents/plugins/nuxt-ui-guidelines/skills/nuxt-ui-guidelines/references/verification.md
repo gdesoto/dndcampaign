@@ -17,6 +17,7 @@ This pass is not optional and not the same as making the change. Re-read the gui
 | CSV | Visible data columns; filtered/sorted rows across pages or selected filtered rows; commas, quotes, newlines and formula-looking strings; actual downloaded contents |
 | Requests | First load, contextual refresh, rejection/retry, resolved empty; no mislabeled stale results or stuck pending states |
 | Routes | Direct child/editor URL, refresh, Back/Forward, exact Overview, unrelated queries, isolated child editors, missing-record recovery |
+| Component sizing | Native size props; globally consistent size variants/defaults; proportionate text, icons, padding and embedded controls; mobile target spacing without stretched boxes or overlapping hit areas |
 | Accessibility | Keyboard names/focus, field validation, textual status, touch spacing, 200% zoom, reduced motion, long titles and contained overflow |
 | Shell | Collapsed child links, mobile navigation close, one persistent header, portal theme inheritance, toasts clear of mobile actions |
 | Portability | Local imports resolve without demo code; theme roles exist; SSR/hydration if enabled; icon bundle meets host requirements |

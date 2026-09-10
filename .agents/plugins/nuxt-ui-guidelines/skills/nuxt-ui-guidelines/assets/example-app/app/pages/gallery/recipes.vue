@@ -312,7 +312,6 @@ source="https://ui.nuxt.com/docs/components/form-field"
                   aria-label="About export formats"
                   color="neutral"
                   variant="ghost"
-                  size="xs"
                 />
                 <template #content><p class="max-w-xs p-3 text-sm text-muted">{{ exportBackground }}</p></template>
               </UPopover>

@@ -234,7 +234,7 @@ required
       title="UButton · UTooltip · UIcon"
       rule="Variant communicates priority; icons communicate familiar actions."
       rationale="Use primary solid, neutral outline, and neutral ghost consistently. Card-header utilities use neutral ghost. Tooltips supplement accessible names; the DataTable example demonstrates column visibility, CSV export, and expansion tooltips, and ActionMenu demonstrates contextual row-action tooltips."
-      contract="UButton: label, icon, color, variant, size, loading, disabled, to; click event. UTooltip: text, default trigger slot. UIcon: name. Supported button sizes: xs for table utilities, sm/md for controls; larger touch targets via theme CSS."
+      contract="UButton: label, icon, color, variant, size, loading, disabled, to; click event. UTooltip: text, default trigger slot. UIcon: name. Use the native size prop; this app defaults buttons to md. Customize size labels globally in app.config.ts so text, icons, padding, and embedded controls stay proportionate. Check rendered mobile target spacing."
       source="https://ui.nuxt.com/docs/components/button"
       :code="'<UButton label=&quot;New course&quot; icon=&quot;i-lucide-plus&quot; />\n<UButton label=&quot;Cancel&quot; color=&quot;neutral&quot; variant=&quot;outline&quot; />\n<UTooltip text=&quot;Edit&quot;><UButton icon=&quot;i-lucide-pencil&quot; aria-label=&quot;Edit course&quot; color=&quot;neutral&quot; variant=&quot;ghost&quot; /></UTooltip>'"
     >

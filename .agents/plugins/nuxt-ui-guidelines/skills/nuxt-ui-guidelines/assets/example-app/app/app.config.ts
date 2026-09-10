@@ -1,14 +1,15 @@
 export default defineAppConfig({
   ui: {
     colors: { primary: "blue", neutral: "slate" },
-    button: { slots: { base: "font-medium touch-target" }, variants: { square: { true: 'justify-center aspect-square' } }, compoundVariants: [{ color: 'neutral', variant: 'ghost', class: 'text-muted hover:text-highlighted focus-visible:text-highlighted hover:bg-elevated focus-visible:bg-elevated' }], defaultVariants: { size: "sm" } },
-    input: { slots: { base: 'touch-target' } },
-    inputNumber: { slots: { base: 'touch-target touch-number' } },
-    select: { slots: { base: 'touch-target', item: 'touch-target items-center' } },
-    selectMenu: { slots: { base: 'touch-target', item: 'touch-target items-center' } },
-    navigationMenu: { slots: { link: 'touch-target' } },
-    tabs: { slots: { trigger: 'touch-target justify-center' } },
-    accordion: { slots: { trigger: 'touch-target py-2 text-data', body: 'pb-2' } },
+    // Native sizes keep labels, icons and embedded controls proportionate.
+    // Customize size variants here when the app needs a different scale.
+    button: { slots: { base: "font-medium" }, compoundVariants: [{ color: 'neutral', variant: 'ghost', class: 'text-muted hover:text-highlighted focus-visible:text-highlighted hover:bg-elevated focus-visible:bg-elevated' }], defaultVariants: { size: "md" } },
+    input: { defaultVariants: { size: 'md' } },
+    inputNumber: { defaultVariants: { size: 'md' } },
+    select: { defaultVariants: { size: 'md' } },
+    selectMenu: { defaultVariants: { size: 'md' } },
+    tabs: { defaultVariants: { size: 'md' } },
+    accordion: { slots: { trigger: 'py-2 text-data', body: 'pb-2' } },
     badge: { slots: { base: "rounded font-medium" }, defaultVariants: { variant: "subtle", size: "sm" } },
     // Soft and subtle ship as bg-elevated/50. Opaque here instead: a quiet
     // surface should be a lighter one, not a window onto the page ground.
