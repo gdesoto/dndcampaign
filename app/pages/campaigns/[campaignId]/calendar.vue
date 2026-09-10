@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { titledEntityFormSchema } from '~/utils/entity-form-schemas'
 import { useCampaignCalendar } from '~/composables/useCampaignCalendar'
+import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
+import CalendarDateFields from '~/components/campaign/CalendarDateFields.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -37,6 +39,7 @@ const campaignAccess = inject<ComputedRef<CampaignAccess>>('campaignAccess', com
 const canEditCalendar = computed(() => Boolean(campaignAccess.value?.permissions.includes('campaign.update')))
 const { request } = useApi()
 const calendarApi = useCampaignCalendar()
+const toast = useToast()
 
 const selectedYear = ref<number | null>(null)
 const selectedMonth = ref<number | null>(null)
@@ -106,7 +109,7 @@ const daysInMonth = computed(() => {
 const weekdayNames = computed(() => calendarView.value?.config?.weekdays.map((weekday) => weekday.name) || [])
 const weekdayCount = computed(() => Math.max(1, weekdayNames.value.length))
 const calendarGridStyle = computed(() => ({
-  gridTemplateColumns: `repeat(${weekdayCount.value}, minmax(0, 1fr))`,
+  gridTemplateColumns: `repeat(${weekdayCount.value}, minmax(6.5rem, 1fr))`,
 }))
 
 const mod = (value: number, base: number) => ((value % base) + base) % base
@@ -134,9 +137,7 @@ const monthCells = computed(() => {
 const currentDate = computed(() => calendarView.value?.currentDate || null)
 const currentDateLabel = computed(() => {
   if (!currentDate.value) return 'Not configured'
-  const monthName = selectedMonthMeta.value && currentDate.value.month === selectedMonthMeta.value.month
-    ? selectedMonthMeta.value.name
-    : `Month ${currentDate.value.month}`
+  const monthName = calendarView.value?.config?.months[currentDate.value.month - 1]?.name || `Month ${currentDate.value.month}`
   return `${monthName} ${currentDate.value.day}, Year ${currentDate.value.year}`
 })
 
@@ -245,6 +246,7 @@ const currentDateAction = reactive({
   error: '',
   success: '',
 })
+const currentDateDraft = useEditorDraft(() => ({ ...currentDateForm }), value => Object.assign(currentDateForm, value))
 
 const rangeForm = reactive({
   sessionId: '',
@@ -263,12 +265,9 @@ const rangeAction = reactive({
   success: '',
 })
 
-const monthOptions = computed(() =>
-  (calendarView.value?.config?.months || []).map((month, index) => ({
-    label: `${index + 1}: ${month.name}`,
-    value: index + 1,
-  })),
-)
+const calendarMonths = computed(() => calendarView.value?.config?.months || [])
+const isCurrentDay = (day: number) => currentDate.value?.day === day && currentDate.value.month === selectedMonthMeta.value?.month && currentDate.value.year === selectedMonthMeta.value?.year
+const dayLabel = (day: number) => `${selectedMonthMeta.value?.name} ${day}, ${selectedMonthMeta.value?.year}${isCurrentDay(day) ? ', current date' : ''}, ${daySessionMap.value.get(day)?.length || 0} sessions, ${dayEventCountMap.value.get(day) || 0} events`
 
 const sessionOptions = computed(() =>
   (sessions.value || []).map((session) => ({
@@ -302,9 +301,7 @@ watch(
     if (!selectedYear.value) selectedYear.value = value.selectedMonth.year
     if (!selectedMonth.value) selectedMonth.value = value.selectedMonth.month
     clampSelectedDay()
-    currentDateForm.year = value.currentDate?.year || value.config.currentYear
-    currentDateForm.month = value.currentDate?.month || value.config.currentMonth
-    currentDateForm.day = value.currentDate?.day || value.config.currentDay
+    currentDateDraft.sync({ year: value.currentDate?.year || value.config.currentYear, month: value.currentDate?.month || value.config.currentMonth, day: value.currentDate?.day || value.config.currentDay }, campaignId.value)
     if (selectedDay.value < 1 || selectedDay.value > value.selectedMonth.length) {
       selectedDay.value = value.currentDate?.day || 1
       clampSelectedDay()
@@ -426,6 +423,7 @@ const deleteEvent = async (eventId: string) => {
   }
   catch (error) {
     eventAction.error = (error as Error).message || 'Unable to delete event.'
+    throw error
   }
   finally {
     eventAction.deletingId = ''
@@ -439,16 +437,14 @@ const deleteEditingEvent = async () => {
 }
 
 const applyCurrentDate = async () => {
-  if (!canEditCalendar.value) return
+  if (!canEditCalendar.value || currentDateAction.saving || !currentDateDraft.dirty.value) return
+  const submitted = currentDateDraft.snapshot()
   currentDateAction.error = ''
   currentDateAction.success = ''
   currentDateAction.saving = true
   try {
-    await calendarApi.updateCurrentDate(campaignId.value, {
-      year: currentDateForm.year,
-      month: currentDateForm.month,
-      day: currentDateForm.day,
-    })
+    await calendarApi.updateCurrentDate(campaignId.value, submitted)
+    currentDateDraft.accept(submitted)
     currentDateAction.success = 'Current date updated.'
     await refreshCalendarView()
   }
@@ -498,7 +494,7 @@ const loadRangeForSession = (sessionId: string) => {
 }
 
 const saveRange = async () => {
-  if (!canEditCalendar.value || !rangeForm.sessionId) return
+  if (!canEditCalendar.value || !rangeForm.sessionId || rangeAction.saving || rangeAction.deleting) return
   rangeAction.error = ''
   rangeAction.success = ''
   rangeAction.saving = true
@@ -523,13 +519,21 @@ const saveRange = async () => {
 }
 
 const removeRange = async () => {
-  if (!canEditCalendar.value || !rangeForm.sessionId) return
+  if (!canEditCalendar.value || !rangeForm.sessionId || rangeAction.saving || rangeAction.deleting) return
+  const previous = sessionRanges.value?.find(range => range.sessionId === rangeForm.sessionId)
+  if (!previous) return
+  const targetCampaignId = campaignId.value
   rangeAction.error = ''
   rangeAction.success = ''
   rangeAction.deleting = true
   try {
     await calendarApi.deleteSessionRange(rangeForm.sessionId)
-    rangeAction.success = 'Session range removed.'
+    toast.add({ title: 'Session range removed', actions: [{ label: 'Undo', onClick: async () => {
+      try {
+        await calendarApi.upsertSessionRange(previous.sessionId, { startYear: previous.startYear, startMonth: previous.startMonth, startDay: previous.startDay, endYear: previous.endYear, endMonth: previous.endMonth, endDay: previous.endDay })
+        if (campaignId.value === targetCampaignId) await Promise.all([refreshSessionRanges(), refreshCalendarView()])
+      } catch { toast.add({ title: 'Unable to restore session range', color: 'error' }) }
+    } }] })
     await Promise.all([refreshSessionRanges(), refreshCalendarView()])
   }
   catch (error) {
@@ -542,12 +546,8 @@ const removeRange = async () => {
 </script>
 
 <template>
-  <div class="space-y-6">
-    <UPageHeader
-      headline="Calendar"
-      title="Campaign calendar"
-      description="Track in-world dates, events, and session timeline coverage."
-    />
+  <CampaignListTemplate title="Calendar">
+    <template #actions><UButton v-if="canEditCalendar && isCalendarEnabled" icon="i-lucide-plus" color="primary" variant="solid" @click="openCreateEvent">Add event</UButton></template>
 
     <SharedReadOnlyAlert
       v-if="!canEditCalendar"
@@ -586,16 +586,16 @@ const removeRange = async () => {
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 class=" type-section">{{ yearMonthLabel }}</h2>
-                <p class="text-sm text-muted">Current in-world date: {{ currentDateLabel }}</p>
+                <UButton v-if="currentDate" icon="i-lucide-calendar-check" color="neutral" variant="ghost" size="sm" @click="jumpToDate(currentDate)">{{ currentDateLabel }}</UButton>
               </div>
               <div class="flex items-center gap-2">
-                <UButton size="xs" variant="outline" @click="shiftMonth(-1)">Prev month</UButton>
-                <UButton size="xs" variant="outline" @click="shiftMonth(1)">Next month</UButton>
+                <UTooltip text="Previous month"><UButton icon="i-lucide-chevron-left" aria-label="Previous month" variant="outline" :disabled="calendarPending" @click="shiftMonth(-1)" /></UTooltip>
+                <UTooltip text="Next month"><UButton icon="i-lucide-chevron-right" aria-label="Next month" variant="outline" :disabled="calendarPending" @click="shiftMonth(1)" /></UTooltip>
               </div>
             </div>
           </template>
 
-          <div class="grid gap-2" :style="calendarGridStyle">
+          <div class="overflow-x-auto" role="region" aria-label="Calendar month" tabindex="0"><div class="grid gap-2" :style="calendarGridStyle">
             <div
               v-for="(weekday, index) in weekdayNames"
               :key="`weekday-label-${index}`"
@@ -611,7 +611,8 @@ const removeRange = async () => {
               <button
                 v-else
                 type="button"
-                class="min-h-24 rounded-md border px-2 py-2 text-sm text-left transition flex flex-col items-start justify-start"
+                class="min-h-24 rounded-md border px-2 py-2 text-sm text-left transition flex flex-col items-start justify-start focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                :aria-label="dayLabel(cellDay)" :aria-pressed="selectedDay === cellDay" :aria-current="isCurrentDay(cellDay) ? 'date' : undefined"
                 :class="[
                   selectedDay === cellDay ? 'border-primary bg-primary/10' : 'border-default hover:bg-muted/40',
                   currentDate && currentDate.day === cellDay && currentDate.month === selectedMonthMeta?.month && currentDate.year === selectedMonthMeta?.year
@@ -620,32 +621,28 @@ const removeRange = async () => {
                 ]"
                 @click="selectedDay = cellDay"
               >
-                <div class="font-semibold">{{ cellDay }}</div>
+                <div class="flex w-full items-center justify-between font-semibold tabular-nums">{{ cellDay }}<UIcon v-if="isCurrentDay(cellDay)" name="i-lucide-calendar-check" class="size-3 text-primary" aria-hidden="true" /></div>
                 <div class="mt-1 flex flex-col items-start gap-1 text-xs">
                   <div
                     v-if="daySessionMap.get(cellDay)?.length"
                     class="flex flex-wrap items-center gap-1"
                   >
-                    <UTooltip
-                      v-for="session in daySessionMap.get(cellDay)"
-                      :key="session.id"
-                      :text="session.title"
-                      :content="{ side: 'top' }"
-                    >
-                      <span class="rounded-sm bg-primary/10 px-1 py-0.5 text-primary">
-                        Session {{ session.sessionNumber ?? '?' }}
-                      </span>
-                    </UTooltip>
+                    <span v-for="session in daySessionMap.get(cellDay)" :key="session.id" class="inline-flex items-center gap-1 rounded-sm bg-accented px-1 py-0.5 text-default"><UIcon name="i-lucide-book-open" class="size-3" aria-hidden="true" /> {{ session.sessionNumber ?? '?' }}</span>
                   </div>
                   <span
                     v-if="dayEventCountMap.get(cellDay)"
-                    class="text-secondary"
+                    class="inline-flex items-center gap-1 text-muted"
                   >
-                    {{ dayEventCountMap.get(cellDay) }} Event{{ dayEventCountMap.get(cellDay)! > 1 ? 's' : '' }}
+                    <UIcon name="i-lucide-sparkles" class="size-3" aria-hidden="true" /> {{ dayEventCountMap.get(cellDay) }} Event{{ dayEventCountMap.get(cellDay)! > 1 ? 's' : '' }}
                   </span>
                 </div>
               </button>
             </template>
+          </div></div>
+          <div class="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted">
+            <span class="inline-flex items-center gap-1"><UIcon name="i-lucide-book-open" aria-hidden="true" />Session</span>
+            <span class="inline-flex items-center gap-1"><UIcon name="i-lucide-sparkles" aria-hidden="true" />Event</span>
+            <span class="inline-flex items-center gap-1"><UIcon name="i-lucide-calendar-check" aria-hidden="true" />Current date</span>
           </div>
         </UCard>
 
@@ -653,15 +650,8 @@ const removeRange = async () => {
           <UCard>
             <template #header>
               <div class="flex items-center justify-between gap-2">
-                <h3 class=" type-record">Events: day {{ selectedDay }}</h3>
-                <UButton
-                  v-if="canEditCalendar"
-                  size="xs"
-                  variant="outline"
-                  @click="openCreateEvent"
-                >
-                  Add event
-                </UButton>
+                <h2 class="type-section">{{ selectedMonthMeta?.name }} {{ selectedDay }}</h2>
+                <USelect v-model="selectedDay" :items="daysInMonth.map(day => ({ label: `Day ${day}`, value: day }))" aria-label="Selected day" class="w-28 shrink-0" />
               </div>
             </template>
 
@@ -674,7 +664,7 @@ const removeRange = async () => {
               <div
                 v-for="range in selectedDayRanges"
                 :key="`selected-day-range-${range.id}`"
-                class="rounded-md border border-default p-3"
+                class="border-b border-muted py-3 last:border-0"
               >
                 <div class="flex items-start justify-between gap-2">
                   <div>
@@ -687,45 +677,31 @@ const removeRange = async () => {
               <div
                 v-for="event in selectedDayEvents"
                 :key="event.id"
-                class="rounded-md border border-default p-3"
+                class="border-b border-muted py-3 last:border-0"
               >
                 <div class="flex items-start justify-between gap-2">
                   <div>
-                    <p class="text-sm font-semibold">{{ event.title }}</p>
+                    <p class="type-record flex items-center gap-2"><UIcon name="i-lucide-sparkles" class="size-4 shrink-0" aria-hidden="true" />{{ event.title }}</p>
                     <p v-if="event.description" class="text-xs text-muted">{{ event.description }}</p>
                   </div>
                   <div v-if="canEditCalendar" class="flex items-center gap-1">
-                    <UButton size="xs" variant="ghost" @click="openEditEvent(event)">Edit</UButton>
+                    <UTooltip text="Edit event"><UButton icon="i-lucide-pencil" :aria-label="`Edit ${event.title}`" variant="ghost" @click="openEditEvent(event)" /></UTooltip>
                   </div>
                 </div>
               </div>
             </div>
           </UCard>
 
-          <UCard>
+          <UCard v-if="canEditCalendar" variant="soft" class="bg-muted">
             <template #header>
-              <h3 class=" type-record">Current date</h3>
+              <h2 class="type-section">Current date</h2>
             </template>
 
             <div class="space-y-3">
-              <div class="grid gap-2 sm:grid-cols-3">
-                <UInput v-model.number="currentDateForm.year" type="number" :disabled="!canEditCalendar" />
-                <USelect
-                  v-model="currentDateForm.month"
-                  :items="monthOptions"
-                  :disabled="!canEditCalendar"
-                />
-                <UInput
-                  v-model.number="currentDateForm.day"
-                  type="number"
-                  min="1"
-                  :max="selectedMonthMeta?.length || 1"
-                  :disabled="!canEditCalendar"
-                />
-              </div>
+              <CalendarDateFields v-model:year="currentDateForm.year" v-model:month="currentDateForm.month" v-model:day="currentDateForm.day" prefix="current" :months="calendarMonths" :disabled="!canEditCalendar || currentDateAction.saving" />
               <div class="flex flex-wrap items-center gap-2">
                 <UButton
-                  :disabled="!canEditCalendar"
+                  :disabled="!canEditCalendar || currentDateAction.saving || !currentDateDraft.dirty.value"
                   :loading="currentDateAction.saving"
                   @click="applyCurrentDate"
                 >
@@ -749,33 +725,23 @@ const removeRange = async () => {
 
       <UCard v-if="isCalendarEnabled" class="mt-4">
         <template #header>
-          <h3 class=" type-record">Session ranges</h3>
+          <h2 class="type-section">Session ranges</h2>
         </template>
 
-        <div class="grid gap-4 xl:grid-cols-[1.1fr_1fr]">
-          <div class="space-y-3">
+        <div class="grid gap-4" :class="canEditCalendar ? 'xl:grid-cols-[1.1fr_1fr]' : ''">
+          <div v-if="canEditCalendar" class="space-y-3">
             <p v-if="rangeAction.error" class="text-sm text-error">{{ rangeAction.error }}</p>
             <p v-if="rangeAction.success" class="text-sm text-success">{{ rangeAction.success }}</p>
 
-            <USelect
+            <UFormField label="Session" name="sessionId"><USelect
               v-model="rangeForm.sessionId"
               :items="sessionOptions"
               placeholder="Select session"
               :disabled="!canEditCalendar"
               @update:model-value="(value) => loadRangeForSession(value as string)"
-            />
+            /></UFormField>
 
-            <div class="grid gap-2 sm:grid-cols-3">
-              <UInput v-model.number="rangeForm.startYear" type="number" :disabled="!canEditCalendar" />
-              <USelect v-model="rangeForm.startMonth" :items="monthOptions" :disabled="!canEditCalendar" />
-              <UInput
-                v-model.number="rangeForm.startDay"
-                type="number"
-                min="1"
-                :max="selectedMonthMeta?.length || 1"
-                :disabled="!canEditCalendar"
-              />
-            </div>
+            <fieldset class="space-y-2"><legend class="type-label">Start date</legend><CalendarDateFields v-model:year="rangeForm.startYear" v-model:month="rangeForm.startMonth" v-model:day="rangeForm.startDay" prefix="start" :months="calendarMonths" :disabled="!canEditCalendar || rangeAction.saving || rangeAction.deleting" /></fieldset>
 
             <USwitch
               :model-value="rangeForm.includeEnd"
@@ -784,30 +750,21 @@ const removeRange = async () => {
               @update:model-value="(value) => rangeForm.includeEnd = value"
             />
 
-            <div v-if="rangeForm.includeEnd" class="grid gap-2 sm:grid-cols-3">
-              <UInput v-model.number="rangeForm.endYear" type="number" :disabled="!canEditCalendar" />
-              <USelect v-model="rangeForm.endMonth" :items="monthOptions" :disabled="!canEditCalendar" />
-              <UInput
-                v-model.number="rangeForm.endDay"
-                type="number"
-                min="1"
-                :max="selectedMonthMeta?.length || 1"
-                :disabled="!canEditCalendar"
-              />
-            </div>
+            <fieldset v-if="rangeForm.includeEnd" class="space-y-2"><legend class="type-label">End date</legend><CalendarDateFields v-model:year="rangeForm.endYear" v-model:month="rangeForm.endMonth" v-model:day="rangeForm.endDay" prefix="end" :months="calendarMonths" :disabled="!canEditCalendar || rangeAction.saving || rangeAction.deleting" /></fieldset>
 
             <div class="flex flex-wrap gap-2">
               <UButton
-                :disabled="!canEditCalendar || !rangeForm.sessionId"
+                :disabled="!canEditCalendar || !rangeForm.sessionId || rangeAction.saving || rangeAction.deleting"
                 :loading="rangeAction.saving"
                 @click="saveRange"
               >
                 Save range
               </UButton>
               <UButton
-                color="error"
+                v-if="sessionRanges?.some(range => range.sessionId === rangeForm.sessionId)"
+                color="neutral"
                 variant="ghost"
-                :disabled="!canEditCalendar || !rangeForm.sessionId"
+                :disabled="!canEditCalendar || !rangeForm.sessionId || rangeAction.saving || rangeAction.deleting"
                 :loading="rangeAction.deleting"
                 @click="removeRange"
               >
@@ -817,17 +774,17 @@ const removeRange = async () => {
           </div>
 
           <div class="space-y-2">
-            <p class="text-sm text-muted">Session ranges</p>
+
             <div v-if="!allRangesWithSession.length" class="text-sm text-muted">No session ranges configured.</div>
             <div v-else class="space-y-2">
               <div
                 v-for="range in allRangesWithSession"
                 :key="range.id"
-                class="rounded-md border border-default p-3"
+                class="border-b border-muted py-3 last:border-0"
               >
-                <div class="flex items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p class="text-sm font-medium">
+                    <p class="type-record">
                       {{ range.session?.title || `Session ${range.sessionId}` }}
                     </p>
                     <p class="text-xs text-muted">
@@ -844,14 +801,7 @@ const removeRange = async () => {
                     >
                       Go to start
                     </UButton>
-                    <UButton
-                      v-if="canEditCalendar"
-                      size="xs"
-                      variant="outline"
-                      @click="loadRangeForSession(range.sessionId)"
-                    >
-                      Edit
-                    </UButton>
+                    <UTooltip v-if="canEditCalendar" text="Edit range"><UButton icon="i-lucide-pencil" :aria-label="`Edit range for ${range.session?.title || range.sessionId}`" variant="ghost" @click="loadRangeForSession(range.sessionId)" /></UTooltip>
                   </div>
                 </div>
               </div>
@@ -862,8 +812,8 @@ const removeRange = async () => {
     </SharedResourceState>
 
     <SharedEntityFormModal
-v-model:open="eventModalOpen"
-:schema="titledEntityFormSchema"
+      v-model:open="eventModalOpen"
+      :schema="titledEntityFormSchema"
       :state="eventForm"
       :title="eventMode === 'create' ? 'Create event' : 'Edit event'"
       :saving="eventAction.saving"
@@ -871,26 +821,16 @@ v-model:open="eventModalOpen"
       :submit-label="eventMode === 'create' ? 'Create' : 'Save'"
       :show-delete-action="eventMode === 'edit'"
       :delete-loading="eventAction.deletingId === eventForm.id"
-      @delete="deleteEditingEvent"
+      :delete-action="deleteEditingEvent" :record-name="eventForm.title" delete-message="This calendar event will be permanently deleted."
       @submit="saveEvent"
     >
       <UFormField label="Title" name="title">
         <UInput v-model="eventForm.title" />
       </UFormField>
-      <div class="grid gap-2 sm:grid-cols-3">
-        <UFormField label="Year" name="year">
-          <UInput v-model.number="eventForm.year" type="number" />
-        </UFormField>
-        <UFormField label="Month" name="month">
-          <USelect v-model="eventForm.month" :items="monthOptions" />
-        </UFormField>
-        <UFormField label="Day" name="day">
-          <UInput v-model.number="eventForm.day" type="number" min="1" />
-        </UFormField>
-      </div>
+      <CalendarDateFields v-model:year="eventForm.year" v-model:month="eventForm.month" v-model:day="eventForm.day" prefix="event" :months="calendarMonths" :disabled="eventAction.saving" />
       <UFormField label="Description" name="description">
         <UTextarea v-model="eventForm.description" :rows="3" />
       </UFormField>
     </SharedEntityFormModal>
-  </div>
+  </CampaignListTemplate>
 </template>

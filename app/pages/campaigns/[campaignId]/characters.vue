@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { RecordAction } from '~/types/actions'
+import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
+import CharacterClassAvatar from '~/components/character/ClassAvatar.vue'
 definePageMeta({ layout: 'dashboard' })
 
 type CharacterLink = {
@@ -54,17 +56,19 @@ const { data: links, pending, refresh, error } = await useAsyncData(
   () => request<CharacterLink[]>(`/api/campaigns/${campaignId.value}/characters`)
 )
 
-const { data: allCharacters } = await useAsyncData('all-characters', () =>
+const { data: allCharacters, pending: rosterPending, error: rosterError, refresh: refreshRoster } = await useAsyncData('all-characters', () =>
   request<CharacterOption[]>('/api/characters')
 )
 
 const attachCharacterId = ref('')
 const attachError = ref('')
+const attaching = ref(false)
 
 const attachCharacter = async () => {
-  if (!canWriteContent.value) return
+  if (!canWriteContent.value || attaching.value) return
   if (!attachCharacterId.value) return
   attachError.value = ''
+  attaching.value = true
   try {
     await request(`/api/campaigns/${campaignId.value}/characters`, {
       method: 'POST',
@@ -75,7 +79,7 @@ const attachCharacter = async () => {
   } catch (error) {
     attachError.value =
       (error as Error & { message?: string }).message || 'Unable to attach character.'
-  }
+  } finally { attaching.value = false }
 }
 
 const updateStatus = async (link: CharacterLink, status: CharacterLink['status']) => {
@@ -98,7 +102,7 @@ const removeLink = async (link: CharacterLink) => {
 
 
 const availableAttachCharacters = computed(() =>
-  (allCharacters.value || []).filter((character) => character.canEdit)
+  (allCharacters.value || []).filter((character) => character.canEdit && !links.value?.some(link => link.character.id === character.id))
 )
 
 
@@ -118,21 +122,13 @@ const subtitleFor = (link: CharacterLink) => {
   const race = link.character.summaryJson?.race
   const classes = link.character.summaryJson?.classes?.join(' · ')
   if (race && classes) return `${race} · ${classes}`
-  return race || classes || 'Adventurer'
+  return race || classes || ''
 }
 
 const ownerLineFor = (link: CharacterLink) => {
   const playerName = link.character.sheetJson?.basics?.playerName
-  return playerName ? `Played by ${playerName}` : 'Campaign character'
+  return playerName ? `Played by ${playerName}` : ''
 }
-
-const initialsFor = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() || '')
-    .join('')
 
 const abilityScoreFor = (link: CharacterLink, key: AbilityKey) => {
   return characterAbilityScore(link.character.sheetJson?.abilityScores?.[key])
@@ -175,113 +171,61 @@ const characterActions = (link: CharacterLink): RecordAction[] => [
 </script>
 
 <template>
-  <UPage>
-    <div class="space-y-6">
-      <SharedReadOnlyAlert
-        v-if="!canWriteContent"
-        description="Your role can view campaign characters but cannot attach, update, or remove links."
-      />
-
-      <UPageHeader
-        headline="Campaign"
-        title="Characters"
-        description="Manage which PCs are part of this campaign."
-      >
-        <template #links>
-          <UButton variant="outline" :to="`/characters`">Open roster</UButton>
-        </template>
-      </UPageHeader>
-
-      <UCard variant="soft">
-        <div class="space-y-3">
-          <div class="flex flex-wrap gap-2">
-            <USelectMenu
-              v-model="attachCharacterId"
-              value-key="id"
-              label-key="name"
-              :items="availableAttachCharacters"
-              placeholder="Attach existing character"
-              class="min-w-[240px]"
-              :disabled="!canWriteContent"
-            />
-            <UButton :disabled="!canWriteContent || !attachCharacterId" @click="attachCharacter">Attach</UButton>
-            <UButton variant="outline" :to="`/characters`">Create or import</UButton>
-          </div>
-          <p v-if="attachError" class="text-sm text-error">{{ attachError }}</p>
-        </div>
-      </UCard>
-
-      <div v-if="pending" class="grid gap-4 sm:grid-cols-2">
-        <UCard v-for="i in 3" :key="i" class="h-32 animate-pulse" />
+  <CampaignListTemplate title="Characters" :count="links?.length">
+    <template #actions>
+      <UButton to="/characters" icon="i-lucide-users" variant="outline">Character roster</UButton>
+    </template>
+    <template #notice>
+      <SharedReadOnlyAlert v-if="!canWriteContent" description="Your role can view campaign characters but cannot attach, update, or remove links." />
+    </template>
+    <UCard v-if="canWriteContent" variant="soft" class="bg-muted">
+      <div class="flex flex-wrap items-end gap-3">
+        <UFormField label="Add from your roster" name="character" class="w-full sm:w-80">
+          <USelectMenu v-model="attachCharacterId" value-key="id" label-key="name" :items="availableAttachCharacters" placeholder="Select character" class="w-full" :loading="rosterPending" :disabled="attaching || rosterPending" />
+        </UFormField>
+        <UButton icon="i-lucide-user-plus" color="primary" variant="solid" :disabled="!attachCharacterId || attaching" :loading="attaching" @click="attachCharacter">Add to campaign</UButton>
       </div>
-
-      <UCard v-else-if="error" class="text-center">
-        <p class="text-sm text-error">Unable to load campaign characters.</p>
-        <UButton class="mt-4" variant="outline" @click="() => refresh()">Try again</UButton>
-      </UCard>
-
-      <UCard v-else-if="!links?.length" class="text-center">
-        <p class="text-sm text-muted">No characters attached yet.</p>
-        <UButton
-          class="mt-4"
-          variant="outline"
-          :to="`/characters`"
-          :disabled="!canWriteContent"
-        >
-          Add a character
-        </UButton>
-      </UCard>
-
-      <div v-else class="grid gap-4 md:grid-cols-2">
+      <p v-if="attachError" role="alert" class="mt-2 text-sm text-error">{{ attachError }}</p>
+      <div v-if="rosterError" role="alert" class="mt-2 flex items-center gap-2 text-sm text-error">
+        Unable to load your roster. <UButton variant="ghost" @click="refreshRoster()">Retry</UButton>
+      </div>
+      <p v-else-if="!rosterPending && !availableAttachCharacters.length" class="mt-2 text-sm text-muted">No more characters available. <NuxtLink to="/characters" class="underline">Create or import in your roster.</NuxtLink></p>
+    </UCard>
+    <SharedResourceState :pending="pending" :error="error" :has-data="Boolean(links)" :empty="!links?.length" empty-message="No characters attached yet." error-message="Unable to load campaign characters." @retry="refresh()">
+      <template #loading><div class="grid gap-4 md:grid-cols-2"><USkeleton v-for="i in 2" :key="i" class="h-80" /></div></template>
+      <div v-if="links?.length" class="grid gap-4 md:grid-cols-2">
         <UCard
           v-for="link in links"
           :key="link.id"
-          :ui="{
-            root: 'overflow-hidden',
-            header: 'before:block before:h-[4px] before:bg-gradient-to-r before:from-primary-700 before:via-primary-500 before:to-primary-700',
-          }"
         >
           <div class="space-y-4">
             <div class="flex items-start justify-between gap-3">
-              <div class="flex items-start gap-3">
-                <UAvatar
+              <div class="flex min-w-0 items-start gap-3">
+                <CharacterClassAvatar
                   :src="link.character.summaryJson?.portraitUrl"
-                  :alt="link.character.name"
-                  size="xl"
-                  :text="initialsFor(link.character.name)"
-                  class="border border-[var(--ui-border-accented)]/70"
+                  :name="link.character.name"
+                  :classes="link.character.summaryJson?.classes"
+                  :level="link.character.summaryJson?.level"
                 />
-                <div class="space-y-1">
-                  <h3 class="uppercase text-[var(--ui-text-highlighted)] type-record">
-                    <NuxtLink :to="`/characters/${link.character.id}`" class="hover:underline">{{ link.character.name }}</NuxtLink>
-                  </h3>
-                  <p class="text-sm italic text-[var(--ui-text-muted)]">{{ subtitleFor(link) }}</p>
-                  <p class="text-xs text-[var(--ui-text-muted)]">{{ ownerLineFor(link) }}</p>
-                  <div class="flex flex-wrap items-center gap-2 pt-1">
-                    <UBadge
-                      :color="link.status === 'ACTIVE' ? 'primary' : 'neutral'"
-                      variant="outline"
-                    >
-                      {{ link.status === 'ACTIVE' ? 'Active' : 'Inactive' }}
-                    </UBadge>
-                    <UBadge
-                      v-if="link.character.summaryJson?.level"
-                      color="neutral"
-                      variant="outline"
-                    >
-                      Level {{ link.character.summaryJson.level }}
-                    </UBadge>
-                  </div>
+                <div class="min-w-0 space-y-1">
+                  <h2 class="uppercase text-highlighted type-record">
+                    <NuxtLink :to="`/characters/${link.character.id}`" class="break-words hover:underline">{{ link.character.name }}</NuxtLink>
+                  </h2>
+                  <p v-if="subtitleFor(link)" class="text-sm italic text-muted">{{ subtitleFor(link) }}</p>
+                  <p v-if="ownerLineFor(link)" class="text-xs text-muted">{{ ownerLineFor(link) }}</p>
                 </div>
               </div>
-              <SharedActionMenu :name="link.character.name" :items="characterActions(link)" />
+              <div class="flex shrink-0 items-center gap-1">
+                <UBadge :color="link.status === 'ACTIVE' ? 'success' : 'neutral'" variant="outline">{{ link.status === 'ACTIVE' ? 'Active' : 'Inactive' }}</UBadge>
+                <SharedActionMenu :name="link.character.name" :items="characterActions(link)" />
+              </div>
             </div>
 
             <div class="space-y-2">
               <CharacterHitPoints :name="link.character.name" :current="hpFor(link)" :max="link.character.sheetJson?.hitPoints?.max" />
-              <div class="flex flex-wrap items-center justify-between gap-2 text-sm text-[var(--ui-text-muted)]">
-                <p>AC {{ acFor(link) ?? '—' }}</p>
-                <p>Initiative {{ initiativeFor(link) ?? '—' }}</p>
+              <div class="flex flex-wrap items-center justify-between gap-2 text-sm text-muted">
+                <p class="flex items-center gap-2"><UIcon name="i-lucide-shield" aria-hidden="true" /> AC <span class="tabular-nums text-highlighted">{{ acFor(link) ?? '—' }}</span></p>
+                <p class="flex items-center gap-2"><UIcon name="i-lucide-zap" aria-hidden="true" /> Initiative <span class="tabular-nums text-highlighted">{{ initiativeFor(link) ?? '—' }}</span></p>
               </div>
             </div>
 
@@ -299,9 +243,6 @@ const characterActions = (link: CharacterLink): RecordAction[] => [
 
         </UCard>
       </div>
-    </div>
-  </UPage>
+    </SharedResourceState>
+  </CampaignListTemplate>
 </template>
-
-
-

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
+import { clearNuxtData } from '#app'
 import CampaignCalendarPage from '../../app/pages/campaigns/[campaignId]/calendar.vue'
 
 const mockRequest = vi.fn()
@@ -60,6 +61,7 @@ const enabledView = {
 
 describe('Campaign calendar page', () => {
   beforeEach(() => {
+    clearNuxtData()
     vi.clearAllMocks()
     mockRequest.mockResolvedValue([])
     mockGetRanges.mockResolvedValue([])
@@ -91,6 +93,7 @@ describe('Campaign calendar page', () => {
 
     const wrapper = await mountSuspended(CampaignCalendarPage, {
       global: {
+        stubs: { UTooltip: { template: '<div><slot /></div>' } },
         provide: {
           campaignAccess: ref({
             role: 'OWNER',
@@ -102,6 +105,7 @@ describe('Campaign calendar page', () => {
 
     expect(wrapper.text()).toContain('Fantasy calendar is disabled')
     expect(wrapper.text()).toContain('Open Settings > General')
+    wrapper.unmount()
   })
 
   it('shows read-only state for viewers on enabled calendar', async () => {
@@ -109,6 +113,7 @@ describe('Campaign calendar page', () => {
 
     const wrapper = await mountSuspended(CampaignCalendarPage, {
       global: {
+        stubs: { UTooltip: { template: '<div><slot /></div>' } },
         provide: {
           campaignAccess: ref({
             role: 'VIEWER',
@@ -119,9 +124,26 @@ describe('Campaign calendar page', () => {
     })
 
     expect(wrapper.text()).toContain('Read-only access')
-    expect(wrapper.text()).toContain('Campaign calendar')
+    expect(wrapper.find('h1').text()).toContain('Calendar')
     const addEventButton = wrapper.findAll('button').find((button) => button.text().includes('Add event'))
     expect(addEventButton).toBeUndefined()
+    expect(wrapper.find('input[type="number"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('selects a named day and disables unchanged current-date saves', async () => {
+    mockGetCalendarView.mockResolvedValue(enabledView)
+    const wrapper = await mountSuspended(CampaignCalendarPage, { global: {
+      stubs: { UTooltip: { template: '<div><slot /></div>' } },
+      provide: { campaignAccess: ref({ role: 'OWNER', permissions: ['campaign.update'] }) },
+    } })
+    const day = wrapper.get('button[aria-label="Firstmoon 3, 100, current date, 0 sessions, 0 events"]')
+    await day.trigger('click')
+    expect(day.attributes('aria-pressed')).toBe('true')
+    expect(day.attributes('aria-current')).toBe('date')
+    const save = wrapper.findAll('button').find(button => button.text() === 'Update current date')!
+    expect(save.attributes('disabled')).toBeDefined()
+    wrapper.unmount()
   })
 
 })
