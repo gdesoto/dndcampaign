@@ -5,7 +5,7 @@ import StatusEditor from '../../app/components/campaign/StatusEditor.vue'
 describe('CampaignStatusEditor', () => {
   it('emits save and value updates', async () => {
     const wrapper = await mountSuspended(StatusEditor, {
-      global: { stubs: { UTooltip: { template: '<slot />' } } },
+      global: { stubs: { UTooltip: { props: { text: String }, template: '<slot />' } } },
       props: {
         value: 'Initial status',
         saving: false,
