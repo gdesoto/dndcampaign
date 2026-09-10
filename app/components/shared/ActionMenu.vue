@@ -97,12 +97,22 @@ const menuItems = computed<DropdownMenuItem[][]>(() => {
         />
       </UTooltip>
     </UDropdownMenu>
+    <SharedConfirmActionModal
+      v-if="selected?.confirmation?.modal"
+      v-model:open="confirmationOpen"
+      :reference="reference"
+      :title="selected.confirmation.label || selected.label"
+      :description="selected.confirmation.message"
+      :confirm-label="selected.confirmation.label || selected.label"
+      :confirm-icon="selected.icon"
+      :action="async () => { await selected?.action?.() }"
+      :focus-fallback="restoreFocus"
+    />
     <SharedConfirmActionPopover
-      v-if="selected?.confirmation"
+      v-else-if="selected?.confirmation"
       v-model:open="confirmationOpen"
       hide-trigger
       :reference="reference"
-      :modal="selected.confirmation.modal"
       :message="selected.confirmation.message"
       :confirm-label="selected.confirmation.label || selected.label"
       :confirm-icon="selected.icon"

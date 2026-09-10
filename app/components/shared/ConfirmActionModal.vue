@@ -1,10 +1,10 @@
 <script setup lang="ts">
 const props = withDefaults(defineProps<{
   reference?: HTMLElement
-  hideTrigger?: boolean
   focusFallback?: () => void
   action?: () => Promise<unknown>
-  message?: string
+  title?: string
+  description?: string
   confirmLabel?: string
   cancelLabel?: string
   confirmColor?: 'error' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'neutral'
@@ -15,44 +15,22 @@ const props = withDefaults(defineProps<{
   cancelSize?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
   confirmIcon?: string
   confirmLoading?: boolean
-  disabled?: boolean
-  contentClass?: string
-  side?: 'top' | 'bottom' | 'left' | 'right'
-  align?: 'start' | 'center' | 'end'
-  triggerLabel?: string
-  triggerAriaLabel?: string
-  triggerColor?: 'error' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'neutral'
-  triggerVariant?: 'solid' | 'outline' | 'soft' | 'subtle' | 'ghost' | 'link'
-  triggerSize?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
-  triggerIcon?: string
-  triggerShowLabel?: boolean
 }>(), {
   reference: undefined,
-  hideTrigger: false,
-  action: undefined,
   focusFallback: undefined,
-  message: 'Are you sure?',
+  action: undefined,
+  title: 'Confirm action',
+  description: 'Are you sure?',
   confirmLabel: 'Confirm',
   cancelLabel: 'Cancel',
   confirmColor: 'error',
   cancelColor: 'neutral',
   confirmVariant: 'solid',
-  cancelVariant: 'ghost',
+  cancelVariant: 'outline',
   confirmSize: 'md',
   cancelSize: 'md',
   confirmIcon: '',
   confirmLoading: false,
-  disabled: false,
-  contentClass: 'w-72 max-w-[calc(100vw-2rem)] p-3',
-  side: 'top',
-  align: 'end',
-  triggerLabel: 'Remove',
-  triggerAriaLabel: '',
-  triggerColor: 'neutral',
-  triggerVariant: 'ghost',
-  triggerSize: 'md',
-  triggerIcon: '',
-  triggerShowLabel: true,
 })
 
 const emit = defineEmits<{
@@ -106,46 +84,20 @@ const confirm = async (close: () => void) => {
 </script>
 
 <template>
-  <UPopover v-model:open="open" :reference="reference" :dismissible="!busy" :content="{ side, align, onOpenAutoFocus: focusCancel, onCloseAutoFocus: restoreFocus }" :ui="{ content: contentClass }">
-    <template v-if="!hideTrigger" #default>
-      <slot name="trigger">
-        <UButton
-          :size="triggerSize"
-          :color="triggerColor"
-          :variant="triggerVariant"
-          :icon="triggerIcon || undefined"
-          :aria-label="triggerAriaLabel || triggerLabel"
-          :disabled="disabled || busy"
-        >
-          <template v-if="triggerShowLabel">
-            {{ triggerLabel }}
-          </template>
-        </UButton>
-      </slot>
-    </template>
-
-    <template #content="{ close }">
+  <UModal v-model:open="open" :title="title" :description="description" :dismissible="!busy" :close="false" :content="{ onOpenAutoFocus: focusCancel, onCloseAutoFocus: restoreFocus }">
+    <template #body>
       <div class="space-y-3">
-        <slot name="content">
-          <p class="text-sm text-muted">{{ message }}</p>
-        </slot>
+        <slot name="content" />
         <p v-if="actionError" role="alert" class="text-sm text-error">{{ actionError }}</p>
         <div class="flex flex-wrap justify-end gap-2">
-          <UButton ref="cancelButton" :disabled="busy" :size="cancelSize" :variant="cancelVariant" :color="cancelColor" @click="emit('cancel'); close()">
-          {{ cancelLabel }}
-        </UButton>
-        <UButton
-          :size="confirmSize"
-          :variant="confirmVariant"
-          :color="confirmColor"
-          :icon="confirmIcon || undefined"
-          :loading="busy"
-          @click="confirm(close)"
-        >
-          {{ confirmLabel }}
-        </UButton>
+          <UButton ref="cancelButton" :disabled="busy" :size="cancelSize" :variant="cancelVariant" :color="cancelColor" @click="emit('cancel'); open = false">
+            {{ cancelLabel }}
+          </UButton>
+          <UButton :size="confirmSize" :variant="confirmVariant" :color="confirmColor" :icon="confirmIcon || undefined" :loading="busy" @click="confirm(() => { open = false })">
+            {{ confirmLabel }}
+          </UButton>
         </div>
       </div>
     </template>
-  </UPopover>
+  </UModal>
 </template>
