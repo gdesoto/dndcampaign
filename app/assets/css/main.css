@@ -3,15 +3,7 @@
 @import "@nuxt/ui";
 @import "maplibre-gl/dist/maplibre-gl.css";
 
-/* Shared interaction sizing and motion policy; preserve native component semantics. */
-@media (pointer: coarse) {
-  button, [role="button"], [role="tab"], [role="combobox"] {
-    min-height: 2.75rem;
-    min-width: 2.75rem;
-  }
-  input, textarea, select { font-size: 1rem; }
-}
-
+/* Shared reduced-motion policy. Control sizing belongs to native Nuxt UI variants. */
 @media (prefers-reduced-motion: reduce) {
   .animate-pulse { animation: none !important; }
   .dmvault-card::before { transition: none !important; }

@@ -22,9 +22,9 @@ const accountMenu = computed(() => [
 <template>
   <div class="flex items-center gap-1 sm:gap-2">
     <ClientOnly>
-      <UDropdownMenu :items="appearanceMenu"><UTooltip text="Appearance"><UButton :icon="appearanceIcon" aria-label="Appearance" color="neutral" variant="ghost" class="size-11 justify-center" /></UTooltip></UDropdownMenu>
-      <template #fallback><UButton icon="i-lucide-monitor" aria-label="Appearance" disabled color="neutral" variant="ghost" class="size-11 justify-center" /></template>
+      <UDropdownMenu :items="appearanceMenu"><UTooltip text="Appearance"><UButton :icon="appearanceIcon" aria-label="Appearance" color="neutral" variant="ghost" size="md" /></UTooltip></UDropdownMenu>
+      <template #fallback><UButton icon="i-lucide-monitor" aria-label="Appearance" disabled color="neutral" variant="ghost" size="md" /></template>
     </ClientOnly>
-    <UDropdownMenu :items="accountMenu"><UButton color="neutral" variant="ghost" aria-label="Account menu" class="min-h-11"><UAvatar :src="account?.avatarUrl" :alt="account?.name || 'Administrator'" size="2xs" /><span class="hidden max-w-36 truncate sm:block">{{ account?.name || 'Account' }}</span><UIcon name="i-lucide-chevron-down" class="size-4" aria-hidden="true" /></UButton></UDropdownMenu>
+    <UDropdownMenu :items="accountMenu"><UButton color="neutral" variant="ghost" aria-label="Account menu" size="md"><UAvatar :src="account?.avatarUrl" :alt="account?.name || 'Administrator'" size="2xs" /><span class="hidden max-w-36 truncate sm:block">{{ account?.name || 'Account' }}</span><UIcon name="i-lucide-chevron-down" class="size-4" aria-hidden="true" /></UButton></UDropdownMenu>
   </div>
 </template>

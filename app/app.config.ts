@@ -15,7 +15,7 @@ export default defineAppConfig({
 
     button: {
       slots: {
-        base: 'max-w-full font-display font-semibold tracking-[0.08em] uppercase transition-all cursor-pointer disabled:cursor-not-allowed aria-disabled:cursor-not-allowed pointer-coarse:min-h-11 pointer-coarse:min-w-11',
+        base: 'max-w-full font-display font-semibold tracking-[0.08em] uppercase transition-all cursor-pointer disabled:cursor-not-allowed aria-disabled:cursor-not-allowed',
       },
       defaultVariants: {
         size: 'md',
@@ -70,7 +70,7 @@ export default defineAppConfig({
         root: 'flex flex-col',
         list: 'flex border-b border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-0', // px-6
         trigger: // grow justify-center
-          'rounded-none font-display tracking-[0.08em] uppercase text-[var(--ui-text-dimmed)] px-3.5 py-2.5 border-b-2 border-transparent -mb-px transition-all cursor-pointer hover:text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-accented)]/60 data-[state=active]:rounded-none data-[state=active]:text-primary data-[state=active]:bg-[var(--ui-bg-accented)] data-[state=active]:border-primary-500',
+          'rounded-none font-display tracking-[0.08em] uppercase text-[var(--ui-text-dimmed)] border-b-2 border-transparent -mb-px transition-all cursor-pointer hover:text-[var(--ui-text-muted)] hover:bg-[var(--ui-bg-accented)]/60 data-[state=active]:rounded-none data-[state=active]:text-primary data-[state=active]:bg-[var(--ui-bg-accented)] data-[state=active]:border-primary-500',
         indicator: 'hidden',
         label: 'truncate text-inherit',
         content: 'outline-none',
@@ -145,7 +145,6 @@ export default defineAppConfig({
 
     navigationMenu: {
       slots: {
-        linkLeadingIcon: 'shrink-0 size-6',
         linkLabel: 'truncate font-display tracking-[0.08em] uppercase',
       },
     },

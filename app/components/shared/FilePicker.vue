@@ -21,7 +21,7 @@ const file = defineModel<File | null>({ default: null })
       :file-image="false"
       :file-delete="{ disabled, variant: 'ghost', color: 'neutral' }"
       :highlight="Boolean(file)"
-      :ui="{ fileName: 'whitespace-normal wrap-anywhere', base: 'min-h-24', file: 'min-w-0' }"
+      :ui="{ fileName: 'whitespace-normal wrap-anywhere', file: 'min-w-0' }"
       class="w-full"
     />
     <p role="status" class="flex items-center gap-1.5 text-xs" :class="file ? 'text-info' : 'text-muted'">

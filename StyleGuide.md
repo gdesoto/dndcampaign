@@ -74,6 +74,7 @@ Guidelines:
 - Only use documented Nuxt UI config keys (`defaultVariants`, `slots`, `variants`, `compoundVariants`, etc.).
 - Verify component config key names before introducing new `ui.*` overrides.
 - Prefer design tokens/semantic classes over repeated one-off utility combinations.
+- Prefer native Nuxt UI sizing so text, icons, padding, and embedded controls stay proportionate. Use `md` as the default for buttons and form controls that support it, including mobile. Improve touch usability with native size props or surrounding spacing after inspecting the rendered interface; avoid fixed dimensions or blanket minimum sizes that stretch controls independently of their contents. Preserve layout widths for fields and containers where needed.
 - Buttons default to neutral outline. Explicitly use primary solid for the main save/create action; use neutral ghost or outline for supporting controls. Badges default to neutral unless they convey a semantic status.
 - Decoration, character, and design whimsy are welcome throughout DM Vault. Main cards retain elevated backgrounds, themed frames, and the restrained `dmvault-card` top shimmer; supporting surfaces remain quieter. Preserve reduced-motion support and readable content when adding decorative effects.
 

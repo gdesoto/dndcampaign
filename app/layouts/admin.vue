@@ -41,8 +41,8 @@ watch(() => route.fullPath, () => { open.value = false })
         </template>
         <template #default="{ collapsed }">
           <template v-if="!collapsed">
-            <UNavigationMenu :items="navigation" orientation="vertical" highlight aria-label="Admin sections" class="w-full" :ui="{ link: 'min-h-11', linkLabel: 'font-display text-sm' }" />
-            <UNavigationMenu :items="workspaceLinks" orientation="vertical" aria-label="Workspace navigation" class="mt-auto w-full border-t border-default pt-3" :ui="{ link: 'min-h-11' }" />
+            <UNavigationMenu :items="navigation" orientation="vertical" highlight aria-label="Admin sections" class="w-full" :ui="{ linkLabel: 'font-display text-sm' }" />
+            <UNavigationMenu :items="workspaceLinks" orientation="vertical" aria-label="Workspace navigation" class="mt-auto w-full border-t border-default pt-3" />
           </template>
         </template>
         <template #footer="{ collapsed }"><p v-if="!collapsed" class="flex items-center gap-2 py-1 text-xs text-muted"><UIcon name="i-lucide-shield" class="size-4" aria-hidden="true" /> System administrator</p></template>

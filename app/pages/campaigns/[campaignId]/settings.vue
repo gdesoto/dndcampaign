@@ -370,7 +370,7 @@ const transferOpenModel = computed({ get: () => transferModalOpen.value, set: as
 <template>
   <div class="space-y-4">
   <CampaignListTemplate title="Campaign settings">
-    <UTabs v-model="activeTab" :items="tabs" :unmount-on-hide="false" variant="link" :ui="{ list: 'grid w-full grid-cols-3 sm:flex sm:w-auto', trigger: 'min-h-11 min-w-0 px-2 sm:px-3', leadingIcon: 'hidden sm:block', label: 'whitespace-normal text-xs sm:text-sm' }">
+    <UTabs v-model="activeTab" :items="tabs" :unmount-on-hide="false" variant="link" :ui="{ list: 'grid w-full grid-cols-3 sm:flex sm:w-auto', trigger: 'min-w-0', leadingIcon: 'hidden sm:block', label: 'whitespace-normal' }">
     <template #general>
 
     <CampaignSettingsCalendarGeneralSettings :campaign-id="campaignId" :can-edit="canManageCalendar" />
@@ -405,7 +405,7 @@ const transferOpenModel = computed({ get: () => transferModalOpen.value, set: as
                   <UFormField label="Role" :name="'role-' + member.id">
                     <USelect :items="roleOptions" :model-value="member.role" :aria-label="'Role for ' + member.user.name" class="w-40" :disabled="membersBusy" :loading="memberAction.roleSavingMemberId === member.id" @update:model-value="value => updateMemberRole(member.id, value as 'COLLABORATOR' | 'VIEWER')" />
                   </UFormField>
-                  <USwitch :model-value="member.hasDmAccess" label="DM access" :aria-label="'DM access for ' + member.user.name" class="min-h-9 items-center" :disabled="membersBusy" :loading="memberAction.dmAccessSavingMemberId === member.id" @update:model-value="value => updateMemberDmAccess(member.id, value)" />
+                  <USwitch :model-value="member.hasDmAccess" label="DM access" :aria-label="'DM access for ' + member.user.name" size="md" :disabled="membersBusy" :loading="memberAction.dmAccessSavingMemberId === member.id" @update:model-value="value => updateMemberDmAccess(member.id, value)" />
                   <SharedConfirmActionPopover :message="'Remove ' + member.user.name + ' from this campaign? They will lose access and will need a new invitation to rejoin.'" :trigger-aria-label="'Remove ' + member.user.name" trigger-icon="i-lucide-user-minus" :trigger-show-label="false" trigger-size="md" confirm-label="Remove member" :disabled="membersBusy" :action="() => removeMember(member.id)" />
                 </div>
               </div>

@@ -90,7 +90,7 @@ const menuItems = computed<DropdownMenuItem[][]>(() => {
           icon="i-lucide-ellipsis-vertical"
           color="neutral"
           variant="ghost"
-          size="sm"
+          size="md"
           :aria-label="`Actions for ${name}`"
           :disabled="disabled || running || confirmationOpen"
           :loading="running"

@@ -32,7 +32,7 @@ const charactersPath = computed(() => `/campaigns/${props.campaignId}/characters
     <p v-if="pending && !links" role="status" class="text-sm text-muted">Loading…</p>
     <div v-else-if="error" class="flex items-center gap-1">
       <p role="status" class="text-xs text-muted">Unavailable</p>
-      <UButton label="Retry" aria-label="Retry loading party" color="neutral" variant="ghost" class="min-h-11" :loading="pending" @click="refresh()" />
+      <UButton label="Retry" aria-label="Retry loading party" color="neutral" variant="ghost" size="md" :loading="pending" @click="refresh()" />
     </div>
     <div v-else-if="party.length" class="flex shrink-0 items-center">
       <div class="isolate flex -space-x-2 items-center">
@@ -53,7 +53,8 @@ const charactersPath = computed(() => `/campaigns/${props.campaignId}/characters
         :aria-label="`View all ${party.length} active characters`"
         color="neutral"
         variant="ghost"
-        class="ms-1 min-h-11 min-w-8 justify-center px-1"
+        size="md"
+        class="ms-1"
       />
     </div>
     <p v-else class="text-xs text-muted">No active characters</p>
