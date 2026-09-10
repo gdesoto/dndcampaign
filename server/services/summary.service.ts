@@ -746,23 +746,44 @@ export class SummaryService {
     })
   }
 
-  async getLatestJobForSession(
-    sessionId: string,
-    userId: string,
-    kind?: 'SUMMARY_GENERATION' | 'SUGGESTION_GENERATION'
-  ) {
-    return prisma.summaryJob.findFirst({
-      where: {
-        sessionId,
-        campaign: buildCampaignWhereForPermission(userId, 'content.read'),
-        kind: kind || undefined,
-      },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        summaryDocument: true,
-        suggestions: true,
+  async getJobsForSession(sessionId: string, userId: string) {
+    const where = { sessionId, campaign: buildCampaignWhereForPermission(userId, 'content.read') }
+    const jobs = await prisma.summaryJob.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: {
+        id: true, status: true, mode: true, kind: true, trackingId: true,
+        summaryDocumentId: true, createdAt: true, updatedAt: true,
       },
     })
+    const summaryId = jobs.find(job => job.kind === 'SUMMARY_GENERATION')?.id
+    const suggestionId = jobs.find(job => job.kind === 'SUGGESTION_GENERATION')?.id
+    const latestIds = [summaryId, suggestionId].filter((id): id is string => Boolean(id))
+    const latestJobs = latestIds.length ? await prisma.summaryJob.findMany({
+      where: { ...where, id: { in: latestIds } },
+      select: {
+        id: true, status: true, mode: true, kind: true, trackingId: true,
+        promptProfile: true, summaryDocumentId: true, createdAt: true, updatedAt: true, meta: true,
+        suggestions: { select: { id: true, entityType: true, action: true, status: true, match: true, payload: true } },
+      },
+    }) : []
+    const latestSummary = latestJobs.find(job => job.id === summaryId)
+    const latestSuggestion = latestJobs.find(job => job.id === suggestionId)
+    const latest = latestJobs.find(job => job.id === jobs[0]?.id)
+    const jobWithoutSuggestions = (job: typeof latest) => {
+      if (!job) return null
+      const { suggestions: _suggestions, ...data } = job
+      return data
+    }
+    return {
+      job: jobWithoutSuggestions(latest),
+      latestSummaryJob: jobWithoutSuggestions(latestSummary),
+      latestSuggestionJob: jobWithoutSuggestions(latestSuggestion),
+      suggestions: latest?.suggestions || [],
+      latestSummarySuggestions: latestSummary?.suggestions || [],
+      latestSuggestionSuggestions: latestSuggestion?.suggestions || [],
+      jobs,
+    }
   }
 
   async getJobById(jobId: string, userId: string) {

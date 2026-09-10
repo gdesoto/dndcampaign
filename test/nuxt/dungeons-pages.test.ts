@@ -1,4 +1,4 @@
-import { config } from '@vue/test-utils'
+import { config, flushPromises } from '@vue/test-utils'
 import { actionMenuStub } from '../helpers/action-menu'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import MapCanvas from '../../app/components/dungeon/MapCanvas.vue'
@@ -216,6 +216,33 @@ describe('Dungeon pages', () => {
 
     expect(wrapper.text()).toContain('Sunken Crypt')
     expect(wrapper.text()).toContain('Dungeons')
+  })
+
+  it('blocks overlapping mutations and releases controls after failure', async () => {
+    let rejectGeneration!: (reason: Error) => void
+    mockGenerateDungeon.mockReturnValueOnce(new Promise((_, reject) => { rejectGeneration = reject }))
+    const wrapper = await mountSuspended(DungeonDetailPage, {
+      global: {
+        provide: { campaignCanWriteContent: ref(true) },
+        stubs: { DungeonMapCanvas: true },
+      },
+    })
+    const button = (label: string) => wrapper.findAll('button').find(item => item.text() === label)!
+    await button('Generate').trigger('click')
+    await flushPromises()
+    expect(mockGenerateDungeon).toHaveBeenCalledTimes(1)
+    expect(button('Publish').attributes('disabled')).toBeDefined()
+    await button('Publish').trigger('click')
+    expect(mockPublishDungeon).not.toHaveBeenCalled()
+    rejectGeneration(new Error('Generation failed'))
+    await flushPromises()
+    expect(wrapper.text()).toContain('Generation failed')
+    expect(button('Publish').attributes('disabled')).toBeUndefined()
+    await button('Publish').trigger('click')
+    await flushPromises()
+    expect(mockPublishDungeon).toHaveBeenCalledTimes(1)
+    expect(wrapper.text()).not.toContain('Generation failed')
+    wrapper.unmount()
   })
 
   it('shows read-only state in detail page for viewers', async () => {

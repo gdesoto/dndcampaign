@@ -1,119 +1,84 @@
-import type { Ref } from 'vue'
 import type {
   SessionSummaryJobDetail,
-  SessionSummaryJobResponse,
   SessionSummarySuggestion,
 } from '#shared/types/session-workflow'
 
+const jobStatusPresentation: Record<string, { label: string; color: 'warning' | 'primary' | 'success' | 'error' | 'secondary' }> = {
+  READY_FOR_REVIEW: { label: 'Ready for review', color: 'warning' },
+  PROCESSING: { label: 'Processing', color: 'primary' },
+  SENT: { label: 'Sent', color: 'primary' },
+  APPLIED: { label: 'Applied', color: 'success' },
+  FAILED: { label: 'Failed', color: 'error' },
+  QUEUED: { label: 'Queued', color: 'primary' },
+}
+
 type UseSummaryJobStateOptions = {
-  sessionId: Ref<string>
+  jobs: ReturnType<typeof useSessionJobs>
   jobKind: 'SUMMARY_GENERATION' | 'SUGGESTION_GENERATION'
-  keyPrefix: string
 }
 
 export function useSummaryJobState(options: UseSummaryJobStateOptions) {
   const { request } = useApi()
-
+  const { jobs } = options
+  const keyPrefix = options.jobKind === 'SUMMARY_GENERATION' ? 'summary' : 'suggestion'
   const selectedSummaryJobId = useState<string>(
-    `${options.keyPrefix}-selected-summary-job-${options.sessionId.value}`,
-    () => ''
+    `${keyPrefix}-selected-summary-job-${jobs.sessionId.value}`, () => '',
   )
-  const summaryJobData = useState<SessionSummaryJobResponse | null>(
-    `${options.keyPrefix}-summary-job-data-${options.sessionId.value}`,
-    () => null
+  const defaultJobForKind = computed(() => options.jobKind === 'SUMMARY_GENERATION'
+    ? jobs.data.value?.latestSummaryJob : jobs.data.value?.latestSuggestionJob)
+  const latestSuggestions = computed(() => options.jobKind === 'SUMMARY_GENERATION'
+    ? jobs.data.value?.latestSummarySuggestions : jobs.data.value?.latestSuggestionSuggestions)
+
+  watch(() => defaultJobForKind.value?.id, id => {
+    if (!selectedSummaryJobId.value && id) selectedSummaryJobId.value = id
+  }, { immediate: true })
+
+  // Wait for the combined resource before deciding whether a selection needs a
+  // detail request. The latest job and its suggestions are already in that response.
+  const historicalJobId = computed(() => jobs.data.value && selectedSummaryJobId.value !== defaultJobForKind.value?.id
+    ? selectedSummaryJobId.value : '')
+  const detailKey = () => `session-job-detail-${jobs.sessionId.value}-${keyPrefix}-${historicalJobId.value || 'latest'}`
+  const retained = useRetainedResource<SessionSummaryJobDetail | null>(detailKey)
+  const detail = useAsyncData(
+    detailKey,
+    () => retained.load(() => historicalJobId.value
+      ? request<SessionSummaryJobDetail>(`/api/summaries/jobs/${historicalJobId.value}`)
+      : Promise.resolve(null)),
+    { default: retained.get },
   )
-  const selectedSummaryJobData = useState<SessionSummaryJobDetail | null>(
-    `${options.keyPrefix}-summary-job-detail-${options.sessionId.value}`,
-    () => null
-  )
+  retained.seed(detail.data.value)
+
+  const summaryJob = computed(() => historicalJobId.value
+    ? (detail.data.value?.id === historicalJobId.value ? detail.data.value : null)
+    : defaultJobForKind.value || null)
+  const summarySuggestions = computed<SessionSummarySuggestion[]>(() => historicalJobId.value
+    ? detail.data.value?.id === historicalJobId.value ? detail.data.value.suggestions : []
+    : latestSuggestions.value || [])
+  const loadError = computed(() => historicalJobId.value ? detail.error.value : jobs.error.value)
+  const statusPresentation = computed(() => jobStatusPresentation[summaryJob.value?.status ?? ''])
+  const statusLabel = computed(() => statusPresentation.value?.label
+    ?? (loadError.value ? 'Unavailable' : jobs.pending.value || detail.pending.value ? 'Loading' : 'Not started'))
+  const statusColor = computed(() => statusPresentation.value?.color ?? 'secondary')
+  const summaryJobHistory = computed(() => (jobs.data.value?.jobs || []).filter(job => job.kind === options.jobKind))
+  const summaryJobOptions = computed(() => summaryJobHistory.value.map(job => ({
+    label: `${new Date(job.createdAt).toLocaleString()} · ${job.status}`,
+    value: job.id,
+  })))
 
   const refreshSummaryJob = async () => {
-    summaryJobData.value = await request<SessionSummaryJobResponse>(
-      `/api/sessions/${options.sessionId.value}/summaries/jobs`
-    )
-  }
-
-  const refreshSelectedSummaryJob = async () => {
-    if (!selectedSummaryJobId.value) {
-      selectedSummaryJobData.value = null
-      return
+    const previousHistoricalId = historicalJobId.value
+    await jobs.refresh()
+    // A newly historical selection reloads through its reactive key. Only an
+    // unchanged historical selection needs an explicit refresh after a mutation.
+    if (previousHistoricalId && historicalJobId.value === previousHistoricalId) {
+      await detail.refresh()
+      if (detail.error.value) throw detail.error.value
     }
-    selectedSummaryJobData.value = await request<SessionSummaryJobDetail>(
-      `/api/summaries/jobs/${selectedSummaryJobId.value}`
-    )
-  }
-
-  const defaultJobForKind = computed(() => {
-    if (options.jobKind === 'SUMMARY_GENERATION') {
-      return summaryJobData.value?.latestSummaryJob || null
-    }
-    return summaryJobData.value?.latestSuggestionJob || null
-  })
-
-  const summaryJob = computed(() => {
-    if (selectedSummaryJobId.value && selectedSummaryJobData.value) {
-      return selectedSummaryJobData.value
-    }
-    return defaultJobForKind.value
-  })
-
-  const summarySuggestions = computed<SessionSummarySuggestion[]>(() => {
-    if (selectedSummaryJobId.value && selectedSummaryJobData.value) {
-      return selectedSummaryJobData.value.suggestions || []
-    }
-    if (options.jobKind === 'SUMMARY_GENERATION') {
-      return summaryJobData.value?.latestSummarySuggestions || []
-    }
-    return summaryJobData.value?.latestSuggestionSuggestions || []
-  })
-
-  const summaryJobHistory = computed(() =>
-    (summaryJobData.value?.jobs || []).filter((job) => job.kind === options.jobKind)
-  )
-
-  const summaryJobOptions = computed(() =>
-    summaryJobHistory.value.map((job) => {
-      const dateLabel = new Date(job.createdAt).toLocaleString()
-      return {
-        label: `${dateLabel} Â· ${job.status}`,
-        value: job.id,
-      }
-    })
-  )
-
-  watch(
-    () => defaultJobForKind.value?.id,
-    (value) => {
-      if (!selectedSummaryJobId.value && value) {
-        selectedSummaryJobId.value = value
-      }
-    },
-    { immediate: true }
-  )
-
-  watch(
-    () => selectedSummaryJobId.value,
-    async (value) => {
-      if (!value) {
-        selectedSummaryJobData.value = null
-        return
-      }
-      await refreshSelectedSummaryJob()
-    },
-    { immediate: true }
-  )
-
-  if (!summaryJobData.value) {
-    void refreshSummaryJob()
   }
 
   return {
-    selectedSummaryJobId,
-    summaryJob,
-    summarySuggestions,
-    summaryJobHistory,
-    summaryJobOptions,
-    refreshSummaryJob,
-    refreshSelectedSummaryJob,
+    statusLabel, statusColor, loadError,
+    selectedSummaryJobId, summaryJob, summarySuggestions,
+    summaryJobHistory, summaryJobOptions, refreshSummaryJob,
   }
 }

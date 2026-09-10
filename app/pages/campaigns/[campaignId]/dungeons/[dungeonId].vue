@@ -11,18 +11,27 @@ const canWriteContent = inject('campaignCanWriteContent', computed(() => true))
 const dungeonApi = useDungeonDetail()
 
 const actionError = ref('')
-const isSaving = ref(false)
-const isGenerating = ref(false)
-const isRegenerating = ref(false)
-const isSavingRoom = ref(false)
-const isPatchingMap = ref(false)
-const isCreatingLink = ref(false)
-const isCreatingSnapshot = ref(false)
-const restoringSnapshotId = ref('')
+type DungeonMutation = {
+  type: 'save-settings' | 'generate' | 'regenerate' | 'save-room' | 'patch-map'
+    | 'create-link' | 'delete-link' | 'create-snapshot' | 'restore-snapshot'
+    | 'publish' | 'create-encounter'
+  recordId?: string
+}
+const activeMutation = ref<DungeonMutation | null>(null)
+const mutationBusy = computed(() => activeMutation.value !== null)
+const runMutation = async <T,>(operation: DungeonMutation, action: () => Promise<T>, failureMessage: string) => {
+  if (!canWriteContent.value || mutationBusy.value) return
+  activeMutation.value = operation
+  actionError.value = ''
+  try {
+    return await action()
+  } catch (cause) {
+    actionError.value = (cause as Error).message || failureMessage
+  } finally {
+    activeMutation.value = null
+  }
+}
 const isExporting = ref(false)
-const isPublishing = ref(false)
-const isCreatingEncounter = ref(false)
-const deletingLinkId = ref('')
 const currentRoomId = ref<string | null>(null)
 const selectedRoomId = computed({
   get: () => currentRoomId.value,
@@ -128,10 +137,6 @@ watch(dungeon, value => {
   }, value.id)
 }, { immediate: true })
 
-const mutationBusy = computed(() => isSaving.value || isGenerating.value || isRegenerating.value
-  || isSavingRoom.value || isPatchingMap.value || isCreatingLink.value || isCreatingSnapshot.value
-  || !!restoringSnapshotId.value || isPublishing.value || isCreatingEncounter.value || !!deletingLinkId.value)
-
 const resolveTheme = () =>
   selectedThemeOption.value === 'custom'
     ? customTheme.value.trim()
@@ -147,10 +152,7 @@ const saveSettings = async () => {
   editState.theme = resolvedTheme
   configDraft.theme = resolvedTheme
   const submitted = settingsDraft.snapshot()
-  isSaving.value = true
-  actionError.value = ''
-  try {
-    editState.theme = resolvedTheme
+  return runMutation({ type: 'save-settings' }, async () => {
     await dungeonApi.updateDungeon(campaignId.value, dungeonId.value, {
       name: editState.name,
       theme: resolvedTheme,
@@ -163,11 +165,7 @@ const saveSettings = async () => {
     })
     settingsDraft.accept(submitted)
     await refresh()
-  } catch (cause) {
-    actionError.value = (cause as Error).message || 'Unable to save dungeon settings.'
-  } finally {
-    isSaving.value = false
-  }
+  }, 'Unable to save dungeon settings.')
 }
 
 const generate = async () => {
@@ -177,9 +175,7 @@ const generate = async () => {
     actionError.value = 'Custom theme is required.'
     return
   }
-  isGenerating.value = true
-  actionError.value = ''
-  try {
+  return runMutation({ type: 'generate' }, async () => {
     editState.theme = resolvedTheme
     await dungeonApi.generateDungeon(campaignId.value, dungeonId.value, {
       seed: editState.seed,
@@ -190,18 +186,12 @@ const generate = async () => {
     })
     roomDraft.discard()
     await Promise.all([refresh(), refreshRooms()])
-  } catch (cause) {
-    actionError.value = (cause as Error).message || 'Unable to generate dungeon map.'
-  } finally {
-    isGenerating.value = false
-  }
+  }, 'Unable to generate dungeon map.')
 }
 
 const regenerate = async (scope: CampaignDungeonRegenerateScope) => {
   if (!canWriteContent.value || mutationBusy.value || !await confirmRoomDiscard()) return
-  isRegenerating.value = true
-  actionError.value = ''
-  try {
+  return runMutation({ type: 'regenerate' }, async () => {
     await dungeonApi.regenerateDungeon(campaignId.value, dungeonId.value, {
       scope,
       preserveLocks: true,
@@ -209,11 +199,7 @@ const regenerate = async (scope: CampaignDungeonRegenerateScope) => {
     })
     roomDraft.discard()
     await Promise.all([refresh(), refreshRooms()])
-  } catch (cause) {
-    actionError.value = (cause as Error).message || 'Unable to regenerate dungeon map.'
-  } finally {
-    isRegenerating.value = false
-  }
+  }, 'Unable to regenerate dungeon map.')
 }
 
 const applyPreset = (preset: 'small_one_shot' | 'mega_wing' | 'story') => {
@@ -343,19 +329,11 @@ watch(selectedRoomMeta, value => {
 }, { immediate: true })
 
 const patchMap = async (actions: DungeonMapPatchActionInput[]) => {
-  if (!canWriteContent.value || mutationBusy.value) return
-  isPatchingMap.value = true
-  actionError.value = ''
-  try {
+  return runMutation({ type: 'patch-map' }, async () => {
     await dungeonApi.patchMap(campaignId.value, dungeonId.value, { actions })
     await Promise.all([refresh(), refreshRooms()])
     return true
-  } catch (cause) {
-    actionError.value = (cause as Error).message || 'Unable to update dungeon map.'
-    return false
-  } finally {
-    isPatchingMap.value = false
-  }
+  }, 'Unable to update dungeon map.')
 }
 
 const addRoom = async () => {
@@ -408,11 +386,10 @@ const removeSelectedRoom = async () => {
 
 const saveRoomMetadata = async () => {
   if (!canWriteContent.value || !selectedRoomMeta.value || mutationBusy.value) return
+  const roomId = selectedRoomMeta.value.id
   const submitted = roomDraft.snapshot()
-  isSavingRoom.value = true
-  actionError.value = ''
-  try {
-    await dungeonApi.updateRoom(campaignId.value, dungeonId.value, selectedRoomMeta.value.id, {
+  return runMutation({ type: 'save-room' }, async () => {
+    await dungeonApi.updateRoom(campaignId.value, dungeonId.value, roomId, {
       name: roomEditor.name,
       description: roomEditor.description || null,
       gmNotes: roomEditor.gmNotes || null,
@@ -422,18 +399,11 @@ const saveRoomMetadata = async () => {
     })
     roomDraft.accept(submitted)
     await refreshRooms()
-  } catch (cause) {
-    actionError.value = (cause as Error).message || 'Unable to save room metadata.'
-  } finally {
-    isSavingRoom.value = false
-  }
+  }, 'Unable to save room metadata.')
 }
 
 const createLink = async () => {
-  if (!canWriteContent.value || mutationBusy.value) return
-  isCreatingLink.value = true
-  actionError.value = ''
-  try {
+  return runMutation({ type: 'create-link' }, async () => {
     await dungeonApi.createLink(campaignId.value, dungeonId.value, {
       linkType: newLink.linkType,
       targetId: newLink.targetId,
@@ -441,58 +411,34 @@ const createLink = async () => {
     })
     newLink.targetId = ''
     await refreshLinks()
-  } catch (cause) {
-    actionError.value = (cause as Error).message || 'Unable to create link.'
-  } finally {
-    isCreatingLink.value = false
-  }
+  }, 'Unable to create link.')
 }
 
 const deleteLink = async (linkId: string) => {
-  if (!canWriteContent.value || mutationBusy.value) return
-  deletingLinkId.value = linkId
-  actionError.value = ''
-  try {
+  return runMutation({ type: 'delete-link', recordId: linkId }, async () => {
     await dungeonApi.deleteLink(campaignId.value, dungeonId.value, linkId)
     await refreshLinks()
-  } catch (cause) {
-    actionError.value = (cause as Error).message || 'Unable to delete link.'
-  } finally {
-    deletingLinkId.value = ''
-  }
+  }, 'Unable to delete link.')
 }
 
 const createSnapshot = async () => {
-  if (!canWriteContent.value || mutationBusy.value) return
-  isCreatingSnapshot.value = true
-  actionError.value = ''
-  try {
+  return runMutation({ type: 'create-snapshot' }, async () => {
     await dungeonApi.createSnapshot(campaignId.value, dungeonId.value, {
       snapshotType: 'MANUAL',
     })
     await refreshSnapshots()
-  } catch (cause) {
-    actionError.value = (cause as Error).message || 'Unable to create snapshot.'
-  } finally {
-    isCreatingSnapshot.value = false
-  }
+  }, 'Unable to create snapshot.')
 }
 
 const restoreSnapshot = async (snapshotId: string) => {
   if (!canWriteContent.value || mutationBusy.value) return
   if (!await confirmSettingsDiscard() || !await confirmRoomDiscard()) return
-  restoringSnapshotId.value = snapshotId
-  actionError.value = ''
-  try {
+  return runMutation({ type: 'restore-snapshot', recordId: snapshotId }, async () => {
     await dungeonApi.restoreSnapshot(campaignId.value, dungeonId.value, snapshotId)
     settingsDraft.discard()
     roomDraft.discard()
     await Promise.all([refresh(), refreshRooms(), refreshLinks()])
-  } catch (cause) {
-    actionError.value = (cause as Error).message || 'Unable to restore snapshot.'
-  } finally {
-    restoringSnapshotId.value = ''
-  }
+  }, 'Unable to restore snapshot.')
 }
 
 const exportDungeon = async () => {
@@ -532,21 +478,14 @@ const exportDungeon = async () => {
 }
 
 const publishDungeon = async () => {
-  if (!canWriteContent.value || mutationBusy.value) return
-  isPublishing.value = true
-  actionError.value = ''
-  try {
+  return runMutation({ type: 'publish' }, async () => {
     if (editState.status === 'READY') {
       await dungeonApi.unpublishDungeon(campaignId.value, dungeonId.value)
     } else {
       await dungeonApi.publishDungeon(campaignId.value, dungeonId.value)
     }
     await refresh()
-  } catch (cause) {
-    actionError.value = (cause as Error).message || 'Unable to change publish state.'
-  } finally {
-    isPublishing.value = false
-  }
+  }, 'Unable to change publish state.')
 }
 
 const toggleDoorLock = async () => {
@@ -583,24 +522,19 @@ const toggleEntityLock = async (
 
 const createEncounterFromRoom = async () => {
   if (!selectedRoomMeta.value) return
-  isCreatingEncounter.value = true
-  actionError.value = ''
-  try {
-    const result = await dungeonApi.createEncounterFromRoom(
-      campaignId.value,
-      dungeonId.value,
-      selectedRoomMeta.value.id,
-    )
-    if (!result) {
-      throw new Error('Encounter creation returned an empty response.')
-    }
+  const roomId = selectedRoomMeta.value.id
+  const encounterId = await runMutation({ type: 'create-encounter' }, async () => {
+    const result = await dungeonApi.createEncounterFromRoom(campaignId.value, dungeonId.value, roomId)
+    if (!result) throw new Error('Encounter creation returned an empty response.')
     await refreshLinks()
-    isCreatingEncounter.value = false
-    await navigateTo(`/campaigns/${campaignId.value}/encounters/${result.encounterId}`)
-  } catch (cause) {
-    actionError.value = (cause as Error).message || 'Unable to create encounter from room.'
-  } finally {
-    isCreatingEncounter.value = false
+    return result.encounterId
+  }, 'Unable to create encounter from room.')
+  if (encounterId) {
+    try {
+      await navigateTo(`/campaigns/${campaignId.value}/encounters/${encounterId}`)
+    } catch (cause) {
+      actionError.value = (cause as Error).message || 'Unable to open encounter.'
+    }
   }
 }
 
@@ -641,7 +575,7 @@ onBeforeUnmount(() => {
           </UButton>
           <UButton
             :disabled="mutationBusy || !canWriteContent"
-            :loading="isGenerating"
+            :loading="activeMutation?.type === 'generate'"
             icon="i-lucide-sparkles"
             @click="generate"
           >
@@ -649,7 +583,7 @@ onBeforeUnmount(() => {
           </UButton>
           <UButton
             :disabled="mutationBusy || !canWriteContent"
-            :loading="isPublishing"
+            :loading="activeMutation?.type === 'publish'"
             variant="outline"
             :icon="editState.status === 'READY' ? 'i-lucide-eye-off' : 'i-lucide-eye'"
             @click="publishDungeon"
@@ -778,7 +712,7 @@ onBeforeUnmount(() => {
               <div class="flex flex-wrap gap-2">
                 <UButton
                   :disabled="mutationBusy || !canWriteContent"
-                  :loading="isSaving"
+                  :loading="activeMutation?.type === 'save-settings'"
                   variant="outline"
                   @click="saveSettings"
                 >
@@ -786,11 +720,11 @@ onBeforeUnmount(() => {
                 </UButton>
                 <UDropdownMenu
                   :items="regenerationItems"
-                  :disabled="mutationBusy || !canWriteContent || isRegenerating"
+                  :disabled="mutationBusy || !canWriteContent"
                 >
                   <UButton
                     :disabled="mutationBusy || !canWriteContent"
-                    :loading="isRegenerating"
+                    :loading="activeMutation?.type === 'regenerate'"
                     variant="soft"
                     icon="i-lucide-refresh-cw"
                   >
@@ -919,7 +853,7 @@ onBeforeUnmount(() => {
                   size="xs"
                   variant="outline"
                   :disabled="mutationBusy || !canWriteContent"
-                  :loading="isCreatingSnapshot"
+                  :loading="activeMutation?.type === 'create-snapshot'"
                   @click="createSnapshot"
                 >
                   Create snapshot
@@ -939,7 +873,7 @@ onBeforeUnmount(() => {
                     size="xs"
                     variant="ghost"
                     :disabled="mutationBusy || !canWriteContent"
-                    :loading="restoringSnapshotId === snapshot.id"
+                    :loading="activeMutation?.type === 'restore-snapshot' && activeMutation.recordId === snapshot.id"
                     @click="restoreSnapshot(snapshot.id)"
                   >
                     Restore
@@ -980,7 +914,7 @@ onBeforeUnmount(() => {
                 </UFormField>
                 <UButton
                   :disabled="mutationBusy || !canWriteContent"
-                  :loading="isSavingRoom"
+                  :loading="activeMutation?.type === 'save-room'"
                   size="sm"
                   @click="saveRoomMetadata"
                 >
@@ -988,7 +922,7 @@ onBeforeUnmount(() => {
                 </UButton>
                 <UButton
                   :disabled="mutationBusy || !canWriteContent"
-                  :loading="isCreatingEncounter"
+                  :loading="activeMutation?.type === 'create-encounter'"
                   size="sm"
                   variant="soft"
                   @click="createEncounterFromRoom"
@@ -1007,7 +941,7 @@ onBeforeUnmount(() => {
                 <UFormField label="Add W"><UInput v-model.number="roomAction.addWidth" type="number" :disabled="mutationBusy || !canWriteContent" /></UFormField>
                 <UFormField label="Add H"><UInput v-model.number="roomAction.addHeight" type="number" :disabled="mutationBusy || !canWriteContent" /></UFormField>
               </div>
-              <UButton :disabled="mutationBusy || !canWriteContent" :loading="isPatchingMap" size="sm" variant="outline" @click="addRoom">
+              <UButton :disabled="mutationBusy || !canWriteContent" :loading="activeMutation?.type === 'patch-map'" size="sm" variant="outline" @click="addRoom">
                 Add room
               </UButton>
               <div class="grid grid-cols-2 gap-2">
@@ -1017,28 +951,28 @@ onBeforeUnmount(() => {
                 <UFormField label="Resize H"><UInput v-model.number="roomAction.resizeHeight" type="number" :disabled="mutationBusy || !canWriteContent || !selectedRoom" /></UFormField>
               </div>
               <div class="flex flex-wrap gap-2">
-                <UButton :disabled="mutationBusy || !canWriteContent || !selectedRoom" :loading="isPatchingMap" size="sm" variant="soft" @click="moveSelectedRoom">
+                <UButton :disabled="mutationBusy || !canWriteContent || !selectedRoom" :loading="activeMutation?.type === 'patch-map'" size="sm" variant="soft" @click="moveSelectedRoom">
                   Move room
                 </UButton>
-                <UButton :disabled="mutationBusy || !canWriteContent || !selectedRoom" :loading="isPatchingMap" size="sm" variant="soft" @click="resizeSelectedRoom">
+                <UButton :disabled="mutationBusy || !canWriteContent || !selectedRoom" :loading="activeMutation?.type === 'patch-map'" size="sm" variant="soft" @click="resizeSelectedRoom">
                   Resize room
                 </UButton>
-                <UButton :disabled="mutationBusy || !canWriteContent || !selectedRoom" :loading="isPatchingMap" size="sm" color="error" variant="outline" @click="removeSelectedRoom">
+                <UButton :disabled="mutationBusy || !canWriteContent || !selectedRoom" :loading="activeMutation?.type === 'patch-map'" size="sm" color="error" variant="outline" @click="removeSelectedRoom">
                   Remove room
                 </UButton>
-                <UButton :disabled="mutationBusy || !canWriteContent" :loading="isPatchingMap" size="sm" variant="outline" @click="renumberRooms">
+                <UButton :disabled="mutationBusy || !canWriteContent" :loading="activeMutation?.type === 'patch-map'" size="sm" variant="outline" @click="renumberRooms">
                   Renumber rooms
                 </UButton>
-                <UButton :disabled="mutationBusy || !canWriteContent || !selectedRoom" :loading="isPatchingMap" size="sm" variant="outline" @click="paintZone('SAFE')">
+                <UButton :disabled="mutationBusy || !canWriteContent || !selectedRoom" :loading="activeMutation?.type === 'patch-map'" size="sm" variant="outline" @click="paintZone('SAFE')">
                   Paint safe zone
                 </UButton>
-                <UButton :disabled="mutationBusy || !canWriteContent || !selectedRoom" :loading="isPatchingMap" size="sm" variant="outline" @click="paintZone('HAZARD')">
+                <UButton :disabled="mutationBusy || !canWriteContent || !selectedRoom" :loading="activeMutation?.type === 'patch-map'" size="sm" variant="outline" @click="paintZone('HAZARD')">
                   Paint hazard zone
                 </UButton>
-                <UButton :disabled="mutationBusy || !canWriteContent || !selectedDoorId" :loading="isPatchingMap" size="sm" variant="outline" @click="toggleDoorLock">
+                <UButton :disabled="mutationBusy || !canWriteContent || !selectedDoorId" :loading="activeMutation?.type === 'patch-map'" size="sm" variant="outline" @click="toggleDoorLock">
                   Toggle door lock
                 </UButton>
-                <UButton :disabled="mutationBusy || !canWriteContent || !selectedDoorId" :loading="isPatchingMap" size="sm" variant="outline" @click="toggleDoorSecret">
+                <UButton :disabled="mutationBusy || !canWriteContent || !selectedDoorId" :loading="activeMutation?.type === 'patch-map'" size="sm" variant="outline" @click="toggleDoorSecret">
                   Toggle door secret
                 </UButton>
               </div>
@@ -1073,7 +1007,7 @@ onBeforeUnmount(() => {
               </UFormField>
               <UButton
                 :disabled="mutationBusy || !canWriteContent || !newLink.targetId.trim()"
-                :loading="isCreatingLink"
+                :loading="activeMutation?.type === 'create-link'"
                 size="sm"
                 @click="createLink"
               >
@@ -1095,7 +1029,7 @@ onBeforeUnmount(() => {
                     color="error"
                     variant="ghost"
                     :disabled="mutationBusy || !canWriteContent"
-                    :loading="deletingLinkId === link.id"
+                    :loading="activeMutation?.type === 'delete-link' && activeMutation.recordId === link.id"
                     @click="deleteLink(link.id)"
                   >
                     Delete

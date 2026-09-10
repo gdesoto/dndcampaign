@@ -34,16 +34,6 @@ export async function useSessionWorkspace(options: UseSessionWorkspaceOptions) {
   const canRunSummary = computed(() => Boolean(access.value?.permissions.includes('summary.run')))
   const canUploadRecording = computed(() => Boolean(access.value?.permissions.includes('recording.upload')))
 
-  const refreshSession = async () => refreshWorkspace()
-  const refreshRecordings = async () => refreshWorkspace()
-  const refreshRecap = async () => refreshWorkspace()
-  const refreshTranscript = async () => refreshWorkspace()
-  const refreshSummary = async () => refreshWorkspace()
-
-  const refreshAll = async () => {
-    await refreshWorkspace()
-  }
-
   return {
     session,
     recordings,
@@ -56,11 +46,6 @@ export async function useSessionWorkspace(options: UseSessionWorkspaceOptions) {
     canUploadRecording,
     pending,
     error,
-    refreshSession,
-    refreshRecordings,
-    refreshRecap,
-    refreshTranscript,
-    refreshSummary,
-    refreshAll,
+    refreshWorkspace,
   }
 }

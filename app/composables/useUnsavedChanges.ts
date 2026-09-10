@@ -1,10 +1,12 @@
 import type { MaybeRefOrGetter } from 'vue'
+import type { RouteLocationNormalized } from 'vue-router'
 import DiscardChangesModal from '~/components/shared/DiscardChangesModal.vue'
 
 /** Protect both in-app navigation and browser close/reload, without replacing routing. */
 export const useUnsavedChanges = (
   dirty: MaybeRefOrGetter<boolean>,
   busy: MaybeRefOrGetter<boolean> = false,
+  options: { isWithinScope?: (to: RouteLocationNormalized) => boolean } = {},
 ) => {
   const router = useRouter()
   const overlay = useOverlay()
@@ -23,7 +25,8 @@ export const useUnsavedChanges = (
     event.preventDefault()
     event.returnValue = ''
   }
-  const removeGuard = router.beforeEach((to, from) => to.fullPath === from.fullPath || confirmDiscard())
+  const removeGuard = router.beforeEach((to, from) =>
+    to.fullPath === from.fullPath || options.isWithinScope?.(to) || confirmDiscard())
   onMounted(() => window.addEventListener('beforeunload', preventUnload))
   onBeforeUnmount(() => {
     removeGuard()

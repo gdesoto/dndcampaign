@@ -1,109 +1,8 @@
 <script setup lang="ts">
-const {
-  route,
-  campaignId,
-  sessionId,
-  canWriteContent,
-  canUploadRecording,
-  canRunSummary,
-  selectedFile,
-  selectedKind,
-  isUploading,
-  uploadError,
-  playbackError,
-  deleteRecordingError,
-  deletingRecordingId,
-  playbackLoading,
-  playbackUrls,
-  recordings,
-  transcriptDoc,
-  transcriptError,
-  transcriptDeleteError,
-  transcriptDeleting,
-  transcriptImportError,
-  transcriptImporting,
-  transcriptFile,
-  showFullTranscript,
-  transcriptPreview,
-  fullTranscript,
-  selectedSubtitleRecordingId,
-  videoOptions,
-  subtitleAttachLoading,
-  subtitleAttachError,
-  selectedSummaryJobId,
-  summaryJobOptions,
-  summarySending,
-  hasTranscript,
-  summaryStatusColor,
-  summaryStatusLabel,
-  summaryJob,
-  summaryPendingText,
-  summaryHighlights,
-  summarySessionTags,
-  summaryNotableDialogue,
-  summaryConcreteFacts,
-  summarySendError,
-  summaryActionError,
-  summaryForm,
-  summarySaving,
-  summaryDirty,
-  summaryDoc,
-  summaryFile,
-  summaryImporting,
-  summaryError,
-  summaryImportError,
-  selectedSuggestionJobId,
-  suggestionJobOptions,
-  suggestionSending,
-  suggestionApplying,
-  hasSummary,
-  suggestionStatusColor,
-  suggestionStatusLabel,
-  suggestionJob,
-  suggestionGroups,
-  sessionSuggestion,
-  suggestionSendError,
-  suggestionActionError,
-  recapFile,
-  recapUploading,
-  recapPlaybackLoading,
-  recapDeleting,
-  recapPlaybackUrl,
-  recapError,
-  recapDeleteError,
-  recap,
-  recaps,
-  selectedRecapKind,
-  uploadRecording,
-  loadPlayback,
-  deleteRecording,
-  openPlayer,
-  saveTranscript,
-  importTranscript,
-  deleteTranscript,
-  attachTranscriptToVideo,
-  refreshSummaryJob,
-  sendSummaryToN8n,
-  applyPendingSummary,
-  refreshSuggestionJobs,
-  generateSuggestions,
-  applySuggestion,
-  discardSuggestion,
-  saveSummary,
-  importSummary,
-  uploadRecap,
-  loadRecapPlayback,
-  deleteRecap,
-} = await useSessionWorkspaceViewModel()
-
-const currentStep = computed(() =>
-  typeof route.params.step === 'string' ? route.params.step : ''
-)
-
-const returnToPath = computed(
-  () => `/campaigns/${campaignId.value}/sessions/${sessionId.value}/${currentStep.value}`
-)
-useUnsavedChanges(summaryDirty, () => summarySaving.value || summaryImporting.value)
+const { campaignId, sessionId, resource, recording, recap, transcript, summary, suggestions, overview, openPlayer } = useSessionWorkspaceContext()
+const route = useRoute()
+const currentStep = computed(() => typeof route.params.step === 'string' ? route.params.step : '')
+const returnToPath = computed(() => `/campaigns/${campaignId.value}/sessions/${sessionId.value}/${currentStep.value}`)
 </script>
 
 <template>
@@ -112,22 +11,22 @@ useUnsavedChanges(summaryDirty, () => summarySaving.value || summaryImporting.va
       <SessionRecordingsPanel
         :workflow-mode="true"
         :campaign-id="campaignId"
-        :can-manage-recordings="canUploadRecording"
-        :recordings="recordings"
-        :selected-file="selectedFile"
-        :selected-kind="selectedKind"
-        :is-uploading="isUploading"
-        :upload-error="uploadError"
-        :playback-error="playbackError"
-        :delete-error="deleteRecordingError"
-        :deleting-recording-id="deletingRecordingId"
-        :playback-loading="playbackLoading"
-        :playback-urls="playbackUrls"
-        :delete-recording="canUploadRecording ? deleteRecording : undefined"
-        @update:selected-file="selectedFile = $event"
-        @update:selected-kind="selectedKind = $event"
-        @upload-recording="canUploadRecording && uploadRecording()"
-        @play-recording="loadPlayback"
+        :can-manage-recordings="resource.canUploadRecording"
+        :recordings="resource.recordings"
+        :selected-file="recording.selectedFile"
+        :selected-kind="recording.selectedKind"
+        :is-uploading="recording.isUploading"
+        :upload-error="recording.uploadError"
+        :playback-error="recording.playbackError"
+        :delete-error="recording.deleteError"
+        :deleting-recording-id="recording.deletingRecordingId"
+        :playback-loading="recording.playbackLoading"
+        :playback-urls="recording.playbackUrls"
+        :delete-recording="resource.canUploadRecording ? recording.deleteRecording : undefined"
+        @update:selected-file="recording.selectedFile = $event"
+        @update:selected-kind="recording.selectedKind = $event"
+        @upload-recording="resource.canUploadRecording && recording.uploadRecording()"
+        @play-recording="recording.loadPlayback"
         @open-player="openPlayer"
       />
     </div>
@@ -136,114 +35,114 @@ useUnsavedChanges(summaryDirty, () => summarySaving.value || summaryImporting.va
       <SessionTranscriptPanel
         :campaign-id="campaignId"
         :return-to-path="returnToPath"
-        :can-manage-transcript="canWriteContent"
-        :recordings="recordings"
-        :transcript-doc="transcriptDoc?.id ? { id: transcriptDoc.id } : null"
-        :transcript-error="transcriptError"
-        :transcript-delete-error="transcriptDeleteError"
-        :transcript-deleting="transcriptDeleting"
-        :transcript-import-error="transcriptImportError"
-        :transcript-importing="transcriptImporting"
-        :transcript-file="transcriptFile"
-        :show-full-transcript="showFullTranscript"
-        :transcript-preview="transcriptPreview"
-        :full-transcript="fullTranscript"
-        :selected-subtitle-recording-id="selectedSubtitleRecordingId"
-        :video-options="videoOptions"
-        :subtitle-attach-loading="subtitleAttachLoading"
-        :subtitle-attach-error="subtitleAttachError"
-        :delete-transcript="canWriteContent ? deleteTranscript : undefined"
-        @update:transcript-file="transcriptFile = $event"
-        @update:show-full-transcript="showFullTranscript = $event"
-        @update:selected-subtitle-recording-id="selectedSubtitleRecordingId = $event"
-        @create-transcript="canWriteContent && saveTranscript()"
-        @import-transcript="canWriteContent && importTranscript()"
-        @attach-subtitles="canWriteContent && attachTranscriptToVideo()"
+        :can-manage-transcript="resource.canWriteContent"
+        :recordings="resource.recordings"
+        :transcript-doc="resource.transcriptDoc?.id ? { id: resource.transcriptDoc.id } : null"
+        :transcript-error="transcript.transcriptError"
+        :transcript-delete-error="transcript.transcriptDeleteError"
+        :transcript-deleting="transcript.transcriptDeleting"
+        :transcript-import-error="transcript.transcriptImportError"
+        :transcript-importing="transcript.transcriptImporting"
+        :transcript-file="transcript.transcriptFile"
+        :show-full-transcript="transcript.showFullTranscript"
+        :transcript-preview="transcript.transcriptPreview"
+        :full-transcript="transcript.fullTranscript"
+        :selected-subtitle-recording-id="transcript.selectedSubtitleRecordingId"
+        :video-options="transcript.videoOptions"
+        :subtitle-attach-loading="transcript.subtitleAttachLoading"
+        :subtitle-attach-error="transcript.subtitleAttachError"
+        :delete-transcript="resource.canWriteContent ? transcript.deleteTranscript : undefined"
+        @update:transcript-file="transcript.transcriptFile = $event"
+        @update:show-full-transcript="transcript.showFullTranscript = $event"
+        @update:selected-subtitle-recording-id="transcript.selectedSubtitleRecordingId = $event"
+        @create-transcript="resource.canWriteContent && transcript.saveTranscript()"
+        @import-transcript="resource.canWriteContent && transcript.importTranscript()"
+        @attach-subtitles="resource.canWriteContent && transcript.attachTranscriptToVideo()"
       />
     </div>
 
     <div v-else-if="currentStep === 'summary'" class="space-y-4">
       <SessionSummaryPanel
-        :dirty="summaryDirty"
-        :can-edit="canWriteContent"
-        :can-generate="canRunSummary"
+        :dirty="summary.summaryDirty"
+        :can-edit="resource.canWriteContent"
+        :can-generate="resource.canRunSummary"
         :campaign-id="campaignId"
         :return-to-path="returnToPath"
-        :selected-summary-job-id="selectedSummaryJobId"
-        :summary-job-options="summaryJobOptions"
-        :summary-sending="summarySending"
-        :has-transcript="hasTranscript"
-        :summary-status-color="summaryStatusColor"
-        :summary-status-label="summaryStatusLabel"
-        :summary-tracking-id="summaryJob?.trackingId"
-        :summary-pending-text="summaryPendingText"
-        :summary-highlights="summaryHighlights"
-        :summary-session-tags="summarySessionTags"
-        :summary-notable-dialogue="summaryNotableDialogue"
-        :summary-concrete-facts="summaryConcreteFacts"
-        :summary-send-error="summarySendError"
-        :summary-action-error="summaryActionError"
-        :summary-content="summaryForm.content"
-        :summary-saving="summarySaving"
-        :summary-doc-id="summaryDoc?.id"
-        :summary-file="summaryFile"
-        :summary-importing="summaryImporting"
-        :summary-error="summaryError"
-        :summary-import-error="summaryImportError"
-        @update:selected-summary-job-id="selectedSummaryJobId = $event"
-        @refresh-jobs="refreshSummaryJob"
-        @send-to-n8n="canRunSummary && sendSummaryToN8n()"
-        @apply-pending-summary="canRunSummary && applyPendingSummary()"
-        @update:summary-content="summaryForm.content = $event"
-        @save-summary="canWriteContent && saveSummary()"
-        @update:summary-file="summaryFile = $event"
-        @import-summary="canWriteContent && importSummary()"
+        :selected-summary-job-id="summary.selectedSummaryJobId"
+        :summary-job-options="summary.summaryJobOptions"
+        :summary-sending="summary.summarySending"
+        :has-transcript="overview.hasTranscript"
+        :summary-status-color="summary.summaryStatusColor"
+        :summary-status-label="summary.summaryStatusLabel"
+        :summary-tracking-id="summary.summaryJob?.trackingId"
+        :summary-pending-text="summary.summaryPendingText"
+        :summary-highlights="summary.summaryHighlights"
+        :summary-session-tags="summary.summarySessionTags"
+        :summary-notable-dialogue="summary.summaryNotableDialogue"
+        :summary-concrete-facts="summary.summaryConcreteFacts"
+        :summary-send-error="summary.summarySendError"
+        :summary-action-error="summary.summaryActionError"
+        :summary-content="summary.summaryForm.content"
+        :summary-saving="summary.summarySaving"
+        :summary-doc-id="resource.summaryDoc?.id"
+        :summary-file="summary.summaryFile"
+        :summary-importing="summary.summaryImporting"
+        :summary-error="summary.summaryError"
+        :summary-import-error="summary.summaryImportError"
+        @update:selected-summary-job-id="summary.selectedSummaryJobId = $event"
+        @refresh-jobs="summary.refreshSummaryJob"
+        @send-to-n8n="resource.canRunSummary && summary.sendSummaryToN8n()"
+        @apply-pending-summary="resource.canRunSummary && summary.applyPendingSummary()"
+        @update:summary-content="summary.summaryForm.content = $event"
+        @save-summary="resource.canWriteContent && summary.saveSummary()"
+        @update:summary-file="summary.summaryFile = $event"
+        @import-summary="resource.canWriteContent && summary.importSummary()"
       />
     </div>
 
     <div v-else-if="currentStep === 'suggestions'" class="space-y-4">
       <SessionSuggestionsPanel
-        :can-generate="canRunSummary"
-        :selected-suggestion-job-id="selectedSuggestionJobId"
-        :suggestion-job-options="suggestionJobOptions"
-        :suggestion-sending="suggestionSending"
-        :applying="suggestionApplying"
-        :has-summary="hasSummary"
-        :suggestion-status-color="suggestionStatusColor"
-        :suggestion-status-label="suggestionStatusLabel"
-        :suggestion-tracking-id="suggestionJob?.trackingId"
-        :suggestion-groups="suggestionGroups"
-        :session-suggestion="sessionSuggestion"
-        :suggestion-send-error="suggestionSendError"
-        :suggestion-action-error="suggestionActionError"
-        @update:selected-suggestion-job-id="selectedSuggestionJobId = $event"
-        @refresh-jobs="refreshSuggestionJobs"
-        @generate-suggestions="canRunSummary && generateSuggestions()"
-        @apply-suggestion="canRunSummary && applySuggestion($event)"
-        @discard-suggestion="canRunSummary && discardSuggestion($event)"
+        :can-generate="resource.canRunSummary"
+        :selected-suggestion-job-id="suggestions.selectedSuggestionJobId"
+        :suggestion-job-options="suggestions.suggestionJobOptions"
+        :suggestion-sending="suggestions.suggestionSending"
+        :applying="suggestions.suggestionApplying"
+        :has-summary="overview.hasSummary"
+        :suggestion-status-color="suggestions.suggestionStatusColor"
+        :suggestion-status-label="suggestions.suggestionStatusLabel"
+        :suggestion-tracking-id="suggestions.suggestionJob?.trackingId"
+        :suggestion-groups="suggestions.suggestionGroups"
+        :session-suggestion="suggestions.sessionSuggestion"
+        :suggestion-send-error="suggestions.suggestionSendError"
+        :suggestion-action-error="suggestions.suggestionActionError"
+        @update:selected-suggestion-job-id="suggestions.selectedSuggestionJobId = $event"
+        @refresh-jobs="suggestions.refreshSuggestionJobs"
+        @generate-suggestions="resource.canRunSummary && suggestions.generateSuggestions()"
+        @apply-suggestion="resource.canRunSummary && suggestions.applySuggestion($event)"
+        @discard-suggestion="resource.canRunSummary && suggestions.discardSuggestion($event)"
       />
     </div>
 
     <div v-else-if="currentStep === 'recap'" class="space-y-4">
       <SessionRecapPanel
-        v-model:selected-kind="selectedRecapKind"
-        :can-manage="canUploadRecording"
+        v-model:selected-kind="recap.selectedRecapKind"
+        :can-manage="resource.canUploadRecording"
         :campaign-id="campaignId"
         :workflow-mode="true"
-        :recap="recap"
-        :recaps="recaps"
-        :recap-file="recapFile"
-        :recap-uploading="recapUploading"
-        :recap-playback-loading="recapPlaybackLoading"
-        :recap-deleting="recapDeleting"
-        :recap-playback-url="recapPlaybackUrl"
-        :recap-error="recapError"
-        :recap-delete-error="recapDeleteError"
-        :has-recap="Boolean(recap)"
-        :delete-recap="canUploadRecording ? deleteRecap : undefined"
-        @update:recap-file="recapFile = $event"
-        @upload-recap="canUploadRecording && uploadRecap()"
-        @play-recap="loadRecapPlayback"
+        :recap="recap.recap"
+        :recaps="resource.recaps"
+        :recap-file="recap.recapFile"
+        :recap-uploading="recap.recapUploading"
+        :recap-playback-loading="recap.recapPlaybackLoading"
+        :recap-deleting="recap.recapDeleting"
+        :recap-playback-url="recap.recapPlaybackUrl"
+        :recap-error="recap.recapError"
+        :recap-delete-error="recap.recapDeleteError"
+        :has-recap="Boolean(recap.recap)"
+        :delete-recap="resource.canUploadRecording ? recap.deleteRecap : undefined"
+        @update:recap-file="recap.recapFile = $event"
+        @upload-recap="resource.canUploadRecording && recap.uploadRecap()"
+        @play-recap="recap.loadRecapPlayback"
         @open-player="openPlayer"
       />
     </div>

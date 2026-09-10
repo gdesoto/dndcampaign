@@ -12,6 +12,7 @@ const password = 'encounter-api-pass'
 
 const users = {
   owner: { email: 'enc-owner@example.com', name: 'Encounter Owner' },
+  collaborator: { email: 'enc-collaborator@example.com', name: 'Encounter Collaborator' },
   viewer: { email: 'enc-viewer@example.com', name: 'Encounter Viewer' },
   outsider: { email: 'enc-outsider@example.com', name: 'Encounter Outsider' },
 }
@@ -68,6 +69,7 @@ describe('encounter API routes', () => {
 
     const ownerId = createdUsers.find((user) => user.email === users.owner.email)?.id as string
     const viewerId = createdUsers.find((user) => user.email === users.viewer.email)?.id as string
+    const collaboratorId = createdUsers.find((user) => user.email === users.collaborator.email)?.id as string
 
     const campaign = await prisma.campaign.create({
       data: {
@@ -75,6 +77,11 @@ describe('encounter API routes', () => {
         name: 'Encounter API Campaign',
         members: {
           create: [
+            {
+              userId: collaboratorId,
+              role: 'COLLABORATOR',
+              invitedByUserId: ownerId,
+            },
             {
               userId: ownerId,
               role: 'OWNER',
@@ -93,6 +100,7 @@ describe('encounter API routes', () => {
 
     campaignId = campaign.id
     cookies.owner = await loginAndGetCookie(users.owner.email)
+    cookies.collaborator = await loginAndGetCookie(users.collaborator.email)
     cookies.viewer = await loginAndGetCookie(users.viewer.email)
     cookies.outsider = await loginAndGetCookie(users.outsider.email)
 
@@ -103,6 +111,47 @@ describe('encounter API routes', () => {
 
   afterAll(async () => {
     await prisma.$disconnect()
+  })
+
+  it.each([
+    { role: 'owner', readStatus: 200, writeStatus: 200 },
+    { role: 'collaborator', readStatus: 200, writeStatus: 200 },
+    { role: 'viewer', readStatus: 200, writeStatus: 404 },
+    { role: 'outsider', readStatus: 404, writeStatus: 404 },
+  ])('preserves encounter access for $role', async ({ role, readStatus, writeStatus }) => {
+    const created = await fetch(`${baseUrl}/api/campaigns/${campaignId}/encounters`, {
+      method: 'POST',
+      headers: { cookie: cookies.owner, 'content-type': 'application/json' },
+      body: JSON.stringify({ name: `Access check: ${role}`, type: 'COMBAT' }),
+    })
+    expect(created.status).toBe(200)
+    const { data: encounter } = await created.json()
+    for (const suffix of ['', '/summary']) {
+      const response = await fetch(`${baseUrl}/api/encounters/${encounter.id}${suffix}`, {
+        headers: { cookie: cookies[role] },
+      })
+      expect(response.status).toBe(readStatus)
+    }
+    const response = await fetch(`${baseUrl}/api/encounters/${encounter.id}`, {
+      method: 'PATCH',
+      headers: { cookie: cookies[role], 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'start' }),
+    })
+    expect(response.status).toBe(writeStatus)
+    const stored = await prisma.campaignEncounter.findUniqueOrThrow({ where: { id: encounter.id } })
+    expect(stored.status).toBe(writeStatus === 200 ? 'ACTIVE' : 'PLANNED')
+  })
+
+  it('returns not found for a missing encounter on reads and lifecycle writes', async () => {
+    for (const method of ['GET', 'PATCH']) {
+      const response = await fetch(`${baseUrl}/api/encounters/missing-encounter`, {
+        method,
+        headers: { cookie: cookies.owner, 'content-type': 'application/json' },
+        ...(method === 'PATCH' ? { body: JSON.stringify({ action: 'start' }) } : {}),
+      })
+      expect(response.status).toBe(404)
+      expect((await response.json()).error.code).toBe('NOT_FOUND')
+    }
   })
 
   it('creates encounter, updates runtime, and blocks viewer writes', async () => {

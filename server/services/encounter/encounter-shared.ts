@@ -48,27 +48,11 @@ export async function getEncounterWithAccess(
   userId: string,
   permission: CampaignPermission,
 ) {
-  const encounter = await prisma.campaignEncounter.findUnique({
-    where: { id: encounterId },
-    select: { id: true, campaignId: true },
-  })
-  if (!encounter) {
-    return null
-  }
-
-  const campaignAccess = await prisma.campaign.findFirst({
+  return prisma.campaignEncounter.findFirst({
     where: {
-      id: encounter.campaignId,
-      ...buildCampaignWhereForPermission(userId, permission),
+      id: encounterId,
+      campaign: buildCampaignWhereForPermission(userId, permission),
     },
-    select: { id: true },
-  })
-  if (!campaignAccess) {
-    return null
-  }
-
-  return prisma.campaignEncounter.findUnique({
-    where: { id: encounterId },
     include: {
       combatants: true,
       events: { orderBy: { createdAt: 'asc' } },

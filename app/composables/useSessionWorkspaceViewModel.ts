@@ -1,3 +1,4 @@
+import type { Ref } from 'vue'
 import type { TimelineItem } from '@nuxt/ui'
 import {
   isSegmentedTranscript,
@@ -8,18 +9,19 @@ import { formatSessionDate, serializeSessionDateInput } from '~/utils/session-da
 
 const workflowStepOrder = ['recordings', 'transcription', 'summary', 'suggestions', 'recap'] as const
 type WorkflowStep = (typeof workflowStepOrder)[number]
-const sessionSectionOrder = ['overview', ...workflowStepOrder] as const
-export type SessionSection = (typeof sessionSectionOrder)[number]
 
-export async function useSessionWorkspaceViewModel() {
-  const nuxtApp = useNuxtApp()
+/** Construct once, synchronously in the session parent after its resource has loaded. */
+export function useSessionWorkspaceViewModel(options: {
+  campaignId: Ref<string>
+  sessionId: Ref<string>
+  resource: Awaited<ReturnType<typeof useSessionWorkspace>>
+}) {
   const route = useRoute()
-  const campaignId = computed(() => route.params.campaignId as string)
-  const sessionId = computed(() => route.params.sessionId as string)
+  const { campaignId, sessionId, resource } = options
   const { request } = useApi()
   const toast = useToast()
   const player = useMediaPlayer()
-  const isEditSessionOpen = useState<boolean>(`session-edit-open-${sessionId.value}`, () => false)
+  const isEditSessionOpen = ref(false)
 
   const {
     session,
@@ -27,35 +29,14 @@ export async function useSessionWorkspaceViewModel() {
     recaps,
     transcriptDoc,
     summaryDoc,
-    access,
     canWriteContent,
-    canRunSummary,
-    canUploadRecording,
-    pending,
-    error,
-    refreshAll,
-    refreshSession,
-    refreshRecordings,
-    refreshRecap,
-    refreshTranscript,
-    refreshSummary,
-  } = await useSessionWorkspace({
-    sessionId,
-  })
+    refreshWorkspace,
+  } = resource
 
   const selectedRecapKind = ref<'AUDIO' | 'VIDEO'>('AUDIO')
   const recap = computed(() => recaps.value.find((item) =>
     (item.mimeType.startsWith('video/') ? 'VIDEO' : 'AUDIO') === selectedRecapKind.value
   ) ?? null)
-
-  const sessionInvalidation = useSessionWorkspaceInvalidation({
-    refreshAll,
-    refreshSession,
-    refreshRecordings,
-    refreshRecap,
-    refreshTranscript,
-    refreshSummary,
-  })
 
   const form = reactive({
     title: '',
@@ -71,23 +52,6 @@ export async function useSessionWorkspaceViewModel() {
   const selectedSubtitleRecordingId = ref('')
   const showFullTranscript = ref(false)
 
-  const checklistItems = ref([
-    { id: 'details', label: 'Session details captured', done: false },
-    { id: 'recordings', label: 'Audio/video recordings uploaded', done: false },
-    { id: 'transcribe', label: 'Transcription requested from ElevenLabs', done: false },
-    { id: 'transcript_received', label: 'Transcript received and saved', done: false },
-    { id: 'attach_initial_vtt', label: 'Transcript attached to video (VTT)', done: false },
-    { id: 'edit_transcript', label: 'Transcript edits saved in editor', done: false },
-    { id: 'attach_final_vtt', label: 'Updated transcript re-attached as VTT', done: false },
-    { id: 'send_summary', label: 'Transcript sent to n8n for summary', done: false },
-    { id: 'summary_received', label: 'Summary received and saved', done: false },
-    { id: 'edit_summary', label: 'Summary edits saved in editor', done: false },
-    { id: 'generate_suggestions', label: 'Suggestions generated from summary', done: false },
-    { id: 'review_links', label: 'Suggestions reviewed (apply/discard)', done: false },
-    { id: 'send_recap', label: 'Summary sent to ElevenLabs for recap', done: false },
-    { id: 'recap_received', label: 'Recap podcast received and saved', done: false },
-  ])
-
   const transcriptForm = reactive({
     content: '',
   })
@@ -98,123 +62,46 @@ export async function useSessionWorkspaceViewModel() {
     typeof route.params.step === 'string' ? route.params.step : ''
   )
 
-  const currentSection = computed<SessionSection>(() =>
-    sessionSectionOrder.includes(stepParam.value as SessionSection)
-      ? (stepParam.value as SessionSection)
-      : 'overview'
-  )
-
-  const {
-    uploadError,
-    isUploading,
-    selectedFile,
-    selectedKind,
-    playbackUrls,
-    playbackLoading,
-    playbackError,
-    deletingRecordingId,
-    deleteError: deleteRecordingError,
-    uploadRecording,
-    loadPlayback,
-    deleteRecording,
-  } = await nuxtApp.runWithContext(() => useSessionRecordings({
+  const recording = useSessionRecordings({
     sessionId,
     recordings,
-    refreshRecordings: sessionInvalidation.afterRecordingsMutation,
-  }))
+    refreshRecordings: refreshWorkspace,
+  })
 
-  const {
-    recapFile,
-    recapUploading,
-    recapError,
-    recapPlaybackUrl,
-    recapPlaybackLoading,
-    recapDeleting,
-    recapDeleteError,
-    uploadRecap,
-    loadRecapPlayback,
-    deleteRecap,
-  } = await nuxtApp.runWithContext(() => useSessionRecap({
+  const recapActions = useSessionRecap({
     sessionId,
     recap,
     selectedRecapKind,
-    refreshRecap: sessionInvalidation.afterRecapMutation,
-  }))
+    refreshRecap: refreshWorkspace,
+  })
 
-  const {
-    summarySending,
-    summarySendError,
-    summaryActionError,
-    selectedSummaryJobId,
-    summaryJob,
-    summaryJobOptions,
-    summaryHighlights,
-    summaryPendingText,
-    summarySessionTags,
-    summaryNotableDialogue,
-    summaryConcreteFacts,
-    summaryStatusLabel,
-    summaryStatusColor,
-    refreshSummaryJob,
-    sendSummaryToN8n,
-    applyPendingSummary,
-  } = await nuxtApp.runWithContext(() => useSessionSummaryJobs({
+  const jobs = useSessionJobs(sessionId)
+  const summaryJobs = useSessionSummaryJobs({
+    jobs,
     sessionId,
     transcriptDoc,
-    refreshSummary: sessionInvalidation.afterSummaryMutation,
-  }))
+    refreshSummary: refreshWorkspace,
+  })
 
-  const {
-    suggestionSending,
-    suggestionApplying,
-    suggestionSendError,
-    suggestionActionError,
-    selectedSuggestionJobId,
-    suggestionJob,
-    suggestionJobOptions,
-    sessionSuggestion,
-    suggestionStatusLabel,
-    suggestionStatusColor,
-    suggestionGroups,
-    refreshSuggestionJobs,
-    generateSuggestions,
-    applySuggestion,
-    discardSuggestion,
-  } = await nuxtApp.runWithContext(() => useSessionSuggestionJobs({
+  const suggestions = useSessionSuggestionJobs({
+    jobs,
     sessionId,
     summaryDoc,
-  }))
+  })
 
   const transcriptContent = toRef(transcriptForm, 'content')
   const summaryContent = toRef(summaryForm, 'content')
 
-  const {
-    summarySaving,
-    transcriptError,
-    summaryError,
-    transcriptImportError,
-    summaryImportError,
-    transcriptImporting,
-    summaryImporting,
-    transcriptFile,
-    summaryFile,
-    transcriptDeleting,
-    transcriptDeleteError,
-    saveTranscript,
-    saveSummary: persistSummary,
-    importTranscript,
-    importSummary,
-    deleteTranscript,
-  } = await nuxtApp.runWithContext(() => useSessionDocuments({
+  const documents = useSessionDocuments({
     sessionId,
     sessionTitle: computed(() => session.value?.title),
     transcriptDoc,
     summaryDoc,
     transcriptContent,
     summaryContent,
-    refreshTranscript: sessionInvalidation.afterTranscriptMutation,
-    refreshSummary: sessionInvalidation.afterSummaryMutation,
-  }))
+    refreshTranscript: refreshWorkspace,
+    refreshSummary: refreshWorkspace,
+  })
 
   const sessionDraft = useEditorDraft(() => ({ ...form }), value => Object.assign(form, value))
   watch(() => session.value, value => {
@@ -247,7 +134,7 @@ export async function useSessionWorkspaceViewModel() {
   const hasRecordings = computed(() => (recordings.value?.length || 0) > 0)
   const hasTranscript = computed(() => Boolean(transcriptDoc.value))
   const hasSummary = computed(() => Boolean(summaryDoc.value))
-  const hasSuggestionJob = computed(() => Boolean(suggestionJob.value))
+  const hasSuggestionJob = computed(() => Boolean(suggestions.suggestionJob.value))
   const hasRecap = computed(() => Boolean(recaps.value.length))
   const videoOptions = computed(() =>
     (recordings.value || [])
@@ -300,9 +187,9 @@ export async function useSessionWorkspaceViewModel() {
     summaryDraft.sync({ content: value?.currentVersion?.content || '' }, id)
   }, { immediate: true })
   const saveSummary = async () => {
-    if (!canWriteContent.value || summarySaving.value || summaryImporting.value) return
+    if (!canWriteContent.value || documents.summarySaving.value || documents.summaryImporting.value) return
     const submitted = summaryDraft.snapshot()
-    if (await persistSummary()) summaryDraft.accept(submitted)
+    if (await documents.saveSummary()) summaryDraft.accept(submitted)
   }
 
   const sessionNavigationItems = computed<TimelineItem[]>(() => [
@@ -413,7 +300,7 @@ export async function useSessionWorkspaceViewModel() {
         },
       })
       sessionDraft.accept(submitted)
-      await sessionInvalidation.afterSessionMutation()
+      await refreshWorkspace()
       toast.add({
         title: 'Session saved',
         color: 'success',
@@ -444,7 +331,7 @@ export async function useSessionWorkspaceViewModel() {
         method: 'POST',
         body: { mode: 'from-transcript' },
       })
-      await sessionInvalidation.afterRecordingsMutation()
+      await refreshWorkspace()
     } catch (error) {
       subtitleAttachError.value =
         (error as Error & { message?: string }).message || 'Unable to attach subtitles.'
@@ -454,123 +341,50 @@ export async function useSessionWorkspaceViewModel() {
   }
 
   return {
-    summaryDirty: summaryDraft.dirty,
-    route,
     campaignId,
     sessionId,
-    session,
-    recordings,
-    recap,
-    recaps,
-    selectedRecapKind,
-    transcriptDoc,
-    summaryDoc,
-    access,
-    canWriteContent,
-    canRunSummary,
-    canUploadRecording,
-    pending,
-    error,
-    refreshSession,
-    form,
-    isSaving,
-    saveError,
-    subtitleAttachLoading,
-    subtitleAttachError,
-    selectedSubtitleRecordingId,
-    showFullTranscript,
-    isEditSessionOpen,
-    checklistItems,
-    transcriptForm,
-    summaryForm,
-    currentSection,
-    uploadError,
-    isUploading,
-    selectedFile,
-    selectedKind,
-    playbackUrls,
-    playbackLoading,
-    playbackError,
-    deletingRecordingId,
-    deleteRecordingError,
-    uploadRecording,
-    loadPlayback,
-    deleteRecording,
-    recapFile,
-    recapUploading,
-    recapError,
-    recapPlaybackUrl,
-    recapPlaybackLoading,
-    recapDeleting,
-    recapDeleteError,
-    uploadRecap,
-    loadRecapPlayback,
-    deleteRecap,
-    summarySending,
-    summarySendError,
-    summaryActionError,
-    selectedSummaryJobId,
-    summaryJob,
-    summaryJobOptions,
-    summaryHighlights,
-    summaryPendingText,
-    summarySessionTags,
-    summaryNotableDialogue,
-    summaryConcreteFacts,
-    summaryStatusLabel,
-    summaryStatusColor,
-    refreshSummaryJob,
-    sendSummaryToN8n,
-    applyPendingSummary,
-    suggestionSending,
-    suggestionApplying,
-    suggestionSendError,
-    suggestionActionError,
-    selectedSuggestionJobId,
-    suggestionJob,
-    suggestionJobOptions,
-    sessionSuggestion,
-    suggestionStatusLabel,
-    suggestionStatusColor,
-    suggestionGroups,
-    refreshSuggestionJobs,
-    generateSuggestions,
-    applySuggestion,
-    discardSuggestion,
-    summarySaving,
-    transcriptError,
-    summaryError,
-    transcriptImportError,
-    summaryImportError,
-    transcriptImporting,
-    summaryImporting,
-    transcriptFile,
-    summaryFile,
-    transcriptDeleting,
-    transcriptDeleteError,
-    saveTranscript,
-    saveSummary,
-    importTranscript,
-    importSummary,
-    deleteTranscript,
-    sessionDungeonMasterLabel,
-    sessionHeaderDescription,
-    recordingsCount,
-    recapStatus,
-    transcriptStatus,
-    summaryStatus,
-    hasTranscript,
-    hasSummary,
-    hasRecap,
-    videoOptions,
-    transcriptPreview,
-    fullTranscript,
-    summaryPreview,
-    sessionNavigationItems,
-    openSessionSection,
-    openEditSession,
-    saveSession,
-    attachTranscriptToVideo,
+    resource: reactive(resource),
+    jobs: reactive(jobs),
+    editor: reactive({ form, isSaving, saveError, isEditSessionOpen, openEditSession, saveSession }),
+    recording: reactive(recording),
+    recap: reactive({ ...recapActions, recap, selectedRecapKind }),
+    summary: reactive({
+      ...summaryJobs,
+      summaryForm,
+      summaryDirty: summaryDraft.dirty,
+      summarySaving: documents.summarySaving,
+      summaryImporting: documents.summaryImporting,
+      summaryFile: documents.summaryFile,
+      summaryError: documents.summaryError,
+      summaryImportError: documents.summaryImportError,
+      saveSummary,
+      importSummary: documents.importSummary,
+    }),
+    transcript: reactive({
+      transcriptError: documents.transcriptError,
+      transcriptDeleteError: documents.transcriptDeleteError,
+      transcriptDeleting: documents.transcriptDeleting,
+      transcriptImportError: documents.transcriptImportError,
+      transcriptImporting: documents.transcriptImporting,
+      transcriptFile: documents.transcriptFile,
+      saveTranscript: documents.saveTranscript,
+      importTranscript: documents.importTranscript,
+      deleteTranscript: documents.deleteTranscript,
+      showFullTranscript,
+      transcriptPreview,
+      fullTranscript,
+      videoOptions,
+      selectedSubtitleRecordingId,
+      subtitleAttachLoading,
+      subtitleAttachError,
+      attachTranscriptToVideo,
+    }),
+    suggestions: reactive(suggestions),
+    overview: reactive({
+      sessionDungeonMasterLabel, sessionHeaderDescription, recordingsCount,
+      recapStatus, transcriptStatus, summaryStatus, summaryPreview, hasTranscript, hasSummary,
+    }),
+    navigation: reactive({ sessionNavigationItems, openSessionSection }),
     openPlayer: player.openDrawer,
   }
 }

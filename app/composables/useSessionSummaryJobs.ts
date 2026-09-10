@@ -1,6 +1,7 @@
 import type { Ref } from 'vue'
 
 type UseSessionSummaryJobsOptions = {
+  jobs: ReturnType<typeof useSessionJobs>
   sessionId: Ref<string>
   transcriptDoc: Ref<{ id: string } | null | undefined>
   refreshSummary: () => Promise<void>
@@ -13,16 +14,17 @@ export function useSessionSummaryJobs(options: UseSessionSummaryJobsOptions) {
   const summarySendError = ref('')
   const summaryActionError = ref('')
   const {
+    loadError,
+    statusLabel: summaryStatusLabel,
+    statusColor: summaryStatusColor,
     selectedSummaryJobId,
     summaryJob,
     summaryJobHistory,
     summaryJobOptions,
     refreshSummaryJob,
-    refreshSelectedSummaryJob,
   } = useSummaryJobState({
-    sessionId: options.sessionId,
+    jobs: options.jobs,
     jobKind: 'SUMMARY_GENERATION',
-    keyPrefix: 'summary',
   })
 
   const summaryHighlights = computed(() => {
@@ -68,42 +70,6 @@ export function useSessionSummaryJobs(options: UseSessionSummaryJobsOptions) {
       : []
   })
 
-  const summaryStatusLabel = computed(() => {
-    switch (summaryJob.value?.status) {
-      case 'READY_FOR_REVIEW':
-        return 'Ready for review'
-      case 'PROCESSING':
-        return 'Processing'
-      case 'SENT':
-        return 'Sent'
-      case 'APPLIED':
-        return 'Applied'
-      case 'FAILED':
-        return 'Failed'
-      case 'QUEUED':
-        return 'Queued'
-      default:
-        return 'Not started'
-    }
-  })
-
-  const summaryStatusColor = computed(() => {
-    switch (summaryJob.value?.status) {
-      case 'READY_FOR_REVIEW':
-        return 'warning'
-      case 'PROCESSING':
-      case 'SENT':
-      case 'QUEUED':
-        return 'primary'
-      case 'APPLIED':
-        return 'success'
-      case 'FAILED':
-        return 'error'
-      default:
-        return 'secondary'
-    }
-  })
-
   const sendSummaryToN8n = async () => {
     if (!options.transcriptDoc.value) {
       summarySendError.value = 'Transcript is required to generate a summary.'
@@ -138,7 +104,6 @@ export function useSessionSummaryJobs(options: UseSessionSummaryJobsOptions) {
       })
       await options.refreshSummary()
       await refreshSummaryJob()
-      await refreshSelectedSummaryJob()
     } catch (error) {
       summaryActionError.value =
         (error as Error & { message?: string }).message || 'Unable to apply summary.'
@@ -148,7 +113,7 @@ export function useSessionSummaryJobs(options: UseSessionSummaryJobsOptions) {
   return {
     summarySending,
     summarySendError,
-    summaryActionError,
+    summaryActionError: computed(() => summaryActionError.value || loadError.value?.message || ''),
     selectedSummaryJobId,
     summaryJob,
     summaryJobHistory,

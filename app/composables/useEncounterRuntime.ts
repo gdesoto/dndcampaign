@@ -11,18 +11,8 @@ import type {
 export function useEncounterRuntime() {
   const { request } = useApi()
 
-  const start = async (encounterId: string) =>
-    request(`/api/encounters/${encounterId}`, { method: 'PATCH', body: { action: 'start' } })
-  const pause = async (encounterId: string) =>
-    request(`/api/encounters/${encounterId}`, { method: 'PATCH', body: { action: 'pause' } })
-  const resume = async (encounterId: string) =>
-    request(`/api/encounters/${encounterId}`, { method: 'PATCH', body: { action: 'resume' } })
-  const complete = async (encounterId: string) =>
-    request(`/api/encounters/${encounterId}`, { method: 'PATCH', body: { action: 'complete' } })
-  const abandon = async (encounterId: string) =>
-    request(`/api/encounters/${encounterId}`, { method: 'PATCH', body: { action: 'abandon' } })
-  const reset = async (encounterId: string) =>
-    request(`/api/encounters/${encounterId}`, { method: 'PATCH', body: { action: 'reset' } })
+  const transition = async (encounterId: string, action: 'start' | 'pause' | 'resume' | 'complete' | 'abandon' | 'reset') =>
+    request(`/api/encounters/${encounterId}`, { method: 'PATCH', body: { action } })
 
   const rollInitiative = async (encounterId: string, input?: EncounterInitiativeRollInput) =>
     request(`/api/encounters/${encounterId}/initiative`, {
@@ -105,12 +95,7 @@ export function useEncounterRuntime() {
     })
 
   return {
-    start,
-    pause,
-    resume,
-    complete,
-    abandon,
-    reset,
+    transition,
     rollInitiative,
     reorderInitiative,
     advanceTurn,

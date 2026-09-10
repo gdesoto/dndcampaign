@@ -11,6 +11,7 @@ it.each(['apply', 'discard'] as const)('serializes %s with other suggestion acti
   let rejectRequest!: (reason: Error) => void
   request.mockReset().mockImplementationOnce(() => new Promise((_, reject) => { rejectRequest = reject }))
   jobState.mockReturnValue({
+    loadError: ref(null),
     selectedSummaryJobId: ref('j1'), summaryJob: ref(null), summaryJobHistory: ref([]), summaryJobOptions: ref([]),
     summarySuggestions: ref([{ id: 's1', entityType: 'SESSION' }, { id: 'q1', entityType: 'QUEST' }]),
     refreshSummaryJob: vi.fn(), refreshSelectedSummaryJob: vi.fn(),
@@ -18,7 +19,7 @@ it.each(['apply', 'discard'] as const)('serializes %s with other suggestion acti
   let controls!: ReturnType<typeof useSessionSuggestionJobs>
   const wrapper = await mountSuspended(defineComponent({
     setup() {
-      controls = useSessionSuggestionJobs({ sessionId: ref('s1'), summaryDoc: ref({ id: 'd1' }) })
+      controls = useSessionSuggestionJobs({ sessionId: ref('s1'), summaryDoc: ref({ id: 'd1' }), jobs: { sessionId: ref('s1'), data: ref(null), pending: ref(false), error: ref(undefined), refresh: vi.fn() } })
       return () => null
     },
   }))

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { EncounterCombatant, EncounterSummaryReport } from '#shared/types/encounter'
+import type { EncounterCombatant } from '#shared/types/encounter'
+import { buildEncounterSummary } from '#shared/utils/encounter-summary'
 import type { CampaignCalendarConfigDto } from '~/composables/useCampaignCalendar'
 
 definePageMeta({ layout: 'dashboard' })
@@ -78,8 +79,7 @@ const { data: calendarConfig } = await useAsyncData(
   () => request<CampaignCalendarConfigDto | null>(`/api/campaigns/${campaignId.value}/calendar/config`),
 )
 
-const summary = ref<EncounterSummaryReport | null>(null)
-const summaryPending = ref(false)
+const summary = computed(() => encounter.value ? buildEncounterSummary(encounter.value) : null)
 const actionError = ref('')
 const noteDraft = ref('')
 const preferredActiveCombatantId = ref<string | null>(null)
@@ -200,7 +200,7 @@ const refreshPreservingUiState = async () => {
   const previousActiveId = activeCombatant.value?.id || preferredActiveCombatantId.value
   const previousScrollY = import.meta.client ? window.scrollY : 0
 
-  await Promise.all([refresh(), refreshSummary()])
+  await refresh()
   await nextTick()
 
   if (import.meta.client) {
@@ -210,17 +210,6 @@ const refreshPreservingUiState = async () => {
     })
   }
   preferredActiveCombatantId.value = previousActiveId || null
-}
-
-const refreshSummary = async () => {
-  summaryPending.value = true
-  try {
-    summary.value = (await detailApi.getSummary(encounterId.value)) as EncounterSummaryReport
-  } catch {
-    summary.value = null
-  } finally {
-    summaryPending.value = false
-  }
 }
 
 const openManageCombatants = () => {
@@ -372,14 +361,7 @@ const deleteCombatant = async (combatantId: string) => {
 
 const runStatusAction = async (action: 'start' | 'pause' | 'resume' | 'complete' | 'abandon' | 'reset') => {
   if (!canWriteContent.value) return
-  await withAction(async () => {
-    if (action === 'start') await runtimeApi.start(encounterId.value)
-    if (action === 'pause') await runtimeApi.pause(encounterId.value)
-    if (action === 'resume') await runtimeApi.resume(encounterId.value)
-    if (action === 'complete') await runtimeApi.complete(encounterId.value)
-    if (action === 'abandon') await runtimeApi.abandon(encounterId.value)
-    if (action === 'reset') await runtimeApi.reset(encounterId.value)
-  })
+  await withAction(() => runtimeApi.transition(encounterId.value, action))
 }
 
 const advanceTurn = async () => {
@@ -745,7 +727,6 @@ onBeforeUnmount(() => {
   if (pollingHandle) clearInterval(pollingHandle)
 })
 
-await refreshSummary()
 const confirmStatusAction = async (action: 'reset' | 'abandon') => {
   await runStatusAction(action)
   if (actionError.value) throw new Error(actionError.value)
@@ -831,7 +812,7 @@ const confirmStatusAction = async (action: 'reset' | 'abandon') => {
 
           <div class="space-y-4">
             <EncounterSummaryPanel
-              :summary="summaryPending ? null : summary"
+              :summary="summary"
             />
 
             <UCard>

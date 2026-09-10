@@ -17,8 +17,6 @@ export function useEncounterDetail() {
       method: 'DELETE',
     })
 
-  const getSummary = async (encounterId: string) => request(`/api/encounters/${encounterId}/summary`)
-
   const getEvents = async (encounterId: string) => request(`/api/encounters/${encounterId}/events`)
 
   const addNoteEvent = async (encounterId: string, summary: string) =>
@@ -31,7 +29,6 @@ export function useEncounterDetail() {
     getEncounter,
     updateEncounter,
     deleteEncounter,
-    getSummary,
     getEvents,
     addNoteEvent,
   }

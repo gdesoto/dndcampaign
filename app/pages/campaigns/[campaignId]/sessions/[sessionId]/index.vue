@@ -1,61 +1,19 @@
 <script setup lang="ts">
 import { formatSessionDate } from '~/utils/session-date'
-const {
-  campaignId,
-  canUploadRecording,
-  sessionDungeonMasterLabel,
-  transcriptPreview,
-  summaryPreview,
-  recordingsCount,
-  transcriptStatus,
-  summaryStatus,
-  suggestionStatusLabel,
-  recapStatus,
-  transcriptDoc,
-  summaryDoc,
-  recordings,
-  selectedFile,
-  selectedKind,
-  isUploading,
-  uploadError,
-  playbackError,
-  deleteRecordingError,
-  deletingRecordingId,
-  playbackLoading,
-  playbackUrls,
-  uploadRecording,
-  loadPlayback,
-  deleteRecording,
-  openPlayer,
-  recapFile,
-  recapUploading,
-  recapPlaybackLoading,
-  recapDeleting,
-  recapPlaybackUrl,
-  recapError,
-  recapDeleteError,
-  recap,
-  recaps,
-  selectedRecapKind,
-  uploadRecap,
-  loadRecapPlayback,
-  deleteRecap,
-  openSessionSection,
-  session,
-} = await useSessionWorkspaceViewModel()
+const { campaignId, resource, recording, recap, transcript, suggestions, overview, navigation, openPlayer } = useSessionWorkspaceContext()
 </script>
 
 <template>
   <div class="space-y-6 theme-reveal">
     <SessionStatusCards
-      :recordings-count="recordingsCount"
-      :transcript-status="transcriptStatus"
-      :summary-status="summaryStatus"
-      :suggestion-status="suggestionStatusLabel"
-      :recap-status="recapStatus"
+      :recordings-count="overview.recordingsCount"
+      :transcript-status="overview.transcriptStatus"
+      :summary-status="overview.summaryStatus"
+      :suggestion-status="suggestions.suggestionStatusLabel"
+      :recap-status="overview.recapStatus"
       mode="overview"
       active-step="recordings"
-      @jump-step="openSessionSection"
+      @jump-step="navigation.openSessionSection"
     />
 
     <UCard class="session-story">
@@ -66,22 +24,22 @@ const {
             <h2 class="type-section text-highlighted">Session notes</h2>
             <span class="h-px flex-1 bg-primary/20" aria-hidden="true" />
           </div>
-          <p class="reading-copy whitespace-pre-wrap text-default wrap-break-word">{{ session?.notes || 'No notes added yet. Edit this session to capture the story.' }}</p>
+          <p class="reading-copy whitespace-pre-wrap text-default wrap-break-word">{{ resource.session?.notes || 'No notes added yet. Edit this session to capture the story.' }}</p>
         </section>
         <dl class="space-y-4 border-t border-primary/20 pt-4 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6">
           <div>
             <dt class="type-label text-muted">Session</dt>
-            <dd class="type-metric tabular-nums text-highlighted">{{ session?.sessionNumber ?? '—' }}</dd>
+            <dd class="type-metric tabular-nums text-highlighted">{{ resource.session?.sessionNumber ?? '—' }}</dd>
           </div>
           <div>
             <dt class="type-label text-muted">Played on</dt>
-            <dd class="mt-1 text-sm text-highlighted">{{ formatSessionDate(session?.playedAt) }}</dd>
+            <dd class="mt-1 text-sm text-highlighted">{{ formatSessionDate(resource.session?.playedAt) }}</dd>
           </div>
           <div>
             <dt class="type-label text-muted">Dungeon Master</dt>
             <dd class="mt-2 flex items-center gap-2 text-sm text-highlighted">
-              <UAvatar :alt="sessionDungeonMasterLabel" size="xs" />
-              {{ sessionDungeonMasterLabel }}
+              <UAvatar :alt="overview.sessionDungeonMasterLabel" size="xs" />
+              {{ overview.sessionDungeonMasterLabel }}
             </dd>
           </div>
         </dl>
@@ -98,18 +56,18 @@ const {
             </div>
             <SessionStepLinkButton
               step="transcription"
-              @open="openSessionSection('transcription')"
+              @open="navigation.openSessionSection('transcription')"
             />
           </div>
         </template>
         <div class="space-y-3">
-          <p class="whitespace-pre-line reading-copy text-default">{{ transcriptPreview }}</p>
+          <p class="whitespace-pre-line reading-copy text-default">{{ transcript.transcriptPreview }}</p>
           <div class="flex flex-wrap gap-2">
             <UButton
-              v-if="transcriptDoc?.id"
+              v-if="resource.transcriptDoc?.id"
               size="sm"
               variant="outline"
-              :to="`/campaigns/${campaignId}/documents/${transcriptDoc.id}`"
+              :to="`/campaigns/${campaignId}/documents/${resource.transcriptDoc.id}`"
             >
               Open editor
             </UButton>
@@ -126,18 +84,18 @@ const {
             </div>
             <SessionStepLinkButton
               step="summary"
-              @open="openSessionSection('summary')"
+              @open="navigation.openSessionSection('summary')"
             />
           </div>
         </template>
         <div class="space-y-3">
-          <p class="whitespace-pre-line text-sm text-muted">{{ summaryPreview }}</p>
+          <p class="whitespace-pre-line text-sm text-muted">{{ overview.summaryPreview }}</p>
           <div class="flex flex-wrap gap-2">
             <UButton
-              v-if="summaryDoc?.id"
+              v-if="resource.summaryDoc?.id"
               size="sm"
               variant="outline"
-              :to="`/campaigns/${campaignId}/documents/${summaryDoc.id}`"
+              :to="`/campaigns/${campaignId}/documents/${resource.summaryDoc.id}`"
             >
               Open editor
             </UButton>
@@ -149,48 +107,48 @@ const {
     <SessionRecordingsPanel
       :workflow-mode="false"
       open-step="recordings"
-      :can-manage-recordings="canUploadRecording"
+      :can-manage-recordings="resource.canUploadRecording"
       :campaign-id="campaignId"
-      :recordings="recordings"
-      :selected-file="selectedFile"
-      :selected-kind="selectedKind"
-      :is-uploading="isUploading"
-      :upload-error="uploadError"
-      :playback-error="playbackError"
-      :delete-error="deleteRecordingError"
-      :deleting-recording-id="deletingRecordingId"
-      :playback-loading="playbackLoading"
-      :playback-urls="playbackUrls"
-      :delete-recording="canUploadRecording ? deleteRecording : undefined"
-      @update:selected-file="selectedFile = $event"
-      @update:selected-kind="selectedKind = $event"
-      @upload-recording="canUploadRecording && uploadRecording()"
-      @play-recording="loadPlayback"
+      :recordings="resource.recordings"
+      :selected-file="recording.selectedFile"
+      :selected-kind="recording.selectedKind"
+      :is-uploading="recording.isUploading"
+      :upload-error="recording.uploadError"
+      :playback-error="recording.playbackError"
+      :delete-error="recording.deleteError"
+      :deleting-recording-id="recording.deletingRecordingId"
+      :playback-loading="recording.playbackLoading"
+      :playback-urls="recording.playbackUrls"
+      :delete-recording="resource.canUploadRecording ? recording.deleteRecording : undefined"
+      @update:selected-file="recording.selectedFile = $event"
+      @update:selected-kind="recording.selectedKind = $event"
+      @upload-recording="resource.canUploadRecording && recording.uploadRecording()"
+      @play-recording="recording.loadPlayback"
       @open-player="openPlayer"
-      @open-step="openSessionSection"
+      @open-step="navigation.openSessionSection"
     />
 
     <SessionRecapPanel
-      v-model:selected-kind="selectedRecapKind"
+      v-model:selected-kind="recap.selectedRecapKind"
       :campaign-id="campaignId"
       :workflow-mode="false"
       open-step="recap"
-      :recap="recap"
-      :recaps="recaps"
-      :recap-file="recapFile"
-      :recap-uploading="recapUploading"
-      :recap-playback-loading="recapPlaybackLoading"
-      :recap-deleting="recapDeleting"
-      :recap-playback-url="recapPlaybackUrl"
-      :recap-error="recapError"
-      :recap-delete-error="recapDeleteError"
-      :has-recap="Boolean(recap)"
-      :delete-recap="canUploadRecording ? deleteRecap : undefined"
-      @update:recap-file="recapFile = $event"
-      @upload-recap="canUploadRecording && uploadRecap()"
-      @play-recap="loadRecapPlayback"
+      :recap="recap.recap"
+      :recaps="resource.recaps"
+      :recap-file="recap.recapFile"
+      :recap-uploading="recap.recapUploading"
+      :recap-playback-loading="recap.recapPlaybackLoading"
+      :recap-deleting="recap.recapDeleting"
+      :recap-playback-url="recap.recapPlaybackUrl"
+      :recap-error="recap.recapError"
+      :recap-delete-error="recap.recapDeleteError"
+      :has-recap="Boolean(recap.recap)"
+      :delete-recap="resource.canUploadRecording ? recap.deleteRecap : undefined"
+      @update:recap-file="recap.recapFile = $event"
+      @upload-recap="resource.canUploadRecording && recap.uploadRecap()"
+      @play-recap="recap.loadRecapPlayback"
       @open-player="openPlayer"
-      @open-step="openSessionSection"
+      @open-step="navigation.openSessionSection"
     />
   </div>
 </template>
