@@ -87,12 +87,12 @@ const showFullTranscript = ref(false)
 const showAdvancedFilters = ref(false)
 const showBulkEdit = ref(false)
 
-const { data: document, pending, refresh, error } = await useAsyncData(
+const { data: document, pending, refresh, error } = await useLazyAsyncData(
   () => `document-${documentId.value}`,
   () => request<DocumentDetail>(`/api/documents/${documentId.value}`)
 )
 
-const { data: versions, refresh: refreshVersions } = await useAsyncData(
+const { data: versions, refresh: refreshVersions } = await useLazyAsyncData(
   () => `document-versions-${documentId.value}`,
   () => request<DocumentVersionListItem[]>(`/api/documents/${documentId.value}/versions`)
 )
@@ -136,7 +136,7 @@ const speakerBulkInput = ref('')
 const selectedSpeakerPreset = ref<string | undefined>(undefined)
 const speakerDrafts = ref<Record<string, string>>({})
 
-const { data: sessionRecordings } = await useAsyncData(
+const { data: sessionRecordings } = await useLazyAsyncData(
   () => `document-session-recordings-${documentId.value}`,
   async () => {
     if (!document.value?.sessionId) return []
@@ -147,7 +147,7 @@ const { data: sessionRecordings } = await useAsyncData(
   { watch: [document] }
 )
 
-const { data: sessionDetail } = await useAsyncData(
+const { data: sessionDetail } = await useLazyAsyncData(
   () => `document-session-detail-${documentId.value}`,
   async () => {
     if (!document.value?.sessionId) return null
@@ -156,13 +156,13 @@ const { data: sessionDetail } = await useAsyncData(
   { watch: [document] }
 )
 
-const { data: campaignDetail } = await useAsyncData(
+const { data: campaignDetail } = await useLazyAsyncData(
   () => `document-campaign-detail-${campaignId.value}`,
   () => request<CampaignDetail>(`/api/campaigns/${campaignId.value}`),
   { watch: [campaignId] }
 )
 
-const { data: pcGlossaryEntries } = await useAsyncData(
+const { data: pcGlossaryEntries } = await useLazyAsyncData(
   () => `document-speaker-pc-glossary-${campaignId.value}`,
   () => request<GlossaryEntry[]>(`/api/campaigns/${campaignId.value}/glossary?type=PC`),
   { watch: [campaignId] }
@@ -194,7 +194,7 @@ const videoOptions = computed(() =>
 const selectedRecordingId = ref('')
 const linkedRecordingId = computed(() => document.value?.recordingId || '')
 
-const { data: selectedRecording } = await useAsyncData(
+const { data: selectedRecording } = await useLazyAsyncData(
   () => `document-recording-${selectedRecordingId.value}`,
   async () => {
     if (!selectedRecordingId.value) return null
@@ -203,7 +203,7 @@ const { data: selectedRecording } = await useAsyncData(
   { watch: [selectedRecordingId] }
 )
 
-const { data: playbackUrl } = await useAsyncData(
+const { data: playbackUrl } = await useLazyAsyncData(
   () => `document-recording-playback-${selectedRecordingId.value}`,
   async () => {
     if (!selectedRecordingId.value) return ''

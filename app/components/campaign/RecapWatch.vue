@@ -14,6 +14,7 @@ const { player, playlist, selected, selectedId, selectedIndex, next, previous, l
 const state = player.state
 const active = computed(() => Boolean(selected.value) && state.value.source?.recapProgressId === selectedId.value)
 const playlistButtons = new Map<string, HTMLButtonElement>()
+const playlistElement = useTemplateRef<HTMLOListElement>('playlistElement')
 
 const setPlaylistButton = (id: string, element: unknown) => {
   if (element instanceof HTMLButtonElement) playlistButtons.set(id, element)
@@ -23,7 +24,23 @@ const setPlaylistButton = (id: string, element: unknown) => {
 watch([selectedId, playlist], async ([id]) => {
   if (!id) return
   await nextTick()
-  playlistButtons.get(id)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  const container = playlistElement.value
+  const button = playlistButtons.get(id)
+  if (!container || !button) return
+
+  // Scroll only the playlist; scrollIntoView also moves the page on mobile.
+  const containerTop = container.getBoundingClientRect().top + container.clientTop
+  const buttonBounds = button.getBoundingClientRect()
+  const offset = buttonBounds.top < containerTop
+    ? buttonBounds.top - containerTop
+    : Math.max(0, buttonBounds.bottom - containerTop - container.clientHeight)
+
+  if (offset) {
+    container.scrollTo({
+      top: container.scrollTop + offset,
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+    })
+  }
 }, { flush: 'post' })
 </script>
 
@@ -66,7 +83,7 @@ watch([selectedId, playlist], async ([id]) => {
           <h2 class="text-highlighted type-section">Session recaps</h2>
           <p class="text-xs text-muted">Oldest to newest · {{ selectedIndex + 1 }} / {{ playlist.length }}</p>
         </template>
-        <ol class="max-h-[70vh] space-y-2 overflow-y-auto" aria-label="Session recap playlist">
+        <ol ref="playlistElement" class="max-h-[70vh] space-y-2 overflow-y-auto" aria-label="Session recap playlist">
           <li v-for="(recap, index) in playlist" :key="recap.id">
             <button :ref="element => setPlaylistButton(recap.id, element)" type="button" class="flex w-full items-center gap-3 rounded-lg border border-default p-3 text-left transition hover:bg-accented focus-visible:outline-2 focus-visible:outline-primary" :class="recap.id === selectedId ? 'border-primary bg-primary/10' : ''" :aria-current="recap.id === selectedId ? 'true' : undefined" @click="choose(recap.id)">
               <span class="shrink-0 text-xs tabular-nums text-dimmed">{{ index + 1 }}</span>

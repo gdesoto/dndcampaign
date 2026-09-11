@@ -32,9 +32,25 @@ export async function useCampaignWorkspace(options: UseCampaignWorkspaceOptions)
   )
   retained.seed(workspace.value)
 
-  const campaign = computed(() => workspace.value?.campaign)
-  const sessionHeader = computed(() => workspace.value?.sessionHeader || null)
-  const access = computed(() => workspace.value?.access)
+  // Session context changes must not tear down the campaign's nested NuxtPage
+  // while the destination route is still resolving its async setup.
+  const campaignShell = useRetainedResource<Pick<CampaignWorkspace, 'campaign' | 'access'>>(
+    () => options.campaignId.value,
+  )
+  watch(workspace, (value) => {
+    if (value?.campaign.id === options.campaignId.value) campaignShell.seed(value)
+  }, { immediate: true, flush: 'sync' })
+
+  const currentWorkspace = computed(() =>
+    workspace.value?.campaign.id === options.campaignId.value ? workspace.value : undefined,
+  )
+  const campaign = computed(() => currentWorkspace.value?.campaign || campaignShell.get()?.campaign)
+  const sessionHeader = computed(() =>
+    options.isSessionDetailRoute.value && currentWorkspace.value?.sessionHeader?.id === options.sessionId.value
+      ? currentWorkspace.value.sessionHeader
+      : null,
+  )
+  const access = computed(() => currentWorkspace.value?.access || campaignShell.get()?.access)
   const canWriteContent = computed(() => Boolean(access.value?.permissions.includes('content.write')))
   const refreshCampaign = async () => refreshWorkspace()
   const refreshSessionHeader = async () => refreshWorkspace()
