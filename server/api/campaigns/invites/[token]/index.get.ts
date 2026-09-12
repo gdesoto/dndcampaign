@@ -1,4 +1,4 @@
-import { ok, fail } from '#server/utils/http'
+import { fail, respond } from '#server/utils/http'
 import { CampaignMembershipService } from '#server/services/campaign-membership.service'
 
 const membershipService = new CampaignMembershipService()
@@ -12,9 +12,5 @@ export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
   const result = await membershipService.inspectInvite(inviteToken, session.user.id, session.user.email)
 
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message, result.fields)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })

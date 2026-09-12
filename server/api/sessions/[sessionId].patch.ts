@@ -1,6 +1,6 @@
 import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
-import { readValidatedBodySafe } from '#server/utils/validate'
+import { validateBody } from '#server/utils/validate'
 import { sessionUpdateSchema } from '#shared/schemas/session'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
@@ -8,13 +8,11 @@ export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
   const sessionId = event.context.params?.sessionId
   if (!sessionId) {
-    return fail(400, 'VALIDATION_ERROR', 'Session id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Session id is required')
   }
 
-  const parsed = await readValidatedBodySafe(event, sessionUpdateSchema)
-  if (!parsed.success) {
-    return fail(400, 'VALIDATION_ERROR', 'Invalid session payload', parsed.fieldErrors)
-  }
+  const parsed = await validateBody(event, sessionUpdateSchema, 'Invalid session payload')
+  if (!parsed.ok) return parsed.response
 
   const existing = await prisma.session.findFirst({
     where: {
@@ -23,7 +21,7 @@ export default defineEventHandler(async (event) => {
     },
   })
   if (!existing) {
-    return fail(404, 'NOT_FOUND', 'Session not found')
+    return fail(event, 404, 'NOT_FOUND', 'Session not found')
   }
 
   const updated = await prisma.session.update({

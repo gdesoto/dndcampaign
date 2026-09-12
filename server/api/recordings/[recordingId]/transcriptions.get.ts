@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
   const recordingId = event.context.params?.recordingId
   if (!recordingId) {
-    return fail(400, 'VALIDATION_ERROR', 'Recording id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Recording id is required')
   }
 
   const jobs = await prisma.transcriptionJob.findMany({

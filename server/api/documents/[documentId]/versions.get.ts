@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
   const documentId = event.context.params?.documentId
   if (!documentId) {
-    return fail(400, 'VALIDATION_ERROR', 'Document id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Document id is required')
   }
 
   const existing = await prisma.document.findFirst({
@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
     },
   })
   if (!existing) {
-    return fail(404, 'NOT_FOUND', 'Document not found')
+    return fail(event, 404, 'NOT_FOUND', 'Document not found')
   }
 
   const query = getQuery(event)

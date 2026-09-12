@@ -1,5 +1,5 @@
-import { fail, ok } from '#server/utils/http'
-import { readValidatedBodySafe } from '#server/utils/validate'
+import { fail, respond } from '#server/utils/http'
+import { validateInput } from '#server/utils/validate'
 import {
   campaignRequestDecisionInputSchema,
   campaignRequestUpdateSchema,
@@ -26,22 +26,12 @@ export default defineEventHandler(async (event) => {
       sessionUser.user.id,
       sessionUser.user.systemRole,
     )
-    if (!result.ok) {
-      return fail(event, result.statusCode, result.code, result.message, result.fields)
-    }
-    return ok(result.data)
+    return respond(event, result)
   }
 
   if (action === 'decision') {
-    const decisionParsed = campaignRequestDecisionInputSchema.safeParse(rawBody)
-    if (!decisionParsed.success) {
-      const fields: Record<string, string> = {}
-      for (const issue of decisionParsed.error.issues) {
-        const key = issue.path.join('.') || 'decision'
-        fields[key] = issue.message
-      }
-      return fail(event, 400, 'VALIDATION_ERROR', 'Invalid request decision payload', fields)
-    }
+    const decisionParsed = validateInput(event, campaignRequestDecisionInputSchema, rawBody, 'Invalid request decision payload')
+    if (!decisionParsed.ok) return decisionParsed.response
 
     const result = await campaignRequestsService.decideRequest(
       campaignId,
@@ -50,16 +40,11 @@ export default defineEventHandler(async (event) => {
       decisionParsed.data,
       sessionUser.user.systemRole,
     )
-    if (!result.ok) {
-      return fail(event, result.statusCode, result.code, result.message, result.fields)
-    }
-    return ok(result.data)
+    return respond(event, result)
   }
 
-  const parsed = await readValidatedBodySafe(event, campaignRequestUpdateSchema)
-  if (!parsed.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid request update payload', parsed.fieldErrors)
-  }
+  const parsed = validateInput(event, campaignRequestUpdateSchema, rawBody, 'Invalid request update payload')
+  if (!parsed.ok) return parsed.response
 
   const result = await campaignRequestsService.updateRequest(
     campaignId,
@@ -68,9 +53,5 @@ export default defineEventHandler(async (event) => {
     parsed.data,
     sessionUser.user.systemRole,
   )
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message, result.fields)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })

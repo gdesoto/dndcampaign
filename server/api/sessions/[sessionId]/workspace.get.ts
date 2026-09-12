@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
   const sessionId = event.context.params?.sessionId
   if (!sessionId) {
-    return fail(400, 'VALIDATION_ERROR', 'Session id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Session id is required')
   }
 
   const workspace = await new SessionWorkspaceService().getWorkspace(
@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
     sessionUser.user.systemRole
   )
   if (!workspace) {
-    return fail(404, 'NOT_FOUND', 'Session not found')
+    return fail(event, 404, 'NOT_FOUND', 'Session not found')
   }
 
   return ok(workspace)

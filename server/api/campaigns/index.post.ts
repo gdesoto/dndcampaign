@@ -1,15 +1,13 @@
 import { prisma } from '#server/db/prisma'
-import { ok, fail } from '#server/utils/http'
-import { readValidatedBodySafe } from '#server/utils/validate'
+import { ok } from '#server/utils/http'
+import { validateBody } from '#server/utils/validate'
 import { campaignCreateSchema } from '#shared/schemas/campaign'
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
-  const parsed = await readValidatedBodySafe(event, campaignCreateSchema)
+  const parsed = await validateBody(event, campaignCreateSchema, 'Invalid campaign payload')
 
-  if (!parsed.success) {
-    return fail(400, 'VALIDATION_ERROR', 'Invalid campaign payload', parsed.fieldErrors)
-  }
+  if (!parsed.ok) return parsed.response
 
   const campaign = await prisma.campaign.create({
     data: {

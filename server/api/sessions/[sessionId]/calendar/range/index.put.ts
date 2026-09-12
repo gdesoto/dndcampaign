@@ -1,5 +1,5 @@
-import { fail, ok } from '#server/utils/http'
-import { readValidatedBodySafe } from '#server/utils/validate'
+import { fail, respond } from '#server/utils/http'
+import { validateBody } from '#server/utils/validate'
 import { sessionCalendarRangeWriteSchema } from '#shared/schemas/calendar'
 import { SessionCalendarRangeService } from '#server/services/calendar/session-calendar-range.service'
 
@@ -13,15 +13,9 @@ export default defineEventHandler(async (event) => {
 
   const sessionUser = await requireUserSession(event)
 
-  const parsed = await readValidatedBodySafe(event, sessionCalendarRangeWriteSchema)
-  if (!parsed.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid session calendar range payload', parsed.fieldErrors)
-  }
+  const parsed = await validateBody(event, sessionCalendarRangeWriteSchema, 'Invalid session calendar range payload')
+  if (!parsed.ok) return parsed.response
 
   const result = await sessionCalendarRangeService.upsertRange(sessionId, sessionUser.user.id, parsed.data)
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message, result.fields)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })

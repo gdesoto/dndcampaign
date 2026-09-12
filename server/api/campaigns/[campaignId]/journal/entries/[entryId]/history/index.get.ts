@@ -1,5 +1,5 @@
-import { getQuery } from 'h3'
-import { fail, ok } from '#server/utils/http'
+import { validateQuery } from '#server/utils/validate'
+import { fail, respond } from '#server/utils/http'
 import { campaignJournalHistoryListQuerySchema } from '#shared/schemas/campaign-journal'
 import { CampaignJournalService } from '#server/services/campaign-journal.service'
 
@@ -12,10 +12,8 @@ export default defineEventHandler(async (event) => {
     return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id and entry id are required')
   }
 
-  const parsedQuery = campaignJournalHistoryListQuerySchema.safeParse(getQuery(event))
-  if (!parsedQuery.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid history query parameters')
-  }
+  const parsedQuery = validateQuery(event, campaignJournalHistoryListQuerySchema, 'Invalid history query parameters')
+  if (!parsedQuery.ok) return parsedQuery.response
 
   const sessionUser = await requireUserSession(event)
   const result = await campaignJournalService.listEntryHistory(
@@ -25,10 +23,6 @@ export default defineEventHandler(async (event) => {
     parsedQuery.data,
     sessionUser.user.systemRole
   )
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message, result.fields)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })
 

@@ -14,7 +14,7 @@ const VALIDATION_MESSAGES = new Set([
 export default defineEventHandler(async (event) => {
   const campaignId = event.context.params?.campaignId
   if (!campaignId) {
-    return fail(400, 'VALIDATION_ERROR', 'Campaign id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id is required')
   }
   const authz = await requireCampaignPermission(event, campaignId, 'content.write')
   if (!authz.ok) return authz.response
@@ -28,13 +28,13 @@ export default defineEventHandler(async (event) => {
       files
     )
     if (!created) {
-      return fail(404, 'NOT_FOUND', 'Campaign not found')
+      return fail(event, 404, 'NOT_FOUND', 'Campaign not found')
     }
     return ok(created)
   } catch (error) {
     const message = (error as Error).message || 'Map import failed'
     if (VALIDATION_MESSAGES.has(message)) {
-      return fail(400, 'VALIDATION_ERROR', message)
+      return fail(event, 400, 'VALIDATION_ERROR', message)
     }
     throw error
   }

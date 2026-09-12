@@ -1,13 +1,13 @@
 import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
-import { readValidatedBodySafe } from '#server/utils/validate'
+import { validateBody } from '#server/utils/validate'
 import { sessionCreateSchema } from '#shared/schemas/session'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const campaignId = event.context.params?.campaignId
   if (!campaignId) {
-    return fail(400, 'VALIDATION_ERROR', 'Campaign id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id is required')
   }
 
   const authz = await requireCampaignPermission(event, campaignId, 'content.write')
@@ -15,10 +15,8 @@ export default defineEventHandler(async (event) => {
     return authz.response
   }
 
-  const parsed = await readValidatedBodySafe(event, sessionCreateSchema)
-  if (!parsed.success) {
-    return fail(400, 'VALIDATION_ERROR', 'Invalid session payload', parsed.fieldErrors)
-  }
+  const parsed = await validateBody(event, sessionCreateSchema, 'Invalid session payload')
+  if (!parsed.ok) return parsed.response
 
   const created = await prisma.session.create({
     data: {

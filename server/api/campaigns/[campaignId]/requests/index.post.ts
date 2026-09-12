@@ -1,5 +1,5 @@
-import { fail, ok } from '#server/utils/http'
-import { readValidatedBodySafe } from '#server/utils/validate'
+import { fail, respond } from '#server/utils/http'
+import { validateBody } from '#server/utils/validate'
 import { campaignRequestCreateSchema } from '#shared/schemas/campaign-requests'
 import { CampaignRequestsService } from '#server/services/campaign-requests.service'
 
@@ -11,10 +11,8 @@ export default defineEventHandler(async (event) => {
     return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id is required')
   }
 
-  const parsed = await readValidatedBodySafe(event, campaignRequestCreateSchema)
-  if (!parsed.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid request payload', parsed.fieldErrors)
-  }
+  const parsed = await validateBody(event, campaignRequestCreateSchema, 'Invalid request payload')
+  if (!parsed.ok) return parsed.response
 
   const sessionUser = await requireUserSession(event)
   const result = await campaignRequestsService.createRequest(
@@ -23,9 +21,5 @@ export default defineEventHandler(async (event) => {
     parsed.data,
     sessionUser.user.systemRole,
   )
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message, result.fields)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })

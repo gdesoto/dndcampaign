@@ -50,13 +50,13 @@ export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
   const jobId = event.context.params?.jobId
   if (!jobId) {
-    return fail(400, 'VALIDATION_ERROR', 'Transcription id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Transcription id is required')
   }
 
   const rawBody = (await readBody(event)) ?? {}
   const parsed = transcriptionActionSchema.safeParse(rawBody)
   if (!parsed.success) {
-    return fail(400, 'VALIDATION_ERROR', 'Invalid request')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid request')
   }
 
   if (parsed.data.action === 'fetch') {
@@ -68,22 +68,22 @@ export default defineEventHandler(async (event) => {
     })
 
     if (!job) {
-      return fail(404, 'NOT_FOUND', 'Transcription not found')
+      return fail(event, 404, 'NOT_FOUND', 'Transcription not found')
     }
 
     if (!job.externalJobId) {
-      return fail(400, 'VALIDATION_ERROR', 'Transcription job is missing an external id')
+      return fail(event, 400, 'VALIDATION_ERROR', 'Transcription job is missing an external id')
     }
 
     const config = useRuntimeConfig()
     if (!config.elevenlabs?.apiKey) {
-      return fail(500, 'CONFIG_ERROR', 'ElevenLabs API key is not configured')
+      return fail(event, 500, 'CONFIG_ERROR', 'ElevenLabs API key is not configured')
     }
 
     const service = new TranscriptionService(config.elevenlabs.apiKey)
     const updated = await service.fetchTranscription(job.id)
     if (!updated) {
-      return fail(404, 'NOT_FOUND', 'Unable to fetch transcription')
+      return fail(event, 404, 'NOT_FOUND', 'Unable to fetch transcription')
     }
 
     return ok(updated)
@@ -102,7 +102,7 @@ export default defineEventHandler(async (event) => {
     })
 
     if (!job) {
-      return fail(404, 'NOT_FOUND', 'Transcription not found')
+      return fail(event, 404, 'NOT_FOUND', 'Transcription not found')
     }
 
     const artifactId = 'artifactId' in parsed.data ? parsed.data.artifactId : undefined
@@ -111,7 +111,7 @@ export default defineEventHandler(async (event) => {
       : job.artifacts.find((entry) => entry.format === 'TXT')
 
     if (!selected) {
-      return fail(404, 'NOT_FOUND', 'Transcript artifact not found')
+      return fail(event, 404, 'NOT_FOUND', 'Transcript artifact not found')
     }
 
     const adapter = getStorageAdapter()
@@ -159,7 +159,7 @@ export default defineEventHandler(async (event) => {
   }
 
   if (parsed.data.action !== 'attach-vtt') {
-    return fail(400, 'VALIDATION_ERROR', 'Invalid request')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid request')
   }
 
   const job = await prisma.transcriptionJob.findFirst({
@@ -174,7 +174,7 @@ export default defineEventHandler(async (event) => {
   })
 
   if (!job) {
-    return fail(404, 'NOT_FOUND', 'Transcription not found')
+    return fail(event, 404, 'NOT_FOUND', 'Transcription not found')
   }
 
   const targetRecordingId = parsed.data.recordingId || job.recordingId
@@ -188,17 +188,17 @@ export default defineEventHandler(async (event) => {
   })
 
   if (!targetRecording) {
-    return fail(404, 'NOT_FOUND', 'Recording not found')
+    return fail(event, 404, 'NOT_FOUND', 'Recording not found')
   }
 
   if (targetRecording.kind !== 'VIDEO') {
-    return fail(400, 'VALIDATION_ERROR', 'Subtitles can only be attached to video recordings')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Subtitles can only be attached to video recordings')
   }
 
   const artifactId = 'artifactId' in parsed.data ? parsed.data.artifactId : undefined
   const selected = artifactId ? job.artifacts.find((entry) => entry.artifactId === artifactId) : null
   if (!selected || selected.format !== 'SRT') {
-    return fail(404, 'NOT_FOUND', 'Subtitle artifact not found')
+    return fail(event, 404, 'NOT_FOUND', 'Subtitle artifact not found')
   }
 
   const adapter = getStorageAdapter()

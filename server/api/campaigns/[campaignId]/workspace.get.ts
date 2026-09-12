@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
   const campaignId = event.context.params?.campaignId
   if (!campaignId) {
-    return fail(400, 'VALIDATION_ERROR', 'Campaign id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id is required')
   }
 
   const query = getQuery(event)
@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
     sessionUser.user.systemRole
   )
   if (!workspace) {
-    return fail(404, 'NOT_FOUND', 'Campaign not found')
+    return fail(event, 404, 'NOT_FOUND', 'Campaign not found')
   }
 
   return ok(workspace)

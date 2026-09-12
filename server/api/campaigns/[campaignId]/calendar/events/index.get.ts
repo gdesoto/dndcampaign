@@ -1,5 +1,5 @@
-import { getQuery } from 'h3'
-import { fail, ok } from '#server/utils/http'
+import { validateQuery } from '#server/utils/validate'
+import { fail, respond } from '#server/utils/http'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
 import { calendarEventQuerySchema } from '#shared/schemas/calendar'
 import { CalendarEventsService } from '#server/services/calendar/calendar-events.service'
@@ -17,16 +17,10 @@ export default defineEventHandler(async (event) => {
     return authz.response
   }
 
-  const parsed = calendarEventQuerySchema.safeParse(getQuery(event))
-  if (!parsed.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid calendar events query')
-  }
+  const parsed = validateQuery(event, calendarEventQuerySchema, 'Invalid calendar events query')
+  if (!parsed.ok) return parsed.response
 
   const result = await calendarEventsService.listEvents(campaignId, authz.session.user.id, parsed.data)
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message, result.fields)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })
 

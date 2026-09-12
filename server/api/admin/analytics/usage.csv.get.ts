@@ -1,5 +1,5 @@
-import { getQuery, setHeader } from 'h3'
-import { fail } from '#server/utils/http'
+import { setHeader } from 'h3'
+import { validateQuery } from '#server/utils/validate'
 import { requireSystemAdmin } from '#server/utils/campaign-auth'
 import { adminCsvFormatQuerySchema } from '#shared/schemas/admin'
 import { AdminAnalyticsService } from '#server/services/admin-analytics.service'
@@ -12,10 +12,8 @@ export default defineEventHandler(async (event) => {
     return authz.response
   }
 
-  const parsed = adminCsvFormatQuerySchema.safeParse(getQuery(event))
-  if (!parsed.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid analytics usage csv query parameters')
-  }
+  const parsed = validateQuery(event, adminCsvFormatQuerySchema, 'Invalid analytics usage csv query parameters')
+  if (!parsed.ok) return parsed.response
 
   const result = await analyticsService.getUsage(parsed.data)
   const csv = analyticsService.buildUsageCsv(result)

@@ -5,13 +5,13 @@ export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
   const jobId = event.context.params?.jobId
   if (!jobId) {
-    return fail(400, 'VALIDATION_ERROR', 'Summary job id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Summary job id is required')
   }
 
   const service = new SummaryService()
   const job = await service.getJobById(jobId, sessionUser.user.id)
   if (!job) {
-    return fail(404, 'NOT_FOUND', 'Summary job not found')
+    return fail(event, 404, 'NOT_FOUND', 'Summary job not found')
   }
 
   return ok({

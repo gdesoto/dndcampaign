@@ -4334,246 +4334,6 @@
         }
       }
     },
-    "/api/campaigns/{campaignId}/journal/entries/{entryId}/archive": {
-      "post": {
-        "tags": [
-          "campaigns"
-        ],
-        "summary": "POST /api/campaigns/{campaignId}/journal/entries/{entryId}/archive",
-        "description": "Auto-documented from server route `campaigns/[campaignId]/journal/entries/[entryId]/archive/index.post.ts`. This operation uses the project standard API envelope `{ data, error }`.",
-        "operationId": "post_api_campaigns_campaignId_journal_entries_entryId_archive",
-        "parameters": [
-          {
-            "name": "campaignId",
-            "in": "path",
-            "required": true,
-            "description": "Path identifier for campaignId.",
-            "schema": {
-              "type": "string"
-            },
-            "example": "c8b2e6f8-3f9b-4b06-a4a0-87a0ef0b7a15"
-          },
-          {
-            "name": "entryId",
-            "in": "path",
-            "required": true,
-            "description": "Path identifier for entryId.",
-            "schema": {
-              "type": "string"
-            },
-            "example": "c8b2e6f8-3f9b-4b06-a4a0-87a0ef0b7a15"
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Successful operation response envelope.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_GenericMutation"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          }
-        },
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "x-source-file": "campaigns/[campaignId]/journal/entries/[entryId]/archive/index.post.ts",
-        "x-generated": true,
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
-              },
-              "example": {
-                "action": "update",
-                "notes": "Example payload. See schema and endpoint-specific docs."
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/campaigns/{campaignId}/journal/entries/{entryId}/discover": {
-      "post": {
-        "tags": [
-          "campaigns"
-        ],
-        "summary": "POST /api/campaigns/{campaignId}/journal/entries/{entryId}/discover",
-        "description": "Auto-documented from server route `campaigns/[campaignId]/journal/entries/[entryId]/discover/index.post.ts`. This operation uses the project standard API envelope `{ data, error }`.",
-        "operationId": "post_api_campaigns_campaignId_journal_entries_entryId_discover",
-        "parameters": [
-          {
-            "name": "campaignId",
-            "in": "path",
-            "required": true,
-            "description": "Path identifier for campaignId.",
-            "schema": {
-              "type": "string"
-            },
-            "example": "c8b2e6f8-3f9b-4b06-a4a0-87a0ef0b7a15"
-          },
-          {
-            "name": "entryId",
-            "in": "path",
-            "required": true,
-            "description": "Path identifier for entryId.",
-            "schema": {
-              "type": "string"
-            },
-            "example": "c8b2e6f8-3f9b-4b06-a4a0-87a0ef0b7a15"
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Successful operation response envelope.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_GenericMutation"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          }
-        },
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "x-source-file": "campaigns/[campaignId]/journal/entries/[entryId]/discover/index.post.ts",
-        "x-generated": true,
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
-              },
-              "example": {
-                "action": "update",
-                "notes": "Example payload. See schema and endpoint-specific docs."
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/campaigns/{campaignId}/journal/entries/{entryId}/discoverable": {
-      "patch": {
-        "tags": [
-          "campaigns"
-        ],
-        "summary": "PATCH /api/campaigns/{campaignId}/journal/entries/{entryId}/discoverable",
-        "description": "Auto-documented from server route `campaigns/[campaignId]/journal/entries/[entryId]/discoverable/index.patch.ts`. This operation uses the project standard API envelope `{ data, error }`.",
-        "operationId": "patch_api_campaigns_campaignId_journal_entries_entryId_discoverable",
-        "parameters": [
-          {
-            "name": "campaignId",
-            "in": "path",
-            "required": true,
-            "description": "Path identifier for campaignId.",
-            "schema": {
-              "type": "string"
-            },
-            "example": "c8b2e6f8-3f9b-4b06-a4a0-87a0ef0b7a15"
-          },
-          {
-            "name": "entryId",
-            "in": "path",
-            "required": true,
-            "description": "Path identifier for entryId.",
-            "schema": {
-              "type": "string"
-            },
-            "example": "c8b2e6f8-3f9b-4b06-a4a0-87a0ef0b7a15"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful operation response envelope.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_GenericMutation"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          }
-        },
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "x-source-file": "campaigns/[campaignId]/journal/entries/[entryId]/discoverable/index.patch.ts",
-        "x-generated": true,
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
-              },
-              "example": {
-                "action": "update",
-                "notes": "Example payload. See schema and endpoint-specific docs."
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/campaigns/{campaignId}/journal/entries/{entryId}/history": {
       "get": {
         "tags": [
@@ -4638,166 +4398,6 @@
         ],
         "x-source-file": "campaigns/[campaignId]/journal/entries/[entryId]/history/index.get.ts",
         "x-generated": true
-      }
-    },
-    "/api/campaigns/{campaignId}/journal/entries/{entryId}/transfer": {
-      "post": {
-        "tags": [
-          "campaigns"
-        ],
-        "summary": "POST /api/campaigns/{campaignId}/journal/entries/{entryId}/transfer",
-        "description": "Auto-documented from server route `campaigns/[campaignId]/journal/entries/[entryId]/transfer/index.post.ts`. This operation uses the project standard API envelope `{ data, error }`.",
-        "operationId": "post_api_campaigns_campaignId_journal_entries_entryId_transfer",
-        "parameters": [
-          {
-            "name": "campaignId",
-            "in": "path",
-            "required": true,
-            "description": "Path identifier for campaignId.",
-            "schema": {
-              "type": "string"
-            },
-            "example": "c8b2e6f8-3f9b-4b06-a4a0-87a0ef0b7a15"
-          },
-          {
-            "name": "entryId",
-            "in": "path",
-            "required": true,
-            "description": "Path identifier for entryId.",
-            "schema": {
-              "type": "string"
-            },
-            "example": "c8b2e6f8-3f9b-4b06-a4a0-87a0ef0b7a15"
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Successful operation response envelope.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_GenericMutation"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          }
-        },
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "x-source-file": "campaigns/[campaignId]/journal/entries/[entryId]/transfer/index.post.ts",
-        "x-generated": true,
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
-              },
-              "example": {
-                "action": "update",
-                "notes": "Example payload. See schema and endpoint-specific docs."
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/campaigns/{campaignId}/journal/entries/{entryId}/unarchive": {
-      "post": {
-        "tags": [
-          "campaigns"
-        ],
-        "summary": "POST /api/campaigns/{campaignId}/journal/entries/{entryId}/unarchive",
-        "description": "Auto-documented from server route `campaigns/[campaignId]/journal/entries/[entryId]/unarchive/index.post.ts`. This operation uses the project standard API envelope `{ data, error }`.",
-        "operationId": "post_api_campaigns_campaignId_journal_entries_entryId_unarchive",
-        "parameters": [
-          {
-            "name": "campaignId",
-            "in": "path",
-            "required": true,
-            "description": "Path identifier for campaignId.",
-            "schema": {
-              "type": "string"
-            },
-            "example": "c8b2e6f8-3f9b-4b06-a4a0-87a0ef0b7a15"
-          },
-          {
-            "name": "entryId",
-            "in": "path",
-            "required": true,
-            "description": "Path identifier for entryId.",
-            "schema": {
-              "type": "string"
-            },
-            "example": "c8b2e6f8-3f9b-4b06-a4a0-87a0ef0b7a15"
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Successful operation response envelope.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_GenericMutation"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          }
-        },
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "x-source-file": "campaigns/[campaignId]/journal/entries/[entryId]/unarchive/index.post.ts",
-        "x-generated": true,
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
-              },
-              "example": {
-                "action": "update",
-                "notes": "Example payload. See schema and endpoint-specific docs."
-              }
-            }
-          }
-        }
       }
     },
     "/api/campaigns/{campaignId}/journal/member-options": {
@@ -10356,21 +9956,6 @@
               }
             }
           },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          },
           "206": {
             "description": "Requested byte range.",
             "headers": {
@@ -10394,6 +9979,18 @@
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
           "416": {
             "description": "The byte range is outside the media file.",
             "headers": {
@@ -10403,6 +10000,9 @@
                 }
               }
             }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
           }
         },
         "security": [],

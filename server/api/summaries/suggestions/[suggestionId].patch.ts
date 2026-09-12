@@ -19,13 +19,13 @@ export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
   const suggestionId = event.context.params?.suggestionId
   if (!suggestionId) {
-    return fail(400, 'VALIDATION_ERROR', 'Suggestion id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Suggestion id is required')
   }
 
   const body = (await readBody(event)) ?? {}
   const parsed = summarySuggestionPatchSchema.safeParse(body)
   if (!parsed.success) {
-    return fail(400, 'VALIDATION_ERROR', 'Invalid suggestion action')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid suggestion action')
   }
 
   const suggestion = await prisma.summarySuggestion.findUnique({
@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
     select: { id: true, summaryJob: { select: { campaignId: true } } },
   })
   if (!suggestion) {
-    return fail(404, 'NOT_FOUND', 'Suggestion not found')
+    return fail(event, 404, 'NOT_FOUND', 'Suggestion not found')
   }
 
   const access = await resolveCampaignAccess(
@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
     sessionUser.user.systemRole
   )
   if (!access.access?.permissions.includes('summary.run')) {
-    return fail(403, 'FORBIDDEN', 'You do not have permission to modify suggestions')
+    return fail(event, 403, 'FORBIDDEN', 'You do not have permission to modify suggestions')
   }
 
   const service = new SummarySuggestionService()
@@ -51,12 +51,12 @@ export default defineEventHandler(async (event) => {
     try {
       const result = await service.applySuggestion(sessionUser.user.id, suggestionId, parsed.data.payload)
       if (!result) {
-        return fail(404, 'NOT_FOUND', 'Suggestion not found')
+        return fail(event, 404, 'NOT_FOUND', 'Suggestion not found')
       }
       return ok(result)
     } catch (error) {
       return fail(
-        400,
+        event, 400,
         'SUGGESTION_APPLY_FAILED',
         (error as Error & { message?: string }).message || 'Unable to apply suggestion.'
       )
@@ -65,7 +65,7 @@ export default defineEventHandler(async (event) => {
 
   const result = await service.discardSuggestion(sessionUser.user.id, suggestionId)
   if (!result) {
-    return fail(404, 'NOT_FOUND', 'Suggestion not found')
+    return fail(event, 404, 'NOT_FOUND', 'Suggestion not found')
   }
 
   return ok(result)

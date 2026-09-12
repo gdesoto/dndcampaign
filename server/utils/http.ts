@@ -12,36 +12,37 @@ export type ApiResponse<T> = {
   error: ApiError | null
 }
 
+export type ServiceResult<T> =
+  | { ok: true; data: T }
+  | {
+      ok: false
+      statusCode: number
+      code: string
+      message: string
+      fields?: Record<string, string>
+    }
+
 export const ok = <T>(data: T): ApiResponse<T> => ({
   data,
   error: null,
 })
 
 export const fail = (
-  eventOrStatusCode: H3Event | number,
-  statusOrCode: number | string,
-  codeOrMessage: string,
-  messageOrFields?: string | Record<string, string>,
-  maybeFields?: Record<string, string>
+  event: H3Event,
+  statusCode: number,
+  code: string,
+  message = '',
+  fields?: Record<string, string>
 ): ApiResponse<null> => {
-  let code: string
-  let message: string
-  let fields: Record<string, string> | undefined
-
-  if (typeof eventOrStatusCode === 'number') {
-    code = statusOrCode as string
-    message = codeOrMessage
-    fields = messageOrFields as Record<string, string> | undefined
-  } else {
-    const statusCode = statusOrCode as number
-    code = codeOrMessage
-    message = (messageOrFields as string) || ''
-    fields = maybeFields
-    setResponseStatus(eventOrStatusCode, statusCode)
-  }
-
+  setResponseStatus(event, statusCode)
   return {
     data: null,
     error: { code, message, fields: fields && Object.keys(fields).length ? fields : undefined },
   }
 }
+
+/** Translate a service result into the API envelope, setting the HTTP status on failure. */
+export const respond = <T>(event: H3Event, result: ServiceResult<T>): ApiResponse<T | null> =>
+  result.ok
+    ? ok(result.data)
+    : fail(event, result.statusCode, result.code, result.message, result.fields)

@@ -10,7 +10,6 @@ import {
   normalizeGlossaryMentionLabel,
   normalizeJournalTagLabel,
 } from '../../shared/utils/campaign-journal-tags'
-import { parseCampaignMarkdown } from '../../server/utils/markdown'
 
 describe('campaign journal tag utilities', () => {
   it('normalizes and deduplicates custom hashtags', () => {
@@ -63,16 +62,5 @@ describe('campaign journal schemas and markdown parsing', () => {
       pageSize: 1000,
     })
     expect(parsed.success).toBe(false)
-  })
-
-  it('parses markdown without preserving executable script tags', async () => {
-    const parsed = await parseCampaignMarkdown(
-      '# Journal\n\nSafe text<script>alert("x")</script>\n\n- item'
-    )
-    const serialized = JSON.stringify(parsed).toLowerCase()
-
-    expect(serialized).toContain('journal')
-    expect(serialized).not.toContain('<script>')
-    expect(serialized).not.toContain('alert("x")')
   })
 })

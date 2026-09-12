@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
   const documentId = event.context.params?.documentId
   if (!documentId) {
-    return fail(400, 'VALIDATION_ERROR', 'Document id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Document id is required')
   }
 
   const rawBody = (await readBody(event)) ?? {}
@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
     },
   })
   if (!existing) {
-    return fail(404, 'NOT_FOUND', 'Document not found')
+    return fail(event, 404, 'NOT_FOUND', 'Document not found')
   }
 
   const actionParsed = documentPatchActionSchema.safeParse(rawBody)
@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
           },
         })
         if (!recording) {
-          return fail(404, 'NOT_FOUND', 'Recording not found')
+          return fail(event, 404, 'NOT_FOUND', 'Recording not found')
         }
       }
 
@@ -59,7 +59,7 @@ export default defineEventHandler(async (event) => {
       where: { id: actionParsed.data.versionId, documentId },
     })
     if (!version) {
-      return fail(404, 'NOT_FOUND', 'Version not found')
+      return fail(event, 404, 'NOT_FOUND', 'Version not found')
     }
 
     const service = new DocumentService()
@@ -69,7 +69,7 @@ export default defineEventHandler(async (event) => {
 
   const parsed = documentUpdateSchema.safeParse(rawBody)
   if (!parsed.success) {
-    return fail(400, 'VALIDATION_ERROR', 'Invalid document payload')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid document payload')
   }
 
   const service = new DocumentService()

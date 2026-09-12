@@ -1,15 +1,9 @@
 import type { H3Event } from 'h3'
 import { prisma } from '#server/db/prisma'
 
-export type ServiceResult<T> =
-  | { ok: true; data: T }
-  | {
-      ok: false
-      statusCode: number
-      code: string
-      message: string
-      fields?: Record<string, string>
-    }
+import type { ServiceResult } from '#server/utils/http'
+
+export type { ServiceResult }
 
 type AuthenticatedUserRecord = {
   id: string

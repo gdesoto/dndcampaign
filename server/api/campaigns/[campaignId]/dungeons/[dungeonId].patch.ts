@@ -1,6 +1,7 @@
 import { readBody } from 'h3'
 import { z } from 'zod'
-import { fail, ok } from '#server/utils/http'
+import { fail, respond } from '#server/utils/http'
+import { validateInput } from '#server/utils/validate'
 import {
   dungeonExportSchema,
   dungeonGenerateSchema,
@@ -20,15 +21,6 @@ const dungeonPatchActionSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('unpublish') }),
   dungeonExportSchema.extend({ action: z.literal('export') }),
 ])
-
-const toFieldErrors = (issues: z.ZodIssue[]) => {
-  const fieldErrors: Record<string, string> = {}
-  for (const issue of issues) {
-    const key = issue.path.join('.') || 'body'
-    fieldErrors[key] = issue.message
-  }
-  return fieldErrors
-}
 
 export default defineEventHandler(async (event) => {
   const campaignId = event.context.params?.campaignId
@@ -51,10 +43,7 @@ export default defineEventHandler(async (event) => {
           sessionUser.user.id,
           actionParsed.data
         )
-        if (!result.ok) {
-          return fail(event, result.statusCode, result.code, result.message, result.fields)
-        }
-        return ok(result.data)
+        return respond(event, result)
       }
       case 'regenerate': {
         const result = await dungeonService.regenerateDungeon(
@@ -63,10 +52,7 @@ export default defineEventHandler(async (event) => {
           sessionUser.user.id,
           actionParsed.data
         )
-        if (!result.ok) {
-          return fail(event, result.statusCode, result.code, result.message, result.fields)
-        }
-        return ok(result.data)
+        return respond(event, result)
       }
       case 'publish': {
         const result = await dungeonService.setPublishStatus(
@@ -75,10 +61,7 @@ export default defineEventHandler(async (event) => {
           sessionUser.user.id,
           'READY'
         )
-        if (!result.ok) {
-          return fail(event, result.statusCode, result.code, result.message, result.fields)
-        }
-        return ok(result.data)
+        return respond(event, result)
       }
       case 'unpublish': {
         const result = await dungeonService.setPublishStatus(
@@ -87,10 +70,7 @@ export default defineEventHandler(async (event) => {
           sessionUser.user.id,
           'DRAFT'
         )
-        if (!result.ok) {
-          return fail(event, result.statusCode, result.code, result.message, result.fields)
-        }
-        return ok(result.data)
+        return respond(event, result)
       }
       case 'export': {
         const result = await dungeonExportService.exportDungeon(
@@ -99,25 +79,16 @@ export default defineEventHandler(async (event) => {
           sessionUser.user.id,
           actionParsed.data
         )
-        if (!result.ok) {
-          return fail(event, result.statusCode, result.code, result.message, result.fields)
-        }
-        return ok(result.data)
+        return respond(event, result)
       }
       default:
         break
     }
   }
 
-  const parsed = dungeonUpdateSchema.safeParse(rawBody)
-  if (!parsed.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid dungeon payload', toFieldErrors(parsed.error.issues))
-  }
+  const parsed = validateInput(event, dungeonUpdateSchema, rawBody, 'Invalid dungeon payload')
+  if (!parsed.ok) return parsed.response
 
   const result = await dungeonService.updateDungeon(campaignId, dungeonId, sessionUser.user.id, parsed.data)
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message, result.fields)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })

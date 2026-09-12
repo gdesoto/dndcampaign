@@ -5,7 +5,7 @@ import { readBody } from 'h3'
 
 export default defineEventHandler(async (event) => {
   if (process.env.NODE_ENV === 'production') {
-    return fail(403, 'FORBIDDEN', 'Migration endpoint is disabled in production.')
+    return fail(event, 403, 'FORBIDDEN', 'Migration endpoint is disabled in production.')
   }
 
   const session = await requireUserSession(event)
@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
   })
 
   if (!campaigns.length) {
-    return fail(404, 'NOT_FOUND', 'No campaigns found')
+    return fail(event, 404, 'NOT_FOUND', 'No campaigns found')
   }
 
   const campaignIds = campaigns.map((campaign) => campaign.id)

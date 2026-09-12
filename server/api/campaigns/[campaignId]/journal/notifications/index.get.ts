@@ -1,5 +1,5 @@
-import { getQuery } from 'h3'
-import { fail, ok } from '#server/utils/http'
+import { validateQuery } from '#server/utils/validate'
+import { fail, respond } from '#server/utils/http'
 import { campaignJournalNotificationListQuerySchema } from '#shared/schemas/campaign-journal'
 import { CampaignJournalService } from '#server/services/campaign-journal.service'
 
@@ -11,10 +11,8 @@ export default defineEventHandler(async (event) => {
     return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id is required')
   }
 
-  const parsedQuery = campaignJournalNotificationListQuerySchema.safeParse(getQuery(event))
-  if (!parsedQuery.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid journal notification query parameters')
-  }
+  const parsedQuery = validateQuery(event, campaignJournalNotificationListQuerySchema, 'Invalid journal notification query parameters')
+  if (!parsedQuery.ok) return parsedQuery.response
 
   const sessionUser = await requireUserSession(event)
   const result = await campaignJournalService.listNotifications(
@@ -23,10 +21,6 @@ export default defineEventHandler(async (event) => {
     parsedQuery.data,
     sessionUser.user.systemRole
   )
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message, result.fields)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })
 

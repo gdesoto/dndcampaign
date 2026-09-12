@@ -61,7 +61,7 @@ export function useSummaryJobState(options: UseSummaryJobStateOptions) {
   const statusColor = computed(() => statusPresentation.value?.color ?? 'secondary')
   const summaryJobHistory = computed(() => (jobs.data.value?.jobs || []).filter(job => job.kind === options.jobKind))
   const summaryJobOptions = computed(() => summaryJobHistory.value.map(job => ({
-    label: `${new Date(job.createdAt).toLocaleString()} · ${job.status}`,
+    label: `${new Date(job.createdAt).toLocaleString()} Â· ${job.status}`,
     value: job.id,
   })))
 

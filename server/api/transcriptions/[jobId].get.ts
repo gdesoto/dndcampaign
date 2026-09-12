@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
   const jobId = event.context.params?.jobId
   if (!jobId) {
-    return fail(400, 'VALIDATION_ERROR', 'Transcription id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Transcription id is required')
   }
 
   const job = await prisma.transcriptionJob.findFirst({
@@ -30,7 +30,7 @@ export default defineEventHandler(async (event) => {
   })
 
   if (!job) {
-    return fail(404, 'NOT_FOUND', 'Transcription not found')
+    return fail(event, 404, 'NOT_FOUND', 'Transcription not found')
   }
 
   return ok({

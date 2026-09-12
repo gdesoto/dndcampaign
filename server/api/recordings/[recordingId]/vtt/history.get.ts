@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
   const recordingId = event.context.params?.recordingId
   if (!recordingId) {
-    return fail(400, 'VALIDATION_ERROR', 'Recording id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Recording id is required')
   }
 
   const recording = await prisma.recording.findFirst({
@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
     include: { session: true },
   })
   if (!recording) {
-    return fail(404, 'NOT_FOUND', 'Recording not found')
+    return fail(event, 404, 'NOT_FOUND', 'Recording not found')
   }
 
   const history = await prisma.artifact.findMany({

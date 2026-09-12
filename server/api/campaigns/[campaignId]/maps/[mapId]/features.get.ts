@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
   const campaignId = event.context.params?.campaignId
   const mapId = event.context.params?.mapId
   if (!campaignId || !mapId) {
-    return fail(400, 'VALIDATION_ERROR', 'Campaign id and map id are required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id and map id are required')
   }
   const authz = await requireCampaignPermission(event, campaignId, 'content.read')
   if (!authz.ok) return authz.response
@@ -20,12 +20,12 @@ export default defineEventHandler(async (event) => {
     includeRemoved: query.includeRemoved,
   })
   if (!parsed.success) {
-    return fail(400, 'VALIDATION_ERROR', 'Invalid feature filter payload')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid feature filter payload')
   }
 
   const features = await new MapService().getFeatures(campaignId, mapId, authz.session.user.id, parsed.data)
   if (!features) {
-    return fail(404, 'NOT_FOUND', 'Map not found')
+    return fail(event, 404, 'NOT_FOUND', 'Map not found')
   }
   return ok(features)
 })

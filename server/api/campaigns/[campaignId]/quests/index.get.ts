@@ -7,7 +7,7 @@ const questService = new QuestService()
 export default defineEventHandler(async (event) => {
   const campaignId = event.context.params?.campaignId
   if (!campaignId) {
-    return fail(400, 'VALIDATION_ERROR', 'Campaign id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id is required')
   }
 
   const authz = await requireCampaignPermission(event, campaignId, 'content.read')

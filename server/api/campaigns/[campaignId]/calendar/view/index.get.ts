@@ -1,6 +1,6 @@
-import { getQuery } from 'h3'
+import { validateQuery } from '#server/utils/validate'
 import { prisma } from '#server/db/prisma'
-import { fail, ok } from '#server/utils/http'
+import { ok, fail, respond } from '#server/utils/http'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
 import { calendarViewQuerySchema } from '#shared/schemas/calendar'
 import { CalendarConfigService } from '#server/services/calendar/calendar-config.service'
@@ -30,14 +30,12 @@ export default defineEventHandler(async (event) => {
     return authz.response
   }
 
-  const parsedQuery = calendarViewQuerySchema.safeParse(getQuery(event))
-  if (!parsedQuery.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid calendar view query')
-  }
+  const parsedQuery = validateQuery(event, calendarViewQuerySchema, 'Invalid calendar view query')
+  if (!parsedQuery.ok) return parsedQuery.response
 
   const configResult = await calendarConfigService.getConfig(campaignId, authz.session.user.id)
   if (!configResult.ok) {
-    return fail(event, configResult.statusCode, configResult.code, configResult.message, configResult.fields)
+    return respond(event, configResult)
   }
 
   const config = configResult.data
@@ -65,12 +63,12 @@ export default defineEventHandler(async (event) => {
     month: selectedMonth,
   })
   if (!eventsResult.ok) {
-    return fail(event, eventsResult.statusCode, eventsResult.code, eventsResult.message, eventsResult.fields)
+    return respond(event, eventsResult)
   }
 
   const rangesResult = await sessionCalendarRangeService.listRanges(campaignId, authz.session.user.id)
   if (!rangesResult.ok) {
-    return fail(event, rangesResult.statusCode, rangesResult.code, rangesResult.message, rangesResult.fields)
+    return respond(event, rangesResult)
   }
 
   const sessions = await prisma.session.findMany({

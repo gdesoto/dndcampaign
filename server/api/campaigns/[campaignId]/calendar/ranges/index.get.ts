@@ -1,4 +1,4 @@
-import { fail, ok } from '#server/utils/http'
+import { fail, respond } from '#server/utils/http'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
 import { SessionCalendarRangeService } from '#server/services/calendar/session-calendar-range.service'
 
@@ -16,10 +16,6 @@ export default defineEventHandler(async (event) => {
   }
 
   const result = await sessionCalendarRangeService.listRanges(campaignId, authz.session.user.id)
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message, result.fields)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })
 

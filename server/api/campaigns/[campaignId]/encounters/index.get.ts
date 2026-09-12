@@ -1,24 +1,18 @@
-import { getQuery } from 'h3'
-import { ok, fail } from '#server/utils/http'
+import { validateQuery } from '#server/utils/validate'
+import { fail, respond } from '#server/utils/http'
 import { encounterListQuerySchema } from '#shared/schemas/encounter'
 import { EncounterService } from '#server/services/encounter/encounter.service'
 
 export default defineEventHandler(async (event) => {
   const campaignId = event.context.params?.campaignId
   if (!campaignId) {
-    return fail(event, 400, '', 'Campaign id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id is required')
   }
 
   const sessionUser = await requireUserSession(event)
-  const parsedQuery = encounterListQuerySchema.safeParse(getQuery(event))
-  if (!parsedQuery.success) {
-    return fail(event, 400, '', 'Invalid encounter query parameters')
-  }
+  const parsedQuery = validateQuery(event, encounterListQuerySchema, 'Invalid encounter query parameters')
+  if (!parsedQuery.ok) return parsedQuery.response
 
   const result = await new EncounterService().listEncounters(campaignId, sessionUser.user.id, parsedQuery.data)
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message, result.fields)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })

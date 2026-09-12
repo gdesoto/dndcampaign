@@ -1,4 +1,4 @@
-import { ok, fail } from '#server/utils/http'
+import { fail, respond } from '#server/utils/http'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
 import { CampaignMembershipService } from '#server/services/campaign-membership.service'
 
@@ -17,9 +17,5 @@ export default defineEventHandler(async (event) => {
   }
 
   const result = await membershipService.removeMember(campaignId, memberId, authz.session.user.id)
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message, result.fields)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })

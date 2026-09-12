@@ -1,4 +1,5 @@
-import { fail, ok } from '#server/utils/http'
+import { fail, respond } from '#server/utils/http'
+import { validateInput } from '#server/utils/validate'
 import { readBody } from 'h3'
 import { z } from 'zod'
 import { dungeonCreateSchema, dungeonImportSchema } from '#shared/schemas/dungeon'
@@ -13,15 +14,6 @@ const dungeonCollectionActionSchema = z.object({
   source: dungeonImportSchema.shape.source,
   nameOverride: dungeonImportSchema.shape.nameOverride,
 })
-
-const toFieldErrors = (issues: z.ZodIssue[]) => {
-  const fieldErrors: Record<string, string> = {}
-  for (const issue of issues) {
-    const key = issue.path.join('.') || 'body'
-    fieldErrors[key] = issue.message
-  }
-  return fieldErrors
-}
 
 export default defineEventHandler(async (event) => {
   const campaignId = event.context.params?.campaignId
@@ -43,28 +35,13 @@ export default defineEventHandler(async (event) => {
       source: actionParsed.data.source,
       nameOverride: actionParsed.data.nameOverride,
     })
-    if (!result.ok) {
-      return fail(event, result.statusCode, result.code, result.message, result.fields)
-    }
-    return ok(result.data)
+    return respond(event, result)
   }
 
-  const createParsed = dungeonCreateSchema.safeParse(rawBody)
-  if (!createParsed.success) {
-    return fail(
-      event,
-      400,
-      'VALIDATION_ERROR',
-      'Invalid dungeon payload',
-      toFieldErrors(createParsed.error.issues)
-    )
-  }
+  const createParsed = validateInput(event, dungeonCreateSchema, rawBody, 'Invalid dungeon payload')
+  if (!createParsed.ok) return createParsed.response
 
   const result = await dungeonService.createDungeon(campaignId, sessionUser.user.id, createParsed.data)
 
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message, result.fields)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })

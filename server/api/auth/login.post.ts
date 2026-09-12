@@ -1,5 +1,5 @@
-import { ok, fail } from '#server/utils/http'
-import { readValidatedBodySafe } from '#server/utils/validate'
+import { ok, respond } from '#server/utils/http'
+import { validateBody } from '#server/utils/validate'
 import { loginSchema } from '#shared/schemas/auth'
 import { AuthService, toAuthUserDto } from '#server/services/auth.service'
 import { enforceRateLimit } from '#server/utils/rate-limit'
@@ -16,14 +16,12 @@ export default defineEventHandler(async (event) => {
     return rateLimitResponse
   }
 
-  const parsed = await readValidatedBodySafe(event, loginSchema)
-  if (!parsed.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid login payload', parsed.fieldErrors)
-  }
+  const parsed = await validateBody(event, loginSchema, 'Invalid login payload')
+  if (!parsed.ok) return parsed.response
 
   const authResult = await authService.authenticate(parsed.data.email, parsed.data.password)
   if (!authResult.ok) {
-    return fail(event, authResult.statusCode, authResult.code, authResult.message, authResult.fields)
+    return respond(event, authResult)
   }
 
   const user = authResult.data

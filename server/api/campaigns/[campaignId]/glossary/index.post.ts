@@ -1,6 +1,6 @@
 import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
-import { readValidatedBodySafe } from '#server/utils/validate'
+import { validateBody } from '#server/utils/validate'
 import { glossaryCreateSchema } from '#shared/schemas/glossary'
 import { CharacterService } from '#server/services/character.service'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
   const campaignId = event.context.params?.campaignId
   if (!campaignId) {
-    return fail(400, 'VALIDATION_ERROR', 'Campaign id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id is required')
   }
 
   const authz = await requireCampaignPermission(event, campaignId, 'content.write')
@@ -17,10 +17,8 @@ export default defineEventHandler(async (event) => {
     return authz.response
   }
 
-  const parsed = await readValidatedBodySafe(event, glossaryCreateSchema)
-  if (!parsed.success) {
-    return fail(400, 'VALIDATION_ERROR', 'Invalid glossary payload', parsed.fieldErrors)
-  }
+  const parsed = await validateBody(event, glossaryCreateSchema, 'Invalid glossary payload')
+  if (!parsed.ok) return parsed.response
 
   const entry = await prisma.glossaryEntry.create({
     data: {

@@ -22,14 +22,14 @@ export default defineEventHandler(async (event) => {
   if (expectedSecret) {
     const provided = extractSecret(event)
     if (provided !== expectedSecret) {
-      return fail(401, 'UNAUTHORIZED', 'Invalid webhook secret')
+      return fail(event, 401, 'UNAUTHORIZED', 'Invalid webhook secret')
     }
   }
 
   const payload = await readBody(event)
   const parsed = n8nWebhookPayloadSchema.safeParse(payload)
   if (!parsed.success) {
-    return fail(400, 'VALIDATION_ERROR', 'Invalid webhook payload')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid webhook payload')
   }
 
   const service = new SummaryService()

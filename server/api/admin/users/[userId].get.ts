@@ -1,4 +1,4 @@
-import { ok, fail } from '#server/utils/http'
+import { fail, respond } from '#server/utils/http'
 import { requireSystemAdmin } from '#server/utils/campaign-auth'
 import { AdminService } from '#server/services/admin.service'
 
@@ -16,9 +16,5 @@ export default defineEventHandler(async (event) => {
   }
 
   const result = await adminService.getUser(userId)
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message, result.fields)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })

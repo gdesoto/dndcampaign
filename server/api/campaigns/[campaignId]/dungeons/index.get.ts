@@ -1,5 +1,5 @@
-import { getQuery } from 'h3'
-import { fail, ok } from '#server/utils/http'
+import { validateQuery } from '#server/utils/validate'
+import { fail, respond } from '#server/utils/http'
 import { dungeonListQuerySchema } from '#shared/schemas/dungeon'
 import { DungeonService } from '#server/services/dungeon/dungeon.service'
 
@@ -12,15 +12,9 @@ export default defineEventHandler(async (event) => {
   }
 
   const sessionUser = await requireUserSession(event)
-  const query = dungeonListQuerySchema.safeParse(getQuery(event))
-  if (!query.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid dungeon query parameters')
-  }
+  const query = validateQuery(event, dungeonListQuerySchema, 'Invalid dungeon query parameters')
+  if (!query.ok) return query.response
 
   const result = await dungeonService.listDungeons(campaignId, sessionUser.user.id, query.data)
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message, result.fields)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })

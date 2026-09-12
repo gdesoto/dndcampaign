@@ -1,4 +1,4 @@
-import { fail, ok } from '#server/utils/http'
+import { fail, respond } from '#server/utils/http'
 import { CampaignRequestsService } from '#server/services/campaign-requests.service'
 
 const campaignRequestsService = new CampaignRequestsService()
@@ -17,9 +17,5 @@ export default defineEventHandler(async (event) => {
     sessionUser.user.id,
     sessionUser.user.systemRole,
   )
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message, result.fields)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })

@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
   const campaignId = event.context.params?.campaignId
   const mapId = event.context.params?.mapId
   if (!campaignId || !mapId) {
-    return fail(400, 'VALIDATION_ERROR', 'Campaign id and map id are required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id and map id are required')
   }
   const authz = await requireCampaignPermission(event, campaignId, 'content.write')
   if (!authz.ok) return authz.response
@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
       if (action === 'reimport-preview') {
         const preview = await new MapService().previewReimport(campaignId, mapId, authz.session.user.id, files)
         if (!preview) {
-          return fail(404, 'NOT_FOUND', 'Map not found')
+          return fail(event, 404, 'NOT_FOUND', 'Map not found')
         }
         return ok(preview)
       }
@@ -47,7 +47,7 @@ export default defineEventHandler(async (event) => {
           keepPrimary: fields.keepPrimary,
         })
         if (!parsed.success) {
-          return fail(400, 'VALIDATION_ERROR', 'Invalid re-import apply payload')
+          return fail(event, 400, 'VALIDATION_ERROR', 'Invalid re-import apply payload')
         }
 
         const applied = await new MapService().applyReimport(
@@ -60,16 +60,16 @@ export default defineEventHandler(async (event) => {
           parsed.data.keepPrimary
         )
         if (!applied) {
-          return fail(404, 'NOT_FOUND', 'Map not found')
+          return fail(event, 404, 'NOT_FOUND', 'Map not found')
         }
         return ok(applied)
       }
 
-      return fail(400, 'VALIDATION_ERROR', 'Invalid map action')
+      return fail(event, 400, 'VALIDATION_ERROR', 'Invalid map action')
     } catch (error) {
       const message = (error as Error).message || 'Map re-import failed'
       if (VALIDATION_MESSAGES.has(message)) {
-        return fail(400, 'VALIDATION_ERROR', message)
+        return fail(event, 400, 'VALIDATION_ERROR', message)
       }
       throw error
     }
@@ -81,19 +81,19 @@ export default defineEventHandler(async (event) => {
   if (actionParsed.success) {
     const updated = await new MapService().updateMap(campaignId, mapId, authz.session.user.id, { isPrimary: true })
     if (!updated) {
-      return fail(404, 'NOT_FOUND', 'Map not found')
+      return fail(event, 404, 'NOT_FOUND', 'Map not found')
     }
     return ok(updated)
   }
 
   const parsed = mapPatchSchema.safeParse(rawBody)
   if (!parsed.success) {
-    return fail(400, 'VALIDATION_ERROR', 'Invalid map update payload')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid map update payload')
   }
 
   const updated = await new MapService().updateMap(campaignId, mapId, authz.session.user.id, parsed.data)
   if (!updated) {
-    return fail(404, 'NOT_FOUND', 'Map not found')
+    return fail(event, 404, 'NOT_FOUND', 'Map not found')
   }
 
   return ok(updated)

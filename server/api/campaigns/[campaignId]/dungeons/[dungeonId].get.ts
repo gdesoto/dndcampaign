@@ -1,4 +1,4 @@
-import { fail, ok } from '#server/utils/http'
+import { fail, respond } from '#server/utils/http'
 import { DungeonService } from '#server/services/dungeon/dungeon.service'
 
 const dungeonService = new DungeonService()
@@ -12,9 +12,5 @@ export default defineEventHandler(async (event) => {
 
   const sessionUser = await requireUserSession(event)
   const result = await dungeonService.getDungeon(campaignId, dungeonId, sessionUser.user.id)
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message, result.fields)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })

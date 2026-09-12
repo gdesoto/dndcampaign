@@ -55,19 +55,6 @@ type CampaignAccessResolution = {
   access: ResolvedCampaignAccess | null
 }
 
-export type PublicCampaignAccess = {
-  campaignId: string
-  publicSlug: string
-  isEnabled: boolean
-  showCharacters: boolean
-  showRecaps: boolean
-  showSessions: boolean
-  showGlossary: boolean
-  showQuests: boolean
-  showMilestones: boolean
-  showMaps: boolean
-}
-
 export const buildCampaignWhereForPermission = (
   userId: string,
   permission: CampaignPermission
@@ -196,30 +183,3 @@ export const requireSystemAdmin = async (event: H3Event) => {
 
   return { ok: true as const, session }
 }
-
-export const getPublicCampaignAccess = async (
-  publicSlug: string
-): Promise<{ exists: boolean; access: PublicCampaignAccess | null }> => {
-  const access = await prisma.campaignPublicAccess.findUnique({
-    where: { publicSlug },
-    select: {
-      campaignId: true,
-      publicSlug: true,
-      isEnabled: true,
-      showCharacters: true,
-      showRecaps: true,
-      showSessions: true,
-      showGlossary: true,
-      showQuests: true,
-      showMilestones: true,
-      showMaps: true,
-    },
-  })
-
-  if (!access) {
-    return { exists: false, access: null }
-  }
-
-  return { exists: true, access }
-}
-

@@ -1,5 +1,5 @@
 import { ok, fail } from '#server/utils/http'
-import { readValidatedBodySafe } from '#server/utils/validate'
+import { validateBody } from '#server/utils/validate'
 import { registerSchema } from '#shared/schemas/auth'
 import { AuthService, toAuthUserDto } from '#server/services/auth.service'
 import { enforceRateLimit } from '#server/utils/rate-limit'
@@ -16,10 +16,8 @@ export default defineEventHandler(async (event) => {
     return rateLimitResponse
   }
 
-  const parsed = await readValidatedBodySafe(event, registerSchema)
-  if (!parsed.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid register payload', parsed.fieldErrors)
-  }
+  const parsed = await validateBody(event, registerSchema, 'Invalid register payload')
+  if (!parsed.ok) return parsed.response
 
   const registerResult = await authService.register(parsed.data)
   if (!registerResult.ok) {

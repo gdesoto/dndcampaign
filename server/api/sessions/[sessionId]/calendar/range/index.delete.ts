@@ -1,4 +1,4 @@
-import { fail, ok } from '#server/utils/http'
+import { fail, respond } from '#server/utils/http'
 import { SessionCalendarRangeService } from '#server/services/calendar/session-calendar-range.service'
 
 const sessionCalendarRangeService = new SessionCalendarRangeService()
@@ -12,9 +12,5 @@ export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
 
   const result = await sessionCalendarRangeService.deleteRange(sessionId, sessionUser.user.id)
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message, result.fields)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })

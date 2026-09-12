@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
   const recordingId = event.context.params?.recordingId
   if (!recordingId) {
-    return fail(400, 'VALIDATION_ERROR', 'Recording id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Recording id is required')
   }
 
   const rawBody = (await readBody(event)) ?? {}
@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
     }
   }
   if (!modeParsed.success) {
-    return fail(400, 'VALIDATION_ERROR', 'Invalid transcription request')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid transcription request')
   }
 
   if (modeParsed.data.mode === 'transcribe') {
@@ -47,12 +47,12 @@ export default defineEventHandler(async (event) => {
       },
     })
     if (!recording) {
-      return fail(404, 'NOT_FOUND', 'Recording not found')
+      return fail(event, 404, 'NOT_FOUND', 'Recording not found')
     }
 
     const config = useRuntimeConfig()
     if (!config.elevenlabs?.apiKey) {
-      return fail(500, 'CONFIG_ERROR', 'ElevenLabs API key is not configured')
+      return fail(event, 500, 'CONFIG_ERROR', 'ElevenLabs API key is not configured')
     }
 
     const webhookEnabled = Boolean(config.elevenlabs.webhookId)
@@ -87,7 +87,7 @@ export default defineEventHandler(async (event) => {
     include: { session: true },
   })
   if (!recording) {
-    return fail(404, 'NOT_FOUND', 'Recording not found')
+    return fail(event, 404, 'NOT_FOUND', 'Recording not found')
   }
 
   const existing = await prisma.transcriptionJob.findFirst({
@@ -111,7 +111,7 @@ export default defineEventHandler(async (event) => {
 
   const config = useRuntimeConfig()
   if (!config.elevenlabs?.apiKey) {
-    return fail(500, 'CONFIG_ERROR', 'ElevenLabs API key is not configured')
+    return fail(event, 500, 'CONFIG_ERROR', 'ElevenLabs API key is not configured')
   }
 
   const service = new TranscriptionService(config.elevenlabs.apiKey)

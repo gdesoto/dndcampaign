@@ -1,6 +1,6 @@
 import { prisma } from '#server/db/prisma'
 import { ok, fail } from '#server/utils/http'
-import { readValidatedBodySafe } from '#server/utils/validate'
+import { validateBody } from '#server/utils/validate'
 import { documentCreateSchema } from '#shared/schemas/document'
 import { DocumentService } from '#server/services/document.service'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
   const sessionId = event.context.params?.sessionId
   if (!sessionId) {
-    return fail(400, 'VALIDATION_ERROR', 'Session id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Session id is required')
   }
 
   const session = await prisma.session.findFirst({
@@ -19,19 +19,17 @@ export default defineEventHandler(async (event) => {
     },
   })
   if (!session) {
-    return fail(404, 'NOT_FOUND', 'Session not found')
+    return fail(event, 404, 'NOT_FOUND', 'Session not found')
   }
 
-  const parsed = await readValidatedBodySafe(event, documentCreateSchema)
-  if (!parsed.success) {
-    return fail(400, 'VALIDATION_ERROR', 'Invalid document payload', parsed.fieldErrors)
-  }
+  const parsed = await validateBody(event, documentCreateSchema, 'Invalid document payload')
+  if (!parsed.ok) return parsed.response
 
   const existing = await prisma.document.findFirst({
     where: { sessionId, type: parsed.data.type },
   })
   if (existing) {
-    return fail(409, 'ALREADY_EXISTS', 'Document already exists for this session')
+    return fail(event, 409, 'ALREADY_EXISTS', 'Document already exists for this session')
   }
 
   const service = new DocumentService()

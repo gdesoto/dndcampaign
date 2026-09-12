@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
   const entryId = event.context.params?.entryId
   if (!entryId) {
-    return fail(400, 'VALIDATION_ERROR', 'Entry id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Entry id is required')
   }
 
   const existing = await prisma.glossaryEntry.findFirst({
@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
     },
   })
   if (!existing) {
-    return fail(404, 'NOT_FOUND', 'Glossary entry not found')
+    return fail(event, 404, 'NOT_FOUND', 'Glossary entry not found')
   }
 
   if (existing.type === 'PC') {

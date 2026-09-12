@@ -1,4 +1,4 @@
-import { fail, ok } from '#server/utils/http'
+import { fail, respond } from '#server/utils/http'
 import { CampaignPublicAccessService } from '#server/services/campaign-public-access.service'
 
 const publicAccessService = new CampaignPublicAccessService()
@@ -11,9 +11,5 @@ export default defineEventHandler(async (event) => {
   }
 
   const result = await publicAccessService.getPublicMapViewer(publicSlug, mapSlug)
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })

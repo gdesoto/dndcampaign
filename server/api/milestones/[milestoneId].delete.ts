@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
   const milestoneId = event.context.params?.milestoneId
   if (!milestoneId) {
-    return fail(400, 'VALIDATION_ERROR', 'Milestone id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Milestone id is required')
   }
 
   const existing = await prisma.milestone.findFirst({
@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
     },
   })
   if (!existing) {
-    return fail(404, 'NOT_FOUND', 'Milestone not found')
+    return fail(event, 404, 'NOT_FOUND', 'Milestone not found')
   }
 
   await prisma.milestone.delete({ where: { id: milestoneId } })

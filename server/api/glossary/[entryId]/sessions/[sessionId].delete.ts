@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
   const entryId = event.context.params?.entryId
   const sessionId = event.context.params?.sessionId
   if (!entryId || !sessionId) {
-    return fail(400, 'VALIDATION_ERROR', 'Entry id and session id are required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Entry id and session id are required')
   }
 
   const entry = await prisma.glossaryEntry.findFirst({
@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
     },
   })
   if (!entry) {
-    return fail(404, 'NOT_FOUND', 'Glossary entry not found')
+    return fail(event, 404, 'NOT_FOUND', 'Glossary entry not found')
   }
 
   const existing = await prisma.glossarySessionLink.findUnique({

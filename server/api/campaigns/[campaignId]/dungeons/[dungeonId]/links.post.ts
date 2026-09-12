@@ -1,5 +1,5 @@
-import { fail, ok } from '#server/utils/http'
-import { readValidatedBodySafe } from '#server/utils/validate'
+import { fail, respond } from '#server/utils/http'
+import { validateBody } from '#server/utils/validate'
 import { dungeonLinkCreateSchema } from '#shared/schemas/dungeon'
 import { DungeonEditorService } from '#server/services/dungeon/dungeon-editor.service'
 
@@ -12,16 +12,10 @@ export default defineEventHandler(async (event) => {
     return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id and dungeon id are required')
   }
 
-  const parsed = await readValidatedBodySafe(event, dungeonLinkCreateSchema)
-  if (!parsed.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid dungeon link payload', parsed.fieldErrors)
-  }
+  const parsed = await validateBody(event, dungeonLinkCreateSchema, 'Invalid dungeon link payload')
+  if (!parsed.ok) return parsed.response
 
   const sessionUser = await requireUserSession(event)
   const result = await dungeonEditorService.createLink(campaignId, dungeonId, sessionUser.user.id, parsed.data)
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message, result.fields)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })

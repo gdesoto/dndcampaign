@@ -26,7 +26,6 @@ export default defineNuxtConfig({
     '@nuxt/image',
     '@nuxt/test-utils',
     '@nuxt/ui',
-    '@pinia/nuxt',
     'nuxt-auth-utils',
     '@nuxt/eslint',
     '@nuxtjs/mdc'

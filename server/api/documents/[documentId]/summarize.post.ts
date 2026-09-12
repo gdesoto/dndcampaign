@@ -1,5 +1,5 @@
 import { ok, fail } from '#server/utils/http'
-import { readValidatedBodySafe } from '#server/utils/validate'
+import { validateBody } from '#server/utils/validate'
 import { summarizeRequestSchema } from '#shared/schemas/summarization'
 import { SummaryService } from '#server/services/summary.service'
 import { prisma } from '#server/db/prisma'
@@ -9,20 +9,18 @@ export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
   const documentId = event.context.params?.documentId
   if (!documentId) {
-    return fail(400, 'VALIDATION_ERROR', 'Document id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Document id is required')
   }
 
-  const parsed = await readValidatedBodySafe(event, summarizeRequestSchema)
-  if (!parsed.success) {
-    return fail(400, 'VALIDATION_ERROR', 'Invalid summarization payload', parsed.fieldErrors)
-  }
+  const parsed = await validateBody(event, summarizeRequestSchema, 'Invalid summarization payload')
+  if (!parsed.ok) return parsed.response
 
   const document = await prisma.document.findUnique({
     where: { id: documentId },
     select: { id: true, campaignId: true, type: true },
   })
   if (!document || document.type !== 'TRANSCRIPT') {
-    return fail(404, 'NOT_FOUND', 'Transcript document not found')
+    return fail(event, 404, 'NOT_FOUND', 'Transcript document not found')
   }
 
   const campaignAccess = await resolveCampaignAccess(
@@ -32,7 +30,7 @@ export default defineEventHandler(async (event) => {
   )
   const canRunSummary = campaignAccess.access?.permissions.includes('summary.run')
   if (!canRunSummary) {
-    return fail(403, 'FORBIDDEN', 'You do not have permission to run summarization')
+    return fail(event, 403, 'FORBIDDEN', 'You do not have permission to run summarization')
   }
 
   const service = new SummaryService()
@@ -49,7 +47,7 @@ export default defineEventHandler(async (event) => {
     return ok(result)
   } catch (error) {
     return fail(
-      500,
+      event, 500,
       'SUMMARY_FAILED',
       (error as Error & { message?: string }).message || 'Unable to start summarization.'
     )

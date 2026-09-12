@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { ok, fail } from '#server/utils/http'
+import { ok, fail, respond } from '#server/utils/http'
+import { validateInput } from '#server/utils/validate'
 import { AccountService } from '#server/services/account.service'
 import {
   accountProfileUpdateSchema,
@@ -32,19 +33,12 @@ export default defineEventHandler(async (event) => {
   const action = actionParsed.data.action
 
   if (action === 'update-profile') {
-    const parsed = accountProfileUpdateSchema.safeParse(body)
-    if (!parsed.success) {
-      const fields: Record<string, string> = {}
-      for (const issue of parsed.error.issues) {
-        const key = issue.path.join('.') || 'profile'
-        fields[key] = issue.message
-      }
-      return fail(event, 400, 'VALIDATION_ERROR', 'Invalid profile payload', fields)
-    }
+    const parsed = validateInput(event, accountProfileUpdateSchema, body, 'Invalid profile payload')
+    if (!parsed.ok) return parsed.response
 
     const result = await accountService.updateProfile(session.user.id, parsed.data)
     if (!result.ok) {
-      return fail(event, result.statusCode, result.code, result.message, result.fields)
+      return respond(event, result)
     }
 
     await accountService.syncSession(event, session.user.id)
@@ -64,19 +58,12 @@ export default defineEventHandler(async (event) => {
   }
 
   if (action === 'change-email') {
-    const parsed = changeEmailSchema.safeParse(body)
-    if (!parsed.success) {
-      const fields: Record<string, string> = {}
-      for (const issue of parsed.error.issues) {
-        const key = issue.path.join('.') || 'changeEmail'
-        fields[key] = issue.message
-      }
-      return fail(event, 400, 'VALIDATION_ERROR', 'Invalid email payload', fields)
-    }
+    const parsed = validateInput(event, changeEmailSchema, body, 'Invalid email payload')
+    if (!parsed.ok) return parsed.response
 
     const result = await accountService.changeEmail(session.user.id, parsed.data)
     if (!result.ok) {
-      return fail(event, result.statusCode, result.code, result.message, result.fields)
+      return respond(event, result)
     }
 
     await accountService.syncSession(event, session.user.id)
@@ -84,28 +71,17 @@ export default defineEventHandler(async (event) => {
   }
 
   if (action === 'change-password') {
-    const parsed = changePasswordSchema.safeParse(body)
-    if (!parsed.success) {
-      const fields: Record<string, string> = {}
-      for (const issue of parsed.error.issues) {
-        const key = issue.path.join('.') || 'changePassword'
-        fields[key] = issue.message
-      }
-      return fail(event, 400, 'VALIDATION_ERROR', 'Invalid password payload', fields)
-    }
+    const parsed = validateInput(event, changePasswordSchema, body, 'Invalid password payload')
+    if (!parsed.ok) return parsed.response
 
     const result = await accountService.changePassword(session.user.id, parsed.data)
     if (!result.ok) {
-      return fail(event, result.statusCode, result.code, result.message, result.fields)
+      return respond(event, result)
     }
 
     return ok({ success: true })
   }
 
   const result = await accountService.revokeOtherSessions(event, session.user.id)
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message, result.fields)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })

@@ -1,5 +1,5 @@
-import { fail, ok } from '#server/utils/http'
-import { readValidatedBodySafe } from '#server/utils/validate'
+import { ok, fail } from '#server/utils/http'
+import { validateBody } from '#server/utils/validate'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
 import { calendarNameGenerateSchema } from '#shared/schemas/calendar'
 import { NameGeneratorService } from '#server/services/calendar/name-generator.service'
@@ -17,10 +17,8 @@ export default defineEventHandler(async (event) => {
     return authz.response
   }
 
-  const parsed = await readValidatedBodySafe(event, calendarNameGenerateSchema)
-  if (!parsed.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid name generation payload', parsed.fieldErrors)
-  }
+  const parsed = await validateBody(event, calendarNameGenerateSchema, 'Invalid name generation payload')
+  if (!parsed.ok) return parsed.response
 
   const names = nameGeneratorService.generateNames(parsed.data.kind, parsed.data.count, parsed.data.seed)
   return ok({

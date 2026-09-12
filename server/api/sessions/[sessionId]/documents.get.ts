@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
   const sessionId = event.context.params?.sessionId
   if (!sessionId) {
-    return fail(400, 'VALIDATION_ERROR', 'Session id is required')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Session id is required')
   }
 
   const session = await prisma.session.findFirst({
@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
     },
   })
   if (!session) {
-    return fail(404, 'NOT_FOUND', 'Session not found')
+    return fail(event, 404, 'NOT_FOUND', 'Session not found')
   }
 
   const query = getQuery(event)

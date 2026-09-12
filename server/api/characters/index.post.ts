@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
   const actionParsed = characterCreateActionSchema.safeParse(rawBody)
   if (actionParsed.success) {
     if (actionParsed.data.provider !== 'DND_BEYOND') {
-      return fail(400, 'VALIDATION_ERROR', 'Unsupported provider')
+      return fail(event, 400, 'VALIDATION_ERROR', 'Unsupported provider')
     }
 
     try {
@@ -45,15 +45,15 @@ export default defineEventHandler(async (event) => {
       const statusCode = getErrorStatusCode(error)
       const message = (error as Error).message || 'Import failed'
       if (statusCode === 403) {
-        return fail(403, 'IMPORT_FORBIDDEN', message)
+        return fail(event, 403, 'IMPORT_FORBIDDEN', message)
       }
-      return fail(500, 'IMPORT_FAILED', message)
+      return fail(event, 500, 'IMPORT_FAILED', message)
     }
   }
 
   const parsed = characterCreateSchema.safeParse(rawBody)
   if (!parsed.success) {
-    return fail(400, 'VALIDATION_ERROR', 'Invalid character payload')
+    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid character payload')
   }
 
   const character = await characterService.createManualCharacter(

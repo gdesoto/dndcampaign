@@ -1,5 +1,5 @@
-import { fail, ok } from '#server/utils/http'
-import { readValidatedBodySafe } from '#server/utils/validate'
+import { fail, respond } from '#server/utils/http'
+import { validateBody } from '#server/utils/validate'
 import { campaignJournalCreateSchema } from '#shared/schemas/campaign-journal'
 import { CampaignJournalService } from '#server/services/campaign-journal.service'
 
@@ -11,10 +11,8 @@ export default defineEventHandler(async (event) => {
     return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id is required')
   }
 
-  const parsed = await readValidatedBodySafe(event, campaignJournalCreateSchema)
-  if (!parsed.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid journal create payload', parsed.fieldErrors)
-  }
+  const parsed = await validateBody(event, campaignJournalCreateSchema, 'Invalid journal create payload')
+  if (!parsed.ok) return parsed.response
 
   const sessionUser = await requireUserSession(event)
   const result = await campaignJournalService.createEntry(
@@ -23,10 +21,6 @@ export default defineEventHandler(async (event) => {
     parsed.data,
     sessionUser.user.systemRole
   )
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message, result.fields)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })
 

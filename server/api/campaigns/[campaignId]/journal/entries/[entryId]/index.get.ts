@@ -1,4 +1,4 @@
-import { fail, ok } from '#server/utils/http'
+import { fail, respond } from '#server/utils/http'
 import { CampaignJournalService } from '#server/services/campaign-journal.service'
 
 const campaignJournalService = new CampaignJournalService()
@@ -17,10 +17,6 @@ export default defineEventHandler(async (event) => {
     sessionUser.user.id,
     sessionUser.user.systemRole
   )
-  if (!result.ok) {
-    return fail(event, result.statusCode, result.code, result.message, result.fields)
-  }
-
-  return ok(result.data)
+  return respond(event, result)
 })
 

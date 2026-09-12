@@ -34,7 +34,7 @@ Server API routes in `server/api/` should be **thin handlers** — validation, p
 
 ### Frontend Pattern
 
-Pages in `app/pages/` should be **thin**; move repeated UI logic into components/composables. Use `useAsyncData`/`useFetch` for page-level data loading. Composables in `app/composables/` handle state orchestration. Auth state lives in the Pinia store at `app/stores/auth.ts`.
+Pages in `app/pages/` should be **thin**; move repeated UI logic into components/composables. Use `useAsyncData`/`useFetch` for page-level data loading. Composables in `app/composables/` handle state orchestration. Auth session state comes from `useAuth()` in `app/composables/useAuth.ts`, which wraps `useUserSession`.
 
 ### Storage
 
