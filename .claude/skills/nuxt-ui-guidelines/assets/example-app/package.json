@@ -1,0 +1,31 @@
+{
+  "name": "intuitive-ui-reference",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev --host 127.0.0.1",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "lint": "eslint .",
+    "typecheck": "nuxt typecheck",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "@iconify-json/lucide": "1.2.129",
+    "@nuxt/ui": "4.11.0",
+    "@tanstack/vue-table": "8.21.3",
+    "nuxt": "4.5.2",
+    "tailwindcss": "4.3.3",
+    "vue": "3.5.42",
+    "zod": "4.5.4",
+    "marked": "17.0.6"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "1.17.0",
+    "eslint": "10.10.0",
+    "typescript": "6.0.3",
+    "vue-tsc": "3.3.11"
+  },
+  "packageManager": "pnpm@12.3.4"
+}

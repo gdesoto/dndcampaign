@@ -666,7 +666,7 @@ All buttons use `font-display` (Cinzel) with wide letter-spacing and uppercase t
 <UButton icon="i-lucide-search" variant="ghost" square />
 
 <!-- With route navigation -->
-<UButton to="/campaign/characters">View Party</UButton>
+<UButton to="/campaigns/characters">View Party</UButton>
 ```
 
 ### Props
@@ -1303,7 +1303,7 @@ const navItems = computed<NavigationMenuItem[]>(() => [
 </template>
 ```
 
-> **`active` state on nav items:** Always set `active` explicitly using `route.path.startsWith()`. This correctly highlights parent items when a child route is active (e.g. highlighting "Campaign" for any `/campaign/**` URL).
+> **`active` state on nav items:** Always set `active` explicitly using `route.path.startsWith()`. This correctly highlights parent items when a child route is active (e.g. highlighting "Campaign" for any `/campaigns/**` URL).
 
 ---
 
@@ -1454,11 +1454,11 @@ const { data: surround } = await useAsyncData(`${route.path}-surround`, () =>
 const navLinks = [
   { label: 'Campaign',   type: 'label' },
   { label: 'Overview',   icon: 'i-lucide-layout-dashboard', to: '/campaign' },
-  { label: 'Characters', icon: 'i-lucide-users',            to: '/campaign/characters', badge: { label: '4', color: 'primary', variant: 'outline' } },
-  { label: 'World',      icon: 'i-lucide-map',              to: '/campaign/world' },
+  { label: 'Characters', icon: 'i-lucide-users',            to: '/campaigns/characters', badge: { label: '4', color: 'primary', variant: 'outline' } },
+  { label: 'World',      icon: 'i-lucide-map',              to: '/campaigns/world' },
   { label: 'Session',    type: 'label' },
-  { label: 'Notes',      icon: 'i-lucide-scroll-text',      to: '/campaign/notes' },
-  { label: 'History',    icon: 'i-lucide-clock',            to: '/campaign/history' },
+  { label: 'Notes',      icon: 'i-lucide-scroll-text',      to: '/campaigns/notes' },
+  { label: 'History',    icon: 'i-lucide-clock',            to: '/campaigns/history' },
 ]
 </script>
 
@@ -1496,7 +1496,7 @@ const navLinks = [
 ```
 
 ```vue
-<!-- pages/campaign/index.vue -->
+<!-- pages/campaigns/index.vue -->
 <script setup lang="ts">
 definePageMeta({ layout: 'dashboard' })
 </script>
@@ -1619,7 +1619,7 @@ See `layouts/docs.vue` and `pages/docs/[...slug].vue` in §22.2 for the complete
 ```
 
 ```vue
-<!-- pages/campaign/characters/index.vue -->
+<!-- pages/campaigns/characters/index.vue -->
 <script setup lang="ts">
 definePageMeta({ layout: 'dashboard' })
 </script>
@@ -1708,7 +1708,7 @@ Show at route depth ≥ 3 inside `UDashboardNavbar`:
   <template #leading>
     <UBreadcrumb :items="[
       { label: 'Campaign',   to: '/campaign' },
-      { label: 'Characters', to: '/campaign/characters' },
+      { label: 'Characters', to: '/campaigns/characters' },
       { label: 'Valen Ashford' },  <!-- no to = current page -->
     ]" />
   </template>
@@ -1762,7 +1762,7 @@ Docs pages only — use `UContentSurround`:
 Always use the `to` prop on Nuxt UI components or explicit `<NuxtLink>` for internal links. Never use bare `<a>` tags — they break SPA routing and disable prefetching.
 
 ```vue
-<UButton to="/campaign/characters">View Party</UButton>
+<UButton to="/campaigns/characters">View Party</UButton>
 
 <NuxtLink to="/campaign">
   <UAvatar src="/logo.png" />
@@ -1773,7 +1773,7 @@ Always use the `to` prop on Nuxt UI components or explicit `<NuxtLink>` for inte
 
 ```ts
 // After saving
-await navigateTo('/campaign/notes')
+await navigateTo('/campaigns/notes')
 
 // Replace history entry
 await navigateTo('/campaign', { replace: true })
@@ -1797,7 +1797,7 @@ else navigateTo('/campaign')
 
 ```ts
 const route = useRoute()
-route.path        // '/campaign/characters/42'
+route.path        // '/campaigns/characters/42'
 route.params.id   // '42'
 route.query.tab   // 'spells'
 ```
@@ -1919,7 +1919,7 @@ pages/
 
 ### Layouts
 
-6. **Dashboard layout always wins for `/campaign/**`.** Never use `default` or `docs` layouts for campaign views.
+6. **Dashboard layout always wins for `/campaigns/**`.** Never use `default` or `docs` layouts for campaign views.
 
 7. **Dashboard routes have no `AppHeader` or `AppFooter` because `layouts/dashboard.vue` doesn't include them.** No `v-if` guard is needed in `app.vue` — each layout is fully responsible for its own chrome.
 
@@ -1937,7 +1937,7 @@ pages/
 
 13. **`UTabs` are for in-panel navigation only.** Section-level navigation (Overview, Characters, World, Notes, History) always uses the sidebar, never tabs.
 
-14. **Breadcrumbs appear at route depth ≥ 3.** Pattern: `Campaign > Section > Item`. The section root (e.g. `/campaign/characters`) shows only "Characters" as the plain navbar title.
+14. **Breadcrumbs appear at route depth ≥ 3.** Pattern: `Campaign > Section > Item`. The section root (e.g. `/campaigns/characters`) shows only "Characters" as the plain navbar title.
 
 ### Typography
 

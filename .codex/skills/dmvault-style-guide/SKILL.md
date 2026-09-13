@@ -11,7 +11,7 @@ Use this skill when implementing or reviewing frontend changes.
 
 ## Source of truth
 
-- Canonical guide: `theme-guide.md`
+- Canonical guide: `theme-guide.md` at the repository root (identity only: palette, fonts, radii, ornament, parchment light mode). Interaction, layout, forms, tables, confirmation, feedback, navigation, and accessibility are governed by the `nuxt-ui-guidelines` skill, which takes precedence where the two conflict; see `AGENTS.md` for the full order.
 - Key implementation files:
   - `app/assets/css/main.css`
   - `app/app.config.ts`
@@ -36,7 +36,7 @@ If current code differs from the guide, treat the guide as intended architecture
 4. Validate structure contracts:
    - `app.vue` remains minimal shell.
    - Layout responsibilities stay in layout files.
-   - Dashboard owns `/campaign/**` routes.
+   - Dashboard layout owns `/campaigns/**` routes; admin uses the `admin` layout.
 5. Run checks:
    - `yarn typecheck`
    - `yarn lint`

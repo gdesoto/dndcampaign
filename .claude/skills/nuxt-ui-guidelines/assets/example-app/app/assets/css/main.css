@@ -1,0 +1,269 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+@theme static {
+  --font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  /* Titles follow the body face unless an identity gives them their own.
+     Declaring it here is what generates the `font-display` utility, so a page
+     title asks for the role and the identity decides what the role looks like. */
+  --font-display: var(--font-sans);
+  /* Faces the alternate identities switch to. They are declared here because
+     that is what makes @nuxt/fonts load and self-host them. */
+  --font-alegreya-sans: 'Alegreya Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-cinzel: 'Cinzel', ui-serif, Georgia, serif;
+  --font-nunito: 'Nunito', ui-sans-serif, system-ui, sans-serif;
+  --font-fraunces: 'Fraunces', ui-serif, Georgia, serif;
+  --text-data: 0.8125rem;
+  --text-data--line-height: 1.25rem;
+  --text-page-title: 1.25rem;
+  --text-page-title--line-height: 1.75rem;
+  --text-metric: 1.5rem;
+  --text-metric--line-height: 2rem;
+  --spacing-page: 1.25rem;
+  --spacing-toast-form-clearance: 6rem;
+}
+:root {
+  --ui-radius: 0.25rem;
+  --ui-primary: var(--ui-color-primary-700);
+  --ui-success: var(--ui-color-success-700);
+  --ui-warning: var(--ui-color-warning-700);
+  --ui-error: var(--ui-color-error-700);
+  --ui-info: var(--ui-color-info-700);
+}
+.dark {
+  --ui-primary: var(--ui-color-primary-400);
+  --ui-success: var(--ui-color-success-400);
+  --ui-warning: var(--ui-color-warning-400);
+  --ui-error: var(--ui-color-error-400);
+  --ui-info: var(--ui-color-info-400);
+}
+body {
+  background: var(--ui-bg);
+  font-size: var(--text-data);
+}
+/* Identities. Each class carries only values — typefaces, the type scale, page
+   padding, radii — on the <html> element, so overlays rendered in a portal
+   inherit them too. Semantic color aliases are runtime app.config values and
+   shared component defaults are a UTheme layer; neither belongs in CSS. */
+.identity-campaign {
+  --font-sans: var(--font-alegreya-sans);
+  --font-display: var(--font-cinzel);
+  --text-page-title: 1.5rem;
+  --text-page-title--line-height: 2rem;
+  --text-metric: 1.75rem;
+  --text-metric--line-height: 2.25rem;
+  --spacing-page: 1.5rem;
+  --ui-radius: 0.625rem;
+  font-family: var(--font-sans);
+}
+/* Character. Each identity below gets a ground of its own and one thing that
+   happens under the cursor. Neither stands for anything, which is exactly what
+   makes them character rather than signals, so both stay off the resting layer
+   where a status color or a semantic edge has to be read. Ornament belongs in
+   this file for the same reason tokens do: defined once, it cannot drift
+   between pages.
+
+   The ground goes on the shell element, not on `body`. The dashboard group is
+   `fixed inset-0`, so nothing is in flow and `body` has zero height; a flat
+   colour still propagates to the canvas from there, but a gradient collapses
+   with the box that generated it. `.app-ground` is that shell. */
+
+/* Campaign: aged vellum. A wash over the whole page, a warm glow from above it,
+   and a fine hatch in the grain. */
+.identity-campaign .app-ground {
+  background-image:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--ui-primary) 5%, transparent) 0 1px,
+      transparent 1px 7px
+    ),
+    radial-gradient(
+      120% 70% at 50% -10%,
+      color-mix(in oklab, var(--ui-primary) 15%, transparent),
+      transparent 65%
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--ui-primary) 5%, transparent),
+      color-mix(in oklab, var(--ui-primary) 9%, transparent)
+    );
+}
+.identity-campaign.dark .app-ground {
+  background-image:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--ui-primary) 4%, transparent) 0 1px,
+      transparent 1px 7px
+    ),
+    radial-gradient(
+      120% 70% at 50% -10%,
+      color-mix(in oklab, var(--ui-primary) 9%, transparent),
+      transparent 65%
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--ui-primary) 3%, transparent),
+      color-mix(in oklab, var(--ui-primary) 6%, transparent)
+    );
+}
+
+/* Coastal: light off the water, low and wide, deepening toward the horizon. */
+.identity-coastal .app-ground {
+  background-image:
+    radial-gradient(
+      95% 55% at 8% 0%,
+      color-mix(in oklab, var(--ui-primary) 14%, transparent),
+      transparent 58%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 30%,
+      color-mix(in oklab, var(--ui-primary) 11%, transparent)
+    );
+}
+.identity-coastal.dark .app-ground {
+  background-image:
+    radial-gradient(
+      95% 55% at 8% 0%,
+      color-mix(in oklab, var(--ui-primary) 9%, transparent),
+      transparent 58%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 30%,
+      color-mix(in oklab, var(--ui-primary) 7%, transparent)
+    );
+}
+
+/* Campaign, under the cursor: a warm sheen crosses the card. It sits on every
+   card because it is transient and addressed to the one the reader is already
+   pointing at, so it cannot compete with the resting marks the eye sweeps a
+   grid for. Both ends of the sweep leave the card clear, so no wash ever parks
+   over the text, and reduced motion stops it entirely. */
+.identity-sheen {
+  position: relative;
+}
+.identity-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  background-image: linear-gradient(
+    105deg,
+    transparent 44%,
+    color-mix(in oklab, var(--ui-primary) 16%, transparent) 50%,
+    transparent 56%
+  );
+  background-size: 260% 100%;
+  background-position: 130% 0;
+  background-repeat: no-repeat;
+  transition: background-position 700ms ease-out;
+}
+.identity-sheen:hover::after {
+  background-position: -30% 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .identity-sheen::after,
+  .identity-sheen:hover::after {
+    transition: none;
+    background-position: 130% 0;
+  }
+}
+
+/* Coastal, under the cursor: the card lifts into its own light. `transform`
+   composites, so nothing reflows and no neighbour moves; reduced motion keeps
+   the warmth and drops the movement. */
+.identity-lift {
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease;
+}
+.identity-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px -14px color-mix(in oklab, var(--ui-primary) 55%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .identity-lift {
+    transition: box-shadow 220ms ease;
+  }
+  .identity-lift:hover {
+    transform: none;
+  }
+}
+.identity-coastal {
+  --font-sans: var(--font-nunito);
+  --font-display: var(--font-fraunces);
+  --text-page-title: 1.375rem;
+  --text-page-title--line-height: 1.875rem;
+  --spacing-page: 1.5rem;
+  --ui-radius: 0.875rem;
+  font-family: var(--font-sans);
+}
+.app-toast-viewport {
+  bottom: max(1rem, env(safe-area-inset-bottom));
+}
+@media (max-width: 767px) {
+  body:has([role="dialog"][data-state="open"]) .app-toast-viewport {
+    bottom: calc(var(--spacing-toast-form-clearance) + env(safe-area-inset-bottom));
+  }
+}
+/* Busy states stay visible without nonessential motion. Spinners keep turning:
+   they are the feedback itself, while a skeleton's pulse is decoration. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse {
+    animation: none;
+  }
+}
+
+.guide {
+  max-width: 78ch;
+  line-height: 1.75;
+}
+.guide h1 {
+  font-size: 1.875rem;
+  font-weight: 650;
+  margin-bottom: 1rem;
+}
+.guide h2 {
+  font-size: 1.25rem;
+  font-weight: 650;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+.guide p,
+.guide ul,
+.guide ol {
+  margin-block: 0.75rem;
+}
+.guide ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+}
+.guide ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+}
+.guide a {
+  color: var(--ui-primary);
+  text-decoration: underline;
+}
+.guide table {
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.guide th,
+.guide td {
+  padding: 0.65rem;
+  border: 1px solid var(--ui-border);
+  text-align: left;
+}
+.guide code {
+  font-size: 0.85em;
+  background: var(--ui-bg-elevated);
+  padding: 0.1rem 0.25rem;
+  border-radius: 0.25rem;
+}
