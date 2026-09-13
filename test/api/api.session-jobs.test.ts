@@ -12,6 +12,10 @@ let documentId = ''
 let campaignId = ''
 let emptySessionId = ''
 let hiddenSessionId = ''
+let recordingId = ''
+let taggedTranscriptionJobId = ''
+let untaggedTranscriptionJobId = ''
+let transcriptionArtifactId = ''
 
 beforeAll(async () => {
   const password = 'session-jobs-test-password'
@@ -22,6 +26,65 @@ beforeAll(async () => {
   campaignId = campaign.id
   const session = await prisma.session.create({ data: { campaignId, title: 'Jobs session' } })
   sessionId = session.id
+  const recordingArtifact = await prisma.artifact.create({ data: {
+    ownerId: owner.id,
+    campaignId,
+    provider: 'LOCAL',
+    storageKey: `session-jobs/${session.id}/recording.mp3`,
+    mimeType: 'audio/mpeg',
+    byteSize: 512,
+  } })
+  const recording = await prisma.recording.create({ data: {
+    sessionId,
+    kind: 'AUDIO',
+    filename: 'jobs-recording.mp3',
+    mimeType: 'audio/mpeg',
+    byteSize: 512,
+    artifactId: recordingArtifact.id,
+  } })
+  recordingId = recording.id
+  const taggedJob = await prisma.transcriptionJob.create({ data: {
+    recordingId,
+    provider: 'ELEVENLABS',
+    status: 'COMPLETED',
+    modelId: 'scribe-v1',
+    languageCode: 'en',
+    numSpeakers: 2,
+    diarize: true,
+    tagAudioEvents: true,
+    requestedFormats: JSON.stringify(['txt', 'srt']),
+    keyterms: JSON.stringify(['Aelar']),
+    completedAt: new Date('2026-09-10T00:00:00Z'),
+    createdAt: new Date('2026-09-10T00:00:00Z'),
+  } })
+  taggedTranscriptionJobId = taggedJob.id
+  const transcriptionArtifact = await prisma.artifact.create({ data: {
+    ownerId: owner.id,
+    campaignId,
+    provider: 'LOCAL',
+    storageKey: `session-jobs/${session.id}/transcript.txt`,
+    mimeType: 'text/plain',
+    byteSize: 64,
+    label: 'Private transcription artifact label',
+  } })
+  transcriptionArtifactId = transcriptionArtifact.id
+  await prisma.transcriptionArtifact.create({ data: {
+    transcriptionJobId: taggedJob.id,
+    artifactId: transcriptionArtifact.id,
+    format: 'TXT',
+  } })
+  const untaggedJob = await prisma.transcriptionJob.create({ data: {
+    recordingId,
+    provider: 'ELEVENLABS',
+    status: 'FAILED',
+    diarize: false,
+    tagAudioEvents: false,
+    requestedFormats: 'not-json',
+    keyterms: JSON.stringify({ invalid: 'array' }),
+    errorMessage: 'Transcription failed',
+    createdAt: new Date('2026-09-11T00:00:00Z'),
+  } })
+  untaggedTranscriptionJobId = untaggedJob.id
   emptySessionId = (await prisma.session.create({ data: { campaignId, title: 'Empty' } })).id
   const hiddenCampaign = await prisma.campaign.create({ data: { ownerId: outsider.id, name: 'Other campaign' } })
   hiddenSessionId = (await prisma.session.create({ data: { campaignId: hiddenCampaign.id, title: 'Hidden' } })).id
@@ -75,4 +138,62 @@ it('keeps latest overall, both kinds, suggestions and ordered history consistent
   expect(result.latestSummaryJob.meta.fullSummary).toBe('jobs-b')
   expect(result.latestSummaryJob).not.toHaveProperty('suggestions')
   expect(result.jobs[0]).not.toHaveProperty('meta')
+})
+
+it('returns matching transcription job DTOs with audio-event flags and safe JSON/artifact fields', async () => {
+  const listResponse = await fetch(`${baseUrl}/api/recordings/${recordingId}/transcriptions`, {
+    headers: { cookie },
+  })
+  expect(listResponse.status).toBe(200)
+  const listPayload = await listResponse.json()
+  expect(listPayload.data.map((job: { id: string }) => job.id)).toEqual([
+    untaggedTranscriptionJobId,
+    taggedTranscriptionJobId,
+  ])
+
+  for (const jobId of [taggedTranscriptionJobId, untaggedTranscriptionJobId]) {
+    const detailResponse = await fetch(`${baseUrl}/api/transcriptions/${jobId}`, {
+      headers: { cookie },
+    })
+    expect(detailResponse.status).toBe(200)
+    const detailPayload = await detailResponse.json()
+    expect(detailPayload.data).toEqual(listPayload.data.find((job: { id: string }) => job.id === jobId))
+  }
+
+  const taggedJob = listPayload.data.find((job: { id: string }) => job.id === taggedTranscriptionJobId)
+  expect(taggedJob).toMatchObject({
+    tagAudioEvents: true,
+    requestedFormats: ['txt', 'srt'],
+    keyterms: ['Aelar'],
+  })
+  expect(taggedJob.artifacts).toEqual([{
+      id: expect.any(String),
+      format: 'TXT',
+      artifact: {
+        id: transcriptionArtifactId,
+        storageKey: `session-jobs/${sessionId}/transcript.txt`,
+        mimeType: 'text/plain',
+        byteSize: 64,
+        createdAt: expect.any(String),
+      },
+    }])
+
+  const untaggedJob = listPayload.data.find((job: { id: string }) => job.id === untaggedTranscriptionJobId)
+  expect(untaggedJob).toMatchObject({
+    tagAudioEvents: false,
+    requestedFormats: [],
+    keyterms: [],
+    artifacts: [],
+  })
+
+  await prisma.transcriptionJob.update({
+    where: { id: untaggedTranscriptionJobId },
+    data: { requestedFormats: null, keyterms: null },
+  })
+  const nullJsonResponse = await fetch(`${baseUrl}/api/transcriptions/${untaggedTranscriptionJobId}`, {
+    headers: { cookie },
+  })
+  expect(nullJsonResponse.status).toBe(200)
+  const nullJsonPayload = await nullJsonResponse.json()
+  expect(nullJsonPayload.data).toMatchObject({ requestedFormats: [], keyterms: [] })
 })
