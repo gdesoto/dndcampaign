@@ -1,7 +1,5 @@
 import { prisma } from '#server/db/prisma'
 import type { Prisma } from '#server/db/prisma-client'
-import type { ServiceResult } from '#server/services/auth.service'
-import { buildCampaignWhereForPermission, resolveCampaignAccess } from '#server/utils/campaign-auth'
 import {
   dungeonGeneratorConfigSchema,
   type DungeonCreateInput,
@@ -20,6 +18,8 @@ import type {
 import { DungeonGeneratorService } from '#server/services/dungeon/dungeon-generator.service'
 import { parseDungeonMap, toPlayerSafeMap } from '#server/services/dungeon/dungeon-map-utils'
 import { ActivityLogService } from '#server/services/activity-log.service'
+import { apiError } from '#server/utils/http'
+import { hasCampaignDmAccess, type CampaignActor } from '#server/utils/campaign-auth'
 
 const defaultDungeonConfig: DungeonGeneratorConfig = dungeonGeneratorConfigSchema.parse({})
 const generator = new DungeonGeneratorService()
@@ -93,39 +93,11 @@ const toDetail = (row: {
   }
 }
 
-const ensureCampaignAccess = async (
-  campaignId: string,
-  userId: string,
-  permission: 'content.read' | 'content.write',
-): Promise<ServiceResult<true>> => {
-  const campaign = await prisma.campaign.findFirst({
-    where: { id: campaignId, ...buildCampaignWhereForPermission(userId, permission) },
-    select: { id: true },
-  })
-
-  if (!campaign) {
-    return {
-      ok: false,
-      statusCode: 404,
-      code: 'NOT_FOUND',
-      message: 'Campaign not found or access denied.',
-    }
-  }
-
-  return { ok: true, data: true }
-}
-
-const withDungeonAccess = async (
-  dungeonId: string,
-  campaignId: string,
-  userId: string,
-  permission: 'content.read' | 'content.write',
-) =>
+const withDungeonAccess = async (campaignId: string, dungeonId: string) =>
   prisma.campaignDungeon.findFirst({
     where: {
       id: dungeonId,
       campaignId,
-      campaign: buildCampaignWhereForPermission(userId, permission),
     },
   })
 
@@ -161,14 +133,12 @@ const syncRoomsFromMap = async (dungeonId: string, map: DungeonMapData) => {
 export class DungeonService {
   async listDungeons(
     campaignId: string,
-    userId: string,
+    actor: CampaignActor,
     query: DungeonListQueryInput,
-  ): Promise<ServiceResult<CampaignDungeonSummary[]>> {
-    const access = await ensureCampaignAccess(campaignId, userId, 'content.read')
-    if (!access.ok) return access
-    const resolved = await resolveCampaignAccess(campaignId, userId)
+  ): Promise<CampaignDungeonSummary[]> {
+    const userId = actor.userId
     const canDeleteAsOwnerOrDm = Boolean(
-      resolved.access?.role === 'OWNER' || resolved.access?.hasDmAccess,
+      actor.access.role === 'OWNER' || actor.access.hasDmAccess,
     )
 
     const rows = await prisma.campaignDungeon.findMany({
@@ -180,19 +150,15 @@ export class DungeonService {
       orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
     })
 
-    return {
-      ok: true,
-      data: rows.map((row) => toSummary(row, canDeleteAsOwnerOrDm || row.createdByUserId === userId)),
-    }
+    return rows.map((row) => toSummary(row, canDeleteAsOwnerOrDm || row.createdByUserId === userId))
   }
 
   async createDungeon(
     campaignId: string,
-    userId: string,
+    actor: CampaignActor,
     input: DungeonCreateInput,
-  ): Promise<ServiceResult<CampaignDungeonDetail>> {
-    const access = await ensureCampaignAccess(campaignId, userId, 'content.write')
-    if (!access.ok) return access
+  ): Promise<CampaignDungeonDetail> {
+    const userId = actor.userId
 
     const seed = input.seed || generator.buildDefaultSeed()
     const config = input.config ? dungeonGeneratorConfigSchema.parse(input.config) : defaultDungeonConfig
@@ -220,47 +186,34 @@ export class DungeonService {
 
     await syncRoomsFromMap(created.id, map)
 
-    return {
-      ok: true,
-      data: toDetail({
+    return toDetail({
         ...created,
         configJson: normalizedConfig,
         mapJson: map,
         playerViewJson: created.playerViewJson,
-      }),
-    }
+      })
   }
 
-  async getDungeon(campaignId: string, dungeonId: string, userId: string): Promise<ServiceResult<CampaignDungeonDetail>> {
-    const row = await withDungeonAccess(dungeonId, campaignId, userId, 'content.read')
+  async getDungeon(campaignId: string, dungeonId: string, actor: CampaignActor): Promise<CampaignDungeonDetail> {
+    const row = await withDungeonAccess(campaignId, dungeonId)
     if (!row) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Dungeon not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
-    const access = await resolveCampaignAccess(campaignId, userId)
-    const viewerSafe = access.access?.role === 'VIEWER'
-    return { ok: true, data: toDetail(row, viewerSafe) }
+    const viewerSafe = actor.access.role === 'VIEWER'
+    return toDetail(row, viewerSafe)
   }
 
   async updateDungeon(
     campaignId: string,
     dungeonId: string,
-    userId: string,
+    actor: CampaignActor,
     input: DungeonUpdateInput,
-  ): Promise<ServiceResult<CampaignDungeonDetail>> {
-    const existing = await withDungeonAccess(dungeonId, campaignId, userId, 'content.write')
+  ): Promise<CampaignDungeonDetail> {
+    const userId = actor.userId
+    const existing = await withDungeonAccess(campaignId, dungeonId)
     if (!existing) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Dungeon not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
     const currentConfig = dungeonGeneratorConfigSchema.parse(existing.configJson)
@@ -287,52 +240,21 @@ export class DungeonService {
       summary: `Updated dungeon "${updated.name}".`,
     })
 
-    return { ok: true, data: toDetail({ ...updated, configJson: nextConfig }) }
+    return toDetail({ ...updated, configJson: nextConfig })
   }
 
-  async deleteDungeon(campaignId: string, dungeonId: string, userId: string): Promise<ServiceResult<{ deleted: true }>> {
+  async deleteDungeon(campaignId: string, dungeonId: string, actor: CampaignActor): Promise<{ deleted: true }> {
+    const userId = actor.userId
     const existing = await prisma.campaignDungeon.findFirst({
-      where: {
-        id: dungeonId,
-        campaignId,
-        campaign: buildCampaignWhereForPermission(userId, 'content.read'),
-      },
-      select: {
-        id: true,
-        campaignId: true,
-        name: true,
-        createdByUserId: true,
-        campaign: {
-          select: {
-            ownerId: true,
-            members: {
-              where: { userId },
-              select: { hasDmAccess: true },
-              take: 1,
-            },
-          },
-        },
-      },
+      where: { id: dungeonId, campaignId },
+      select: { id: true, campaignId: true, name: true, createdByUserId: true },
     })
     if (!existing) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Dungeon not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
-    const canDelete =
-      existing.createdByUserId === userId
-      || existing.campaign.ownerId === userId
-      || Boolean(existing.campaign.members[0]?.hasDmAccess)
+    const canDelete = existing.createdByUserId === userId || hasCampaignDmAccess(actor.access)
     if (!canDelete) {
-      return {
-        ok: false,
-        statusCode: 403,
-        code: 'FORBIDDEN',
-        message: 'You do not have permission to delete this dungeon.',
-      }
+      throw apiError(403, 'FORBIDDEN', 'You do not have permission to delete this dungeon.')
     }
 
     await prisma.campaignDungeon.delete({ where: { id: dungeonId } })
@@ -345,23 +267,19 @@ export class DungeonService {
       targetId: dungeonId,
       summary: `Deleted dungeon "${existing.name}".`,
     })
-    return { ok: true, data: { deleted: true } }
+    return { deleted: true }
   }
 
   async generateDungeon(
     campaignId: string,
     dungeonId: string,
-    userId: string,
+    actor: CampaignActor,
     input: DungeonGenerateInput,
-  ): Promise<ServiceResult<CampaignDungeonDetail>> {
-    const existing = await withDungeonAccess(dungeonId, campaignId, userId, 'content.write')
+  ): Promise<CampaignDungeonDetail> {
+    const userId = actor.userId
+    const existing = await withDungeonAccess(campaignId, dungeonId)
     if (!existing) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Dungeon not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
     const seed = input.seed || existing.seed
@@ -396,23 +314,19 @@ export class DungeonService {
       },
     })
 
-    return { ok: true, data: toDetail({ ...updated, configJson: config, mapJson: map }) }
+    return toDetail({ ...updated, configJson: config, mapJson: map })
   }
 
   async regenerateDungeon(
     campaignId: string,
     dungeonId: string,
-    userId: string,
+    actor: CampaignActor,
     input: DungeonRegenerateInput,
-  ): Promise<ServiceResult<CampaignDungeonDetail>> {
-    const existing = await withDungeonAccess(dungeonId, campaignId, userId, 'content.write')
+  ): Promise<CampaignDungeonDetail> {
+    const userId = actor.userId
+    const existing = await withDungeonAccess(campaignId, dungeonId)
     if (!existing) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Dungeon not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
     const seed = input.seed || existing.seed
@@ -462,29 +376,21 @@ export class DungeonService {
       },
     })
 
-    return { ok: true, data: toDetail({ ...updated, configJson: config, mapJson: regenerated }) }
+    return toDetail({ ...updated, configJson: config, mapJson: regenerated })
   }
 
   async setPublishStatus(
     campaignId: string,
     dungeonId: string,
-    userId: string,
+    actor: CampaignActor,
     status: 'READY' | 'DRAFT',
-  ): Promise<ServiceResult<CampaignDungeonDetail>> {
+  ): Promise<CampaignDungeonDetail> {
+    const userId = actor.userId
     const existing = await prisma.campaignDungeon.findFirst({
-      where: {
-        id: dungeonId,
-        campaignId,
-        campaign: buildCampaignWhereForPermission(userId, 'campaign.public.manage'),
-      },
+      where: { id: dungeonId, campaignId },
     })
     if (!existing) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Dungeon not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
     const updated = await prisma.campaignDungeon.update({
@@ -500,6 +406,6 @@ export class DungeonService {
       targetId: dungeonId,
       summary: `${status === 'READY' ? 'Published' : 'Unpublished'} dungeon "${updated.name}".`,
     })
-    return { ok: true, data: toDetail(updated) }
+    return toDetail(updated)
   }
 }

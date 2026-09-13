@@ -2,7 +2,7 @@ import { getRequestHeader, readBody } from 'h3'
 import { z } from 'zod'
 import { MapService } from '#server/services/map.service'
 import { readMapMultipartUpload } from '#server/services/map-upload.service'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 import { mapPatchSchema, mapReimportApplySchema } from '#shared/schemas/map'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
@@ -10,90 +10,69 @@ const mapPatchActionSchema = z.object({
   action: z.literal('set-primary'),
 })
 
-const VALIDATION_MESSAGES = new Set([
-  'Expected multipart form data',
-  'File is too large',
-  'Too many files uploaded',
-  'Too many fields provided',
-  'Full JSON export is required',
-])
-
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  const mapId = event.context.params?.mapId
-  if (!campaignId || !mapId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id and map id are required')
-  }
+  const { campaignId, mapId } = routeParams(event, 'campaignId', 'mapId')
   const authz = await requireCampaignPermission(event, campaignId, 'content.write')
-  if (!authz.ok) return authz.response
 
   const contentType = String(getRequestHeader(event, 'content-type') || '')
   if (contentType.startsWith('multipart/form-data')) {
-    try {
-      const { files, fields } = await readMapMultipartUpload(event)
-      const action = String(fields.action || '').trim()
-      if (action === 'reimport-preview') {
-        const preview = await new MapService().previewReimport(campaignId, mapId, authz.session.user.id, files)
-        if (!preview) {
-          return fail(event, 404, 'NOT_FOUND', 'Map not found')
-        }
-        return ok(preview)
+    const { files, fields } = await readMapMultipartUpload(event)
+    const action = String(fields.action || '').trim()
+    if (action === 'reimport-preview') {
+      const preview = await new MapService().previewReimport(campaignId, mapId, files)
+      if (!preview) {
+        throw apiError(404, 'NOT_FOUND', 'Map not found')
       }
-
-      if (action === 'reimport-apply') {
-        const parsed = mapReimportApplySchema.safeParse({
-          strategy: fields.strategy,
-          mapName: fields.mapName,
-          keepPrimary: fields.keepPrimary,
-        })
-        if (!parsed.success) {
-          return fail(event, 400, 'VALIDATION_ERROR', 'Invalid re-import apply payload')
-        }
-
-        const applied = await new MapService().applyReimport(
-          campaignId,
-          mapId,
-          authz.session.user.id,
-          parsed.data.strategy,
-          files,
-          parsed.data.mapName,
-          parsed.data.keepPrimary
-        )
-        if (!applied) {
-          return fail(event, 404, 'NOT_FOUND', 'Map not found')
-        }
-        return ok(applied)
-      }
-
-      return fail(event, 400, 'VALIDATION_ERROR', 'Invalid map action')
-    } catch (error) {
-      const message = (error as Error).message || 'Map re-import failed'
-      if (VALIDATION_MESSAGES.has(message)) {
-        return fail(event, 400, 'VALIDATION_ERROR', message)
-      }
-      throw error
+      return ok(preview)
     }
+
+    if (action === 'reimport-apply') {
+      const parsed = mapReimportApplySchema.safeParse({
+        strategy: fields.strategy,
+        mapName: fields.mapName,
+        keepPrimary: fields.keepPrimary,
+      })
+      if (!parsed.success) {
+        throw apiError(400, 'VALIDATION_ERROR', 'Invalid re-import apply payload')
+      }
+
+      const applied = await new MapService().applyReimport(
+        campaignId,
+        mapId,
+        authz.session.user.id,
+        parsed.data.strategy,
+        files,
+        parsed.data.mapName,
+        parsed.data.keepPrimary
+      )
+      if (!applied) {
+        throw apiError(404, 'NOT_FOUND', 'Map not found')
+      }
+      return ok(applied)
+    }
+
+    throw apiError(400, 'VALIDATION_ERROR', 'Invalid map action')
   }
 
   const rawBody = (await readBody(event)) ?? {}
 
   const actionParsed = mapPatchActionSchema.safeParse(rawBody)
   if (actionParsed.success) {
-    const updated = await new MapService().updateMap(campaignId, mapId, authz.session.user.id, { isPrimary: true })
+    const updated = await new MapService().updateMap(campaignId, mapId, { isPrimary: true })
     if (!updated) {
-      return fail(event, 404, 'NOT_FOUND', 'Map not found')
+      throw apiError(404, 'NOT_FOUND', 'Map not found')
     }
     return ok(updated)
   }
 
   const parsed = mapPatchSchema.safeParse(rawBody)
   if (!parsed.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid map update payload')
+    throw apiError(400, 'VALIDATION_ERROR', 'Invalid map update payload')
   }
 
-  const updated = await new MapService().updateMap(campaignId, mapId, authz.session.user.id, parsed.data)
+  const updated = await new MapService().updateMap(campaignId, mapId, parsed.data)
   if (!updated) {
-    return fail(event, 404, 'NOT_FOUND', 'Map not found')
+    throw apiError(404, 'NOT_FOUND', 'Map not found')
   }
 
   return ok(updated)

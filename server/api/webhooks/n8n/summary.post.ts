@@ -1,6 +1,6 @@
 import type { H3Event } from 'h3'
 import { getRequestHeader, readBody } from 'h3'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError } from '#server/utils/http'
 import { n8nWebhookPayloadSchema } from '#shared/schemas/summarization'
 import { SummaryService } from '#server/services/summary.service'
 
@@ -22,14 +22,14 @@ export default defineEventHandler(async (event) => {
   if (expectedSecret) {
     const provided = extractSecret(event)
     if (provided !== expectedSecret) {
-      return fail(event, 401, 'UNAUTHORIZED', 'Invalid webhook secret')
+      throw apiError(401, 'UNAUTHORIZED', 'Invalid webhook secret')
     }
   }
 
   const payload = await readBody(event)
   const parsed = n8nWebhookPayloadSchema.safeParse(payload)
   if (!parsed.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid webhook payload')
+    throw apiError(400, 'VALIDATION_ERROR', 'Invalid webhook payload')
   }
 
   const service = new SummaryService()

@@ -1,4 +1,4 @@
-import { ok, fail } from '#server/utils/http'
+import { ok, routeParams } from '#server/utils/http'
 import { validateBody } from '#server/utils/validate'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
 import { calendarNameGenerateSchema } from '#shared/schemas/calendar'
@@ -7,22 +7,15 @@ import { NameGeneratorService } from '#server/services/calendar/name-generator.s
 const nameGeneratorService = new NameGeneratorService()
 
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  if (!campaignId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id is required')
-  }
+  const { campaignId } = routeParams(event, 'campaignId')
 
-  const authz = await requireCampaignPermission(event, campaignId, 'campaign.update')
-  if (!authz.ok) {
-    return authz.response
-  }
+  await requireCampaignPermission(event, campaignId, 'campaign.update')
 
   const parsed = await validateBody(event, calendarNameGenerateSchema, 'Invalid name generation payload')
-  if (!parsed.ok) return parsed.response
 
-  const names = nameGeneratorService.generateNames(parsed.data.kind, parsed.data.count, parsed.data.seed)
+  const names = nameGeneratorService.generateNames(parsed.kind, parsed.count, parsed.seed)
   return ok({
-    kind: parsed.data.kind,
+    kind: parsed.kind,
     names,
   })
 })

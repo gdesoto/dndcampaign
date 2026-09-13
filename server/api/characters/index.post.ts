@@ -1,6 +1,6 @@
-import { readBody } from 'h3'
+import { readBody, isError } from 'h3'
 import { z } from 'zod'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError } from '#server/utils/http'
 import { characterCreateSchema, characterImportRequestSchema } from '#shared/schemas/character'
 import { CharacterService } from '#server/services/character.service'
 import { CharacterImportService } from '#server/services/character-import.service'
@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
   const actionParsed = characterCreateActionSchema.safeParse(rawBody)
   if (actionParsed.success) {
     if (actionParsed.data.provider !== 'DND_BEYOND') {
-      return fail(event, 400, 'VALIDATION_ERROR', 'Unsupported provider')
+      throw apiError(400, 'VALIDATION_ERROR', 'Unsupported provider')
     }
 
     try {
@@ -42,18 +42,19 @@ export default defineEventHandler(async (event) => {
       )
       return ok(character)
     } catch (error) {
+      if (isError(error)) throw error
       const statusCode = getErrorStatusCode(error)
       const message = (error as Error).message || 'Import failed'
       if (statusCode === 403) {
-        return fail(event, 403, 'IMPORT_FORBIDDEN', message)
+        throw apiError(403, 'IMPORT_FORBIDDEN', message)
       }
-      return fail(event, 500, 'IMPORT_FAILED', message)
+      throw apiError(500, 'IMPORT_FAILED', message)
     }
   }
 
   const parsed = characterCreateSchema.safeParse(rawBody)
   if (!parsed.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid character payload')
+    throw apiError(400, 'VALIDATION_ERROR', 'Invalid character payload')
   }
 
   const character = await characterService.createManualCharacter(

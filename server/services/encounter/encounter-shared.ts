@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import { prisma } from '#server/db/prisma'
 import type { Prisma } from '#server/db/prisma-client'
-import type { ServiceResult } from '#server/services/auth.service'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 import { ActivityLogService } from '#server/services/activity-log.service'
 import { createEncounterCalendarDateSchema } from '#shared/schemas/encounter'
@@ -15,33 +14,12 @@ import type {
   EncounterTemplate,
   EncounterTemplateCombatant,
 } from '#shared/types/encounter'
+import { apiError } from '#server/utils/http'
 
 type CampaignPermission = 'content.read' | 'content.write'
 
 const monthShapeSchema = z.array(z.object({ length: z.number().int().min(1) }))
 const activityLogService = new ActivityLogService()
-
-export async function ensureCampaignAccess(
-  campaignId: string,
-  userId: string,
-  permission: CampaignPermission,
-): Promise<ServiceResult<{ campaignId: string }>> {
-  const campaign = await prisma.campaign.findFirst({
-    where: { id: campaignId, ...buildCampaignWhereForPermission(userId, permission) },
-    select: { id: true },
-  })
-
-  if (!campaign) {
-    return {
-      ok: false,
-      statusCode: 404,
-      code: 'NOT_FOUND',
-      message: 'Campaign not found or access denied.',
-    }
-  }
-
-  return { ok: true, data: { campaignId: campaign.id } }
-}
 
 export async function getEncounterWithAccess(
   encounterId: string,
@@ -64,9 +42,9 @@ export async function getEncounterWithAccess(
 export async function validateEncounterSessionLink(
   campaignId: string,
   sessionId?: string | null,
-): Promise<ServiceResult<{ sessionId?: string }>> {
+): Promise<{ sessionId?: string }> {
   if (!sessionId) {
-    return { ok: true, data: {} }
+    return {}
   }
 
   const session = await prisma.session.findFirst({
@@ -75,29 +53,23 @@ export async function validateEncounterSessionLink(
   })
 
   if (!session) {
-    return {
-      ok: false,
-      statusCode: 400,
-      code: 'VALIDATION_ERROR',
-      message: 'Session must belong to the same campaign.',
-      fields: { sessionId: 'Session not found in this campaign.' },
-    }
+    throw apiError(400, 'VALIDATION_ERROR', 'Session must belong to the same campaign.', { sessionId: 'Session not found in this campaign.' })
   }
 
-  return { ok: true, data: { sessionId } }
+  return { sessionId }
 }
 
 export async function validateEncounterCalendarLink(
   campaignId: string,
   input: { calendarYear?: number | null; calendarMonth?: number | null; calendarDay?: number | null },
-): Promise<ServiceResult<{ calendarYear?: number; calendarMonth?: number; calendarDay?: number }>> {
+): Promise<{ calendarYear?: number; calendarMonth?: number; calendarDay?: number }> {
   const hasAny =
     typeof input.calendarYear === 'number'
     || typeof input.calendarMonth === 'number'
     || typeof input.calendarDay === 'number'
 
   if (!hasAny) {
-    return { ok: true, data: {} }
+    return {}
   }
 
   const config = await prisma.campaignCalendarConfig.findUnique({
@@ -106,12 +78,7 @@ export async function validateEncounterCalendarLink(
   })
 
   if (!config || !config.isEnabled) {
-    return {
-      ok: false,
-      statusCode: 409,
-      code: 'CALENDAR_DISABLED',
-      message: 'Calendar is currently disabled for this campaign.',
-    }
+    throw apiError(409, 'CALENDAR_DISABLED', 'Calendar is currently disabled for this campaign.')
   }
 
   const parsed = createEncounterCalendarDateSchema(monthShapeSchema.parse(config.monthsJson)).safeParse({
@@ -126,23 +93,14 @@ export async function validateEncounterCalendarLink(
       const key = issue.path.join('.') || 'calendarDay'
       fieldErrors[key] = issue.message
     }
-    return {
-      ok: false,
-      statusCode: 400,
-      code: 'VALIDATION_ERROR',
-      message: 'Invalid encounter calendar date.',
-      fields: fieldErrors,
-    }
+    throw apiError(400, 'VALIDATION_ERROR', 'Invalid encounter calendar date.', fieldErrors)
   }
 
   return {
-    ok: true,
-    data: {
       calendarYear: parsed.data.calendarYear,
       calendarMonth: parsed.data.calendarMonth,
       calendarDay: parsed.data.calendarDay,
-    },
-  }
+    }
 }
 
 export async function validateEncounterCombatantSourceReferences(
@@ -154,7 +112,7 @@ export async function validateEncounterCombatantSourceReferences(
     sourceGlossaryEntryId?: string | null
     sourceStatBlockId?: string | null
   },
-): Promise<ServiceResult<{ valid: true }>> {
+): Promise<{ valid: true }> {
   const fieldErrors: Record<string, string> = {}
 
   if (input.sourceType === 'CAMPAIGN_CHARACTER') {
@@ -219,16 +177,10 @@ export async function validateEncounterCombatantSourceReferences(
   }
 
   if (Object.keys(fieldErrors).length) {
-    return {
-      ok: false,
-      statusCode: 400,
-      code: 'VALIDATION_ERROR',
-      message: 'Invalid combatant source references.',
-      fields: fieldErrors,
-    }
+    throw apiError(400, 'VALIDATION_ERROR', 'Invalid combatant source references.', fieldErrors)
   }
 
-  return { ok: true, data: { valid: true } }
+  return { valid: true }
 }
 
 export async function appendEncounterEvent(

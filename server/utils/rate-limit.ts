@@ -1,7 +1,7 @@
 import type { H3Event } from 'h3'
 import { getRequestIP, setHeader } from 'h3'
 import { createHash } from 'node:crypto'
-import { fail } from '#server/utils/http'
+import { apiError } from '#server/utils/http'
 
 type RateLimitOptions = {
   key: string
@@ -75,8 +75,6 @@ export const enforceRateLimit = (event: H3Event, options: RateLimitOptions) => {
   if (record.count > options.max) {
     const retryAfterSeconds = Math.max(1, Math.ceil((record.resetAt - now) / 1000))
     setHeader(event, 'Retry-After', retryAfterSeconds)
-    return fail(event, 429, 'RATE_LIMITED', 'Too many requests. Please try again shortly.')
+    throw apiError(429, 'RATE_LIMITED', 'Too many requests. Please try again shortly.')
   }
-
-  return null
 }

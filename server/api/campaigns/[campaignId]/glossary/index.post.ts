@@ -1,5 +1,5 @@
 import { prisma } from '#server/db/prisma'
-import { ok, fail } from '#server/utils/http'
+import { ok, routeParams } from '#server/utils/http'
 import { validateBody } from '#server/utils/validate'
 import { glossaryCreateSchema } from '#shared/schemas/glossary'
 import { CharacterService } from '#server/services/character.service'
@@ -7,39 +7,32 @@ import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
-  const campaignId = event.context.params?.campaignId
-  if (!campaignId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id is required')
-  }
+  const { campaignId } = routeParams(event, 'campaignId')
 
-  const authz = await requireCampaignPermission(event, campaignId, 'content.write')
-  if (!authz.ok) {
-    return authz.response
-  }
+  await requireCampaignPermission(event, campaignId, 'content.write')
 
   const parsed = await validateBody(event, glossaryCreateSchema, 'Invalid glossary payload')
-  if (!parsed.ok) return parsed.response
 
   const entry = await prisma.glossaryEntry.create({
     data: {
       campaignId,
-      type: parsed.data.type,
-      name: parsed.data.name,
-      aliases: parsed.data.aliases,
-      description: parsed.data.description,
+      type: parsed.type,
+      name: parsed.name,
+      aliases: parsed.aliases,
+      description: parsed.description,
     },
   })
 
-  if (parsed.data.type === 'PC') {
+  if (parsed.type === 'PC') {
     const characterService = new CharacterService()
     const existingCharacter = await prisma.playerCharacter.findFirst({
-      where: { ownerId: session.user.id, name: parsed.data.name },
+      where: { ownerId: session.user.id, name: parsed.name },
     })
     const character =
       existingCharacter ||
-      (await characterService.createManualCharacter(session.user.id, parsed.data.name, {
-        basics: { name: parsed.data.name },
-        notes: { other: parsed.data.description },
+      (await characterService.createManualCharacter(session.user.id, parsed.name, {
+        basics: { name: parsed.name },
+        notes: { other: parsed.description },
       }))
 
     await prisma.campaignCharacter.upsert({

@@ -1,25 +1,20 @@
 import { validateQuery } from '#server/utils/validate'
-import { fail, respond } from '#server/utils/http'
+import { ok, routeParams } from '#server/utils/http'
 import { campaignRequestListQuerySchema } from '#shared/schemas/campaign-requests'
 import { CampaignRequestsService } from '#server/services/campaign-requests.service'
+import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 const campaignRequestsService = new CampaignRequestsService()
 
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  if (!campaignId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id is required')
-  }
+  const { campaignId } = routeParams(event, 'campaignId')
 
-  const sessionUser = await requireUserSession(event)
+  const { session, access } = await requireCampaignPermission(event, campaignId, 'campaign.read')
   const parsedQuery = validateQuery(event, campaignRequestListQuerySchema, 'Invalid request query parameters')
-  if (!parsedQuery.ok) return parsedQuery.response
 
-  const result = await campaignRequestsService.listRequests(
-    campaignId,
-    sessionUser.user.id,
-    parsedQuery.data,
-    sessionUser.user.systemRole,
+  const result = await campaignRequestsService.listRequests(access,
+    session.user.id,
+    parsedQuery
   )
-  return respond(event, result)
+  return ok(result)
 })

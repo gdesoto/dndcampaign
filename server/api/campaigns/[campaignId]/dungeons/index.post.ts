@@ -1,4 +1,5 @@
-import { fail, respond } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
+import { requireCampaignPermission } from '#server/utils/campaign-auth'
 import { validateInput } from '#server/utils/validate'
 import { readBody } from 'h3'
 import { z } from 'zod'
@@ -16,32 +17,28 @@ const dungeonCollectionActionSchema = z.object({
 })
 
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  if (!campaignId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id is required')
-  }
+  const { campaignId } = routeParams(event, 'campaignId')
 
   const rawBody = (await readBody(event)) ?? {}
 
-  const sessionUser = await requireUserSession(event)
+  const { actor } = await requireCampaignPermission(event, campaignId, 'content.write')
 
   if (JSON.stringify(rawBody).length > 2_000_000) {
-    return fail(event, 413, 'PAYLOAD_TOO_LARGE', 'Import payload exceeds allowed size.')
+    throw apiError(413, 'PAYLOAD_TOO_LARGE', 'Import payload exceeds allowed size.')
   }
 
   const actionParsed = dungeonCollectionActionSchema.safeParse(rawBody)
   if (actionParsed.success) {
-    const result = await dungeonExportService.importDungeon(campaignId, sessionUser.user.id, {
+    const result = await dungeonExportService.importDungeon(campaignId, actor, {
       source: actionParsed.data.source,
       nameOverride: actionParsed.data.nameOverride,
     })
-    return respond(event, result)
+    return ok(result)
   }
 
-  const createParsed = validateInput(event, dungeonCreateSchema, rawBody, 'Invalid dungeon payload')
-  if (!createParsed.ok) return createParsed.response
+  const createParsed = validateInput(dungeonCreateSchema, rawBody, 'Invalid dungeon payload')
 
-  const result = await dungeonService.createDungeon(campaignId, sessionUser.user.id, createParsed.data)
+  const result = await dungeonService.createDungeon(campaignId, actor, createParsed)
 
-  return respond(event, result)
+  return ok(result)
 })

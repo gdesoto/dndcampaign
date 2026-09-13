@@ -1,7 +1,5 @@
 import { z } from 'zod'
 import { prisma } from '#server/db/prisma'
-import type { ServiceResult } from '#server/services/auth.service'
-import { buildCampaignWhereForPermission, resolveCampaignAccess } from '#server/utils/campaign-auth'
 import type {
   DungeonLinkCreateInput,
   DungeonMapPatchActionInput,
@@ -18,6 +16,8 @@ import { parseDungeonMap } from '#server/services/dungeon/dungeon-map-utils'
 import type { EncounterCreateInput } from '#shared/schemas/encounter'
 import { EncounterService } from '#server/services/encounter/encounter.service'
 import { ActivityLogService } from '#server/services/activity-log.service'
+import { apiError } from '#server/utils/http'
+import type { CampaignActor } from '#server/utils/campaign-auth'
 
 const toRoomDto = (row: {
   id: string
@@ -78,17 +78,11 @@ const toLinkDto = (row: {
   createdAt: row.createdAt.toISOString(),
 })
 
-const withDungeonAccess = async (
-  campaignId: string,
-  dungeonId: string,
-  userId: string,
-  permission: 'content.read' | 'content.write',
-) =>
+const withDungeonAccess = async (campaignId: string, dungeonId: string) =>
   prisma.campaignDungeon.findFirst({
     where: {
       id: dungeonId,
       campaignId,
-      campaign: buildCampaignWhereForPermission(userId, permission),
     },
     select: {
       id: true,
@@ -390,48 +384,34 @@ export class DungeonEditorService {
   async listRooms(
     campaignId: string,
     dungeonId: string,
-    userId: string,
-  ): Promise<ServiceResult<CampaignDungeonRoom[]>> {
-    const access = await withDungeonAccess(campaignId, dungeonId, userId, 'content.read')
+    actor: CampaignActor,
+  ): Promise<CampaignDungeonRoom[]> {
+    const access = await withDungeonAccess(campaignId, dungeonId)
     if (!access) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Dungeon not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
     const rows = await prisma.campaignDungeonRoom.findMany({
       where: { dungeonId: access.id },
       orderBy: [{ roomNumber: 'asc' }],
     })
-    const resolved = await resolveCampaignAccess(campaignId, userId)
-    const isViewer = resolved.access?.role === 'VIEWER'
-    return {
-      ok: true,
-      data: rows.map((row) => {
+    const isViewer = actor.access.role === 'VIEWER'
+    return rows.map((row) => {
         const dto = toRoomDto(row)
         return isViewer ? { ...dto, gmNotes: null } : dto
-      }),
-    }
+      })
   }
 
   async updateRoom(
     campaignId: string,
     dungeonId: string,
     roomId: string,
-    userId: string,
+    actor: CampaignActor,
     input: DungeonRoomUpdateInput,
-  ): Promise<ServiceResult<CampaignDungeonRoom>> {
-    const access = await withDungeonAccess(campaignId, dungeonId, userId, 'content.write')
+  ): Promise<CampaignDungeonRoom> {
+    const access = await withDungeonAccess(campaignId, dungeonId)
     if (!access) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Dungeon not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
     const existing = await prisma.campaignDungeonRoom.findFirst({
@@ -439,12 +419,7 @@ export class DungeonEditorService {
       select: { id: true },
     })
     if (!existing) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Room not found.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Room not found.')
     }
 
     const updated = await prisma.campaignDungeonRoom.update({
@@ -460,23 +435,19 @@ export class DungeonEditorService {
       },
     })
 
-    return { ok: true, data: toRoomDto(updated) }
+    return toRoomDto(updated)
   }
 
   async patchMap(
     campaignId: string,
     dungeonId: string,
-    userId: string,
+    actor: CampaignActor,
     input: DungeonMapPatchInput,
-  ): Promise<ServiceResult<DungeonMapData>> {
-    const access = await withDungeonAccess(campaignId, dungeonId, userId, 'content.write')
+  ): Promise<DungeonMapData> {
+    const userId = actor.userId
+    const access = await withDungeonAccess(campaignId, dungeonId)
     if (!access) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Dungeon not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
     const previousMap = parseDungeonMap(access.mapJson)
@@ -496,35 +467,26 @@ export class DungeonEditorService {
       summary: `Patched dungeon map with ${input.actions.length} action(s).`,
     })
 
-    return { ok: true, data: map }
+    return map
   }
 
   async createEncounterFromRoom(
     campaignId: string,
     dungeonId: string,
     roomId: string,
-    userId: string,
-  ): Promise<ServiceResult<{ encounterId: string }>> {
-    const access = await withDungeonAccess(campaignId, dungeonId, userId, 'content.write')
+    actor: CampaignActor,
+  ): Promise<{ encounterId: string }> {
+    const userId = actor.userId
+    const access = await withDungeonAccess(campaignId, dungeonId)
     if (!access) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Dungeon not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
     const room = await prisma.campaignDungeonRoom.findFirst({
       where: { dungeonId: access.id, id: roomId },
     })
     if (!room) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Room not found.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Room not found.')
     }
 
     const encounter: EncounterCreateInput = {
@@ -538,16 +500,13 @@ export class DungeonEditorService {
       calendarDay: undefined,
     }
     const created = await new EncounterService().createEncounter(campaignId, userId, encounter)
-    if (!created.ok) {
-      return created
-    }
 
     await prisma.campaignDungeonLink.create({
       data: {
         dungeonId: access.id,
         roomId,
         linkType: 'ENCOUNTER',
-        targetId: created.data.id,
+        targetId: created.id,
       },
     })
     await activityLogService.log({
@@ -560,52 +519,35 @@ export class DungeonEditorService {
       summary: `Created encounter from room ${room.roomNumber}.`,
       metadata: {
         roomId,
-        encounterId: created.data.id,
+        encounterId: created.id,
       },
     })
 
-    return {
-      ok: true,
-      data: { encounterId: created.data.id },
-    }
+    return { encounterId: created.id }
   }
 
-  async listLinks(
-    campaignId: string,
-    dungeonId: string,
-    userId: string,
-  ): Promise<ServiceResult<CampaignDungeonLink[]>> {
-    const access = await withDungeonAccess(campaignId, dungeonId, userId, 'content.read')
+  async listLinks(campaignId: string, dungeonId: string): Promise<CampaignDungeonLink[]> {
+    const access = await withDungeonAccess(campaignId, dungeonId)
     if (!access) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Dungeon not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
     const rows = await prisma.campaignDungeonLink.findMany({
       where: { dungeonId: access.id },
       orderBy: [{ createdAt: 'desc' }],
     })
-    return { ok: true, data: rows.map(toLinkDto) }
+    return rows.map(toLinkDto)
   }
 
   async createLink(
     campaignId: string,
     dungeonId: string,
-    userId: string,
+    actor: CampaignActor,
     input: DungeonLinkCreateInput,
-  ): Promise<ServiceResult<CampaignDungeonLink>> {
-    const access = await withDungeonAccess(campaignId, dungeonId, userId, 'content.write')
+  ): Promise<CampaignDungeonLink> {
+    const access = await withDungeonAccess(campaignId, dungeonId)
     if (!access) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Dungeon not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
     if (input.roomId) {
@@ -614,13 +556,7 @@ export class DungeonEditorService {
         select: { id: true },
       })
       if (!room) {
-        return {
-          ok: false,
-          statusCode: 400,
-          code: 'VALIDATION_ERROR',
-          message: 'Room id is invalid for this dungeon.',
-          fields: { roomId: 'Room not found in this dungeon.' },
-        }
+        throw apiError(400, 'VALIDATION_ERROR', 'Room id is invalid for this dungeon.', { roomId: 'Room not found in this dungeon.' })
       }
     }
 
@@ -632,23 +568,17 @@ export class DungeonEditorService {
         targetId: input.targetId,
       },
     })
-    return { ok: true, data: toLinkDto(created) }
+    return toLinkDto(created)
   }
 
   async deleteLink(
     campaignId: string,
     dungeonId: string,
     linkId: string,
-    userId: string,
-  ): Promise<ServiceResult<{ deleted: true }>> {
-    const access = await withDungeonAccess(campaignId, dungeonId, userId, 'content.write')
+  ): Promise<{ deleted: true }> {
+    const access = await withDungeonAccess(campaignId, dungeonId)
     if (!access) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Dungeon not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
     const existing = await prisma.campaignDungeonLink.findFirst({
@@ -656,18 +586,13 @@ export class DungeonEditorService {
       select: { id: true },
     })
     if (!existing) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Dungeon link not found.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Dungeon link not found.')
     }
 
     await prisma.campaignDungeonLink.delete({
       where: { id: linkId },
     })
 
-    return { ok: true, data: { deleted: true } }
+    return { deleted: true }
   }
 }

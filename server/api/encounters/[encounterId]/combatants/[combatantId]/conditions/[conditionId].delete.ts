@@ -1,15 +1,10 @@
-import { fail, respond } from '#server/utils/http'
+import { ok, routeParams } from '#server/utils/http'
 import { EncounterRuntimeService } from '#server/services/encounter/encounter-runtime.service'
 
 export default defineEventHandler(async (event) => {
-  const encounterId = event.context.params?.encounterId
-  const combatantId = event.context.params?.combatantId
-  const conditionId = event.context.params?.conditionId
-  if (!encounterId || !combatantId || !conditionId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Encounter id, combatant id, and condition id are required')
-  }
+  const { encounterId, combatantId, conditionId } = routeParams(event, 'encounterId', 'combatantId', 'conditionId')
 
   const sessionUser = await requireUserSession(event)
   const result = await new EncounterRuntimeService().deleteCondition(encounterId, combatantId, conditionId, sessionUser.user.id)
-  return respond(event, result)
+  return ok(result)
 })

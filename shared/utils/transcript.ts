@@ -323,3 +323,62 @@ export const segmentsToVtt = (segments: TranscriptSegment[]) => {
   }
   return lines.join('\n').trimEnd() + '\n'
 }
+
+const srtTimePattern = /^(\d{2}:\d{2}:\d{2}),(\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}),(\d{3})(.*)$/
+
+/** Convert SubRip captions to WebVTT, dropping cue numbers and keeping cue settings. */
+export const srtToVtt = (input: string) => {
+  const normalized = input.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim()
+  if (!normalized) return 'WEBVTT\n'
+
+  const output: string[] = ['WEBVTT', '']
+  let pendingPrefix = ''
+
+  for (const currentLine of normalized.split('\n')) {
+    const line = currentLine.trim()
+    if (!line) {
+      pendingPrefix = ''
+      output.push('')
+      continue
+    }
+    if (/^\d+$/.test(line)) {
+      continue
+    }
+    if (line.includes('-->')) {
+      const match = line.match(srtTimePattern)
+      if (match) {
+        const [, startBase, startMs, endBase, endMs, rest] = match
+        pendingPrefix = rest?.trim() || ''
+        output.push(`${startBase}.${startMs} --> ${endBase}.${endMs}`)
+      } else {
+        output.push(line.replace(/,/g, '.'))
+      }
+      continue
+    }
+    if (pendingPrefix) {
+      output.push(`${pendingPrefix} ${line}`.trim())
+      pendingPrefix = ''
+      continue
+    }
+    output.push(currentLine)
+  }
+
+  return output.join('\n').replace(/\n{3,}/g, '\n\n')
+}
+
+/** Ensure caption text carries the WEBVTT header. */
+export const normalizeVtt = (content: string) => {
+  const trimmed = content.replace(/\r\n/g, '\n').trim()
+  if (!trimmed) return 'WEBVTT\n'
+  return /^WEBVTT/i.test(trimmed) ? trimmed : `WEBVTT\n\n${trimmed}`
+}
+
+export const isLikelySrt = (content: string) =>
+  /-->\s*\d{2}:\d{2}:\d{2},\d{3}/.test(content) || /\d{2}:\d{2}:\d{2},\d{3}\s*-->/.test(content)
+
+/** Coerce any caption or transcript text into WebVTT. */
+export const toVtt = (content: string) => {
+  if (isSegmentedTranscript(content)) return segmentsToVtt(parseTranscriptSegments(content))
+  if (isLikelySrt(content)) return srtToVtt(content)
+  return normalizeVtt(content)
+}

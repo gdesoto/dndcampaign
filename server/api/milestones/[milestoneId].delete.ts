@@ -1,13 +1,10 @@
 import { prisma } from '#server/db/prisma'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
-  const milestoneId = event.context.params?.milestoneId
-  if (!milestoneId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Milestone id is required')
-  }
+  const { milestoneId } = routeParams(event, 'milestoneId')
 
   const existing = await prisma.milestone.findFirst({
     where: {
@@ -16,7 +13,7 @@ export default defineEventHandler(async (event) => {
     },
   })
   if (!existing) {
-    return fail(event, 404, 'NOT_FOUND', 'Milestone not found')
+    throw apiError(404, 'NOT_FOUND', 'Milestone not found')
   }
 
   await prisma.milestone.delete({ where: { id: milestoneId } })

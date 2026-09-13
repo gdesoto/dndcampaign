@@ -266,7 +266,7 @@ describe('dungeon API routes', () => {
         actions: [{ type: 'REMOVE_ROOM', roomId }],
       }),
     })
-    expect(viewerPatchMap.status).toBe(404)
+    expect(viewerPatchMap.status).toBe(403)
 
     const deleteLinkResponse = await fetch(
       `${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}/links/${linkId}`,
@@ -285,7 +285,7 @@ describe('dungeon API routes', () => {
       },
       body: JSON.stringify({ name: 'Viewer edit denied' }),
     })
-    expect(viewerPatch.status).toBe(404)
+    expect(viewerPatch.status).toBe(403)
 
     const viewerRoomsResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}/rooms`, {
       headers: { cookie: cookies.viewer },
@@ -317,7 +317,7 @@ describe('dungeon API routes', () => {
         body: JSON.stringify({ action: 'unpublish' }),
       },
     )
-    expect(viewerUnpublishResponse.status).toBe(404)
+    expect(viewerUnpublishResponse.status).toBe(403)
 
     const ownerUnpublishResponse = await fetch(
       `${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}`,

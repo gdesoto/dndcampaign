@@ -1,6 +1,6 @@
-import { readBody } from 'h3'
+import { readBody, isError } from 'h3'
 import { z } from 'zod'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 import {
   characterImportRefreshSchema,
   characterImportRequestSchema,
@@ -29,16 +29,13 @@ const getErrorStatusCode = (error: unknown) => {
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
-  const characterId = event.context.params?.characterId
-  if (!characterId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Character id is required')
-  }
+  const { characterId } = routeParams(event, 'characterId')
   const access = await resolveCharacterAccess(characterId, session.user.id, session.user.systemRole)
   if (!access.exists) {
-    return fail(event, 404, 'NOT_FOUND', 'Character not found')
+    throw apiError(404, 'NOT_FOUND', 'Character not found')
   }
   if (!access.canEdit) {
-    return fail(event, 403, 'FORBIDDEN', 'You do not have permission to edit this character')
+    throw apiError(403, 'FORBIDDEN', 'You do not have permission to edit this character')
   }
 
   const rawBody = (await readBody(event)) ?? {}
@@ -47,7 +44,7 @@ export default defineEventHandler(async (event) => {
   if (actionParsed.success) {
     if (actionParsed.data.action === 'import') {
       if (actionParsed.data.provider !== 'DND_BEYOND') {
-        return fail(event, 400, 'VALIDATION_ERROR', 'Unsupported provider')
+        throw apiError(400, 'VALIDATION_ERROR', 'Unsupported provider')
       }
       try {
         const character = await importService.importIntoCharacter(
@@ -60,16 +57,17 @@ export default defineEventHandler(async (event) => {
           }
         )
         if (!character) {
-          return fail(event, 404, 'NOT_FOUND', 'Character not found')
+          throw apiError(404, 'NOT_FOUND', 'Character not found')
         }
         return ok(character)
       } catch (error) {
+        if (isError(error)) throw error
         const statusCode = getErrorStatusCode(error)
         const message = (error as Error).message || 'Import failed'
         if (statusCode === 403) {
-          return fail(event, 403, 'IMPORT_FORBIDDEN', message)
+          throw apiError(403, 'IMPORT_FORBIDDEN', message)
         }
-        return fail(event, 500, 'IMPORT_FAILED', message)
+        throw apiError(500, 'IMPORT_FAILED', message)
       }
     }
 
@@ -79,22 +77,23 @@ export default defineEventHandler(async (event) => {
         sections: actionParsed.data.sections,
       })
       if (!character) {
-        return fail(event, 404, 'NOT_FOUND', 'No import history found for character')
+        throw apiError(404, 'NOT_FOUND', 'No import history found for character')
       }
       return ok(character)
     } catch (error) {
+      if (isError(error)) throw error
       const statusCode = getErrorStatusCode(error)
       const message = (error as Error).message || 'Import refresh failed'
       if (statusCode === 403) {
-        return fail(event, 403, 'IMPORT_FORBIDDEN', message)
+        throw apiError(403, 'IMPORT_FORBIDDEN', message)
       }
-      return fail(event, 500, 'IMPORT_FAILED', message)
+      throw apiError(500, 'IMPORT_FAILED', message)
     }
   }
 
   const parsed = characterUpdateSchema.safeParse(rawBody)
   if (!parsed.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid character payload')
+    throw apiError(400, 'VALIDATION_ERROR', 'Invalid character payload')
   }
 
   if (parsed.data.section && typeof parsed.data.payload !== 'undefined') {
@@ -105,7 +104,7 @@ export default defineEventHandler(async (event) => {
       parsed.data.payload
     )
     if (!updated) {
-      return fail(event, 404, 'NOT_FOUND', 'Character not found')
+      throw apiError(404, 'NOT_FOUND', 'Character not found')
     }
     return ok(updated)
   }
@@ -116,7 +115,7 @@ export default defineEventHandler(async (event) => {
     portraitUrl: parsed.data.portraitUrl,
   })
   if (!updated) {
-    return fail(event, 404, 'NOT_FOUND', 'Character not found')
+    throw apiError(404, 'NOT_FOUND', 'Character not found')
   }
   return ok(updated)
 })

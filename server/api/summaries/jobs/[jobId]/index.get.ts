@@ -1,17 +1,14 @@
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 import { SummaryService } from '#server/services/summary.service'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
-  const jobId = event.context.params?.jobId
-  if (!jobId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Summary job id is required')
-  }
+  const { jobId } = routeParams(event, 'jobId')
 
   const service = new SummaryService()
   const job = await service.getJobById(jobId, sessionUser.user.id)
   if (!job) {
-    return fail(event, 404, 'NOT_FOUND', 'Summary job not found')
+    throw apiError(404, 'NOT_FOUND', 'Summary job not found')
   }
 
   return ok({

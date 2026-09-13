@@ -1,4 +1,4 @@
-import { fail, respond } from '#server/utils/http'
+import { ok, routeParams } from '#server/utils/http'
 import { validateBody } from '#server/utils/validate'
 import { encounterUpdateSchema } from '#shared/schemas/encounter'
 import { EncounterService } from '#server/services/encounter/encounter.service'
@@ -7,10 +7,7 @@ import { EncounterRuntimeService } from '#server/services/encounter/encounter-ru
 const lifecycleActions = new Set(['start', 'pause', 'resume', 'complete', 'abandon', 'reset'])
 
 export default defineEventHandler(async (event) => {
-  const encounterId = event.context.params?.encounterId
-  if (!encounterId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Encounter id is required')
-  }
+  const { encounterId } = routeParams(event, 'encounterId')
 
   const rawBody = (await readBody(event).catch(() => null)) as Record<string, unknown> | null
   const action = typeof rawBody?.action === 'string' ? rawBody.action : null
@@ -22,14 +19,13 @@ export default defineEventHandler(async (event) => {
       action as 'start' | 'pause' | 'resume' | 'complete' | 'abandon' | 'reset',
     )
 
-    return respond(event, result)
+    return ok(result)
   }
 
   const parsed = await validateBody(event, encounterUpdateSchema, 'Invalid encounter payload')
-  if (!parsed.ok) return parsed.response
 
   const sessionUser = await requireUserSession(event)
-  const result = await new EncounterService().updateEncounter(encounterId, sessionUser.user.id, parsed.data)
+  const result = await new EncounterService().updateEncounter(encounterId, sessionUser.user.id, parsed)
 
-  return respond(event, result)
+  return ok(result)
 })

@@ -1,7 +1,7 @@
 import { readBody } from 'h3'
 import { z } from 'zod'
 import { prisma } from '#server/db/prisma'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 import { documentLinkRecordingSchema, documentRestoreSchema, documentUpdateSchema } from '#shared/schemas/document'
 import { DocumentService } from '#server/services/document.service'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
@@ -13,10 +13,7 @@ const documentPatchActionSchema = z.discriminatedUnion('action', [
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
-  const documentId = event.context.params?.documentId
-  if (!documentId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Document id is required')
-  }
+  const { documentId } = routeParams(event, 'documentId')
 
   const rawBody = (await readBody(event)) ?? {}
 
@@ -27,7 +24,7 @@ export default defineEventHandler(async (event) => {
     },
   })
   if (!existing) {
-    return fail(event, 404, 'NOT_FOUND', 'Document not found')
+    throw apiError(404, 'NOT_FOUND', 'Document not found')
   }
 
   const actionParsed = documentPatchActionSchema.safeParse(rawBody)
@@ -42,7 +39,7 @@ export default defineEventHandler(async (event) => {
           },
         })
         if (!recording) {
-          return fail(event, 404, 'NOT_FOUND', 'Recording not found')
+          throw apiError(404, 'NOT_FOUND', 'Recording not found')
         }
       }
 
@@ -59,7 +56,7 @@ export default defineEventHandler(async (event) => {
       where: { id: actionParsed.data.versionId, documentId },
     })
     if (!version) {
-      return fail(event, 404, 'NOT_FOUND', 'Version not found')
+      throw apiError(404, 'NOT_FOUND', 'Version not found')
     }
 
     const service = new DocumentService()
@@ -69,7 +66,7 @@ export default defineEventHandler(async (event) => {
 
   const parsed = documentUpdateSchema.safeParse(rawBody)
   if (!parsed.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid document payload')
+    throw apiError(400, 'VALIDATION_ERROR', 'Invalid document payload')
   }
 
   const service = new DocumentService()

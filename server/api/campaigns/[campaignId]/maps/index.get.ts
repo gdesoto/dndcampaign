@@ -1,18 +1,14 @@
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 import { MapService } from '#server/services/map.service'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  if (!campaignId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id is required')
-  }
-  const authz = await requireCampaignPermission(event, campaignId, 'content.read')
-  if (!authz.ok) return authz.response
+  const { campaignId } = routeParams(event, 'campaignId')
+  await requireCampaignPermission(event, campaignId, 'content.read')
 
-  const maps = await new MapService().listMaps(campaignId, authz.session.user.id)
+  const maps = await new MapService().listMaps(campaignId)
   if (!maps) {
-    return fail(event, 404, 'NOT_FOUND', 'Campaign not found')
+    throw apiError(404, 'NOT_FOUND', 'Campaign not found')
   }
 
   return ok(maps)

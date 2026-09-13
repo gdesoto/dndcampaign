@@ -16,5 +16,5 @@ export default defineEventHandler(async (event) => {
     search,
   })
 
-  return ok(result.data)
+  return ok(result)
 })

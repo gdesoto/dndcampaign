@@ -1,18 +1,13 @@
 import { prisma } from '#server/db/prisma'
 import { ArtifactService } from '#server/services/artifact.service'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 
 const artifactService = new ArtifactService()
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
-  const jobId = event.context.params?.jobId
-  const artifactId = event.context.params?.artifactId
-
-  if (!jobId || !artifactId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Transcription job id and artifact id are required')
-  }
+  const { jobId, artifactId } = routeParams(event, 'jobId', 'artifactId')
 
   const job = await prisma.transcriptionJob.findFirst({
     where: {
@@ -30,7 +25,7 @@ export default defineEventHandler(async (event) => {
   })
 
   if (!job) {
-    return fail(event, 404, 'NOT_FOUND', 'Transcription artifact not found')
+    throw apiError(404, 'NOT_FOUND', 'Transcription artifact not found')
   }
 
   await prisma.transcriptionArtifact.deleteMany({

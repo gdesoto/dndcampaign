@@ -1,14 +1,10 @@
 import { prisma } from '#server/db/prisma'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
-  const entryId = event.context.params?.entryId
-  const sessionId = event.context.params?.sessionId
-  if (!entryId || !sessionId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Entry id and session id are required')
-  }
+  const { entryId, sessionId } = routeParams(event, 'entryId', 'sessionId')
 
   const entry = await prisma.glossaryEntry.findFirst({
     where: {
@@ -17,7 +13,7 @@ export default defineEventHandler(async (event) => {
     },
   })
   if (!entry) {
-    return fail(event, 404, 'NOT_FOUND', 'Glossary entry not found')
+    throw apiError(404, 'NOT_FOUND', 'Glossary entry not found')
   }
 
   const existing = await prisma.glossarySessionLink.findUnique({

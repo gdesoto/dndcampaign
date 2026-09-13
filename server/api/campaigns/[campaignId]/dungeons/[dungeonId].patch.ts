@@ -1,6 +1,7 @@
 import { readBody } from 'h3'
 import { z } from 'zod'
-import { fail, respond } from '#server/utils/http'
+import { ok, routeParams } from '#server/utils/http'
+import { assertCampaignPermission, requireCampaignPermission } from '#server/utils/campaign-auth'
 import { validateInput } from '#server/utils/validate'
 import {
   dungeonExportSchema,
@@ -23,72 +24,72 @@ const dungeonPatchActionSchema = z.discriminatedUnion('action', [
 ])
 
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  const dungeonId = event.context.params?.dungeonId
-  if (!campaignId || !dungeonId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id and dungeon id are required')
-  }
+  const { campaignId, dungeonId } = routeParams(event, 'campaignId', 'dungeonId')
 
   const rawBody = (await readBody(event)) ?? {}
 
-  const sessionUser = await requireUserSession(event)
+  const { actor } = await requireCampaignPermission(event, campaignId, 'content.read')
 
   const actionParsed = dungeonPatchActionSchema.safeParse(rawBody)
   if (actionParsed.success) {
     switch (actionParsed.data.action) {
       case 'generate': {
+        assertCampaignPermission(actor.access, 'content.write')
         const result = await dungeonService.generateDungeon(
           campaignId,
           dungeonId,
-          sessionUser.user.id,
+          actor,
           actionParsed.data
         )
-        return respond(event, result)
+        return ok(result)
       }
       case 'regenerate': {
+        assertCampaignPermission(actor.access, 'content.write')
         const result = await dungeonService.regenerateDungeon(
           campaignId,
           dungeonId,
-          sessionUser.user.id,
+          actor,
           actionParsed.data
         )
-        return respond(event, result)
+        return ok(result)
       }
       case 'publish': {
+        assertCampaignPermission(actor.access, 'campaign.public.manage')
         const result = await dungeonService.setPublishStatus(
           campaignId,
           dungeonId,
-          sessionUser.user.id,
+          actor,
           'READY'
         )
-        return respond(event, result)
+        return ok(result)
       }
       case 'unpublish': {
+        assertCampaignPermission(actor.access, 'campaign.public.manage')
         const result = await dungeonService.setPublishStatus(
           campaignId,
           dungeonId,
-          sessionUser.user.id,
+          actor,
           'DRAFT'
         )
-        return respond(event, result)
+        return ok(result)
       }
       case 'export': {
         const result = await dungeonExportService.exportDungeon(
           campaignId,
           dungeonId,
-          sessionUser.user.id,
+          actor,
           actionParsed.data
         )
-        return respond(event, result)
+        return ok(result)
       }
       default:
         break
     }
   }
 
-  const parsed = validateInput(event, dungeonUpdateSchema, rawBody, 'Invalid dungeon payload')
-  if (!parsed.ok) return parsed.response
+  assertCampaignPermission(actor.access, 'content.write')
+  const parsed = validateInput(dungeonUpdateSchema, rawBody, 'Invalid dungeon payload')
 
-  const result = await dungeonService.updateDungeon(campaignId, dungeonId, sessionUser.user.id, parsed.data)
-  return respond(event, result)
+  const result = await dungeonService.updateDungeon(campaignId, dungeonId, actor, parsed)
+  return ok(result)
 })

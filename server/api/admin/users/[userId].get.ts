@@ -1,20 +1,14 @@
-import { fail, respond } from '#server/utils/http'
+import { ok, routeParams } from '#server/utils/http'
 import { requireSystemAdmin } from '#server/utils/campaign-auth'
 import { AdminService } from '#server/services/admin.service'
 
 const adminService = new AdminService()
 
 export default defineEventHandler(async (event) => {
-  const userId = event.context.params?.userId
-  if (!userId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'User id is required')
-  }
+  const { userId } = routeParams(event, 'userId')
 
-  const authz = await requireSystemAdmin(event)
-  if (!authz.ok) {
-    return authz.response
-  }
+  await requireSystemAdmin(event)
 
   const result = await adminService.getUser(userId)
-  return respond(event, result)
+  return ok(result)
 })

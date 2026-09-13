@@ -1,18 +1,8 @@
 import type { H3Event } from 'h3'
 import { getQuery } from 'h3'
 import { prisma } from '#server/db/prisma'
-import { fail } from '#server/utils/http'
+import { apiError } from '#server/utils/http'
 import { resolveCampaignAccess } from '#server/utils/campaign-auth'
-
-type ArtifactReadResult =
-  | {
-      ok: true
-      artifact: Awaited<ReturnType<typeof prisma.artifact.findUniqueOrThrow>>
-    }
-  | {
-      ok: false
-      response: ReturnType<typeof fail>
-    }
 
 const hasPublicRecapAccess = async (artifactId: string, campaignId: string, publicSlug: string) => {
   const publicAccess = await prisma.campaignPublicAccess.findFirst({
@@ -44,16 +34,13 @@ const hasPublicRecapAccess = async (artifactId: string, campaignId: string, publ
   return Boolean(recap)
 }
 
-export const requireArtifactReadAccess = async (
-  event: H3Event,
-  artifactId: string
-): Promise<ArtifactReadResult> => {
+export const requireArtifactReadAccess = async (event: H3Event, artifactId: string) => {
   const artifact = await prisma.artifact.findUnique({
     where: { id: artifactId },
   })
 
   if (!artifact) {
-    return { ok: false, response: fail(event, 404, 'NOT_FOUND', 'Artifact not found') }
+    throw apiError(404, 'NOT_FOUND', 'Artifact not found')
   }
 
   const session = await getUserSession(event)
@@ -68,7 +55,7 @@ export const requireArtifactReadAccess = async (
       )
       const canRead = campaignAccess.access?.permissions.includes('content.read')
       if (canRead) {
-        return { ok: true, artifact }
+        return artifact
       }
     } else {
       const query = getQuery(event)
@@ -77,21 +64,21 @@ export const requireArtifactReadAccess = async (
       if (publicSlug) {
         const canReadPublicly = await hasPublicRecapAccess(artifact.id, artifact.campaignId, publicSlug)
         if (canReadPublicly) {
-          return { ok: true, artifact }
+          return artifact
         }
       }
     }
 
-    return { ok: false, response: fail(event, 403, 'FORBIDDEN', 'Artifact access is denied') }
+    throw apiError(403, 'FORBIDDEN', 'Artifact access is denied')
   }
 
   if (!sessionUser) {
-    return { ok: false, response: fail(event, 401, 'UNAUTHORIZED', 'Not authenticated') }
+    throw apiError(401, 'UNAUTHORIZED', 'Not authenticated')
   }
 
   if (artifact.ownerId !== sessionUser.id && sessionUser.systemRole !== 'SYSTEM_ADMIN') {
-    return { ok: false, response: fail(event, 403, 'FORBIDDEN', 'Artifact access is denied') }
+    throw apiError(403, 'FORBIDDEN', 'Artifact access is denied')
   }
 
-  return { ok: true, artifact }
+  return artifact
 }

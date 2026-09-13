@@ -2,7 +2,6 @@ import { getMediaStream } from '#server/utils/media-stream'
 import { randomBytes } from 'node:crypto'
 import { Prisma } from '#server/db/prisma-client'
 import { prisma } from '#server/db/prisma'
-import type { ServiceResult } from '#server/services/auth.service'
 import { defaultMapLayerTypes, type MapFeatureType } from '#shared/schemas/map'
 import { getStorageAdapter } from '#server/services/storage/storage.factory'
 import type {
@@ -20,6 +19,7 @@ import {
 import { normalizeJournalTagLabel } from '#shared/utils/campaign-journal-tags'
 import type { CampaignJournalListResponse } from '#shared/types/campaign-journal'
 import { ActivityLogService } from '#server/services/activity-log.service'
+import { apiError } from '#server/utils/http'
 
 const PUBLIC_SLUG_BYTE_LENGTH = 16
 const activityLogService = new ActivityLogService()
@@ -40,24 +40,16 @@ type CampaignPublicAccessRecord = {
   updatedAt: Date
 }
 
-type PublicResolverResult =
-  | {
-      ok: true
-      campaignId: string
-      access: CampaignPublicAccessRecord
-      campaign: {
-        name: string
-        system: string
-        description: string | null
-        dungeonMasterName: string | null
-      }
-    }
-  | {
-      ok: false
-      statusCode: number
-      code: string
-      message: string
-    }
+type PublicResolverResult = {
+  campaignId: string
+  access: CampaignPublicAccessRecord
+  campaign: {
+    name: string
+    system: string
+    description: string | null
+    dungeonMasterName: string | null
+  }
+}
 
 const sectionToFlag: Record<CampaignPublicAccessSection, keyof CampaignPublicAccessRecord> = {
   characters: 'showCharacters',
@@ -198,24 +190,24 @@ export class CampaignPublicAccessService {
   async getOwnerSettings(
     campaignId: string,
     updatedByUserId: string
-  ): Promise<ServiceResult<CampaignPublicAccessOwnerDto>> {
+  ): Promise<CampaignPublicAccessOwnerDto> {
     const existing = await prisma.campaignPublicAccess.findUnique({
       where: { campaignId },
     })
 
     if (existing) {
-      return { ok: true, data: toOwnerDto(existing) }
+      return toOwnerDto(existing)
     }
 
     const created = await createAccessRecord(campaignId, updatedByUserId)
-    return { ok: true, data: toOwnerDto(created) }
+    return toOwnerDto(created)
   }
 
   async updateOwnerSettings(
     campaignId: string,
     updatedByUserId: string,
     input: CampaignPublicAccessUpdateInput
-  ): Promise<ServiceResult<CampaignPublicAccessOwnerDto>> {
+  ): Promise<CampaignPublicAccessOwnerDto> {
     const normalizedInput: CampaignPublicAccessUpdateInput = { ...input }
     if (normalizedInput.isEnabled === false) {
       normalizedInput.isListed = false
@@ -275,13 +267,13 @@ export class CampaignPublicAccessService {
       },
     })
 
-    return { ok: true, data: toOwnerDto(updated) }
+    return toOwnerDto(updated)
   }
 
   async regenerateSlug(
     campaignId: string,
     updatedByUserId: string
-  ): Promise<ServiceResult<CampaignPublicAccessOwnerDto>> {
+  ): Promise<CampaignPublicAccessOwnerDto> {
     for (let attempt = 0; attempt < 5; attempt += 1) {
       try {
         const existing = await prisma.campaignPublicAccess.findUnique({
@@ -318,7 +310,7 @@ export class CampaignPublicAccessService {
           },
         })
 
-        return { ok: true, data: toOwnerDto(updated) }
+        return toOwnerDto(updated)
       } catch (error) {
         if (!isUniqueConstraintError(error)) {
           throw error
@@ -326,12 +318,7 @@ export class CampaignPublicAccessService {
       }
     }
 
-    return {
-      ok: false,
-      statusCode: 500,
-      code: 'PUBLIC_SLUG_GENERATION_FAILED',
-      message: 'Unable to regenerate a unique public URL. Try again.',
-    }
+    throw apiError(500, 'PUBLIC_SLUG_GENERATION_FAILED', 'Unable to regenerate a unique public URL. Try again.')
   }
 
   private async resolvePublicAccess(
@@ -354,28 +341,17 @@ export class CampaignPublicAccessService {
     })
 
     if (!access || !access.isEnabled) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'PUBLIC_CAMPAIGN_NOT_FOUND',
-        message: 'Public campaign not found.',
-      }
+      throw apiError(404, 'PUBLIC_CAMPAIGN_NOT_FOUND', 'Public campaign not found.')
     }
 
     if (section) {
       const flag = sectionToFlag[section]
       if (!access[flag]) {
-        return {
-          ok: false,
-          statusCode: 404,
-          code: 'PUBLIC_SECTION_NOT_AVAILABLE',
-          message: 'This public section is not available.',
-        }
+        throw apiError(404, 'PUBLIC_SECTION_NOT_AVAILABLE', 'This public section is not available.')
       }
     }
 
     return {
-      ok: true,
       campaignId: access.campaign.id,
       access,
       campaign: {
@@ -387,15 +363,10 @@ export class CampaignPublicAccessService {
     }
   }
 
-  async getPublicOverview(publicSlug: string): Promise<ServiceResult<CampaignPublicOverviewDto>> {
+  async getPublicOverview(publicSlug: string): Promise<CampaignPublicOverviewDto> {
     const resolved = await this.resolvePublicAccess(publicSlug)
-    if (!resolved.ok) {
-      return resolved
-    }
 
     return {
-      ok: true,
-      data: {
         campaign: resolved.campaign,
         sections: {
           showCharacters: resolved.access.showCharacters,
@@ -407,16 +378,14 @@ export class CampaignPublicAccessService {
           showMaps: resolved.access.showMaps,
           showJournal: resolved.access.showJournal,
         },
-      },
-    }
+      }
   }
 
   async getPublicJournalEntries(
     publicSlug: string,
     query: PublicCampaignJournalListQueryInput
-  ): Promise<ServiceResult<CampaignJournalListResponse>> {
+  ): Promise<CampaignJournalListResponse> {
     const resolved = await this.resolvePublicAccess(publicSlug, 'journal')
-    if (!resolved.ok) return resolved
 
     const page = query.page || campaignJournalListDefaultPage
     const pageSize = query.pageSize || campaignJournalListDefaultPageSize
@@ -497,8 +466,6 @@ export class CampaignPublicAccessService {
     ])
 
     return {
-      ok: true,
-      data: {
         items: rows.map((row) => ({
           id: row.id,
           campaignId: row.campaignId,
@@ -562,8 +529,7 @@ export class CampaignPublicAccessService {
           total,
           totalPages: Math.max(1, Math.ceil(total / pageSize)),
         },
-      },
-    }
+      }
   }
 
   async listPublicCampaignDirectory(input: {
@@ -609,7 +575,7 @@ export class CampaignPublicAccessService {
 
     const sorted = rows.map(toDirectoryItem)
     if (!input.random) {
-      return { ok: true as const, data: sorted }
+      return sorted
     }
 
     const shuffled = [...sorted]
@@ -620,12 +586,11 @@ export class CampaignPublicAccessService {
       shuffled[j] = tmp
     }
 
-    return { ok: true as const, data: shuffled.slice(0, limit) }
+    return shuffled.slice(0, limit)
   }
 
   async getPublicCharacters(publicSlug: string) {
     const resolved = await this.resolvePublicAccess(publicSlug, 'characters')
-    if (!resolved.ok) return resolved
 
     const rows = await prisma.campaignCharacter.findMany({
       where: { campaignId: resolved.campaignId },
@@ -644,22 +609,18 @@ export class CampaignPublicAccessService {
       orderBy: { updatedAt: 'desc' },
     })
 
-    return {
-      ok: true as const,
-      data: rows.map((row) => ({
+    return rows.map((row) => ({
         name: row.character.name,
         status: row.character.status,
         portraitUrl: row.character.portraitUrl,
         campaignStatus: row.status,
         roleLabel: row.roleLabel,
         notes: row.notes,
-      })),
-    }
+      }))
   }
 
   async getPublicRecaps(publicSlug: string) {
     const resolved = await this.resolvePublicAccess(publicSlug, 'recaps')
-    if (!resolved.ok) return resolved
 
     const rows = await prisma.recapRecording.findMany({
       where: { session: { campaignId: resolved.campaignId } },
@@ -681,12 +642,11 @@ export class CampaignPublicAccessService {
       orderBy: { createdAt: 'desc' },
     })
 
-    return { ok: true as const, data: rows }
+    return rows
   }
 
   async getPublicRecapPlayback(publicSlug: string, recapId: string) {
     const resolved = await this.resolvePublicAccess(publicSlug, 'recaps')
-    if (!resolved.ok) return resolved
 
     const recap = await prisma.recapRecording.findFirst({
       where: {
@@ -698,25 +658,16 @@ export class CampaignPublicAccessService {
       select: { id: true },
     })
     if (!recap) {
-      return {
-        ok: false as const,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Recap not found.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Recap not found.')
     }
 
     return {
-      ok: true as const,
-      data: {
         url: `/api/public/campaigns/${publicSlug}/recaps/${recapId}/stream`,
-      },
-    }
+      }
   }
 
   async getPublicRecapStream(publicSlug: string, recapId: string, rangeHeader?: string) {
     const resolved = await this.resolvePublicAccess(publicSlug, 'recaps')
-    if (!resolved.ok) return resolved
 
     const recap = await prisma.recapRecording.findFirst({
       where: {
@@ -738,29 +689,20 @@ export class CampaignPublicAccessService {
     })
 
     if (!recap) {
-      return {
-        ok: false as const,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Recap not found.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Recap not found.')
     }
 
     const adapter = getStorageAdapter()
     const stream = await getMediaStream(adapter, recap.artifact.storageKey, rangeHeader)
     return {
-      ok: true as const,
-      data: {
         contentType: recap.mimeType,
         filename: recap.filename,
         stream,
-      },
-    }
+      }
   }
 
   async getPublicSessions(publicSlug: string) {
     const resolved = await this.resolvePublicAccess(publicSlug, 'sessions')
-    if (!resolved.ok) return resolved
 
     const rows = await prisma.session.findMany({
       where: { campaignId: resolved.campaignId },
@@ -774,12 +716,11 @@ export class CampaignPublicAccessService {
       orderBy: [{ sessionNumber: 'asc' }, { playedAt: 'desc' }, { createdAt: 'desc' }],
     })
 
-    return { ok: true as const, data: rows }
+    return rows
   }
 
   async getPublicGlossary(publicSlug: string) {
     const resolved = await this.resolvePublicAccess(publicSlug, 'glossary')
-    if (!resolved.ok) return resolved
 
     const rows = await prisma.glossaryEntry.findMany({
       where: { campaignId: resolved.campaignId },
@@ -804,12 +745,11 @@ export class CampaignPublicAccessService {
       orderBy: { name: 'asc' },
     })
 
-    return { ok: true as const, data: rows }
+    return rows
   }
 
   async getPublicQuests(publicSlug: string) {
     const resolved = await this.resolvePublicAccess(publicSlug, 'quests')
-    if (!resolved.ok) return resolved
 
       const rows = await prisma.quest.findMany({
         where: { campaignId: resolved.campaignId },
@@ -828,9 +768,7 @@ export class CampaignPublicAccessService {
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
       })
 
-    return {
-      ok: true as const,
-      data: rows.map((row) => ({
+    return rows.map((row) => ({
         id: row.id,
         title: row.title,
         description: row.description,
@@ -856,13 +794,11 @@ export class CampaignPublicAccessService {
         sortOrder: row.sortOrder,
         createdAt: row.createdAt.toISOString(),
         updatedAt: row.updatedAt.toISOString(),
-      })),
-    }
+      }))
   }
 
   async getPublicMilestones(publicSlug: string) {
     const resolved = await this.resolvePublicAccess(publicSlug, 'milestones')
-    if (!resolved.ok) return resolved
 
     const rows = await prisma.milestone.findMany({
       where: { campaignId: resolved.campaignId },
@@ -876,12 +812,11 @@ export class CampaignPublicAccessService {
       orderBy: [{ isComplete: 'asc' }, { createdAt: 'desc' }],
     })
 
-    return { ok: true as const, data: rows }
+    return rows
   }
 
   async getPublicMaps(publicSlug: string) {
     const resolved = await this.resolvePublicAccess(publicSlug, 'maps')
-    if (!resolved.ok) return resolved
 
     const rows = await prisma.campaignMap.findMany({
       where: { campaignId: resolved.campaignId },
@@ -895,12 +830,11 @@ export class CampaignPublicAccessService {
       orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
     })
 
-    return { ok: true as const, data: rows }
+    return rows
   }
 
   async getPublicMapViewer(publicSlug: string, mapSlug?: string) {
     const resolved = await this.resolvePublicAccess(publicSlug, 'maps')
-    if (!resolved.ok) return resolved
 
     const map = await prisma.campaignMap.findFirst({
       where: {
@@ -921,12 +855,7 @@ export class CampaignPublicAccessService {
     })
 
     if (!map) {
-      return {
-        ok: false as const,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Map not found.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Map not found.')
     }
 
     const features = await prisma.campaignMapFeature.findMany({
@@ -953,8 +882,6 @@ export class CampaignPublicAccessService {
     const mapCoordinates = parseMapCoordinates(manifest.mapCoordinates)
 
     return {
-      ok: true as const,
-      data: {
         map: {
           id: map.id,
           campaignId: map.campaignId,
@@ -985,13 +912,11 @@ export class CampaignPublicAccessService {
             ...(feature.propertiesJson as Record<string, unknown> | null | undefined),
           },
         })),
-      },
-    }
+      }
   }
 
   async getPublicMapSvg(publicSlug: string, mapSlug: string) {
     const resolved = await this.resolvePublicAccess(publicSlug, 'maps')
-    if (!resolved.ok) return resolved
 
     const map = await prisma.campaignMap.findFirst({
       where: {
@@ -1013,34 +938,21 @@ export class CampaignPublicAccessService {
     })
 
     if (!map) {
-      return {
-        ok: false as const,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Map not found.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Map not found.')
     }
 
     const svgFile = map.files[0]
     if (!svgFile) {
-      return {
-        ok: false as const,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'No SVG source file found for this map.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'No SVG source file found for this map.')
     }
 
     const adapter = getStorageAdapter()
     const stream = await adapter.getObject(svgFile.storageKey)
     return {
-      ok: true as const,
-      data: {
         contentType: svgFile.contentType || 'image/svg+xml',
         filename: `${map.slug || 'map'}.svg`,
         stream,
-      },
-    }
+      }
   }
 }
 

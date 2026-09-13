@@ -1,8 +1,5 @@
 import { z } from 'zod'
-import type { CampaignPermission } from '#server/utils/campaign-auth'
-import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 import { prisma } from '#server/db/prisma'
-import type { ServiceResult } from '#server/services/auth.service'
 import {
   calendarConfigUpsertSchema,
   calendarMonthSchema,
@@ -22,6 +19,7 @@ import type {
   CampaignCalendarConfig,
 } from '#shared/types/calendar'
 import { NameGeneratorService } from '#server/services/calendar/name-generator.service'
+import { apiError } from '#server/utils/http'
 
 type CampaignCalendarConfigRow = {
   id: string
@@ -271,13 +269,6 @@ const buildTemplate = (templateId: CalendarTemplateId, seed?: string): CalendarC
 }
 
 export class CalendarConfigService {
-  private async ensureCampaignPermission(campaignId: string, userId: string, permission: CampaignPermission) {
-    return prisma.campaign.findFirst({
-      where: { id: campaignId, ...buildCampaignWhereForPermission(userId, permission) },
-      select: { id: true },
-    })
-  }
-
   private async getConfigRow(campaignId: string) {
     return prisma.campaignCalendarConfig.findUnique({
       where: { campaignId },
@@ -300,40 +291,16 @@ export class CalendarConfigService {
     })
   }
 
-  async getConfig(campaignId: string, userId: string): Promise<ServiceResult<CampaignCalendarConfigDto | null>> {
-    const campaign = await this.ensureCampaignPermission(campaignId, userId, 'campaign.read')
-    if (!campaign) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Campaign not found or access denied.',
-      }
-    }
-
+  async getConfig(campaignId: string): Promise<CampaignCalendarConfigDto | null> {
     const config = await this.getConfigRow(campaignId)
     if (!config) {
-      return { ok: true, data: null }
+      return null
     }
 
-    return { ok: true, data: toConfigDto(config) }
+    return toConfigDto(config)
   }
 
-  async upsertConfig(
-    campaignId: string,
-    userId: string,
-    input: CalendarConfigUpsertInput,
-  ): Promise<ServiceResult<CampaignCalendarConfigDto>> {
-    const campaign = await this.ensureCampaignPermission(campaignId, userId, 'campaign.update')
-    if (!campaign) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Campaign not found or access denied.',
-      }
-    }
-
+  async upsertConfig(campaignId: string, input: CalendarConfigUpsertInput): Promise<CampaignCalendarConfigDto> {
     const parsedInput = calendarConfigUpsertSchema.parse(input)
 
     const updated = await prisma.campaignCalendarConfig.upsert({
@@ -381,52 +348,27 @@ export class CalendarConfigService {
       },
     })
 
-    return { ok: true, data: toConfigDto(updated) }
+    return toConfigDto(updated)
   }
 
   async applyTemplate(
     campaignId: string,
-    userId: string,
     input: CalendarTemplateApplyInput & { seed?: string },
-  ): Promise<ServiceResult<CampaignCalendarConfigDto>> {
+  ): Promise<CampaignCalendarConfigDto> {
     const parsedInput = calendarTemplateApplySchema.parse(input)
     const seed = input.seed ? z.string().min(1).max(120).parse(input.seed) : undefined
     const templateInput = buildTemplate(parsedInput.templateId, seed)
-    return this.upsertConfig(campaignId, userId, templateInput)
+    return this.upsertConfig(campaignId, templateInput)
   }
 
-  async updateCurrentDate(
-    campaignId: string,
-    userId: string,
-    input: CalendarCurrentDateUpdateInput,
-  ): Promise<ServiceResult<CampaignCalendarConfigDto>> {
-    const campaign = await this.ensureCampaignPermission(campaignId, userId, 'campaign.update')
-    if (!campaign) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Campaign not found or access denied.',
-      }
-    }
-
+  async updateCurrentDate(campaignId: string, input: CalendarCurrentDateUpdateInput): Promise<CampaignCalendarConfigDto> {
     const existing = await this.getConfigRow(campaignId)
     if (!existing) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'CALENDAR_CONFIG_NOT_FOUND',
-        message: 'Calendar config not found for campaign.',
-      }
+      throw apiError(404, 'CALENDAR_CONFIG_NOT_FOUND', 'Calendar config not found for campaign.')
     }
 
     if (!existing.isEnabled) {
-      return {
-        ok: false,
-        statusCode: 409,
-        code: 'CALENDAR_DISABLED',
-        message: 'Calendar is currently disabled for this campaign.',
-      }
+      throw apiError(409, 'CALENDAR_DISABLED', 'Calendar is currently disabled for this campaign.')
     }
 
     const months = monthArraySchema.parse(existing.monthsJson)
@@ -457,7 +399,7 @@ export class CalendarConfigService {
       },
     })
 
-    return { ok: true, data: toConfigDto(updated) }
+    return toConfigDto(updated)
   }
 }
 

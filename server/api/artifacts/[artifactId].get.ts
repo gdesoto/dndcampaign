@@ -1,18 +1,10 @@
-import { ok, fail } from '#server/utils/http'
+import { ok, routeParams } from '#server/utils/http'
 import { requireArtifactReadAccess } from '#server/utils/artifact-auth'
 
 export default defineEventHandler(async (event) => {
-  const artifactId = event.context.params?.artifactId
-  if (!artifactId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Artifact id is required')
-  }
+  const { artifactId } = routeParams(event, 'artifactId')
 
-  const access = await requireArtifactReadAccess(event, artifactId)
-  if (!access.ok) {
-    return access.response
-  }
-
-  return ok(access.artifact)
+  return ok(await requireArtifactReadAccess(event, artifactId))
 })
 
 

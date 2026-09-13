@@ -2,10 +2,10 @@ import { readdir, stat } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { useRuntimeConfig } from '#imports'
 import { prisma } from '#server/db/prisma'
-import type { ServiceResult } from '#server/services/auth.service'
 import { ArtifactService } from '#server/services/artifact.service'
 import { getStorageAdapter } from '#server/services/storage/storage.factory'
 import type { AdminStorageAuditFixInput, AdminStorageAuditQuery } from '#shared/schemas/admin'
+import { apiError } from '#server/utils/http'
 
 type ScannedStorageFile = {
   storageKey: string
@@ -312,11 +312,11 @@ export class AdminStorageAuditService {
     }
   }
 
-  async applyFix(input: AdminStorageAuditFixInput): Promise<ServiceResult<{
+  async applyFix(input: AdminStorageAuditFixInput): Promise<{
     action: AdminStorageAuditFixInput['action']
     targetId: string
     message: string
-  }>> {
+  }> {
     if (input.action === 'DELETE_ORPHAN_STORAGE_FILE') {
       const linkedArtifact = await prisma.artifact.findFirst({
         where: {
@@ -327,12 +327,7 @@ export class AdminStorageAuditService {
       })
 
       if (linkedArtifact) {
-        return {
-          ok: false,
-          statusCode: 409,
-          code: 'ARTIFACT_EXISTS',
-          message: 'Storage key is still linked to an artifact record.',
-        }
+        throw apiError(409, 'ARTIFACT_EXISTS', 'Storage key is still linked to an artifact record.')
       }
 
       const adapter = getStorageAdapter()
@@ -346,13 +341,10 @@ export class AdminStorageAuditService {
       }
 
       return {
-        ok: true,
-        data: {
           action: input.action,
           targetId: input.storageKey,
           message: 'Orphaned storage file deleted.',
-        },
-      }
+        }
     }
 
     if (input.action === 'DELETE_UNREFERENCED_ARTIFACT') {
@@ -373,33 +365,20 @@ export class AdminStorageAuditService {
       })
 
       if (!artifact) {
-        return {
-          ok: false,
-          statusCode: 404,
-          code: 'NOT_FOUND',
-          message: 'Artifact not found.',
-        }
+        throw apiError(404, 'NOT_FOUND', 'Artifact not found.')
       }
 
       const referencedCount = sumArtifactReferenceCount(artifact._count)
       if (referencedCount > 0) {
-        return {
-          ok: false,
-          statusCode: 409,
-          code: 'ARTIFACT_REFERENCED',
-          message: 'Artifact is still referenced and cannot be removed.',
-        }
+        throw apiError(409, 'ARTIFACT_REFERENCED', 'Artifact is still referenced and cannot be removed.')
       }
 
       await this.artifactService.deleteArtifact(artifact.id)
       return {
-        ok: true,
-        data: {
           action: input.action,
           targetId: artifact.id,
           message: 'Unreferenced artifact deleted.',
-        },
-      }
+        }
     }
 
     if (input.action === 'REPAIR_DOCUMENT_CURRENT_VERSION') {
@@ -417,33 +396,20 @@ export class AdminStorageAuditService {
       })
 
       if (!document) {
-        return {
-          ok: false,
-          statusCode: 404,
-          code: 'NOT_FOUND',
-          message: 'Document not found.',
-        }
+        throw apiError(404, 'NOT_FOUND', 'Document not found.')
       }
 
       const latestVersion = document.versions[0]
       if (!latestVersion) {
-        return {
-          ok: false,
-          statusCode: 409,
-          code: 'DOCUMENT_EMPTY',
-          message: 'Document has no versions to set as current.',
-        }
+        throw apiError(409, 'DOCUMENT_EMPTY', 'Document has no versions to set as current.')
       }
 
       if (document.currentVersionId === latestVersion.id) {
         return {
-          ok: true,
-          data: {
             action: input.action,
             targetId: document.id,
             message: 'Document current version is already valid.',
-          },
-        }
+          }
       }
 
       await prisma.document.update({
@@ -452,13 +418,10 @@ export class AdminStorageAuditService {
       })
 
       return {
-        ok: true,
-        data: {
           action: input.action,
           targetId: document.id,
           message: 'Document current version repaired.',
-        },
-      }
+        }
     }
 
     const document = await prisma.document.findUnique({
@@ -470,31 +433,18 @@ export class AdminStorageAuditService {
     })
 
     if (!document) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Document not found.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Document not found.')
     }
 
     if (document._count.versions > 0) {
-      return {
-        ok: false,
-        statusCode: 409,
-        code: 'DOCUMENT_NOT_EMPTY',
-        message: 'Document has versions and cannot be deleted as empty.',
-      }
+      throw apiError(409, 'DOCUMENT_NOT_EMPTY', 'Document has versions and cannot be deleted as empty.')
     }
 
     await prisma.document.delete({ where: { id: document.id } })
     return {
-      ok: true,
-      data: {
         action: input.action,
         targetId: document.id,
         message: 'Empty document deleted.',
-      },
-    }
+      }
   }
 }

@@ -1,6 +1,6 @@
 import { validateQuery } from '#server/utils/validate'
 import { prisma } from '#server/db/prisma'
-import { ok, fail, respond } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
 import { calendarViewQuerySchema } from '#shared/schemas/calendar'
 import { CalendarConfigService } from '#server/services/calendar/calendar-config.service'
@@ -20,25 +20,15 @@ const compareDateParts = (left: DateParts, right: DateParts) => {
 }
 
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  if (!campaignId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id is required')
-  }
+  const { campaignId } = routeParams(event, 'campaignId')
 
-  const authz = await requireCampaignPermission(event, campaignId, 'campaign.read')
-  if (!authz.ok) {
-    return authz.response
-  }
+  await requireCampaignPermission(event, campaignId, 'campaign.read')
 
   const parsedQuery = validateQuery(event, calendarViewQuerySchema, 'Invalid calendar view query')
-  if (!parsedQuery.ok) return parsedQuery.response
 
-  const configResult = await calendarConfigService.getConfig(campaignId, authz.session.user.id)
-  if (!configResult.ok) {
-    return respond(event, configResult)
-  }
+  const configResult = await calendarConfigService.getConfig(campaignId)
 
-  const config = configResult.data
+  const config = configResult
   if (!config || !config.isEnabled) {
     return ok({
       config,
@@ -51,25 +41,19 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const selectedYear = parsedQuery.data.year ?? config.currentYear
-  const selectedMonth = parsedQuery.data.month ?? config.currentMonth
+  const selectedYear = parsedQuery.year ?? config.currentYear
+  const selectedMonth = parsedQuery.month ?? config.currentMonth
   const selectedMonthDefinition = config.months[selectedMonth - 1]
   if (!selectedMonthDefinition) {
-    return fail(event, 400, 'VALIDATION_ERROR', `Month must be between 1 and ${config.months.length}`)
+    throw apiError(400, 'VALIDATION_ERROR', `Month must be between 1 and ${config.months.length}`)
   }
 
-  const eventsResult = await calendarEventsService.listEvents(campaignId, authz.session.user.id, {
+  const eventsResult = await calendarEventsService.listEvents(campaignId, {
     year: selectedYear,
     month: selectedMonth,
   })
-  if (!eventsResult.ok) {
-    return respond(event, eventsResult)
-  }
 
-  const rangesResult = await sessionCalendarRangeService.listRanges(campaignId, authz.session.user.id)
-  if (!rangesResult.ok) {
-    return respond(event, rangesResult)
-  }
+  const rangesResult = await sessionCalendarRangeService.listRanges(campaignId)
 
   const sessions = await prisma.session.findMany({
     where: { campaignId },
@@ -84,7 +68,7 @@ export default defineEventHandler(async (event) => {
 
   const monthStart: DateParts = { year: selectedYear, month: selectedMonth, day: 1 }
   const monthEnd: DateParts = { year: selectedYear, month: selectedMonth, day: selectedMonthDefinition.length }
-  const intersectingRanges = rangesResult.data
+  const intersectingRanges = rangesResult
     .filter((range) => {
       const rangeStart: DateParts = {
         year: range.startYear,
@@ -126,7 +110,7 @@ export default defineEventHandler(async (event) => {
       name: selectedMonthDefinition.name,
       length: selectedMonthDefinition.length,
     },
-    events: eventsResult.data,
+    events: eventsResult,
     sessionRanges: intersectingRanges,
   })
 })

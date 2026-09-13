@@ -1,14 +1,11 @@
-import { fail, respond } from '#server/utils/http'
+import { ok, routeParams } from '#server/utils/http'
 import { CampaignPublicAccessService } from '#server/services/campaign-public-access.service'
 
 const publicAccessService = new CampaignPublicAccessService()
 
 export default defineEventHandler(async (event) => {
-  const publicSlug = event.context.params?.publicSlug
-  if (!publicSlug) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Public slug is required')
-  }
+  const { publicSlug } = routeParams(event, 'publicSlug')
 
   const result = await publicAccessService.getPublicMilestones(publicSlug)
-  return respond(event, result)
+  return ok(result)
 })

@@ -1,4 +1,5 @@
-import { fail, respond } from '#server/utils/http'
+import { ok, routeParams } from '#server/utils/http'
+import { requireCampaignPermission } from '#server/utils/campaign-auth'
 import { validateBody } from '#server/utils/validate'
 import { dungeonLinkCreateSchema } from '#shared/schemas/dungeon'
 import { DungeonEditorService } from '#server/services/dungeon/dungeon-editor.service'
@@ -6,16 +7,11 @@ import { DungeonEditorService } from '#server/services/dungeon/dungeon-editor.se
 const dungeonEditorService = new DungeonEditorService()
 
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  const dungeonId = event.context.params?.dungeonId
-  if (!campaignId || !dungeonId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id and dungeon id are required')
-  }
+  const { campaignId, dungeonId } = routeParams(event, 'campaignId', 'dungeonId')
 
   const parsed = await validateBody(event, dungeonLinkCreateSchema, 'Invalid dungeon link payload')
-  if (!parsed.ok) return parsed.response
 
-  const sessionUser = await requireUserSession(event)
-  const result = await dungeonEditorService.createLink(campaignId, dungeonId, sessionUser.user.id, parsed.data)
-  return respond(event, result)
+  const { actor } = await requireCampaignPermission(event, campaignId, 'content.write')
+  const result = await dungeonEditorService.createLink(campaignId, dungeonId, actor, parsed)
+  return ok(result)
 })

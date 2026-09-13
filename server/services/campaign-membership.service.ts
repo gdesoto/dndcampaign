@@ -1,13 +1,13 @@
 import { createHash, randomBytes } from 'node:crypto'
 import type { CampaignRole } from '#server/db/prisma-client'
 import { prisma } from '#server/db/prisma'
-import type { ServiceResult } from '#server/services/auth.service'
 import type {
   CampaignInviteCreateInput,
   CampaignMemberUpdateInput,
   CampaignOwnerTransferInput,
 } from '#shared/schemas/campaign-membership'
 import { ActivityLogService } from '#server/services/activity-log.service'
+import { apiError } from '#server/utils/http'
 
 const DEFAULT_INVITE_EXPIRY_DAYS = 7
 const activityLogService = new ActivityLogService()
@@ -142,7 +142,7 @@ export class CampaignMembershipService {
     inviteToken: string,
     userId: string,
     userEmail: string
-  ): Promise<ServiceResult<CampaignInviteInspection>> {
+  ): Promise<CampaignInviteInspection> {
     const tokenHash = hashInviteToken(inviteToken)
 
     const invite = await prisma.campaignInvite.findUnique({
@@ -159,11 +159,8 @@ export class CampaignMembershipService {
 
     if (!invite) {
       return {
-        ok: true,
-        data: {
           status: 'INVITE_NOT_FOUND',
-        },
-      }
+        }
     }
 
     const existingMember = await prisma.campaignMember.findUnique({
@@ -181,24 +178,18 @@ export class CampaignMembershipService {
 
     if (existingMember) {
       return {
-        ok: true,
-        data: {
           status: 'ALREADY_MEMBER',
           campaignId: invite.campaign.id,
           campaignName: invite.campaign.name,
           role: existingMember.role,
           hasDmAccess: existingMember.role === 'OWNER' ? true : existingMember.hasDmAccess,
-        },
-      }
+        }
     }
 
     if (invite.status !== 'PENDING') {
       return {
-        ok: true,
-        data: {
           status: 'INVITE_ALREADY_PROCESSED',
-        },
-      }
+        }
     }
 
     if (invite.expiresAt < new Date()) {
@@ -208,30 +199,21 @@ export class CampaignMembershipService {
       })
 
       return {
-        ok: true,
-        data: {
           status: 'INVITE_EXPIRED',
-        },
-      }
+        }
     }
 
     if (normalizeEmail(invite.email) !== normalizeEmail(userEmail)) {
       return {
-        ok: true,
-        data: {
           status: 'WRONG_ACCOUNT',
-        },
-      }
+        }
     }
 
     return {
-      ok: true,
-      data: {
         status: 'CAN_ACCEPT',
         role: invite.role,
         expiresAt: invite.expiresAt.toISOString(),
-      },
-    }
+      }
   }
 
   private async expirePendingInvites(campaignId: string) {
@@ -247,12 +229,12 @@ export class CampaignMembershipService {
     })
   }
 
-  async listMembers(campaignId: string): Promise<ServiceResult<{
+  async listMembers(campaignId: string): Promise<{
     campaignId: string
     campaignName: string
     members: CampaignMemberRow[]
     pendingInvites: CampaignInviteRow[]
-  }>> {
+  }> {
     await this.expirePendingInvites(campaignId)
 
     const campaign = await prisma.campaign.findUnique({
@@ -293,34 +275,26 @@ export class CampaignMembershipService {
     })
 
     if (!campaign) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Campaign not found',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Campaign not found')
     }
 
     return {
-      ok: true,
-      data: {
         campaignId: campaign.id,
         campaignName: campaign.name,
         members: campaign.members.map(toMemberRow),
         pendingInvites: campaign.invites.map(toInviteRow),
-      },
-    }
+      }
   }
 
   async createInvite(
     campaignId: string,
     invitedByUserId: string,
     input: CampaignInviteCreateInput
-  ): Promise<ServiceResult<{
+  ): Promise<{
     invite: CampaignInviteRow
     inviteToken: string
     acceptUrl: string
-  }>> {
+  }> {
     const email = normalizeEmail(input.email)
 
     const existingUser = await prisma.user.findUnique({
@@ -340,15 +314,9 @@ export class CampaignMembershipService {
       })
 
       if (existingMembership) {
-        return {
-          ok: false,
-          statusCode: 409,
-          code: 'MEMBER_ALREADY_EXISTS',
-          message: 'User is already a campaign member.',
-          fields: {
+        throw apiError(409, 'MEMBER_ALREADY_EXISTS', 'User is already a campaign member.', {
             email: 'User is already a member',
-          },
-        }
+          })
       }
     }
 
@@ -406,24 +374,21 @@ export class CampaignMembershipService {
     })
 
     return {
-      ok: true,
-      data: {
         invite: toInviteRow(invite),
         inviteToken,
         acceptUrl: getInviteAcceptUrl(inviteToken),
-      },
-    }
+      }
   }
 
   async acceptInvite(
     inviteToken: string,
     userId: string,
     userEmail: string
-  ): Promise<ServiceResult<{
+  ): Promise<{
     campaignId: string
     campaignName: string
     role: CampaignRole
-  }>> {
+  }> {
     const tokenHash = hashInviteToken(inviteToken)
 
     const invite = await prisma.campaignInvite.findUnique({
@@ -439,12 +404,7 @@ export class CampaignMembershipService {
     })
 
     if (!invite) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'INVITE_NOT_FOUND',
-        message: 'Campaign invite not found.',
-      }
+      throw apiError(404, 'INVITE_NOT_FOUND', 'Campaign invite not found.')
     }
 
     const existingMember = await prisma.campaignMember.findUnique({
@@ -461,22 +421,14 @@ export class CampaignMembershipService {
 
     if (existingMember) {
       return {
-        ok: true,
-        data: {
           campaignId: invite.campaign.id,
           campaignName: invite.campaign.name,
           role: existingMember.role,
-        },
-      }
+        }
     }
 
     if (invite.status !== 'PENDING') {
-      return {
-        ok: false,
-        statusCode: 409,
-        code: 'INVITE_ALREADY_PROCESSED',
-        message: 'This invite has already been processed.',
-      }
+      throw apiError(409, 'INVITE_ALREADY_PROCESSED', 'This invite has already been processed.')
     }
 
     if (invite.expiresAt < new Date()) {
@@ -485,21 +437,11 @@ export class CampaignMembershipService {
         data: { status: 'EXPIRED' },
       })
 
-      return {
-        ok: false,
-        statusCode: 410,
-        code: 'INVITE_EXPIRED',
-        message: 'This invite has expired.',
-      }
+      throw apiError(410, 'INVITE_EXPIRED', 'This invite has expired.')
     }
 
     if (normalizeEmail(invite.email) !== normalizeEmail(userEmail)) {
-      return {
-        ok: false,
-        statusCode: 403,
-        code: 'INVITE_EMAIL_MISMATCH',
-        message: 'Invite email does not match your signed-in account.',
-      }
+      throw apiError(403, 'INVITE_EMAIL_MISMATCH', 'Invite email does not match your signed-in account.')
     }
 
     const membership = await prisma.$transaction(async (tx) => {
@@ -549,13 +491,10 @@ export class CampaignMembershipService {
     })
 
     return {
-      ok: true,
-      data: {
         campaignId: invite.campaign.id,
         campaignName: invite.campaign.name,
         role: membership.role,
-      },
-    }
+      }
   }
 
   async updateMember(
@@ -563,7 +502,7 @@ export class CampaignMembershipService {
     memberId: string,
     actorUserId: string,
     input: CampaignMemberUpdateInput
-  ): Promise<ServiceResult<CampaignMemberRow>> {
+  ): Promise<CampaignMemberRow> {
     const member = await prisma.campaignMember.findFirst({
       where: {
         id: memberId,
@@ -582,30 +521,15 @@ export class CampaignMembershipService {
     })
 
     if (!member) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'MEMBER_NOT_FOUND',
-        message: 'Campaign member not found.',
-      }
+      throw apiError(404, 'MEMBER_NOT_FOUND', 'Campaign member not found.')
     }
 
     if (member.role === 'OWNER') {
-      return {
-        ok: false,
-        statusCode: 409,
-        code: 'OWNER_ROLE_CHANGE_FORBIDDEN',
-        message: 'Use owner transfer to change owner role.',
-      }
+      throw apiError(409, 'OWNER_ROLE_CHANGE_FORBIDDEN', 'Use owner transfer to change owner role.')
     }
 
     if (member.userId === actorUserId) {
-      return {
-        ok: false,
-        statusCode: 400,
-        code: 'SELF_ROLE_CHANGE_FORBIDDEN',
-        message: 'You cannot change your own campaign role here.',
-      }
+      throw apiError(400, 'SELF_ROLE_CHANGE_FORBIDDEN', 'You cannot change your own campaign role here.')
     }
 
     const updateData: {
@@ -652,17 +576,14 @@ export class CampaignMembershipService {
       },
     })
 
-    return {
-      ok: true,
-      data: toMemberRow(updated),
-    }
+    return toMemberRow(updated)
   }
 
   async removeMember(
     campaignId: string,
     memberId: string,
     actorUserId: string
-  ): Promise<ServiceResult<{ removedMemberId: string }>> {
+  ): Promise<{ removedMemberId: string }> {
     const member = await prisma.campaignMember.findFirst({
       where: {
         id: memberId,
@@ -676,30 +597,15 @@ export class CampaignMembershipService {
     })
 
     if (!member) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'MEMBER_NOT_FOUND',
-        message: 'Campaign member not found.',
-      }
+      throw apiError(404, 'MEMBER_NOT_FOUND', 'Campaign member not found.')
     }
 
     if (member.role === 'OWNER') {
-      return {
-        ok: false,
-        statusCode: 409,
-        code: 'OWNER_REMOVE_FORBIDDEN',
-        message: 'Owner cannot be removed. Transfer ownership first.',
-      }
+      throw apiError(409, 'OWNER_REMOVE_FORBIDDEN', 'Owner cannot be removed. Transfer ownership first.')
     }
 
     if (member.userId === actorUserId) {
-      return {
-        ok: false,
-        statusCode: 400,
-        code: 'SELF_REMOVE_FORBIDDEN',
-        message: 'You cannot remove your own membership from this endpoint.',
-      }
+      throw apiError(400, 'SELF_REMOVE_FORBIDDEN', 'You cannot remove your own membership from this endpoint.')
     }
 
     await prisma.campaignMember.delete({
@@ -721,23 +627,20 @@ export class CampaignMembershipService {
     })
 
     return {
-      ok: true,
-      data: {
         removedMemberId: member.id,
-      },
-    }
+      }
   }
 
   async transferOwnership(
     campaignId: string,
     ownerUserId: string,
     input: CampaignOwnerTransferInput
-  ): Promise<ServiceResult<{
+  ): Promise<{
     campaignId: string
     newOwnerUserId: string
     previousOwnerUserId: string
     newOwnerMemberId: string
-  }>> {
+  }> {
     const owner = await prisma.user.findUnique({
       where: { id: ownerUserId },
       select: {
@@ -746,25 +649,14 @@ export class CampaignMembershipService {
     })
 
     if (!owner?.passwordHash) {
-      return {
-        ok: false,
-        statusCode: 400,
-        code: 'PASSWORD_REQUIRED',
-        message: 'Password login is not configured for this account.',
-      }
+      throw apiError(400, 'PASSWORD_REQUIRED', 'Password login is not configured for this account.')
     }
 
     const passwordValid = await verifyPassword(owner.passwordHash, input.password)
     if (!passwordValid) {
-      return {
-        ok: false,
-        statusCode: 401,
-        code: 'INVALID_CREDENTIALS',
-        message: 'Invalid password.',
-        fields: {
+      throw apiError(401, 'INVALID_CREDENTIALS', 'Invalid password.', {
           password: 'Password is incorrect',
-        },
-      }
+        })
     }
 
     const targetMember = await prisma.campaignMember.findFirst({
@@ -780,21 +672,11 @@ export class CampaignMembershipService {
     })
 
     if (!targetMember) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'MEMBER_NOT_FOUND',
-        message: 'Target member was not found for this campaign.',
-      }
+      throw apiError(404, 'MEMBER_NOT_FOUND', 'Target member was not found for this campaign.')
     }
 
     if (targetMember.userId === ownerUserId) {
-      return {
-        ok: false,
-        statusCode: 400,
-        code: 'OWNER_TRANSFER_INVALID_TARGET',
-        message: 'Select a different member to transfer ownership.',
-      }
+      throw apiError(400, 'OWNER_TRANSFER_INVALID_TARGET', 'Select a different member to transfer ownership.')
     }
 
     const transferResult = await prisma.$transaction(async (tx) => {
@@ -855,14 +737,11 @@ export class CampaignMembershipService {
     })
 
     return {
-      ok: true,
-      data: {
         campaignId,
         newOwnerUserId: transferResult.userId,
         previousOwnerUserId: ownerUserId,
         newOwnerMemberId: transferResult.id,
-      },
-    }
+      }
   }
 }
 

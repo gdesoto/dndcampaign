@@ -1,5 +1,5 @@
 import { prisma } from '#server/db/prisma'
-import { ok, fail } from '#server/utils/http'
+import { ok, routeParams } from '#server/utils/http'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 const parseJsonArray = (value: string | null) => {
@@ -14,10 +14,7 @@ const parseJsonArray = (value: string | null) => {
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
-  const recordingId = event.context.params?.recordingId
-  if (!recordingId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Recording id is required')
-  }
+  const { recordingId } = routeParams(event, 'recordingId')
 
   const jobs = await prisma.transcriptionJob.findMany({
     where: {

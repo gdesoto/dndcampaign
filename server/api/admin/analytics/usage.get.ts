@@ -7,14 +7,10 @@ import { AdminAnalyticsService } from '#server/services/admin-analytics.service'
 const analyticsService = new AdminAnalyticsService()
 
 export default defineEventHandler(async (event) => {
-  const authz = await requireSystemAdmin(event)
-  if (!authz.ok) {
-    return authz.response
-  }
+  await requireSystemAdmin(event)
 
   const parsed = validateQuery(event, adminAnalyticsUsageQuerySchema, 'Invalid analytics usage query parameters')
-  if (!parsed.ok) return parsed.response
 
-  const result = await analyticsService.getUsage(parsed.data)
+  const result = await analyticsService.getUsage(parsed)
   return ok(result)
 })

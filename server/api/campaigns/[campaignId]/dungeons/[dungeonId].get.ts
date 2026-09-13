@@ -1,16 +1,13 @@
-import { fail, respond } from '#server/utils/http'
+import { ok, routeParams } from '#server/utils/http'
+import { requireCampaignPermission } from '#server/utils/campaign-auth'
 import { DungeonService } from '#server/services/dungeon/dungeon.service'
 
 const dungeonService = new DungeonService()
 
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  const dungeonId = event.context.params?.dungeonId
-  if (!campaignId || !dungeonId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id and dungeon id are required')
-  }
+  const { campaignId, dungeonId } = routeParams(event, 'campaignId', 'dungeonId')
 
-  const sessionUser = await requireUserSession(event)
-  const result = await dungeonService.getDungeon(campaignId, dungeonId, sessionUser.user.id)
-  return respond(event, result)
+  const { actor } = await requireCampaignPermission(event, campaignId, 'content.read')
+  const result = await dungeonService.getDungeon(campaignId, dungeonId, actor)
+  return ok(result)
 })

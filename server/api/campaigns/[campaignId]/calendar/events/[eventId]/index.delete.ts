@@ -1,22 +1,15 @@
-import { fail, respond } from '#server/utils/http'
+import { ok, routeParams } from '#server/utils/http'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
 import { CalendarEventsService } from '#server/services/calendar/calendar-events.service'
 
 const calendarEventsService = new CalendarEventsService()
 
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  const eventId = event.context.params?.eventId
-  if (!campaignId || !eventId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id and event id are required')
-  }
+  const { campaignId, eventId } = routeParams(event, 'campaignId', 'eventId')
 
-  const authz = await requireCampaignPermission(event, campaignId, 'campaign.update')
-  if (!authz.ok) {
-    return authz.response
-  }
+  await requireCampaignPermission(event, campaignId, 'campaign.update')
 
-  const result = await calendarEventsService.deleteEvent(campaignId, eventId, authz.session.user.id)
-  return respond(event, result)
+  const result = await calendarEventsService.deleteEvent(campaignId, eventId)
+  return ok(result)
 })
 

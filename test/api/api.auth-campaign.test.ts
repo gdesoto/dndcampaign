@@ -77,6 +77,30 @@ describe('auth + campaigns API', () => {
   it('rejects campaign list without auth', async () => {
     const response = await fetch(`${baseUrl}/api/campaigns`)
     expect(response.status).toBe(401)
+    const payload = await response.json()
+    expect(payload).toEqual({ data: null, error: { code: 'UNAUTHORIZED', message: expect.any(String) } })
+  })
+
+  it('wraps validation failures in the API error envelope', async () => {
+    const response = await fetch(`${baseUrl}/api/campaigns`, {
+      method: 'POST',
+      headers: { cookie: authCookie, 'content-type': 'application/json' },
+      body: JSON.stringify({ system: 'D&D 5e' }),
+    })
+    expect(response.status).toBe(400)
+    const payload = await response.json()
+    expect(payload.data).toBeNull()
+    expect(payload.error.code).toBe('VALIDATION_ERROR')
+    expect(payload.error.fields.name).toBeTruthy()
+  })
+
+  it('wraps not-found failures in the API error envelope', async () => {
+    const response = await fetch(`${baseUrl}/api/campaigns/does-not-exist`, {
+      headers: { cookie: authCookie },
+    })
+    expect(response.status).toBe(404)
+    const payload = await response.json()
+    expect(payload).toEqual({ data: null, error: { code: 'NOT_FOUND', message: 'Campaign not found' } })
   })
 
   it('logs in and returns session user', async () => {

@@ -1,5 +1,4 @@
 import { Readable } from 'node:stream'
-import type { Readable as ReadableType } from 'node:stream'
 import { readBody } from 'h3'
 import { z } from 'zod'
 import { prisma } from '#server/db/prisma'
@@ -7,8 +6,10 @@ import { DocumentService } from '#server/services/document.service'
 import { RecordingService } from '#server/services/recording.service'
 import { TranscriptionService } from '#server/services/transcription.service'
 import { getStorageAdapter } from '#server/services/storage/storage.factory'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 import { transcriptionApplySchema, transcriptionAttachVttSchema } from '#shared/schemas/transcription'
+import { toVtt } from '#shared/utils/transcript'
+import { streamToBuffer } from '#server/utils/multipart'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 const transcriptionActionSchema = z.discriminatedUnion('action', [
@@ -17,46 +18,14 @@ const transcriptionActionSchema = z.discriminatedUnion('action', [
   transcriptionAttachVttSchema.extend({ action: z.literal('attach-vtt') }),
 ])
 
-const streamToBuffer = async (stream: ReadableType) => {
-  const chunks: Buffer[] = []
-  for await (const chunk of stream) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
-  }
-  return Buffer.concat(chunks)
-}
-
-const srtToVtt = (input: string) => {
-  const normalized = input.replace(/\r\n/g, '\n').trim()
-  if (!normalized) return 'WEBVTT\n'
-  const output: string[] = ['WEBVTT', '']
-  const lines = normalized.split('\n')
-  for (const line of lines) {
-    if (/^\d+$/.test(line.trim())) continue
-    output.push(line.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2'))
-  }
-  return `${output.join('\n').trim()}\n`
-}
-
-const normalizeVtt = (content: string) => {
-  const trimmed = content.replace(/\r\n/g, '\n').trim()
-  if (!trimmed) return 'WEBVTT\n'
-  if (/^WEBVTT/i.test(trimmed)) {
-    return `${trimmed}\n`
-  }
-  return `WEBVTT\n\n${trimmed}\n`
-}
-
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
-  const jobId = event.context.params?.jobId
-  if (!jobId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Transcription id is required')
-  }
+  const { jobId } = routeParams(event, 'jobId')
 
   const rawBody = (await readBody(event)) ?? {}
   const parsed = transcriptionActionSchema.safeParse(rawBody)
   if (!parsed.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid request')
+    throw apiError(400, 'VALIDATION_ERROR', 'Invalid request')
   }
 
   if (parsed.data.action === 'fetch') {
@@ -68,22 +37,22 @@ export default defineEventHandler(async (event) => {
     })
 
     if (!job) {
-      return fail(event, 404, 'NOT_FOUND', 'Transcription not found')
+      throw apiError(404, 'NOT_FOUND', 'Transcription not found')
     }
 
     if (!job.externalJobId) {
-      return fail(event, 400, 'VALIDATION_ERROR', 'Transcription job is missing an external id')
+      throw apiError(400, 'VALIDATION_ERROR', 'Transcription job is missing an external id')
     }
 
     const config = useRuntimeConfig()
     if (!config.elevenlabs?.apiKey) {
-      return fail(event, 500, 'CONFIG_ERROR', 'ElevenLabs API key is not configured')
+      throw apiError(500, 'CONFIG_ERROR', 'ElevenLabs API key is not configured')
     }
 
     const service = new TranscriptionService(config.elevenlabs.apiKey)
     const updated = await service.fetchTranscription(job.id)
     if (!updated) {
-      return fail(event, 404, 'NOT_FOUND', 'Unable to fetch transcription')
+      throw apiError(404, 'NOT_FOUND', 'Unable to fetch transcription')
     }
 
     return ok(updated)
@@ -102,7 +71,7 @@ export default defineEventHandler(async (event) => {
     })
 
     if (!job) {
-      return fail(event, 404, 'NOT_FOUND', 'Transcription not found')
+      throw apiError(404, 'NOT_FOUND', 'Transcription not found')
     }
 
     const artifactId = 'artifactId' in parsed.data ? parsed.data.artifactId : undefined
@@ -111,7 +80,7 @@ export default defineEventHandler(async (event) => {
       : job.artifacts.find((entry) => entry.format === 'TXT')
 
     if (!selected) {
-      return fail(event, 404, 'NOT_FOUND', 'Transcript artifact not found')
+      throw apiError(404, 'NOT_FOUND', 'Transcript artifact not found')
     }
 
     const adapter = getStorageAdapter()
@@ -159,7 +128,7 @@ export default defineEventHandler(async (event) => {
   }
 
   if (parsed.data.action !== 'attach-vtt') {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid request')
+    throw apiError(400, 'VALIDATION_ERROR', 'Invalid request')
   }
 
   const job = await prisma.transcriptionJob.findFirst({
@@ -174,7 +143,7 @@ export default defineEventHandler(async (event) => {
   })
 
   if (!job) {
-    return fail(event, 404, 'NOT_FOUND', 'Transcription not found')
+    throw apiError(404, 'NOT_FOUND', 'Transcription not found')
   }
 
   const targetRecordingId = parsed.data.recordingId || job.recordingId
@@ -188,24 +157,24 @@ export default defineEventHandler(async (event) => {
   })
 
   if (!targetRecording) {
-    return fail(event, 404, 'NOT_FOUND', 'Recording not found')
+    throw apiError(404, 'NOT_FOUND', 'Recording not found')
   }
 
   if (targetRecording.kind !== 'VIDEO') {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Subtitles can only be attached to video recordings')
+    throw apiError(400, 'VALIDATION_ERROR', 'Subtitles can only be attached to video recordings')
   }
 
   const artifactId = 'artifactId' in parsed.data ? parsed.data.artifactId : undefined
   const selected = artifactId ? job.artifacts.find((entry) => entry.artifactId === artifactId) : null
   if (!selected || selected.format !== 'SRT') {
-    return fail(event, 404, 'NOT_FOUND', 'Subtitle artifact not found')
+    throw apiError(404, 'NOT_FOUND', 'Subtitle artifact not found')
   }
 
   const adapter = getStorageAdapter()
   const { stream } = await adapter.getObject(selected.artifact.storageKey)
   const buffer = await streamToBuffer(stream)
   const content = buffer.toString('utf-8')
-  const vttContent = content.trim().startsWith('WEBVTT') ? normalizeVtt(content) : srtToVtt(content)
+  const vttContent = toVtt(content)
 
   const service = new RecordingService()
   const updated = await service.attachVttFromStream({

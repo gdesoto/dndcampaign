@@ -18,7 +18,6 @@ import {
 } from './map-parser.service'
 import { buildGlossaryConflictCandidates } from './map-conflict.utils'
 import { defaultMapLayerTypes, type MapFeatureType } from '#shared/schemas/map'
-import { buildCampaignWhereForPermission, type CampaignPermission } from '#server/utils/campaign-auth'
 import type {
   CampaignMapSummaryDto,
   CampaignMapViewerDto,
@@ -145,23 +144,12 @@ const mergeAliases = (current: string | null, incoming?: string) => {
 }
 
 export class MapService {
-  private async ensureCampaignPermission(campaignId: string, userId: string, permission: CampaignPermission) {
-    const campaign = await prisma.campaign.findFirst({
-      where: { id: campaignId, ...buildCampaignWhereForPermission(userId, permission) },
-      select: { id: true },
-    })
-    return campaign
+  private async findCampaign(campaignId: string) {
+    return prisma.campaign.findFirst({ where: { id: campaignId }, select: { id: true } })
   }
 
-  private async ensureMapPermission(campaignId: string, mapId: string, userId: string, permission: CampaignPermission) {
-    const map = await prisma.campaignMap.findFirst({
-      where: {
-        id: mapId,
-        campaignId,
-        campaign: buildCampaignWhereForPermission(userId, permission),
-      },
-    })
-    return map
+  private async findMap(campaignId: string, mapId: string) {
+    return prisma.campaignMap.findFirst({ where: { id: mapId, campaignId } })
   }
 
   private async allocateSlug(campaignId: string, preferred: string) {
@@ -221,7 +209,7 @@ export class MapService {
   }
 
   async createMapFromUpload(campaignId: string, userId: string, fields: Record<string, string>, files: UploadedMapFile[]) {
-    const campaign = await this.ensureCampaignPermission(campaignId, userId, 'content.write')
+    const campaign = await this.findCampaign(campaignId)
     if (!campaign) return null
 
     const classified = classifyMapUploadFiles(files)
@@ -291,8 +279,8 @@ export class MapService {
     return created ? toSummary(created as never) : null
   }
 
-  async listMaps(campaignId: string, userId: string) {
-    const campaign = await this.ensureCampaignPermission(campaignId, userId, 'content.read')
+  async listMaps(campaignId: string) {
+    const campaign = await this.findCampaign(campaignId)
     if (!campaign) return null
     const maps = await prisma.campaignMap.findMany({
       where: { campaignId },
@@ -305,8 +293,8 @@ export class MapService {
     return maps.map((entry) => toSummary(entry as never))
   }
 
-  async updateMap(campaignId: string, mapId: string, userId: string, input: { name?: string; status?: 'ACTIVE' | 'ARCHIVED'; isPrimary?: boolean }) {
-    const map = await this.ensureMapPermission(campaignId, mapId, userId, 'content.write')
+  async updateMap(campaignId: string, mapId: string, input: { name?: string; status?: 'ACTIVE' | 'ARCHIVED'; isPrimary?: boolean }) {
+    const map = await this.findMap(campaignId, mapId)
     if (!map) return null
 
     if (input.isPrimary) {
@@ -338,8 +326,8 @@ export class MapService {
     return updated ? toSummary(updated as never) : null
   }
 
-  async getMapSvg(campaignId: string, mapId: string, userId: string) {
-    const map = await this.ensureMapPermission(campaignId, mapId, userId, 'content.read')
+  async getMapSvg(campaignId: string, mapId: string) {
+    const map = await this.findMap(campaignId, mapId)
     if (!map) return null
 
     const svgFile = await prisma.campaignMapFile.findFirst({
@@ -358,8 +346,8 @@ export class MapService {
     }
   }
 
-  async deleteMap(campaignId: string, mapId: string, userId: string) {
-    const map = await this.ensureMapPermission(campaignId, mapId, userId, 'content.write')
+  async deleteMap(campaignId: string, mapId: string) {
+    const map = await this.findMap(campaignId, mapId)
     if (!map) return null
 
     const files = await prisma.campaignMapFile.findMany({
@@ -395,8 +383,8 @@ export class MapService {
     return { id: mapId }
   }
 
-  async getViewer(campaignId: string, mapId: string, userId: string): Promise<CampaignMapViewerDto | null> {
-    const map = await this.ensureMapPermission(campaignId, mapId, userId, 'content.read')
+  async getViewer(campaignId: string, mapId: string): Promise<CampaignMapViewerDto | null> {
+    const map = await this.findMap(campaignId, mapId)
     if (!map) return null
 
     const features = await prisma.campaignMapFeature.findMany({
@@ -474,8 +462,8 @@ export class MapService {
     }
   }
 
-  async getFeatures(campaignId: string, mapId: string, userId: string, filter: { types?: MapFeatureType[]; includeRemoved?: boolean }) {
-    const map = await this.ensureMapPermission(campaignId, mapId, userId, 'content.read')
+  async getFeatures(campaignId: string, mapId: string, filter: { types?: MapFeatureType[]; includeRemoved?: boolean }) {
+    const map = await this.findMap(campaignId, mapId)
     if (!map) return null
 
     const features = await prisma.campaignMapFeature.findMany({
@@ -507,8 +495,8 @@ export class MapService {
     }))
   }
 
-  async stageGlossary(campaignId: string, mapId: string, userId: string, featureIds: string[]): Promise<MapGlossaryStageResultDto | null> {
-    const map = await this.ensureMapPermission(campaignId, mapId, userId, 'content.write')
+  async stageGlossary(campaignId: string, mapId: string, featureIds: string[]): Promise<MapGlossaryStageResultDto | null> {
+    const map = await this.findMap(campaignId, mapId)
     if (!map) return null
 
     const features = await prisma.campaignMapFeature.findMany({
@@ -557,7 +545,6 @@ export class MapService {
   async commitGlossary(
     campaignId: string,
     mapId: string,
-    userId: string,
     items: Array<{
       featureId: string
       action: 'create' | 'link' | 'merge' | 'skip'
@@ -565,7 +552,7 @@ export class MapService {
       glossaryPayload?: { type: GlossaryType; name: string; aliases?: string; description: string }
     }>
   ): Promise<MapGlossaryCommitResultDto | null> {
-    const map = await this.ensureMapPermission(campaignId, mapId, userId, 'content.write')
+    const map = await this.findMap(campaignId, mapId)
     if (!map) return null
 
     const counters = {
@@ -677,10 +664,9 @@ export class MapService {
   async previewReimport(
     campaignId: string,
     mapId: string,
-    userId: string,
     files: UploadedMapFile[]
   ): Promise<MapReimportPreviewDto | null> {
-    const map = await this.ensureMapPermission(campaignId, mapId, userId, 'content.write')
+    const map = await this.findMap(campaignId, mapId)
     if (!map) return null
 
     const parsed = parseAzgaarFullJson(classifyMapUploadFiles(files).fullJson.buffer)
@@ -724,7 +710,7 @@ export class MapService {
     mapName?: string,
     keepPrimary = false
   ) {
-    const map = await this.ensureMapPermission(campaignId, mapId, userId, 'content.write')
+    const map = await this.findMap(campaignId, mapId)
     if (!map) return null
 
     if (strategy === 'create_new_map') {

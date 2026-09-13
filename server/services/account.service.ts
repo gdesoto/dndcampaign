@@ -1,7 +1,8 @@
 import type { H3Event } from 'h3'
 import { getRequestIP, getHeader } from 'h3'
 import { prisma } from '#server/db/prisma'
-import { AuthService, type ServiceResult, toAuthUserDto } from '#server/services/auth.service'
+import { AuthService, toAuthUserDto } from '#server/services/auth.service'
+import { apiError } from '#server/utils/http'
 
 const authService = new AuthService()
 
@@ -32,29 +33,21 @@ const profileSelect = {
 } as const
 
 export class AccountService {
-  async getProfile(userId: string): Promise<ServiceResult<ProfileRecord>> {
+  async getProfile(userId: string): Promise<ProfileRecord> {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: profileSelect,
     })
 
     if (!user || user.deletedAt) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'USER_NOT_FOUND',
-        message: 'Account not found',
-      }
+      throw apiError(404, 'USER_NOT_FOUND', 'Account not found')
     }
 
-    return { ok: true, data: user }
+    return user
   }
 
-  async updateProfile(userId: string, input: { name?: string; avatarUrl?: string | null }): Promise<ServiceResult<ProfileRecord>> {
-    const existing = await this.getProfile(userId)
-    if (!existing.ok) {
-      return existing
-    }
+  async updateProfile(userId: string, input: { name?: string; avatarUrl?: string | null }): Promise<ProfileRecord> {
+    await this.getProfile(userId)
 
     const user = await prisma.user.update({
       where: { id: userId },
@@ -65,49 +58,32 @@ export class AccountService {
       select: profileSelect,
     })
 
-    return { ok: true, data: user }
+    return user
   }
 
   async changeEmail(
     userId: string,
     input: { newEmail: string; password: string }
-  ): Promise<ServiceResult<{ email: string }>> {
+  ): Promise<{ email: string }> {
     const profileResult = await this.getProfile(userId)
-    if (!profileResult.ok) {
-      return profileResult
-    }
 
-    const current = profileResult.data
+    const current = profileResult
     if (!current.passwordHash) {
-      return {
-        ok: false,
-        statusCode: 400,
-        code: 'PASSWORD_REQUIRED',
-        message: 'Password login is not configured for this account.',
-      }
+      throw apiError(400, 'PASSWORD_REQUIRED', 'Password login is not configured for this account.')
     }
 
     const passwordValid = await verifyPassword(current.passwordHash, input.password)
     if (!passwordValid) {
-      return {
-        ok: false,
-        statusCode: 401,
-        code: 'INVALID_CREDENTIALS',
-        message: 'Invalid password.',
-        fields: {
+      throw apiError(401, 'INVALID_CREDENTIALS', 'Invalid password.', {
           password: 'Password is incorrect',
-        },
-      }
+        })
     }
 
     const normalizedEmail = input.newEmail.trim().toLowerCase()
     if (normalizedEmail === current.email) {
       return {
-        ok: true,
-        data: {
           email: current.email,
-        },
-      }
+        }
     }
 
     const taken = await prisma.user.findUnique({
@@ -116,15 +92,9 @@ export class AccountService {
     })
 
     if (taken && taken.id !== userId) {
-      return {
-        ok: false,
-        statusCode: 409,
-        code: 'EMAIL_ALREADY_IN_USE',
-        message: 'An account with this email already exists.',
-        fields: {
+      throw apiError(409, 'EMAIL_ALREADY_IN_USE', 'An account with this email already exists.', {
           newEmail: 'Email is already in use',
-        },
-      }
+        })
     }
 
     await prisma.user.update({
@@ -133,56 +103,33 @@ export class AccountService {
     })
 
     return {
-      ok: true,
-      data: {
         email: normalizedEmail,
-      },
-    }
+      }
   }
 
   async changePassword(
     userId: string,
     input: { currentPassword: string; newPassword: string }
-  ): Promise<ServiceResult<true>> {
+  ): Promise<true> {
     const profileResult = await this.getProfile(userId)
-    if (!profileResult.ok) {
-      return profileResult
-    }
 
-    const current = profileResult.data
+    const current = profileResult
     if (!current.passwordHash) {
-      return {
-        ok: false,
-        statusCode: 400,
-        code: 'PASSWORD_REQUIRED',
-        message: 'Password login is not configured for this account.',
-      }
+      throw apiError(400, 'PASSWORD_REQUIRED', 'Password login is not configured for this account.')
     }
 
     const passwordValid = await verifyPassword(current.passwordHash, input.currentPassword)
     if (!passwordValid) {
-      return {
-        ok: false,
-        statusCode: 401,
-        code: 'INVALID_CREDENTIALS',
-        message: 'Invalid current password.',
-        fields: {
+      throw apiError(401, 'INVALID_CREDENTIALS', 'Invalid current password.', {
           currentPassword: 'Current password is incorrect',
-        },
-      }
+        })
     }
 
     const reusedPassword = await verifyPassword(current.passwordHash, input.newPassword)
     if (reusedPassword) {
-      return {
-        ok: false,
-        statusCode: 400,
-        code: 'PASSWORD_REUSE',
-        message: 'New password must be different from the current password.',
-        fields: {
+      throw apiError(400, 'PASSWORD_REUSE', 'New password must be different from the current password.', {
           newPassword: 'New password must be different from the current password',
-        },
-      }
+        })
     }
 
     const nextPasswordHash = await hashPassword(input.newPassword)
@@ -191,21 +138,16 @@ export class AccountService {
       data: { passwordHash: nextPasswordHash },
     })
 
-    return { ok: true, data: true }
+    return true
   }
 
-  async listSessions(event: H3Event, userId: string): Promise<ServiceResult<{ sessions: Array<Record<string, unknown>> }>> {
-    const profileResult = await this.getProfile(userId)
-    if (!profileResult.ok) {
-      return profileResult
-    }
+  async listSessions(event: H3Event, userId: string): Promise<{ sessions: Array<Record<string, unknown>> }> {
+    await this.getProfile(userId)
 
     const session = await getUserSession(event)
     const nowIso = new Date().toISOString()
 
     return {
-      ok: true,
-      data: {
         sessions: [
           {
             id: session.id || 'current',
@@ -216,18 +158,14 @@ export class AccountService {
             lastSeenAt: nowIso,
           },
         ],
-      },
-    }
+      }
   }
 
-  async revokeOtherSessions(event: H3Event, userId: string): Promise<ServiceResult<{ revokedSessions: number }>> {
+  async revokeOtherSessions(event: H3Event, userId: string): Promise<{ revokedSessions: number }> {
     const profileResult = await this.getProfile(userId)
-    if (!profileResult.ok) {
-      return profileResult
-    }
 
     const session = await getUserSession(event)
-    const user = profileResult.data
+    const user = profileResult
 
     await setUserSession(event, {
       user: toAuthUserDto(user),
@@ -235,11 +173,8 @@ export class AccountService {
     })
 
     return {
-      ok: true,
-      data: {
         revokedSessions: 0,
-      },
-    }
+      }
   }
 
   async syncSession(event: H3Event, userId: string) {

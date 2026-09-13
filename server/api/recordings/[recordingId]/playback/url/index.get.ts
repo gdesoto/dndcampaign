@@ -1,13 +1,10 @@
 import { prisma } from '#server/db/prisma'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   await requireUserSession(event)
-  const recordingId = event.context.params?.recordingId
-  if (!recordingId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Recording id is required')
-  }
+  const { recordingId } = routeParams(event, 'recordingId')
 
   const recording = await prisma.recording.findUnique({
     where: { id: recordingId },
@@ -21,13 +18,10 @@ export default defineEventHandler(async (event) => {
     },
   })
   if (!recording) {
-    return fail(event, 404, 'NOT_FOUND', 'Recording not found')
+    throw apiError(404, 'NOT_FOUND', 'Recording not found')
   }
 
-  const access = await requireCampaignPermission(event, recording.session.campaignId, 'content.read')
-  if (!access.ok) {
-    return access.response
-  }
+  await requireCampaignPermission(event, recording.session.campaignId, 'content.read')
 
   const url = `/api/artifacts/${recording.artifactId}/stream`
   return ok({ url, expiresAt: null })

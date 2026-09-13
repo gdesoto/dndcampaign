@@ -1,21 +1,16 @@
-import { fail, respond } from '#server/utils/http'
+import { ok, routeParams } from '#server/utils/http'
 import { CampaignRequestsService } from '#server/services/campaign-requests.service'
+import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 const campaignRequestsService = new CampaignRequestsService()
 
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  const requestId = event.context.params?.requestId
-  if (!campaignId || !requestId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id and request id are required')
-  }
+  const { campaignId, requestId } = routeParams(event, 'campaignId', 'requestId')
 
-  const sessionUser = await requireUserSession(event)
-  const result = await campaignRequestsService.getRequestById(
-    campaignId,
+  const { session, access } = await requireCampaignPermission(event, campaignId, 'campaign.read')
+  const result = await campaignRequestsService.getRequestById(access,
     requestId,
-    sessionUser.user.id,
-    sessionUser.user.systemRole,
+    session.user.id
   )
-  return respond(event, result)
+  return ok(result)
 })

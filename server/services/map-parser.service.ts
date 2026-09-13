@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import type { Prisma } from '#server/db/prisma-client'
 import type { MapFeatureType } from '#shared/types/api/map'
+import { createError } from 'h3'
 
 export type UploadedMapFile = {
   filename: string
@@ -115,7 +116,7 @@ export const classifyMapUploadFiles = (files: UploadedMapFile[]): ClassifiedMapU
   }
 
   if (!fullJson) {
-    throw new Error('Full JSON export is required')
+    throw createError({ statusCode: 400, message: 'Full JSON export is required', data: { code: 'VALIDATION_ERROR' } })
   }
 
   return {

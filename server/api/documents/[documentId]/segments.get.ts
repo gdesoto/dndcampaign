@@ -1,14 +1,11 @@
 import { prisma } from '#server/db/prisma'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 import { parseTranscriptSegments } from '#shared/utils/transcript'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
-  const documentId = event.context.params?.documentId
-  if (!documentId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Document id is required')
-  }
+  const { documentId } = routeParams(event, 'documentId')
 
   const document = await prisma.document.findFirst({
     where: {
@@ -19,7 +16,7 @@ export default defineEventHandler(async (event) => {
   })
 
   if (!document?.currentVersion) {
-    return fail(event, 404, 'NOT_FOUND', 'Document not found')
+    throw apiError(404, 'NOT_FOUND', 'Document not found')
   }
 
   return ok({

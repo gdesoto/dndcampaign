@@ -1,5 +1,5 @@
 import { prisma } from '#server/db/prisma'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 import { validateBody } from '#server/utils/validate'
 import { glossaryUpdateSchema } from '#shared/schemas/glossary'
 import { CharacterSyncService } from '#server/services/character-sync.service'
@@ -7,13 +7,9 @@ import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
-  const entryId = event.context.params?.entryId
-  if (!entryId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Entry id is required')
-  }
+  const { entryId } = routeParams(event, 'entryId')
 
   const parsed = await validateBody(event, glossaryUpdateSchema, 'Invalid glossary payload')
-  if (!parsed.ok) return parsed.response
 
   const existing = await prisma.glossaryEntry.findFirst({
     where: {
@@ -22,12 +18,12 @@ export default defineEventHandler(async (event) => {
     },
   })
   if (!existing) {
-    return fail(event, 404, 'NOT_FOUND', 'Glossary entry not found')
+    throw apiError(404, 'NOT_FOUND', 'Glossary entry not found')
   }
 
   const updated = await prisma.glossaryEntry.update({
     where: { id: entryId },
-    data: parsed.data,
+    data: parsed,
   })
 
   if (updated.type === 'PC') {

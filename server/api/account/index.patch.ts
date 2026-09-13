@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ok, fail, respond } from '#server/utils/http'
+import { ok, apiError } from '#server/utils/http'
 import { validateInput } from '#server/utils/validate'
 import { AccountService } from '#server/services/account.service'
 import {
@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
   const actionParsed = accountActionSchema.safeParse(body)
 
   if (!actionParsed.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid account action payload', {
+    throw apiError(400, 'VALIDATION_ERROR', 'Invalid account action payload', {
       action: 'Unsupported or missing action',
     })
   }
@@ -33,16 +33,12 @@ export default defineEventHandler(async (event) => {
   const action = actionParsed.data.action
 
   if (action === 'update-profile') {
-    const parsed = validateInput(event, accountProfileUpdateSchema, body, 'Invalid profile payload')
-    if (!parsed.ok) return parsed.response
+    const parsed = validateInput(accountProfileUpdateSchema, body, 'Invalid profile payload')
 
-    const result = await accountService.updateProfile(session.user.id, parsed.data)
-    if (!result.ok) {
-      return respond(event, result)
-    }
+    const result = await accountService.updateProfile(session.user.id, parsed)
 
     await accountService.syncSession(event, session.user.id)
-    const profile = result.data
+    const profile = result
     return ok({
       profile: {
         id: profile.id,
@@ -58,30 +54,22 @@ export default defineEventHandler(async (event) => {
   }
 
   if (action === 'change-email') {
-    const parsed = validateInput(event, changeEmailSchema, body, 'Invalid email payload')
-    if (!parsed.ok) return parsed.response
+    const parsed = validateInput(changeEmailSchema, body, 'Invalid email payload')
 
-    const result = await accountService.changeEmail(session.user.id, parsed.data)
-    if (!result.ok) {
-      return respond(event, result)
-    }
+    const result = await accountService.changeEmail(session.user.id, parsed)
 
     await accountService.syncSession(event, session.user.id)
-    return ok({ email: result.data.email })
+    return ok({ email: result.email })
   }
 
   if (action === 'change-password') {
-    const parsed = validateInput(event, changePasswordSchema, body, 'Invalid password payload')
-    if (!parsed.ok) return parsed.response
+    const parsed = validateInput(changePasswordSchema, body, 'Invalid password payload')
 
-    const result = await accountService.changePassword(session.user.id, parsed.data)
-    if (!result.ok) {
-      return respond(event, result)
-    }
+    await accountService.changePassword(session.user.id, parsed)
 
     return ok({ success: true })
   }
 
   const result = await accountService.revokeOtherSessions(event, session.user.id)
-  return respond(event, result)
+  return ok(result)
 })

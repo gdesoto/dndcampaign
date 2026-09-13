@@ -1,6 +1,6 @@
 import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js'
-import type { Readable } from 'node:stream'
 import { prisma } from '#server/db/prisma'
+import { streamToBuffer } from '#server/utils/multipart'
 import { getStorageAdapter } from '#server/services/storage/storage.factory'
 import { ArtifactService } from '#server/services/artifact.service'
 import type {
@@ -83,14 +83,6 @@ const formatToMimeType: Record<string, string> = {
   pdf: 'application/pdf',
   html: 'text/html',
   segmented_json: 'application/json',
-}
-
-const streamToBuffer = async (stream: Readable) => {
-  const chunks: Buffer[] = []
-  for await (const chunk of stream) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
-  }
-  return Buffer.concat(chunks)
 }
 
 const parseWebhookMetadata = (metadata: unknown): Record<string, unknown> | undefined => {

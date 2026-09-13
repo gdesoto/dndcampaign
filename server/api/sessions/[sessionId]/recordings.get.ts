@@ -1,13 +1,10 @@
 import { prisma } from '#server/db/prisma'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
-  const sessionId = event.context.params?.sessionId
-  if (!sessionId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Session id is required')
-  }
+  const { sessionId } = routeParams(event, 'sessionId')
 
   const session = await prisma.session.findFirst({
     where: {
@@ -16,7 +13,7 @@ export default defineEventHandler(async (event) => {
     },
   })
   if (!session) {
-    return fail(event, 404, 'NOT_FOUND', 'Session not found')
+    throw apiError(404, 'NOT_FOUND', 'Session not found')
   }
 
   const recordings = await prisma.recording.findMany({

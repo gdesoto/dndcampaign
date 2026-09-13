@@ -1,7 +1,6 @@
 import { prisma } from '#server/db/prisma'
 import type { CampaignRequestStatus } from '#server/db/prisma-client'
 import { ActivityLogService } from '#server/services/activity-log.service'
-import type { ServiceResult } from '#server/services/auth.service'
 import {
   canCancelRequest,
   canEditRequest,
@@ -27,9 +26,9 @@ import type {
 } from '#shared/types/campaign-requests'
 import {
   hasCampaignDmAccess,
-  resolveCampaignAccess,
   type ResolvedCampaignAccess,
 } from '#server/utils/campaign-auth'
+import { apiError } from '#server/utils/http'
 
 const activityLogService = new ActivityLogService()
 
@@ -169,39 +168,12 @@ const getPagination = (query: CampaignRequestListQueryInput) => {
 }
 
 export class CampaignRequestsService {
-  private async resolveAccess(
-    campaignId: string,
-    userId: string,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN',
-  ): Promise<ServiceResult<ResolvedCampaignAccess>> {
-    const resolved = await resolveCampaignAccess(campaignId, userId, systemRole)
-    if (!resolved.exists) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Campaign not found',
-      }
-    }
-
-    if (!resolved.access) {
-      return {
-        ok: false,
-        statusCode: 403,
-        code: 'FORBIDDEN',
-        message: 'Campaign access is denied',
-      }
-    }
-
-    return { ok: true, data: resolved.access }
-  }
-
   private async getAuthorizedRequest(
     campaignId: string,
     requestId: string,
     userId: string,
     access: ResolvedCampaignAccess,
-  ): Promise<ServiceResult<RequestWithRelations>> {
+  ): Promise<RequestWithRelations> {
     const request = await prisma.campaignRequest.findFirst({
       where: {
         id: requestId,
@@ -211,12 +183,7 @@ export class CampaignRequestsService {
     })
 
     if (!request) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Request not found',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Request not found')
     }
 
     if (
@@ -225,25 +192,18 @@ export class CampaignRequestsService {
         visibility: request.visibility,
       })
     ) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Request not found',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Request not found')
     }
 
-    return { ok: true, data: request as RequestWithRelations }
+    return request as RequestWithRelations
   }
 
   async createRequest(
-    campaignId: string,
+    access: ResolvedCampaignAccess,
     userId: string,
     input: CampaignRequestCreateInput,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN',
-  ): Promise<ServiceResult<CampaignRequestDetail>> {
-    const access = await this.resolveAccess(campaignId, userId, systemRole)
-    if (!access.ok) return access
+  ): Promise<CampaignRequestDetail> {
+    const campaignId = access.campaignId
 
     const created = await prisma.campaignRequest.create({
       data: {
@@ -272,28 +232,21 @@ export class CampaignRequestsService {
       },
     })
 
-    return { ok: true, data: toRequestDetail(created as RequestWithRelations, userId, access.data) }
+    return toRequestDetail(created as RequestWithRelations, userId, access)
   }
 
   async listRequests(
-    campaignId: string,
+    access: ResolvedCampaignAccess,
     userId: string,
     query: CampaignRequestListQueryInput,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN',
-  ): Promise<ServiceResult<CampaignRequestListResponse>> {
-    const access = await this.resolveAccess(campaignId, userId, systemRole)
-    if (!access.ok) return access
+  ): Promise<CampaignRequestListResponse> {
+    const campaignId = access.campaignId
 
-    if (query.moderationQueue && !hasCampaignDmAccess(access.data)) {
-      return {
-        ok: false,
-        statusCode: 403,
-        code: 'FORBIDDEN',
-        message: 'DM access is required for moderation queue',
-      }
+    if (query.moderationQueue && !hasCampaignDmAccess(access)) {
+      throw apiError(403, 'FORBIDDEN', 'DM access is required for moderation queue')
     }
 
-    const visibilityWhere = hasCampaignDmAccess(access.data)
+    const visibilityWhere = hasCampaignDmAccess(access)
       ? {}
       : {
           OR: [
@@ -328,10 +281,8 @@ export class CampaignRequestsService {
       }),
     ])
 
-    const items = rows.map((row) => toRequestListItem(row as RequestWithRelations, userId, access.data))
+    const items = rows.map((row) => toRequestListItem(row as RequestWithRelations, userId, access))
     return {
-      ok: true,
-      data: {
         items,
         pagination: {
           page: pagination.page,
@@ -339,56 +290,41 @@ export class CampaignRequestsService {
           total,
           totalPages: Math.max(1, Math.ceil(total / pagination.pageSize)),
         },
-      },
-    }
+      }
   }
 
   async getRequestById(
-    campaignId: string,
+    access: ResolvedCampaignAccess,
     requestId: string,
     userId: string,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN',
-  ): Promise<ServiceResult<CampaignRequestDetail>> {
-    const access = await this.resolveAccess(campaignId, userId, systemRole)
-    if (!access.ok) return access
+  ): Promise<CampaignRequestDetail> {
+    const campaignId = access.campaignId
 
-    const request = await this.getAuthorizedRequest(campaignId, requestId, userId, access.data)
-    if (!request.ok) return request
+    const request = await this.getAuthorizedRequest(campaignId, requestId, userId, access)
 
-    return {
-      ok: true,
-      data: toRequestDetail(request.data, userId, access.data),
-    }
+    return toRequestDetail(request, userId, access)
   }
 
   async updateRequest(
-    campaignId: string,
+    access: ResolvedCampaignAccess,
     requestId: string,
     userId: string,
     input: CampaignRequestUpdateInput,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN',
-  ): Promise<ServiceResult<CampaignRequestDetail>> {
-    const access = await this.resolveAccess(campaignId, userId, systemRole)
-    if (!access.ok) return access
+  ): Promise<CampaignRequestDetail> {
+    const campaignId = access.campaignId
 
-    const existing = await this.getAuthorizedRequest(campaignId, requestId, userId, access.data)
-    if (!existing.ok) return existing
+    const existing = await this.getAuthorizedRequest(campaignId, requestId, userId, access)
 
     if (!canEditRequest(userId, {
-      createdByUserId: existing.data.createdByUserId,
-      visibility: existing.data.visibility,
-      status: toStatus(existing.data.status),
+      createdByUserId: existing.createdByUserId,
+      visibility: existing.visibility,
+      status: toStatus(existing.status),
     })) {
-      return {
-        ok: false,
-        statusCode: 403,
-        code: 'FORBIDDEN',
-        message: 'Only the creator can edit a pending request',
-      }
+      throw apiError(403, 'FORBIDDEN', 'Only the creator can edit a pending request')
     }
 
     const updated = await prisma.campaignRequest.update({
-      where: { id: existing.data.id },
+      where: { id: existing.id },
       data: {
         ...(input.type !== undefined ? { type: input.type } : {}),
         ...(input.visibility !== undefined ? { visibility: input.visibility } : {}),
@@ -408,39 +344,28 @@ export class CampaignRequestsService {
       summary: `Updated campaign request "${updated.title}".`,
     })
 
-    return {
-      ok: true,
-      data: toRequestDetail(updated as RequestWithRelations, userId, access.data),
-    }
+    return toRequestDetail(updated as RequestWithRelations, userId, access)
   }
 
   async cancelRequest(
-    campaignId: string,
+    access: ResolvedCampaignAccess,
     requestId: string,
     userId: string,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN',
-  ): Promise<ServiceResult<CampaignRequestDetail>> {
-    const access = await this.resolveAccess(campaignId, userId, systemRole)
-    if (!access.ok) return access
+  ): Promise<CampaignRequestDetail> {
+    const campaignId = access.campaignId
 
-    const existing = await this.getAuthorizedRequest(campaignId, requestId, userId, access.data)
-    if (!existing.ok) return existing
+    const existing = await this.getAuthorizedRequest(campaignId, requestId, userId, access)
 
     if (!canCancelRequest(userId, {
-      createdByUserId: existing.data.createdByUserId,
-      visibility: existing.data.visibility,
-      status: toStatus(existing.data.status),
+      createdByUserId: existing.createdByUserId,
+      visibility: existing.visibility,
+      status: toStatus(existing.status),
     })) {
-      return {
-        ok: false,
-        statusCode: 403,
-        code: 'FORBIDDEN',
-        message: 'Only the creator can cancel a pending request',
-      }
+      throw apiError(403, 'FORBIDDEN', 'Only the creator can cancel a pending request')
     }
 
     const canceled = await prisma.campaignRequest.update({
-      where: { id: existing.data.id },
+      where: { id: existing.id },
       data: {
         status: 'CANCELED',
       },
@@ -457,41 +382,30 @@ export class CampaignRequestsService {
       summary: `Canceled campaign request "${canceled.title}".`,
     })
 
-    return {
-      ok: true,
-      data: toRequestDetail(canceled as RequestWithRelations, userId, access.data),
-    }
+    return toRequestDetail(canceled as RequestWithRelations, userId, access)
   }
 
   async addVote(
-    campaignId: string,
+    access: ResolvedCampaignAccess,
     requestId: string,
     userId: string,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN',
-  ): Promise<ServiceResult<CampaignRequestDetail>> {
-    const access = await this.resolveAccess(campaignId, userId, systemRole)
-    if (!access.ok) return access
+  ): Promise<CampaignRequestDetail> {
+    const campaignId = access.campaignId
 
-    const existing = await this.getAuthorizedRequest(campaignId, requestId, userId, access.data)
-    if (!existing.ok) return existing
+    const existing = await this.getAuthorizedRequest(campaignId, requestId, userId, access)
 
     if (!canVoteOnRequest({
-      createdByUserId: existing.data.createdByUserId,
-      visibility: existing.data.visibility,
-      status: toStatus(existing.data.status),
+      createdByUserId: existing.createdByUserId,
+      visibility: existing.visibility,
+      status: toStatus(existing.status),
     })) {
-      return {
-        ok: false,
-        statusCode: 409,
-        code: 'INVALID_REQUEST_STATE',
-        message: 'Voting is only available for public pending requests',
-      }
+      throw apiError(409, 'INVALID_REQUEST_STATE', 'Voting is only available for public pending requests')
     }
 
     const vote = await prisma.campaignRequestVote.findUnique({
       where: {
         campaignRequestId_userId: {
-          campaignRequestId: existing.data.id,
+          campaignRequestId: existing.id,
           userId,
         },
       },
@@ -501,7 +415,7 @@ export class CampaignRequestsService {
     if (!vote) {
       await prisma.campaignRequestVote.create({
         data: {
-          campaignRequestId: existing.data.id,
+          campaignRequestId: existing.id,
           campaignId,
           userId,
         },
@@ -513,48 +427,36 @@ export class CampaignRequestsService {
         scope: 'CAMPAIGN',
         action: 'campaign.request.vote_added',
         targetType: 'CAMPAIGN_REQUEST',
-        targetId: existing.data.id,
-        summary: `Added vote for campaign request "${existing.data.title}".`,
+        targetId: existing.id,
+        summary: `Added vote for campaign request "${existing.title}".`,
       })
     }
 
-    const refreshed = await this.getAuthorizedRequest(campaignId, requestId, userId, access.data)
-    if (!refreshed.ok) return refreshed
+    const refreshed = await this.getAuthorizedRequest(campaignId, requestId, userId, access)
 
-    return {
-      ok: true,
-      data: toRequestDetail(refreshed.data, userId, access.data),
-    }
+    return toRequestDetail(refreshed, userId, access)
   }
 
   async removeMyVote(
-    campaignId: string,
+    access: ResolvedCampaignAccess,
     requestId: string,
     userId: string,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN',
-  ): Promise<ServiceResult<CampaignRequestDetail>> {
-    const access = await this.resolveAccess(campaignId, userId, systemRole)
-    if (!access.ok) return access
+  ): Promise<CampaignRequestDetail> {
+    const campaignId = access.campaignId
 
-    const existing = await this.getAuthorizedRequest(campaignId, requestId, userId, access.data)
-    if (!existing.ok) return existing
+    const existing = await this.getAuthorizedRequest(campaignId, requestId, userId, access)
 
     if (!canVoteOnRequest({
-      createdByUserId: existing.data.createdByUserId,
-      visibility: existing.data.visibility,
-      status: toStatus(existing.data.status),
+      createdByUserId: existing.createdByUserId,
+      visibility: existing.visibility,
+      status: toStatus(existing.status),
     })) {
-      return {
-        ok: false,
-        statusCode: 409,
-        code: 'INVALID_REQUEST_STATE',
-        message: 'Voting is only available for public pending requests',
-      }
+      throw apiError(409, 'INVALID_REQUEST_STATE', 'Voting is only available for public pending requests')
     }
 
     const deleted = await prisma.campaignRequestVote.deleteMany({
       where: {
-        campaignRequestId: existing.data.id,
+        campaignRequestId: existing.id,
         userId,
       },
     })
@@ -566,53 +468,36 @@ export class CampaignRequestsService {
         scope: 'CAMPAIGN',
         action: 'campaign.request.vote_removed',
         targetType: 'CAMPAIGN_REQUEST',
-        targetId: existing.data.id,
-        summary: `Removed vote for campaign request "${existing.data.title}".`,
+        targetId: existing.id,
+        summary: `Removed vote for campaign request "${existing.title}".`,
       })
     }
 
-    const refreshed = await this.getAuthorizedRequest(campaignId, requestId, userId, access.data)
-    if (!refreshed.ok) return refreshed
+    const refreshed = await this.getAuthorizedRequest(campaignId, requestId, userId, access)
 
-    return {
-      ok: true,
-      data: toRequestDetail(refreshed.data, userId, access.data),
-    }
+    return toRequestDetail(refreshed, userId, access)
   }
 
   async decideRequest(
-    campaignId: string,
+    access: ResolvedCampaignAccess,
     requestId: string,
     userId: string,
     input: CampaignRequestDecisionInput,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN',
-  ): Promise<ServiceResult<CampaignRequestDetail>> {
-    const access = await this.resolveAccess(campaignId, userId, systemRole)
-    if (!access.ok) return access
+  ): Promise<CampaignRequestDetail> {
+    const campaignId = access.campaignId
 
-    if (!hasCampaignDmAccess(access.data)) {
-      return {
-        ok: false,
-        statusCode: 403,
-        code: 'FORBIDDEN',
-        message: 'DM access is required to decide requests',
-      }
+    if (!hasCampaignDmAccess(access)) {
+      throw apiError(403, 'FORBIDDEN', 'DM access is required to decide requests')
     }
 
-    const existing = await this.getAuthorizedRequest(campaignId, requestId, userId, access.data)
-    if (!existing.ok) return existing
+    const existing = await this.getAuthorizedRequest(campaignId, requestId, userId, access)
 
-    if (!isModeratableByAccess(access.data, toStatus(existing.data.status))) {
-      return {
-        ok: false,
-        statusCode: 409,
-        code: 'INVALID_REQUEST_STATE',
-        message: 'Only pending requests can be decided',
-      }
+    if (!isModeratableByAccess(access, toStatus(existing.status))) {
+      throw apiError(409, 'INVALID_REQUEST_STATE', 'Only pending requests can be decided')
     }
 
     const updated = await prisma.campaignRequest.update({
-      where: { id: existing.data.id },
+      where: { id: existing.id },
       data: {
         status: input.decision,
         decisionNote: input.decisionNote || null,
@@ -635,9 +520,6 @@ export class CampaignRequestsService {
       },
     })
 
-    return {
-      ok: true,
-      data: toRequestDetail(updated as RequestWithRelations, userId, access.data),
-    }
+    return toRequestDetail(updated as RequestWithRelations, userId, access)
   }
 }

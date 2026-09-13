@@ -32,6 +32,10 @@ Full-stack **Nuxt 4** app with a Prisma/SQLite backend. Frontend and backend sha
 
 Server API routes in `server/api/` should be **thin handlers** — validation, permission checks, and response shaping only. All business logic belongs in `server/services/`. Use `#server/...` and `#shared/...` path aliases in server code. Protected routes rely on `requireUserSession` (auto-imported from `#auth-utils`).
 
+Errors are **thrown, not returned**. Handlers, utils, and services throw `apiError(statusCode, code, message, fields?)` from `server/utils/http.ts`; `server/error-handler.ts` turns anything thrown under `/api/` into the `{ data: null, error: { code, message, fields } }` envelope. Success responses return `ok(data)`. Helpers like `requireCampaignPermission`, `validateBody`, `validateQuery`, and `routeParams` return their value directly and throw on failure, so handlers never branch on `.ok`. A `catch` that remaps errors must first rethrow H3 errors (`if (isError(error)) throw error`).
+
+Authorization lives in the handler. Campaign-scoped routes call `requireCampaignPermission(event, campaignId, permission)` once and pass the returned `access` or `actor` (`{ userId, access }`) into services; services take a trusted `campaignId` and never re-resolve membership. Routes keyed by a child id (`/encounters/:id`, `/sessions/:id`) scope the lookup with `buildCampaignWhereForPermission` instead. Multipart uploads go through `readSingleFileUpload` / `readMultipartUpload` in `server/utils/multipart.ts`; caption conversion lives in `shared/utils/transcript.ts` (`toVtt`).
+
 ### Frontend Pattern
 
 Pages in `app/pages/` should be **thin**; move repeated UI logic into components/composables. Use `useAsyncData`/`useFetch` for page-level data loading. Composables in `app/composables/` handle state orchestration. Auth session state comes from `useAuth()` in `app/composables/useAuth.ts`, which wraps `useUserSession`.

@@ -1,5 +1,4 @@
 import { prisma } from '#server/db/prisma'
-import type { ServiceResult } from '#server/services/auth.service'
 import type {
   EncounterSummary,
   EncounterTemplate,
@@ -11,7 +10,6 @@ import type {
 } from '#shared/schemas/encounter'
 import {
   appendEncounterEvent,
-  ensureCampaignAccess,
   logEncounterActivity,
   toEncounterSummaryDto,
   toEncounterTemplateDto,
@@ -19,29 +17,24 @@ import {
   validateEncounterSessionLink,
 } from '#server/services/encounter/encounter-shared'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
+import { apiError } from '#server/utils/http'
 
 export class EncounterTemplateService {
-  async listTemplates(campaignId: string, userId: string): Promise<ServiceResult<EncounterTemplate[]>> {
-    const access = await ensureCampaignAccess(campaignId, userId, 'content.read')
-    if (!access.ok) return access
-
+  async listTemplates(campaignId: string): Promise<EncounterTemplate[]> {
     const templates = await prisma.encounterTemplate.findMany({
       where: { campaignId },
       include: { combatants: { orderBy: { sortOrder: 'asc' } } },
       orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
     })
 
-    return { ok: true, data: templates.map(toEncounterTemplateDto) }
+    return templates.map(toEncounterTemplateDto)
   }
 
   async createTemplate(
     campaignId: string,
     userId: string,
     input: EncounterTemplateCreateInput,
-  ): Promise<ServiceResult<EncounterTemplate>> {
-    const access = await ensureCampaignAccess(campaignId, userId, 'content.write')
-    if (!access.ok) return access
-
+  ): Promise<EncounterTemplate> {
     const template = await prisma.encounterTemplate.create({
       data: {
         campaignId,
@@ -67,14 +60,14 @@ export class EncounterTemplateService {
       include: { combatants: { orderBy: { sortOrder: 'asc' } } },
     })
 
-    return { ok: true, data: toEncounterTemplateDto(template) }
+    return toEncounterTemplateDto(template)
   }
 
   async updateTemplate(
     templateId: string,
     userId: string,
     input: EncounterTemplateUpdateInput,
-  ): Promise<ServiceResult<EncounterTemplate>> {
+  ): Promise<EncounterTemplate> {
     const existing = await prisma.encounterTemplate.findFirst({
       where: {
         id: templateId,
@@ -84,12 +77,7 @@ export class EncounterTemplateService {
     })
 
     if (!existing) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Encounter template not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Encounter template not found or access denied.')
     }
 
     const template = await prisma.$transaction(async (tx) => {
@@ -132,18 +120,13 @@ export class EncounterTemplateService {
     })
 
     if (!full) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Encounter template not found.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Encounter template not found.')
     }
 
-    return { ok: true, data: toEncounterTemplateDto(full) }
+    return toEncounterTemplateDto(full)
   }
 
-  async deleteTemplate(templateId: string, userId: string): Promise<ServiceResult<{ deleted: true }>> {
+  async deleteTemplate(templateId: string, userId: string): Promise<{ deleted: true }> {
     const existing = await prisma.encounterTemplate.findFirst({
       where: {
         id: templateId,
@@ -153,23 +136,18 @@ export class EncounterTemplateService {
     })
 
     if (!existing) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Encounter template not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Encounter template not found or access denied.')
     }
 
     await prisma.encounterTemplate.delete({ where: { id: templateId } })
-    return { ok: true, data: { deleted: true } }
+    return { deleted: true }
   }
 
   async instantiateTemplate(
     templateId: string,
     userId: string,
     input: EncounterTemplateInstantiateInput,
-  ): Promise<ServiceResult<EncounterSummary>> {
+  ): Promise<EncounterSummary> {
     const template = await prisma.encounterTemplate.findFirst({
       where: {
         id: templateId,
@@ -179,23 +157,16 @@ export class EncounterTemplateService {
     })
 
     if (!template) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Encounter template not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Encounter template not found or access denied.')
     }
 
-    const sessionValidation = await validateEncounterSessionLink(template.campaignId, input.sessionId)
-    if (!sessionValidation.ok) return sessionValidation
+    await validateEncounterSessionLink(template.campaignId, input.sessionId)
 
     const calendarValidation = await validateEncounterCalendarLink(template.campaignId, {
       calendarYear: input.calendarYear,
       calendarMonth: input.calendarMonth,
       calendarDay: input.calendarDay,
     })
-    if (!calendarValidation.ok) return calendarValidation
 
     const created = await prisma.$transaction(async (tx) => {
       const encounter = await tx.campaignEncounter.create({
@@ -205,9 +176,9 @@ export class EncounterTemplateService {
           type: template.type,
           notes: template.notes,
           sessionId: input.sessionId,
-          calendarYear: calendarValidation.data.calendarYear,
-          calendarMonth: calendarValidation.data.calendarMonth,
-          calendarDay: calendarValidation.data.calendarDay,
+          calendarYear: calendarValidation.calendarYear,
+          calendarMonth: calendarValidation.calendarMonth,
+          calendarDay: calendarValidation.calendarDay,
           createdByUserId: userId,
         },
       })
@@ -256,6 +227,6 @@ export class EncounterTemplateService {
       },
     })
 
-    return { ok: true, data: toEncounterSummaryDto(created) }
+    return toEncounterSummaryDto(created)
   }
 }

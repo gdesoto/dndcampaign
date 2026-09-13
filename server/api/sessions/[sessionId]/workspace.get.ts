@@ -1,12 +1,9 @@
 import { SessionWorkspaceService } from '#server/services/session-workspace.service'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
-  const sessionId = event.context.params?.sessionId
-  if (!sessionId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Session id is required')
-  }
+  const { sessionId } = routeParams(event, 'sessionId')
 
   const workspace = await new SessionWorkspaceService().getWorkspace(
     sessionId,
@@ -14,7 +11,7 @@ export default defineEventHandler(async (event) => {
     sessionUser.user.systemRole
   )
   if (!workspace) {
-    return fail(event, 404, 'NOT_FOUND', 'Session not found')
+    throw apiError(404, 'NOT_FOUND', 'Session not found')
   }
 
   return ok(workspace)

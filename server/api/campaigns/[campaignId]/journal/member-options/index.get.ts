@@ -1,20 +1,14 @@
-import { fail, respond } from '#server/utils/http'
+import { ok, routeParams } from '#server/utils/http'
 import { CampaignJournalService } from '#server/services/campaign-journal.service'
+import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 const campaignJournalService = new CampaignJournalService()
 
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  if (!campaignId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id is required')
-  }
+  const { campaignId } = routeParams(event, 'campaignId')
 
-  const sessionUser = await requireUserSession(event)
-  const result = await campaignJournalService.listMemberOptions(
-    campaignId,
-    sessionUser.user.id,
-    sessionUser.user.systemRole
-  )
-  return respond(event, result)
+  const { access } = await requireCampaignPermission(event, campaignId, 'campaign.read')
+  const result = await campaignJournalService.listMemberOptions(access)
+  return ok(result)
 })
 

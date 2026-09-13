@@ -1,28 +1,22 @@
 import { validateQuery } from '#server/utils/validate'
-import { fail, respond } from '#server/utils/http'
+import { ok, routeParams } from '#server/utils/http'
 import { campaignJournalHistoryListQuerySchema } from '#shared/schemas/campaign-journal'
 import { CampaignJournalService } from '#server/services/campaign-journal.service'
+import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 const campaignJournalService = new CampaignJournalService()
 
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  const entryId = event.context.params?.entryId
-  if (!campaignId || !entryId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id and entry id are required')
-  }
+  const { campaignId, entryId } = routeParams(event, 'campaignId', 'entryId')
 
   const parsedQuery = validateQuery(event, campaignJournalHistoryListQuerySchema, 'Invalid history query parameters')
-  if (!parsedQuery.ok) return parsedQuery.response
 
-  const sessionUser = await requireUserSession(event)
-  const result = await campaignJournalService.listEntryHistory(
-    campaignId,
+  const { session, access } = await requireCampaignPermission(event, campaignId, 'campaign.read')
+  const result = await campaignJournalService.listEntryHistory(access,
     entryId,
-    sessionUser.user.id,
-    parsedQuery.data,
-    sessionUser.user.systemRole
+    session.user.id,
+    parsedQuery
   )
-  return respond(event, result)
+  return ok(result)
 })
 

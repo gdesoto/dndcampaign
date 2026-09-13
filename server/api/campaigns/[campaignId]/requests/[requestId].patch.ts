@@ -1,57 +1,46 @@
-import { fail, respond } from '#server/utils/http'
+import { ok, routeParams } from '#server/utils/http'
 import { validateInput } from '#server/utils/validate'
 import {
   campaignRequestDecisionInputSchema,
   campaignRequestUpdateSchema,
 } from '#shared/schemas/campaign-requests'
 import { CampaignRequestsService } from '#server/services/campaign-requests.service'
+import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 const campaignRequestsService = new CampaignRequestsService()
 
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  const requestId = event.context.params?.requestId
-  if (!campaignId || !requestId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id and request id are required')
-  }
+  const { campaignId, requestId } = routeParams(event, 'campaignId', 'requestId')
 
   const rawBody = ((await readBody(event).catch(() => null)) ?? {}) as Record<string, unknown>
   const action = typeof rawBody.action === 'string' ? rawBody.action : null
-  const sessionUser = await requireUserSession(event)
+  const { session, access } = await requireCampaignPermission(event, campaignId, 'campaign.read')
 
   if (action === 'cancel') {
-    const result = await campaignRequestsService.cancelRequest(
-      campaignId,
+    const result = await campaignRequestsService.cancelRequest(access,
       requestId,
-      sessionUser.user.id,
-      sessionUser.user.systemRole,
+      session.user.id
     )
-    return respond(event, result)
+    return ok(result)
   }
 
   if (action === 'decision') {
-    const decisionParsed = validateInput(event, campaignRequestDecisionInputSchema, rawBody, 'Invalid request decision payload')
-    if (!decisionParsed.ok) return decisionParsed.response
+    const decisionParsed = validateInput(campaignRequestDecisionInputSchema, rawBody, 'Invalid request decision payload')
 
-    const result = await campaignRequestsService.decideRequest(
-      campaignId,
+    const result = await campaignRequestsService.decideRequest(access,
       requestId,
-      sessionUser.user.id,
-      decisionParsed.data,
-      sessionUser.user.systemRole,
+      session.user.id,
+      decisionParsed
     )
-    return respond(event, result)
+    return ok(result)
   }
 
-  const parsed = validateInput(event, campaignRequestUpdateSchema, rawBody, 'Invalid request update payload')
-  if (!parsed.ok) return parsed.response
+  const parsed = validateInput(campaignRequestUpdateSchema, rawBody, 'Invalid request update payload')
 
-  const result = await campaignRequestsService.updateRequest(
-    campaignId,
+  const result = await campaignRequestsService.updateRequest(access,
     requestId,
-    sessionUser.user.id,
-    parsed.data,
-    sessionUser.user.systemRole,
+    session.user.id,
+    parsed
   )
-  return respond(event, result)
+  return ok(result)
 })

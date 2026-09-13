@@ -1,6 +1,7 @@
 import { readBody } from 'h3'
 import { z } from 'zod'
-import { fail, respond } from '#server/utils/http'
+import { ok, routeParams } from '#server/utils/http'
+import { requireCampaignPermission } from '#server/utils/campaign-auth'
 import { validateInput } from '#server/utils/validate'
 import { dungeonRoomUpdateSchema } from '#shared/schemas/dungeon'
 import { DungeonEditorService } from '#server/services/dungeon/dungeon-editor.service'
@@ -11,16 +12,11 @@ const dungeonRoomActionSchema = z.object({
 })
 
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  const dungeonId = event.context.params?.dungeonId
-  const roomId = event.context.params?.roomId
-  if (!campaignId || !dungeonId || !roomId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id, dungeon id, and room id are required')
-  }
+  const { campaignId, dungeonId, roomId } = routeParams(event, 'campaignId', 'dungeonId', 'roomId')
 
   const rawBody = (await readBody(event)) ?? {}
 
-  const sessionUser = await requireUserSession(event)
+  const { actor } = await requireCampaignPermission(event, campaignId, 'content.write')
 
   const actionParsed = dungeonRoomActionSchema.safeParse(rawBody)
   if (actionParsed.success) {
@@ -28,20 +24,19 @@ export default defineEventHandler(async (event) => {
       campaignId,
       dungeonId,
       roomId,
-      sessionUser.user.id
+      actor
     )
-    return respond(event, result)
+    return ok(result)
   }
 
-  const parsed = validateInput(event, dungeonRoomUpdateSchema, rawBody, 'Invalid room update payload')
-  if (!parsed.ok) return parsed.response
+  const parsed = validateInput(dungeonRoomUpdateSchema, rawBody, 'Invalid room update payload')
 
   const result = await dungeonEditorService.updateRoom(
     campaignId,
     dungeonId,
     roomId,
-    sessionUser.user.id,
-    parsed.data
+    actor,
+    parsed
   )
-  return respond(event, result)
+  return ok(result)
 })

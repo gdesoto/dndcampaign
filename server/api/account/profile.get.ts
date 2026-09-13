@@ -1,4 +1,4 @@
-import { ok, respond } from '#server/utils/http'
+import { ok } from '#server/utils/http'
 import { AccountService } from '#server/services/account.service'
 
 const accountService = new AccountService()
@@ -7,11 +7,8 @@ export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
   const result = await accountService.getProfile(session.user.id)
 
-  if (!result.ok) {
-    return respond(event, result)
-  }
 
-  const profile = result.data
+  const profile = result
   return ok({
     profile: {
       id: profile.id,

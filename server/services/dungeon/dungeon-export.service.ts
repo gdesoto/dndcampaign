@@ -1,7 +1,5 @@
 import { prisma } from '#server/db/prisma'
 import { Prisma } from '#server/db/prisma-client'
-import type { ServiceResult } from '#server/services/auth.service'
-import { buildCampaignWhereForPermission, resolveCampaignAccess } from '#server/utils/campaign-auth'
 import type { DungeonExportInput, DungeonImportInput } from '#shared/schemas/dungeon'
 import type {
   DungeonExportResult,
@@ -13,20 +11,16 @@ import { parseDungeonMap, toPlayerSafeMap } from '#server/services/dungeon/dunge
 import sharp from 'sharp'
 import PDFDocument from 'pdfkit'
 import { ActivityLogService } from '#server/services/activity-log.service'
+import { apiError } from '#server/utils/http'
+import type { CampaignActor } from '#server/utils/campaign-auth'
 
 const activityLogService = new ActivityLogService()
 
-const withDungeonAccess = async (
-  campaignId: string,
-  dungeonId: string,
-  userId: string,
-  permission: 'content.read' | 'content.write',
-) =>
+const withDungeonAccess = async (campaignId: string, dungeonId: string) =>
   prisma.campaignDungeon.findFirst({
     where: {
       id: dungeonId,
       campaignId,
-      campaign: buildCampaignWhereForPermission(userId, permission),
     },
     include: {
       rooms: true,
@@ -184,22 +178,17 @@ export class DungeonExportService {
   async exportDungeon(
     campaignId: string,
     dungeonId: string,
-    userId: string,
+    actor: CampaignActor,
     input: DungeonExportInput,
-  ): Promise<ServiceResult<DungeonExportResult>> {
-    const row = await withDungeonAccess(campaignId, dungeonId, userId, 'content.read')
+  ): Promise<DungeonExportResult> {
+    const userId = actor.userId
+    const row = await withDungeonAccess(campaignId, dungeonId)
     if (!row) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Dungeon not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
     const map = parseDungeonMap(row.mapJson)
-    const resolved = await resolveCampaignAccess(campaignId, userId)
-    const forcePlayerSafe = resolved.access?.role === 'VIEWER'
+    const forcePlayerSafe = actor.access.role === 'VIEWER'
     const effectivePlayerSafe = forcePlayerSafe || input.playerSafe || !input.includeGmLayer
     const exportMap = effectivePlayerSafe ? toPlayerSafeMap(map) : map
     const safeSuffix = input.playerSafe ? '-player' : '-dm'
@@ -209,45 +198,36 @@ export class DungeonExportService {
     if (input.format === 'SVG') {
       await this.logExport(campaignId, userId, row.id, 'SVG', effectivePlayerSafe)
       return {
-        ok: true,
-        data: {
           format: 'SVG',
           filename: `${baseName}${safeSuffix}.svg`,
           contentType: 'image/svg+xml',
           content: svg,
           encoding: 'utf8',
-        },
-      }
+        }
     }
 
     if (input.format === 'PNG') {
       const pngBase64 = await toPngBase64(svg)
       await this.logExport(campaignId, userId, row.id, 'PNG', effectivePlayerSafe)
       return {
-        ok: true,
-        data: {
           format: 'PNG',
           filename: `${baseName}${safeSuffix}.png`,
           contentType: 'image/png',
           content: pngBase64,
           encoding: 'base64',
-        },
-      }
+        }
     }
 
     if (input.format === 'PDF') {
       const pdfBase64 = await toPdfBase64(exportMap, svg)
       await this.logExport(campaignId, userId, row.id, 'PDF', effectivePlayerSafe)
       return {
-        ok: true,
-        data: {
           format: 'PDF',
           filename: `${baseName}${safeSuffix}.pdf`,
           contentType: 'application/pdf',
           content: pdfBase64,
           encoding: 'base64',
-        },
-      }
+        }
     }
 
     const document: DungeonPortableDocument = {
@@ -295,35 +275,20 @@ export class DungeonExportService {
 
     await this.logExport(campaignId, userId, row.id, 'JSON', effectivePlayerSafe)
     return {
-      ok: true,
-      data: {
         format: 'JSON',
         filename: `${baseName}${safeSuffix}.json`,
         contentType: 'application/json',
         content: JSON.stringify(document, null, 2),
         encoding: 'utf8',
-      },
-    }
+      }
   }
 
   async importDungeon(
     campaignId: string,
-    userId: string,
+    actor: CampaignActor,
     input: DungeonImportInput,
-  ): Promise<ServiceResult<{ id: string }>> {
-    const campaign = await prisma.campaign.findFirst({
-      where: { id: campaignId, ...buildCampaignWhereForPermission(userId, 'content.write') },
-      select: { id: true },
-    })
-    if (!campaign) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Campaign not found or access denied.',
-      }
-    }
-
+  ): Promise<{ id: string }> {
+    const userId = actor.userId
     const source = input.source
     const created = await prisma.campaignDungeon.create({
       data: {
@@ -383,6 +348,6 @@ export class DungeonExportService {
       summary: `Imported dungeon "${input.nameOverride || source.dungeon.name}".`,
     })
 
-    return { ok: true, data: { id: created.id } }
+    return { id: created.id }
   }
 }

@@ -1,13 +1,10 @@
 import { getQuery } from 'h3'
 import { CampaignWorkspaceService } from '#server/services/campaign-workspace.service'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
-  const campaignId = event.context.params?.campaignId
-  if (!campaignId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id is required')
-  }
+  const { campaignId } = routeParams(event, 'campaignId')
 
   const query = getQuery(event)
   const sessionId = typeof query.sessionId === 'string' && query.sessionId
@@ -21,7 +18,7 @@ export default defineEventHandler(async (event) => {
     sessionUser.user.systemRole
   )
   if (!workspace) {
-    return fail(event, 404, 'NOT_FOUND', 'Campaign not found')
+    throw apiError(404, 'NOT_FOUND', 'Campaign not found')
   }
 
   return ok(workspace)

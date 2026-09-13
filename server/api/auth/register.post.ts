@@ -1,4 +1,4 @@
-import { ok, fail } from '#server/utils/http'
+import { ok } from '#server/utils/http'
 import { validateBody } from '#server/utils/validate'
 import { registerSchema } from '#shared/schemas/auth'
 import { AuthService, toAuthUserDto } from '#server/services/auth.service'
@@ -7,32 +7,16 @@ import { enforceRateLimit } from '#server/utils/rate-limit'
 const authService = new AuthService()
 
 export default defineEventHandler(async (event) => {
-  const rateLimitResponse = enforceRateLimit(event, {
+  enforceRateLimit(event, {
     key: 'auth:register',
     max: 10,
     windowMs: 10 * 60_000,
   })
-  if (rateLimitResponse) {
-    return rateLimitResponse
-  }
 
   const parsed = await validateBody(event, registerSchema, 'Invalid register payload')
-  if (!parsed.ok) return parsed.response
 
-  const registerResult = await authService.register(parsed.data)
-  if (!registerResult.ok) {
-    return fail(
-      event,
-      registerResult.statusCode,
-      registerResult.code,
-      registerResult.message,
-      registerResult.fields
-    )
-  }
+  const user = await authService.register(parsed)
+  await authService.refreshSession(event, user)
 
-  await authService.refreshSession(event, registerResult.data)
-
-  return ok({
-    user: toAuthUserDto(registerResult.data),
-  })
+  return ok({ user: toAuthUserDto(user) })
 })

@@ -1,6 +1,5 @@
 import { prisma } from '#server/db/prisma'
 import type { Prisma } from '#server/db/prisma-client'
-import type { ServiceResult } from '#server/services/auth.service'
 import {
   campaignJournalListMaxPageSize,
   campaignJournalListDefaultPage,
@@ -41,9 +40,9 @@ import {
 } from '#shared/utils/campaign-journal-tags'
 import {
   hasCampaignDmAccess,
-  resolveCampaignAccess,
   type ResolvedCampaignAccess,
 } from '#server/utils/campaign-auth'
+import { apiError } from '#server/utils/http'
 
 const JOURNAL_NOTIFICATION_RETENTION_DAYS = 30
 
@@ -306,37 +305,12 @@ type ResolvedCreateData = {
 }
 
 export class CampaignJournalService {
-  private async resolveAccess(
-    campaignId: string,
-    userId: string,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN'
-  ): Promise<ServiceResult<ResolvedCampaignAccess>> {
-    const resolved = await resolveCampaignAccess(campaignId, userId, systemRole)
-    if (!resolved.exists) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Campaign not found',
-      }
-    }
-    if (!resolved.access) {
-      return {
-        ok: false,
-        statusCode: 403,
-        code: 'FORBIDDEN',
-        message: 'Campaign access is denied',
-      }
-    }
-    return { ok: true, data: resolved.access }
-  }
-
   private async resolveSessionIds(
     campaignId: string,
     sessionIds: string[]
-  ): Promise<ServiceResult<string[]>> {
+  ): Promise<string[]> {
     const uniqueIds = uniqueStrings(sessionIds)
-    if (!uniqueIds.length) return { ok: true, data: [] }
+    if (!uniqueIds.length) return []
 
     const found = await prisma.session.findMany({
       where: {
@@ -346,36 +320,25 @@ export class CampaignJournalService {
       select: { id: true },
     })
     if (found.length !== uniqueIds.length) {
-      return {
-        ok: false,
-        statusCode: 400,
-        code: 'VALIDATION_ERROR',
-        message: 'One or more sessions do not belong to this campaign',
-      }
+      throw apiError(400, 'VALIDATION_ERROR', 'One or more sessions do not belong to this campaign')
     }
-    return { ok: true, data: uniqueIds }
+    return uniqueIds
   }
 
   private validateDiscoverableHolderVisibility(
     visibility: 'MYSELF' | 'DM' | 'CAMPAIGN'
-  ): ServiceResult<true> {
+  ): true {
     if (visibility === 'MYSELF') {
-      return {
-        ok: false,
-        statusCode: 400,
-        code: 'VALIDATION_ERROR',
-        message: 'Discoverable entries require visibility DM or CAMPAIGN',
-        fields: { visibility: 'Discoverable entries cannot be MYSELF' },
-      }
+      throw apiError(400, 'VALIDATION_ERROR', 'Discoverable entries require visibility DM or CAMPAIGN', { visibility: 'Discoverable entries cannot be MYSELF' })
     }
-    return { ok: true, data: true }
+    return true
   }
 
   private async ensureCampaignMemberHolder(
     campaignId: string,
     holderUserId: string | null
-  ): Promise<ServiceResult<true>> {
-    if (!holderUserId) return { ok: true, data: true }
+  ): Promise<true> {
+    if (!holderUserId) return true
     const holderMembership = await prisma.campaignMember.findUnique({
       where: {
         campaignId_userId: {
@@ -386,15 +349,9 @@ export class CampaignJournalService {
       select: { id: true },
     })
     if (!holderMembership) {
-      return {
-        ok: false,
-        statusCode: 400,
-        code: 'VALIDATION_ERROR',
-        message: 'Holder must be a campaign member',
-        fields: { holderUserId: 'Select a campaign member as holder' },
-      }
+      throw apiError(400, 'VALIDATION_ERROR', 'Holder must be a campaign member', { holderUserId: 'Select a campaign member as holder' })
     }
-    return { ok: true, data: true }
+    return true
   }
 
   private async createTransferHistory(
@@ -504,7 +461,7 @@ export class CampaignJournalService {
     entryId: string,
     userId: string,
     access: ResolvedCampaignAccess
-  ): Promise<ServiceResult<EntryListRow>> {
+  ): Promise<EntryListRow> {
     const row = await prisma.campaignJournalEntry.findFirst({
       where: {
         id: entryId,
@@ -513,35 +470,22 @@ export class CampaignJournalService {
       include: entryInclude,
     })
     if (!row) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Journal entry not found',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Journal entry not found')
     }
     if (!isEntryVisibleToUser(access, userId, row)) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Journal entry not found',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Journal entry not found')
     }
-    return { ok: true, data: row }
+    return row
   }
 
   async createEntry(
-    campaignId: string,
+    access: ResolvedCampaignAccess,
     userId: string,
     input: CampaignJournalCreateInput,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN'
-  ): Promise<ServiceResult<CampaignJournalEntryDetail>> {
-    const access = await this.resolveAccess(campaignId, userId, systemRole)
-    if (!access.ok) return access
+  ): Promise<CampaignJournalEntryDetail> {
+    const campaignId = access.campaignId
 
     const sessionIds = await this.resolveSessionIds(campaignId, input.sessionIds || [])
-    if (!sessionIds.ok) return sessionIds
     const resolvedTags = await this.resolveTagData(campaignId, input)
 
     const created = await prisma.campaignJournalEntry.create({
@@ -562,9 +506,9 @@ export class CampaignJournalService {
               })),
             }
           : undefined,
-        sessionLinks: sessionIds.data.length
+        sessionLinks: sessionIds.length
           ? {
-              create: sessionIds.data.map((sessionId) => ({
+              create: sessionIds.map((sessionId) => ({
                 campaignId,
                 sessionId,
               })),
@@ -574,28 +518,21 @@ export class CampaignJournalService {
       include: entryInclude,
     })
 
-    return { ok: true, data: toEntryListItem(created, access.data, userId) }
+    return toEntryListItem(created, access, userId)
   }
 
   async listEntries(
-    campaignId: string,
+    access: ResolvedCampaignAccess,
     userId: string,
     query: CampaignJournalListQueryInput,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN'
-  ): Promise<ServiceResult<CampaignJournalListResponse>> {
-    const access = await this.resolveAccess(campaignId, userId, systemRole)
-    if (!access.ok) return access
+  ): Promise<CampaignJournalListResponse> {
+    const campaignId = access.campaignId
 
-    if (query.dmVisible && !hasCampaignDmAccess(access.data)) {
-      return {
-        ok: false,
-        statusCode: 403,
-        code: 'FORBIDDEN',
-        message: 'DM access is required for dmVisible filter',
-      }
+    if (query.dmVisible && !hasCampaignDmAccess(access)) {
+      throw apiError(403, 'FORBIDDEN', 'DM access is required for dmVisible filter')
     }
 
-    const visibilityWhere = entryVisibilityWhere(access.data, userId)
+    const visibilityWhere = entryVisibilityWhere(access, userId)
     const tagSearch = query.tag ? normalizeJournalTagLabel(query.tag) : undefined
     const recentlyDiscoveredSince = new Date(Date.now() - JOURNAL_NOTIFICATION_RETENTION_DAYS * 24 * 60 * 60 * 1000)
 
@@ -662,11 +599,9 @@ export class CampaignJournalService {
       }),
     ])
 
-    const items = rows.map((row) => toEntryListItem(row, access.data, userId))
+    const items = rows.map((row) => toEntryListItem(row, access, userId))
 
     return {
-      ok: true,
-      data: {
         items,
         pagination: {
           page: pagination.page,
@@ -674,48 +609,36 @@ export class CampaignJournalService {
           total,
           totalPages: Math.max(1, Math.ceil(total / pagination.pageSize)),
         },
-      },
-    }
+      }
   }
 
   async getEntryById(
-    campaignId: string,
+    access: ResolvedCampaignAccess,
     entryId: string,
     userId: string,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN'
-  ): Promise<ServiceResult<CampaignJournalEntryDetail>> {
-    const access = await this.resolveAccess(campaignId, userId, systemRole)
-    if (!access.ok) return access
+  ): Promise<CampaignJournalEntryDetail> {
+    const campaignId = access.campaignId
 
-    const entry = await this.getAuthorizedEntry(campaignId, entryId, userId, access.data)
-    if (!entry.ok) return entry
+    const entry = await this.getAuthorizedEntry(campaignId, entryId, userId, access)
 
-    return { ok: true, data: toEntryListItem(entry.data, access.data, userId) }
+    return toEntryListItem(entry, access, userId)
   }
 
   async updateEntry(
-    campaignId: string,
+    access: ResolvedCampaignAccess,
     entryId: string,
     userId: string,
     input: CampaignJournalUpdateInput,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN'
-  ): Promise<ServiceResult<CampaignJournalEntryDetail>> {
-    const access = await this.resolveAccess(campaignId, userId, systemRole)
-    if (!access.ok) return access
+  ): Promise<CampaignJournalEntryDetail> {
+    const campaignId = access.campaignId
 
-    const existing = await this.getAuthorizedEntry(campaignId, entryId, userId, access.data)
-    if (!existing.ok) return existing
-    const isDm = hasCampaignDmAccess(access.data)
+    const existing = await this.getAuthorizedEntry(campaignId, entryId, userId, access)
+    const isDm = hasCampaignDmAccess(access)
 
-    if (existing.data.isDiscoverable) {
-      const holderCanManageState = canManageDiscoverableHolderState(access.data, userId, existing.data)
+    if (existing.isDiscoverable) {
+      const holderCanManageState = canManageDiscoverableHolderState(access, userId, existing)
       if (!holderCanManageState) {
-        return {
-          ok: false,
-          statusCode: 403,
-          code: 'FORBIDDEN',
-          message: 'You do not have permission to edit this discoverable journal entry',
-        }
+        throw apiError(403, 'FORBIDDEN', 'You do not have permission to edit this discoverable journal entry')
       }
 
       if (!isDm) {
@@ -725,41 +648,23 @@ export class CampaignJournalService {
           input.sessionIds !== undefined ||
           input.tags !== undefined
         if (includesNonVisibilityFields) {
-          return {
-            ok: false,
-            statusCode: 403,
-            code: 'FORBIDDEN',
-            message: 'Only DM-access users can edit discoverable entry content',
-          }
+          throw apiError(403, 'FORBIDDEN', 'Only DM-access users can edit discoverable entry content')
         }
 
         if (input.visibility === 'MYSELF') {
-          return {
-            ok: false,
-            statusCode: 400,
-            code: 'VALIDATION_ERROR',
-            message: 'Discoverable entries cannot be set to MYSELF visibility',
-            fields: { visibility: 'Choose DM or CAMPAIGN visibility' },
-          }
+          throw apiError(400, 'VALIDATION_ERROR', 'Discoverable entries cannot be set to MYSELF visibility', { visibility: 'Choose DM or CAMPAIGN visibility' })
         }
       }
-    } else if (!canManageEntry(access.data, userId, existing.data)) {
-      return {
-        ok: false,
-        statusCode: 403,
-        code: 'FORBIDDEN',
-        message: 'You do not have permission to edit this journal entry',
-      }
+    } else if (!canManageEntry(access, userId, existing)) {
+      throw apiError(403, 'FORBIDDEN', 'You do not have permission to edit this journal entry')
     }
 
-    if (existing.data.isDiscoverable && input.visibility) {
-      const visibilityResult = this.validateDiscoverableHolderVisibility(input.visibility)
-      if (!visibilityResult.ok) return visibilityResult
+    if (existing.isDiscoverable && input.visibility) {
+      this.validateDiscoverableHolderVisibility(input.visibility)
     }
 
-    const nextContent = input.contentMarkdown ?? existing.data.contentMarkdown
-    const sessionIds = await this.resolveSessionIds(campaignId, input.sessionIds ?? existing.data.sessionLinks.map((link) => link.session.id))
-    if (!sessionIds.ok) return sessionIds
+    const nextContent = input.contentMarkdown ?? existing.contentMarkdown
+    const sessionIds = await this.resolveSessionIds(campaignId, input.sessionIds ?? existing.sessionLinks.map((link) => link.session.id))
 
     const resolvedTags = await this.resolveTagData(campaignId, {
       contentMarkdown: nextContent,
@@ -768,16 +673,16 @@ export class CampaignJournalService {
 
     const updated = await prisma.$transaction(async (tx) => {
       await tx.campaignJournalTag.deleteMany({
-        where: { campaignJournalEntryId: existing.data.id },
+        where: { campaignJournalEntryId: existing.id },
       })
       await tx.campaignJournalEntrySessionLink.deleteMany({
-        where: { campaignJournalEntryId: existing.data.id },
+        where: { campaignJournalEntryId: existing.id },
       })
 
       if (resolvedTags.length) {
         await tx.campaignJournalTag.createMany({
           data: resolvedTags.map((tag) => ({
-            campaignJournalEntryId: existing.data.id,
+            campaignJournalEntryId: existing.id,
             campaignId,
             tagType: tag.tagType,
             normalizedLabel: tag.normalizedLabel,
@@ -787,10 +692,10 @@ export class CampaignJournalService {
         })
       }
 
-      if (sessionIds.data.length) {
+      if (sessionIds.length) {
         await tx.campaignJournalEntrySessionLink.createMany({
-          data: sessionIds.data.map((sessionId) => ({
-            campaignJournalEntryId: existing.data.id,
+          data: sessionIds.map((sessionId) => ({
+            campaignJournalEntryId: existing.id,
             campaignId,
             sessionId,
           })),
@@ -798,7 +703,7 @@ export class CampaignJournalService {
       }
 
       return tx.campaignJournalEntry.update({
-        where: { id: existing.data.id },
+        where: { id: existing.id },
         data: {
           ...(input.title !== undefined ? { title: input.title } : {}),
           ...(input.contentMarkdown !== undefined ? { contentMarkdown: input.contentMarkdown } : {}),
@@ -808,92 +713,69 @@ export class CampaignJournalService {
       })
     })
 
-    return { ok: true, data: toEntryListItem(updated, access.data, userId) }
+    return toEntryListItem(updated, access, userId)
   }
 
   async deleteEntry(
-    campaignId: string,
+    access: ResolvedCampaignAccess,
     entryId: string,
     userId: string,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN'
-  ): Promise<ServiceResult<{ id: string }>> {
-    const access = await this.resolveAccess(campaignId, userId, systemRole)
-    if (!access.ok) return access
+  ): Promise<{ id: string }> {
+    const campaignId = access.campaignId
 
-    const existing = await this.getAuthorizedEntry(campaignId, entryId, userId, access.data)
-    if (!existing.ok) return existing
-    if (existing.data.isDiscoverable && !hasCampaignDmAccess(access.data)) {
-      return {
-        ok: false,
-        statusCode: 403,
-        code: 'FORBIDDEN',
-        message: 'Only DM-access users can delete discoverable journal entries',
-      }
+    const existing = await this.getAuthorizedEntry(campaignId, entryId, userId, access)
+    if (existing.isDiscoverable && !hasCampaignDmAccess(access)) {
+      throw apiError(403, 'FORBIDDEN', 'Only DM-access users can delete discoverable journal entries')
     }
-    if (!existing.data.isDiscoverable && !canManageEntry(access.data, userId, existing.data)) {
-      return {
-        ok: false,
-        statusCode: 403,
-        code: 'FORBIDDEN',
-        message: 'You do not have permission to delete this journal entry',
-      }
+    if (!existing.isDiscoverable && !canManageEntry(access, userId, existing)) {
+      throw apiError(403, 'FORBIDDEN', 'You do not have permission to delete this journal entry')
     }
 
     await prisma.campaignJournalEntry.delete({
-      where: { id: existing.data.id },
+      where: { id: existing.id },
     })
 
-    return { ok: true, data: { id: existing.data.id } }
+    return { id: existing.id }
   }
 
   async updateDiscoverable(
-    campaignId: string,
+    access: ResolvedCampaignAccess,
     entryId: string,
     userId: string,
     input: CampaignJournalDiscoverableUpdateInput,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN'
-  ): Promise<ServiceResult<CampaignJournalEntryDetail>> {
-    const access = await this.resolveAccess(campaignId, userId, systemRole)
-    if (!access.ok) return access
-    if (!hasCampaignDmAccess(access.data)) {
-      return {
-        ok: false,
-        statusCode: 403,
-        code: 'FORBIDDEN',
-        message: 'DM access is required to update discoverable settings',
-      }
+  ): Promise<CampaignJournalEntryDetail> {
+    const campaignId = access.campaignId
+    if (!hasCampaignDmAccess(access)) {
+      throw apiError(403, 'FORBIDDEN', 'DM access is required to update discoverable settings')
     }
 
-    const holderCheck = await this.ensureCampaignMemberHolder(campaignId, input.holderUserId ?? null)
-    if (!holderCheck.ok) return holderCheck
+    await this.ensureCampaignMemberHolder(campaignId, input.holderUserId ?? null)
 
-    const entry = await this.getAuthorizedEntry(campaignId, entryId, userId, access.data)
-    if (!entry.ok) return entry
+    const entry = await this.getAuthorizedEntry(campaignId, entryId, userId, access)
 
     if (input.isDiscoverable && input.visibility) {
-      const visibilityCheck = this.validateDiscoverableHolderVisibility(input.visibility)
-      if (!visibilityCheck.ok) return visibilityCheck
+      this.validateDiscoverableHolderVisibility(input.visibility)
     }
 
     const updated = await prisma.$transaction(async (tx) => {
       if (input.isDiscoverable) {
-        const targetVisibility = input.visibility ?? (entry.data.visibility === 'MYSELF' ? 'DM' : entry.data.visibility)
-        const targetHolderUserId = input.holderUserId === undefined ? entry.data.holderUserId : input.holderUserId
+        const targetVisibility = input.visibility ?? (entry.visibility === 'MYSELF' ? 'DM' : entry.visibility)
+        const targetHolderUserId = input.holderUserId === undefined ? entry.holderUserId : input.holderUserId
         const now = new Date()
         const transferAction: CampaignJournalTransferHistoryAction =
-          !entry.data.isDiscoverable || !entry.data.discoveredAt
+          !entry.isDiscoverable || !entry.discoveredAt
             ? 'DISCOVERED'
-            : targetHolderUserId !== entry.data.holderUserId
+            : targetHolderUserId !== entry.holderUserId
               ? targetHolderUserId
                 ? 'TRANSFERRED'
                 : 'UNASSIGNED'
               : 'DISCOVERED'
 
-        const nextDiscoveredAt = entry.data.discoveredAt || now
-        const nextDiscoveredByUserId = entry.data.discoveredByUserId || userId
+        const nextDiscoveredAt = entry.discoveredAt || now
+        const nextDiscoveredByUserId = entry.discoveredByUserId || userId
 
         const next = await tx.campaignJournalEntry.update({
-          where: { id: entry.data.id },
+          where: { id: entry.id },
           data: {
             isDiscoverable: true,
             holderUserId: targetHolderUserId,
@@ -906,8 +788,8 @@ export class CampaignJournalService {
 
         await this.createTransferHistory(tx, {
           campaignId,
-          campaignJournalEntryId: entry.data.id,
-          fromHolderUserId: entry.data.holderUserId,
+          campaignJournalEntryId: entry.id,
+          fromHolderUserId: entry.holderUserId,
           toHolderUserId: targetHolderUserId,
           actorUserId: userId,
           action: transferAction,
@@ -917,7 +799,7 @@ export class CampaignJournalService {
       }
 
       const next = await tx.campaignJournalEntry.update({
-        where: { id: entry.data.id },
+        where: { id: entry.id },
         data: {
           isDiscoverable: false,
           holderUserId: null,
@@ -929,8 +811,8 @@ export class CampaignJournalService {
 
       await this.createTransferHistory(tx, {
         campaignId,
-        campaignJournalEntryId: entry.data.id,
-        fromHolderUserId: entry.data.holderUserId,
+        campaignJournalEntryId: entry.id,
+        fromHolderUserId: entry.holderUserId,
         toHolderUserId: null,
         actorUserId: userId,
         action: 'UNASSIGNED',
@@ -939,44 +821,34 @@ export class CampaignJournalService {
       return next
     })
 
-    return { ok: true, data: toEntryListItem(updated, access.data, userId) }
+    return toEntryListItem(updated, access, userId)
   }
 
   async discoverEntry(
-    campaignId: string,
+    access: ResolvedCampaignAccess,
     entryId: string,
     userId: string,
     input: CampaignJournalDiscoverInput,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN'
-  ): Promise<ServiceResult<CampaignJournalEntryDetail>> {
-    const access = await this.resolveAccess(campaignId, userId, systemRole)
-    if (!access.ok) return access
-    if (!hasCampaignDmAccess(access.data)) {
-      return {
-        ok: false,
-        statusCode: 403,
-        code: 'FORBIDDEN',
-        message: 'DM access is required to discover journal entries',
-      }
+  ): Promise<CampaignJournalEntryDetail> {
+    const campaignId = access.campaignId
+    if (!hasCampaignDmAccess(access)) {
+      throw apiError(403, 'FORBIDDEN', 'DM access is required to discover journal entries')
     }
 
-    const holderCheck = await this.ensureCampaignMemberHolder(campaignId, input.holderUserId)
-    if (!holderCheck.ok) return holderCheck
+    await this.ensureCampaignMemberHolder(campaignId, input.holderUserId)
 
-    const entry = await this.getAuthorizedEntry(campaignId, entryId, userId, access.data)
-    if (!entry.ok) return entry
+    const entry = await this.getAuthorizedEntry(campaignId, entryId, userId, access)
 
     if (input.visibility) {
-      const visibilityCheck = this.validateDiscoverableHolderVisibility(input.visibility)
-      if (!visibilityCheck.ok) return visibilityCheck
+      this.validateDiscoverableHolderVisibility(input.visibility)
     }
 
     const updated = await prisma.$transaction(async (tx) => {
-      const nextVisibility = input.visibility ?? (entry.data.visibility === 'MYSELF' ? 'DM' : entry.data.visibility)
-      const nextDiscoveredAt = entry.data.discoveredAt || new Date()
-      const nextDiscoveredByUserId = entry.data.discoveredByUserId || userId
+      const nextVisibility = input.visibility ?? (entry.visibility === 'MYSELF' ? 'DM' : entry.visibility)
+      const nextDiscoveredAt = entry.discoveredAt || new Date()
+      const nextDiscoveredByUserId = entry.discoveredByUserId || userId
       const next = await tx.campaignJournalEntry.update({
-        where: { id: entry.data.id },
+        where: { id: entry.id },
         data: {
           isDiscoverable: true,
           holderUserId: input.holderUserId,
@@ -987,13 +859,13 @@ export class CampaignJournalService {
         include: entryInclude,
       })
 
-      const action: CampaignJournalTransferHistoryAction = entry.data.holderUserId
+      const action: CampaignJournalTransferHistoryAction = entry.holderUserId
         ? 'TRANSFERRED'
         : 'DISCOVERED'
       await this.createTransferHistory(tx, {
         campaignId,
-        campaignJournalEntryId: entry.data.id,
-        fromHolderUserId: entry.data.holderUserId,
+        campaignJournalEntryId: entry.id,
+        fromHolderUserId: entry.holderUserId,
         toHolderUserId: input.holderUserId,
         actorUserId: userId,
         action,
@@ -1002,50 +874,35 @@ export class CampaignJournalService {
       return next
     })
 
-    return { ok: true, data: toEntryListItem(updated, access.data, userId) }
+    return toEntryListItem(updated, access, userId)
   }
 
   async transferEntry(
-    campaignId: string,
+    access: ResolvedCampaignAccess,
     entryId: string,
     userId: string,
     input: CampaignJournalTransferInput,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN'
-  ): Promise<ServiceResult<CampaignJournalEntryDetail>> {
-    const access = await this.resolveAccess(campaignId, userId, systemRole)
-    if (!access.ok) return access
+  ): Promise<CampaignJournalEntryDetail> {
+    const campaignId = access.campaignId
 
-    const entry = await this.getAuthorizedEntry(campaignId, entryId, userId, access.data)
-    if (!entry.ok) return entry
+    const entry = await this.getAuthorizedEntry(campaignId, entryId, userId, access)
 
-    if (!entry.data.isDiscoverable) {
-      return {
-        ok: false,
-        statusCode: 400,
-        code: 'VALIDATION_ERROR',
-        message: 'Only discoverable entries can be transferred',
-      }
+    if (!entry.isDiscoverable) {
+      throw apiError(400, 'VALIDATION_ERROR', 'Only discoverable entries can be transferred')
     }
 
-    if (!canManageDiscoverableHolderState(access.data, userId, entry.data)) {
-      return {
-        ok: false,
-        statusCode: 403,
-        code: 'FORBIDDEN',
-        message: 'Only DM-access users or current holder can transfer this entry',
-      }
+    if (!canManageDiscoverableHolderState(access, userId, entry)) {
+      throw apiError(403, 'FORBIDDEN', 'Only DM-access users or current holder can transfer this entry')
     }
 
-    const holderCheck = await this.ensureCampaignMemberHolder(campaignId, input.toHolderUserId)
-    if (!holderCheck.ok) return holderCheck
+    await this.ensureCampaignMemberHolder(campaignId, input.toHolderUserId)
 
-    const nextVisibility = input.visibility ?? entry.data.visibility
-    const visibilityCheck = this.validateDiscoverableHolderVisibility(nextVisibility)
-    if (!visibilityCheck.ok) return visibilityCheck
+    const nextVisibility = input.visibility ?? entry.visibility
+    this.validateDiscoverableHolderVisibility(nextVisibility)
 
     const updated = await prisma.$transaction(async (tx) => {
       const next = await tx.campaignJournalEntry.update({
-        where: { id: entry.data.id },
+        where: { id: entry.id },
         data: {
           holderUserId: input.toHolderUserId,
           visibility: nextVisibility,
@@ -1057,8 +914,8 @@ export class CampaignJournalService {
       const action: CampaignJournalTransferHistoryAction = input.toHolderUserId ? 'TRANSFERRED' : 'UNASSIGNED'
       await this.createTransferHistory(tx, {
         campaignId,
-        campaignJournalEntryId: entry.data.id,
-        fromHolderUserId: entry.data.holderUserId,
+        campaignJournalEntryId: entry.id,
+        fromHolderUserId: entry.holderUserId,
         toHolderUserId: input.toHolderUserId,
         actorUserId: userId,
         action,
@@ -1067,38 +924,30 @@ export class CampaignJournalService {
       return next
     })
 
-    return { ok: true, data: toEntryListItem(updated, access.data, userId) }
+    return toEntryListItem(updated, access, userId)
   }
 
   async archiveEntry(
-    campaignId: string,
+    access: ResolvedCampaignAccess,
     entryId: string,
     userId: string,
     input: CampaignJournalArchiveInput,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN'
-  ): Promise<ServiceResult<CampaignJournalEntryDetail>> {
-    const access = await this.resolveAccess(campaignId, userId, systemRole)
-    if (!access.ok) return access
+  ): Promise<CampaignJournalEntryDetail> {
+    const campaignId = access.campaignId
 
-    const entry = await this.getAuthorizedEntry(campaignId, entryId, userId, access.data)
-    if (!entry.ok) return entry
-    if (!canManageDiscoverableHolderState(access.data, userId, entry.data)) {
-      return {
-        ok: false,
-        statusCode: 403,
-        code: 'FORBIDDEN',
-        message: 'Only DM-access users or holder can archive this entry',
-      }
+    const entry = await this.getAuthorizedEntry(campaignId, entryId, userId, access)
+    if (!canManageDiscoverableHolderState(access, userId, entry)) {
+      throw apiError(403, 'FORBIDDEN', 'Only DM-access users or holder can archive this entry')
     }
 
     const targetArchived = input.archived
-    if (entry.data.isArchived === targetArchived) {
-      return { ok: true, data: toEntryListItem(entry.data, access.data, userId) }
+    if (entry.isArchived === targetArchived) {
+      return toEntryListItem(entry, access, userId)
     }
 
     const updated = await prisma.$transaction(async (tx) => {
       const next = await tx.campaignJournalEntry.update({
-        where: { id: entry.data.id },
+        where: { id: entry.id },
         data: targetArchived
           ? {
               isArchived: true,
@@ -1115,9 +964,9 @@ export class CampaignJournalService {
 
       await this.createTransferHistory(tx, {
         campaignId,
-        campaignJournalEntryId: entry.data.id,
-        fromHolderUserId: entry.data.holderUserId,
-        toHolderUserId: entry.data.holderUserId,
+        campaignJournalEntryId: entry.id,
+        fromHolderUserId: entry.holderUserId,
+        toHolderUserId: entry.holderUserId,
         actorUserId: userId,
         action: targetArchived ? 'ARCHIVED' : 'UNARCHIVED',
       })
@@ -1125,26 +974,23 @@ export class CampaignJournalService {
       return next
     })
 
-    return { ok: true, data: toEntryListItem(updated, access.data, userId) }
+    return toEntryListItem(updated, access, userId)
   }
 
   async listEntryHistory(
-    campaignId: string,
+    access: ResolvedCampaignAccess,
     entryId: string,
     userId: string,
     query: CampaignJournalHistoryListQueryInput,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN'
-  ): Promise<ServiceResult<CampaignJournalHistoryResponse>> {
-    const access = await this.resolveAccess(campaignId, userId, systemRole)
-    if (!access.ok) return access
+  ): Promise<CampaignJournalHistoryResponse> {
+    const campaignId = access.campaignId
 
-    const entry = await this.getAuthorizedEntry(campaignId, entryId, userId, access.data)
-    if (!entry.ok) return entry
+    const entry = await this.getAuthorizedEntry(campaignId, entryId, userId, access)
 
     const pagination = getPagination(query)
     const where = {
       campaignId,
-      campaignJournalEntryId: entry.data.id,
+      campaignJournalEntryId: entry.id,
     }
 
     const [total, rows] = await prisma.$transaction([
@@ -1159,8 +1005,6 @@ export class CampaignJournalService {
     ])
 
     return {
-      ok: true,
-      data: {
         items: rows.map(toTransferHistoryDto),
         pagination: {
           page: pagination.page,
@@ -1168,18 +1012,15 @@ export class CampaignJournalService {
           total,
           totalPages: Math.max(1, Math.ceil(total / pagination.pageSize)),
         },
-      },
-    }
+      }
   }
 
   async listNotifications(
-    campaignId: string,
+    access: ResolvedCampaignAccess,
     userId: string,
     query: CampaignJournalNotificationListQueryInput,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN'
-  ): Promise<ServiceResult<CampaignJournalNotificationListResponse>> {
-    const access = await this.resolveAccess(campaignId, userId, systemRole)
-    if (!access.ok) return access
+  ): Promise<CampaignJournalNotificationListResponse> {
+    const campaignId = access.campaignId
 
     const retentionFloor = new Date(Date.now() - JOURNAL_NOTIFICATION_RETENTION_DAYS * 24 * 60 * 60 * 1000)
     const sinceFilter = query.since ? new Date(query.since) : null
@@ -1224,7 +1065,7 @@ export class CampaignJournalService {
     })
 
     const visibleRows = historyRows.filter((row) =>
-      isEntryVisibleToUser(access.data, userId, {
+      isEntryVisibleToUser(access, userId, {
         authorUserId: row.entry.authorUserId,
         holderUserId: row.entry.holderUserId,
         visibility: row.entry.visibility,
@@ -1277,8 +1118,6 @@ export class CampaignJournalService {
     const pagedItems = items.slice(pagination.skip, pagination.skip + pagination.take)
 
     return {
-      ok: true,
-      data: {
         items: pagedItems,
         pagination: {
           page: pagination.page,
@@ -1286,17 +1125,11 @@ export class CampaignJournalService {
           total,
           totalPages: Math.max(1, Math.ceil(total / pagination.pageSize)),
         },
-      },
-    }
+      }
   }
 
-  async listMemberOptions(
-    campaignId: string,
-    userId: string,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN'
-  ): Promise<ServiceResult<{ items: CampaignJournalMemberOption[] }>> {
-    const access = await this.resolveAccess(campaignId, userId, systemRole)
-    if (!access.ok) return access
+  async listMemberOptions(access: ResolvedCampaignAccess): Promise<{ items: CampaignJournalMemberOption[] }> {
+    const campaignId = access.campaignId
 
     const members = await prisma.campaignMember.findMany({
       where: { campaignId },
@@ -1314,28 +1147,23 @@ export class CampaignJournalService {
     })
 
     return {
-      ok: true,
-      data: {
         items: members.map((member) => ({
           userId: member.userId,
           name: member.user.name,
           role: member.role,
           hasDmAccess: member.hasDmAccess,
         })),
-      },
-    }
+      }
   }
 
   async listTags(
-    campaignId: string,
+    access: ResolvedCampaignAccess,
     userId: string,
     query: CampaignJournalTagListQueryInput,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN'
-  ): Promise<ServiceResult<CampaignJournalTagListResponse>> {
-    const access = await this.resolveAccess(campaignId, userId, systemRole)
-    if (!access.ok) return access
+  ): Promise<CampaignJournalTagListResponse> {
+    const campaignId = access.campaignId
 
-    const visibilityWhere = entryVisibilityWhere(access.data, userId)
+    const visibilityWhere = entryVisibilityWhere(access, userId)
     const queryLabel = query.query ? normalizeJournalTagLabel(query.query) : undefined
 
     const rows = await prisma.campaignJournalTag.findMany({
@@ -1387,8 +1215,6 @@ export class CampaignJournalService {
     const items = allItems.slice(start, end)
 
     return {
-      ok: true,
-      data: {
         items,
         pagination: {
           page: pagination.page,
@@ -1396,30 +1222,26 @@ export class CampaignJournalService {
           total: allItems.length,
           totalPages: Math.max(1, Math.ceil(allItems.length / pagination.pageSize)),
         },
-      },
-    }
+      }
   }
 
   async suggestTags(
-    campaignId: string,
+    access: ResolvedCampaignAccess,
     userId: string,
     query: CampaignJournalTagSuggestQueryInput,
-    systemRole?: 'USER' | 'SYSTEM_ADMIN'
-  ): Promise<ServiceResult<{ items: CampaignJournalTagSuggestion[] }>> {
+  ): Promise<{ items: CampaignJournalTagSuggestion[] }> {
     const result = await this.listTags(
-      campaignId,
+      access,
       userId,
       {
         type: query.type,
         query: query.query,
         page: 1,
         pageSize: query.limit,
-      },
-      systemRole
+      }
     )
-    if (!result.ok) return result
 
-    const items: CampaignJournalTagSuggestion[] = result.data.items.map((item) => ({
+    const items: CampaignJournalTagSuggestion[] = result.items.map((item) => ({
       tagType: item.tagType,
       displayLabel: item.displayLabel,
       normalizedLabel: item.normalizedLabel,
@@ -1427,6 +1249,6 @@ export class CampaignJournalService {
       glossaryEntryName: item.glossaryEntryName,
     }))
 
-    return { ok: true, data: { items } }
+    return { items }
   }
 }

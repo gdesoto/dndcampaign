@@ -1,19 +1,13 @@
 import { getQuery } from 'h3'
 import { prisma } from '#server/db/prisma'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 import { glossaryTypeSchema } from '#shared/schemas/glossary'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  if (!campaignId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id is required')
-  }
+  const { campaignId } = routeParams(event, 'campaignId')
 
-  const authz = await requireCampaignPermission(event, campaignId, 'content.read')
-  if (!authz.ok) {
-    return authz.response
-  }
+  await requireCampaignPermission(event, campaignId, 'content.read')
 
   const query = getQuery(event)
   const type = typeof query.type === 'string' ? query.type : undefined
@@ -21,7 +15,7 @@ export default defineEventHandler(async (event) => {
 
   const typeParsed = type ? glossaryTypeSchema.safeParse(type) : null
   if (type && typeParsed && !typeParsed.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid glossary type')
+    throw apiError(400, 'VALIDATION_ERROR', 'Invalid glossary type')
   }
 
   const entries = await prisma.glossaryEntry.findMany({

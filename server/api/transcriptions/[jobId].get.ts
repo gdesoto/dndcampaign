@@ -1,5 +1,5 @@
 import { prisma } from '#server/db/prisma'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 const parseJsonArray = (value: string | null) => {
@@ -14,10 +14,7 @@ const parseJsonArray = (value: string | null) => {
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
-  const jobId = event.context.params?.jobId
-  if (!jobId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Transcription id is required')
-  }
+  const { jobId } = routeParams(event, 'jobId')
 
   const job = await prisma.transcriptionJob.findFirst({
     where: {
@@ -30,7 +27,7 @@ export default defineEventHandler(async (event) => {
   })
 
   if (!job) {
-    return fail(event, 404, 'NOT_FOUND', 'Transcription not found')
+    throw apiError(404, 'NOT_FOUND', 'Transcription not found')
   }
 
   return ok({

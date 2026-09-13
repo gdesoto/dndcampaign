@@ -1,14 +1,11 @@
 import { prisma } from '#server/db/prisma'
 import { ArtifactService } from '#server/services/artifact.service'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
-  const recordingId = event.context.params?.recordingId
-  if (!recordingId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Recording id is required')
-  }
+  const { recordingId } = routeParams(event, 'recordingId')
 
   const recording = await prisma.recording.findFirst({
     where: {
@@ -17,7 +14,7 @@ export default defineEventHandler(async (event) => {
     },
   })
   if (!recording) {
-    return fail(event, 404, 'NOT_FOUND', 'Recording not found')
+    throw apiError(404, 'NOT_FOUND', 'Recording not found')
   }
 
   const previousVttArtifactId = recording.vttArtifactId

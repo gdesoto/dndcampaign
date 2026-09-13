@@ -1,7 +1,5 @@
 import { z } from 'zod'
 import { prisma } from '#server/db/prisma'
-import type { ServiceResult } from '#server/services/auth.service'
-import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 import {
   calendarEventCreateSchema,
   calendarEventQuerySchema,
@@ -12,6 +10,7 @@ import {
   type CalendarEventUpdateInput,
 } from '#shared/schemas/calendar'
 import type { CampaignCalendarEvent } from '#shared/types/calendar'
+import { apiError } from '#server/utils/http'
 
 type CampaignCalendarEventDto = CampaignCalendarEvent
 
@@ -42,25 +41,7 @@ const toEventDto = (row: {
 })
 
 export class CalendarEventsService {
-  async listEvents(
-    campaignId: string,
-    userId: string,
-    query: CalendarEventQueryInput,
-  ): Promise<ServiceResult<CampaignCalendarEventDto[]>> {
-    const campaign = await prisma.campaign.findFirst({
-      where: { id: campaignId, ...buildCampaignWhereForPermission(userId, 'campaign.read') },
-      select: { id: true },
-    })
-
-    if (!campaign) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Campaign not found or access denied.',
-      }
-    }
-
+  async listEvents(campaignId: string, query: CalendarEventQueryInput): Promise<CampaignCalendarEventDto[]> {
     const parsedQuery = calendarEventQuerySchema.parse(query)
 
     const events = await prisma.campaignCalendarEvent.findMany({
@@ -72,49 +53,25 @@ export class CalendarEventsService {
       orderBy: [{ year: 'asc' }, { month: 'asc' }, { day: 'asc' }, { createdAt: 'asc' }],
     })
 
-    return { ok: true, data: events.map(toEventDto) }
+    return events.map(toEventDto)
   }
 
   async createEvent(
     campaignId: string,
     userId: string,
     input: CalendarEventCreateInput,
-  ): Promise<ServiceResult<CampaignCalendarEventDto>> {
-    const campaign = await prisma.campaign.findFirst({
-      where: { id: campaignId, ...buildCampaignWhereForPermission(userId, 'campaign.update') },
-      select: { id: true },
-    })
-
-    if (!campaign) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Campaign not found or access denied.',
-      }
-    }
-
+  ): Promise<CampaignCalendarEventDto> {
     const config = await prisma.campaignCalendarConfig.findUnique({
       where: { campaignId },
       select: { isEnabled: true, monthsJson: true },
     })
 
     if (!config) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'CALENDAR_CONFIG_NOT_FOUND',
-        message: 'Calendar config not found for campaign.',
-      }
+      throw apiError(404, 'CALENDAR_CONFIG_NOT_FOUND', 'Calendar config not found for campaign.')
     }
 
     if (!config.isEnabled) {
-      return {
-        ok: false,
-        statusCode: 409,
-        code: 'CALENDAR_DISABLED',
-        message: 'Calendar is currently disabled for this campaign.',
-      }
+      throw apiError(409, 'CALENDAR_DISABLED', 'Calendar is currently disabled for this campaign.')
     }
 
     const parsedInput = calendarEventCreateSchema.parse(input)
@@ -137,40 +94,20 @@ export class CalendarEventsService {
       },
     })
 
-    return { ok: true, data: toEventDto(created) }
+    return toEventDto(created)
   }
 
   async updateEvent(
     campaignId: string,
     eventId: string,
-    userId: string,
     input: CalendarEventUpdateInput,
-  ): Promise<ServiceResult<CampaignCalendarEventDto>> {
-    const campaign = await prisma.campaign.findFirst({
-      where: { id: campaignId, ...buildCampaignWhereForPermission(userId, 'campaign.update') },
-      select: { id: true },
-    })
-
-    if (!campaign) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Campaign not found or access denied.',
-      }
-    }
-
+  ): Promise<CampaignCalendarEventDto> {
     const existing = await prisma.campaignCalendarEvent.findFirst({
       where: { id: eventId, campaignId },
     })
 
     if (!existing) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'EVENT_NOT_FOUND',
-        message: 'Calendar event not found.',
-      }
+      throw apiError(404, 'EVENT_NOT_FOUND', 'Calendar event not found.')
     }
 
     const parsedInput = calendarEventUpdateSchema.parse(input)
@@ -188,20 +125,10 @@ export class CalendarEventsService {
         select: { isEnabled: true, monthsJson: true },
       })
       if (!config) {
-        return {
-          ok: false,
-          statusCode: 404,
-          code: 'CALENDAR_CONFIG_NOT_FOUND',
-          message: 'Calendar config not found for campaign.',
-        }
+        throw apiError(404, 'CALENDAR_CONFIG_NOT_FOUND', 'Calendar config not found for campaign.')
       }
       if (!config.isEnabled) {
-        return {
-          ok: false,
-          statusCode: 409,
-          code: 'CALENDAR_DISABLED',
-          message: 'Calendar is currently disabled for this campaign.',
-        }
+        throw apiError(409, 'CALENDAR_DISABLED', 'Calendar is currently disabled for this campaign.')
       }
       createCalendarDateBoundsSchema(monthShapeSchema.parse(config.monthsJson)).parse({
         year: nextYear,
@@ -223,32 +150,14 @@ export class CalendarEventsService {
       },
     })
 
-    return { ok: true, data: toEventDto(updated) }
+    return toEventDto(updated)
   }
 
-  async deleteEvent(
-    campaignId: string,
-    eventId: string,
-    userId: string,
-  ): Promise<ServiceResult<{ deleted: true }>> {
-    const campaign = await prisma.campaign.findFirst({
-      where: { id: campaignId, ...buildCampaignWhereForPermission(userId, 'campaign.update') },
-      select: { id: true },
-    })
-
-    if (!campaign) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Campaign not found or access denied.',
-      }
-    }
-
+  async deleteEvent(campaignId: string, eventId: string): Promise<{ deleted: true }> {
     await prisma.campaignCalendarEvent.deleteMany({
       where: { id: eventId, campaignId },
     })
 
-    return { ok: true, data: { deleted: true } }
+    return { deleted: true }
   }
 }

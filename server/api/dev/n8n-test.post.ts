@@ -1,5 +1,5 @@
-import { readBody } from 'h3'
-import { ok, fail } from '#server/utils/http'
+import { readBody, isError } from 'h3'
+import { ok, apiError } from '#server/utils/http'
 import { prisma } from '#server/db/prisma'
 import { n8nWebhookPayloadSchema } from '#shared/schemas/summarization'
 
@@ -98,7 +98,7 @@ export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
 
   if (!import.meta.dev) {
-    return fail(event, 403, 'FORBIDDEN', 'Dev-only endpoint')
+    throw apiError(403, 'FORBIDDEN', 'Dev-only endpoint')
   }
 
   const config = useRuntimeConfig()
@@ -112,7 +112,7 @@ export default defineEventHandler(async (event) => {
   const webhookUrl = body?.webhookUrlOverride || config.n8n?.webhookUrlDefault
 
   if (!webhookUrl) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'n8n webhook URL is not configured')
+    throw apiError(400, 'VALIDATION_ERROR', 'n8n webhook URL is not configured')
   }
 
   let campaignName = 'Dev Campaign'
@@ -140,7 +140,7 @@ export default defineEventHandler(async (event) => {
     })
 
     if (!campaign || !session) {
-      return fail(event, 404, 'NOT_FOUND', 'Campaign/session not found')
+      throw apiError(404, 'NOT_FOUND', 'Campaign/session not found')
     }
 
     campaignName = campaign.name
@@ -225,7 +225,8 @@ export default defineEventHandler(async (event) => {
           zodIssues = JSON.stringify(parsed.error.issues, null, 2)
         }
       } catch (error) {
-        return fail(event, 500, 'ZOD_CRASH', 'Zod validation crashed', {
+        if (isError(error)) throw error
+        throw apiError(500, 'ZOD_CRASH', 'Zod validation crashed', {
           message: (error as Error & { message?: string }).message || 'Unknown Zod error',
         })
       }
@@ -233,7 +234,7 @@ export default defineEventHandler(async (event) => {
 
     const validation = validateN8nResponse(response)
     if (!validation.valid || (useZod && zodValid === false)) {
-      return fail(event, 400, 'INVALID_RESPONSE', 'n8n response did not match expected schema', {
+      throw apiError(400, 'INVALID_RESPONSE', 'n8n response did not match expected schema', {
         errors: JSON.stringify(validation.errors, null, 2),
         warnings: JSON.stringify(validation.warnings, null, 2),
         receivedKeys: JSON.stringify(Object.keys((response as Record<string, unknown>) || {})),
@@ -252,8 +253,8 @@ export default defineEventHandler(async (event) => {
       zodValid: zodValid ?? 'not-run',
     })
   } catch (error) {
-    return fail(
-      event, 500,
+    if (isError(error)) throw error
+    throw apiError(500,
       'N8N_TEST_FAILED',
       (error as Error & { message?: string }).message || 'Unable to reach n8n webhook.'
     )

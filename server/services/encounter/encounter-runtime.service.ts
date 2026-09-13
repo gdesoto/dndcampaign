@@ -1,5 +1,4 @@
 import { prisma } from '#server/db/prisma'
-import type { ServiceResult } from '#server/services/auth.service'
 import type {
   EncounterCombatant,
   EncounterCondition,
@@ -23,6 +22,7 @@ import {
   toEncounterConditionDto,
   toEncounterSummaryDto,
 } from '#server/services/encounter/encounter-shared'
+import { apiError } from '#server/utils/http'
 
 type EncounterLifecycleAction = 'start' | 'pause' | 'resume' | 'complete' | 'abandon' | 'reset'
 
@@ -82,25 +82,15 @@ export class EncounterRuntimeService {
     encounterId: string,
     userId: string,
     action: EncounterLifecycleAction,
-  ): Promise<ServiceResult<EncounterSummary>> {
+  ): Promise<EncounterSummary> {
     const encounter = await getEncounterWithAccess(encounterId, userId, 'content.write')
     if (!encounter) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Encounter not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
 
     const nextStatus = lifecycleTarget[action]
     if (action !== 'reset' && !transitionAllowed(encounter.status, nextStatus)) {
-      return {
-        ok: false,
-        statusCode: 409,
-        code: 'INVALID_STATE_TRANSITION',
-        message: `Cannot transition encounter from ${encounter.status} to ${nextStatus}.`,
-      }
+      throw apiError(409, 'INVALID_STATE_TRANSITION', `Cannot transition encounter from ${encounter.status} to ${nextStatus}.`)
     }
 
     const updated = await prisma.campaignEncounter.update({
@@ -131,22 +121,17 @@ export class EncounterRuntimeService {
       },
     })
 
-    return { ok: true, data: toEncounterSummaryDto(updated) }
+    return toEncounterSummaryDto(updated)
   }
 
   async rollInitiative(
     encounterId: string,
     userId: string,
     input: EncounterInitiativeRollInput = { mode: 'ALL' },
-  ): Promise<ServiceResult<EncounterCombatant[]>> {
+  ): Promise<EncounterCombatant[]> {
     const encounter = await getEncounterWithAccess(encounterId, userId, 'content.write')
     if (!encounter) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Encounter not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
 
     const combatants = await prisma.encounterCombatant.findMany({
@@ -201,22 +186,17 @@ export class EncounterRuntimeService {
       userId,
     )
 
-    return { ok: true, data: finalOrder.map(toEncounterCombatantDto) }
+    return finalOrder.map(toEncounterCombatantDto)
   }
 
   async reorderInitiative(
     encounterId: string,
     userId: string,
     input: EncounterInitiativeReorderInput,
-  ): Promise<ServiceResult<EncounterCombatant[]>> {
+  ): Promise<EncounterCombatant[]> {
     const encounter = await getEncounterWithAccess(encounterId, userId, 'content.write')
     if (!encounter) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Encounter not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
 
     const combatants = await prisma.encounterCombatant.findMany({ where: { encounterId } })
@@ -225,12 +205,7 @@ export class EncounterRuntimeService {
       input.combatantOrder.length !== combatants.length
       || input.combatantOrder.some((id) => !combatantSet.has(id))
     ) {
-      return {
-        ok: false,
-        statusCode: 400,
-        code: 'VALIDATION_ERROR',
-        message: 'Combatant order must include all encounter combatants exactly once.',
-      }
+      throw apiError(400, 'VALIDATION_ERROR', 'Combatant order must include all encounter combatants exactly once.')
     }
 
     await this.applySortOrder(encounterId, input.combatantOrder)
@@ -248,14 +223,14 @@ export class EncounterRuntimeService {
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     })
 
-    return { ok: true, data: ordered.map(toEncounterCombatantDto) }
+    return ordered.map(toEncounterCombatantDto)
   }
 
-  async advanceTurn(encounterId: string, userId: string): Promise<ServiceResult<EncounterSummary>> {
+  async advanceTurn(encounterId: string, userId: string): Promise<EncounterSummary> {
     return this.moveTurn(encounterId, userId, 'advance')
   }
 
-  async rewindTurn(encounterId: string, userId: string): Promise<ServiceResult<EncounterSummary>> {
+  async rewindTurn(encounterId: string, userId: string): Promise<EncounterSummary> {
     return this.moveTurn(encounterId, userId, 'rewind')
   }
 
@@ -263,25 +238,15 @@ export class EncounterRuntimeService {
     encounterId: string,
     userId: string,
     direction: 'advance' | 'rewind',
-  ): Promise<ServiceResult<EncounterSummary>> {
+  ): Promise<EncounterSummary> {
     const encounter = await getEncounterWithAccess(encounterId, userId, 'content.write')
     if (!encounter) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Encounter not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
 
     const combatantCount = encounter.combatants.length
     if (!combatantCount) {
-      return {
-        ok: false,
-        statusCode: 409,
-        code: 'NO_COMBATANTS',
-        message: 'Cannot move turn without combatants.',
-      }
+      throw apiError(409, 'NO_COMBATANTS', 'Cannot move turn without combatants.')
     }
 
     let nextTurnIndex = encounter.currentTurnIndex
@@ -323,34 +288,24 @@ export class EncounterRuntimeService {
       userId,
     )
 
-    return { ok: true, data: toEncounterSummaryDto(updated) }
+    return toEncounterSummaryDto(updated)
   }
 
   async setActiveTurn(
     encounterId: string,
     userId: string,
     input: EncounterSetActiveTurnInput,
-  ): Promise<ServiceResult<EncounterSummary>> {
+  ): Promise<EncounterSummary> {
     const encounter = await getEncounterWithAccess(encounterId, userId, 'content.write')
     if (!encounter) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Encounter not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
 
     const ordered = [...encounter.combatants].sort((a, b) => a.sortOrder - b.sortOrder)
     const index = ordered.findIndex((combatant) => combatant.id === input.combatantId)
 
     if (index < 0) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Combatant not found.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Combatant not found.')
     }
 
     const updated = await prisma.campaignEncounter.update({
@@ -366,7 +321,7 @@ export class EncounterRuntimeService {
       userId,
     )
 
-    return { ok: true, data: toEncounterSummaryDto(updated) }
+    return toEncounterSummaryDto(updated)
   }
 
   async applyDamage(
@@ -374,25 +329,15 @@ export class EncounterRuntimeService {
     combatantId: string,
     userId: string,
     input: EncounterDamageInput,
-  ): Promise<ServiceResult<EncounterCombatant>> {
+  ): Promise<EncounterCombatant> {
     const encounter = await getEncounterWithAccess(encounterId, userId, 'content.write')
     if (!encounter) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Encounter not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
 
     const combatant = await prisma.encounterCombatant.findFirst({ where: { id: combatantId, encounterId } })
     if (!combatant) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Combatant not found.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Combatant not found.')
     }
 
     let remainingDamage = input.amount
@@ -432,7 +377,7 @@ export class EncounterRuntimeService {
       userId,
     )
 
-    return { ok: true, data: toEncounterCombatantDto(updated) }
+    return toEncounterCombatantDto(updated)
   }
 
   async applyHeal(
@@ -440,25 +385,15 @@ export class EncounterRuntimeService {
     combatantId: string,
     userId: string,
     input: EncounterHealInput,
-  ): Promise<ServiceResult<EncounterCombatant>> {
+  ): Promise<EncounterCombatant> {
     const encounter = await getEncounterWithAccess(encounterId, userId, 'content.write')
     if (!encounter) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Encounter not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
 
     const combatant = await prisma.encounterCombatant.findFirst({ where: { id: combatantId, encounterId } })
     if (!combatant) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Combatant not found.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Combatant not found.')
     }
 
     const baselineHp = combatant.currentHp ?? 0
@@ -487,7 +422,7 @@ export class EncounterRuntimeService {
       userId,
     )
 
-    return { ok: true, data: toEncounterCombatantDto(updated) }
+    return toEncounterCombatantDto(updated)
   }
 
   async createCondition(
@@ -495,25 +430,15 @@ export class EncounterRuntimeService {
     combatantId: string,
     userId: string,
     input: EncounterConditionCreateInput,
-  ): Promise<ServiceResult<EncounterCondition>> {
+  ): Promise<EncounterCondition> {
     const encounter = await getEncounterWithAccess(encounterId, userId, 'content.write')
     if (!encounter) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Encounter not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
 
     const combatant = await prisma.encounterCombatant.findFirst({ where: { id: combatantId, encounterId } })
     if (!combatant) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Combatant not found.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Combatant not found.')
     }
 
     const created = await prisma.encounterCondition.create({
@@ -536,7 +461,7 @@ export class EncounterRuntimeService {
       userId,
     )
 
-    return { ok: true, data: toEncounterConditionDto(created) }
+    return toEncounterConditionDto(created)
   }
 
   async updateCondition(
@@ -545,15 +470,10 @@ export class EncounterRuntimeService {
     conditionId: string,
     userId: string,
     input: EncounterConditionUpdateInput,
-  ): Promise<ServiceResult<EncounterCondition>> {
+  ): Promise<EncounterCondition> {
     const encounter = await getEncounterWithAccess(encounterId, userId, 'content.write')
     if (!encounter) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Encounter not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
 
     const condition = await prisma.encounterCondition.findFirst({
@@ -562,12 +482,7 @@ export class EncounterRuntimeService {
     })
 
     if (!condition || condition.combatant.encounterId !== encounterId) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Condition not found.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Condition not found.')
     }
 
     const updated = await prisma.encounterCondition.update({
@@ -590,7 +505,7 @@ export class EncounterRuntimeService {
       userId,
     )
 
-    return { ok: true, data: toEncounterConditionDto(updated) }
+    return toEncounterConditionDto(updated)
   }
 
   async deleteCondition(
@@ -598,15 +513,10 @@ export class EncounterRuntimeService {
     combatantId: string,
     conditionId: string,
     userId: string,
-  ): Promise<ServiceResult<{ deleted: true }>> {
+  ): Promise<{ deleted: true }> {
     const encounter = await getEncounterWithAccess(encounterId, userId, 'content.write')
     if (!encounter) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Encounter not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
 
     const condition = await prisma.encounterCondition.findFirst({
@@ -614,12 +524,7 @@ export class EncounterRuntimeService {
       include: { combatant: true },
     })
     if (!condition || condition.combatant.encounterId !== encounterId) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Condition not found.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Condition not found.')
     }
 
     await prisma.encounterCondition.delete({ where: { id: conditionId } })
@@ -632,18 +537,13 @@ export class EncounterRuntimeService {
       userId,
     )
 
-    return { ok: true, data: { deleted: true } }
+    return { deleted: true }
   }
 
-  async getRuntimeBoard(encounterId: string, userId: string): Promise<ServiceResult<EncounterRuntimeBoard>> {
+  async getRuntimeBoard(encounterId: string, userId: string): Promise<EncounterRuntimeBoard> {
     const encounter = await getEncounterWithAccess(encounterId, userId, 'content.read')
     if (!encounter) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Encounter not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
 
     const initiativeLane = [...encounter.combatants]
@@ -667,15 +567,12 @@ export class EncounterRuntimeService {
     }
 
     return {
-      ok: true,
-      data: {
         encounterId,
         round: encounter.currentRound,
         activeCombatantId: initiativeLane.find((item) => item.isActive)?.combatantId || null,
         initiativeLane,
         warnings,
-      },
-    }
+      }
   }
 
   private async tickRoundEndConditions(encounterId: string) {

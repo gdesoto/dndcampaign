@@ -1,14 +1,11 @@
 import { prisma } from '#server/db/prisma'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 import { ArtifactService } from '#server/services/artifact.service'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   await requireUserSession(event)
-  const recapId = event.context.params?.recapId
-  if (!recapId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Recap id is required')
-  }
+  const { recapId } = routeParams(event, 'recapId')
 
   const recap = await prisma.recapRecording.findUnique({
     where: { id: recapId },
@@ -23,13 +20,10 @@ export default defineEventHandler(async (event) => {
     },
   })
   if (!recap) {
-    return fail(event, 404, 'NOT_FOUND', 'Recap not found')
+    throw apiError(404, 'NOT_FOUND', 'Recap not found')
   }
 
-  const access = await requireCampaignPermission(event, recap.session.campaignId, 'recording.upload')
-  if (!access.ok) {
-    return access.response
-  }
+  await requireCampaignPermission(event, recap.session.campaignId, 'recording.upload')
 
   const deletedRecap = await prisma.recapRecording.delete({
     where: { id: recap.id },

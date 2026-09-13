@@ -1,11 +1,11 @@
 import { prisma } from '#server/db/prisma'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError } from '#server/utils/http'
 import { computeCharacterSummary } from '#server/services/character.service'
 import { readBody } from 'h3'
 
 export default defineEventHandler(async (event) => {
   if (process.env.NODE_ENV === 'production') {
-    return fail(event, 403, 'FORBIDDEN', 'Migration endpoint is disabled in production.')
+    throw apiError(403, 'FORBIDDEN', 'Migration endpoint is disabled in production.')
   }
 
   const session = await requireUserSession(event)
@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
   })
 
   if (!campaigns.length) {
-    return fail(event, 404, 'NOT_FOUND', 'No campaigns found')
+    throw apiError(404, 'NOT_FOUND', 'No campaigns found')
   }
 
   const campaignIds = campaigns.map((campaign) => campaign.id)

@@ -1,6 +1,5 @@
 import { prisma } from '#server/db/prisma'
 import type { Prisma } from '#server/db/prisma-client'
-import type { ServiceResult } from '#server/services/auth.service'
 import type {
   EncounterStatBlock,
 } from '#shared/types/encounter'
@@ -9,32 +8,26 @@ import type {
   EncounterStatBlockUpdateInput,
 } from '#shared/schemas/encounter'
 import {
-  ensureCampaignAccess,
   toEncounterStatBlockDto,
 } from '#server/services/encounter/encounter-shared'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
+import { apiError } from '#server/utils/http'
 
 export class EncounterStatBlockService {
-  async listStatBlocks(campaignId: string, userId: string): Promise<ServiceResult<EncounterStatBlock[]>> {
-    const access = await ensureCampaignAccess(campaignId, userId, 'content.read')
-    if (!access.ok) return access
-
+  async listStatBlocks(campaignId: string): Promise<EncounterStatBlock[]> {
     const statBlocks = await prisma.encounterStatBlock.findMany({
       where: { campaignId },
       orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
     })
 
-    return { ok: true, data: statBlocks.map(toEncounterStatBlockDto) }
+    return statBlocks.map(toEncounterStatBlockDto)
   }
 
   async createStatBlock(
     campaignId: string,
     userId: string,
     input: EncounterStatBlockCreateInput,
-  ): Promise<ServiceResult<EncounterStatBlock>> {
-    const access = await ensureCampaignAccess(campaignId, userId, 'content.write')
-    if (!access.ok) return access
-
+  ): Promise<EncounterStatBlock> {
     const created = await prisma.encounterStatBlock.create({
       data: {
         campaignId,
@@ -46,14 +39,14 @@ export class EncounterStatBlockService {
       },
     })
 
-    return { ok: true, data: toEncounterStatBlockDto(created) }
+    return toEncounterStatBlockDto(created)
   }
 
   async updateStatBlock(
     statBlockId: string,
     userId: string,
     input: EncounterStatBlockUpdateInput,
-  ): Promise<ServiceResult<EncounterStatBlock>> {
+  ): Promise<EncounterStatBlock> {
     const existing = await prisma.encounterStatBlock.findFirst({
       where: {
         id: statBlockId,
@@ -63,12 +56,7 @@ export class EncounterStatBlockService {
     })
 
     if (!existing) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Encounter stat block not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Encounter stat block not found or access denied.')
     }
 
     const updated = await prisma.encounterStatBlock.update({
@@ -83,10 +71,10 @@ export class EncounterStatBlockService {
       },
     })
 
-    return { ok: true, data: toEncounterStatBlockDto(updated) }
+    return toEncounterStatBlockDto(updated)
   }
 
-  async deleteStatBlock(statBlockId: string, userId: string): Promise<ServiceResult<{ deleted: true }>> {
+  async deleteStatBlock(statBlockId: string, userId: string): Promise<{ deleted: true }> {
     const existing = await prisma.encounterStatBlock.findFirst({
       where: {
         id: statBlockId,
@@ -96,16 +84,11 @@ export class EncounterStatBlockService {
     })
 
     if (!existing) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Encounter stat block not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Encounter stat block not found or access denied.')
     }
 
     await prisma.encounterStatBlock.delete({ where: { id: statBlockId } })
-    return { ok: true, data: { deleted: true } }
+    return { deleted: true }
   }
 }
 

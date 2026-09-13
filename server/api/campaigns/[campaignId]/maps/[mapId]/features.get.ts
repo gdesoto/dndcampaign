@@ -1,17 +1,12 @@
 import { getQuery } from 'h3'
 import { MapService } from '#server/services/map.service'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 import { mapFeatureFilterSchema } from '#shared/schemas/map'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  const mapId = event.context.params?.mapId
-  if (!campaignId || !mapId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id and map id are required')
-  }
-  const authz = await requireCampaignPermission(event, campaignId, 'content.read')
-  if (!authz.ok) return authz.response
+  const { campaignId, mapId } = routeParams(event, 'campaignId', 'mapId')
+  await requireCampaignPermission(event, campaignId, 'content.read')
 
   const query = getQuery(event)
   const types = typeof query.types === 'string' ? query.types.split(',').map((entry) => entry.trim()) : undefined
@@ -20,12 +15,12 @@ export default defineEventHandler(async (event) => {
     includeRemoved: query.includeRemoved,
   })
   if (!parsed.success) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Invalid feature filter payload')
+    throw apiError(400, 'VALIDATION_ERROR', 'Invalid feature filter payload')
   }
 
-  const features = await new MapService().getFeatures(campaignId, mapId, authz.session.user.id, parsed.data)
+  const features = await new MapService().getFeatures(campaignId, mapId, parsed.data)
   if (!features) {
-    return fail(event, 404, 'NOT_FOUND', 'Map not found')
+    throw apiError(404, 'NOT_FOUND', 'Map not found')
   }
   return ok(features)
 })

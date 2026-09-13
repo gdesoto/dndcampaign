@@ -1,17 +1,13 @@
-import { fail, respond } from '#server/utils/http'
+import { ok, routeParams } from '#server/utils/http'
+import { requireCampaignPermission } from '#server/utils/campaign-auth'
 import { DungeonEditorService } from '#server/services/dungeon/dungeon-editor.service'
 
 const dungeonEditorService = new DungeonEditorService()
 
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  const dungeonId = event.context.params?.dungeonId
-  const linkId = event.context.params?.linkId
-  if (!campaignId || !dungeonId || !linkId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id, dungeon id, and link id are required')
-  }
+  const { campaignId, dungeonId, linkId } = routeParams(event, 'campaignId', 'dungeonId', 'linkId')
 
-  const sessionUser = await requireUserSession(event)
-  const result = await dungeonEditorService.deleteLink(campaignId, dungeonId, linkId, sessionUser.user.id)
-  return respond(event, result)
+  await requireCampaignPermission(event, campaignId, 'content.write')
+  const result = await dungeonEditorService.deleteLink(campaignId, dungeonId, linkId)
+  return ok(result)
 })

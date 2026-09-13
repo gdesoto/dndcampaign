@@ -1,12 +1,12 @@
 import { prisma } from '#server/db/prisma'
 import { z } from 'zod'
-import type { ServiceResult } from '#server/services/auth.service'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 import {
   createSessionCalendarRangeSchema,
   type SessionCalendarRangeUpsertInput,
 } from '#shared/schemas/calendar'
 import type { SessionCalendarRange } from '#shared/types/calendar'
+import { apiError } from '#server/utils/http'
 
 type SessionCalendarRangeDto = SessionCalendarRange
 const monthShapeSchema = z.array(z.object({ length: z.number().int().min(1) }))
@@ -56,45 +56,19 @@ const normalizeRangeInput = (input: SessionCalendarRangeInput): SessionCalendarR
 })
 
 export class SessionCalendarRangeService {
-  async listRanges(campaignId: string, userId: string): Promise<ServiceResult<SessionCalendarRangeDto[]>> {
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: campaignId },
-      select: { id: true },
-    })
-    if (!campaign) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Campaign not found.',
-      }
-    }
-
-    const campaignAccess = await prisma.campaign.findFirst({
-      where: { id: campaignId, ...buildCampaignWhereForPermission(userId, 'campaign.read') },
-      select: { id: true },
-    })
-    if (!campaignAccess) {
-      return {
-        ok: false,
-        statusCode: 403,
-        code: 'FORBIDDEN',
-        message: 'You do not have permission for this action.',
-      }
-    }
-
+  async listRanges(campaignId: string): Promise<SessionCalendarRangeDto[]> {
     const ranges = await prisma.sessionCalendarRange.findMany({
       where: { campaignId },
       orderBy: [{ startYear: 'asc' }, { startMonth: 'asc' }, { startDay: 'asc' }],
     })
-    return { ok: true, data: ranges.map(toRangeDto) }
+    return ranges.map(toRangeDto)
   }
 
   async upsertRange(
     sessionId: string,
     userId: string,
     input: SessionCalendarRangeInput,
-  ): Promise<ServiceResult<SessionCalendarRangeDto>> {
+  ): Promise<SessionCalendarRangeDto> {
     const session = await prisma.session.findUnique({
       where: { id: sessionId },
       select: {
@@ -104,12 +78,7 @@ export class SessionCalendarRangeService {
     })
 
     if (!session) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'SESSION_NOT_FOUND',
-        message: 'Session not found.',
-      }
+      throw apiError(404, 'SESSION_NOT_FOUND', 'Session not found.')
     }
 
     const campaignAccess = await prisma.campaign.findFirst({
@@ -120,12 +89,7 @@ export class SessionCalendarRangeService {
       select: { id: true },
     })
     if (!campaignAccess) {
-      return {
-        ok: false,
-        statusCode: 403,
-        code: 'FORBIDDEN',
-        message: 'You do not have permission for this action.',
-      }
+      throw apiError(403, 'FORBIDDEN', 'You do not have permission for this action.')
     }
 
     const config = await prisma.campaignCalendarConfig.findUnique({
@@ -137,21 +101,11 @@ export class SessionCalendarRangeService {
     })
 
     if (!config) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'CALENDAR_CONFIG_NOT_FOUND',
-        message: 'Calendar config not found for campaign.',
-      }
+      throw apiError(404, 'CALENDAR_CONFIG_NOT_FOUND', 'Calendar config not found for campaign.')
     }
 
     if (!config.isEnabled) {
-      return {
-        ok: false,
-        statusCode: 409,
-        code: 'CALENDAR_DISABLED',
-        message: 'Calendar is currently disabled for this campaign.',
-      }
+      throw apiError(409, 'CALENDAR_DISABLED', 'Calendar is currently disabled for this campaign.')
     }
 
     const parsedInput = createSessionCalendarRangeSchema(monthShapeSchema.parse(config.monthsJson)).parse(
@@ -180,22 +134,17 @@ export class SessionCalendarRangeService {
       },
     })
 
-    return { ok: true, data: toRangeDto(range) }
+    return toRangeDto(range)
   }
 
-  async deleteRange(sessionId: string, userId: string): Promise<ServiceResult<{ deleted: true }>> {
+  async deleteRange(sessionId: string, userId: string): Promise<{ deleted: true }> {
     const session = await prisma.session.findUnique({
       where: { id: sessionId },
       select: { id: true },
     })
 
     if (!session) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'SESSION_NOT_FOUND',
-        message: 'Session not found.',
-      }
+      throw apiError(404, 'SESSION_NOT_FOUND', 'Session not found.')
     }
 
     const campaignAccess = await prisma.session.findFirst({
@@ -206,18 +155,13 @@ export class SessionCalendarRangeService {
       select: { id: true },
     })
     if (!campaignAccess) {
-      return {
-        ok: false,
-        statusCode: 403,
-        code: 'FORBIDDEN',
-        message: 'You do not have permission for this action.',
-      }
+      throw apiError(403, 'FORBIDDEN', 'You do not have permission for this action.')
     }
 
     await prisma.sessionCalendarRange.deleteMany({
       where: { sessionId },
     })
 
-    return { ok: true, data: { deleted: true } }
+    return { deleted: true }
   }
 }

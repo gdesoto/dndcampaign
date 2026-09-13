@@ -1,16 +1,13 @@
 import { prisma } from '#server/db/prisma'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 import { calculateCharacterUnlinkAccessImpact, resolveCharacterAccess } from '#server/utils/character-auth'
 
 export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
-  const characterId = event.context.params?.characterId
-  if (!characterId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Character id is required')
-  }
+  const { characterId } = routeParams(event, 'characterId')
   const access = await resolveCharacterAccess(characterId, session.user.id, session.user.systemRole)
   if (!access.exists || !access.canRead) {
-    return fail(event, 404, 'NOT_FOUND', 'Character not found')
+    throw apiError(404, 'NOT_FOUND', 'Character not found')
   }
 
   const character = await prisma.playerCharacter.findUnique({
@@ -28,7 +25,7 @@ export default defineEventHandler(async (event) => {
   })
 
   if (!character) {
-    return fail(event, 404, 'NOT_FOUND', 'Character not found')
+    throw apiError(404, 'NOT_FOUND', 'Character not found')
   }
 
   const campaignLinks = await Promise.all(

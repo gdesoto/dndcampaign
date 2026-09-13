@@ -1,8 +1,7 @@
 import type { H3Event } from 'h3'
 import type { CampaignRole, Prisma } from '#server/db/prisma-client'
 import { prisma } from '#server/db/prisma'
-import type { ApiResponse } from '#server/utils/http'
-import { fail } from '#server/utils/http'
+import { apiError } from '#server/utils/http'
 
 export type CampaignPermission =
   | 'campaign.read'
@@ -43,6 +42,19 @@ export type ResolvedCampaignAccess = {
   role: CampaignRole
   hasDmAccess: boolean
   permissions: CampaignPermission[]
+}
+
+/** A verified campaign member acting on a request: who they are plus what the handler already resolved. */
+export type CampaignActor = {
+  userId: string
+  access: ResolvedCampaignAccess
+}
+
+/** Cheap follow-up check on an already-resolved access, for handlers that branch on the action. */
+export const assertCampaignPermission = (access: ResolvedCampaignAccess, permission: CampaignPermission) => {
+  if (!hasRolePermission(access.role, permission)) {
+    throw apiError(403, 'FORBIDDEN', 'You do not have permission for this action')
+  }
 }
 
 export type CampaignDmAccessSubject = Pick<ResolvedCampaignAccess, 'role' | 'hasDmAccess'>
@@ -137,49 +149,38 @@ export const resolveCampaignAccess = async (
   }
 }
 
-type RequireCampaignPermissionSuccess = {
-  ok: true
-  session: Awaited<ReturnType<typeof requireUserSession>>
-  access: ResolvedCampaignAccess
-}
-
-type RequireCampaignPermissionFailure = {
-  ok: false
-  response: ApiResponse<null>
-}
-
 export const requireCampaignPermission = async (
   event: H3Event,
   campaignId: string,
   permission: CampaignPermission
-): Promise<RequireCampaignPermissionSuccess | RequireCampaignPermissionFailure> => {
+) => {
   const session = await requireUserSession(event)
   const resolved = await resolveCampaignAccess(campaignId, session.user.id, session.user.systemRole)
 
   if (!resolved.exists) {
-    return { ok: false, response: fail(event, 404, 'NOT_FOUND', 'Campaign not found') }
+    throw apiError(404, 'NOT_FOUND', 'Campaign not found')
   }
 
   if (!resolved.access) {
-    return { ok: false, response: fail(event, 403, 'FORBIDDEN', 'Campaign access is denied') }
+    throw apiError(403, 'FORBIDDEN', 'Campaign access is denied')
   }
 
   if (!hasRolePermission(resolved.access.role, permission)) {
-    return { ok: false, response: fail(event, 403, 'FORBIDDEN', 'You do not have permission for this action') }
+    throw apiError(403, 'FORBIDDEN', 'You do not have permission for this action')
   }
 
   return {
-    ok: true,
     session,
     access: resolved.access,
+    actor: { userId: session.user.id, access: resolved.access } satisfies CampaignActor,
   }
 }
 
 export const requireSystemAdmin = async (event: H3Event) => {
   const session = await requireUserSession(event)
   if (session.user.systemRole !== 'SYSTEM_ADMIN') {
-    return { ok: false as const, response: fail(event, 403, 'FORBIDDEN', 'System administrator access is required') }
+    throw apiError(403, 'FORBIDDEN', 'System administrator access is required')
   }
 
-  return { ok: true as const, session }
+  return { session }
 }

@@ -1,11 +1,11 @@
 import { prisma } from '#server/db/prisma'
 import type { Prisma } from '#server/db/prisma-client'
-import type { ServiceResult } from '#server/services/auth.service'
-import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 import type { DungeonSnapshotCreateInput } from '#shared/schemas/dungeon'
 import type { CampaignDungeonSnapshot, DungeonMapData } from '#shared/types/dungeon'
 import { parseDungeonMap } from '#server/services/dungeon/dungeon-map-utils'
 import { ActivityLogService } from '#server/services/activity-log.service'
+import { apiError } from '#server/utils/http'
+import type { CampaignActor } from '#server/utils/campaign-auth'
 const activityLogService = new ActivityLogService()
 
 const toSnapshotDto = (row: {
@@ -26,17 +26,11 @@ const toSnapshotDto = (row: {
   createdAt: row.createdAt.toISOString(),
 })
 
-const withDungeonAccess = async (
-  campaignId: string,
-  dungeonId: string,
-  userId: string,
-  permission: 'content.read' | 'content.write',
-) =>
+const withDungeonAccess = async (campaignId: string, dungeonId: string) =>
   prisma.campaignDungeon.findFirst({
     where: {
       id: dungeonId,
       campaignId,
-      campaign: buildCampaignWhereForPermission(userId, permission),
     },
     select: {
       id: true,
@@ -72,42 +66,29 @@ const syncRoomRowsToMap = async (dungeonId: string, map: DungeonMapData) => {
 }
 
 export class DungeonSnapshotService {
-  async listSnapshots(
-    campaignId: string,
-    dungeonId: string,
-    userId: string,
-  ): Promise<ServiceResult<CampaignDungeonSnapshot[]>> {
-    const access = await withDungeonAccess(campaignId, dungeonId, userId, 'content.read')
+  async listSnapshots(campaignId: string, dungeonId: string): Promise<CampaignDungeonSnapshot[]> {
+    const access = await withDungeonAccess(campaignId, dungeonId)
     if (!access) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Dungeon not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
     const rows = await prisma.campaignDungeonSnapshot.findMany({
       where: { dungeonId: access.id },
       orderBy: [{ createdAt: 'desc' }],
     })
-    return { ok: true, data: rows.map(toSnapshotDto) }
+    return rows.map(toSnapshotDto)
   }
 
   async createSnapshot(
     campaignId: string,
     dungeonId: string,
-    userId: string,
+    actor: CampaignActor,
     input: DungeonSnapshotCreateInput,
-  ): Promise<ServiceResult<CampaignDungeonSnapshot>> {
-    const access = await withDungeonAccess(campaignId, dungeonId, userId, 'content.write')
+  ): Promise<CampaignDungeonSnapshot> {
+    const userId = actor.userId
+    const access = await withDungeonAccess(campaignId, dungeonId)
     if (!access) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Dungeon not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
     const created = await prisma.campaignDungeonSnapshot.create({
@@ -130,23 +111,19 @@ export class DungeonSnapshotService {
       targetId: dungeonId,
       summary: `Created ${input.snapshotType} dungeon snapshot.`,
     })
-    return { ok: true, data: toSnapshotDto(created) }
+    return toSnapshotDto(created)
   }
 
   async restoreSnapshot(
     campaignId: string,
     dungeonId: string,
     snapshotId: string,
-    userId: string,
-  ): Promise<ServiceResult<{ restored: true }>> {
-    const access = await withDungeonAccess(campaignId, dungeonId, userId, 'content.write')
+    actor: CampaignActor,
+  ): Promise<{ restored: true }> {
+    const userId = actor.userId
+    const access = await withDungeonAccess(campaignId, dungeonId)
     if (!access) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Dungeon not found or access denied.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
     const snapshot = await prisma.campaignDungeonSnapshot.findFirst({
@@ -159,12 +136,7 @@ export class DungeonSnapshotService {
       },
     })
     if (!snapshot) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Snapshot not found.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Snapshot not found.')
     }
 
     const map = parseDungeonMap(snapshot.mapJson)
@@ -188,6 +160,6 @@ export class DungeonSnapshotService {
       summary: 'Restored dungeon snapshot.',
       metadata: { snapshotId },
     })
-    return { ok: true, data: { restored: true } }
+    return { restored: true }
   }
 }

@@ -1,12 +1,12 @@
-import { getRequestHeader, readRawBody } from 'h3'
-import { ok, fail } from '#server/utils/http'
+import { getRequestHeader, readRawBody, isError } from 'h3'
+import { ok, apiError } from '#server/utils/http'
 import { TranscriptionService } from '#server/services/transcription.service'
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const rawBody = await readRawBody(event, false)
   if (!rawBody) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Missing webhook body')
+    throw apiError(400, 'VALIDATION_ERROR', 'Missing webhook body')
   }
   const rawBodyText = typeof rawBody === 'string' ? rawBody : rawBody.toString('utf-8')
   const service = new TranscriptionService(config.elevenlabs?.apiKey || '')
@@ -19,11 +19,12 @@ export default defineEventHandler(async (event) => {
       signature: getRequestHeader(event, 'elevenlabs-signature') || undefined,
     })
   } catch (error) {
+    if (isError(error)) throw error
     const code = (error as Error & { code?: string }).code
     if (code === 'MISSING_SIGNATURE' || code === 'INVALID_SIGNATURE') {
-      return fail(event, 401, 'UNAUTHORIZED', (error as Error).message)
+      throw apiError(401, 'UNAUTHORIZED', (error as Error).message)
     }
-    return fail(event, 400, 'VALIDATION_ERROR', (error as Error).message)
+    throw apiError(400, 'VALIDATION_ERROR', (error as Error).message)
   }
 
   const job = await service.ingestWebhook(payload)

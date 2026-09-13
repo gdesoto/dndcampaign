@@ -1,12 +1,11 @@
-import { getRequestHeader } from 'h3'
-import Busboy from 'busboy'
 import { prisma } from '#server/db/prisma'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
+import { readSingleFileUpload } from '#server/utils/multipart'
 import { RecapService } from '#server/services/recap.service'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 const MAX_BYTES = 512 * 1024 * 1024
-const ALLOWED_MIME = [
+const ALLOWED_MIME = new Set([
   'audio/mpeg',
   'audio/mp4',
   'audio/m4a',
@@ -18,153 +17,37 @@ const ALLOWED_MIME = [
   'video/mp4',
   'video/webm',
   'video/ogg',
-]
+])
 
 export default defineEventHandler(async (event) => {
-  const sessionUser = await requireUserSession(event)
-  const sessionId = event.context.params?.sessionId
-  if (!sessionId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Session id is required')
-  }
+  const { sessionId } = routeParams(event, 'sessionId')
 
   const session = await prisma.session.findUnique({
     where: { id: sessionId },
     select: { id: true, campaignId: true },
   })
   if (!session) {
-    return fail(event, 404, 'NOT_FOUND', 'Session not found')
+    throw apiError(404, 'NOT_FOUND', 'Session not found')
   }
 
-  const access = await requireCampaignPermission(event, session.campaignId, 'recording.upload')
-  if (!access.ok) {
-    return access.response
-  }
+  const { actor } = await requireCampaignPermission(event, session.campaignId, 'recording.upload')
 
-  const contentType = String(getRequestHeader(event, 'content-type') || '')
-  if (!contentType.startsWith('multipart/form-data')) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Expected multipart form data')
-  }
-
-  const contentLength = Number(getRequestHeader(event, 'content-length') || 0)
-  if (contentLength && contentLength > MAX_BYTES) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'File is too large')
-  }
-
-  let recap
-  try {
-    recap = await new Promise((resolve, reject) => {
-      const busboy = Busboy({
-        headers: event.node.req.headers,
-        limits: {
-          fileSize: MAX_BYTES,
-          files: 1,
-          fields: 10,
-        },
+  const { result } = await readSingleFileUpload(event, {
+    maxBytes: MAX_BYTES,
+    accept: ({ mimeType }) => ALLOWED_MIME.has(mimeType),
+    consume: (file, fields) => {
+      const durationSeconds = Number(fields.durationSeconds)
+      return new RecapService().createRecapFromStream({
+        ownerId: actor.userId,
+        campaignId: session.campaignId,
+        sessionId,
+        filename: file.filename,
+        mimeType: file.mimeType,
+        stream: file.stream,
+        durationSeconds: Number.isFinite(durationSeconds) ? durationSeconds : undefined,
       })
+    },
+  })
 
-      let durationSeconds: number | undefined
-      let fileHandled = false
-      let fileError: string | null = null
-      let uploadPromise: Promise<unknown> | null = null
-      let uploadError: unknown = null
-
-      busboy.on('field', (name, value) => {
-        if (name === 'durationSeconds') {
-          const parsed = Number(value)
-          durationSeconds = Number.isFinite(parsed) ? parsed : undefined
-        }
-      })
-
-      busboy.on('file', (name, file, info) => {
-        if (name !== 'file') {
-          file.resume()
-          return
-        }
-
-        fileHandled = true
-
-        const filename = info.filename
-        const mimeType = info.mimeType || 'application/octet-stream'
-
-        if (!filename) {
-          fileError = 'File is required'
-          file.resume()
-          return
-        }
-
-        if (!ALLOWED_MIME.includes(mimeType)) {
-          fileError = 'Unsupported file type'
-          file.resume()
-          return
-        }
-
-        file.on('limit', () => {
-          fileError = 'File is too large'
-          file.destroy(new Error('File is too large'))
-          if (uploadPromise) {
-            uploadPromise.catch(() => undefined)
-          }
-        })
-
-        const service = new RecapService()
-        uploadPromise = service.createRecapFromStream({
-          ownerId: sessionUser.user.id,
-          campaignId: session.campaignId,
-          sessionId,
-          filename,
-          mimeType,
-          stream: file,
-          durationSeconds,
-        })
-          .catch((error) => {
-            uploadError = error
-            return null
-          })
-      })
-
-      busboy.on('filesLimit', () => {
-        fileError = 'Only one file is allowed'
-      })
-
-      busboy.on('error', (error) => {
-        reject(error)
-      })
-
-      busboy.on('finish', async () => {
-        if (fileError) {
-          reject(new Error(fileError))
-          return
-        }
-        if (!fileHandled || !uploadPromise) {
-          reject(new Error('File is required'))
-          return
-        }
-        try {
-          const result = await uploadPromise
-          if (uploadError) {
-            reject(uploadError)
-            return
-          }
-          resolve(result)
-        } catch (error) {
-          reject(error)
-        }
-      })
-
-      event.node.req.pipe(busboy)
-    })
-  } catch (error) {
-    const message = (error as Error & { message?: string }).message || 'Upload failed'
-    if (
-      message === 'File is too large' ||
-      message === 'Unsupported file type' ||
-      message === 'File is required' ||
-      message === 'Only one file is allowed'
-    ) {
-      return fail(event, 400, 'VALIDATION_ERROR', message)
-    }
-    throw error
-  }
-
-  return ok(recap)
+  return ok(result)
 })

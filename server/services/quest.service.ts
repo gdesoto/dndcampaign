@@ -1,6 +1,5 @@
 import { z } from 'zod'
 import { prisma } from '#server/db/prisma'
-import type { ServiceResult } from '#server/services/auth.service'
 import type {
   questSourceTypeSchema,
   questTrackSchema,
@@ -9,6 +8,7 @@ import type {
   QuestUpdateInput,
 } from '#shared/schemas/quest'
 import { validateCalendarDateBounds } from '#shared/schemas/calendar'
+import { apiError } from '#server/utils/http'
 
 type QuestType = z.infer<typeof questTypeSchema>
 type QuestTrack = z.infer<typeof questTrackSchema>
@@ -143,27 +143,26 @@ export class QuestService {
     return rows.map(toQuestDto)
   }
 
-  async createQuest(campaignId: string, input: QuestCreateInput): Promise<ServiceResult<QuestDto>> {
+  async createQuest(campaignId: string, input: QuestCreateInput): Promise<QuestDto> {
     const validation = await this.validateQuestInput(campaignId, input, { validateExpiration: true })
-    if (!validation.ok) return validation
 
     const created = await prisma.quest.create({
       data: {
         campaignId,
         title: input.title,
         description: normalizeOptionalText(input.description) ?? null,
-        type: validation.data.type,
-        track: validation.data.track,
-        sourceType: validation.data.sourceType,
-        sourceText: validation.data.sourceText,
-        sourceNpcId: validation.data.sourceNpcId,
-        sourceCharacterId: validation.data.sourceCharacterId,
+        type: validation.type,
+        track: validation.track,
+        sourceType: validation.sourceType,
+        sourceText: validation.sourceText,
+        sourceNpcId: validation.sourceNpcId,
+        sourceCharacterId: validation.sourceCharacterId,
         reward: normalizeOptionalText(input.reward) ?? null,
         status: input.status || 'ACTIVE',
         progressNotes: normalizeOptionalText(input.progressNotes) ?? null,
-        expirationYear: validation.data.expirationYear,
-        expirationMonth: validation.data.expirationMonth,
-        expirationDay: validation.data.expirationDay,
+        expirationYear: validation.expirationYear,
+        expirationMonth: validation.expirationMonth,
+        expirationDay: validation.expirationDay,
       },
       include: {
         sourceNpc: {
@@ -175,13 +174,13 @@ export class QuestService {
       },
     })
 
-    return { ok: true, data: toQuestDto(created) }
+    return toQuestDto(created)
   }
 
   async updateQuest(
     questId: string,
     input: QuestUpdateInput,
-  ): Promise<ServiceResult<QuestDto>> {
+  ): Promise<QuestDto> {
     const existing = await prisma.quest.findUnique({
       where: { id: questId },
       select: {
@@ -205,12 +204,7 @@ export class QuestService {
     })
 
     if (!existing) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Quest not found.',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Quest not found.')
     }
 
     const mergedInput: QuestCreateInput = {
@@ -250,10 +244,9 @@ export class QuestService {
           : input.expirationDate || undefined,
     }
 
-    const validation = await this.validateQuestInput(existing.campaignId, mergedInput, {
+    await this.validateQuestInput(existing.campaignId, mergedInput, {
       validateExpiration: input.expirationDate !== undefined,
     })
-    if (!validation.ok) return validation
 
     const updated = await prisma.quest.update({
       where: { id: questId },
@@ -281,7 +274,7 @@ export class QuestService {
       },
     })
 
-    return { ok: true, data: toQuestDto(updated) }
+    return toQuestDto(updated)
   }
 
   private async validateQuestInput(
@@ -290,7 +283,7 @@ export class QuestService {
     options: {
       validateExpiration: boolean
     },
-  ): Promise<ServiceResult<{
+  ): Promise<{
     campaignId: string
     type: QuestType
     track: QuestTrack
@@ -301,7 +294,7 @@ export class QuestService {
     expirationYear: number | null
     expirationMonth: number | null
     expirationDay: number | null
-  }>> {
+  }> {
     const type = input.type || 'CAMPAIGN'
     const track = input.track || 'SIDE'
     const sourceType = input.sourceType || 'FREE_TEXT'
@@ -311,33 +304,15 @@ export class QuestService {
     const expirationDate = input.expirationDate === undefined ? null : input.expirationDate
 
     if (!questSourceTypeByQuestType[type].includes(sourceType)) {
-      return {
-        ok: false,
-        statusCode: 400,
-        code: 'VALIDATION_ERROR',
-        message: 'Selected source is not valid for this quest type.',
-        fields: { sourceType: 'Selected source is not valid for this quest type.' },
-      }
+      throw apiError(400, 'VALIDATION_ERROR', 'Selected source is not valid for this quest type.', { sourceType: 'Selected source is not valid for this quest type.' })
     }
 
     if (sourceType === 'FREE_TEXT' && !sourceText) {
-      return {
-        ok: false,
-        statusCode: 400,
-        code: 'VALIDATION_ERROR',
-        message: 'Source text is required for free text sources.',
-        fields: { sourceText: 'Source text is required for free text sources.' },
-      }
+      throw apiError(400, 'VALIDATION_ERROR', 'Source text is required for free text sources.', { sourceText: 'Source text is required for free text sources.' })
     }
 
     if (sourceType !== 'FREE_TEXT' && sourceText) {
-      return {
-        ok: false,
-        statusCode: 400,
-        code: 'VALIDATION_ERROR',
-        message: 'Source text is only allowed for free text sources.',
-        fields: { sourceText: 'Source text is only allowed for free text sources.' },
-      }
+      throw apiError(400, 'VALIDATION_ERROR', 'Source text is only allowed for free text sources.', { sourceText: 'Source text is only allowed for free text sources.' })
     }
 
     if (sourceType === 'NPC') {
@@ -351,24 +326,12 @@ export class QuestService {
       })
 
       if (!npc) {
-        return {
-          ok: false,
-          statusCode: 400,
-          code: 'VALIDATION_ERROR',
-          message: 'Selected NPC source was not found in this campaign.',
-          fields: { sourceNpcId: 'Selected NPC source was not found in this campaign.' },
-        }
+        throw apiError(400, 'VALIDATION_ERROR', 'Selected NPC source was not found in this campaign.', { sourceNpcId: 'Selected NPC source was not found in this campaign.' })
       }
     }
 
     if (sourceType !== 'NPC' && sourceNpcId) {
-      return {
-        ok: false,
-        statusCode: 400,
-        code: 'VALIDATION_ERROR',
-        message: 'NPC source selection is only allowed for NPC sources.',
-        fields: { sourceNpcId: 'NPC source selection is only allowed for NPC sources.' },
-      }
+      throw apiError(400, 'VALIDATION_ERROR', 'NPC source selection is only allowed for NPC sources.', { sourceNpcId: 'NPC source selection is only allowed for NPC sources.' })
     }
 
     if (sourceType === 'CAMPAIGN_CHARACTER') {
@@ -381,24 +344,12 @@ export class QuestService {
       })
 
       if (!characterLink) {
-        return {
-          ok: false,
-          statusCode: 400,
-          code: 'VALIDATION_ERROR',
-          message: 'Selected campaign character source was not found in this campaign.',
-          fields: { sourceCharacterId: 'Selected campaign character source was not found in this campaign.' },
-        }
+        throw apiError(400, 'VALIDATION_ERROR', 'Selected campaign character source was not found in this campaign.', { sourceCharacterId: 'Selected campaign character source was not found in this campaign.' })
       }
     }
 
     if (sourceType !== 'CAMPAIGN_CHARACTER' && sourceCharacterId) {
-      return {
-        ok: false,
-        statusCode: 400,
-        code: 'VALIDATION_ERROR',
-        message: 'Campaign character selection is only allowed for campaign character sources.',
-        fields: { sourceCharacterId: 'Campaign character selection is only allowed for campaign character sources.' },
-      }
+      throw apiError(400, 'VALIDATION_ERROR', 'Campaign character selection is only allowed for campaign character sources.', { sourceCharacterId: 'Campaign character selection is only allowed for campaign character sources.' })
     }
 
     if (options.validateExpiration && expirationDate) {
@@ -411,30 +362,16 @@ export class QuestService {
       })
 
       if (!calendarConfig?.isEnabled) {
-        return {
-          ok: false,
-          statusCode: 409,
-          code: 'CALENDAR_DISABLED',
-          message: 'Enable the campaign calendar before setting quest expiration dates.',
-          fields: { expirationDate: 'Enable the campaign calendar before setting quest expiration dates.' },
-        }
+        throw apiError(409, 'CALENDAR_DISABLED', 'Enable the campaign calendar before setting quest expiration dates.', { expirationDate: 'Enable the campaign calendar before setting quest expiration dates.' })
       }
 
       const months = monthShapeSchema.parse(calendarConfig.monthsJson)
       if (!validateCalendarDateBounds(expirationDate, months)) {
-        return {
-          ok: false,
-          statusCode: 400,
-          code: 'VALIDATION_ERROR',
-          message: 'Expiration date is outside the configured campaign calendar.',
-          fields: { expirationDate: 'Expiration date is outside the configured campaign calendar.' },
-        }
+        throw apiError(400, 'VALIDATION_ERROR', 'Expiration date is outside the configured campaign calendar.', { expirationDate: 'Expiration date is outside the configured campaign calendar.' })
       }
     }
 
     return {
-      ok: true,
-      data: {
         campaignId,
         type,
         track,
@@ -445,8 +382,7 @@ export class QuestService {
         expirationYear: expirationDate?.year ?? null,
         expirationMonth: expirationDate?.month ?? null,
         expirationDay: expirationDate?.day ?? null,
-      },
-    }
+      }
   }
 }
 

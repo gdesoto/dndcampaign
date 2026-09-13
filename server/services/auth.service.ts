@@ -1,9 +1,7 @@
 import type { H3Event } from 'h3'
 import { prisma } from '#server/db/prisma'
+import { apiError } from '#server/utils/http'
 
-import type { ServiceResult } from '#server/utils/http'
-
-export type { ServiceResult }
 
 type AuthenticatedUserRecord = {
   id: string
@@ -35,21 +33,16 @@ const toSessionUser = (user: AuthenticatedUserRecord): AuthUserDto => toAuthUser
 
 const ensureUserCanAuthenticate = (
   user: Pick<AuthenticatedUserRecord, 'isActive' | 'deletedAt'>
-): ServiceResult<true> => {
+): true => {
   if (!user.isActive || user.deletedAt) {
-    return {
-      ok: false,
-      statusCode: 403,
-      code: 'ACCOUNT_DISABLED',
-      message: 'This account is not active.',
-    }
+    throw apiError(403, 'ACCOUNT_DISABLED', 'This account is not active.')
   }
 
-  return { ok: true, data: true }
+  return true
 }
 
 export class AuthService {
-  async register(input: { name: string; email: string; password: string }): Promise<ServiceResult<AuthenticatedUserRecord>> {
+  async register(input: { name: string; email: string; password: string }): Promise<AuthenticatedUserRecord> {
     const email = input.email.trim().toLowerCase()
 
     const existing = await prisma.user.findUnique({
@@ -58,15 +51,9 @@ export class AuthService {
     })
 
     if (existing) {
-      return {
-        ok: false,
-        statusCode: 409,
-        code: 'EMAIL_ALREADY_IN_USE',
-        message: 'An account with this email already exists.',
-        fields: {
+      throw apiError(409, 'EMAIL_ALREADY_IN_USE', 'An account with this email already exists.', {
           email: 'Email is already in use',
-        },
-      }
+        })
     }
 
     const passwordHash = await hashPassword(input.password)
@@ -89,10 +76,10 @@ export class AuthService {
       },
     })
 
-    return { ok: true, data: user }
+    return user
   }
 
-  async authenticate(emailInput: string, password: string): Promise<ServiceResult<AuthenticatedUserRecord>> {
+  async authenticate(emailInput: string, password: string): Promise<AuthenticatedUserRecord> {
     const email = emailInput.trim().toLowerCase()
 
     const user = await prisma.user.findUnique({
@@ -110,27 +97,14 @@ export class AuthService {
     })
 
     if (!user || !user.passwordHash) {
-      return {
-        ok: false,
-        statusCode: 401,
-        code: 'INVALID_CREDENTIALS',
-        message: 'Invalid email or password',
-      }
+      throw apiError(401, 'INVALID_CREDENTIALS', 'Invalid email or password')
     }
 
-    const accountState = ensureUserCanAuthenticate(user)
-    if (!accountState.ok) {
-      return accountState
-    }
+    ensureUserCanAuthenticate(user)
 
     const isValid = await verifyPassword(user.passwordHash, password)
     if (!isValid) {
-      return {
-        ok: false,
-        statusCode: 401,
-        code: 'INVALID_CREDENTIALS',
-        message: 'Invalid email or password',
-      }
+      throw apiError(401, 'INVALID_CREDENTIALS', 'Invalid email or password')
     }
 
     const shouldRehash = await passwordNeedsReHash(user.passwordHash)
@@ -153,7 +127,7 @@ export class AuthService {
       },
     })
 
-    return { ok: true, data: updated }
+    return updated
   }
 
   async refreshSession(event: H3Event, user: AuthenticatedUserRecord, loggedInAt?: Date) {

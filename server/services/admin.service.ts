@@ -1,5 +1,4 @@
 import { prisma } from '#server/db/prisma'
-import type { ServiceResult } from '#server/services/auth.service'
 import type {
   AdminActivityLogListQuery,
   AdminCampaignListQuery,
@@ -12,6 +11,7 @@ import type {
 import { AdminAuditService } from '#server/services/admin-audit.service'
 import { ActivityLogService } from '#server/services/activity-log.service'
 import { AdminStorageAuditService } from '#server/services/admin-storage-audit.service'
+import { apiError } from '#server/utils/http'
 
 const auditService = new AdminAuditService()
 const activityLogService = new ActivityLogService()
@@ -49,25 +49,22 @@ export class AdminService {
   async applyStorageAuditFix(
     actorUserId: string,
     input: AdminStorageAuditFixInput
-  ): Promise<ServiceResult<{
+  ): Promise<{
     action: AdminStorageAuditFixInput['action']
     targetId: string
     message: string
-  }>> {
+  }> {
     const result = await storageAuditService.applyFix(input)
-    if (!result.ok) {
-      return result
-    }
 
     await auditService.log({
       actorUserId,
       action: 'ADMIN_STORAGE_AUDIT_FIX_APPLIED',
       targetType: 'STORAGE_AUDIT',
-      targetId: result.data.targetId,
-      summary: result.data.message,
+      targetId: result.targetId,
+      summary: result.message,
       metadata: {
-        action: result.data.action,
-        targetId: result.data.targetId,
+        action: result.action,
+        targetId: result.targetId,
       },
     })
 
@@ -76,11 +73,11 @@ export class AdminService {
       scope: 'ADMIN',
       action: 'ADMIN_STORAGE_AUDIT_FIX_APPLIED',
       targetType: 'STORAGE_AUDIT',
-      targetId: result.data.targetId,
-      summary: result.data.message,
+      targetId: result.targetId,
+      summary: result.message,
       metadata: {
-        action: result.data.action,
-        targetId: result.data.targetId,
+        action: result.action,
+        targetId: result.targetId,
       },
     })
 
@@ -150,7 +147,7 @@ export class AdminService {
     }
   }
 
-  async getUser(userId: string): Promise<ServiceResult<{
+  async getUser(userId: string): Promise<{
     id: string
     email: string
     name: string
@@ -168,7 +165,7 @@ export class AdminService {
       isArchived: boolean
       updatedAt: string
     }>
-  }>> {
+  }> {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -201,17 +198,10 @@ export class AdminService {
     })
 
     if (!user) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'User not found',
-      }
+      throw apiError(404, 'NOT_FOUND', 'User not found')
     }
 
     return {
-      ok: true,
-      data: {
         id: user.id,
         email: user.email,
         name: user.name,
@@ -229,20 +219,19 @@ export class AdminService {
           isArchived: campaign.isArchived,
           updatedAt: campaign.updatedAt.toISOString(),
         })),
-      },
-    }
+      }
   }
 
   async updateUser(
     userId: string,
     actorUserId: string,
     input: AdminUserUpdateInput
-  ): Promise<ServiceResult<{
+  ): Promise<{
     id: string
     systemRole: 'USER' | 'SYSTEM_ADMIN'
     isActive: boolean
     updatedAt: string
-  }>> {
+  }> {
     const existing = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -253,12 +242,7 @@ export class AdminService {
     })
 
     if (!existing) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'User not found',
-      }
+      throw apiError(404, 'NOT_FOUND', 'User not found')
     }
 
     const updated = await prisma.user.update({
@@ -306,14 +290,11 @@ export class AdminService {
     })
 
     return {
-      ok: true,
-      data: {
         id: updated.id,
         systemRole: updated.systemRole,
         isActive: updated.isActive,
         updatedAt: updated.updatedAt.toISOString(),
-      },
-    }
+      }
   }
 
   async listCampaigns(query: AdminCampaignListQuery) {
@@ -479,7 +460,7 @@ export class AdminService {
     }
   }
 
-  async getCampaign(campaignId: string): Promise<ServiceResult<{
+  async getCampaign(campaignId: string): Promise<{
     id: string
     name: string
     description: string | null
@@ -511,7 +492,7 @@ export class AdminService {
         name: string
       }
     }>
-  }>> {
+  }> {
     const campaign = await prisma.campaign.findUnique({
       where: { id: campaignId },
       select: {
@@ -566,19 +547,12 @@ export class AdminService {
     })
 
     if (!campaign) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Campaign not found',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Campaign not found')
     }
 
     const recordings = campaign.sessions.reduce((total, session) => total + session._count.recordings, 0)
 
     return {
-      ok: true,
-      data: {
         id: campaign.id,
         name: campaign.name,
         description: campaign.description,
@@ -603,20 +577,19 @@ export class AdminService {
           joinedAt: member.createdAt.toISOString(),
           user: member.user,
         })),
-      },
-    }
+      }
   }
 
   async updateCampaign(
     campaignId: string,
     actorUserId: string,
     input: AdminCampaignUpdateInput
-  ): Promise<ServiceResult<{
+  ): Promise<{
     id: string
     ownerId: string
     isArchived: boolean
     updatedAt: string
-  }>> {
+  }> {
     const existing = await prisma.campaign.findUnique({
       where: { id: campaignId },
       select: {
@@ -627,12 +600,7 @@ export class AdminService {
     })
 
     if (!existing) {
-      return {
-        ok: false,
-        statusCode: 404,
-        code: 'NOT_FOUND',
-        message: 'Campaign not found',
-      }
+      throw apiError(404, 'NOT_FOUND', 'Campaign not found')
     }
 
     if (input.transferOwnerUserId) {
@@ -642,21 +610,11 @@ export class AdminService {
       })
 
       if (!targetUser) {
-        return {
-          ok: false,
-          statusCode: 404,
-          code: 'TARGET_USER_NOT_FOUND',
-          message: 'Target owner user was not found.',
-        }
+        throw apiError(404, 'TARGET_USER_NOT_FOUND', 'Target owner user was not found.')
       }
 
       if (!targetUser.isActive) {
-        return {
-          ok: false,
-          statusCode: 409,
-          code: 'TARGET_USER_INACTIVE',
-          message: 'Target owner must be active.',
-        }
+        throw apiError(409, 'TARGET_USER_INACTIVE', 'Target owner must be active.')
       }
     }
 
@@ -746,13 +704,10 @@ export class AdminService {
     })
 
     return {
-      ok: true,
-      data: {
         id: updated.id,
         ownerId: updated.ownerId,
         isArchived: updated.isArchived,
         updatedAt: updated.updatedAt.toISOString(),
-      },
-    }
+      }
   }
 }

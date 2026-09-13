@@ -1,11 +1,11 @@
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError } from '#server/utils/http'
 import { prisma } from '#server/db/prisma'
 import { toAuthUserDto } from '#server/services/auth.service'
 
 export default defineEventHandler(async (event) => {
   const session = await getUserSession(event)
   if (!session.user) {
-    return fail(event, 401, 'UNAUTHORIZED', 'Not authenticated')
+    throw apiError(401, 'UNAUTHORIZED', 'Not authenticated')
   }
 
   const user = await prisma.user.findUnique({
@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
 
   if (!user || !user.isActive || user.deletedAt) {
     await clearUserSession(event)
-    return fail(event, 401, 'UNAUTHORIZED', 'Not authenticated')
+    throw apiError(401, 'UNAUTHORIZED', 'Not authenticated')
   }
 
   return ok({ user: toAuthUserDto(user) })

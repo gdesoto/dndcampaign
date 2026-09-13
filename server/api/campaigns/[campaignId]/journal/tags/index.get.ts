@@ -1,26 +1,21 @@
 import { validateQuery } from '#server/utils/validate'
-import { fail, respond } from '#server/utils/http'
+import { ok, routeParams } from '#server/utils/http'
 import { campaignJournalTagListQuerySchema } from '#shared/schemas/campaign-journal'
 import { CampaignJournalService } from '#server/services/campaign-journal.service'
+import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 const campaignJournalService = new CampaignJournalService()
 
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  if (!campaignId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id is required')
-  }
+  const { campaignId } = routeParams(event, 'campaignId')
 
   const parsedQuery = validateQuery(event, campaignJournalTagListQuerySchema, 'Invalid journal tag query parameters')
-  if (!parsedQuery.ok) return parsedQuery.response
 
-  const sessionUser = await requireUserSession(event)
-  const result = await campaignJournalService.listTags(
-    campaignId,
-    sessionUser.user.id,
-    parsedQuery.data,
-    sessionUser.user.systemRole
+  const { session, access } = await requireCampaignPermission(event, campaignId, 'campaign.read')
+  const result = await campaignJournalService.listTags(access,
+    session.user.id,
+    parsedQuery
   )
-  return respond(event, result)
+  return ok(result)
 })
 

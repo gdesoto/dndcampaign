@@ -1,7 +1,7 @@
 import { readBody } from 'h3'
 import { z } from 'zod'
 import { MapService } from '#server/services/map.service'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 import { mapGlossaryCommitSchema, mapGlossaryStageSchema } from '#shared/schemas/map'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
@@ -11,13 +11,8 @@ const mapGlossaryActionSchema = z.discriminatedUnion('action', [
 ])
 
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  const mapId = event.context.params?.mapId
-  if (!campaignId || !mapId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id and map id are required')
-  }
-  const authz = await requireCampaignPermission(event, campaignId, 'content.write')
-  if (!authz.ok) return authz.response
+  const { campaignId, mapId } = routeParams(event, 'campaignId', 'mapId')
+  await requireCampaignPermission(event, campaignId, 'content.write')
 
   const rawBody = (await readBody(event)) ?? {}
 
@@ -27,11 +22,10 @@ export default defineEventHandler(async (event) => {
       const staged = await new MapService().stageGlossary(
         campaignId,
         mapId,
-        authz.session.user.id,
         actionParsed.data.featureIds
       )
       if (!staged) {
-        return fail(event, 404, 'NOT_FOUND', 'Map not found')
+        throw apiError(404, 'NOT_FOUND', 'Map not found')
       }
       return ok(staged)
     }
@@ -39,11 +33,10 @@ export default defineEventHandler(async (event) => {
     const result = await new MapService().commitGlossary(
       campaignId,
       mapId,
-      authz.session.user.id,
       actionParsed.data.items
     )
     if (!result) {
-      return fail(event, 404, 'NOT_FOUND', 'Map not found')
+      throw apiError(404, 'NOT_FOUND', 'Map not found')
     }
     return ok(result)
   }
@@ -53,11 +46,10 @@ export default defineEventHandler(async (event) => {
     const staged = await new MapService().stageGlossary(
       campaignId,
       mapId,
-      authz.session.user.id,
       stageParsed.data.featureIds
     )
     if (!staged) {
-      return fail(event, 404, 'NOT_FOUND', 'Map not found')
+      throw apiError(404, 'NOT_FOUND', 'Map not found')
     }
     return ok(staged)
   }
@@ -67,14 +59,13 @@ export default defineEventHandler(async (event) => {
     const result = await new MapService().commitGlossary(
       campaignId,
       mapId,
-      authz.session.user.id,
       commitParsed.data.items
     )
     if (!result) {
-      return fail(event, 404, 'NOT_FOUND', 'Map not found')
+      throw apiError(404, 'NOT_FOUND', 'Map not found')
     }
     return ok(result)
   }
 
-  return fail(event, 400, 'VALIDATION_ERROR', 'Invalid map glossary payload')
+  throw apiError(400, 'VALIDATION_ERROR', 'Invalid map glossary payload')
 })

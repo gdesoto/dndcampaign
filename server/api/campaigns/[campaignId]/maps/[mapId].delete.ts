@@ -1,19 +1,14 @@
 import { MapService } from '#server/services/map.service'
-import { ok, fail } from '#server/utils/http'
+import { ok, apiError, routeParams } from '#server/utils/http'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  const mapId = event.context.params?.mapId
-  if (!campaignId || !mapId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id and map id are required')
-  }
-  const authz = await requireCampaignPermission(event, campaignId, 'content.write')
-  if (!authz.ok) return authz.response
+  const { campaignId, mapId } = routeParams(event, 'campaignId', 'mapId')
+  await requireCampaignPermission(event, campaignId, 'content.write')
 
-  const deleted = await new MapService().deleteMap(campaignId, mapId, authz.session.user.id)
+  const deleted = await new MapService().deleteMap(campaignId, mapId)
   if (!deleted) {
-    return fail(event, 404, 'NOT_FOUND', 'Map not found')
+    throw apiError(404, 'NOT_FOUND', 'Map not found')
   }
 
   return ok(deleted)

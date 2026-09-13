@@ -1,19 +1,12 @@
 import { getRequestHeader, sendStream, setHeader, setResponseStatus } from 'h3'
-import { fail } from '#server/utils/http'
 import { getStorageAdapter } from '#server/services/storage/storage.factory'
 import { requireArtifactReadAccess } from '#server/utils/artifact-auth'
+import { routeParams } from '#server/utils/http'
 
 export default defineEventHandler(async (event) => {
-  const artifactId = event.context.params?.artifactId
-  if (!artifactId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Artifact id is required')
-  }
+  const { artifactId } = routeParams(event, 'artifactId')
 
-  const access = await requireArtifactReadAccess(event, artifactId)
-  if (!access.ok) {
-    return access.response
-  }
-  const artifact = access.artifact
+  const artifact = await requireArtifactReadAccess(event, artifactId)
 
   const adapter = getStorageAdapter()
   const rangeHeader = String(getRequestHeader(event, 'range') || '')

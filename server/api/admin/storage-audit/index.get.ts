@@ -7,14 +7,10 @@ import { AdminService } from '#server/services/admin.service'
 const adminService = new AdminService()
 
 export default defineEventHandler(async (event) => {
-  const authz = await requireSystemAdmin(event)
-  if (!authz.ok) {
-    return authz.response
-  }
+  await requireSystemAdmin(event)
 
   const parsed = validateQuery(event, adminStorageAuditQuerySchema, 'Invalid storage audit query parameters')
-  if (!parsed.ok) return parsed.response
 
-  const result = await adminService.getStorageAudit(parsed.data)
+  const result = await adminService.getStorageAudit(parsed)
   return ok(result)
 })

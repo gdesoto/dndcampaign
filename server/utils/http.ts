@@ -1,5 +1,5 @@
 import type { H3Event } from 'h3'
-import { setResponseStatus } from 'h3'
+import { createError, getRouterParams } from 'h3'
 
 export type ApiError = {
   code: string
@@ -12,37 +12,46 @@ export type ApiResponse<T> = {
   error: ApiError | null
 }
 
-export type ServiceResult<T> =
-  | { ok: true; data: T }
-  | {
-      ok: false
-      statusCode: number
-      code: string
-      message: string
-      fields?: Record<string, string>
-    }
+/** Extra payload carried on thrown H3 errors; the Nitro error handler shapes it into `ApiError`. */
+export type ApiErrorData = {
+  code: string
+  fields?: Record<string, string>
+}
 
 export const ok = <T>(data: T): ApiResponse<T> => ({
   data,
   error: null,
 })
 
-export const fail = (
-  event: H3Event,
+/**
+ * Build an HTTP error to throw from handlers, utils, or services.
+ * `server/error-handler.ts` turns it into the `{ data: null, error }` envelope.
+ */
+export const apiError = (
   statusCode: number,
   code: string,
   message = '',
   fields?: Record<string, string>
-): ApiResponse<null> => {
-  setResponseStatus(event, statusCode)
-  return {
-    data: null,
-    error: { code, message, fields: fields && Object.keys(fields).length ? fields : undefined },
-  }
-}
+) =>
+  createError({
+    statusCode,
+    message,
+    data: {
+      code,
+      fields: fields && Object.keys(fields).length ? fields : undefined,
+    } satisfies ApiErrorData,
+  })
 
-/** Translate a service result into the API envelope, setting the HTTP status on failure. */
-export const respond = <T>(event: H3Event, result: ServiceResult<T>): ApiResponse<T | null> =>
-  result.ok
-    ? ok(result.data)
-    : fail(event, result.statusCode, result.code, result.message, result.fields)
+/** Read required route params as plain strings, e.g. `const { campaignId } = routeParams(event, 'campaignId')`. */
+export const routeParams = <K extends string>(event: H3Event, ...keys: K[]): Record<K, string> => {
+  const params = getRouterParams(event)
+  const result = {} as Record<K, string>
+  for (const key of keys) {
+    const value = params[key]
+    if (!value) {
+      throw apiError(400, 'VALIDATION_ERROR', `${key} is required`)
+    }
+    result[key] = value
+  }
+  return result
+}

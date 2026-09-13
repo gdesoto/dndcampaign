@@ -1,6 +1,19 @@
+import { fileURLToPath } from 'node:url'
+
+const apiErrorHandler = fileURLToPath(new URL('./server/error-handler.ts', import.meta.url)).replace(/\\/g, '/')
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
+  hooks: {
+    // Run the API envelope error handler before Nuxt's HTML error page handler.
+    'nitro:config'(config) {
+      const existing = config.errorHandler
+        ? Array.isArray(config.errorHandler) ? config.errorHandler : [config.errorHandler]
+        : []
+      config.errorHandler = [apiErrorHandler, ...existing]
+    },
+  },
   devtools: {
     enabled: false
   },

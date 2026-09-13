@@ -1,17 +1,13 @@
-import { fail, respond } from '#server/utils/http'
+import { ok, routeParams } from '#server/utils/http'
+import { requireCampaignPermission } from '#server/utils/campaign-auth'
 import { DungeonSnapshotService } from '#server/services/dungeon/dungeon-snapshot.service'
 
 const dungeonSnapshotService = new DungeonSnapshotService()
 
 export default defineEventHandler(async (event) => {
-  const campaignId = event.context.params?.campaignId
-  const dungeonId = event.context.params?.dungeonId
-  const snapshotId = event.context.params?.snapshotId
-  if (!campaignId || !dungeonId || !snapshotId) {
-    return fail(event, 400, 'VALIDATION_ERROR', 'Campaign id, dungeon id, and snapshot id are required')
-  }
+  const { campaignId, dungeonId, snapshotId } = routeParams(event, 'campaignId', 'dungeonId', 'snapshotId')
 
-  const sessionUser = await requireUserSession(event)
-  const result = await dungeonSnapshotService.restoreSnapshot(campaignId, dungeonId, snapshotId, sessionUser.user.id)
-  return respond(event, result)
+  const { actor } = await requireCampaignPermission(event, campaignId, 'content.write')
+  const result = await dungeonSnapshotService.restoreSnapshot(campaignId, dungeonId, snapshotId, actor)
+  return ok(result)
 })

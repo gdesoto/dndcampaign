@@ -7,14 +7,13 @@ export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
   const parsed = await validateBody(event, campaignCreateSchema, 'Invalid campaign payload')
 
-  if (!parsed.ok) return parsed.response
 
   const campaign = await prisma.campaign.create({
     data: {
       ownerId: session.user.id,
-      name: parsed.data.name,
-      system: parsed.data.system,
-      description: parsed.data.description,
+      name: parsed.name,
+      system: parsed.system,
+      description: parsed.description,
       members: {
         create: {
           userId: session.user.id,
