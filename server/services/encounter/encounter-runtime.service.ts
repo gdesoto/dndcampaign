@@ -2,7 +2,6 @@ import { prisma } from '#server/db/prisma'
 import type {
   EncounterCombatant,
   EncounterCondition,
-  EncounterRuntimeBoard,
   EncounterSummary,
 } from '#shared/types/encounter'
 import type {
@@ -538,41 +537,6 @@ export class EncounterRuntimeService {
     )
 
     return { deleted: true }
-  }
-
-  async getRuntimeBoard(encounterId: string, userId: string): Promise<EncounterRuntimeBoard> {
-    const encounter = await getEncounterWithAccess(encounterId, userId, 'content.read')
-    if (!encounter) {
-      throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
-    }
-
-    const initiativeLane = [...encounter.combatants]
-      .sort((left, right) => left.sortOrder - right.sortOrder)
-      .map((combatant, index) => ({
-        combatantId: combatant.id,
-        name: combatant.name,
-        side: combatant.side,
-        initiative: combatant.initiative,
-        sortOrder: combatant.sortOrder,
-        isActive: index === encounter.currentTurnIndex,
-        isDefeated: combatant.isDefeated,
-      }))
-
-    const warnings: string[] = []
-    if (!initiativeLane.length) {
-      warnings.push('No combatants added yet.')
-    }
-    if (encounter.status !== 'ACTIVE') {
-      warnings.push('Encounter is not currently active.')
-    }
-
-    return {
-        encounterId,
-        round: encounter.currentRound,
-        activeCombatantId: initiativeLane.find((item) => item.isActive)?.combatantId || null,
-        initiativeLane,
-        warnings,
-      }
   }
 
   private async tickRoundEndConditions(encounterId: string) {
