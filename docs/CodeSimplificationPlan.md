@@ -30,8 +30,8 @@ The original investigation above is historical. This batch starts from clean `ma
 | Ticket | Status | Branch | Implementation commit | Validation and review |
 | --- | --- | --- | --- | --- |
 | CJ-13 | Complete; merged | `codex/cj-13` | `2a6c78b` | Removed unused method/import in `server/services/encounter/encounter-runtime.service.ts` and two orphan types in `shared/types/encounter.ts` (54 lines). Tracked/hidden source searches found no callers; lint, typecheck, diff check passed. Independent Terra and manager reviews approved; no behavioral test needed for dead code. |
-| CJ-14 | Complete; approved for merge | `codex/cj-14` | `21524fd` | Deleted only the unused method/member in `app/composables/useCampaignPublicAccess.ts` (21 lines). Caller searches, lint, typecheck, diff check passed; active public composable and server route/service retained. Independent Terra and manager reviews approved; no behavioral test needed. |
-| CJ-23 | Pending | `codex/cj-23` | — | — |
+| CJ-14 | Complete; merged | `codex/cj-14` | `21524fd` | Deleted only the unused method/member in `app/composables/useCampaignPublicAccess.ts` (21 lines). Caller searches, lint, typecheck, diff check passed; active public composable and server route/service retained. Independent Terra and manager reviews approved; no behavioral test needed. |
+| CJ-23 | Complete; approved for merge | `codex/cj-23` | `3ae6bc3` | Removed permission from `server/utils/campaign-auth.ts`, `shared/types/campaign-workflow.ts`, and calendar/settings page unions. Workspace OpenAPI descriptions record the removed response value. Extended `api.user-management-um3-rbac.test.ts`: 6 tests passed, including both workspace owner permission lists. Lint, typecheck, diff check and source/caller searches passed; independent Terra and manager reviews approved. |
 | CJ-15 | Pending | `codex/cj-15` | — | User confirmed detailed plan: remove `/api/account/profile`, retain `/api/auth/me` via account service. |
 | CJ-16 | Pending | `codex/cj-16` | — | — |
 | CJ-17 | Pending | `codex/cj-17` | — | — |
@@ -286,6 +286,8 @@ Each ticket is independently assignable to a future agent. Re-read its affected 
 **Problem/evidence:** `server/utils/campaign-auth.ts` defines `campaign.delete` with no route or service using it; no campaign delete endpoint exists.
 
 **Plan:** Remove the permission entry. If a delete endpoint is wanted later, add both together.
+
+**Implementation clarification:** The permission was also declared in the calendar/settings page unions and shared campaign workflow type. Remove those stale type members too. Campaign/session workspace responses serialize the registry-derived permission array, so document the removed value in OpenAPI and verify the remaining owner permissions in both responses alongside existing collaborator/viewer RBAC coverage.
 
 ## Investigated but not recommended
 
