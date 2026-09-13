@@ -109,7 +109,13 @@ describe('auth + campaigns API', () => {
     })
     expect(response.status).toBe(200)
     const payload = await response.json()
-    expect(payload.data.user.email).toBe(testUser.email)
+    expect(payload.data.user).toEqual({
+      id: expect.any(String),
+      email: testUser.email,
+      name: testUser.name,
+      systemRole: 'USER',
+      avatarUrl: null,
+    })
   })
 
   it('lists campaigns for authenticated user', async () => {

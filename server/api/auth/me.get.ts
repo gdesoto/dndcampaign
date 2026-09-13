@@ -1,6 +1,8 @@
 import { ok, apiError } from '#server/utils/http'
-import { prisma } from '#server/db/prisma'
+import { AccountService } from '#server/services/account.service'
 import { toAuthUserDto } from '#server/services/auth.service'
+
+const accountService = new AccountService()
 
 export default defineEventHandler(async (event) => {
   const session = await getUserSession(event)
@@ -8,20 +10,9 @@ export default defineEventHandler(async (event) => {
     throw apiError(401, 'UNAUTHORIZED', 'Not authenticated')
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      systemRole: true,
-      avatarUrl: true,
-      isActive: true,
-      deletedAt: true,
-    },
-  })
+  const user = await accountService.getActiveProfile(session.user.id)
 
-  if (!user || !user.isActive || user.deletedAt) {
+  if (!user) {
     await clearUserSession(event)
     throw apiError(401, 'UNAUTHORIZED', 'Not authenticated')
   }
