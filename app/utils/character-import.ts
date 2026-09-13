@@ -1,33 +1,8 @@
+import type { CharacterSection } from '#shared/schemas/character'
+
 export type CharacterImportMode = 'FULL' | 'SECTIONS'
 
-export type CharacterImportSection =
-  | 'BASICS'
-  | 'ABILITY_SCORES'
-  | 'SAVES'
-  | 'SKILLS'
-  | 'CLASSES'
-  | 'RACE'
-  | 'BACKGROUND'
-  | 'EQUIPMENT'
-  | 'CURRENCY'
-  | 'SPELLS'
-  | 'FEATURES'
-  | 'PROFICIENCIES'
-  | 'LANGUAGES'
-  | 'TRAITS'
-  | 'INVENTORY'
-  | 'RESOURCES'
-  | 'HIT_POINTS'
-  | 'DEFENSES'
-  | 'CONDITIONS'
-  | 'ATTACKS'
-  | 'NOTES'
-  | 'APPEARANCE'
-  | 'PORTRAIT'
-  | 'ALLIES'
-  | 'ORGANIZATIONS'
-  | 'COMPANIONS'
-  | 'CUSTOM'
+export type CharacterImportSection = CharacterSection
 
 export type CharacterImportPayload = {
   provider: 'DND_BEYOND'
