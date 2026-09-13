@@ -29,8 +29,8 @@ The original investigation above is historical. This batch starts from clean `ma
 
 | Ticket | Status | Branch | Implementation commit | Validation and review |
 | --- | --- | --- | --- | --- |
-| CJ-13 | Complete; approved for merge | `codex/cj-13` | `2a6c78b` | Removed unused method/import in `server/services/encounter/encounter-runtime.service.ts` and two orphan types in `shared/types/encounter.ts` (54 lines). Tracked/hidden source searches found no callers; lint, typecheck, diff check passed. Independent Terra and manager reviews approved; no behavioral test needed for dead code. |
-| CJ-14 | Pending | `codex/cj-14` | — | — |
+| CJ-13 | Complete; merged | `codex/cj-13` | `2a6c78b` | Removed unused method/import in `server/services/encounter/encounter-runtime.service.ts` and two orphan types in `shared/types/encounter.ts` (54 lines). Tracked/hidden source searches found no callers; lint, typecheck, diff check passed. Independent Terra and manager reviews approved; no behavioral test needed for dead code. |
+| CJ-14 | Complete; approved for merge | `codex/cj-14` | `21524fd` | Deleted only the unused method/member in `app/composables/useCampaignPublicAccess.ts` (21 lines). Caller searches, lint, typecheck, diff check passed; active public composable and server route/service retained. Independent Terra and manager reviews approved; no behavioral test needed. |
 | CJ-23 | Pending | `codex/cj-23` | — | — |
 | CJ-15 | Pending | `codex/cj-15` | — | User confirmed detailed plan: remove `/api/account/profile`, retain `/api/auth/me` via account service. |
 | CJ-16 | Pending | `codex/cj-16` | — | — |

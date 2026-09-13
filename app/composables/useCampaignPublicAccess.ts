@@ -48,30 +48,9 @@ export const useCampaignPublicAccess = () => {
       }
     )
 
-  const getPublicOverview = (publicSlug: string) =>
-    request<{
-      campaign: {
-        name: string
-        system: string
-        description: string | null
-        dungeonMasterName: string | null
-      }
-      sections: {
-        showCharacters: boolean
-        showRecaps: boolean
-        showSessions: boolean
-        showGlossary: boolean
-        showQuests: boolean
-        showMilestones: boolean
-        showMaps: boolean
-        showJournal: boolean
-      }
-    }>(`/api/public/campaigns/${publicSlug}`)
-
   return {
     getSettings,
     updateSettings,
     regenerateSlug,
-    getPublicOverview,
   }
 }
