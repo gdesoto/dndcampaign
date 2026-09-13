@@ -3,17 +3,6 @@ import { ArtifactService } from './artifact.service'
 import type { RecordingKind } from '#server/db/prisma-client'
 import type { Readable } from 'node:stream'
 
-type CreateRecordingInput = {
-  ownerId: string
-  campaignId: string
-  sessionId: string
-  filename: string
-  mimeType: string
-  data: Buffer
-  kind: RecordingKind
-  durationSeconds?: number
-}
-
 type CreateRecordingStreamInput = {
   ownerId: string
   campaignId: string
@@ -36,34 +25,6 @@ type AttachVttStreamInput = {
 
 export class RecordingService {
   private artifactService = new ArtifactService()
-
-  async createRecordingFromUpload(input: CreateRecordingInput) {
-    const artifact = await this.artifactService.createArtifactFromUpload({
-      ownerId: input.ownerId,
-      campaignId: input.campaignId,
-      filename: input.filename,
-      mimeType: input.mimeType,
-      data: input.data,
-      label: `Recording ${input.kind.toLowerCase()}`,
-    })
-
-    try {
-      return await prisma.recording.create({
-        data: {
-          sessionId: input.sessionId,
-          kind: input.kind,
-          filename: input.filename,
-          mimeType: input.mimeType,
-          byteSize: artifact.byteSize,
-          durationSeconds: input.durationSeconds,
-          artifactId: artifact.id,
-        },
-      })
-    } catch (error) {
-      await this.deleteArtifactBestEffort(artifact.id)
-      throw error
-    }
-  }
 
   async createRecordingFromStream(input: CreateRecordingStreamInput) {
     const artifact = await this.artifactService.createArtifactFromStream({

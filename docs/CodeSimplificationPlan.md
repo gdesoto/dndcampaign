@@ -53,6 +53,18 @@ All seven branches were merged locally into `master` in the requested order; fin
 - Application source under `app/`, `server/`, and `shared/`: 87 lines added / 409 removed, net 322 fewer lines. Additional test fixtures and documentation account for the overall diff growing despite less application code.
 - Limits: no external n8n, ElevenLabs or DnD Beyond integration was called. Schema/DTO behavior was checked with local fixtures, and CJ-17 UI behavior was checked in the browser. No database migration or unrelated UI redesign was introduced.
 
+## CJ-03 follow-up implementation (2026-09-13)
+
+**Complete and manager-validated.** Implemented in the working tree from `135ee48`, with separate GPT-5.6 Terra agents owning artifact and recording services. This follow-up does not use the historical batch's branch/merge workflow; changes remain uncommitted for review.
+
+- `server/services/recording.service.ts`: removed the uncalled `CreateRecordingInput` and `createRecordingFromUpload`; active stream creation and recording/subtitle cleanup remain unchanged.
+- `server/services/artifact.service.ts`: removed the uncalled `getStream`; buffer creation now wraps bytes with `Readable.from([input.data])` and delegates to `createArtifactFromStream`, leaving one metadata persistence implementation. Application code is 59 net lines smaller.
+- `test/nuxt/artifact.service.test.ts`: real temporary local storage verifies binary buffer bytes, multi-chunk streams, empty buffers, checksums, MIME, labels, metadata, campaign/global keys, storage failure, and persistence failure. Prisma is mocked to isolate service behavior.
+- `test/nuxt/recording.service.test.ts`: verifies recording-row failure triggers artifact cleanup and retains the original error even when cleanup fails.
+- Manager reviewed both service/test diffs and requested additional multi-chunk stream and empty-buffer coverage, which the artifact agent added. An import-order lint failure in the recording test was corrected.
+- Public URLs/payloads, storage interface/factory, map `putObject` calls, and upload handlers are unchanged. No migration or external integration calls. Artifact-row persistence failure still leaves the stored object; this ticket does not add rollback.
+- Validation: agent-coordinated `yarn lint` and `yarn typecheck` passed; focused service coverage passed 7/7, recap API regression passed 8/8. Manager's integrated `yarn test` passed 75 files / 309 tests (115.17s command duration); log: `storage/cj-03-test.log` (local, ignored). `git diff --check` passed. Manager's production `yarn build` passed with exit 0 in 473.92s (7m54s), including Nitro packaging; log: `storage/cj-03-build.log` (local, ignored). Non-blocking dependency bundler/deprecation warnings remain.
+
 ## Prioritized findings
 
 Scary: **1** mechanical/local; **2** bounded behavior; **3** several flows or query/route ownership; **4** broad compatibility/data risk; **5** architectural migration. Bang for buck: **5** strongest benefit relative to effort, **1** weakest. These are engineering judgments, not measured scores. Effort: XS under half a day, S approximately half–one day, M approximately one–two days, including focused verification.
