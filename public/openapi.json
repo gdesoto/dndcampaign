@@ -171,50 +171,6 @@
         }
       }
     },
-    "/api/account/profile": {
-      "get": {
-        "tags": [
-          "account"
-        ],
-        "summary": "GET /api/account/profile",
-        "description": "Auto-documented from server route `account/profile.get.ts`. This operation uses the project standard API envelope `{ data, error }`.",
-        "operationId": "get_api_account_profile",
-        "responses": {
-          "200": {
-            "description": "Successful operation response envelope.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_GenericRead"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          }
-        },
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "x-source-file": "account/profile.get.ts",
-        "x-generated": true
-      }
-    },
     "/api/account/sessions": {
       "get": {
         "tags": [

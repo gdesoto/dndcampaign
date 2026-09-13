@@ -49,7 +49,13 @@ describe('user management UM-1', () => {
     })
     expect(meResponse.status).toBe(200)
     const mePayload = await meResponse.json()
-    expect(mePayload.data.user.email).toBe(registerUser.email)
+    expect(mePayload.data.user).toEqual({
+      id: expect.any(String),
+      email: registerUser.email,
+      name: registerUser.name,
+      systemRole: 'USER',
+      avatarUrl: null,
+    })
   })
 
   it('returns 409 for duplicate registration email', async () => {
@@ -94,7 +100,17 @@ describe('user management UM-1', () => {
 
     expect(profileResponse.status).toBe(200)
     const profilePayload = await profileResponse.json()
-    expect(profilePayload.data.profile.email).toBe(registerUser.email)
+    const profile = profilePayload.data.profile
+    expect(profile).toEqual({
+      id: expect.any(String),
+      email: registerUser.email,
+      name: registerUser.name,
+      systemRole: 'USER',
+      avatarUrl: null,
+      isActive: true,
+      createdAt: expect.any(String),
+      updatedAt: expect.any(String),
+    })
 
     const patchResponse = await fetch(`${baseUrl}/api/account`, {
       method: 'PATCH',
@@ -111,8 +127,28 @@ describe('user management UM-1', () => {
 
     expect(patchResponse.status).toBe(200)
     const patchPayload = await patchResponse.json()
-    expect(patchPayload.data.profile.name).toBe('Updated UM1 Tester')
-    expect(patchPayload.data.profile.avatarUrl).toBe('https://example.com/avatar.png')
+    expect(patchPayload.data.profile).toEqual({
+      ...profile,
+      name: 'Updated UM1 Tester',
+      avatarUrl: 'https://example.com/avatar.png',
+      updatedAt: expect.any(String),
+    })
+    expect(Number.isNaN(Date.parse(patchPayload.data.profile.updatedAt))).toBe(false)
+
+    const refreshedProfileResponse = await fetch(`${baseUrl}/api/account`, {
+      headers: { cookie: authCookie },
+    })
+    expect(refreshedProfileResponse.status).toBe(200)
+    const refreshedProfilePayload = await refreshedProfileResponse.json()
+    expect(refreshedProfilePayload.data.profile).toEqual(patchPayload.data.profile)
+  })
+
+  it('does not expose the retired account profile endpoint', async () => {
+    const response = await fetch(`${baseUrl}/api/account/profile`, {
+      headers: { cookie: authCookie },
+    })
+
+    expect(response.status).toBe(404)
   })
 
   it('changes email with password re-auth', async () => {
@@ -221,6 +257,47 @@ describe('user management UM-1', () => {
 
     expect(userAfter?.lastLoginAt).toBeTruthy()
     expect((userAfter?.lastLoginAt?.getTime() || 0) >= (userBefore?.lastLoginAt?.getTime() || 0)).toBe(true)
+  })
+
+  it('clears inactive, deleted, and missing account sessions before returning unauthorized', async () => {
+    const assertUnauthorizedAndCleared = async (cookie: string) => {
+      const response = await fetch(`${baseUrl}/api/auth/me`, {
+        headers: { cookie },
+      })
+
+      expect(response.status).toBe(401)
+      expect(response.headers.get('set-cookie')).toContain('nuxt-session=;')
+      const payload = await response.json()
+      expect(payload.error.code).toBe('UNAUTHORIZED')
+    }
+
+    await prisma.user.update({
+      where: { email: 'um1-updated@example.com' },
+      data: { isActive: false },
+    })
+    await assertUnauthorizedAndCleared(authCookie)
+
+    await prisma.user.update({
+      where: { email: 'um1-updated@example.com' },
+      data: { isActive: true, deletedAt: new Date() },
+    })
+    await assertUnauthorizedAndCleared(authCookie)
+
+    const missingResponse = await fetch(`${baseUrl}/api/auth/register`, {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({
+        name: 'Missing UM1 Tester',
+        email: 'missing-um1@example.com',
+        password: registerUser.password,
+        termsAccepted: true,
+      }),
+    })
+    expect(missingResponse.status).toBe(200)
+    const missingCookie = missingResponse.headers.get('set-cookie') || ''
+    const missingPayload = await missingResponse.json()
+    await prisma.user.delete({ where: { id: missingPayload.data.user.id } })
+    await assertUnauthorizedAndCleared(missingCookie)
   })
 })
 

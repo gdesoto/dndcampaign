@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { ok, apiError } from '#server/utils/http'
 import { validateInput } from '#server/utils/validate'
-import { AccountService } from '#server/services/account.service'
+import { AccountService, toAccountProfileDto } from '#server/services/account.service'
 import {
   accountProfileUpdateSchema,
   changeEmailSchema,
@@ -38,18 +38,8 @@ export default defineEventHandler(async (event) => {
     const result = await accountService.updateProfile(session.user.id, parsed)
 
     await accountService.syncSession(event, session.user.id)
-    const profile = result
     return ok({
-      profile: {
-        id: profile.id,
-        email: profile.email,
-        name: profile.name,
-        systemRole: profile.systemRole,
-        avatarUrl: profile.avatarUrl,
-        isActive: profile.isActive,
-        createdAt: profile.createdAt.toISOString(),
-        updatedAt: profile.updatedAt.toISOString(),
-      },
+      profile: toAccountProfileDto(result),
     })
   }
 

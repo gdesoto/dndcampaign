@@ -19,6 +19,17 @@ type ProfileRecord = {
   passwordHash: string | null
 }
 
+export const toAccountProfileDto = (profile: ProfileRecord) => ({
+  id: profile.id,
+  email: profile.email,
+  name: profile.name,
+  systemRole: profile.systemRole,
+  avatarUrl: profile.avatarUrl,
+  isActive: profile.isActive,
+  createdAt: profile.createdAt.toISOString(),
+  updatedAt: profile.updatedAt.toISOString(),
+})
+
 const profileSelect = {
   id: true,
   email: true,
@@ -33,17 +44,26 @@ const profileSelect = {
 } as const
 
 export class AccountService {
-  async getProfile(userId: string): Promise<ProfileRecord> {
-    const user = await prisma.user.findUnique({
+  private async findProfile(userId: string): Promise<ProfileRecord | null> {
+    return prisma.user.findUnique({
       where: { id: userId },
       select: profileSelect,
     })
+  }
+
+  async getProfile(userId: string): Promise<ProfileRecord> {
+    const user = await this.findProfile(userId)
 
     if (!user || user.deletedAt) {
       throw apiError(404, 'USER_NOT_FOUND', 'Account not found')
     }
 
     return user
+  }
+
+  async getActiveProfile(userId: string): Promise<ProfileRecord | null> {
+    const user = await this.findProfile(userId)
+    return user && user.isActive && !user.deletedAt ? user : null
   }
 
   async updateProfile(userId: string, input: { name?: string; avatarUrl?: string | null }): Promise<ProfileRecord> {
