@@ -31,8 +31,8 @@ The original investigation above is historical. This batch starts from clean `ma
 | --- | --- | --- | --- | --- |
 | CJ-13 | Complete; merged | `codex/cj-13` | `2a6c78b` | Removed unused method/import in `server/services/encounter/encounter-runtime.service.ts` and two orphan types in `shared/types/encounter.ts` (54 lines). Tracked/hidden source searches found no callers; lint, typecheck, diff check passed. Independent Terra and manager reviews approved; no behavioral test needed for dead code. |
 | CJ-14 | Complete; merged | `codex/cj-14` | `21524fd` | Deleted only the unused method/member in `app/composables/useCampaignPublicAccess.ts` (21 lines). Caller searches, lint, typecheck, diff check passed; active public composable and server route/service retained. Independent Terra and manager reviews approved; no behavioral test needed. |
-| CJ-23 | Complete; approved for merge | `codex/cj-23` | `3ae6bc3` | Removed permission from `server/utils/campaign-auth.ts`, `shared/types/campaign-workflow.ts`, and calendar/settings page unions. Workspace OpenAPI descriptions record the removed response value. Extended `api.user-management-um3-rbac.test.ts`: 6 tests passed, including both workspace owner permission lists. Lint, typecheck, diff check and source/caller searches passed; independent Terra and manager reviews approved. |
-| CJ-15 | Pending | `codex/cj-15` | — | User confirmed detailed plan: remove `/api/account/profile`, retain `/api/auth/me` via account service. |
+| CJ-23 | Complete; merged | `codex/cj-23` | `3ae6bc3` | Removed permission from `server/utils/campaign-auth.ts`, `shared/types/campaign-workflow.ts`, and calendar/settings page unions. Workspace OpenAPI descriptions record the removed response value. Extended `api.user-management-um3-rbac.test.ts`: 6 tests passed, including both workspace owner permission lists. Lint, typecheck, diff check and source/caller searches passed; independent Terra and manager reviews approved. |
+| CJ-15 | Complete; approved for merge | `codex/cj-15` | `a9d4f48` | Account service owns the explicit profile mapper and shared lookup; account GET/PATCH use the mapper; auth/me retains its distinct DTO and session clearing/401 rules. Removed duplicate route and OpenAPI entry; no app callers needed migration. UM-1 API: 11 tests; auth/campaign API: 6 tests; lint, typecheck, JSON parse, diff check passed. Exact profile fields/equivalence, missing/inactive/deleted sessions, and retired-route 404 covered. Independent Terra and manager reviews approved. |
 | CJ-16 | Pending | `codex/cj-16` | — | — |
 | CJ-17 | Pending | `codex/cj-17` | — | — |
 | CJ-02 | Pending | `codex/cj-02` | — | — |
@@ -230,6 +230,8 @@ Each ticket is independently assignable to a future agent. Re-read its affected 
 **Problem/evidence:** `server/api/account/index.get.ts` and `server/api/account/profile.get.ts` are byte-identical; `server/api/auth/me.get.ts` is a third profile read with its own inline Prisma select. The profile DTO mapping is also repeated in `account/index.patch.ts`.
 
 **Plan:** Keep `GET /api/account`. Delete `profile.get.ts`; make `auth/me` delegate to the account service; put the profile DTO mapper in `account.service.ts`. Remove the dropped path from `public/openapi.json` and update the client callers.
+
+**User decision and contract clarification (2026-09-13):** Retain `/api/auth/me` as specified in this detailed plan. It is not byte-identical to account reads: preserve its `{ user }` DTO, 401 responses and session clearing for missing/inactive/deleted users. Account GET/PATCH keep their `{ profile }` DTO with explicit fields and ISO dates; never expose internal `passwordHash` or `deletedAt` through mapper reuse.
 
 **Acceptance/checks:** Grep app and tests for `/api/account/profile` and `/api/auth/me`; run `test/api/api.user-management-um1.test.ts` and `api.auth-campaign.test.ts`.
 
