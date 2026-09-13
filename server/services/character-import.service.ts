@@ -2,7 +2,7 @@ import { prisma } from '#server/db/prisma'
 import type { Prisma } from '#server/db/prisma-client'
 import { createHash } from 'node:crypto'
 import { ofetch } from 'ofetch'
-import type { CharacterSection } from '#shared/schemas/character'
+import { characterSectionSchema, type CharacterSection } from '#shared/schemas/character'
 import { computeCharacterSummary, setSheetSection } from './character.service'
 import { CharacterSyncService } from './character-sync.service'
 
@@ -22,37 +22,7 @@ const hashJson = (value: unknown) =>
   createHash('sha256').update(JSON.stringify(value)).digest('hex')
 
 const normalizeSections = (sections?: CharacterSection[]) =>
-  sections && sections.length ? sections : (Object.keys(sectionKeyDefaults) as CharacterSection[])
-
-const sectionKeyDefaults: Record<CharacterSection, boolean> = {
-  BASICS: true,
-  ABILITY_SCORES: true,
-  SAVES: true,
-  SKILLS: true,
-  CLASSES: true,
-  RACE: true,
-  BACKGROUND: true,
-  EQUIPMENT: true,
-  CURRENCY: true,
-  SPELLS: true,
-  FEATURES: true,
-  PROFICIENCIES: true,
-  LANGUAGES: true,
-  TRAITS: true,
-  INVENTORY: true,
-  RESOURCES: true,
-  HIT_POINTS: true,
-  DEFENSES: true,
-  CONDITIONS: true,
-  ATTACKS: true,
-  NOTES: true,
-  APPEARANCE: true,
-  PORTRAIT: true,
-  ALLIES: true,
-  ORGANIZATIONS: true,
-  COMPANIONS: true,
-  CUSTOM: true,
-}
+  sections && sections.length ? sections : characterSectionSchema.options
 
 const toNumber = (value: unknown) => (typeof value === 'number' ? value : undefined)
 
