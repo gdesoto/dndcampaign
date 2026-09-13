@@ -3,97 +3,6 @@ import { ok, apiError } from '#server/utils/http'
 import { prisma } from '#server/db/prisma'
 import { n8nWebhookPayloadSchema } from '#shared/schemas/summarization'
 
-type ValidationResult = {
-  valid: boolean
-  errors: string[]
-  warnings: string[]
-}
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-
-const validateSummaryContent = (value: unknown, errors: string[], warnings: string[]) => {
-  if (typeof value === 'string') return
-  if (!isRecord(value)) {
-    errors.push('summaryContent must be a string or object')
-    return
-  }
-  if ('fullSummary' in value && typeof value.fullSummary !== 'string') {
-    warnings.push('summaryContent.fullSummary should be a string')
-  }
-  if ('highlights' in value && !Array.isArray(value.highlights)) {
-    warnings.push('summaryContent.highlights should be an array of strings')
-  }
-  if (Array.isArray(value.highlights) && value.highlights.some((item) => typeof item !== 'string')) {
-    warnings.push('summaryContent.highlights should only include strings')
-  }
-  if ('sessionTags' in value && !Array.isArray(value.sessionTags)) {
-    warnings.push('summaryContent.sessionTags should be an array of strings')
-  }
-  if (Array.isArray(value.sessionTags) && value.sessionTags.some((item) => typeof item !== 'string')) {
-    warnings.push('summaryContent.sessionTags should only include strings')
-  }
-}
-
-const validateSuggestions = (value: unknown, warnings: string[]) => {
-  if (!value) return
-  if (!isRecord(value)) {
-    warnings.push('suggestions should be an object')
-    return
-  }
-  const lists = ['quests', 'milestones']
-  for (const key of lists) {
-    if (key in value && !Array.isArray(value[key])) {
-      warnings.push(`suggestions.${key} should be an array`)
-    }
-  }
-  if (value.glossary && isRecord(value.glossary)) {
-    const glossaryLists = ['pcs', 'npcs', 'items', 'locations']
-    for (const key of glossaryLists) {
-      if (key in value.glossary && !Array.isArray(value.glossary[key])) {
-        warnings.push(`suggestions.glossary.${key} should be an array`)
-      }
-    }
-  }
-}
-const validateN8nResponse = (response: unknown): ValidationResult => {
-  const errors: string[] = []
-  const warnings: string[] = []
-
-  if (!isRecord(response)) {
-    return { valid: false, errors: ['Response must be a JSON object'], warnings }
-  }
-
-  if (!response.trackingId || typeof response.trackingId !== 'string') {
-    errors.push('trackingId is required and must be a string')
-  }
-
-  if ('status' in response) {
-    const status = String(response.status || '').toUpperCase()
-    const allowed = ['COMPLETED', 'FAILED', 'PROCESSING']
-    if (status && !allowed.includes(status)) {
-      warnings.push(`status should be one of ${allowed.join(', ')}`)
-    }
-  }
-
-  if ('summaryContent' in response) {
-    validateSummaryContent(response.summaryContent, errors, warnings)
-  }
-
-  validateSuggestions(response.suggestions, warnings)
-  if (!('summaryContent' in response) && !('suggestions' in response)) {
-    errors.push('summaryContent or suggestions is required')
-  }
-  if (isRecord(response.suggestions) && response.suggestions.session) {
-    const sessionSuggestion = response.suggestions.session
-    if (!isRecord(sessionSuggestion)) {
-      warnings.push('suggestions.session should be an object')
-    }
-  }
-
-  return { valid: errors.length === 0, errors, warnings }
-}
-
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
 
@@ -105,7 +14,6 @@ export default defineEventHandler(async (event) => {
   const body = await readBody<{
     webhookUrlOverride?: string
     promptProfile?: string
-    useZod?: boolean
     campaignId?: string
     sessionId?: string
   }>(event)
@@ -214,32 +122,10 @@ export default defineEventHandler(async (event) => {
         : undefined,
     })
 
-    const useZod = Boolean(body?.useZod)
-    let zodValid: boolean | null = null
-    let zodIssues: string | null = null
-    if (useZod) {
-      try {
-        const parsed = n8nWebhookPayloadSchema.safeParse(response)
-        zodValid = parsed.success
-        if (!parsed.success) {
-          zodIssues = JSON.stringify(parsed.error.issues, null, 2)
-        }
-      } catch (error) {
-        if (isError(error)) throw error
-        throw apiError(500, 'ZOD_CRASH', 'Zod validation crashed', {
-          message: (error as Error & { message?: string }).message || 'Unknown Zod error',
-        })
-      }
-    }
-
-    const validation = validateN8nResponse(response)
-    if (!validation.valid || (useZod && zodValid === false)) {
+    const parsed = n8nWebhookPayloadSchema.safeParse(response)
+    if (!parsed.success) {
       throw apiError(400, 'INVALID_RESPONSE', 'n8n response did not match expected schema', {
-        errors: JSON.stringify(validation.errors, null, 2),
-        warnings: JSON.stringify(validation.warnings, null, 2),
-        receivedKeys: JSON.stringify(Object.keys((response as Record<string, unknown>) || {})),
-        zodValid: zodValid === null ? 'not-run' : String(zodValid),
-        zodIssues: zodIssues || '',
+        issues: JSON.stringify(parsed.error.issues, null, 2),
       })
     }
 
@@ -249,8 +135,6 @@ export default defineEventHandler(async (event) => {
       summaryContent: (response as Record<string, unknown>).summaryContent,
       suggestions: (response as Record<string, unknown>).suggestions || null,
       meta: (response as Record<string, unknown>).meta || null,
-      warnings: validation.warnings,
-      zodValid: zodValid ?? 'not-run',
     })
   } catch (error) {
     if (isError(error)) throw error

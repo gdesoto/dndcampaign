@@ -25,7 +25,6 @@ const { request } = useApi()
 const n8nForm = reactive({
   webhookUrlOverride: '',
   promptProfile: '',
-  useZod: false,
   campaignId: '',
   sessionId: '',
 })
@@ -136,7 +135,6 @@ const runN8nTest = async () => {
       body: {
         webhookUrlOverride: n8nForm.webhookUrlOverride || undefined,
         promptProfile: n8nForm.promptProfile || undefined,
-        useZod: n8nForm.useZod || undefined,
         campaignId: n8nForm.campaignId || undefined,
         sessionId: n8nForm.sessionId || undefined,
       },
@@ -226,10 +224,6 @@ id="field-admin-dev-tools-vue-2"
                 <label class="mb-2 block text-sm text-muted" for="field-admin-dev-tools-vue-4">Prompt profile (optional)</label>
                 <UInput id="field-admin-dev-tools-vue-4" v-model="n8nForm.promptProfile" placeholder="session-summary+highlights+quests..." />
               </div>
-            </div>
-            <div class="flex items-center gap-2">
-              <UCheckbox v-model="n8nForm.useZod" />
-              <span class="text-sm text-muted">Validate response with Zod</span>
             </div>
             <div class="flex flex-wrap items-center gap-3">
               <UButton :loading="n8nTesting" @click="runN8nTest">Send test webhook</UButton>
