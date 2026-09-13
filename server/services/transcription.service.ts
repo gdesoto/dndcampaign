@@ -4,6 +4,7 @@ import { streamToBuffer } from '#server/utils/multipart'
 import { getStorageAdapter } from '#server/services/storage/storage.factory'
 import { ArtifactService } from '#server/services/artifact.service'
 import type {
+  Prisma,
   TranscriptionArtifactFormat,
   TranscriptionJob,
   TranscriptionStatus,
@@ -57,6 +58,49 @@ type TranscriptionResponsePayload = {
     content: string
   }[]
 }
+
+type TranscriptionJobWithArtifacts = Prisma.TranscriptionJobGetPayload<{
+  include: { artifacts: { include: { artifact: true } } }
+}>
+
+const parseJsonArray = (value: string | null): unknown[] => {
+  if (!value) return []
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+export const toTranscriptionJobDto = (job: TranscriptionJobWithArtifacts) => ({
+  id: job.id,
+  status: job.status,
+  requestId: job.requestId,
+  externalJobId: job.externalJobId,
+  modelId: job.modelId,
+  languageCode: job.languageCode,
+  numSpeakers: job.numSpeakers,
+  diarize: job.diarize,
+  tagAudioEvents: job.tagAudioEvents,
+  requestedFormats: parseJsonArray(job.requestedFormats),
+  keyterms: parseJsonArray(job.keyterms),
+  errorMessage: job.errorMessage,
+  completedAt: job.completedAt,
+  createdAt: job.createdAt,
+  updatedAt: job.updatedAt,
+  artifacts: job.artifacts.map((entry) => ({
+    id: entry.id,
+    format: entry.format,
+    artifact: {
+      id: entry.artifact.id,
+      storageKey: entry.artifact.storageKey,
+      mimeType: entry.artifact.mimeType,
+      byteSize: entry.artifact.byteSize,
+      createdAt: entry.artifact.createdAt,
+    },
+  })),
+})
 
 const requestFormatMap: Record<string, { format: string }> = {
   txt: { format: 'txt' },

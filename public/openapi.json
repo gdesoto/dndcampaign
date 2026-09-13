@@ -11805,7 +11805,7 @@
           "transcriptions"
         ],
         "summary": "GET /api/transcriptions/{jobId}",
-        "description": "Auto-documented from server route `transcriptions/[jobId].get.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Auto-documented from server route `transcriptions/[jobId].get.ts`. This operation uses the project standard API envelope `{ data, error }`. The job payload includes tagAudioEvents, matching the recording transcription list response.",
         "operationId": "get_api_transcriptions_jobId",
         "parameters": [
           {
