@@ -23,6 +23,24 @@ These landed after the original sweep and outrank the per-feature tickets below 
 - **S4 — One multipart reader.** `server/utils/multipart.ts` replaced five Busboy state machines (recordings, recaps, captions, document import, map upload).
 - **S5 — One caption converter.** `srtToVtt`, `normalizeVtt`, `isLikelySrt`, and `toVtt` live in `shared/utils/transcript.ts`.
 
+## Managed implementation progress (2026-09-13)
+
+The original investigation above is historical. This batch starts from clean `master` at `7ee3df7`; the earlier S1/S3/S4/S5 work is already committed. Execute one ticket at a time in the user-requested order below. Each ticket has a `codex/cj-NN` branch, Terra implementation and independent review, and a final manager review before a local merge to `master`. Implementation agents own scoped code and checks; the manager owns this log and Git operations. No database migrations are planned.
+
+| Ticket | Status | Branch | Implementation commit | Validation and review |
+| --- | --- | --- | --- | --- |
+| CJ-13 | Complete; approved for merge | `codex/cj-13` | `2a6c78b` | Removed unused method/import in `server/services/encounter/encounter-runtime.service.ts` and two orphan types in `shared/types/encounter.ts` (54 lines). Tracked/hidden source searches found no callers; lint, typecheck, diff check passed. Independent Terra and manager reviews approved; no behavioral test needed for dead code. |
+| CJ-14 | Pending | `codex/cj-14` | — | — |
+| CJ-23 | Pending | `codex/cj-23` | — | — |
+| CJ-15 | Pending | `codex/cj-15` | — | User confirmed detailed plan: remove `/api/account/profile`, retain `/api/auth/me` via account service. |
+| CJ-16 | Pending | `codex/cj-16` | — | — |
+| CJ-17 | Pending | `codex/cj-17` | — | — |
+| CJ-02 | Pending | `codex/cj-02` | — | — |
+
+Run the integrated full test suite, lint, typecheck, and production build after the final ticket. Record actual results and any limitations here. Ticket branches remain available for inspection; rollback is a code revert.
+
+Validation prerequisite: initial CJ-13 lint failed because the bundled UI reference app moved to `.claude/skills/nuxt-ui-guidelines` while ESLint excluded only its old `.agents/plugins` location. Commit `4b2226d` adds the current path to `eslint.config.mjs`; independent review approved, and normal `yarn lint` then passed. No app source is excluded by this fix.
+
 ## Prioritized findings
 
 Scary: **1** mechanical/local; **2** bounded behavior; **3** several flows or query/route ownership; **4** broad compatibility/data risk; **5** architectural migration. Bang for buck: **5** strongest benefit relative to effort, **1** weakest. These are engineering judgments, not measured scores. Effort: XS under half a day, S approximately half–one day, M approximately one–two days, including focused verification.
@@ -43,7 +61,7 @@ Scary: **1** mechanical/local; **2** bounded behavior; **3** several flows or qu
 | CJ-12 | Cached/fresh playback repeats the same operation; converge locally | 2 | 3 | S |
 | CJ-13 | Uncalled encounter runtime-board layer; delete method and orphan types | 1 | 3 | XS |
 | CJ-14 | Unused client public-overview facade duplicates an active one; delete it | 1 | 3 | XS |
-| CJ-15 | Three identical profile endpoints; keep `GET /api/account`, delete the rest | 1 | 4 | XS |
+| CJ-15 | Duplicate profile logic; remove `/api/account/profile`, retain `/api/auth/me` via account service | 1 | 4 | XS |
 | CJ-16 | Two copied transcription job DTO mappers already drifting; one mapper in the service | 1 | 4 | XS |
 | CJ-17 | Dev n8n endpoint hand-validates a payload the Zod schema already covers; delete the shadow validator | 1 | 3 | XS |
 | CJ-18 | Create-or-update document repeated in four places; add `DocumentService.upsertForSession` | 1 | 3 | XS |
