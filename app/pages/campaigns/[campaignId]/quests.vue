@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { questFormSchema } from '~/utils/quest-form-schema'
-import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 import { useCampaignCalendar } from '~/composables/useCampaignCalendar'
 
 definePageMeta({ layout: 'dashboard' })
@@ -423,7 +422,7 @@ const updateStatus = async (quest: QuestItem, status: QuestStatus) => {
 
 <template>
   <div class="space-y-6">
-    <CampaignListTemplate
+    <CampaignTemplatesList
       title="Quests"
       :count="quests ? filteredQuests.length : undefined"
       description="Track quest category, main or side status, rewards, sources, and expiration dates."
@@ -534,7 +533,7 @@ const updateStatus = async (quest: QuestItem, status: QuestStatus) => {
           </section>
         </div>
       </SharedResourceState>
-    </CampaignListTemplate>
+    </CampaignTemplatesList>
 
     <SharedEntityFormModal
 v-model:open="isEditOpen"

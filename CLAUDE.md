@@ -68,7 +68,9 @@ Recordings and file artifacts use a pluggable storage abstraction in `server/ser
 
 ### Components
 
+- Use Nuxt's auto-imported component names in templates. Names include the directory path under `app/components/` and the filename: `app/components/shared/ConfirmActionModal.vue` is `<SharedConfirmActionModal />`, not `<ConfirmActionModal />`. Prefer correcting the template name over adding an explicit import to bypass the naming convention. When unsure, check `.nuxt/components.d.ts` for the generated name.
 - `script setup lang="ts"` with strongly typed props and emits.
+- When organizing or naming components, consider the full generated auto-import name. Let directories supply domain/group context and keep filenames focused on the component's role; avoid repeating directory words in filenames when that produces redundant names. For example, prefer `campaign/templates/List.vue` (`CampaignTemplatesList`) over `campaign/templates/CampaignListTemplate.vue` (`CampaignTemplatesCampaignListTemplate`). Keep names descriptive and unique, verify generated names in `.nuxt/components.d.ts`, and update all template references, programmatic imports, and tests when moving or renaming components.
 - Use `app/components/shared/ConfirmActionPopover.vue` for destructive-action confirmations.
 - For `UTable` customization, prefer `#<column>-header` and `#<column>-cell` slots over render functions.
 

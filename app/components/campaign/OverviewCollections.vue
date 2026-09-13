@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import type { CampaignSessionSummary, CampaignQuestSummary, CampaignMilestoneSummary } from '#shared/types/campaign-overview'
 import { formatSessionDate } from '~/utils/session-date'
-import SharedSummarySection from '~/components/shared/SummarySection.vue'
-import CampaignProgressBadge from '~/components/campaign/ProgressBadge.vue'
 
 type ResourceState = { pending: boolean; error: unknown; hasData: boolean }
 defineProps<{

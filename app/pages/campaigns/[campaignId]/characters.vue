@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import type { RecordAction } from '~/types/actions'
-import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
-import CharacterClassAvatar from '~/components/character/ClassAvatar.vue'
 definePageMeta({ layout: 'dashboard' })
 
 type CharacterLink = {
@@ -171,7 +169,7 @@ const characterActions = (link: CharacterLink): RecordAction[] => [
 </script>
 
 <template>
-  <CampaignListTemplate title="Characters" :count="links?.length">
+  <CampaignTemplatesList title="Characters" :count="links?.length">
     <template #actions>
       <UButton to="/characters" icon="i-lucide-users" variant="outline">Character roster</UButton>
     </template>
@@ -244,5 +242,5 @@ const characterActions = (link: CharacterLink): RecordAction[] => [
         </UCard>
       </div>
     </SharedResourceState>
-  </CampaignListTemplate>
+  </CampaignTemplatesList>
 </template>

@@ -13,7 +13,7 @@ const handleOpenUpdate = (value: boolean) => {
 </script>
 
 <template>
-  <ConfirmActionModal
+  <SharedConfirmActionModal
     title="Discard unsaved changes?"
     description="Your changes have not been saved."
     cancel-label="Keep editing"

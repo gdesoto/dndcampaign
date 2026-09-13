@@ -8,7 +8,6 @@ import type {
   MapReimportStrategy,
   MapFeatureType,
 } from '#shared/types/api/map'
-import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -350,7 +349,7 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
 
 <template>
   <div class="space-y-6">
-    <CampaignListTemplate
+    <CampaignTemplatesList
       title="Maps"
       :count="maps?.length"
     >
@@ -535,7 +534,7 @@ const mapActions = (map: CampaignMapSummaryDto): RecordAction[] => [
         </div>
       </UCard>
       </div>
-    </CampaignListTemplate>
+    </CampaignTemplatesList>
 
     <UModal
       v-model:open="layerModalOpen"

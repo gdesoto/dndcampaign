@@ -2,7 +2,6 @@
 import type { RecordAction } from '~/types/actions'
 import type { DungeonCreateInput, DungeonImportInput } from '#shared/schemas/dungeon'
 import type { CampaignDungeonSummary } from '#shared/types/dungeon'
-import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -182,7 +181,7 @@ const dungeonActions = (dungeon: CampaignDungeonSummary): RecordAction[] => [
 </script>
 
 <template>
-  <CampaignListTemplate
+  <CampaignTemplatesList
     title="Dungeons"
     :count="dungeons?.length"
     :action-label="canWriteContent ? 'New dungeon' : ''"
@@ -295,6 +294,6 @@ v-model:open="isImportOpen" title="Import dungeon JSON"
           </UFormField>
         </div>
     </SharedEntityFormModal>
-  </CampaignListTemplate>
+  </CampaignTemplatesList>
 </template>
 

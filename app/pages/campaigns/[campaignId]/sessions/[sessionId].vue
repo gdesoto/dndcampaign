@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import CampaignDetailTemplate from '~/components/campaign/templates/CampaignDetailTemplate.vue'
 import { sessionWorkspaceKey } from '~/composables/useSessionWorkspaceContext'
 
 definePageMeta({
@@ -35,7 +34,7 @@ useSeoMeta({
 </script>
 
 <template>
-  <CampaignDetailTemplate
+  <CampaignTemplatesDetail
     :back-to="`/campaigns/${campaignId}/sessions`"
     back-label="Back to sessions"
     back-button-placement="header"
@@ -84,5 +83,5 @@ useSeoMeta({
       @update:form="Object.assign(editor.form, $event)"
       @save="editor.saveSession"
     />
-  </CampaignDetailTemplate>
+  </CampaignTemplatesDetail>
 </template>

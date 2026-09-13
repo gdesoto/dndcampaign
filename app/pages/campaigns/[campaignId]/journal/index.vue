@@ -15,8 +15,6 @@ import type {
 } from '#shared/types/campaign-journal'
 import { extractJournalTagCandidatesFromMarkdown } from '#shared/utils/campaign-journal-tags'
 import type { CampaignAccess } from '#shared/types/campaign-workflow'
-import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
-import JournalEntryFormFields from '~/components/campaign/journal/JournalEntryFormFields.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -469,7 +467,7 @@ const entryActions = (entry: CampaignJournalEntryListItem): RecordAction[] => [
 
 <template>
   <div class="space-y-6">
-    <CampaignListTemplate
+    <CampaignTemplatesList
       title="Journal"
       :count="entries.length"
       :action-label="canWriteContent ? 'New entry' : ''"
@@ -642,7 +640,7 @@ const entryActions = (entry: CampaignJournalEntryListItem): RecordAction[] => [
           </div>
         </UCard>
       </template>
-    </CampaignListTemplate>
+    </CampaignTemplatesList>
 
     <SharedEntityFormModal
 v-model:open="isCreateOpen"
@@ -655,7 +653,7 @@ v-model:open="isCreateOpen"
       submit-label="Create entry"
       @submit="saveCreate"
     >
-      <JournalEntryFormFields
+      <CampaignJournalEntryFormFields
         :title="form.title"
         :visibility="form.visibility"
         :visibility-items="visibilityItems"
@@ -695,7 +693,7 @@ v-model:open="isEditOpen"
       @delete="deleteEditingEntry"
       @submit="saveEdit"
     >
-      <JournalEntryFormFields
+      <CampaignJournalEntryFormFields
         :title="form.title"
         :title-disabled="Boolean(editTarget?.isDiscoverable && !canManageDiscoverables)"
         :visibility="form.visibility"

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { RecordAction } from '~/types/actions'
 import { namedEntityFormSchema } from '~/utils/entity-form-schemas'
-import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 definePageMeta({ layout: 'dashboard' })
 
 type SessionItem = {
@@ -180,7 +179,7 @@ const sessionActions = (entry: GlossaryEntry, link: GlossaryLink): RecordAction[
 
 <template>
   <div class="space-y-6">
-    <CampaignListTemplate
+    <CampaignTemplatesList
       title="Glossary"
       :count="entries?.length"
       :action-label="canWriteContent ? 'New entry' : ''"
@@ -269,7 +268,7 @@ const sessionActions = (entry: GlossaryEntry, link: GlossaryLink): RecordAction[
           </SharedListItemCard>
         </div>
       </SharedResourceState>
-    </CampaignListTemplate>
+    </CampaignTemplatesList>
 
     <SharedEntityFormModal
 v-model:open="isEditOpen"

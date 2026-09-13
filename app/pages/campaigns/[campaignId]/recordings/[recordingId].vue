@@ -2,7 +2,6 @@
 import type { RecordAction } from '~/types/actions'
 import { getFirstNameTerm } from '#shared/utils/name'
 import type { CampaignAccess } from '#shared/types/campaign-workflow'
-import CampaignDetailTemplate from '~/components/campaign/templates/CampaignDetailTemplate.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -597,7 +596,7 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
 </script>
 
 <template>
-  <CampaignDetailTemplate
+  <CampaignTemplatesDetail
     :back-to="recording ? `/campaigns/${campaignId}/sessions/${recording.sessionId}` : `/campaigns/${campaignId}/sessions`"
     back-label="Back to session"
     headline="Session Asset"
@@ -1074,7 +1073,7 @@ id="field-campaigns--campaignId--recordings--recordingId--vue-4"
       </UCard>
     </template>
   </UModal>
-  </CampaignDetailTemplate>
+  </CampaignTemplatesDetail>
 </template>
 
 

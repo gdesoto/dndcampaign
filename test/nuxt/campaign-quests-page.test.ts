@@ -123,7 +123,7 @@ describe('Campaign quests page', () => {
           campaignCanWriteContent: computed(() => true),
         },
         stubs: {
-          CampaignListTemplate: {
+          CampaignTemplatesList: {
             props: ['actionLabel', 'actionDisabled'],
             emits: ['action'],
             template: `

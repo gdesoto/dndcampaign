@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import type { RecordAction } from '~/types/actions'
 import { titledEntityFormSchema } from '~/utils/entity-form-schemas'
-import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
-import CampaignProgressBadge from '~/components/campaign/ProgressBadge.vue'
 definePageMeta({ layout: 'dashboard' })
 
 type MilestoneItem = {
@@ -129,7 +127,7 @@ const milestoneActions = (milestone: MilestoneItem): RecordAction[] => canWriteC
 
 <template>
   <div class="space-y-6">
-    <CampaignListTemplate
+    <CampaignTemplatesList
       title="Milestones"
       :count="milestones?.length"
       :action-label="canWriteContent ? 'New milestone' : ''"
@@ -184,7 +182,7 @@ const milestoneActions = (milestone: MilestoneItem): RecordAction[] => canWriteC
           </SharedListItemCard>
         </div>
       </SharedResourceState>
-    </CampaignListTemplate>
+    </CampaignTemplatesList>
 
     <SharedEntityFormModal
       v-model:open="isEditOpen"

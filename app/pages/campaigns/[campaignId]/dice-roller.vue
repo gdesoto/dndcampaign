@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 
 definePageMeta({ layout: 'dashboard' })
 </script>
 
 <template>
-  <CampaignListTemplate
+  <CampaignTemplatesList
     title="Dice roller"
   >
     <CampaignToolsDiceRoller />
-  </CampaignListTemplate>
+  </CampaignTemplatesList>
 </template>

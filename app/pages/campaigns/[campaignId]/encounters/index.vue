@@ -3,7 +3,6 @@ import { namedEntityFormSchema } from '~/utils/entity-form-schemas'
 import type { EncounterSummary } from '#shared/types/encounter'
 import type { EncounterCreateInput } from '#shared/schemas/encounter'
 import type { CampaignCalendarConfigDto } from '~/composables/useCampaignCalendar'
-import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -384,7 +383,7 @@ const statBlockOptions = computed(() =>
 </script>
 
 <template>
-  <CampaignListTemplate
+  <CampaignTemplatesList
     title="Encounters"
     :count="encounters?.length"
     :action-label="canWriteContent ? 'New encounter' : ''"
@@ -631,5 +630,5 @@ v-model:open="isTemplateModalOpen"
         </div>
       </UCard>
     </SharedEntityFormModal>
-  </CampaignListTemplate>
+  </CampaignTemplatesList>
 </template>

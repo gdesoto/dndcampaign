@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { sessionFormSchema } from '~/utils/entity-form-schemas'
-import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 import { formatSessionDate, serializeSessionDateInput } from '~/utils/session-date'
 definePageMeta({ layout: 'dashboard' })
 
@@ -95,7 +94,7 @@ const createSession = async () => {
 
 <template>
   <div class="space-y-6">
-    <CampaignListTemplate
+    <CampaignTemplatesList
       headline="Sessions"
         title="Session log"
         :count="sessions?.length"
@@ -167,7 +166,7 @@ const createSession = async () => {
           </ol>
         </UCard>
       </SharedResourceState>
-    </CampaignListTemplate>
+    </CampaignTemplatesList>
 
     <SharedEntityFormModal
 v-model:open="isCreateOpen"

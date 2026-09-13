@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { CampaignJournalVisibilityInput } from '#shared/schemas/campaign-journal'
-import CampaignEditorTemplate from '~/components/campaign/templates/CampaignEditorTemplate.vue'
 
 type EditorTab = 'write' | 'preview'
 
@@ -103,7 +102,7 @@ const emit = defineEmits<{
   </div>
 
   <UFormField v-if="showMarkdown" label="Entry markdown" name="contentMarkdown" required>
-    <CampaignEditorTemplate
+    <CampaignTemplatesEditor
       :model-value="contentMarkdown"
       :tab="editorTab"
       :rows="editorRows"

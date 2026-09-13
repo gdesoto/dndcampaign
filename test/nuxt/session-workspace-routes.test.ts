@@ -22,7 +22,7 @@ const panel = defineComponent({
 })
 const slotStub = { template: '<div><slot /><slot name="actions" /></div>' }
 const stubs = {
-  CampaignDetailTemplate: slotStub, CampaignPageHeader: slotStub,
+  CampaignTemplatesDetail: slotStub, CampaignPageHeader: slotStub,
   UCard: slotStub, SessionWorkflowTimeline: true, SessionEditModal: true,
   SessionStatusCards: true, SessionStepLinkButton: true,
   SessionRecordingsPanel: panel, SessionRecapPanel: panel,

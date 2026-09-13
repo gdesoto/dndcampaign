@@ -71,7 +71,7 @@ describe('Campaign milestones page', () => {
           campaignCanWriteContent: computed(() => true),
         },
         stubs: {
-          CampaignListTemplate: {
+          CampaignTemplatesList: {
             template: `
               <div>
                 <slot name="notice" />
@@ -164,7 +164,7 @@ describe('Campaign milestones page', () => {
           campaignCanWriteContent: computed(() => true),
         },
         stubs: {
-          CampaignListTemplate: {
+          CampaignTemplatesList: {
             template: `
               <div>
                 <slot name="notice" />

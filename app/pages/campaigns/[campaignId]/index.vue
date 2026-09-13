@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { CampaignActivityLogItem, CampaignMilestoneSummary, CampaignOverviewDetail, CampaignQuestSummary, CampaignSessionSummary } from '#shared/types/campaign-overview'
 import { formatSessionDate } from '~/utils/session-date'
-import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 
 const { campaignId, request, canWriteContent } = useCampaignPageContext()
 const { data: campaign, pending, refresh, error } = await useOverviewResource<CampaignOverviewDetail>(campaignId, 'campaign', () => `/api/campaigns/${campaignId.value}`)
@@ -69,7 +68,7 @@ const saveCampaign = async () => {
 </script>
 
 <template>
-  <CampaignListTemplate title="Overview">
+  <CampaignTemplatesList title="Overview">
     <template #actions>
       <UButton v-if="canWriteContent" variant="outline" icon="i-lucide-pencil" :disabled="mutationBusy" @click="openEdit">Edit campaign</UButton>
     </template>
@@ -119,5 +118,5 @@ const saveCampaign = async () => {
       </template>
     </template>
     <CampaignEditModal v-model:open="isEditOpen" :form="editForm" :saving="isUpdating" :error="editError" @update:form="Object.assign(editForm, $event)" @save="saveCampaign" />
-  </CampaignListTemplate>
+  </CampaignTemplatesList>
 </template>

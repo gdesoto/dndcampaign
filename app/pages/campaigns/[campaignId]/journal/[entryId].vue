@@ -6,8 +6,6 @@ import type {
 } from '#shared/schemas/campaign-journal'
 import { campaignJournalListMaxPageSize } from '#shared/schemas/campaign-journal'
 import type { CampaignAccess } from '#shared/types/campaign-workflow'
-import CampaignDetailTemplate from '~/components/campaign/templates/CampaignDetailTemplate.vue'
-import CampaignEditorTemplate from '~/components/campaign/templates/CampaignEditorTemplate.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -365,7 +363,7 @@ const toggleArchive = async () => {
         <UCard class="h-40 animate-pulse" />
       </template>
 
-      <CampaignDetailTemplate
+      <CampaignTemplatesDetail
         :back-to="`/campaigns/${campaignId}/journal`"
         back-label="Back to journal"
         headline="Journal"
@@ -418,7 +416,7 @@ const toggleArchive = async () => {
             </div>
           </template>
           <div v-if="documentMode === 'edit'" class="space-y-3">
-            <CampaignEditorTemplate
+            <CampaignTemplatesEditor
               :model-value="form.contentMarkdown || ''"
               :tab="editorTab"
               :show-tabs="false"
@@ -532,7 +530,7 @@ const toggleArchive = async () => {
             </div>
           </UCard>
         </template>
-      </CampaignDetailTemplate>
+      </CampaignTemplatesDetail>
     </SharedResourceState>
 
     <SharedEntityFormModal

@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { titledEntityFormSchema } from '~/utils/entity-form-schemas'
 import { useCampaignCalendar } from '~/composables/useCampaignCalendar'
-import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
-import CalendarDateFields from '~/components/campaign/CalendarDateFields.vue'
 import type { CampaignCalendarEvent } from '#shared/types/calendar'
 
 definePageMeta({ layout: 'dashboard' })
@@ -564,7 +562,7 @@ const removeRange = async () => {
 </script>
 
 <template>
-  <CampaignListTemplate title="Calendar">
+  <CampaignTemplatesList title="Calendar">
     <template #actions><UButton v-if="canEditCalendar && isCalendarEnabled" icon="i-lucide-plus" color="primary" variant="solid" @click="openCreateEvent">Add event</UButton></template>
 
     <SharedReadOnlyAlert
@@ -733,7 +731,7 @@ const removeRange = async () => {
             </template>
 
             <div class="space-y-3">
-              <CalendarDateFields v-model:year="currentDateForm.year" v-model:month="currentDateForm.month" v-model:day="currentDateForm.day" prefix="current" :months="calendarMonths" :disabled="!canEditCalendar || currentDateAction.saving" />
+              <CampaignCalendarDateFields v-model:year="currentDateForm.year" v-model:month="currentDateForm.month" v-model:day="currentDateForm.day" prefix="current" :months="calendarMonths" :disabled="!canEditCalendar || currentDateAction.saving" />
               <div class="flex flex-wrap items-center gap-2">
                 <UButton
                   :disabled="!canEditCalendar || currentDateAction.saving || !currentDateDraft.dirty.value"
@@ -776,7 +774,7 @@ const removeRange = async () => {
               @update:model-value="(value) => loadRangeForSession(value as string)"
             /></UFormField>
 
-            <fieldset class="space-y-2"><legend class="type-label">Start date</legend><CalendarDateFields v-model:year="rangeForm.startYear" v-model:month="rangeForm.startMonth" v-model:day="rangeForm.startDay" prefix="start" :months="calendarMonths" :disabled="!canEditCalendar || rangeAction.saving || rangeAction.deleting" /></fieldset>
+            <fieldset class="space-y-2"><legend class="type-label">Start date</legend><CampaignCalendarDateFields v-model:year="rangeForm.startYear" v-model:month="rangeForm.startMonth" v-model:day="rangeForm.startDay" prefix="start" :months="calendarMonths" :disabled="!canEditCalendar || rangeAction.saving || rangeAction.deleting" /></fieldset>
 
             <USwitch
               :model-value="rangeForm.includeEnd"
@@ -785,7 +783,7 @@ const removeRange = async () => {
               @update:model-value="(value) => rangeForm.includeEnd = value"
             />
 
-            <fieldset v-if="rangeForm.includeEnd" class="space-y-2"><legend class="type-label">End date</legend><CalendarDateFields v-model:year="rangeForm.endYear" v-model:month="rangeForm.endMonth" v-model:day="rangeForm.endDay" prefix="end" :months="calendarMonths" :disabled="!canEditCalendar || rangeAction.saving || rangeAction.deleting" /></fieldset>
+            <fieldset v-if="rangeForm.includeEnd" class="space-y-2"><legend class="type-label">End date</legend><CampaignCalendarDateFields v-model:year="rangeForm.endYear" v-model:month="rangeForm.endMonth" v-model:day="rangeForm.endDay" prefix="end" :months="calendarMonths" :disabled="!canEditCalendar || rangeAction.saving || rangeAction.deleting" /></fieldset>
 
             <div class="flex flex-wrap gap-2">
               <UButton
@@ -862,10 +860,10 @@ const removeRange = async () => {
       <UFormField label="Title" name="title">
         <UInput v-model="eventForm.title" />
       </UFormField>
-      <CalendarDateFields v-model:year="eventForm.year" v-model:month="eventForm.month" v-model:day="eventForm.day" prefix="event" :months="calendarMonths" :disabled="eventAction.saving" />
+      <CampaignCalendarDateFields v-model:year="eventForm.year" v-model:month="eventForm.month" v-model:day="eventForm.day" prefix="event" :months="calendarMonths" :disabled="eventAction.saving" />
       <UFormField label="Description" name="description">
         <UTextarea v-model="eventForm.description" :rows="3" />
       </UFormField>
     </SharedEntityFormModal>
-  </CampaignListTemplate>
+  </CampaignTemplatesList>
 </template>

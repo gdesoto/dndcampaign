@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { z } from 'zod'
-import CampaignListTemplate from '~/components/campaign/templates/CampaignListTemplate.vue'
 definePageMeta({ layout: 'dashboard' })
 
 type CampaignPermission =
@@ -369,7 +368,7 @@ const transferOpenModel = computed({ get: () => transferModalOpen.value, set: as
 
 <template>
   <div class="space-y-4">
-  <CampaignListTemplate title="Campaign settings">
+  <CampaignTemplatesList title="Campaign settings">
     <UTabs v-model="activeTab" :items="tabs" :unmount-on-hide="false" variant="link" :ui="{ list: 'grid w-full grid-cols-3 sm:flex sm:w-auto', trigger: 'min-w-0', leadingIcon: 'hidden sm:block', label: 'whitespace-normal' }">
     <template #general>
 
@@ -487,7 +486,7 @@ const transferOpenModel = computed({ get: () => transferModalOpen.value, set: as
     </section>
     </template>
     </UTabs>
-  </CampaignListTemplate>
+  </CampaignTemplatesList>
 
   <UModal v-model:open="transferOpenModel" title="Transfer campaign ownership" description="The selected member becomes the owner immediately. Your role changes to collaborator." :close="false" :dismissible="!transferAction.saving" :content="{ onOpenAutoFocus: focusTransferCancel }">
     <template #body>

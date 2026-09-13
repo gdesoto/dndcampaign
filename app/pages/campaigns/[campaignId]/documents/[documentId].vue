@@ -7,7 +7,6 @@ import {
 } from '#shared/utils/transcript'
 import { getFirstNameTerm } from '#shared/utils/name'
 import type { CampaignAccess } from '#shared/types/campaign-workflow'
-import CampaignDetailTemplate from '~/components/campaign/templates/CampaignDetailTemplate.vue'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -1181,7 +1180,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
 </script>
 
 <template>
-  <CampaignDetailTemplate
+  <CampaignTemplatesDetail
     :back-to="document?.sessionId ? (returnTo || `/campaigns/${campaignId}/sessions/${document.sessionId}`) : `/campaigns/${campaignId}/sessions`"
     back-label="Back to session"
     back-button-placement="header"
@@ -1822,6 +1821,6 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
           </div>
         </UCard>
       </div>
-  </CampaignDetailTemplate>
+  </CampaignTemplatesDetail>
 </template>
 

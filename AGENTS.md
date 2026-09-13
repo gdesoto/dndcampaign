@@ -23,7 +23,9 @@ DND Campaign is a Nuxt 4 web app for running tabletop campaigns. It manages camp
 - Always verify component config keys with the Nuxt UI tool before adding/changing `ui.*` entries (e.g., `dropdownMenu`, not `dropdown`).
 
 ## Code Style
+- Use Nuxt's auto-imported component names in templates. Names include the directory path under `app/components/` and the filename: `app/components/shared/ConfirmActionModal.vue` is `<SharedConfirmActionModal />`, not `<ConfirmActionModal />`. Prefer correcting the template name over adding an explicit import to bypass the naming convention. When unsure, check `.nuxt/components.d.ts` for the generated name.
 - TypeScript first; prefer explicit types for API payloads and service inputs.
+- When organizing or naming components, consider the full generated auto-import name. Let directories supply domain/group context and keep filenames focused on the component's role; avoid repeating directory words in filenames when that produces redundant names. For example, prefer `campaign/templates/List.vue` (`CampaignTemplatesList`) over `campaign/templates/CampaignListTemplate.vue` (`CampaignTemplatesCampaignListTemplate`). Keep names descriptive and unique, verify generated names in `.nuxt/components.d.ts`, and update all template references, programmatic imports, and tests when moving or renaming components.
 - Keep server logic in `server/services`, thin handlers in `server/api`.
 - Use Nuxt UI components for layout and controls; theme overrides live in `app/app.config.ts`.
 - Prefer `UPage`, `UPageHeader`, and `UCard` for page structure.
