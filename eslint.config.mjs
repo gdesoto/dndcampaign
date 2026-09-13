@@ -3,7 +3,7 @@ import withNuxt from './.nuxt/eslint.config.mjs'
 
 export default withNuxt(
   // Bundled reference apps have their own dependencies and lint configuration.
-  { ignores: ['.agents/plugins/nuxt-ui-guidelines/**'] },
+  { ignores: ['.agents/plugins/nuxt-ui-guidelines/**', '.claude/skills/nuxt-ui-guidelines/**'] },
   // Your custom configs here
   {
     name: 'project-overrides',

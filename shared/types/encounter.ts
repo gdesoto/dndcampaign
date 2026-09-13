@@ -136,21 +136,3 @@ export type EncounterSummaryReport = {
   totalHealing: number
   defeatedCombatants: number
 }
-
-export type InitiativeLaneItem = {
-  combatantId: string
-  name: string
-  side: EncounterSide
-  initiative: number | null
-  sortOrder: number
-  isActive: boolean
-  isDefeated: boolean
-}
-
-export type EncounterRuntimeBoard = {
-  encounterId: string
-  round: number
-  activeCombatantId?: string | null
-  initiativeLane: InitiativeLaneItem[]
-  warnings: string[]
-}
