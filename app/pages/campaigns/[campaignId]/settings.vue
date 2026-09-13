@@ -5,7 +5,6 @@ definePageMeta({ layout: 'dashboard' })
 type CampaignPermission =
   | 'campaign.read'
   | 'campaign.update'
-  | 'campaign.delete'
   | 'campaign.members.manage'
   | 'campaign.settings.manage'
   | 'campaign.public.manage'

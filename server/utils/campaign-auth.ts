@@ -6,7 +6,6 @@ import { apiError } from '#server/utils/http'
 export type CampaignPermission =
   | 'campaign.read'
   | 'campaign.update'
-  | 'campaign.delete'
   | 'campaign.members.manage'
   | 'campaign.settings.manage'
   | 'campaign.public.manage'
@@ -22,7 +21,6 @@ const allCampaignRoles: CampaignRole[] = ['OWNER', 'COLLABORATOR', 'VIEWER']
 const permissionRoles: Record<CampaignPermission, CampaignRole[]> = {
   'campaign.read': allCampaignRoles,
   'campaign.update': ['OWNER', 'COLLABORATOR'],
-  'campaign.delete': ['OWNER'],
   'campaign.members.manage': ['OWNER'],
   'campaign.settings.manage': ['OWNER'],
   'campaign.public.manage': ['OWNER'],

@@ -6571,7 +6571,7 @@
           "campaigns"
         ],
         "summary": "GET /api/campaigns/{campaignId}/workspace",
-        "description": "Auto-documented from server route `campaigns/[campaignId]/workspace.get.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Auto-documented from server route `campaigns/[campaignId]/workspace.get.ts`. This operation uses the project standard API envelope `{ data, error }`. Its access.permissions array lists supported campaign permissions and does not include campaign.delete.",
         "operationId": "get_api_campaigns_campaignId_workspace",
         "parameters": [
           {
@@ -11599,7 +11599,7 @@
           "sessions"
         ],
         "summary": "GET /api/sessions/{sessionId}/workspace",
-        "description": "Auto-documented from server route `sessions/[sessionId]/workspace.get.ts`. This operation uses the project standard API envelope `{ data, error }`. Includes recaps, an array of all session audio/video recaps ordered by kind. The legacy recap field contains the first recap or null.",
+        "description": "Auto-documented from server route `sessions/[sessionId]/workspace.get.ts`. This operation uses the project standard API envelope `{ data, error }`. Includes recaps, an array of all session audio/video recaps ordered by kind. The legacy recap field contains the first recap or null. Its access.permissions array lists supported campaign permissions and does not include campaign.delete.",
         "operationId": "get_api_sessions_sessionId_workspace",
         "parameters": [
           {
