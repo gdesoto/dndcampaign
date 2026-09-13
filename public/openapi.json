@@ -7051,10 +7051,10 @@
           "dev"
         ],
         "summary": "POST /api/dev/n8n-test",
-        "description": "Auto-documented from server route `dev/n8n-test.post.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Auto-documented from server route `dev/n8n-test.post.ts`. This development-only operation uses the project standard API envelope `{ data, error }`. It always validates synchronous n8n responses with n8nWebhookPayloadSchema; the useZod request option and success warnings/zodValid diagnostics are removed. Invalid responses return a 400 INVALID_RESPONSE envelope with serialized Zod issues in error.fields.issues.",
         "operationId": "post_api_dev_n8n_test",
         "responses": {
-          "201": {
+          "200": {
             "description": "Successful operation response envelope.",
             "content": {
               "application/json": {
