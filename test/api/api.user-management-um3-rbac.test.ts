@@ -24,6 +24,7 @@ const users = {
 
 const cookies: Record<string, string> = {}
 let campaignId = ''
+let sessionId = ''
 let mapId = ''
 let sharedCharacterId = ''
 
@@ -95,6 +96,15 @@ describe('user management UM-3 RBAC', () => {
     })
     campaignId = campaign.id
 
+    const session = await prisma.session.create({
+      data: {
+        campaignId,
+        title: 'UM3 RBAC Session',
+      },
+      select: { id: true },
+    })
+    sessionId = session.id
+
     const map = await prisma.campaignMap.create({
       data: {
         campaignId,
@@ -148,6 +158,32 @@ describe('user management UM-3 RBAC', () => {
     expect(viewerRes.status).toBe(200)
     const viewerPayload = await viewerRes.json()
     expect(viewerPayload.data.some((campaign: { id: string }) => campaign.id === campaignId)).toBe(true)
+  })
+
+  it('returns active owner permissions without campaign.delete in workspace responses', async () => {
+    const expectedPermissions = [
+      'campaign.read',
+      'campaign.update',
+      'campaign.members.manage',
+      'campaign.settings.manage',
+      'campaign.public.manage',
+      'content.read',
+      'content.write',
+      'recording.upload',
+      'recording.transcribe',
+      'document.edit',
+      'summary.run',
+    ]
+
+    for (const url of [
+      `${baseUrl}/api/campaigns/${campaignId}/workspace`,
+      `${baseUrl}/api/sessions/${sessionId}/workspace`,
+    ]) {
+      const response = await fetch(url, { headers: { cookie: cookies.owner } })
+      expect(response.status).toBe(200)
+      const payload = await response.json()
+      expect(payload.data.access.permissions).toEqual(expectedPermissions)
+    }
   })
 
   it('allows collaborator writes but denies viewer writes with 403', async () => {

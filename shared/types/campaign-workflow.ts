@@ -12,7 +12,6 @@ export type CampaignAccess = {
   permissions: Array<
     | 'campaign.read'
     | 'campaign.update'
-    | 'campaign.delete'
     | 'campaign.members.manage'
     | 'campaign.settings.manage'
     | 'campaign.public.manage'
