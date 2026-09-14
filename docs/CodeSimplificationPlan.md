@@ -77,6 +77,26 @@ All seven branches were merged locally into `master` in the requested order; fin
 - Agent validation: `yarn lint`, `yarn typecheck` (exit 0, 34.70s), OpenAPI parse/reference check, and `git diff --check` passed. Focused range tests passed 18/18; recap API tests passed 25/25 (63.35s command duration).
 - Manager validation: integrated `yarn test` passed 75 files / 336 tests (97.31s command duration); production `yarn build` passed with exit 0 in 397.09s (6m37s), including Nitro packaging. Logs: `storage/cj-01-test.log` and `storage/cj-01-build.log` (local, ignored). Non-blocking dependency bundler/deprecation warnings remain. Final diff review and `git diff --check` passed; application code is 25 net lines smaller.
 
+## CJ-18 and CJ-19 follow-up implementation (2026-09-13)
+
+This batch starts from `6f67721`. Three GPT-5.6 Terra agents completed CJ-18 before three further Terra agents began CJ-19. Changes remain uncommitted for review; the manager owns this log and final integrated validation.
+
+**CJ-18: complete and manager-reviewed.** `DocumentService.upsertForSession(sessionId, type, input)` now owns the shared lookup/create/update path. Document import, transcription application, and summary application delegate to it. Explicit document creation keeps its 409 check; updates retain titles, the transcript response still precedes recording reassignment, and explicit summary-document links remain authoritative.
+
+- Deliberate correction: initial summary application writes one version instead of two identical versions. Subsequent applications still add one version each. The summary PATCH OpenAPI description records this change.
+- `test/api/api.cj18-document-upsert.test.ts` passed 4/4, covering create-only 409, repeated imports with retained titles/source/authorship, transcript versioning/recording association and original response, and summary creation/reuse/explicit-link reapplication. Manager requested and reviewed the added association and explicit-link assertions.
+- `yarn lint`, `yarn typecheck`, and `git diff --check` passed. Final integrated suite/build are deferred until CJ-19 completes.
+
+**CJ-19: complete and manager-validated.** Separate agents own character/glossary linking, calendar month-view assembly, and local transcription/subtitle operations. Handlers retain validation and authorization; URLs and payloads remain unchanged.
+
+- `CharacterSyncService.linkGlossaryPc` replaces duplicate owner-scoped character lookup/creation and campaign-link upsert in glossary creation and dev migration. Existing character data, MANUAL source defaults, migration guards, deletion, and result shape are retained.
+- `CalendarConfigService.getMonthView` owns config/default selection, month validation, event/range retrieval, inclusive month intersection, ordering, and session projection. The route now authorizes, validates, and returns the service result.
+- Static `TranscriptionService.applyTranscript` and `attachSubtitles` reuse document/storage/recording services and the shared VTT converter without constructing an ElevenLabs client. Scoped job/target-recording authorization remains in the handler. Artifact selection, same-session targets, VIDEO validation, cleanup behavior, and pre-reassignment transcript responses are retained.
+- Manager reviewed all service/route changes, requested a shared Prisma-derived transcription input type, and verified character defaults and authorization boundaries. Regression tests cover calendar boundary/empty states, owner-safe character reuse/migration, transcript create/update, SRT conversion, wrong/foreign artifacts, cross-session recordings, and denied writes.
+- Validation note: overlapping standalone API launchers left one orphaned test server and an invalid cross-server login result. The owning agent stopped the exact test process; those attempts are inconclusive. A single coordinated focused run supersedes them.
+- Final coordinated API validation passed 5 files / 18 tests; `yarn lint`, `yarn typecheck`, and `git diff --check` passed. Manager's integrated `yarn test` passed 78 files / 347 tests in 105.45s (log: `storage/cj-18-19-test.log`, local/ignored). Production `yarn build` passed with exit 0 in 412.64s (6m53s), including Nitro packaging (log: `storage/cj-18-19-build.log`, local/ignored). Non-blocking dependency bundler/deprecation warnings remain.
+- Final manager review and OpenAPI JSON validation passed. No migration, frontend change, or external n8n/ElevenLabs request was made. Application source totals 289 additions / 280 removals across 10 files: CJ-18 deletes duplicate writes; CJ-19 primarily relocates logic and adds typed service boundaries, so the combined application diff is 9 net lines larger.
+
 ## Prioritized findings
 
 Scary: **1** mechanical/local; **2** bounded behavior; **3** several flows or query/route ownership; **4** broad compatibility/data risk; **5** architectural migration. Bang for buck: **5** strongest benefit relative to effort, **1** weakest. These are engineering judgments, not measured scores. Effort: XS under half a day, S approximately half–one day, M approximately one–two days, including focused verification.

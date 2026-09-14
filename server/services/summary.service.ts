@@ -703,35 +703,26 @@ export class SummaryService {
 
     let summaryDocumentId = job.summaryDocumentId
     if (!summaryDocumentId) {
-      const existingSummary = await prisma.document.findFirst({
-        where: { sessionId: job.sessionId, type: 'SUMMARY' },
+      const titleBase = 'Summary'
+      const title = job.session?.title ? `${titleBase}: ${job.session.title}` : titleBase
+      const document = await this.documentService.upsertForSession(job.sessionId, 'SUMMARY', {
+        campaignId: job.campaignId,
+        title,
+        content: summaryText,
+        format: 'MARKDOWN',
+        source: 'N8N_IMPORT',
+        createdByUserId: null,
       })
-      if (existingSummary) {
-        summaryDocumentId = existingSummary.id
-      } else {
-        const titleBase = 'Summary'
-        const title = job.session?.title ? `${titleBase}: ${job.session.title}` : titleBase
-        const created = await this.documentService.createDocument({
-          campaignId: job.campaignId,
-          sessionId: job.sessionId,
-          type: 'SUMMARY',
-          title,
-          content: summaryText,
-          format: 'MARKDOWN',
-          source: 'N8N_IMPORT',
-          createdByUserId: null,
-        })
-        summaryDocumentId = created.id
-      }
+      summaryDocumentId = document.id
+    } else {
+      await this.documentService.updateDocument({
+        documentId: summaryDocumentId,
+        content: summaryText,
+        format: 'MARKDOWN',
+        source: 'N8N_IMPORT',
+        createdByUserId: null,
+      })
     }
-
-    await this.documentService.updateDocument({
-      documentId: summaryDocumentId,
-      content: summaryText,
-      format: 'MARKDOWN',
-      source: 'N8N_IMPORT',
-      createdByUserId: null,
-    })
 
     const pendingCount = await prisma.summarySuggestion.count({
       where: { summaryJobId: job.id, status: 'PENDING' },

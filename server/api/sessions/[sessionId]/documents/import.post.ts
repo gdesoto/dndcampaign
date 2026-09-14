@@ -37,30 +37,16 @@ export default defineEventHandler(async (event) => {
   const type = typeField === 'SUMMARY' || typeField === 'NOTES' ? typeField : 'TRANSCRIPT'
 
   const service = new DocumentService()
-  const existing = await prisma.document.findFirst({
-    where: { sessionId, type },
-  })
-
   const title = fields.title || `${type === 'SUMMARY' ? 'Summary' : 'Transcript'}: ${session.title}`
 
-  const updated = existing
-    ? await service.updateDocument({
-        documentId: existing.id,
-        content: result.content,
-        format: result.format,
-        source: 'USER_IMPORT',
-        createdByUserId: sessionUser.user.id,
-      })
-    : await service.createDocument({
-        campaignId: session.campaignId,
-        sessionId,
-        type,
-        title,
-        content: result.content,
-        format: result.format,
-        source: 'USER_IMPORT',
-        createdByUserId: sessionUser.user.id,
-      })
+  const updated = await service.upsertForSession(sessionId, type, {
+    campaignId: session.campaignId,
+    title,
+    content: result.content,
+    format: result.format,
+    source: 'USER_IMPORT',
+    createdByUserId: sessionUser.user.id,
+  })
 
   return ok(updated)
 })

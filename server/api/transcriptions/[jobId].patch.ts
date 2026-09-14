@@ -1,15 +1,9 @@
-import { Readable } from 'node:stream'
 import { readBody } from 'h3'
 import { z } from 'zod'
 import { prisma } from '#server/db/prisma'
-import { DocumentService } from '#server/services/document.service'
-import { RecordingService } from '#server/services/recording.service'
 import { TranscriptionService } from '#server/services/transcription.service'
-import { getStorageAdapter } from '#server/services/storage/storage.factory'
 import { ok, apiError, routeParams } from '#server/utils/http'
 import { transcriptionApplySchema, transcriptionAttachVttSchema } from '#shared/schemas/transcription'
-import { toVtt } from '#shared/utils/transcript'
-import { streamToBuffer } from '#server/utils/multipart'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 const transcriptionActionSchema = z.discriminatedUnion('action', [
@@ -74,55 +68,11 @@ export default defineEventHandler(async (event) => {
       throw apiError(404, 'NOT_FOUND', 'Transcription not found')
     }
 
-    const artifactId = 'artifactId' in parsed.data ? parsed.data.artifactId : undefined
-    const selected = artifactId
-      ? job.artifacts.find((entry) => entry.artifactId === artifactId)
-      : job.artifacts.find((entry) => entry.format === 'TXT')
-
-    if (!selected) {
-      throw apiError(404, 'NOT_FOUND', 'Transcript artifact not found')
-    }
-
-    const adapter = getStorageAdapter()
-    const { stream } = await adapter.getObject(selected.artifact.storageKey)
-    const buffer = await streamToBuffer(stream)
-    const content = buffer.toString('utf-8')
-
-    const service = new DocumentService()
-    const existing = await prisma.document.findFirst({
-      where: { sessionId: job.recording.sessionId, type: 'TRANSCRIPT' },
+    const updated = await TranscriptionService.applyTranscript({
+      job,
+      artifactId: parsed.data.artifactId,
+      createdByUserId: sessionUser.user.id,
     })
-
-    const titleBase = job.recording.session?.title
-      ? `Transcript: ${job.recording.session.title}`
-      : 'Transcript'
-
-    const updated = existing
-      ? await service.updateDocument({
-          documentId: existing.id,
-          content,
-          format: 'PLAINTEXT',
-          source: 'ELEVENLABS_IMPORT',
-          createdByUserId: sessionUser.user.id,
-        })
-      : await service.createDocument({
-          campaignId: job.recording.session.campaignId,
-          sessionId: job.recording.sessionId,
-          recordingId: job.recordingId,
-          type: 'TRANSCRIPT',
-          title: titleBase,
-          content,
-          format: 'PLAINTEXT',
-          source: 'ELEVENLABS_IMPORT',
-          createdByUserId: sessionUser.user.id,
-        })
-
-    if (existing && existing.recordingId !== job.recordingId) {
-      await prisma.document.update({
-        where: { id: existing.id },
-        data: { recordingId: job.recordingId },
-      })
-    }
 
     return ok(updated)
   }
@@ -137,7 +87,7 @@ export default defineEventHandler(async (event) => {
       recording: { session: { campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'document.edit') } },
     },
     include: {
-      recording: { include: { session: { include: { campaign: true } } } },
+      recording: { include: { session: true } },
       artifacts: { include: { artifact: true } },
     },
   })
@@ -153,37 +103,18 @@ export default defineEventHandler(async (event) => {
       sessionId: job.recording.sessionId,
       session: { campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'document.edit') },
     },
-    include: { session: { include: { campaign: true } } },
+    include: { session: true },
   })
 
   if (!targetRecording) {
     throw apiError(404, 'NOT_FOUND', 'Recording not found')
   }
 
-  if (targetRecording.kind !== 'VIDEO') {
-    throw apiError(400, 'VALIDATION_ERROR', 'Subtitles can only be attached to video recordings')
-  }
-
-  const artifactId = 'artifactId' in parsed.data ? parsed.data.artifactId : undefined
-  const selected = artifactId ? job.artifacts.find((entry) => entry.artifactId === artifactId) : null
-  if (!selected || selected.format !== 'SRT') {
-    throw apiError(404, 'NOT_FOUND', 'Subtitle artifact not found')
-  }
-
-  const adapter = getStorageAdapter()
-  const { stream } = await adapter.getObject(selected.artifact.storageKey)
-  const buffer = await streamToBuffer(stream)
-  const content = buffer.toString('utf-8')
-  const vttContent = toVtt(content)
-
-  const service = new RecordingService()
-  const updated = await service.attachVttFromStream({
+  const updated = await TranscriptionService.attachSubtitles({
+    job,
+    artifactId: parsed.data.artifactId,
+    targetRecording,
     ownerId: sessionUser.user.id,
-    campaignId: targetRecording.session.campaignId,
-    recordingId: targetRecording.id,
-    filename: 'subtitles.vtt',
-    mimeType: 'text/vtt',
-    stream: Readable.from(vttContent),
   })
 
   return ok(updated)

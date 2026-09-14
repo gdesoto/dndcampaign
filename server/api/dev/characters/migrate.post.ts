@@ -1,6 +1,6 @@
 import { prisma } from '#server/db/prisma'
 import { ok, apiError } from '#server/utils/http'
-import { computeCharacterSummary } from '#server/services/character.service'
+import { CharacterSyncService } from '#server/services/character-sync.service'
 import { readBody } from 'h3'
 
 export default defineEventHandler(async (event) => {
@@ -33,37 +33,10 @@ export default defineEventHandler(async (event) => {
   })
 
   const results: Array<{ glossaryId: string; characterId: string }> = []
+  const syncService = new CharacterSyncService()
 
   for (const entry of glossaryEntries) {
-    const sheetJson = {
-      basics: { name: entry.name },
-      notes: { other: entry.description },
-    }
-    const existing = await prisma.playerCharacter.findFirst({
-      where: { ownerId: session.user.id, name: entry.name },
-    })
-
-    const character =
-      existing ||
-      (await prisma.playerCharacter.create({
-        data: {
-          ownerId: session.user.id,
-          name: entry.name,
-          sheetJson,
-          summaryJson: computeCharacterSummary(entry.name, sheetJson),
-        },
-      }))
-
-    await prisma.campaignCharacter.upsert({
-      where: { campaignId_characterId: { campaignId: entry.campaignId, characterId: character.id } },
-      update: { glossaryEntryId: entry.id },
-      create: {
-        campaignId: entry.campaignId,
-        characterId: character.id,
-        glossaryEntryId: entry.id,
-      },
-    })
-
+    const { character } = await syncService.linkGlossaryPc({ ownerId: session.user.id, entry })
     results.push({ glossaryId: entry.id, characterId: character.id })
   }
 

@@ -1,8 +1,13 @@
 import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js'
+import { Readable } from 'node:stream'
 import { prisma } from '#server/db/prisma'
 import { streamToBuffer } from '#server/utils/multipart'
+import { apiError } from '#server/utils/http'
 import { getStorageAdapter } from '#server/services/storage/storage.factory'
 import { ArtifactService } from '#server/services/artifact.service'
+import { DocumentService } from '#server/services/document.service'
+import { RecordingService } from '#server/services/recording.service'
+import { toVtt } from '#shared/utils/transcript'
 import type {
   Prisma,
   TranscriptionArtifactFormat,
@@ -61,6 +66,17 @@ type TranscriptionResponsePayload = {
 
 type TranscriptionJobWithArtifacts = Prisma.TranscriptionJobGetPayload<{
   include: { artifacts: { include: { artifact: true } } }
+}>
+
+type LocalTranscriptionJob = Prisma.TranscriptionJobGetPayload<{
+  include: {
+    recording: { include: { session: true } }
+    artifacts: { include: { artifact: true } }
+  }
+}>
+
+type SubtitleTargetRecording = Prisma.RecordingGetPayload<{
+  include: { session: true }
 }>
 
 const parseJsonArray = (value: string | null): unknown[] => {
@@ -212,6 +228,80 @@ export class TranscriptionService {
     private webhookEnabled = true
   ) {
     this.client = new ElevenLabsClient({ apiKey: this.apiKey })
+  }
+
+  static async applyTranscript(input: {
+    job: LocalTranscriptionJob
+    artifactId?: string
+    createdByUserId: string
+  }) {
+    const selected = input.artifactId
+      ? input.job.artifacts.find((entry) => entry.artifactId === input.artifactId)
+      : input.job.artifacts.find((entry) => entry.format === 'TXT')
+
+    if (!selected) {
+      throw apiError(404, 'NOT_FOUND', 'Transcript artifact not found')
+    }
+
+    const adapter = getStorageAdapter()
+    const { stream } = await adapter.getObject(selected.artifact.storageKey)
+    const content = (await streamToBuffer(stream)).toString('utf-8')
+    const title = input.job.recording.session.title
+      ? `Transcript: ${input.job.recording.session.title}`
+      : 'Transcript'
+
+    const document = await new DocumentService().upsertForSession(
+      input.job.recording.sessionId,
+      'TRANSCRIPT',
+      {
+        campaignId: input.job.recording.session.campaignId,
+        recordingId: input.job.recordingId,
+        title,
+        content,
+        format: 'PLAINTEXT',
+        source: 'ELEVENLABS_IMPORT',
+        createdByUserId: input.createdByUserId,
+      }
+    )
+
+    // The response has historically reflected the upsert before this association.
+    if (document.recordingId !== input.job.recordingId) {
+      await prisma.document.update({
+        where: { id: document.id },
+        data: { recordingId: input.job.recordingId },
+      })
+    }
+
+    return document
+  }
+
+  static async attachSubtitles(input: {
+    job: LocalTranscriptionJob
+    artifactId: string
+    targetRecording: SubtitleTargetRecording
+    ownerId: string
+  }) {
+    if (input.targetRecording.kind !== 'VIDEO') {
+      throw apiError(400, 'VALIDATION_ERROR', 'Subtitles can only be attached to video recordings')
+    }
+
+    const selected = input.job.artifacts.find((entry) => entry.artifactId === input.artifactId)
+    if (!selected || selected.format !== 'SRT') {
+      throw apiError(404, 'NOT_FOUND', 'Subtitle artifact not found')
+    }
+
+    const adapter = getStorageAdapter()
+    const { stream } = await adapter.getObject(selected.artifact.storageKey)
+    const vttContent = toVtt((await streamToBuffer(stream)).toString('utf-8'))
+
+    return new RecordingService().attachVttFromStream({
+      ownerId: input.ownerId,
+      campaignId: input.targetRecording.session.campaignId,
+      recordingId: input.targetRecording.id,
+      filename: 'subtitles.vtt',
+      mimeType: 'text/vtt',
+      stream: Readable.from(vttContent),
+    })
   }
 
   async parseWebhookPayload(input: ParseWebhookPayloadInput) {

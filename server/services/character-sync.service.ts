@@ -1,5 +1,5 @@
 import { prisma } from '#server/db/prisma'
-import type { Prisma } from '#server/db/prisma-client'
+import type { GlossaryEntry, Prisma } from '#server/db/prisma-client'
 import { computeCharacterSummary } from './character.service'
 
 const buildGlossaryDescription = (sheetJson: Record<string, unknown>) => {
@@ -19,6 +19,41 @@ const buildNotesFromGlossary = (description?: string | null) => {
 }
 
 export class CharacterSyncService {
+  async linkGlossaryPc(params: {
+    ownerId: string
+    entry: Pick<GlossaryEntry, 'id' | 'campaignId' | 'name' | 'description'>
+  }) {
+    const existingCharacter = await prisma.playerCharacter.findFirst({
+      where: { ownerId: params.ownerId, name: params.entry.name },
+    })
+    const sheetJson = {
+      basics: { name: params.entry.name },
+      notes: { other: params.entry.description },
+    }
+    const character =
+      existingCharacter ||
+      (await prisma.playerCharacter.create({
+        data: {
+          ownerId: params.ownerId,
+          name: params.entry.name,
+          sheetJson: sheetJson as Prisma.InputJsonValue,
+          summaryJson: computeCharacterSummary(params.entry.name, sheetJson) as Prisma.InputJsonValue,
+        },
+      }))
+
+    const link = await prisma.campaignCharacter.upsert({
+      where: { campaignId_characterId: { campaignId: params.entry.campaignId, characterId: character.id } },
+      update: { glossaryEntryId: params.entry.id },
+      create: {
+        campaignId: params.entry.campaignId,
+        characterId: character.id,
+        glossaryEntryId: params.entry.id,
+      },
+    })
+
+    return { character, link }
+  }
+
   async ensureGlossaryEntryForCharacter(params: {
     ownerId: string
     campaignId: string

@@ -2,7 +2,7 @@ import { prisma } from '#server/db/prisma'
 import { ok, routeParams } from '#server/utils/http'
 import { validateBody } from '#server/utils/validate'
 import { glossaryCreateSchema } from '#shared/schemas/glossary'
-import { CharacterService } from '#server/services/character.service'
+import { CharacterSyncService } from '#server/services/character-sync.service'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
@@ -24,25 +24,9 @@ export default defineEventHandler(async (event) => {
   })
 
   if (parsed.type === 'PC') {
-    const characterService = new CharacterService()
-    const existingCharacter = await prisma.playerCharacter.findFirst({
-      where: { ownerId: session.user.id, name: parsed.name },
-    })
-    const character =
-      existingCharacter ||
-      (await characterService.createManualCharacter(session.user.id, parsed.name, {
-        basics: { name: parsed.name },
-        notes: { other: parsed.description },
-      }))
-
-    await prisma.campaignCharacter.upsert({
-      where: { campaignId_characterId: { campaignId, characterId: character.id } },
-      update: { glossaryEntryId: entry.id },
-      create: {
-        campaignId,
-        characterId: character.id,
-        glossaryEntryId: entry.id,
-      },
+    await new CharacterSyncService().linkGlossaryPc({
+      ownerId: session.user.id,
+      entry,
     })
   }
 

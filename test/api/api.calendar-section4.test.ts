@@ -292,6 +292,159 @@ describe('calendar section 4 API routes', () => {
     })
     expect(deleteRange.status).toBe(200)
   })
+
+  it('returns only ordered session ranges intersecting the selected month, including its boundaries', async () => {
+    const sessions = []
+    for (const data of [
+      { title: 'Before February', sessionNumber: 1, playedAt: new Date('2026-01-30T12:00:00.000Z') },
+      { title: 'Starts Before February', sessionNumber: 2, playedAt: new Date('2026-02-01T12:00:00.000Z') },
+      { title: 'Within February', sessionNumber: 3, playedAt: new Date('2026-02-15T12:00:00.000Z') },
+      { title: 'Ends After February', sessionNumber: 4, playedAt: new Date('2026-02-28T12:00:00.000Z') },
+      { title: 'After February', sessionNumber: 5, playedAt: new Date('2026-03-02T12:00:00.000Z') },
+    ]) {
+      sessions.push(await prisma.session.create({ data: { campaignId, ...data } }))
+    }
+    const [before, first, middle, last, after] = sessions
+    await prisma.sessionCalendarRange.createMany({
+      data: [
+        {
+          campaignId,
+          sessionId: before.id,
+          startYear: 2026,
+          startMonth: 1,
+          startDay: 30,
+          endYear: 2026,
+          endMonth: 1,
+          endDay: 31,
+        },
+        {
+          campaignId,
+          sessionId: first.id,
+          startYear: 2026,
+          startMonth: 1,
+          startDay: 31,
+          endYear: 2026,
+          endMonth: 2,
+          endDay: 1,
+        },
+        {
+          campaignId,
+          sessionId: middle.id,
+          startYear: 2026,
+          startMonth: 2,
+          startDay: 15,
+          endYear: 2026,
+          endMonth: 2,
+          endDay: 15,
+        },
+        {
+          campaignId,
+          sessionId: last.id,
+          startYear: 2026,
+          startMonth: 2,
+          startDay: 28,
+          endYear: 2026,
+          endMonth: 3,
+          endDay: 1,
+        },
+        {
+          campaignId,
+          sessionId: after.id,
+          startYear: 2026,
+          startMonth: 3,
+          startDay: 1,
+          endYear: 2026,
+          endMonth: 3,
+          endDay: 2,
+        },
+      ],
+    })
+
+    const response = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar/view?year=2026&month=2`, {
+      headers: { cookie: cookies.viewer },
+    })
+    expect(response.status).toBe(200)
+    const payload = await response.json()
+    expect(payload.data.sessionRanges.map((range: { sessionId: string }) => range.sessionId)).toEqual([
+      first.id,
+      middle.id,
+      last.id,
+    ])
+    expect(payload.data.sessionRanges[0].session).toMatchObject({
+      id: first.id,
+      title: 'Starts Before February',
+      sessionNumber: 2,
+      playedAt: '2026-02-01T12:00:00.000Z',
+    })
+
+    const defaultMonthResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar/view`, {
+      headers: { cookie: cookies.viewer },
+    })
+    expect(defaultMonthResponse.status).toBe(200)
+    const defaultMonthPayload = await defaultMonthResponse.json()
+    expect(defaultMonthPayload.data.selectedMonth).toMatchObject({ year: 2026, month: 2, length: 28 })
+
+    const invalidMonthResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar/view?month=13`, {
+      headers: { cookie: cookies.viewer },
+    })
+    expect(invalidMonthResponse.status).toBe(400)
+    const invalidMonthPayload = await invalidMonthResponse.json()
+    expect(invalidMonthPayload.error).toMatchObject({
+      code: 'VALIDATION_ERROR',
+      message: 'Month must be between 1 and 12',
+    })
+  })
+
+  it('keeps empty views for campaigns without a calendar and disabled calendars', async () => {
+    const owner = await prisma.user.findUniqueOrThrow({
+      where: { email: users.owner.email },
+      select: { id: true },
+    })
+    const campaignWithoutConfig = await prisma.campaign.create({
+      data: {
+        ownerId: owner.id,
+        name: 'Calendar Section 4 No Config Campaign',
+        members: {
+          create: {
+            userId: owner.id,
+            role: 'OWNER',
+            invitedByUserId: owner.id,
+          },
+        },
+      },
+      select: { id: true },
+    })
+
+    const missingConfigResponse = await fetch(
+      `${baseUrl}/api/campaigns/${campaignWithoutConfig.id}/calendar/view?year=2030&month=1`,
+      { headers: { cookie: cookies.owner } },
+    )
+    expect(missingConfigResponse.status).toBe(200)
+    expect((await missingConfigResponse.json()).data).toEqual({
+      config: null,
+      currentDate: null,
+      selectedMonth: null,
+      events: [],
+      sessionRanges: [],
+    })
+
+    await prisma.campaignCalendarConfig.update({
+      where: { campaignId },
+      data: { isEnabled: false },
+    })
+    const disabledResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar/view`, {
+      headers: { cookie: cookies.viewer },
+    })
+    expect(disabledResponse.status).toBe(200)
+    const disabledPayload = await disabledResponse.json()
+    expect(disabledPayload.data).toMatchObject({
+      config: { isEnabled: false },
+      currentDate: { year: 2026, month: 2, day: 10 },
+      selectedMonth: null,
+      events: [],
+      sessionRanges: [],
+    })
+  })
 })
 
 

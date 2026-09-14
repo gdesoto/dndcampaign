@@ -10,6 +10,7 @@ import {
   type CalendarConfigUpsertInput,
   type CalendarCurrentDateUpdateInput,
   type CalendarTemplateApplyInput,
+  type CalendarViewQueryInput,
 } from '#shared/schemas/calendar'
 import type {
   CalendarMonth,
@@ -19,6 +20,8 @@ import type {
   CampaignCalendarConfig,
 } from '#shared/types/calendar'
 import { NameGeneratorService } from '#server/services/calendar/name-generator.service'
+import { CalendarEventsService } from '#server/services/calendar/calendar-events.service'
+import { SessionCalendarRangeService } from '#server/services/calendar/session-calendar-range.service'
 import { apiError } from '#server/utils/http'
 
 type CampaignCalendarConfigRow = {
@@ -46,6 +49,16 @@ const weekdayArraySchema = z.array(calendarWeekdaySchema)
 const monthArraySchema = z.array(calendarMonthSchema)
 const moonArraySchema = z.array(calendarMoonSchema)
 const nameGeneratorService = new NameGeneratorService()
+const calendarEventsService = new CalendarEventsService()
+const sessionCalendarRangeService = new SessionCalendarRangeService()
+
+type DateParts = { year: number, month: number, day: number }
+
+const compareDateParts = (left: DateParts, right: DateParts) => {
+  if (left.year !== right.year) return left.year - right.year
+  if (left.month !== right.month) return left.month - right.month
+  return left.day - right.day
+}
 
 const hashSeed = (seed: string) => {
   let hash = 2166136261 >>> 0
@@ -298,6 +311,91 @@ export class CalendarConfigService {
     }
 
     return toConfigDto(config)
+  }
+
+  async getMonthView(campaignId: string, query: CalendarViewQueryInput) {
+    const config = await this.getConfig(campaignId)
+    if (!config || !config.isEnabled) {
+      return {
+        config,
+        currentDate: config
+          ? { year: config.currentYear, month: config.currentMonth, day: config.currentDay }
+          : null,
+        selectedMonth: null,
+        events: [],
+        sessionRanges: [],
+      }
+    }
+
+    const selectedYear = query.year ?? config.currentYear
+    const selectedMonth = query.month ?? config.currentMonth
+    const selectedMonthDefinition = config.months[selectedMonth - 1]
+    if (!selectedMonthDefinition) {
+      throw apiError(400, 'VALIDATION_ERROR', `Month must be between 1 and ${config.months.length}`)
+    }
+
+    const [events, ranges, sessions] = await Promise.all([
+      calendarEventsService.listEvents(campaignId, { year: selectedYear, month: selectedMonth }),
+      sessionCalendarRangeService.listRanges(campaignId),
+      prisma.session.findMany({
+        where: { campaignId },
+        select: {
+          id: true,
+          title: true,
+          sessionNumber: true,
+          playedAt: true,
+        },
+      }),
+    ])
+    const sessionById = new Map(sessions.map((session) => [session.id, session]))
+    const monthStart: DateParts = { year: selectedYear, month: selectedMonth, day: 1 }
+    const monthEnd: DateParts = { year: selectedYear, month: selectedMonth, day: selectedMonthDefinition.length }
+    const sessionRanges = ranges
+      .filter((range) => {
+        const rangeStart: DateParts = {
+          year: range.startYear,
+          month: range.startMonth,
+          day: range.startDay,
+        }
+        const rangeEnd: DateParts = {
+          year: range.endYear,
+          month: range.endMonth,
+          day: range.endDay,
+        }
+        return compareDateParts(rangeStart, monthEnd) <= 0 && compareDateParts(rangeEnd, monthStart) >= 0
+      })
+      .map((range) => {
+        const session = sessionById.get(range.sessionId)
+        return {
+          ...range,
+          session: session
+            ? {
+                id: session.id,
+                title: session.title,
+                sessionNumber: session.sessionNumber,
+                playedAt: session.playedAt?.toISOString() ?? null,
+              }
+            : null,
+        }
+      })
+
+    return {
+      config,
+      currentDate: {
+        year: config.currentYear,
+        month: config.currentMonth,
+        day: config.currentDay,
+      },
+      selectedMonth: {
+        year: selectedYear,
+        month: selectedMonth,
+        index: selectedMonth - 1,
+        name: selectedMonthDefinition.name,
+        length: selectedMonthDefinition.length,
+      },
+      events,
+      sessionRanges,
+    }
   }
 
   async upsertConfig(campaignId: string, input: CalendarConfigUpsertInput): Promise<CampaignCalendarConfigDto> {

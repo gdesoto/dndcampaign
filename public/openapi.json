@@ -11756,7 +11756,7 @@
           "summaries"
         ],
         "summary": "PATCH /api/summaries/jobs/{jobId}",
-        "description": "Auto-documented from server route `summaries/jobs/[jobId].patch.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Applies a summary job using the standard API envelope `{ data, error }`. Each application writes one summary document version, including initial creation. An explicitly linked summary document is retained; otherwise the session summary is created or updated.",
         "operationId": "patch_api_summaries_jobs_jobId",
         "parameters": [
           {

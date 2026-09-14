@@ -21,6 +21,8 @@ type UpdateDocumentInput = {
   createdByUserId?: string | null
 }
 
+type UpsertForSessionInput = Omit<CreateDocumentInput, 'sessionId' | 'type'>
+
 export class DocumentService {
   async createDocument(input: CreateDocumentInput) {
     return prisma.$transaction(async (tx) => {
@@ -81,6 +83,24 @@ export class DocumentService {
         include: { currentVersion: true },
       })
     })
+  }
+
+  async upsertForSession(sessionId: string, type: DocumentType, input: UpsertForSessionInput) {
+    const existing = await prisma.document.findFirst({
+      where: { sessionId, type },
+    })
+
+    if (existing) {
+      return this.updateDocument({
+        documentId: existing.id,
+        content: input.content,
+        format: input.format,
+        source: input.source,
+        createdByUserId: input.createdByUserId,
+      })
+    }
+
+    return this.createDocument({ ...input, sessionId, type })
   }
 
   async listVersions(documentId: string, options?: { includeContent?: boolean }) {
