@@ -1,373 +1,215 @@
-# Code simplification investigation and implementation tickets
+# Code simplification plan
 
-Date: 2026-09-11, revised 2026-09-13. Reviewed baseline: `71ff70a` (`Simplify API handler plumbing and remove dead code`) plus the uncommitted S1/S3/S4/S5 working tree described under "Completed" below. Line citations were refreshed on 2026-09-13; re-check them before editing.
+Updated: 2026-09-13. Current application baseline: `cd0ae54` on `master`.
 
-This was a static, read-only investigation of application code. This plan is the only intended file change. No application changes, migrations, tests, or browser sessions were run. Findings are source-verified opportunities, not measured performance claims. Source line numbers refer to the reviewed baseline.
+## Goal and constraints
 
-Five GPT-6 Astra reviewers used low reasoning for sessions, campaign/admin APIs, general frontend, gameplay, and a broad structural sweep. A sixth independent validation agent checked the proposals, callers, contracts, and simpler alternatives. The agent tool did not expose a standard-speed setting. The primary agent reconciled the reports and sampled the source. The sweep covered app/server/shared architecture; it does not claim exhaustive review of every line or knowledge of external API consumers.
+Reduce duplicated decisions, unnecessary operations, and independently maintained state. Prefer deletion and reuse of existing domain code. Fewer lines, files, or endpoints alone do not establish a useful simplification. Proceed with a conditional ticket only when its concrete implementation reduces complexity without introducing more indirection or unnecessary work.
 
-## Instruction precedence and constraints
+- Follow `AGENTS.md`. For frontend work, Nuxt UI Guidelines governs interaction/layout/accessibility; `StyleGuide.md` supplies project component contracts; the DM Vault style guide and `theme-guide.md` govern identity. Use the currently installed skill paths rather than a historical plugin-cache version. No unrelated visual redesign is included.
+- Preserve authorization, explicit public response fields, validation, errors/retries, draft retention, conflicting-action guards, keyboard access, and focus behavior.
+- Read `docs/SessionWorkspaceOwnership.md` before session work. Preserve one parent instance, pinned IDs, watcher disposal, same-session drafts, dirty exit guards, combined jobs, historical-response identity checks, exact-scope retained resources, and global playback lifetime.
+- Keep URLs and payloads unless the selected scope explicitly changes them. Update `public/openapi.json` alongside any API behavior or contract change. No planned ticket requires a database migration.
+- Do not introduce generic CRUD, configurable query-loader, serializer, media-controller, or state-management frameworks for these tickets. Do not retain or add abstractions solely for speculative future features.
+- Findings establish source-level duplication or unnecessary work, not measured performance improvements. Recheck current callers before editing; ticket references use file and symbol names rather than stale line numbers.
 
-- Per the user's explicit instruction, **Nuxt UI Guidelines outranks the dmvault style-guide skill wherever they conflict**. Read `C:/Users/gdesoto/.codex/plugins/cache/dndcampaign/nuxt-ui-guidelines/0.1.0/skills/nuxt-ui-guidelines/SKILL.md` and its relevant references, plus repository `AGENTS.md`, `StyleGuide.md`, and `.codex/skills/dmvault-style-guide/SKILL.md`. If the cache moves, locate the installed plugin. Apply this precedence to all tickets; this audit does not authorize an unrelated visual redesign.
-- Prefer deletion, existing services, native routing, and schema-derived types. Do not introduce generic CRUD, configurable query-loader, media, or state-management frameworks to implement these tickets.
-- Preserve documented session ownership in `docs/SessionWorkspaceOwnership.md`: one parent instance, pinned IDs, watcher disposal, same-session drafts, dirty exit guards, combined jobs, historical-selection identity checks, exact-scope retained resources, and global playback lifetime.
-- Preserve authorization, explicit public response boundaries, validation, error/retry handling, draft retention, conflicting-action guards, keyboard access, and focus behavior.
-- Keep public URLs and payloads unless a ticket explicitly identifies a change. Update `public/openapi.json` for API behavior/contract changes. No ticket requires a database migration.
+## Completed work
 
-## Completed since the original review (uncommitted working tree, 2026-09-13)
+These tickets are complete and committed. They are not part of the open queue and do not need to be repeated or reconsidered as pending dependencies.
 
-These landed after the original sweep and outrank the per-feature tickets below because they removed shared plumbing rather than one feature's duplication. Each carries one deliberate behavior change.
+| Ticket | Commit | Result |
+| --- | --- | --- |
+| CJ-01 | `6f67721` | Private artifact streaming reuses the range helper. Added clamping, explicit unsatisfiable-range handling, malformed/multiple-range fallback, and correct range advertising. Private 416 uses the JSON error envelope; public recap 416 remains empty. |
+| CJ-02 | `99fb5e7` | Character import sections derive from the shared schema; client section type also reuses the shared type. |
+| CJ-03 | `9403b91` | Removed unused recording upload/artifact reader methods; buffer artifact creation delegates to streaming persistence. Existing artifact persistence failure does not gain rollback. |
+| CJ-04 | `cd0ae54` | Request, quest, calendar, and public-access row types derive from Prisma. Removed request result casts, identity conversion, and redundant policy projections. |
+| CJ-13 | `2a6c78b` | Removed unused encounter runtime-board method and orphan types. |
+| CJ-14 | `21524fd` | Removed the unused client public-overview wrapper; active public composable and server endpoint remain. |
+| CJ-15 | `a9d4f48` | Removed duplicate account-profile endpoint and reused account mapping; retained `/api/auth/me` with its distinct response/session behavior. |
+| CJ-16 | `c938322` | One transcription job DTO mapper; detail includes `tagAudioEvents`, documented in OpenAPI. |
+| CJ-17 | `0fa857b` | Dev n8n endpoint uses the shared schema; removed shadow validator, optional-validation flag, and checkbox. |
+| CJ-18 | `198fa8c` | Added `DocumentService.upsertForSession`. Create-only route retains 409; imports retain titles/recording semantics. Initial summary application now writes one version instead of two identical versions, documented in OpenAPI. |
+| CJ-19 | `198fa8c` | Moved glossary PC linking, calendar month-view assembly, transcript application, and subtitle attachment into existing services. Local transcription operations do not construct an ElevenLabs client; handlers retain authorization. |
+| CJ-23 | `3ae6bc3` | Removed unused `campaign.delete` permission and corresponding response/type declarations. |
 
-- **S1 — Thrown errors and one Nitro error handler.** `ServiceResult`, `Validated`, `fail`, and `respond` are gone. Handlers, utils, and services throw `apiError(statusCode, code, message, fields?)`; `server/error-handler.ts` shapes anything thrown under `/api/` into the unchanged `{ data, error }` envelope. Behavior change: server messages and validation `fields` now reach the client through `useApi` (they never did before, because `$fetch` threw first), and a 404 thrown by a service now propagates through remapping catches instead of becoming a generic 400/500.
-- **S3 — Handler-owned authorization.** Campaign-scoped handlers call `requireCampaignPermission` once and pass `access` or `actor` into services; calendar, journal, requests, dungeon, encounter, and map services no longer re-query membership, and no service threads `systemRole`. Behavior change: a VIEWER attempting a dungeon write receives 403 instead of 404, matching every other campaign route.
-- **S4 — One multipart reader.** `server/utils/multipart.ts` replaced five Busboy state machines (recordings, recaps, captions, document import, map upload).
-- **S5 — One caption converter.** `srtToVtt`, `normalizeVtt`, `isLikelySrt`, and `toVtt` live in `shared/utils/transcript.ts`.
+Shared plumbing already in place: thrown `apiError` values and the central Nitro API error envelope; campaign-route authorization passed to services and permission-scoped child lookups; shared multipart reading; shared transcript/VTT conversion. Reuse these rather than reconstructing their predecessors.
 
-## Managed implementation progress (2026-09-13)
+### Recorded validation
 
-The original investigation above is historical. This batch starts from clean `master` at `7ee3df7`; the earlier S1/S3/S4/S5 work is already committed. Execute one ticket at a time in the user-requested order below. Each ticket has a `codex/cj-NN` branch, Terra implementation and independent review, and a final manager review before a local merge to `master`. Implementation agents own scoped code and checks; the manager owns this log and Git operations. No database migrations are planned.
+Completed work used scoped Terra implementation and manager review; the initial batch also had independent Terra review. Application changes passed lint/typecheck and relevant tests. Final integrated checks were:
 
-| Ticket | Status | Branch | Implementation commit | Validation and review |
-| --- | --- | --- | --- | --- |
-| CJ-13 | Complete; merged | `codex/cj-13` | `2a6c78b` | Removed unused method/import in `server/services/encounter/encounter-runtime.service.ts` and two orphan types in `shared/types/encounter.ts` (54 lines). Tracked/hidden source searches found no callers; lint, typecheck, diff check passed. Independent Terra and manager reviews approved; no behavioral test needed for dead code. |
-| CJ-14 | Complete; merged | `codex/cj-14` | `21524fd` | Deleted only the unused method/member in `app/composables/useCampaignPublicAccess.ts` (21 lines). Caller searches, lint, typecheck, diff check passed; active public composable and server route/service retained. Independent Terra and manager reviews approved; no behavioral test needed. |
-| CJ-23 | Complete; merged | `codex/cj-23` | `3ae6bc3` | Removed permission from `server/utils/campaign-auth.ts`, `shared/types/campaign-workflow.ts`, and calendar/settings page unions. Workspace OpenAPI descriptions record the removed response value. Extended `api.user-management-um3-rbac.test.ts`: 6 tests passed, including both workspace owner permission lists. Lint, typecheck, diff check and source/caller searches passed; independent Terra and manager reviews approved. |
-| CJ-15 | Complete; merged | `codex/cj-15` | `a9d4f48` | Account service owns the explicit profile mapper and shared lookup; account GET/PATCH use the mapper; auth/me retains its distinct DTO and session clearing/401 rules. Removed duplicate route and OpenAPI entry; no app callers needed migration. UM-1 API: 11 tests; auth/campaign API: 6 tests; lint, typecheck, JSON parse, diff check passed. Exact profile fields/equivalence, missing/inactive/deleted sessions, and retired-route 404 covered. Independent Terra and manager reviews approved. |
-| CJ-16 | Complete; merged | `codex/cj-16` | `c938322` | One Prisma-derived mapper/parser in `transcription.service.ts`; recording-list/detail handlers retain queries and authorization. Detail gains `tagAudioEvents`, documented in OpenAPI. Extended `api.session-jobs.test.ts`: 3 tests passed, including list/detail equality, true/false flags, exact artifact fields, null/malformed/non-array JSON fallbacks. Lint, typecheck, JSON parse, diff check and symbol searches passed; independent Terra and manager reviews approved. No external ElevenLabs calls. |
-| CJ-17 | Complete; merged | `codex/cj-17` | `0fa857b` | Deleted manual validators/flag in dev route and checkbox/form flag in admin page; OpenAPI documents mandatory validation, diagnostics and actual 200. New local-mock API suite: 8 tests passed (valid/raw fields, schema issues, auth, transport failure). Lint/typecheck/JSON parse/diff check passed. Terra and manager reviews approved. Manager browser pass at 1280x900 and 390x844 in light/dark: keyboard submission, local failure, retained inputs and successful local retry; checkbox absent. Build deferred to final batch per user instruction below. |
-| CJ-02 | Complete; merged | `codex/cj-02` | `99fb5e7` | Replaced server duplicate registry/cast with `characterSectionSchema.options`; client import-section union aliases shared `CharacterSection`, labels unchanged. Temporary focused verifier confirmed all 27 baseline keys/order, missing/empty fallback, explicit selections and unchanged SECTIONS/lock logic; FULL path unchanged. Lint, typecheck and diff check passed; independent Terra and manager reviews approved. No new behavior harness or external DnD Beyond calls needed. |
+| Checkpoint | Full suite | Production build | Local ignored logs |
+| --- | --- | --- | --- |
+| Initial CJ-13/14/23/15/16/17/02 batch | 73 files / 302 tests | Exit 0, 403.75s | `storage/cj-batch-test.log`, `storage/cj-batch-build.log` |
+| CJ-03 | 75 files / 309 tests | Exit 0, 473.92s | `storage/cj-03-test.log`, `storage/cj-03-build.log` |
+| CJ-01 | 75 files / 336 tests | Exit 0, 397.09s | `storage/cj-01-test.log`, `storage/cj-01-build.log` |
+| CJ-18/19 | 78 files / 347 tests | Exit 0, 412.64s | `storage/cj-18-19-test.log`, `storage/cj-18-19-build.log` |
+| CJ-04 | 78 files / 347 tests | Exit 0, 429.17s | `storage/cj-04-test.log`, `storage/cj-04-build.log` |
 
-Run the integrated full test suite, lint, typecheck, and production build after the final ticket. Record actual results and any limitations here. Ticket branches remain available for inspection; rollback is a code revert.
+CJ-17 also received desktop/mobile, light/dark browser verification with local webhook fixtures. No external n8n, ElevenLabs, or DnD Beyond call was needed for these checks. Non-blocking dependency bundler/deprecation warnings remained. Completed builds supersede earlier interrupted attempts. Validation counts describe those checkpoints, not promises about subsequent work.
 
-Validation prerequisite: initial CJ-13 lint failed because the bundled UI reference app moved to `.claude/skills/nuxt-ui-guidelines` while ESLint excluded only its old `.agents/plugins` location. Commit `4b2226d` adds the current path to `eslint.config.mjs`; independent review approved, and normal `yarn lint` then passed. No app source is excluded by this fix.
+## Open queue and sequencing
 
-**Build timing instruction (2026-09-13):** The user clarified that builds normally take 7–8 minutes and should be a final check, not a quick per-ticket test. This overrides per-ticket build wording below for this batch. An initial CJ-17 build was interrupted during quiet Nitro packaging after client/server compilation; it is not a pass or evidence of a hang. Run the final integrated build to completion. Browser verification used the existing isolated E2E database setup and a local webhook mock; both servers were stopped afterward.
+| Ticket | Disposition | Scope |
+| --- | --- | --- |
+| CJ-05 | Ready | Make session transcript creation creation-only; remove unused mirrored transcript draft. |
+| CJ-06 | Ready after CJ-05 | Replace session navigation event forwarding with native destinations. |
+| CJ-07 | Ready; independent | Share the existing player-safe dungeon projection. |
+| CJ-08 | Ready; narrowed | Remove unused QuestCard props and duplicate group rendering only. |
+| CJ-09 | Conditional; narrowed | Quest listing reuse only, subject to a clear simplification with explicit public fields. |
+| CJ-10 | Ready; separate review | Make route state own campaign selection; explicitly test navigation behavior changes. |
+| CJ-11 | Conditional; lower priority | Remove unused encounter relation reads when the resulting query ownership stays simple. |
+| CJ-12 | Coordinate with CJ-22 | Converge playback locally if URL endpoints stay; otherwise incorporate into CJ-22. |
+| CJ-20 | Ready; rescoped | Replace hand-parsed actions with schemas on existing endpoints. Treat amount compatibility as a separate step. |
+| CJ-21 | Conditional; redesigned | Share common map projection/parsing and SVG retrieval without private glossary enrichment. |
+| CJ-22 | Roadmap decision first | Remove private playback-URL endpoints only after choosing the playback URL strategy. |
 
-### Integrated batch verification
+Recommended session sequence: **CJ-05 → CJ-06 → playback work**. Before playback work, decide CJ-22: keep the endpoints and implement CJ-12, or remove them and complete both tickets together. Do not refactor caches in CJ-12 only to delete them in CJ-22 immediately afterward.
 
-All seven branches were merged locally into `master` in the requested order; final application-code head is `0696b3a`. Independent Terra review confirmed each implementation commit is an ancestor of `master`, all removals are scoped, active callers and response boundaries remain intact, and OpenAPI parses. Manager reviewed every final ticket diff before its merge. Branches are retained; nothing was pushed.
+CJ-07 and CJ-08 can run independently. Give CJ-10 its own review and browser pass; placing it after the session batch is sensible risk management, not a dependency. CJ-20 can run independently of frontend work. CJ-09, CJ-11, and CJ-21 are not mandatory cleanup: defer them if the proposed implementation adds more machinery than it removes. Profiling can inform CJ-11 priority, but is not required to establish that a query loads unused relations.
 
-- `yarn test`: passed, 73 files / 302 tests across all three Vitest projects (95.69s test duration; 103.52s command duration). Log: `storage/cj-batch-test.log` (local, ignored).
-- `yarn lint` and `yarn typecheck`: passed on the final application tree during CJ-02 validation (26.75s and 33.81s). Subsequent commits changed only this progress document and merge history.
-- Final `yarn build`: passed (exit 0, 403.75s, approximately 6m44s), including Nitro packaging. Non-blocking dependency deprecation/bundler warnings were emitted. This completed run supersedes the interrupted CJ-17 attempt. Log: `storage/cj-batch-build.log` (local, ignored).
-- Application source under `app/`, `server/`, and `shared/`: 87 lines added / 409 removed, net 322 fewer lines. Additional test fixtures and documentation account for the overall diff growing despite less application code.
-- Limits: no external n8n, ElevenLabs or DnD Beyond integration was called. Schema/DTO behavior was checked with local fixtures, and CJ-17 UI behavior was checked in the browser. No database migration or unrelated UI redesign was introduced.
-
-## CJ-03 follow-up implementation (2026-09-13)
-
-**Complete and manager-validated.** Implemented in the working tree from `135ee48`, with separate GPT-5.6 Terra agents owning artifact and recording services. This follow-up does not use the historical batch's branch/merge workflow; changes remain uncommitted for review.
-
-- `server/services/recording.service.ts`: removed the uncalled `CreateRecordingInput` and `createRecordingFromUpload`; active stream creation and recording/subtitle cleanup remain unchanged.
-- `server/services/artifact.service.ts`: removed the uncalled `getStream`; buffer creation now wraps bytes with `Readable.from([input.data])` and delegates to `createArtifactFromStream`, leaving one metadata persistence implementation. Application code is 59 net lines smaller.
-- `test/nuxt/artifact.service.test.ts`: real temporary local storage verifies binary buffer bytes, multi-chunk streams, empty buffers, checksums, MIME, labels, metadata, campaign/global keys, storage failure, and persistence failure. Prisma is mocked to isolate service behavior.
-- `test/nuxt/recording.service.test.ts`: verifies recording-row failure triggers artifact cleanup and retains the original error even when cleanup fails.
-- Manager reviewed both service/test diffs and requested additional multi-chunk stream and empty-buffer coverage, which the artifact agent added. An import-order lint failure in the recording test was corrected.
-- Public URLs/payloads, storage interface/factory, map `putObject` calls, and upload handlers are unchanged. No migration or external integration calls. Artifact-row persistence failure still leaves the stored object; this ticket does not add rollback.
-- Validation: agent-coordinated `yarn lint` and `yarn typecheck` passed; focused service coverage passed 7/7, recap API regression passed 8/8. Manager's integrated `yarn test` passed 75 files / 309 tests (115.17s command duration); log: `storage/cj-03-test.log` (local, ignored). `git diff --check` passed. Manager's production `yarn build` passed with exit 0 in 473.92s (7m54s), including Nitro packaging; log: `storage/cj-03-build.log` (local, ignored). Non-blocking dependency bundler/deprecation warnings remain.
-
-## CJ-01 follow-up implementation (2026-09-13)
-
-**Complete and manager-validated.** Implemented in the working tree from `9403b91` by three GPT-5.6 Terra agents owning route/OpenAPI, range helper/unit tests, and API regressions. Changes remain uncommitted for review.
-
-- `server/api/artifacts/[artifactId]/stream.get.ts` delegates to `getMediaStream`; authorization remains first, successful streams retain the artifact MIME type, and 416 throws `apiError` after applying range headers so the central error handler produces the JSON envelope.
-- `server/utils/media-stream.ts` rejects unsafe raw integers before clamping while retaining computed-bound safety checks. This also corrects unsafe end/suffix handling for public recap streams; their existing empty 416 response remains unchanged.
-- Intentional private-route changes: oversized safe ends clamp to file size; malformed/multiple ranges fall back to full 200; out-of-bounds starts, reversed ranges, zero suffixes, and unsafe integers return 416. Adapters without both range capabilities no longer advertise range support. URLs, authorization, storage interfaces, and client playback code remain unchanged.
-- `public/openapi.json` documents binary 200/206, range headers, private JSON 416, public empty 416, and the deliberate parsing changes. `test/unit/media-stream.test.ts` covers parsing and adapter capabilities; `test/api/api.recap-video.test.ts` covers private bytes/MIME/headers/errors, denied access before range handling, and public regressions.
-- Manager reviewed all code and tests and requested retained safety checks, explicit full-response headers, and private/public unsafe-end/suffix assertions. Agents incorporated these corrections. No migration, UI change, or external integration call.
-- Agent validation: `yarn lint`, `yarn typecheck` (exit 0, 34.70s), OpenAPI parse/reference check, and `git diff --check` passed. Focused range tests passed 18/18; recap API tests passed 25/25 (63.35s command duration).
-- Manager validation: integrated `yarn test` passed 75 files / 336 tests (97.31s command duration); production `yarn build` passed with exit 0 in 397.09s (6m37s), including Nitro packaging. Logs: `storage/cj-01-test.log` and `storage/cj-01-build.log` (local, ignored). Non-blocking dependency bundler/deprecation warnings remain. Final diff review and `git diff --check` passed; application code is 25 net lines smaller.
-
-## CJ-18 and CJ-19 follow-up implementation (2026-09-13)
-
-This batch starts from `6f67721`. Three GPT-5.6 Terra agents completed CJ-18 before three further Terra agents began CJ-19. Changes remain uncommitted for review; the manager owns this log and final integrated validation.
-
-**CJ-18: complete and manager-reviewed.** `DocumentService.upsertForSession(sessionId, type, input)` now owns the shared lookup/create/update path. Document import, transcription application, and summary application delegate to it. Explicit document creation keeps its 409 check; updates retain titles, the transcript response still precedes recording reassignment, and explicit summary-document links remain authoritative.
-
-- Deliberate correction: initial summary application writes one version instead of two identical versions. Subsequent applications still add one version each. The summary PATCH OpenAPI description records this change.
-- `test/api/api.cj18-document-upsert.test.ts` passed 4/4, covering create-only 409, repeated imports with retained titles/source/authorship, transcript versioning/recording association and original response, and summary creation/reuse/explicit-link reapplication. Manager requested and reviewed the added association and explicit-link assertions.
-- `yarn lint`, `yarn typecheck`, and `git diff --check` passed. Final integrated suite/build are deferred until CJ-19 completes.
-
-**CJ-19: complete and manager-validated.** Separate agents own character/glossary linking, calendar month-view assembly, and local transcription/subtitle operations. Handlers retain validation and authorization; URLs and payloads remain unchanged.
-
-- `CharacterSyncService.linkGlossaryPc` replaces duplicate owner-scoped character lookup/creation and campaign-link upsert in glossary creation and dev migration. Existing character data, MANUAL source defaults, migration guards, deletion, and result shape are retained.
-- `CalendarConfigService.getMonthView` owns config/default selection, month validation, event/range retrieval, inclusive month intersection, ordering, and session projection. The route now authorizes, validates, and returns the service result.
-- Static `TranscriptionService.applyTranscript` and `attachSubtitles` reuse document/storage/recording services and the shared VTT converter without constructing an ElevenLabs client. Scoped job/target-recording authorization remains in the handler. Artifact selection, same-session targets, VIDEO validation, cleanup behavior, and pre-reassignment transcript responses are retained.
-- Manager reviewed all service/route changes, requested a shared Prisma-derived transcription input type, and verified character defaults and authorization boundaries. Regression tests cover calendar boundary/empty states, owner-safe character reuse/migration, transcript create/update, SRT conversion, wrong/foreign artifacts, cross-session recordings, and denied writes.
-- Validation note: overlapping standalone API launchers left one orphaned test server and an invalid cross-server login result. The owning agent stopped the exact test process; those attempts are inconclusive. A single coordinated focused run supersedes them.
-- Final coordinated API validation passed 5 files / 18 tests; `yarn lint`, `yarn typecheck`, and `git diff --check` passed. Manager's integrated `yarn test` passed 78 files / 347 tests in 105.45s (log: `storage/cj-18-19-test.log`, local/ignored). Production `yarn build` passed with exit 0 in 412.64s (6m53s), including Nitro packaging (log: `storage/cj-18-19-build.log`, local/ignored). Non-blocking dependency bundler/deprecation warnings remain.
-- Final manager review and OpenAPI JSON validation passed. No migration, frontend change, or external n8n/ElevenLabs request was made. Application source totals 289 additions / 280 removals across 10 files: CJ-18 deletes duplicate writes; CJ-19 primarily relocates logic and adds typed service boundaries, so the combined application diff is 9 net lines larger.
-
-## CJ-04 follow-up implementation (2026-09-13)
-
-**Complete and manager-validated.** Implemented from `198fa8c` by three GPT-5.6 Terra agents owning request service/policies, related service row types, and request regression tests. Changes remain uncommitted for review.
-
-- Request selections preserve literal inference with `satisfies Prisma.CampaignRequestSelect`; `Prisma.CampaignRequestGetPayload` replaces the hand-written relation shape. Removed result casts, identity `toStatus`, and redundant argument projections. One `isCreatorOfPendingRequest` predicate serves edit/cancel; visibility, voting, and moderation policy names remain.
-- Quest and calendar services derive mapper input types from reused typed query literals. Public-access records use a `Pick` of the Prisma model; owner/public response mappers remain explicit. Queries, selected fields, DTOs, date/null conversions, URLs, permissions, and OpenAPI contracts are unchanged.
-- Manager reviewed every service diff, retained moderation's narrow status input, and requested regression assertions for creator actions after cancellation and private voting flags. Request API tests also assert exact list/detail keys and equivalence, actor details, per-viewer vote state, repeat unvote, and decided-request restrictions alongside existing visibility/DM/creator coverage.
-- Agent validation: request schema tests passed 3/3; request page tests passed 2/2; targeted ESLint and diff checks passed. Manager's `yarn lint` passed (26.99s), `yarn typecheck` passed (36.88s), and integrated `yarn test` passed 78 files / 347 tests (101.15s), including request, quest, calendar, and public-access API regressions. Logs: `storage/cj-04-lint.log`, `storage/cj-04-typecheck.log`, `storage/cj-04-test.log` (local/ignored).
-- Production `yarn build` passed with exit 0 in 429.17s (7m09s), including Nitro packaging; log: `storage/cj-04-build.log` (local/ignored). Non-blocking dependency bundler/deprecation warnings remain. Final manager diff/caller review and `git diff --check` passed. Application source totals 93 additions / 221 removals across five service files: 128 net lines removed. No API behavior change, migration, or frontend change.
-
-## Prioritized findings
-
-Scary: **1** mechanical/local; **2** bounded behavior; **3** several flows or query/route ownership; **4** broad compatibility/data risk; **5** architectural migration. Bang for buck: **5** strongest benefit relative to effort, **1** weakest. These are engineering judgments, not measured scores. Effort: XS under half a day, S approximately half–one day, M approximately one–two days, including focused verification.
-
-| Ticket | Issue and recommended option | Scary /5 | Bang /5 | Effort |
-| --- | --- | ---: | ---: | --- |
-| CJ-01 | Private streaming duplicates range handling; reuse `getMediaStream` | 2 | 5 | S |
-| CJ-02 | Character imports duplicate the section enum; use schema options | 1 | 4 | XS |
-| CJ-03 | Obsolete upload/read methods and duplicate artifact persistence; delete and delegate | 2 | 4 | S |
-| CJ-04 | Request service mirrors Prisma types and identity conversions; derive and delete | 1 | 4 | S |
-| CJ-05 | Transcript Create secretly has an editor path; make it creation-only | 2 | 4 | S |
-| CJ-06 | Session navigation forwards events across layers; use native links | 2 | 4 | S |
-| CJ-07 | Dungeon preview duplicates player-safe projection; share the existing pure function | 2 | 4 | S |
-| CJ-08 | Quest card has unused configuration and duplicate group templates; simplify locally | 2 | 4 | S–M |
-| CJ-09 | Public quests duplicate query/serialization; reuse with explicit public fields | 2 | 4 | S |
-| CJ-10 | Campaign selector mirrors router state; derive selection from the route | 3 | 4 | S |
-| CJ-11 | Encounter access lookup loads unused relations; narrow queries at actual consumers | 3 | 4 | M |
-| CJ-12 | Cached/fresh playback repeats the same operation; converge locally | 2 | 3 | S |
-| CJ-13 | Uncalled encounter runtime-board layer; delete method and orphan types | 1 | 3 | XS |
-| CJ-14 | Unused client public-overview facade duplicates an active one; delete it | 1 | 3 | XS |
-| CJ-15 | Duplicate profile logic; remove `/api/account/profile`, retain `/api/auth/me` via account service | 1 | 4 | XS |
-| CJ-16 | Two copied transcription job DTO mappers already drifting; one mapper in the service | 1 | 4 | XS |
-| CJ-17 | Dev n8n endpoint hand-validates a payload the Zod schema already covers; delete the shadow validator | 1 | 3 | XS |
-| CJ-18 | Create-or-update document repeated in four places; add `DocumentService.upsertForSession` | 1 | 3 | XS |
-| CJ-19 | Business logic still inside routes (glossary PC link, calendar month view, transcript apply, subtitle attach); move to services | 2 | 4 | S–M |
-| CJ-20 | Encounter initiative and turn live in separate routes with hand-parsed actions; fold into `PATCH /encounters/:id` | 2 | 3 | S |
-| CJ-21 | Public map viewer and SVG re-implement `MapService`; reuse after `resolvePublicAccess` (extends CJ-09) | 2 | 3 | S |
-| CJ-22 | Playback-url routes return a constant path the client can build; delete both | 2 | 2 | XS |
-| CJ-23 | `campaign.delete` permission has no users and no route; delete it | 1 | 2 | XS |
-
-Start with CJ-15/16/17/23 (same-day deletions), then CJ-01/02/03/04 for direct reuse. CJ-04 and CJ-18 are cheaper than originally rated because S1/S3 removed the plumbing around them. CJ-13/14 are convenient isolated cleanup, not reasons to delay higher-value work. CJ-05/06/12 touch the same session area and should run sequentially. Implement CJ-13 before CJ-11 to reduce its caller set. CJ-09 and CJ-14 both concern public access but modify different layers; do not confuse their similarly named methods.
+The signed-URL roadmap is **unresolved**. A future remote storage provider does not itself require browser-facing signed URLs; server streaming remains possible. This document neither commits to signed URLs nor authorizes endpoint removal before that decision.
 
 ## Execution and completion protocol
 
-Each ticket is independently assignable to a future agent. Re-read its affected files and search symbols before editing: the inventory below is accurate for this snapshot, not a promise about future commits. Preserve unrelated working-tree changes. Use one reviewable change per ticket; avoid opportunistic neighboring refactors.
-
-1. Confirm the cited duplication and current callers, including Nuxt auto-import names and template components. Capture current contracts with existing tests or focused behavior coverage where needed.
-2. Implement the smallest listed deletion/reuse. Avoid API changes unless explicitly planned. Review the diff for fewer branches/state owners/layers, not just moved lines.
-3. Run `yarn typecheck` and `yarn lint`. Run relevant existing tests with `yarn test:unit`, `yarn test:api`, or `yarn test:nuxt` plus the indicated file path. Pure dead-code deletions do not need invented tests.
-4. For UI behavior changes, run `yarn build` and inspect affected interactions at desktop/mobile widths and in light/dark themes per Nuxt UI Guidelines. Verify direct URLs, Back/Forward, guards, keyboard navigation, and failure recovery where relevant. A passing build is not browser verification.
-5. For the integrated batch, run `yarn test`, `yarn typecheck`, `yarn lint`, and `yarn build` once after the final changes. Investigate failures without broad unrelated rewrites. Report actual checks and gaps.
-6. Update affected architecture/API documentation and mark the ticket complete with changed paths, actual checks, remaining limitations, and the commit. Rollback is a code revert; there are no planned data migrations. CJ-01's range behavior and CJ-10's navigation change must be called out in review.
-
-## CJ-01 — Reuse the existing media-range implementation
-
-**Problem/evidence:** `server/api/artifacts/[artifactId]/stream.get.ts:17–50` hand-rolls range parsing and stream handling already provided by `server/utils/media-stream.ts:6`. Public recap streaming uses that utility with the same storage factory. The private implementation does not clamp oversized ends or consistently reject unsatisfiable ranges.
-
-**Plan:** Keep `requireArtifactReadAccess`, MIME type, and URLs. Call `getMediaStream(adapter, storageKey, rangeHeader)`, apply its status/headers, and send its stream or empty response. Delete private range/full-stream branching. Do not move authorization into the generic helper.
-
-**Affected inventory:** Edit the private artifact stream route and `public/openapi.json` artifact stream operation (around line 920). Reuse the media utility and storage interface. Regression paths include `server/services/campaign-public-access.service.ts`, `server/api/public/campaigns/[publicSlug]/recaps/[recapId]/stream.get.ts`, recording/recap playback URL handlers, `useSessionRecordings`, `useSessionRecap`, `useMediaPlayer`, recording and document detail pages' artifact links, and public recap playback. Consumer URLs remain unchanged.
-
-**Acceptance/checks:** Cover full 200, partial/suffix 206, oversized-end clamping, invalid/unsatisfiable 416, denied access, and adapters without range support. Use `test/unit/media-stream.test.ts` and `test/api/api.recap-video.test.ts`; extend private-route coverage, currently only full-stream coverage. Record intentional deltas: anchored parsing treats malformed/multiple ranges as full 200; start beyond size, reversed ranges, zero suffix, and unsafe integers yield 416; unsupported adapters no longer falsely advertise ranges. Unsatisfiable ranges should `throw apiError(416, ...)` and let `server/error-handler.ts` produce the envelope. Document binary 200/206/416 responses and range headers in OpenAPI. Do not describe this as entirely behavior-preserving.
-
-## CJ-02 — Use the character section schema as the registry
-
-**Problem/evidence:** `server/services/character-import.service.ts:24–55` maintains a 29-line all-true object only to call `Object.keys`. `shared/schemas/character.ts:6–34` already defines the same sections and order.
-
-**Plan:** Use `characterSectionSchema.options` for missing/empty section selections; delete the object and cast. Inline the single-use fallback if clearer. Optionally replace the duplicate union in `app/utils/character-import.ts:3–30` with the existing `CharacterSection` type; retain actual display labels.
-
-**Affected inventory:** Import service `normalizeSections` → `applyImport` → `createFromImport`, `importIntoCharacter`, `refreshImport`; `server/api/characters/index.post.ts`, `server/api/characters/[characterId].patch.ts`; character index/detail pages and `app/components/characters/ImportModal.vue`. Shared schema and OpenAPI character contracts stay unchanged.
-
-**Acceptance/checks:** Missing/empty selections preserve all sections and order; explicit subsets, locked sections, and FULL/SECTIONS behavior stay unchanged. Typecheck and focused fallback verification are sufficient for the small registry substitution. Existing character UI/RBAC coverage does not directly establish import fallback behavior. Do not turn this into a generic nested-path engine.
-
-## CJ-03 — Delete obsolete upload paths and delegate buffer artifact creation
-
-**Problem/evidence:** `RecordingService.createRecordingFromUpload` and `CreateRecordingInput` at `server/services/recording.service.ts:6–16,40–66` have zero repository callers. `ArtifactService.getStream` at `server/services/artifact.service.ts:68–73` also has zero callers. S4 already removed the handler-side Busboy code this ticket warned about touching, so the remaining work is two deletions plus the buffer-to-stream delegation (effort XS). Buffer and streaming artifact creation duplicate the same persistence block at lines 28–66.
-
-**Plan:** Delete the dead recording method/type and artifact reader. Keep the used buffer convenience method, adapting `data` with `Readable.from([data])` into `createArtifactFromStream`. Use one metadata persistence implementation. Do not remove `StorageAdapter.putObject` or add another upload abstraction.
-
-**Affected inventory:** Edit recording/artifact services. Buffer callers: `transcription.service.ts:435,467`; stream callers: `recording.service.ts:69,97` and `recap.service.ts:20`; active multipart entry: `server/api/sessions/[sessionId]/recordings.post.ts:123`. Map uploads still call adapter `putObject` (`map-upload.service.ts:267,796`). Storage interface/factory and local adapter remain.
-
-**Acceptance/checks:** Repeat reference searches before deleting. Verify buffer/stream bytes, checksum, MIME, metadata, labels, storage keys, and failure behavior with focused service coverage; run recap API regression coverage. Preserve recording cleanup when recording-row creation fails. Artifact-row persistence failure does not currently have equivalent rollback: do not claim this ticket supplies it or broaden scope into cleanup redesign. Dead deletions alone are scary 1; stream delegation makes the combined ticket scary 2.
-
-## CJ-04 — Derive request result types and remove no-op conversion layers
-
-**Problem/evidence:** `server/services/campaign-requests.service.ts:35–63` manually mirrors a Prisma query result and adds identity `toStatus`; fifteen `as RequestWithRelations` casts remain. S3 already removed the access re-resolution and `systemRole` threading this ticket originally mentioned. `campaign-requests.helpers.ts:32–36` repeats an owner/pending predicate. The same hand-mirrored row types exist in `quest.service.ts` (`toQuestDto` parameter), `calendar-config.service.ts` (`CampaignCalendarConfigRow`), and `campaign-public-access.service.ts` (`CampaignPublicAccessRecord`); apply the same fix there.
-
-**Plan:** Define a typed literal query selection and derive its result via `Prisma.CampaignRequestGetPayload`, following `campaign-journal.service.ts:100`. Preserve literal inference; remove the casts, identity conversion, and redundant argument projections. A single named creator/pending predicate may serve edit/cancel. Keep useful policy names; do not delete the helpers file solely because it has one production importer.
-
-**Affected inventory:** Request service and optionally its helpers; every handler in `server/api/campaigns/[campaignId]/requests/` (list/create/detail/update/vote/unvote); `useCampaignRequests` and campaign requests page. `shared/types/campaign-requests.ts`, shared schemas, and OpenAPI remain compatible.
-
-**Acceptance/checks:** No casts concealing query-shape mismatch; identical list/detail payloads and creator/private-visibility/DM/pending-vote/repeat-vote rules. Run `test/api/api.campaign-requests-routes.test.ts`, `test/unit/campaign-requests-rules.test.ts`, and `test/nuxt/campaign-requests-page.test.ts`. The unit file covers schema rules, not all helper authorization; do not treat it as sufficient alone.
+1. Read the selected ticket and current source; check all callers, Nuxt auto-import surfaces, and existing tests. Preserve unrelated working-tree changes.
+2. Establish current contracts before changing behavior. Implement the smallest concrete deletion/reuse; do not expand into neighboring tickets without a reason tied to the goal.
+3. After JavaScript/TypeScript/Vue changes, pass `yarn lint`, `yarn typecheck`, and relevant tests. Pure unreachable-code deletions do not need invented behavior tests. Run the integrated `yarn test` for a completed multi-area batch.
+4. For UI changes, inspect the affected interactions at desktop/mobile widths and in light/dark themes. Test keyboard navigation, direct URLs, Back/Forward, dirty guards, and failure recovery where applicable. A build is not browser verification.
+5. Run one production `yarn build` after the selected ticket or agreed batch is complete. Allow approximately 8 minutes and wait for actual exit status through quiet Nitro packaging; do not mistake an early tool yield for a hang or completion.
+6. Coordinate a single API test runner: suites share port 4181. Poll yielded command sessions to completion. Do not run competing API launchers or treat a cross-server result as a valid test verdict.
+7. Review the final diff against acceptance criteria, correct gaps, and record actual checks, limitations, and commit when committed. Commit or merge according to the current user instruction; no historical per-ticket branch workflow is required. Rollback is a code revert.
 
 ## CJ-05 — Remove the transcript workspace's unused editing mode
 
-**Problem/evidence:** `useSessionDocuments.ts:45` creates or PATCHes a transcript, but its only production caller is the Create event in the session `[step].vue:58`. `TranscriptPanel.vue:185` renders Create even with an existing transcript. Editing already has a document-editor link at line 84. `useSessionWorkspaceViewModel.ts:55,92,100,176` maintains a mirrored form/ref/watch with no transcript input. Clicking Create on an existing document can create a redundant version and force PLAINTEXT.
+**Evidence:** `useSessionDocuments` creates or PATCHes the transcript, but the session workflow invokes it as Create. `TranscriptPanel` exposes Create even when a transcript exists. `useSessionWorkspaceViewModel` mirrors transcript content despite having no transcript input. Existing content already has a document-editor link.
 
-**Plan:** Make `createTranscript` create an empty document only when missing, and hide/disable that action when a document exists. Existing records use the existing editor link. Delete the PATCH branch, shadow transcript form/ref/watch, and `transcriptContent` option. Keep summary editing, errors, import/delete, and busy protection; guard duplicate/conflicting creation locally.
+**Scope:** Create an empty transcript only when missing. Hide or disable Create when one exists and guard duplicate/conflicting submissions locally. Remove the PATCH branch, mirrored transcript form/ref/watch, and `transcriptContent` option. Keep the summary draft, editor link, import/delete, errors, retries, and busy protection. Continue using the create-only endpoint and its 409 behavior; do not use the new server upsert for this action.
 
-**Affected inventory:** `app/composables/useSessionDocuments.ts`, `useSessionWorkspaceViewModel.ts`, `app/components/session/TranscriptPanel.vue`, `app/pages/campaigns/[campaignId]/sessions/[sessionId]/[step].vue`; fixtures in `test/nuxt/session-delete-recovery.test.ts`; panel tests. Existing `server/api/sessions/[sessionId]/documents.post.ts:32` already returns 409 for duplicate creation; `document.service.ts:67` owns real versioning. No backend/schema/OpenAPI change. Clarify ownership documentation if needed.
+**Files:** `app/composables/useSessionDocuments.ts`, `useSessionWorkspaceViewModel.ts`, `app/components/session/TranscriptPanel.vue`, and `app/pages/campaigns/[campaignId]/sessions/[sessionId]/[step].vue`. Update ownership documentation only if its contract description changes. No backend/API change.
 
-**Acceptance/checks:** One empty POST when missing, no PATCH/create when present, error and retry, double-submit protection, editor link, and preserved import/delete recovery. Extend `test/nuxt/session-panels.test.ts`, run deletion recovery and session workspace route tests. Do not remove the real summary draft or document editor.
+**Acceptance:** One empty POST when missing; no create/PATCH when present; error/retry and double-submit behavior; editor link and import/delete recovery. Extend `test/nuxt/session-panels.test.ts`; run `session-delete-recovery.test.ts` and `session-workspace-routes.test.ts`.
 
 ## CJ-06 — Replace session navigation event chains with native links
 
-**Problem/evidence:** `StepLinkButton.vue:18` emits Open; `StatusCards.vue:76`, `RecordingsPanel.vue:70`, and `RecapPanel.vue:113` forward navigation through parents to `useSessionWorkspaceViewModel.ts:243`, which finally calls `navigateTo`. `WorkflowTimeline.vue:9` already uses native links. StatusCards' `mode`/`activeStep` props and timeline descriptions are unused.
+**Evidence:** `StepLinkButton`, `StatusCards`, `RecordingsPanel`, and `RecapPanel` forward navigation events to `useSessionWorkspaceViewModel.openSessionSection`. `WorkflowTimeline` already uses native links. Routing-only forwarding does not need a separate state owner.
 
-**Plan:** Give the step button a destination and use native `to`; retain its useful tooltip/accessibility presentation. Pass destinations through callers. Delete routing-only `open`, `open-step`, `jump-step`, and `openSessionSection`, plus unused props/bindings/descriptions. Prefer existing native navigation item types where needed; no new router abstraction.
+**Scope:** Supply destinations through `to`, retaining tooltip/accessibility presentation. Delete routing-only `open`, `open-step`, `jump-step`, and `openSessionSection` plumbing and confirmed unused props/descriptions. Keep invalid-step correction and `defaultStep` fallback. Preserve parent ownership and dirty exit guards; do not replace action events unrelated to navigation.
 
-**Affected inventory:** `app/components/session/{StepLinkButton,StatusCards,RecordingsPanel,RecapPanel,WorkflowTimeline}.vue`; `useSessionWorkspaceViewModel.ts`; session overview `index.vue`; session parent `[sessionId].vue` if item shape changes; `[step].vue` wherever changed panel props apply. `docs/SessionWorkspaceOwnership.md` should describe the final navigation contract. No API changes.
+**Files:** Session `StepLinkButton`, `StatusCards`, `RecordingsPanel`, `RecapPanel`, and `WorkflowTimeline`; workspace view model; session overview/step/parent routes as needed; `docs/SessionWorkspaceOwnership.md`. No API change.
 
-**Acceptance/checks:** Actual hrefs and correct destinations, keyboard and new-tab navigation, same-session draft retention, guarded session exit, unchanged request/instance counts. Update `test/nuxt/session-panels.test.ts` to assert destinations rather than forwarded events and run `session-workspace-routes.test.ts`. Retain invalid-step URL correction and `defaultStep` fallback: those are not the duplicated event mechanism.
+**Acceptance:** Correct hrefs, keyboard/new-tab behavior, retained same-session drafts, guarded exits, unchanged workspace instance/request counts. Update `test/nuxt/session-panels.test.ts` to assert destinations; run `session-workspace-routes.test.ts` and browser checks. Complete after CJ-05 to avoid overlapping edits.
 
 ## CJ-07 — Share the existing player-safe dungeon projection
 
-**Problem/evidence:** `server/services/dungeon/dungeon-map-utils.ts:22` has `toPlayerSafeMap`; dungeon detail page lines 248–264 duplicates room/corridor/door filtering but omits attached trap/encounter/treasure/dressing filtering.
+**Evidence:** `server/services/dungeon/dungeon-map-utils.ts` defines `toPlayerSafeMap`; the dungeon detail page duplicates room/corridor/door filtering but omits attached-entity filtering. `MapCanvas` already skips markers whose rooms are absent, so this is data parity and maintenance work, not evidence of a visible secret leak.
 
-**Plan:** Move the existing pure function into `shared/utils/dungeon-map.ts`; import it directly at all three consumers. Delete the client filtering body and old definition. Keep server-side authorization/filtering and existing player-safe semantics.
+**Scope:** Move the existing pure projection to `shared/utils/dungeon-map.ts` and use it from the dungeon service, export service, and client preview. Preserve server authorization and existing projection semantics; do not redefine what player-safe means or change unrelated map fields.
 
-**Affected inventory:** Original map utility, `server/services/dungeon/dungeon.service.ts:21,76`, `dungeon-export.service.ts:12,204`, `app/pages/campaigns/[campaignId]/dungeons/[dungeonId].vue:248`, new shared utility. Downstream `app/components/dungeon/MapCanvas.vue:205–219` already skips markers whose rooms are absent: this is data-parity/maintenance work, **not a confirmed visible secret leak**. `shared/types/dungeon.ts` supplies the unchanged type; no API/migration/schema changes.
+**Files:** `server/services/dungeon/dungeon-map-utils.ts`, `dungeon.service.ts`, `dungeon-export.service.ts`, `app/pages/campaigns/[campaignId]/dungeons/[dungeonId].vue`, and the new shared utility. Keep `shared/types/dungeon.ts` contracts unchanged.
 
-**Acceptance/checks:** Secret rooms, incident corridors/doors, attached entities, no mutation, and idempotence in focused pure-function tests; preview passes the same projected data. Run `test/nuxt/dungeons-pages.test.ts` and export coverage in `test/api/api.dungeon-routes.test.ts`. Do not redefine what counts as player-safe in this refactor.
+**Acceptance:** Secret rooms, incident corridors/doors, attached entities, no input mutation, idempotence, and client/server projection parity. Add focused pure tests; run `test/nuxt/dungeons-pages.test.ts` and export coverage in `test/api/api.dungeon-routes.test.ts`.
 
-## CJ-08 — Remove unused QuestCard configuration and duplicate rendering
+## CJ-08 — Remove unused QuestCard props and duplicate group rendering
 
-**Problem/evidence:** `app/components/campaign/QuestCard.vue:40–51` receives numerous display callbacks from its one caller page. Two color callbacks are never used. `quests.vue:484,513` repeats full card wiring for two groups; enclosing nonempty checks make inner empty branches unreachable.
+**Evidence:** `QuestCard` declares unused `typeBadgeColor`/`trackBadgeColor` callbacks. The private quests page repeats card wiring for two groups and contains empty branches made unreachable by outer nonempty checks.
 
-**Plan:** Delete unused `typeBadgeColor`/`trackBadgeColor` props, functions at page lines 145–151, and bindings. Use two small group descriptors and one section/card template; remove unreachable branches. Optionally centralize invariant quest labels in a plain presentation utility shared with the public page, letting the card consume invariant metadata directly. Do not add a configurable card framework. Keep calendar-sensitive expiration formatting as a real input because public/private behavior differs.
+**Scope:** Remove those props/functions/bindings. Use two small group descriptors and one section/card template, preserving group order and removing unreachable branches. Retain real loading, empty, and no-matches behavior, permissions, handlers, confirmations, drafts, and calendar-sensitive expiration formatting.
 
-**Affected inventory:** QuestCard and `app/pages/campaigns/[campaignId]/quests.vue`; optional `app/pages/public/[publicSlug]/quests.vue` and one plain label utility. Preserve permissions, mutation handlers, schema, confirmations, and drafts. API contracts remain unchanged.
+**Files:** `app/components/campaign/QuestCard.vue` and `app/pages/campaigns/[campaignId]/quests.vue` only. Cross-page label centralization and a configurable card framework are outside this ticket.
 
-**Acceptance/checks:** Both groups, ordering, real empty versus filtered no-matches, reader actions, expiration labels, and create/edit flows. Run `test/nuxt/campaign-quests-page.test.ts` and `quest-form-schema.test.ts`, plus mobile/keyboard inspection. Share labels only if it removes net ceremony; dead props/template cleanup stands alone.
+**Acceptance:** Both groups, ordering, reader actions, expiration labels, create/edit flows, and existing state handling. Run `test/nuxt/campaign-quests-page.test.ts`, `test/nuxt/quest-form-schema.test.ts`, and mobile/keyboard checks. No API change.
 
-## CJ-09 — Reuse private listings behind an explicit public allowlist (quests first; see CJ-21 for maps)
+## CJ-09 — Evaluate quest listing reuse with explicit public fields
 
-**Problem/evidence:** `campaign-public-access.service.ts:751` (`getPublicQuests`) repeats the query and mapping in `quest.service.ts`. Glossary and milestones follow the same shape and should use the same allowlist pattern once quests prove it out. The current public DTO omits campaignId; the relation selection/order otherwise match.
+**Disposition:** Conditional, quests only. Glossary and milestone unification is removed from scope; their private/public queries differ, and the public milestone query is already small. CJ-21 is a separate evaluation, not a dependency.
 
-**Plan:** Keep `resolvePublicAccess(publicSlug, 'quests')` and both routes. Reuse `QuestService.listCampaignQuests` after public authorization, with an **explicit public field allowlist**. Alternatively extract the common query and a public-safe base mapper reused by both DTOs if that removes more duplication cleanly. Do not use rest-omit campaignId: a future private field could then become public automatically. Compare final diff size before choosing; do not introduce a generic serializer framework.
+**Evidence:** `CampaignPublicAccessService.getPublicQuests` repeats quest listing and conversion in `QuestService.listCampaignQuests`. CJ-04 already derives private quest row types from a shared typed include; do not recreate that work.
 
-**Affected inventory:** Public-access and quest services; public quests GET and campaign quests GET handlers; other QuestService create/update callers; `usePublicCampaign.ts:152–178`, public quests page; private quest page, campaign overview, and encounter detail consumers. `shared/schemas/quest.ts` and OpenAPI quest definitions (around 5844,9723,10069) remain the contract; no endpoint removal or payload expansion.
+**Scope:** After `resolvePublicAccess(publicSlug, 'quests')`, reuse the existing quest listing and project an explicit public field allowlist, or share a small common query/projection if that is simpler. Keep the public boundary explicit: do not use rest-omission of `campaignId`, spread private DTOs, or add a generic serializer. Defer if reuse adds more ceremony than the duplication it removes.
 
-**Acceptance/checks:** Exact public keys, no campaignId/private fields, null/date/source-name handling, ordering, unavailable slug and disabled section behavior; unchanged private results. Run `test/api/api.user-management-um5-public-access.test.ts`, `api.quest-routes.test.ts`, and campaign quest UI regression tests. Validator reduced the initial bang rating because explicit boundary preservation is more work than deleting the duplicate mapper outright.
+**Files:** `server/services/campaign-public-access.service.ts` and `server/services/quest.service.ts`; both routes and consumers retain their contracts.
+
+**Acceptance:** Exact public keys, exclusion of private fields, unchanged private results, date/null/source-name handling, ordering, missing slug, and disabled section. Run `test/api/api.user-management-um5-public-access.test.ts`, `test/api/api.quest-routes.test.ts`, and `test/nuxt/campaign-quests-page.test.ts`. No payload expansion or endpoint removal.
 
 ## CJ-10 — Make the router own campaign selection
 
-**Problem/evidence:** `app/composables/useCampaignSelector.ts:32–65` mirrors the route in a selected-ID ref, three watches, and a mount gate. Selection can get ahead of a navigation cancelled by a dirty-editor guard. An empty list can trigger navigation indirectly.
+**Evidence:** `useCampaignSelector` mirrors the route in a selected-ID ref, three watches, and a mount gate. A canceled navigation can leave the selection ahead of the route; an empty/loading list can indirectly initiate navigation.
 
-**Plan:** Use route-derived selection with a writable computed or explicit update handler. Only user selection invokes the existing `resolveCampaignSelectorRoute` and router. Remove synchronization watches/mount gate. Deliberately stop navigating merely because a list becomes empty/loading/failed; let the route/page handle availability. Preserve an intelligible display for a route ID absent from the current list without claiming it is a different campaign.
+**Scope:** Derive selection from the route. Only user selection invokes the existing `resolveCampaignSelectorRoute` and router. Remove synchronization watches/mount gate. A missing route ID in the fetched options must remain intelligible without pretending another campaign is selected.
 
-**Affected inventory:** Selector composable; sole consumer `app/components/AppHeader.vue:63` with desktop/mobile bindings at 133/216. Existing route resolver stays. All campaign routes using the header, especially dirty editors, are behavioral consumers; docs/default headers hide the selector outside campaigns. No API change.
+**Deliberate correction:** Empty, loading, or failed lists no longer redirect on their own. Canceled navigation leaves the actual route selected. Review this behavior explicitly and separately from mechanical cleanup.
 
-**Acceptance/checks:** Cancelled navigation shows the actual route selection; successful selection, Back/Forward, delayed/empty/error list results, same-target selection, and desktop/mobile synchronization. Preserve `test/unit/campaign-selector-route.test.ts`; add meaningful composable/navigation coverage and exercise campaign workspace/dirty-editor routing. No selector-state test currently proves these cases. Review explicitly that list emptiness no longer redirects; this is a deliberate behavior correction, not merely shorter syntax.
+**Files:** `app/composables/useCampaignSelector.ts` and its desktop/mobile bindings in `app/components/AppHeader.vue`. Preserve the route resolver and existing guards. No API change.
 
-## CJ-11 — Stop encounter authorization from loading an entire workspace
+**Acceptance:** Successful/canceled navigation, Back/Forward, delayed/empty/error lists, absent option, same-target selection, and desktop/mobile synchronization. Retain `test/unit/campaign-selector-route.test.ts`, add focused navigation coverage, and exercise dirty-editor exits in the browser. Can follow the session batch; no hard dependency on other tickets.
 
-**Problem/evidence:** `server/services/encounter/encounter-shared.ts:24–40` (`getEncounterWithAccess`) always includes combatants, full ordered event history, and session. Most mutations need encounter fields only. `encounter.service.ts:291,492` then queries combatants/events again; initiative operations separately query combatants too.
+## CJ-11 — Narrow encounter reads where the result stays simple
 
-**Plan:** After CJ-13, make authorized lookup minimal while preserving the `buildCampaignWhereForPermission` scope (S3 kept this single scoped lookup for child-id routes; `ensureCampaignAccess` no longer exists). Explicitly load relations where detail, summary, or turn logic needs them. Remove redundant reads, not necessary post-write rereads. Avoid a loader with boolean modes or a generic query-building framework.
+**Disposition:** Conditional and lower priority. Profiling may establish urgency or a measurable gain; it is not required to establish that unused relations are loaded. Do not claim a speedup without measurement.
 
-**Complete helper caller inventory:**
+**Evidence:** `getEncounterWithAccess` in `server/services/encounter/encounter-shared.ts` loads combatants, ordered event history, and session for many mutations. Some callers then query relations again. The unused runtime-board consumer is already removed.
 
-- `encounter.service.ts`: `getEncounter`, `listCombatants`, `createCombatant`, `updateCombatant`, `deleteCombatant`, `listEvents`, `createNoteEvent`.
-- `encounter-runtime.service.ts`: `transitionStatus`, `rollInitiative`, `reorderInitiative`, `moveTurn`, `setActiveTurn`, `applyDamage`, `applyHeal`, `createCondition`, `updateCondition`, `deleteCondition`; `getRuntimeBoard` removed in CJ-13.
-- `encounter-summary.service.ts`: `getSummary`. Detail/summary need events; detail also needs conditions. Turn movement/selection need combatants. Initiative already has explicit combatant reads. Confirm session fields actually needed at each remaining site before narrowing.
-- API families under `server/api/encounters/[encounterId]`: detail, summary, status PATCH, initiative, turn, combatants/conditions, events and notes. Frontend: `useEncounterDetail`, `useEncounterRuntime`, encounter detail page. Response types, schemas, URLs, and OpenAPI remain unchanged.
+**Scope:** Preserve the permission-scoped lookup while loading relations explicitly at consumers that need them. Remove redundant reads, not required post-write reads. No boolean-mode loader or generic query framework. Defer if the replacement adds substantial branching or scattered query machinery.
 
-**Acceptance/checks:** Same permissions, missing/denied results, ordering, initiative transitions, HP, conditions, notes, detail and summary. Run `test/api/api.encounter-routes.test.ts`, `test/nuxt/encounter-detail-page.test.ts`, `test/unit/encounter-summary.test.ts`. Add focused query assertions that HP/condition operations do not fetch event history and list operations avoid duplicate reads. Do not assert a speedup without measurement; the source establishes unnecessary work, not its wall-clock cost.
+**Caller inventory to recheck:** `encounter.service.ts`: get/detail, combatant list/create/update/delete, event list, notes. `encounter-runtime.service.ts`: lifecycle transitions, initiative roll/reorder, turn movement/selection, damage/heal, and condition create/update/delete. `encounter-summary.service.ts`: summary. Preserve all existing ordering and permission results.
 
-## CJ-12 — Converge cached and fresh playback locally
+**Acceptance:** Unchanged detail/summary, missing/denied access, initiative/turns, HP, conditions, and notes. Focused query assertions should show mutations do not load unused history and list operations avoid duplicate reads. Run `test/api/api.encounter-routes.test.ts`, `test/nuxt/encounter-detail-page.test.ts`, and `test/unit/encounter-summary.test.ts`. Keep URLs/payloads unchanged. No dependency on CJ-20 endpoint consolidation, which is no longer planned here.
 
-**Problem/evidence:** `useSessionRecordings.ts:46–100` and `useSessionRecap.ts:59–103` each duplicate their `playSource` payload/call between cached and freshly fetched URLs.
+## CJ-12 — Converge playback locally if URL endpoints remain
 
-**Plan:** Within each existing composable, resolve the cached-or-fetched URL and call the existing player once under common error handling. Capture recap identity before awaiting so URL and descriptor match. No shared generic media controller is needed.
+**Disposition:** Coordinate with CJ-22 before implementation. If endpoints remain, execute this ticket after CJ-05/06. If endpoint removal is chosen, incorporate this work into CJ-22 and mark CJ-12 satisfied by that change rather than implementing it twice.
 
-**Affected inventory:** Edit only these two composables; sole direct production consumer `useSessionWorkspaceViewModel`; downstream session overview/step routes and RecordingsPanel/RecapPanel retain contracts. Preserve caches, per-record busy state, recap progress IDs, audio/video distinction, and drawer behavior. No API/schema changes.
+**Evidence:** `useSessionRecordings` and `useSessionRecap` duplicate `playSource` calls for cached/fetched URLs. Cached-path player failures bypass the common error path; recap identity can change during URL retrieval.
 
-**Acceptance/checks:** Cached/fresh and repeated playback, URL fetch rejection, player rejection/retry, audio/video kind changes and identity during awaits. Use `test/nuxt/session-recap-playback.test.ts` and `session-delete-recovery.test.ts`; add recording repeat-play/error coverage. Run after CJ-05/06 to avoid simultaneous edits in the same feature area.
+**Scope when retaining endpoints:** Resolve cached-or-fetched URL once, capture media identity before awaits, and call the existing player under common error handling. Preserve meaningful busy guards, caches, progress IDs, audio/video behavior, and drawer presentation. Do not add a generic media controller.
 
-## CJ-13 — Delete the unused encounter runtime-board layer
+**Files:** `app/composables/useSessionRecordings.ts` and `useSessionRecap.ts`; inspect workspace/panel contracts when validating state. URL-presence indicators must not be confused with proof of active playback; if changed, derive them from the existing player rather than adding another playing-state owner.
 
-**Problem/evidence:** `encounter-runtime.service.ts:543` defines `getRuntimeBoard` with zero callers. `shared/types/encounter.ts:140–156` defines `InitiativeLaneItem` and `EncounterRuntimeBoard` exclusively for that method. The live page derives its board from encounter detail.
+**Acceptance:** Cached/fresh/repeated playback, fetch rejection, player rejection/retry, concurrent clicks, and media replacement/kind changes during awaits. Run `test/nuxt/session-recap-playback.test.ts`, `session-delete-recovery.test.ts`, and recording playback coverage. No API change on the endpoint-retention path.
 
-**Plan/inventory:** Delete the method, its import, and both exclusive types in those two files. No route, test, schema, or OpenAPI references were found. Keep the active detail/runtime services.
+## CJ-20 — Replace hand-parsed encounter actions with schemas
 
-**Acceptance/checks:** Repeat whole-repository symbol searches, including tests and auto-import surfaces, then typecheck/lint. No new behavioral test for unreachable code. Complete before CJ-11.
+**Scope:** Keep the existing encounter, initiative, turn, and combatant endpoints. Replace manual action parsing/casts with typed schemas and discriminated action unions where applicable, reusing existing payload schemas. Preserve authorization and service dispatch. Do not move initiative/turn routes or rewrite client URLs as part of this ticket.
 
-## CJ-14 — Delete the unused client public-overview wrapper
+**Current contract:** The encounter PATCH manually recognizes lifecycle actions and otherwise handles ordinary field updates; it does not already have a complete action union. Preserve ordinary update requests alongside lifecycle actions. Explicitly test/document any change to unknown actions, malformed bodies, error messages/fields, or parsing order rather than silently broadening validation.
 
-**Problem/evidence:** `useCampaignPublicAccess.ts:51–69,75` duplicates the overview path/DTO of `usePublicCampaign.ts:23–41`, but its `getPublicOverview` member has no app/test consumer. Its only composable consumer, campaign settings, uses settings/update/regenerate only.
+**Separate amount step:** Combatant damage/heal currently uses `Number(rawBody.amount)`; existing shared amount schemas are strict numbers. Characterize numeric strings, booleans, missing/null values, fractions, and bounds before substituting validation. Preserve accepted coercion deliberately or document/test a reviewed tightening. This compatibility decision must not be hidden inside action-schema cleanup.
 
-**Plan/inventory:** Delete only that client method and returned member from `app/composables/useCampaignPublicAccess.ts`. Preserve settings methods, active `usePublicCampaign`, `usePublicCampaignPageContext`, public pages, the server's same-named service method, and public endpoint.
+**Files:** `server/api/encounters/[encounterId]/index.patch.ts`, `initiative/index.patch.ts`, `turn/index.patch.ts`, `combatants/[combatantId].patch.ts`, and `shared/schemas/encounter.ts` as needed. Update OpenAPI for validation changes. Endpoint consolidation is outside scope and would need a separate concrete benefit assessment.
 
-**Acceptance/checks:** Repeat symbol/caller search and typecheck/lint; no new behavior test for the uncalled member. No API or documentation contract removal.
+**Acceptance:** Lifecycle actions, ordinary edits, initiative roll/reorder, advance/rewind/set-active, damage/heal, invalid actions/payloads, coercion decisions, and access checks. Run `test/api/api.encounter-routes.test.ts`, `test/nuxt/encounter-detail-page.test.ts`, and focused schema tests.
 
-## CJ-15 — Delete duplicate profile endpoints
+## CJ-21 — Share common map work without private glossary enrichment
 
-**Problem/evidence:** `server/api/account/index.get.ts` and `server/api/account/profile.get.ts` are byte-identical; `server/api/auth/me.get.ts` is a third profile read with its own inline Prisma select. The profile DTO mapping is also repeated in `account/index.patch.ts`.
+**Disposition:** Conditional and independent of CJ-09. Do not implement the former plan to call the full private viewer and discard its extra work.
 
-**Plan:** Keep `GET /api/account`. Delete `profile.get.ts`; make `auth/me` delegate to the account service; put the profile DTO mapper in `account.service.ts`. Remove the dropped path from `public/openapi.json` and update the client callers.
+**Evidence:** Public and private map viewers duplicate manifest/coordinate parsing and feature projection. `MapService.getViewer` also queries glossary links/entries and computes private matching information that the public path does not need. Public routes resolve slugs/primary maps; private service methods use map IDs.
 
-**User decision and contract clarification (2026-09-13):** Retain `/api/auth/me` as specified in this detailed plan. It is not byte-identical to account reads: preserve its `{ user }` DTO, 401 responses and session clearing for missing/inactive/deleted users. Account GET/PATCH keep their `{ profile }` DTO with explicit fields and ISO dates; never expose internal `passwordHash` or `deletedAt` through mapper reuse.
+**Scope:** Share a small common map projection/parsing function and appropriate SVG retrieval in the existing map domain. Keep private glossary enrichment on the private path. Resolve public slug/primary identity within the authorized campaign before reuse, preserving missing-map/missing-SVG handling. Reuse existing SVG service logic only where doing so avoids duplicated work rather than adding avoidable lookups.
 
-**Acceptance/checks:** Grep app and tests for `/api/account/profile` and `/api/auth/me`; run `test/api/api.user-management-um1.test.ts` and `api.auth-campaign.test.ts`.
+**Boundaries:** Keep `resolvePublicAccess(publicSlug, 'maps')`, explicit public fields, existing feature-property semantics, sorting, bounds/default layers, and public glossary-indicator behavior. Do not introduce public requests to private glossary queries, rest-spread private DTOs, or a generic loader with modes. Sharing code is optional if it fails the complexity test.
 
-## CJ-16 — One transcription job DTO mapper
+**Files:** `server/services/campaign-public-access.service.ts`, `server/services/map.service.ts`, and a small existing-domain utility if warranted. Private/public map routes retain URL and payload contracts.
 
-**Problem/evidence:** `server/api/recordings/[recordingId]/transcriptions.get.ts` and `server/api/transcriptions/[jobId].get.ts` each carry a 25-line mapper plus a private `parseJsonArray`; they already differ (one omits `tagAudioEvents`).
+**Acceptance:** Exact public/private map shapes, no additional glossary data or queries on public reads, slug/primary selection, disabled/missing public access, coordinate fallbacks, feature order/properties, SVG bytes/content type/filename, and missing-map/missing-file errors. Run public-access API coverage, `test/nuxt/map-viewer.test.ts`, and focused map parsing/SVG coverage where existing tests are insufficient.
 
-**Plan:** Add `toTranscriptionJobDto` to `transcription.service.ts` and call it from both routes. Use the superset of fields so the two responses stop drifting.
+## CJ-22 — Decide whether to remove private playback-URL endpoints
 
-**Acceptance/checks:** Typecheck; `test/api/api.session-jobs.test.ts`. Note the added field on the detail endpoint in OpenAPI.
+**Decision required before implementation:** Are browser-facing signed URLs a committed near-term feature? If yes, retain the URL endpoints and implement CJ-12 independently. If no, evaluate removing the present constant-URL lookup and complete CJ-12 with this ticket. A speculative future provider is not, by itself, a reason to preserve the lookup. No roadmap answer is recorded yet.
 
-## CJ-17 — Delete the hand-written n8n validator
+**Evidence:** Private recording/recap playback-URL routes query access and return `/api/artifacts/:artifactId/stream` with `expiresAt: null`; session DTOs already contain `artifactId`. The stream endpoint performs its own authorization. Current URL caches also drive panel text claiming media is playing.
 
-**Problem/evidence:** `server/api/dev/n8n-test.post.ts` holds about 90 lines of manual shape checks that shadow `n8nWebhookPayloadSchema`, which the same file already imports and runs behind a `useZod` flag.
+**Scope if removal is chosen:** Build the artifact stream URL from existing data, delete the two private URL routes and OpenAPI entries, and remove obsolete fetch/cache/reset plumbing. Converge playback/error handling as in CJ-12. Use existing player identity/state for playback indicators; keep only state needed for actual asynchronous player work. A shared URL builder is justified by current reuse, not as a speculative signed-URL framework.
 
-**Plan:** Always validate with the Zod schema and report `error.issues`; delete `validateN8nResponse`, `validateSummaryContent`, `validateSuggestions`, `isRecord`, and the `useZod` option. Dev-only route.
+**Files:** `server/api/recordings/[recordingId]/playback/url/index.get.ts`, `server/api/recaps/[recapId]/playback/url/index.get.ts`, both session playback composables, affected panel/view-model bindings, tests, and OpenAPI. The public recap playback-URL endpoint is outside this scope.
 
-**Implementation scope and deliberate behavior:** Also remove the admin dev-tools checkbox and request flag. Schema validation now rejects lowercase/unsupported statuses, invalid typed nested content/suggestions, and empty-string-only content previously accepted or warned about by the manual path. Remove obsolete `warnings`/`zodValid` success diagnostics and replace manual error details with serialized Zod `error.fields.issues`; document the dev API contract. Keep the original response projection after validation so unknown nested diagnostic fields are not silently stripped. Preserve authentication, the dev-only guard, owner-scoped lookups, and transport-error handling. Verify with local webhook fixtures; do not call a real n8n service during tests.
+**Acceptance:** Both media kinds, repeat playback, replacement/deletion, stale identity, player failures/retry, accurate indicators, preserved global-player lifetime/progress/drawer behavior, and denied/missing media. Authorization failures move from the removed lookup to stream playback; verify understandable failure handling there. Confirm retired-route behavior and no remaining private URL callers; adapt recap API and session playback/deletion tests. Do not run CJ-12 separately first if this removal path is selected.
 
-## CJ-18 — `DocumentService.upsertForSession`
+## Outside the current scope
 
-**Problem/evidence:** The `existing ? updateDocument : createDocument` block appears in `sessions/[sessionId]/documents/import.post.ts`, `transcriptions/[jobId].patch.ts`, `summary.service.ts`, and (as a 409 check) `documents.post.ts`.
-
-**Plan:** One service method taking `(sessionId, type, input)`; callers pass `source` and title. Keep the create route's 409 behavior explicit.
-
-## CJ-19 — Move remaining business logic out of routes
-
-**Problem/evidence:** `campaigns/[campaignId]/glossary/index.post.ts` creates player characters and links them inline (duplicated in `dev/characters/migrate.post.ts`); `calendar/view/index.get.ts` holds the month-window and session-range math; `transcriptions/[jobId].patch.ts` contains the whole apply-transcript and attach-subtitle flows. CLAUDE.md requires thin handlers.
-
-**Plan:** `CharacterSyncService.linkGlossaryPc`, `CalendarConfigService.getMonthView`, `TranscriptionService.applyTranscript` and `attachSubtitles`. Handlers keep validation and permission only.
-
-**Acceptance/checks:** Existing calendar, glossary, and session-jobs API tests; no payload changes.
-
-## CJ-20 — Fold encounter initiative and turn into the encounter PATCH
-
-**Problem/evidence:** `encounters/[encounterId]/initiative/index.patch.ts` and `turn/index.patch.ts` hand-parse `action` strings; `index.patch.ts` already dispatches lifecycle actions; the journal patch shows the intended shape (one `z.discriminatedUnion('action', ...)` and a `switch`).
-
-**Plan:** Extend the encounter patch union with `roll`, `reorder`, `advance`, `rewind`, `set-active`; delete the two routes; update `useEncounterRuntime` and OpenAPI. Replace the manual `Number(rawBody.amount)` checks on the combatant patch with the schema.
-
-**Acceptance/checks:** `test/api/api.encounter-routes.test.ts`, `test/nuxt/encounter-detail-page.test.ts`.
-
-## CJ-21 — Public map viewer reuses `MapService`
-
-**Problem/evidence:** `campaign-public-access.service.ts:836` re-implements map viewer and SVG streaming from `map.service.ts`, including a second `parseMapCoordinates`.
-
-**Plan:** After `resolvePublicAccess(publicSlug, 'maps')`, call `MapService.getViewer` and `getMapSvg` (permission-free after S3) and project through an explicit public allowlist, as in CJ-09. Delete the duplicate parser.
-
-## CJ-22 — Delete the playback-url routes
-
-**Problem/evidence:** `recaps/[recapId]/playback/url` and `recordings/[recordingId]/playback/url` return a constant `/api/artifacts/:artifactId/stream` with `expiresAt: null`; the client already has `artifactId`.
-
-**Plan:** Build the URL in `useSessionRecordings` and `useSessionRecap`; delete both routes and their OpenAPI entries. Keep one client helper so signed URLs can be introduced later without touching callers.
-
-## CJ-23 — Delete the unused `campaign.delete` permission
-
-**Problem/evidence:** `server/utils/campaign-auth.ts` defines `campaign.delete` with no route or service using it; no campaign delete endpoint exists.
-
-**Plan:** Remove the permission entry. If a delete endpoint is wanted later, add both together.
-
-**Implementation clarification:** The permission was also declared in the calendar/settings page unions and shared campaign workflow type. Remove those stale type members too. Campaign/session workspace responses serialize the registry-derived permission array, so document the removed value in OpenAPI and verify the remaining owner permissions in both responses alongside existing collaborator/viewer RBAC coverage.
-
-## Investigated but not recommended
-
-- **Storage interface/factory and Prisma generated-client shim:** intentional architectural boundaries, including planned storage providers; thinness alone does not justify removal.
-- **Session context, feature composables, retained data, editor drafts, confirmation wrappers:** enforce actual lifetime/recovery/accessibility behavior. Few callers are not evidence of useless abstraction. The separate problem is page size: twelve pages exceed 600 lines (documents 1827, characters 1319, dungeon detail 1135) while 18 composables have one caller each. Split the largest pages into components first; extract composables only when a second page needs them. Not ticketed here because it is UI work outside this API-focused plan.
-- **Encounter summary/events/combatants GET endpoints:** retained for now, but the "unknown external consumers" argument is weak: the app is the only client and `public/openapi.json` is hand-maintained. Reduce duplicate service queries under CJ-11 and revisit consolidation under CJ-20.
-- **Public journal/private journal unification:** distinct visibility and holder/discovery/archive fields make broad reuse riskier than the validated quest opportunity. No generic public/private repository layer is proposed.
-- **Map barrels, domain-specific character sync, test-server lifecycle helpers:** no sufficiently strong net simplification established. Map reimport already reuses its create path where appropriate.
-- **Theme/style overhaul:** user precedence is recorded, but this complexity investigation did not establish a scoped theme rewrite ticket.
-
-## Independent validation decisions
-
-All 14 listed tickets were accepted after source/caller checks, with narrowed scope where needed. Validation specifically rejected rest-spreading private quest DTOs into public output, calling the dungeon duplication a demonstrated visible leak, deleting useful request policy helpers wholesale, and describing range-helper reuse as behavior-neutral. It required OpenAPI correction for streaming and explicit acknowledgement of the campaign selector's empty-list behavior change. The original 14 tickets were validated before S1/S3/S4/S5 landed; CJ-15 through CJ-23 were added on 2026-09-13 from a second sweep and have not been through the same independent validation. The S1/S3/S4/S5 work passed `yarn typecheck`, `yarn lint`, and all three Vitest projects (82 unit, 133 nuxt, 74 api) at the time of writing.
+- Generic public/private unification for glossary, milestones, or journal. Distinct queries and visibility rules require their own justification.
+- Removing encounter read endpoints merely to reduce route count. Schema cleanup in CJ-20 does not authorize this.
+- Removing storage interfaces/factories or the Prisma generated-client boundary because they are thin.
+- Replacing session ownership, retained resources, editor drafts, confirmation components, or global player state with generic frameworks.
+- Broad page/component splitting, theme redesign, and unrelated cleanup. Revisit only with a concrete problem and bounded benefit.
