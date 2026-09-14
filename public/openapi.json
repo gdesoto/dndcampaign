@@ -879,7 +879,7 @@
           "artifacts"
         ],
         "summary": "GET /api/artifacts/{artifactId}/stream",
-        "description": "Auto-documented from server route `artifacts/[artifactId]/stream.get.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Streams a private artifact after read access is verified. A storage adapter with range support serves one valid `Range` request as 206; otherwise the complete artifact is returned. Malformed or multiple ranges deliberately fall back to 200. Starts beyond the artifact, reversed ranges, zero-length suffixes, and unsafe integer values return 416. Oversized valid ends are clamped to the artifact size.",
         "operationId": "get_api_artifacts_artifactId_stream",
         "parameters": [
           {
@@ -891,11 +891,69 @@
               "type": "string"
             },
             "example": "c8b2e6f8-3f9b-4b06-a4a0-87a0ef0b7a15"
+          },
+          {
+            "name": "Range",
+            "in": "header",
+            "required": false,
+            "description": "One byte range for media seeking, for example `bytes=0-1023` or `bytes=-1024`. It is ignored when storage does not support range reads.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "bytes=0-1023"
           }
         ],
         "responses": {
           "200": {
-            "description": "Binary stream response.",
+            "description": "Complete binary artifact with the artifact's stored MIME type. This is also returned for missing, malformed, or multiple Range values, and when storage cannot range-read.",
+            "headers": {
+              "Accept-Ranges": {
+                "description": "Present with `bytes` when the storage adapter supports range reads.",
+                "schema": {
+                  "type": "string",
+                  "example": "bytes"
+                }
+              },
+              "Content-Length": {
+                "description": "Present when the storage adapter reports the complete artifact size.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "206": {
+            "description": "Requested single byte range as a binary artifact.",
+            "headers": {
+              "Accept-Ranges": {
+                "description": "Range support indicator.",
+                "schema": {
+                  "type": "string",
+                  "example": "bytes"
+                }
+              },
+              "Content-Range": {
+                "description": "The byte interval served and the full artifact size.",
+                "schema": {
+                  "type": "string",
+                  "example": "bytes 0-1023/4096"
+                }
+              },
+              "Content-Length": {
+                "description": "The number of bytes in the partial response.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/octet-stream": {
                 "schema": {
@@ -916,6 +974,32 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "416": {
+            "description": "The requested byte range cannot be satisfied. The response is the standard JSON API error envelope, not an artifact stream.",
+            "headers": {
+              "Content-Range": {
+                "description": "The complete artifact size, expressed as an unsatisfied byte range.",
+                "schema": {
+                  "type": "string",
+                  "example": "bytes */4096"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                },
+                "example": {
+                  "data": null,
+                  "error": {
+                    "code": "RANGE_NOT_SATISFIABLE",
+                    "message": "Requested range is not satisfiable."
+                  }
+                }
+              }
+            }
           },
           "500": {
             "$ref": "#/components/responses/InternalError"
@@ -9867,7 +9951,7 @@
           "public"
         ],
         "summary": "GET /api/public/campaigns/{publicSlug}/recaps/{recapId}/stream",
-        "description": "Streams a shared recap. Supports single byte-range requests for seeking and playback resume when supported by storage. Public campaign and recap access are checked before reading media.",
+        "description": "Streams a shared recap after public campaign and recap access are checked. Storage with range support serves one valid byte range for seeking and playback resume. Malformed or multiple ranges deliberately fall back to the complete 200 response; starts beyond the artifact, reversed ranges, zero-length suffixes, and unsafe integer values return 416. Oversized valid ends are clamped to the artifact size.",
         "operationId": "get_api_public_campaigns_publicSlug_recaps_recapId_stream",
         "parameters": [
           {
@@ -9894,6 +9978,7 @@
             "name": "Range",
             "in": "header",
             "required": false,
+            "description": "One byte range, for example `bytes=0-1023` or `bytes=-1024`. It is ignored when storage does not support range reads.",
             "schema": {
               "type": "string"
             },
@@ -9924,6 +10009,12 @@
                 "schema": {
                   "type": "string"
                 }
+              },
+              "Content-Length": {
+                "description": "The number of bytes in the partial response.",
+                "schema": {
+                  "type": "integer"
+                }
               }
             },
             "content": {
@@ -9948,7 +10039,7 @@
             "$ref": "#/components/responses/NotFound"
           },
           "416": {
-            "description": "The byte range is outside the media file.",
+            "description": "The requested byte range cannot be satisfied. Public recap streaming returns an empty response body for this status.",
             "headers": {
               "Content-Range": {
                 "schema": {

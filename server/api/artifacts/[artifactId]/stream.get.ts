@@ -1,7 +1,8 @@
 import { getRequestHeader, sendStream, setHeader, setResponseStatus } from 'h3'
 import { getStorageAdapter } from '#server/services/storage/storage.factory'
 import { requireArtifactReadAccess } from '#server/utils/artifact-auth'
-import { routeParams } from '#server/utils/http'
+import { getMediaStream } from '#server/utils/media-stream'
+import { apiError, routeParams } from '#server/utils/http'
 
 export default defineEventHandler(async (event) => {
   const { artifactId } = routeParams(event, 'artifactId')
@@ -9,51 +10,19 @@ export default defineEventHandler(async (event) => {
   const artifact = await requireArtifactReadAccess(event, artifactId)
 
   const adapter = getStorageAdapter()
-  const rangeHeader = String(getRequestHeader(event, 'range') || '')
-  const supportsRange = typeof adapter.getObjectRange === 'function'
-  const supportsInfo = typeof adapter.getObjectInfo === 'function'
+  const result = await getMediaStream(adapter, artifact.storageKey, getRequestHeader(event, 'range'))
 
-  if (rangeHeader && supportsRange && supportsInfo) {
-    const match = rangeHeader.match(/bytes=(\d*)-(\d*)/)
-    if (match) {
-      const startRaw = match[1]
-      const endRaw = match[2]
-      const objectInfo = await adapter.getObjectInfo!(artifact.storageKey)
-      const size = objectInfo.size
-
-      if (size != null) {
-        let start = startRaw ? Number(startRaw) : 0
-        let end = endRaw ? Number(endRaw) : size - 1
-
-        if (!startRaw && endRaw) {
-          const suffixLength = Number(endRaw)
-          start = Math.max(size - suffixLength, 0)
-          end = size - 1
-        }
-
-        if (Number.isFinite(start) && Number.isFinite(end) && start <= end) {
-          const { stream } = await adapter.getObjectRange!(artifact.storageKey, {
-            start,
-            end,
-          })
-          setResponseStatus(event, 206)
-          setHeader(event, 'Content-Type', artifact.mimeType)
-          setHeader(event, 'Accept-Ranges', 'bytes')
-          setHeader(event, 'Content-Range', `bytes ${start}-${end}/${size}`)
-          setHeader(event, 'Content-Length', end - start + 1)
-          return sendStream(event, stream)
-        }
-      }
-    }
+  for (const [name, value] of Object.entries(result.headers)) {
+    setHeader(event, name, value)
   }
 
-  const { stream, size } = await adapter.getObject(artifact.storageKey)
+  if (result.statusCode === 416) {
+    throw apiError(416, 'RANGE_NOT_SATISFIABLE', 'Requested range is not satisfiable.')
+  }
+
+  setResponseStatus(event, result.statusCode)
   setHeader(event, 'Content-Type', artifact.mimeType)
-  setHeader(event, 'Accept-Ranges', 'bytes')
-  if (size != null) {
-    setHeader(event, 'Content-Length', size)
-  }
-  return sendStream(event, stream)
+  return result.body ? sendStream(event, result.body) : ''
 })
 
 

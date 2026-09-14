@@ -65,6 +65,18 @@ All seven branches were merged locally into `master` in the requested order; fin
 - Public URLs/payloads, storage interface/factory, map `putObject` calls, and upload handlers are unchanged. No migration or external integration calls. Artifact-row persistence failure still leaves the stored object; this ticket does not add rollback.
 - Validation: agent-coordinated `yarn lint` and `yarn typecheck` passed; focused service coverage passed 7/7, recap API regression passed 8/8. Manager's integrated `yarn test` passed 75 files / 309 tests (115.17s command duration); log: `storage/cj-03-test.log` (local, ignored). `git diff --check` passed. Manager's production `yarn build` passed with exit 0 in 473.92s (7m54s), including Nitro packaging; log: `storage/cj-03-build.log` (local, ignored). Non-blocking dependency bundler/deprecation warnings remain.
 
+## CJ-01 follow-up implementation (2026-09-13)
+
+**Complete and manager-validated.** Implemented in the working tree from `9403b91` by three GPT-5.6 Terra agents owning route/OpenAPI, range helper/unit tests, and API regressions. Changes remain uncommitted for review.
+
+- `server/api/artifacts/[artifactId]/stream.get.ts` delegates to `getMediaStream`; authorization remains first, successful streams retain the artifact MIME type, and 416 throws `apiError` after applying range headers so the central error handler produces the JSON envelope.
+- `server/utils/media-stream.ts` rejects unsafe raw integers before clamping while retaining computed-bound safety checks. This also corrects unsafe end/suffix handling for public recap streams; their existing empty 416 response remains unchanged.
+- Intentional private-route changes: oversized safe ends clamp to file size; malformed/multiple ranges fall back to full 200; out-of-bounds starts, reversed ranges, zero suffixes, and unsafe integers return 416. Adapters without both range capabilities no longer advertise range support. URLs, authorization, storage interfaces, and client playback code remain unchanged.
+- `public/openapi.json` documents binary 200/206, range headers, private JSON 416, public empty 416, and the deliberate parsing changes. `test/unit/media-stream.test.ts` covers parsing and adapter capabilities; `test/api/api.recap-video.test.ts` covers private bytes/MIME/headers/errors, denied access before range handling, and public regressions.
+- Manager reviewed all code and tests and requested retained safety checks, explicit full-response headers, and private/public unsafe-end/suffix assertions. Agents incorporated these corrections. No migration, UI change, or external integration call.
+- Agent validation: `yarn lint`, `yarn typecheck` (exit 0, 34.70s), OpenAPI parse/reference check, and `git diff --check` passed. Focused range tests passed 18/18; recap API tests passed 25/25 (63.35s command duration).
+- Manager validation: integrated `yarn test` passed 75 files / 336 tests (97.31s command duration); production `yarn build` passed with exit 0 in 397.09s (6m37s), including Nitro packaging. Logs: `storage/cj-01-test.log` and `storage/cj-01-build.log` (local, ignored). Non-blocking dependency bundler/deprecation warnings remain. Final diff review and `git diff --check` passed; application code is 25 net lines smaller.
+
 ## Prioritized findings
 
 Scary: **1** mechanical/local; **2** bounded behavior; **3** several flows or query/route ownership; **4** broad compatibility/data risk; **5** architectural migration. Bang for buck: **5** strongest benefit relative to effort, **1** weakest. These are engineering judgments, not measured scores. Effort: XS under half a day, S approximately half–one day, M approximately one–two days, including focused verification.

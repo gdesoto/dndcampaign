@@ -10,8 +10,14 @@ export async function getMediaStream(adapter: StorageAdapter, storageKey: string
     const match = rangeHeader?.match(/^bytes=(\d*)-(\d*)$/)
     if (match && (match[1] || match[2])) {
       const { size } = await adapter.getObjectInfo(storageKey)
-      const start = match[1] ? Number(match[1]) : Math.max(0, size - Number(match[2]))
-      const end = match[1] && match[2] ? Math.min(Number(match[2]), size - 1) : size - 1
+      const requestedStart = match[1] ? Number(match[1]) : undefined
+      const requestedEnd = match[2] ? Number(match[2]) : undefined
+      if ((requestedStart != null && !Number.isSafeInteger(requestedStart))
+        || (requestedEnd != null && !Number.isSafeInteger(requestedEnd))) {
+        return { statusCode: 416, headers: { ...headers, 'Content-Range': `bytes */${size}` }, body: null }
+      }
+      const start = requestedStart != null ? requestedStart : Math.max(0, size - requestedEnd!)
+      const end = requestedStart != null && requestedEnd != null ? Math.min(requestedEnd, size - 1) : size - 1
       if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start >= size || start > end) {
         return { statusCode: 416, headers: { ...headers, 'Content-Range': `bytes */${size}` }, body: null }
       }

@@ -10,6 +10,8 @@ let userId = ''
 let campaignId = ''
 let sessionId = ''
 let cookie = ''
+let outsiderId = ''
+let outsiderCookie = ''
 let recapId = ''
 let publicSlug = ''
 const recapIds: Record<string, string> = {}
@@ -35,12 +37,23 @@ describe('audio and video session recaps', () => {
     campaignId = campaign.id
     const session = await prisma.session.create({ data: { campaignId, title: 'Video session' } })
     sessionId = session.id
+    const outsider = await prisma.user.create({ data: {
+      email: 'recap-video-outsider@example.com', name: 'Recap Outsider',
+      passwordHash: await new Hash(new Scrypt()).make(password),
+    } })
+    outsiderId = outsider.id
     const response = await fetch(`${baseUrl}/api/auth/login`, {
       method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.91' },
       body: JSON.stringify({ email: user.email, password }),
     })
     expect(response.status).toBe(200)
     cookie = response.headers.get('set-cookie') || ''
+    const outsiderLogin = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.92' },
+      body: JSON.stringify({ email: outsider.email, password }),
+    })
+    expect(outsiderLogin.status).toBe(200)
+    outsiderCookie = outsiderLogin.headers.get('set-cookie') || ''
   })
 
   afterAll(async () => {
@@ -49,6 +62,7 @@ describe('audio and video session recaps', () => {
     }
     if (campaignId) await prisma.campaign.delete({ where: { id: campaignId } })
     if (userId) await prisma.user.delete({ where: { id: userId } })
+    if (outsiderId) await prisma.user.delete({ where: { id: outsiderId } })
     await prisma.$disconnect()
   })
 
@@ -105,11 +119,93 @@ describe('audio and video session recaps', () => {
     expect(await response.text()).toBe('recap media bytes')
   })
 
-  it('rejects an out-of-bounds public recap range', async () => {
-    const response = await fetch(`${baseUrl}/api/public/campaigns/${publicSlug}/recaps/${recapIds.VIDEO}/stream`, { headers: { range: 'bytes=999-' } })
+  it('streams the full private recap with its MIME type and bytes', async () => {
+    const recap = await prisma.recapRecording.findUniqueOrThrow({ where: { id: recapIds.VIDEO } })
+    const response = await fetch(`${baseUrl}/api/artifacts/${recap.artifactId}/stream`, { headers: { cookie } })
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toContain('video/mp4')
+    expect(response.headers.get('accept-ranges')).toBe('bytes')
+    expect(response.headers.get('content-length')).toBe('17')
+    expect(await response.text()).toBe('recap media bytes')
+  })
+
+  it.each([
+    ['bytes=6-10', 'bytes 6-10/17', '5', 'media'],
+    ['bytes=-5', 'bytes 12-16/17', '5', 'bytes'],
+    ['bytes=12-999', 'bytes 12-16/17', '5', 'bytes'],
+  ])('streams and clamps private range %s', async (range, contentRange, contentLength, body) => {
+    const recap = await prisma.recapRecording.findUniqueOrThrow({ where: { id: recapIds.VIDEO } })
+    const response = await fetch(`${baseUrl}/api/artifacts/${recap.artifactId}/stream`, {
+      headers: { cookie, range },
+    })
+
+    expect(response.status).toBe(206)
+    expect(response.headers.get('content-type')).toContain('video/mp4')
+    expect(response.headers.get('accept-ranges')).toBe('bytes')
+    expect(response.headers.get('content-range')).toBe(contentRange)
+    expect(response.headers.get('content-length')).toBe(contentLength)
+    expect(await response.text()).toBe(body)
+  })
+
+  it.each(['bytes=6-10,12-16', 'not-a-range'])('falls back to full private streaming for malformed range %s', async (range) => {
+    const recap = await prisma.recapRecording.findUniqueOrThrow({ where: { id: recapIds.VIDEO } })
+    const response = await fetch(`${baseUrl}/api/artifacts/${recap.artifactId}/stream`, {
+      headers: { cookie, range },
+    })
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-length')).toBe('17')
+    expect(await response.text()).toBe('recap media bytes')
+  })
+
+  it.each([
+    'bytes=999-',
+    'bytes=10-9',
+    'bytes=-0',
+    'bytes=9007199254740992-',
+    'bytes=0-9007199254740992',
+    'bytes=-9007199254740992',
+  ])('rejects unsatisfiable private range %s with the API envelope', async (range) => {
+    const recap = await prisma.recapRecording.findUniqueOrThrow({ where: { id: recapIds.VIDEO } })
+    const response = await fetch(`${baseUrl}/api/artifacts/${recap.artifactId}/stream`, {
+      headers: { cookie, range },
+    })
+
     expect(response.status).toBe(416)
     expect(response.headers.get('content-range')).toBe('bytes */17')
-    await response.text()
+    expect(response.headers.get('content-type')).toContain('application/json')
+    expect(await response.json()).toEqual({
+      data: null,
+      error: { code: 'RANGE_NOT_SATISFIABLE', message: 'Requested range is not satisfiable.' },
+    })
+  })
+
+  it('rejects private artifact streaming before attempting an invalid range for an outsider', async () => {
+    const recap = await prisma.recapRecording.findUniqueOrThrow({ where: { id: recapIds.VIDEO } })
+    const response = await fetch(`${baseUrl}/api/artifacts/${recap.artifactId}/stream`, {
+      headers: { cookie: outsiderCookie, range: 'bytes=999-' },
+    })
+
+    expect(response.status).toBe(403)
+    expect(response.headers.get('content-range')).toBeNull()
+    expect(await response.json()).toEqual({
+      data: null,
+      error: { code: 'FORBIDDEN', message: 'Artifact access is denied' },
+    })
+  })
+
+  it.each([
+    'bytes=999-',
+    'bytes=9007199254740992-',
+    'bytes=0-9007199254740992',
+    'bytes=-9007199254740992',
+    'bytes=-0',
+  ])('rejects unsafe public recap range %s', async (range) => {
+    const response = await fetch(`${baseUrl}/api/public/campaigns/${publicSlug}/recaps/${recapIds.VIDEO}/stream`, { headers: { range } })
+    expect(response.status).toBe(416)
+    expect(response.headers.get('content-range')).toBe('bytes */17')
+    expect(await response.text()).toBe('')
   })
 
   it.each(['video/webm', 'video/ogg'])('supports uploading and streaming %s recaps', async (mimeType) => {
