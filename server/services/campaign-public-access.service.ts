@@ -1,6 +1,6 @@
 import { getMediaStream } from '#server/utils/media-stream'
 import { randomBytes } from 'node:crypto'
-import { Prisma } from '#server/db/prisma-client'
+import { Prisma, type CampaignPublicAccess } from '#server/db/prisma-client'
 import { prisma } from '#server/db/prisma'
 import { defaultMapLayerTypes, type MapFeatureType } from '#shared/schemas/map'
 import { getStorageAdapter } from '#server/services/storage/storage.factory'
@@ -24,21 +24,22 @@ import { apiError } from '#server/utils/http'
 const PUBLIC_SLUG_BYTE_LENGTH = 16
 const activityLogService = new ActivityLogService()
 
-type CampaignPublicAccessRecord = {
-  campaignId: string
-  isEnabled: boolean
-  isListed: boolean
-  publicSlug: string
-  showCharacters: boolean
-  showRecaps: boolean
-  showSessions: boolean
-  showGlossary: boolean
-  showQuests: boolean
-  showMilestones: boolean
-  showMaps: boolean
-  showJournal: boolean
-  updatedAt: Date
-}
+type CampaignPublicAccessRecord = Pick<
+  CampaignPublicAccess,
+  | 'campaignId'
+  | 'isEnabled'
+  | 'isListed'
+  | 'publicSlug'
+  | 'showCharacters'
+  | 'showRecaps'
+  | 'showSessions'
+  | 'showGlossary'
+  | 'showQuests'
+  | 'showMilestones'
+  | 'showMaps'
+  | 'showJournal'
+  | 'updatedAt'
+>
 
 type PublicResolverResult = {
   campaignId: string

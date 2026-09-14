@@ -25,6 +25,32 @@ let privateRequestId = ''
 let publicRequestId = ''
 let pendingEditRequestId = ''
 
+const listItemKeys = [
+  'canCancel',
+  'canEdit',
+  'canModerate',
+  'canVote',
+  'campaignId',
+  'createdAt',
+  'createdByName',
+  'createdByUserId',
+  'decidedAt',
+  'decidedByName',
+  'decidedByUserId',
+  'decisionNote',
+  'description',
+  'id',
+  'status',
+  'title',
+  'type',
+  'updatedAt',
+  'viewerHasVoted',
+  'visibility',
+  'voteCount',
+].sort()
+
+const detailOnlyKeys = ['createdBy', 'decidedBy']
+
 const loginAndGetCookie = async (email: string) => {
   const response = await fetch(`${baseUrl}/api/auth/login`, {
     method: 'POST',
@@ -120,6 +146,7 @@ describe('campaign requests API routes', () => {
     expect(createPrivate.status).toBe(200)
     const createPrivatePayload = await createPrivate.json()
     privateRequestId = createPrivatePayload.data.id
+    expect(createPrivatePayload.data.canVote).toBe(false)
 
     const playerList = await fetch(`${baseUrl}/api/campaigns/${campaignId}/requests?mine=true`, {
       headers: { cookie: cookies.player },
@@ -151,6 +178,13 @@ describe('campaign requests API routes', () => {
       headers: { cookie: cookies.dm },
     })
     expect(dmDetail.status).toBe(200)
+    const dmDetailPayload = await dmDetail.json()
+    expect(Object.keys(dmDetailPayload.data).sort()).toEqual([...listItemKeys, ...detailOnlyKeys].sort())
+    expect(dmDetailPayload.data.createdBy).toEqual({
+      userId: userIds.player,
+      name: users.player.name,
+    })
+    expect(dmDetailPayload.data.decidedBy).toBeNull()
 
     const outsiderList = await fetch(`${baseUrl}/api/campaigns/${campaignId}/requests`, {
       headers: { cookie: cookies.outsider },
@@ -200,6 +234,27 @@ describe('campaign requests API routes', () => {
     const dmVotePayload = await dmVote.json()
     expect(dmVotePayload.data.voteCount).toBe(2)
 
+    const playerDetailBeforeRemoval = await fetch(
+      `${baseUrl}/api/campaigns/${campaignId}/requests/${publicRequestId}`,
+      { headers: { cookie: cookies.player } },
+    )
+    expect(playerDetailBeforeRemoval.status).toBe(200)
+    const playerDetailBeforeRemovalPayload = await playerDetailBeforeRemoval.json()
+    expect(playerDetailBeforeRemovalPayload.data.voteCount).toBe(2)
+    expect(playerDetailBeforeRemovalPayload.data.viewerHasVoted).toBe(true)
+
+    const playerListBeforeRemoval = await fetch(`${baseUrl}/api/campaigns/${campaignId}/requests`, {
+      headers: { cookie: cookies.player },
+    })
+    expect(playerListBeforeRemoval.status).toBe(200)
+    const playerListBeforeRemovalPayload = await playerListBeforeRemoval.json()
+    const playerListItem = playerListBeforeRemovalPayload.data.items.find(
+      (entry: { id: string }) => entry.id === publicRequestId,
+    )
+    expect(Object.keys(playerListItem).sort()).toEqual(listItemKeys)
+    const { createdBy, decidedBy, ...detailListFields } = playerDetailBeforeRemovalPayload.data
+    expect(detailListFields).toEqual(playerListItem)
+
     const removePlayerVote = await fetch(`${baseUrl}/api/campaigns/${campaignId}/requests/${publicRequestId}/votes/mine`, {
       method: 'DELETE',
       headers: { cookie: cookies.player },
@@ -207,6 +262,25 @@ describe('campaign requests API routes', () => {
     expect(removePlayerVote.status).toBe(200)
     const removePlayerVotePayload = await removePlayerVote.json()
     expect(removePlayerVotePayload.data.voteCount).toBe(1)
+    expect(removePlayerVotePayload.data.viewerHasVoted).toBe(false)
+
+    const repeatRemovePlayerVote = await fetch(`${baseUrl}/api/campaigns/${campaignId}/requests/${publicRequestId}/votes/mine`, {
+      method: 'DELETE',
+      headers: { cookie: cookies.player },
+    })
+    expect(repeatRemovePlayerVote.status).toBe(200)
+    const repeatRemovePlayerVotePayload = await repeatRemovePlayerVote.json()
+    expect(repeatRemovePlayerVotePayload.data.voteCount).toBe(1)
+    expect(repeatRemovePlayerVotePayload.data.viewerHasVoted).toBe(false)
+
+    const dmDetailAfterPlayerRemoval = await fetch(
+      `${baseUrl}/api/campaigns/${campaignId}/requests/${publicRequestId}`,
+      { headers: { cookie: cookies.dm } },
+    )
+    expect(dmDetailAfterPlayerRemoval.status).toBe(200)
+    const dmDetailAfterPlayerRemovalPayload = await dmDetailAfterPlayerRemoval.json()
+    expect(dmDetailAfterPlayerRemovalPayload.data.voteCount).toBe(1)
+    expect(dmDetailAfterPlayerRemovalPayload.data.viewerHasVoted).toBe(true)
 
     const playerDecisionAttempt = await fetch(`${baseUrl}/api/campaigns/${campaignId}/requests/${publicRequestId}`, {
       method: 'PATCH',
@@ -244,6 +318,12 @@ describe('campaign requests API routes', () => {
       headers: { cookie: cookies.viewer },
     })
     expect(voteAfterApproval.status).toBe(409)
+
+    const unvoteAfterApproval = await fetch(`${baseUrl}/api/campaigns/${campaignId}/requests/${publicRequestId}/votes/mine`, {
+      method: 'DELETE',
+      headers: { cookie: cookies.dm },
+    })
+    expect(unvoteAfterApproval.status).toBe(409)
 
     const createPendingForEdit = await fetch(`${baseUrl}/api/campaigns/${campaignId}/requests`, {
       method: 'POST',
@@ -299,6 +379,26 @@ describe('campaign requests API routes', () => {
     expect(creatorCancel.status).toBe(200)
     const creatorCancelPayload = await creatorCancel.json()
     expect(creatorCancelPayload.data.status).toBe('CANCELED')
+    expect(creatorCancelPayload.data.canEdit).toBe(false)
+    expect(creatorCancelPayload.data.canCancel).toBe(false)
+
+    for (const body of [
+      { title: 'Attempt to edit canceled request' },
+      { action: 'cancel' },
+    ]) {
+      const retryCanceledCreatorAction = await fetch(
+        `${baseUrl}/api/campaigns/${campaignId}/requests/${pendingEditRequestId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            cookie: cookies.player,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        },
+      )
+      expect(retryCanceledCreatorAction.status).toBe(403)
+    }
 
     const dmDecisionCanceled = await fetch(`${baseUrl}/api/campaigns/${campaignId}/requests/${pendingEditRequestId}`, {
       method: 'PATCH',

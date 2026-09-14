@@ -29,8 +29,5 @@ export const isVisibleToAccess = (
 export const canVoteOnRequest = (request: CampaignRequestAccessInput) =>
   request.visibility === 'PUBLIC' && isPendingRequest(request.status)
 
-export const canEditRequest = (userId: string, request: CampaignRequestAccessInput) =>
-  request.createdByUserId === userId && isPendingRequest(request.status)
-
-export const canCancelRequest = (userId: string, request: CampaignRequestAccessInput) =>
+export const isCreatorOfPendingRequest = (userId: string, request: CampaignRequestAccessInput) =>
   request.createdByUserId === userId && isPendingRequest(request.status)

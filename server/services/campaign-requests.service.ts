@@ -1,10 +1,9 @@
 import { prisma } from '#server/db/prisma'
-import type { CampaignRequestStatus } from '#server/db/prisma-client'
+import type { Prisma } from '#server/db/prisma-client'
 import { ActivityLogService } from '#server/services/activity-log.service'
 import {
-  canCancelRequest,
-  canEditRequest,
   canVoteOnRequest,
+  isCreatorOfPendingRequest,
   isModeratableByAccess,
   isVisibleToAccess,
 } from '#server/services/campaign-requests.helpers'
@@ -22,7 +21,6 @@ import type {
   CampaignRequestDetail,
   CampaignRequestListItem,
   CampaignRequestListResponse,
-  CampaignRequestStatus as RequestStatus,
 } from '#shared/types/campaign-requests'
 import {
   hasCampaignDmAccess,
@@ -32,47 +30,11 @@ import { apiError } from '#server/utils/http'
 
 const activityLogService = new ActivityLogService()
 
-type RequestWithRelations = {
-  id: string
-  campaignId: string
-  createdByUserId: string
-  type: 'ITEM' | 'PLOT_POINT'
-  visibility: 'PRIVATE' | 'PUBLIC'
-  title: string
-  description: string
-  status: CampaignRequestStatus
-  decisionNote: string | null
-  decidedByUserId: string | null
-  decidedAt: Date | null
-  createdAt: Date
-  updatedAt: Date
-  createdByUser: {
-    id: string
-    name: string
-  }
-  decidedByUser: {
-    id: string
-    name: string
-  } | null
-  votes: Array<{ userId: string }>
-  _count: {
-    votes: number
-  }
-}
-
-const toStatus = (status: CampaignRequestStatus): RequestStatus => status
-
 const toRequestListItem = (
-  request: RequestWithRelations,
+  request: CampaignRequestWithViewerRelations,
   viewerUserId: string,
   access: ResolvedCampaignAccess,
 ): CampaignRequestListItem => {
-  const requestForChecks = {
-    createdByUserId: request.createdByUserId,
-    visibility: request.visibility,
-    status: toStatus(request.status),
-  }
-
   return {
     id: request.id,
     campaignId: request.campaignId,
@@ -82,7 +44,7 @@ const toRequestListItem = (
     visibility: request.visibility,
     title: request.title,
     description: request.description,
-    status: toStatus(request.status),
+    status: request.status,
     decisionNote: request.decisionNote,
     decidedByUserId: request.decidedByUserId,
     decidedByName: request.decidedByUser?.name || null,
@@ -91,15 +53,15 @@ const toRequestListItem = (
     updatedAt: request.updatedAt.toISOString(),
     voteCount: request._count.votes,
     viewerHasVoted: request.votes.length > 0,
-    canModerate: isModeratableByAccess(access, toStatus(request.status)),
-    canEdit: canEditRequest(viewerUserId, requestForChecks),
-    canCancel: canCancelRequest(viewerUserId, requestForChecks),
-    canVote: canVoteOnRequest(requestForChecks),
+    canModerate: isModeratableByAccess(access, request.status),
+    canEdit: isCreatorOfPendingRequest(viewerUserId, request),
+    canCancel: isCreatorOfPendingRequest(viewerUserId, request),
+    canVote: canVoteOnRequest(request),
   }
 }
 
 const toRequestDetail = (
-  request: RequestWithRelations,
+  request: CampaignRequestWithViewerRelations,
   viewerUserId: string,
   access: ResolvedCampaignAccess,
 ): CampaignRequestDetail => ({
@@ -142,9 +104,9 @@ const requestSelect = {
       name: true,
     },
   },
-} as const
+} as const satisfies Prisma.CampaignRequestSelect
 
-const requestIncludeForViewer = (viewerUserId: string) => ({
+const requestSelectForViewer = (viewerUserId: string) => ({
   ...requestSelect,
   votes: {
     where: { userId: viewerUserId },
@@ -154,7 +116,11 @@ const requestIncludeForViewer = (viewerUserId: string) => ({
   _count: {
     select: { votes: true },
   },
-})
+}) as const satisfies Prisma.CampaignRequestSelect
+
+type CampaignRequestWithViewerRelations = Prisma.CampaignRequestGetPayload<{
+  select: ReturnType<typeof requestSelectForViewer>
+}>
 
 const getPagination = (query: CampaignRequestListQueryInput) => {
   const page = query.page || campaignRequestListDefaultPage
@@ -173,29 +139,24 @@ export class CampaignRequestsService {
     requestId: string,
     userId: string,
     access: ResolvedCampaignAccess,
-  ): Promise<RequestWithRelations> {
+  ): Promise<CampaignRequestWithViewerRelations> {
     const request = await prisma.campaignRequest.findFirst({
       where: {
         id: requestId,
         campaignId,
       },
-      select: requestIncludeForViewer(userId),
+      select: requestSelectForViewer(userId),
     })
 
     if (!request) {
       throw apiError(404, 'NOT_FOUND', 'Request not found')
     }
 
-    if (
-      !isVisibleToAccess(access, userId, {
-        createdByUserId: request.createdByUserId,
-        visibility: request.visibility,
-      })
-    ) {
+    if (!isVisibleToAccess(access, userId, request)) {
       throw apiError(404, 'NOT_FOUND', 'Request not found')
     }
 
-    return request as RequestWithRelations
+    return request
   }
 
   async createRequest(
@@ -214,7 +175,7 @@ export class CampaignRequestsService {
         title: input.title,
         description: input.description,
       },
-      select: requestIncludeForViewer(userId),
+      select: requestSelectForViewer(userId),
     })
 
     await activityLogService.log({
@@ -232,7 +193,7 @@ export class CampaignRequestsService {
       },
     })
 
-    return toRequestDetail(created as RequestWithRelations, userId, access)
+    return toRequestDetail(created, userId, access)
   }
 
   async listRequests(
@@ -277,11 +238,11 @@ export class CampaignRequestsService {
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip: pagination.skip,
         take: pagination.take,
-        select: requestIncludeForViewer(userId),
+        select: requestSelectForViewer(userId),
       }),
     ])
 
-    const items = rows.map((row) => toRequestListItem(row as RequestWithRelations, userId, access))
+    const items = rows.map((row) => toRequestListItem(row, userId, access))
     return {
         items,
         pagination: {
@@ -315,11 +276,7 @@ export class CampaignRequestsService {
 
     const existing = await this.getAuthorizedRequest(campaignId, requestId, userId, access)
 
-    if (!canEditRequest(userId, {
-      createdByUserId: existing.createdByUserId,
-      visibility: existing.visibility,
-      status: toStatus(existing.status),
-    })) {
+    if (!isCreatorOfPendingRequest(userId, existing)) {
       throw apiError(403, 'FORBIDDEN', 'Only the creator can edit a pending request')
     }
 
@@ -331,7 +288,7 @@ export class CampaignRequestsService {
         ...(input.title !== undefined ? { title: input.title } : {}),
         ...(input.description !== undefined ? { description: input.description } : {}),
       },
-      select: requestIncludeForViewer(userId),
+      select: requestSelectForViewer(userId),
     })
 
     await activityLogService.log({
@@ -344,7 +301,7 @@ export class CampaignRequestsService {
       summary: `Updated campaign request "${updated.title}".`,
     })
 
-    return toRequestDetail(updated as RequestWithRelations, userId, access)
+    return toRequestDetail(updated, userId, access)
   }
 
   async cancelRequest(
@@ -356,11 +313,7 @@ export class CampaignRequestsService {
 
     const existing = await this.getAuthorizedRequest(campaignId, requestId, userId, access)
 
-    if (!canCancelRequest(userId, {
-      createdByUserId: existing.createdByUserId,
-      visibility: existing.visibility,
-      status: toStatus(existing.status),
-    })) {
+    if (!isCreatorOfPendingRequest(userId, existing)) {
       throw apiError(403, 'FORBIDDEN', 'Only the creator can cancel a pending request')
     }
 
@@ -369,7 +322,7 @@ export class CampaignRequestsService {
       data: {
         status: 'CANCELED',
       },
-      select: requestIncludeForViewer(userId),
+      select: requestSelectForViewer(userId),
     })
 
     await activityLogService.log({
@@ -382,7 +335,7 @@ export class CampaignRequestsService {
       summary: `Canceled campaign request "${canceled.title}".`,
     })
 
-    return toRequestDetail(canceled as RequestWithRelations, userId, access)
+    return toRequestDetail(canceled, userId, access)
   }
 
   async addVote(
@@ -394,11 +347,7 @@ export class CampaignRequestsService {
 
     const existing = await this.getAuthorizedRequest(campaignId, requestId, userId, access)
 
-    if (!canVoteOnRequest({
-      createdByUserId: existing.createdByUserId,
-      visibility: existing.visibility,
-      status: toStatus(existing.status),
-    })) {
+    if (!canVoteOnRequest(existing)) {
       throw apiError(409, 'INVALID_REQUEST_STATE', 'Voting is only available for public pending requests')
     }
 
@@ -446,11 +395,7 @@ export class CampaignRequestsService {
 
     const existing = await this.getAuthorizedRequest(campaignId, requestId, userId, access)
 
-    if (!canVoteOnRequest({
-      createdByUserId: existing.createdByUserId,
-      visibility: existing.visibility,
-      status: toStatus(existing.status),
-    })) {
+    if (!canVoteOnRequest(existing)) {
       throw apiError(409, 'INVALID_REQUEST_STATE', 'Voting is only available for public pending requests')
     }
 
@@ -492,7 +437,7 @@ export class CampaignRequestsService {
 
     const existing = await this.getAuthorizedRequest(campaignId, requestId, userId, access)
 
-    if (!isModeratableByAccess(access, toStatus(existing.status))) {
+    if (!isModeratableByAccess(access, existing.status)) {
       throw apiError(409, 'INVALID_REQUEST_STATE', 'Only pending requests can be decided')
     }
 
@@ -504,7 +449,7 @@ export class CampaignRequestsService {
         decidedByUserId: userId,
         decidedAt: new Date(),
       },
-      select: requestIncludeForViewer(userId),
+      select: requestSelectForViewer(userId),
     })
 
     await activityLogService.log({
@@ -520,6 +465,6 @@ export class CampaignRequestsService {
       },
     })
 
-    return toRequestDetail(updated as RequestWithRelations, userId, access)
+    return toRequestDetail(updated, userId, access)
   }
 }

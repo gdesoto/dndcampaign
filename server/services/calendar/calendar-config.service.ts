@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { Prisma } from '#server/db/prisma-client'
 import { prisma } from '#server/db/prisma'
 import {
   calendarConfigUpsertSchema,
@@ -24,22 +25,26 @@ import { CalendarEventsService } from '#server/services/calendar/calendar-events
 import { SessionCalendarRangeService } from '#server/services/calendar/session-calendar-range.service'
 import { apiError } from '#server/utils/http'
 
-type CampaignCalendarConfigRow = {
-  id: string
-  campaignId: string
-  isEnabled: boolean
-  name: string
-  startingYear: number
-  firstWeekdayIndex: number
-  currentYear: number
-  currentMonth: number
-  currentDay: number
-  weekdaysJson: unknown
-  monthsJson: unknown
-  moonsJson: unknown
-  createdAt: Date
-  updatedAt: Date
-}
+const calendarConfigSelect = {
+  id: true,
+  campaignId: true,
+  isEnabled: true,
+  name: true,
+  startingYear: true,
+  firstWeekdayIndex: true,
+  currentYear: true,
+  currentMonth: true,
+  currentDay: true,
+  weekdaysJson: true,
+  monthsJson: true,
+  moonsJson: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.CampaignCalendarConfigSelect
+
+type CampaignCalendarConfigRow = Prisma.CampaignCalendarConfigGetPayload<{
+  select: typeof calendarConfigSelect
+}>
 
 export type CampaignCalendarConfigDto = CampaignCalendarConfig & {
   yearLength: number
@@ -285,22 +290,7 @@ export class CalendarConfigService {
   private async getConfigRow(campaignId: string) {
     return prisma.campaignCalendarConfig.findUnique({
       where: { campaignId },
-      select: {
-        id: true,
-        campaignId: true,
-        isEnabled: true,
-        name: true,
-        startingYear: true,
-        firstWeekdayIndex: true,
-        currentYear: true,
-        currentMonth: true,
-        currentDay: true,
-        weekdaysJson: true,
-        monthsJson: true,
-        moonsJson: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: calendarConfigSelect,
     })
   }
 
@@ -428,22 +418,7 @@ export class CalendarConfigService {
         monthsJson: parsedInput.months,
         moonsJson: parsedInput.moons,
       },
-      select: {
-        id: true,
-        campaignId: true,
-        isEnabled: true,
-        name: true,
-        startingYear: true,
-        firstWeekdayIndex: true,
-        currentYear: true,
-        currentMonth: true,
-        currentDay: true,
-        weekdaysJson: true,
-        monthsJson: true,
-        moonsJson: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: calendarConfigSelect,
     })
 
     return toConfigDto(updated)
@@ -479,22 +454,7 @@ export class CalendarConfigService {
         currentMonth: input.month,
         currentDay: input.day,
       },
-      select: {
-        id: true,
-        campaignId: true,
-        isEnabled: true,
-        name: true,
-        startingYear: true,
-        firstWeekdayIndex: true,
-        currentYear: true,
-        currentMonth: true,
-        currentDay: true,
-        weekdaysJson: true,
-        monthsJson: true,
-        moonsJson: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: calendarConfigSelect,
     })
 
     return toConfigDto(updated)

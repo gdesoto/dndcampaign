@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { Prisma } from '#server/db/prisma-client'
 import { prisma } from '#server/db/prisma'
 import type {
   questSourceTypeSchema,
@@ -50,29 +51,18 @@ const questSourceTypeByQuestType: Record<QuestType, QuestSourceType[]> = {
 
 const monthShapeSchema = z.array(z.object({ length: z.number().int().min(1) }))
 
-const toQuestDto = (row: {
-  id: string
-  campaignId: string
-  title: string
-  description: string | null
-  type: QuestType
-  track: QuestTrack
-  sourceType: QuestSourceType
-  sourceText: string | null
-  sourceNpcId: string | null
-  sourceNpc?: { name: string } | null
-  sourceCharacterId: string | null
-  sourceCharacter?: { name: string } | null
-  reward: string | null
-  status: 'ACTIVE' | 'COMPLETED' | 'FAILED' | 'ON_HOLD'
-  progressNotes: string | null
-  expirationYear: number | null
-  expirationMonth: number | null
-  expirationDay: number | null
-  sortOrder: number
-  createdAt: Date
-  updatedAt: Date
-}): QuestDto => ({
+const questInclude = {
+  sourceNpc: {
+    select: { name: true },
+  },
+  sourceCharacter: {
+    select: { name: true },
+  },
+} satisfies Prisma.QuestInclude
+
+type QuestRow = Prisma.QuestGetPayload<{ include: typeof questInclude }>
+
+const toQuestDto = (row: QuestRow): QuestDto => ({
   id: row.id,
   campaignId: row.campaignId,
   title: row.title,
@@ -129,14 +119,7 @@ export class QuestService {
   async listCampaignQuests(campaignId: string): Promise<QuestDto[]> {
     const rows = await prisma.quest.findMany({
       where: { campaignId },
-      include: {
-        sourceNpc: {
-          select: { name: true },
-        },
-        sourceCharacter: {
-          select: { name: true },
-        },
-      },
+      include: questInclude,
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
     })
 
@@ -164,14 +147,7 @@ export class QuestService {
         expirationMonth: validation.expirationMonth,
         expirationDay: validation.expirationDay,
       },
-      include: {
-        sourceNpc: {
-          select: { name: true },
-        },
-        sourceCharacter: {
-          select: { name: true },
-        },
-      },
+      include: questInclude,
     })
 
     return toQuestDto(created)
@@ -264,14 +240,7 @@ export class QuestService {
         ...(input.progressNotes !== undefined ? { progressNotes: normalizeOptionalText(input.progressNotes) } : {}),
         ...(input.expirationDate !== undefined ? toExpirationParts(input.expirationDate) : {}),
       },
-      include: {
-        sourceNpc: {
-          select: { name: true },
-        },
-        sourceCharacter: {
-          select: { name: true },
-        },
-      },
+      include: questInclude,
     })
 
     return toQuestDto(updated)
