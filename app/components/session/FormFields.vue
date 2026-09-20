@@ -37,7 +37,10 @@ const titleModel = computed({
 
 const sessionNumberModel = computed({
   get: () => props.form.sessionNumber,
-  set: (value: string) => updateFormField('sessionNumber', value),
+  set: (value: string | number | undefined) => updateFormField(
+    'sessionNumber',
+    value === undefined || value === '' ? '' : String(value),
+  ),
 })
 
 const playedAtModel = computed({
