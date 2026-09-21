@@ -240,7 +240,7 @@ export type CampaignDungeonRoomGroupByOutputType = {
   _max: CampaignDungeonRoomMaxAggregateOutputType | null
 }
 
-type GetCampaignDungeonRoomGroupByPayload<T extends CampaignDungeonRoomGroupByArgs> = Prisma.PrismaPromise<
+export type GetCampaignDungeonRoomGroupByPayload<T extends CampaignDungeonRoomGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<CampaignDungeonRoomGroupByOutputType, T['by']> &
       {
@@ -1590,6 +1590,11 @@ export type CampaignDungeonRoomFindManyArgs<ExtArgs extends runtime.Types.Extens
    * Skip the first `n` CampaignDungeonRooms.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of CampaignDungeonRooms.
+   */
   distinct?: Prisma.CampaignDungeonRoomScalarFieldEnum | Prisma.CampaignDungeonRoomScalarFieldEnum[]
 }
 

@@ -6,7 +6,7 @@ import { CharacterSyncService } from '#server/services/character-sync.service'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
-  const session = await requireUserSession(event)
+  const session = await requireApiUserSession(event)
   const { entryId } = routeParams(event, 'entryId')
 
   const parsed = await validateBody(event, glossaryUpdateSchema, 'Invalid glossary payload')

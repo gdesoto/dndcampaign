@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
     throw apiError(400, 'VALIDATION_ERROR', 'Invalid initiative action', { action: 'Expected roll or reorder' })
   }
 
-  const sessionUser = await requireUserSession(event)
+  const sessionUser = await requireApiUserSession(event)
   const runtimeService = new EncounterRuntimeService()
 
   if (action === 'roll') {

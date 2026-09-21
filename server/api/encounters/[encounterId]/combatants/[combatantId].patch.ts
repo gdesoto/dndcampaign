@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
       throw apiError(400, 'VALIDATION_ERROR', 'Invalid amount payload', { amount: 'Must be an integer from 1 to 9999' })
     }
 
-    const sessionUser = await requireUserSession(event)
+    const sessionUser = await requireApiUserSession(event)
     const runtimeService = new EncounterRuntimeService()
     const result = rawBody.operation === 'damage'
       ? await runtimeService.applyDamage(encounterId, combatantId, sessionUser.user.id, { amount, note })
@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
 
   const parsed = await validateBody(event, encounterCombatantUpdateSchema, 'Invalid combatant payload')
 
-  const sessionUser = await requireUserSession(event)
+  const sessionUser = await requireApiUserSession(event)
   const result = await new EncounterService().updateCombatant(encounterId, combatantId, sessionUser.user.id, parsed)
   return ok(result)
 })

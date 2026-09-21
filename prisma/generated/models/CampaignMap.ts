@@ -244,7 +244,7 @@ export type CampaignMapGroupByOutputType = {
   _max: CampaignMapMaxAggregateOutputType | null
 }
 
-type GetCampaignMapGroupByPayload<T extends CampaignMapGroupByArgs> = Prisma.PrismaPromise<
+export type GetCampaignMapGroupByPayload<T extends CampaignMapGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<CampaignMapGroupByOutputType, T['by']> &
       {
@@ -2007,6 +2007,11 @@ export type CampaignMapFindManyArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Skip the first `n` CampaignMaps.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of CampaignMaps.
+   */
   distinct?: Prisma.CampaignMapScalarFieldEnum | Prisma.CampaignMapScalarFieldEnum[]
 }
 

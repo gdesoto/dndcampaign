@@ -12,7 +12,7 @@ const documentPatchActionSchema = z.discriminatedUnion('action', [
 ])
 
 export default defineEventHandler(async (event) => {
-  const sessionUser = await requireUserSession(event)
+  const sessionUser = await requireApiUserSession(event)
   const { documentId } = routeParams(event, 'documentId')
 
   const rawBody = (await readBody(event)) ?? {}

@@ -4,7 +4,7 @@ import { EncounterSummaryService } from '#server/services/encounter/encounter-su
 export default defineEventHandler(async (event) => {
   const { encounterId } = routeParams(event, 'encounterId')
 
-  const sessionUser = await requireUserSession(event)
+  const sessionUser = await requireApiUserSession(event)
   const result = await new EncounterSummaryService().getSummary(encounterId, sessionUser.user.id)
   return ok(result)
 })

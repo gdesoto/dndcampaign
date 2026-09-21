@@ -158,7 +158,7 @@ export type CampaignJournalEntrySessionLinkGroupByOutputType = {
   _max: CampaignJournalEntrySessionLinkMaxAggregateOutputType | null
 }
 
-type GetCampaignJournalEntrySessionLinkGroupByPayload<T extends CampaignJournalEntrySessionLinkGroupByArgs> = Prisma.PrismaPromise<
+export type GetCampaignJournalEntrySessionLinkGroupByPayload<T extends CampaignJournalEntrySessionLinkGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<CampaignJournalEntrySessionLinkGroupByOutputType, T['by']> &
       {
@@ -1361,6 +1361,11 @@ export type CampaignJournalEntrySessionLinkFindManyArgs<ExtArgs extends runtime.
    * Skip the first `n` CampaignJournalEntrySessionLinks.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of CampaignJournalEntrySessionLinks.
+   */
   distinct?: Prisma.CampaignJournalEntrySessionLinkScalarFieldEnum | Prisma.CampaignJournalEntrySessionLinkScalarFieldEnum[]
 }
 

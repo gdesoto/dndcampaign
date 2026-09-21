@@ -55,6 +55,8 @@ export const ModelName = {
   ActivityLog: 'ActivityLog',
   AdminAuditLog: 'AdminAuditLog',
   Campaign: 'Campaign',
+  ApiKey: 'ApiKey',
+  ApiKeyCampaign: 'ApiKeyCampaign',
   CampaignPublicAccess: 'CampaignPublicAccess',
   CampaignMember: 'CampaignMember',
   CampaignInvite: 'CampaignInvite',
@@ -176,6 +178,31 @@ export const CampaignScalarFieldEnum = {
 } as const
 
 export type CampaignScalarFieldEnum = (typeof CampaignScalarFieldEnum)[keyof typeof CampaignScalarFieldEnum]
+
+
+export const ApiKeyScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  prefix: 'prefix',
+  keyHash: 'keyHash',
+  permissions: 'permissions',
+  expiresAt: 'expiresAt',
+  lastUsedAt: 'lastUsedAt',
+  revokedAt: 'revokedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ApiKeyScalarFieldEnum = (typeof ApiKeyScalarFieldEnum)[keyof typeof ApiKeyScalarFieldEnum]
+
+
+export const ApiKeyCampaignScalarFieldEnum = {
+  apiKeyId: 'apiKeyId',
+  campaignId: 'campaignId'
+} as const
+
+export type ApiKeyCampaignScalarFieldEnum = (typeof ApiKeyCampaignScalarFieldEnum)[keyof typeof ApiKeyCampaignScalarFieldEnum]
 
 
 export const CampaignPublicAccessScalarFieldEnum = {

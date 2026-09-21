@@ -179,7 +179,7 @@ export type CampaignJournalTagGroupByOutputType = {
   _max: CampaignJournalTagMaxAggregateOutputType | null
 }
 
-type GetCampaignJournalTagGroupByPayload<T extends CampaignJournalTagGroupByArgs> = Prisma.PrismaPromise<
+export type GetCampaignJournalTagGroupByPayload<T extends CampaignJournalTagGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<CampaignJournalTagGroupByOutputType, T['by']> &
       {
@@ -1511,6 +1511,11 @@ export type CampaignJournalTagFindManyArgs<ExtArgs extends runtime.Types.Extensi
    * Skip the first `n` CampaignJournalTags.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of CampaignJournalTags.
+   */
   distinct?: Prisma.CampaignJournalTagScalarFieldEnum | Prisma.CampaignJournalTagScalarFieldEnum[]
 }
 

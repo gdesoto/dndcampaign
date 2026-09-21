@@ -259,7 +259,7 @@ export type CampaignCalendarConfigGroupByOutputType = {
   _max: CampaignCalendarConfigMaxAggregateOutputType | null
 }
 
-type GetCampaignCalendarConfigGroupByPayload<T extends CampaignCalendarConfigGroupByArgs> = Prisma.PrismaPromise<
+export type GetCampaignCalendarConfigGroupByPayload<T extends CampaignCalendarConfigGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<CampaignCalendarConfigGroupByOutputType, T['by']> &
       {
@@ -1418,6 +1418,11 @@ export type CampaignCalendarConfigFindManyArgs<ExtArgs extends runtime.Types.Ext
    * Skip the first `n` CampaignCalendarConfigs.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of CampaignCalendarConfigs.
+   */
   distinct?: Prisma.CampaignCalendarConfigScalarFieldEnum | Prisma.CampaignCalendarConfigScalarFieldEnum[]
 }
 

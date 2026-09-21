@@ -193,7 +193,7 @@ export type GlossaryEntryGroupByOutputType = {
   _max: GlossaryEntryMaxAggregateOutputType | null
 }
 
-type GetGlossaryEntryGroupByPayload<T extends GlossaryEntryGroupByArgs> = Prisma.PrismaPromise<
+export type GetGlossaryEntryGroupByPayload<T extends GlossaryEntryGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<GlossaryEntryGroupByOutputType, T['by']> &
       {
@@ -2286,6 +2286,11 @@ export type GlossaryEntryFindManyArgs<ExtArgs extends runtime.Types.Extensions.I
    * Skip the first `n` GlossaryEntries.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of GlossaryEntries.
+   */
   distinct?: Prisma.GlossaryEntryScalarFieldEnum | Prisma.GlossaryEntryScalarFieldEnum[]
 }
 

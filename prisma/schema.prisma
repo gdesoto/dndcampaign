@@ -98,6 +98,7 @@ model User {
   journalEntryTransferActions   CampaignJournalEntryTransferHistory[] @relation("CampaignJournalEntryTransferActor")
   journalEntryTransferFrom      CampaignJournalEntryTransferHistory[] @relation("CampaignJournalEntryTransferFromHolder")
   journalEntryTransferTo        CampaignJournalEntryTransferHistory[] @relation("CampaignJournalEntryTransferToHolder")
+  apiKeys                       ApiKey[]
 
   @@index([email])
 }
@@ -175,8 +176,36 @@ model Campaign {
   journalTags              CampaignJournalTag[]
   journalEntrySessionLinks CampaignJournalEntrySessionLink[]
   journalEntryTransfers    CampaignJournalEntryTransferHistory[]
+  apiKeyCampaigns           ApiKeyCampaign[]
 
   @@index([ownerId])
+}
+
+model ApiKey {
+  id          String           @id @default(uuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  prefix      String
+  keyHash     String           @unique
+  permissions Json
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  campaigns   ApiKeyCampaign[]
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+}
+
+model ApiKeyCampaign {
+  apiKeyId   String
+  campaignId String
+  apiKey     ApiKey   @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  @@id([apiKeyId, campaignId])
+  @@index([campaignId])
 }
 
 model CampaignPublicAccess {

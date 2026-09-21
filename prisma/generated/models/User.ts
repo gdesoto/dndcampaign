@@ -200,7 +200,7 @@ export type UserGroupByOutputType = {
   _max: UserMaxAggregateOutputType | null
 }
 
-type GetUserGroupByPayload<T extends UserGroupByArgs> = Prisma.PrismaPromise<
+export type GetUserGroupByPayload<T extends UserGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<UserGroupByOutputType, T['by']> &
       {
@@ -257,6 +257,7 @@ export type UserWhereInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryListRelationFilter
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryListRelationFilter
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryListRelationFilter
+  apiKeys?: Prisma.ApiKeyListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -298,6 +299,7 @@ export type UserOrderByWithRelationInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryOrderByRelationAggregateInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryOrderByRelationAggregateInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryOrderByRelationAggregateInput
+  apiKeys?: Prisma.ApiKeyOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -342,6 +344,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryListRelationFilter
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryListRelationFilter
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryListRelationFilter
+  apiKeys?: Prisma.ApiKeyListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -417,6 +420,7 @@ export type UserCreateInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -458,6 +462,7 @@ export type UserUncheckedCreateInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -499,6 +504,7 @@ export type UserUpdateInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -540,6 +546,7 @@ export type UserUncheckedUpdateInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -702,6 +709,20 @@ export type UserUpdateOneRequiredWithoutCampaignsNestedInput = {
   upsert?: Prisma.UserUpsertWithoutCampaignsInput
   connect?: Prisma.UserWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutCampaignsInput, Prisma.UserUpdateWithoutCampaignsInput>, Prisma.UserUncheckedUpdateWithoutCampaignsInput>
+}
+
+export type UserCreateNestedOneWithoutApiKeysInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutApiKeysInput, Prisma.UserUncheckedCreateWithoutApiKeysInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutApiKeysInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutApiKeysNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutApiKeysInput, Prisma.UserUncheckedCreateWithoutApiKeysInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutApiKeysInput
+  upsert?: Prisma.UserUpsertWithoutApiKeysInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutApiKeysInput, Prisma.UserUpdateWithoutApiKeysInput>, Prisma.UserUncheckedUpdateWithoutApiKeysInput>
 }
 
 export type UserCreateNestedOneWithoutCampaignPublicAccessUpdatesInput = {
@@ -1096,6 +1117,7 @@ export type UserCreateWithoutActivityActionsInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutActivityActionsInput = {
@@ -1136,6 +1158,7 @@ export type UserUncheckedCreateWithoutActivityActionsInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutActivityActionsInput = {
@@ -1192,6 +1215,7 @@ export type UserUpdateWithoutActivityActionsInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutActivityActionsInput = {
@@ -1232,6 +1256,7 @@ export type UserUncheckedUpdateWithoutActivityActionsInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutAdminAuditActionsInput = {
@@ -1272,6 +1297,7 @@ export type UserCreateWithoutAdminAuditActionsInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutAdminAuditActionsInput = {
@@ -1312,6 +1338,7 @@ export type UserUncheckedCreateWithoutAdminAuditActionsInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutAdminAuditActionsInput = {
@@ -1368,6 +1395,7 @@ export type UserUpdateWithoutAdminAuditActionsInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAdminAuditActionsInput = {
@@ -1408,6 +1436,7 @@ export type UserUncheckedUpdateWithoutAdminAuditActionsInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutCampaignsInput = {
@@ -1448,6 +1477,7 @@ export type UserCreateWithoutCampaignsInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutCampaignsInput = {
@@ -1488,6 +1518,7 @@ export type UserUncheckedCreateWithoutCampaignsInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutCampaignsInput = {
@@ -1544,6 +1575,7 @@ export type UserUpdateWithoutCampaignsInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCampaignsInput = {
@@ -1558,6 +1590,187 @@ export type UserUncheckedUpdateWithoutCampaignsInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  campaignMemberships?: Prisma.CampaignMemberUncheckedUpdateManyWithoutUserNestedInput
+  campaignMembershipInvitesSent?: Prisma.CampaignMemberUncheckedUpdateManyWithoutInvitedByUserNestedInput
+  campaignInvitesSent?: Prisma.CampaignInviteUncheckedUpdateManyWithoutInvitedByUserNestedInput
+  campaignInvitesAccepted?: Prisma.CampaignInviteUncheckedUpdateManyWithoutAcceptedByUserNestedInput
+  campaignPublicAccessUpdates?: Prisma.CampaignPublicAccessUncheckedUpdateManyWithoutUpdatedByUserNestedInput
+  activityActions?: Prisma.ActivityLogUncheckedUpdateManyWithoutActorUserNestedInput
+  documentVersions?: Prisma.DocumentVersionUncheckedUpdateManyWithoutCreatedByUserNestedInput
+  playerCharacters?: Prisma.PlayerCharacterUncheckedUpdateManyWithoutOwnerNestedInput
+  adminAuditActions?: Prisma.AdminAuditLogUncheckedUpdateManyWithoutActorUserNestedInput
+  calendarEventsCreated?: Prisma.CampaignCalendarEventUncheckedUpdateManyWithoutCreatedByUserNestedInput
+  encountersCreated?: Prisma.CampaignEncounterUncheckedUpdateManyWithoutCreatedByUserNestedInput
+  encounterEventsCreated?: Prisma.EncounterEventUncheckedUpdateManyWithoutCreatedByUserNestedInput
+  encounterTemplatesCreated?: Prisma.EncounterTemplateUncheckedUpdateManyWithoutCreatedByUserNestedInput
+  encounterStatBlocksCreated?: Prisma.EncounterStatBlockUncheckedUpdateManyWithoutCreatedByUserNestedInput
+  dungeonsCreated?: Prisma.CampaignDungeonUncheckedUpdateManyWithoutCreatedByUserNestedInput
+  dungeonSnapshotsCreated?: Prisma.CampaignDungeonSnapshotUncheckedUpdateManyWithoutCreatedByUserNestedInput
+  campaignRequestsCreated?: Prisma.CampaignRequestUncheckedUpdateManyWithoutCreatedByUserNestedInput
+  campaignRequestsDecided?: Prisma.CampaignRequestUncheckedUpdateManyWithoutDecidedByUserNestedInput
+  campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutAuthorUserNestedInput
+  journalEntriesHeld?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutHolderUserNestedInput
+  journalEntriesDiscovered?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutDiscoveredByUserNestedInput
+  journalEntriesArchived?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutArchivedByUserNestedInput
+  journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
+  journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
+  journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutApiKeysInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  name: string
+  systemRole?: $Enums.UserSystemRole
+  isActive?: boolean
+  lastLoginAt?: Date | string | null
+  avatarUrl?: string | null
+  deletedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  campaigns?: Prisma.CampaignCreateNestedManyWithoutOwnerInput
+  campaignMemberships?: Prisma.CampaignMemberCreateNestedManyWithoutUserInput
+  campaignMembershipInvitesSent?: Prisma.CampaignMemberCreateNestedManyWithoutInvitedByUserInput
+  campaignInvitesSent?: Prisma.CampaignInviteCreateNestedManyWithoutInvitedByUserInput
+  campaignInvitesAccepted?: Prisma.CampaignInviteCreateNestedManyWithoutAcceptedByUserInput
+  campaignPublicAccessUpdates?: Prisma.CampaignPublicAccessCreateNestedManyWithoutUpdatedByUserInput
+  activityActions?: Prisma.ActivityLogCreateNestedManyWithoutActorUserInput
+  documentVersions?: Prisma.DocumentVersionCreateNestedManyWithoutCreatedByUserInput
+  playerCharacters?: Prisma.PlayerCharacterCreateNestedManyWithoutOwnerInput
+  adminAuditActions?: Prisma.AdminAuditLogCreateNestedManyWithoutActorUserInput
+  calendarEventsCreated?: Prisma.CampaignCalendarEventCreateNestedManyWithoutCreatedByUserInput
+  encountersCreated?: Prisma.CampaignEncounterCreateNestedManyWithoutCreatedByUserInput
+  encounterEventsCreated?: Prisma.EncounterEventCreateNestedManyWithoutCreatedByUserInput
+  encounterTemplatesCreated?: Prisma.EncounterTemplateCreateNestedManyWithoutCreatedByUserInput
+  encounterStatBlocksCreated?: Prisma.EncounterStatBlockCreateNestedManyWithoutCreatedByUserInput
+  dungeonsCreated?: Prisma.CampaignDungeonCreateNestedManyWithoutCreatedByUserInput
+  dungeonSnapshotsCreated?: Prisma.CampaignDungeonSnapshotCreateNestedManyWithoutCreatedByUserInput
+  campaignRequestsCreated?: Prisma.CampaignRequestCreateNestedManyWithoutCreatedByUserInput
+  campaignRequestsDecided?: Prisma.CampaignRequestCreateNestedManyWithoutDecidedByUserInput
+  campaignRequestVotes?: Prisma.CampaignRequestVoteCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryCreateNestedManyWithoutAuthorUserInput
+  journalEntriesHeld?: Prisma.CampaignJournalEntryCreateNestedManyWithoutHolderUserInput
+  journalEntriesDiscovered?: Prisma.CampaignJournalEntryCreateNestedManyWithoutDiscoveredByUserInput
+  journalEntriesArchived?: Prisma.CampaignJournalEntryCreateNestedManyWithoutArchivedByUserInput
+  journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
+  journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
+  journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+}
+
+export type UserUncheckedCreateWithoutApiKeysInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  name: string
+  systemRole?: $Enums.UserSystemRole
+  isActive?: boolean
+  lastLoginAt?: Date | string | null
+  avatarUrl?: string | null
+  deletedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  campaigns?: Prisma.CampaignUncheckedCreateNestedManyWithoutOwnerInput
+  campaignMemberships?: Prisma.CampaignMemberUncheckedCreateNestedManyWithoutUserInput
+  campaignMembershipInvitesSent?: Prisma.CampaignMemberUncheckedCreateNestedManyWithoutInvitedByUserInput
+  campaignInvitesSent?: Prisma.CampaignInviteUncheckedCreateNestedManyWithoutInvitedByUserInput
+  campaignInvitesAccepted?: Prisma.CampaignInviteUncheckedCreateNestedManyWithoutAcceptedByUserInput
+  campaignPublicAccessUpdates?: Prisma.CampaignPublicAccessUncheckedCreateNestedManyWithoutUpdatedByUserInput
+  activityActions?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutActorUserInput
+  documentVersions?: Prisma.DocumentVersionUncheckedCreateNestedManyWithoutCreatedByUserInput
+  playerCharacters?: Prisma.PlayerCharacterUncheckedCreateNestedManyWithoutOwnerInput
+  adminAuditActions?: Prisma.AdminAuditLogUncheckedCreateNestedManyWithoutActorUserInput
+  calendarEventsCreated?: Prisma.CampaignCalendarEventUncheckedCreateNestedManyWithoutCreatedByUserInput
+  encountersCreated?: Prisma.CampaignEncounterUncheckedCreateNestedManyWithoutCreatedByUserInput
+  encounterEventsCreated?: Prisma.EncounterEventUncheckedCreateNestedManyWithoutCreatedByUserInput
+  encounterTemplatesCreated?: Prisma.EncounterTemplateUncheckedCreateNestedManyWithoutCreatedByUserInput
+  encounterStatBlocksCreated?: Prisma.EncounterStatBlockUncheckedCreateNestedManyWithoutCreatedByUserInput
+  dungeonsCreated?: Prisma.CampaignDungeonUncheckedCreateNestedManyWithoutCreatedByUserInput
+  dungeonSnapshotsCreated?: Prisma.CampaignDungeonSnapshotUncheckedCreateNestedManyWithoutCreatedByUserInput
+  campaignRequestsCreated?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutCreatedByUserInput
+  campaignRequestsDecided?: Prisma.CampaignRequestUncheckedCreateNestedManyWithoutDecidedByUserInput
+  campaignRequestVotes?: Prisma.CampaignRequestVoteUncheckedCreateNestedManyWithoutUserInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutAuthorUserInput
+  journalEntriesHeld?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutHolderUserInput
+  journalEntriesDiscovered?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutDiscoveredByUserInput
+  journalEntriesArchived?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutArchivedByUserInput
+  journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
+  journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
+  journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+}
+
+export type UserCreateOrConnectWithoutApiKeysInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutApiKeysInput, Prisma.UserUncheckedCreateWithoutApiKeysInput>
+}
+
+export type UserUpsertWithoutApiKeysInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutApiKeysInput, Prisma.UserUncheckedUpdateWithoutApiKeysInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutApiKeysInput, Prisma.UserUncheckedCreateWithoutApiKeysInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutApiKeysInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutApiKeysInput, Prisma.UserUncheckedUpdateWithoutApiKeysInput>
+}
+
+export type UserUpdateWithoutApiKeysInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  systemRole?: Prisma.EnumUserSystemRoleFieldUpdateOperationsInput | $Enums.UserSystemRole
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  campaigns?: Prisma.CampaignUpdateManyWithoutOwnerNestedInput
+  campaignMemberships?: Prisma.CampaignMemberUpdateManyWithoutUserNestedInput
+  campaignMembershipInvitesSent?: Prisma.CampaignMemberUpdateManyWithoutInvitedByUserNestedInput
+  campaignInvitesSent?: Prisma.CampaignInviteUpdateManyWithoutInvitedByUserNestedInput
+  campaignInvitesAccepted?: Prisma.CampaignInviteUpdateManyWithoutAcceptedByUserNestedInput
+  campaignPublicAccessUpdates?: Prisma.CampaignPublicAccessUpdateManyWithoutUpdatedByUserNestedInput
+  activityActions?: Prisma.ActivityLogUpdateManyWithoutActorUserNestedInput
+  documentVersions?: Prisma.DocumentVersionUpdateManyWithoutCreatedByUserNestedInput
+  playerCharacters?: Prisma.PlayerCharacterUpdateManyWithoutOwnerNestedInput
+  adminAuditActions?: Prisma.AdminAuditLogUpdateManyWithoutActorUserNestedInput
+  calendarEventsCreated?: Prisma.CampaignCalendarEventUpdateManyWithoutCreatedByUserNestedInput
+  encountersCreated?: Prisma.CampaignEncounterUpdateManyWithoutCreatedByUserNestedInput
+  encounterEventsCreated?: Prisma.EncounterEventUpdateManyWithoutCreatedByUserNestedInput
+  encounterTemplatesCreated?: Prisma.EncounterTemplateUpdateManyWithoutCreatedByUserNestedInput
+  encounterStatBlocksCreated?: Prisma.EncounterStatBlockUpdateManyWithoutCreatedByUserNestedInput
+  dungeonsCreated?: Prisma.CampaignDungeonUpdateManyWithoutCreatedByUserNestedInput
+  dungeonSnapshotsCreated?: Prisma.CampaignDungeonSnapshotUpdateManyWithoutCreatedByUserNestedInput
+  campaignRequestsCreated?: Prisma.CampaignRequestUpdateManyWithoutCreatedByUserNestedInput
+  campaignRequestsDecided?: Prisma.CampaignRequestUpdateManyWithoutDecidedByUserNestedInput
+  campaignRequestVotes?: Prisma.CampaignRequestVoteUpdateManyWithoutUserNestedInput
+  journalEntriesAuthored?: Prisma.CampaignJournalEntryUpdateManyWithoutAuthorUserNestedInput
+  journalEntriesHeld?: Prisma.CampaignJournalEntryUpdateManyWithoutHolderUserNestedInput
+  journalEntriesDiscovered?: Prisma.CampaignJournalEntryUpdateManyWithoutDiscoveredByUserNestedInput
+  journalEntriesArchived?: Prisma.CampaignJournalEntryUpdateManyWithoutArchivedByUserNestedInput
+  journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
+  journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
+  journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutApiKeysInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  systemRole?: Prisma.EnumUserSystemRoleFieldUpdateOperationsInput | $Enums.UserSystemRole
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  campaigns?: Prisma.CampaignUncheckedUpdateManyWithoutOwnerNestedInput
   campaignMemberships?: Prisma.CampaignMemberUncheckedUpdateManyWithoutUserNestedInput
   campaignMembershipInvitesSent?: Prisma.CampaignMemberUncheckedUpdateManyWithoutInvitedByUserNestedInput
   campaignInvitesSent?: Prisma.CampaignInviteUncheckedUpdateManyWithoutInvitedByUserNestedInput
@@ -1624,6 +1837,7 @@ export type UserCreateWithoutCampaignPublicAccessUpdatesInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutCampaignPublicAccessUpdatesInput = {
@@ -1664,6 +1878,7 @@ export type UserUncheckedCreateWithoutCampaignPublicAccessUpdatesInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutCampaignPublicAccessUpdatesInput = {
@@ -1720,6 +1935,7 @@ export type UserUpdateWithoutCampaignPublicAccessUpdatesInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCampaignPublicAccessUpdatesInput = {
@@ -1760,6 +1976,7 @@ export type UserUncheckedUpdateWithoutCampaignPublicAccessUpdatesInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutCampaignMembershipsInput = {
@@ -1800,6 +2017,7 @@ export type UserCreateWithoutCampaignMembershipsInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutCampaignMembershipsInput = {
@@ -1840,6 +2058,7 @@ export type UserUncheckedCreateWithoutCampaignMembershipsInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutCampaignMembershipsInput = {
@@ -1885,6 +2104,7 @@ export type UserCreateWithoutCampaignMembershipInvitesSentInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutCampaignMembershipInvitesSentInput = {
@@ -1925,6 +2145,7 @@ export type UserUncheckedCreateWithoutCampaignMembershipInvitesSentInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutCampaignMembershipInvitesSentInput = {
@@ -1981,6 +2202,7 @@ export type UserUpdateWithoutCampaignMembershipsInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCampaignMembershipsInput = {
@@ -2021,6 +2243,7 @@ export type UserUncheckedUpdateWithoutCampaignMembershipsInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUpsertWithoutCampaignMembershipInvitesSentInput = {
@@ -2072,6 +2295,7 @@ export type UserUpdateWithoutCampaignMembershipInvitesSentInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCampaignMembershipInvitesSentInput = {
@@ -2112,6 +2336,7 @@ export type UserUncheckedUpdateWithoutCampaignMembershipInvitesSentInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutCampaignInvitesSentInput = {
@@ -2152,6 +2377,7 @@ export type UserCreateWithoutCampaignInvitesSentInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutCampaignInvitesSentInput = {
@@ -2192,6 +2418,7 @@ export type UserUncheckedCreateWithoutCampaignInvitesSentInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutCampaignInvitesSentInput = {
@@ -2237,6 +2464,7 @@ export type UserCreateWithoutCampaignInvitesAcceptedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutCampaignInvitesAcceptedInput = {
@@ -2277,6 +2505,7 @@ export type UserUncheckedCreateWithoutCampaignInvitesAcceptedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutCampaignInvitesAcceptedInput = {
@@ -2333,6 +2562,7 @@ export type UserUpdateWithoutCampaignInvitesSentInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCampaignInvitesSentInput = {
@@ -2373,6 +2603,7 @@ export type UserUncheckedUpdateWithoutCampaignInvitesSentInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUpsertWithoutCampaignInvitesAcceptedInput = {
@@ -2424,6 +2655,7 @@ export type UserUpdateWithoutCampaignInvitesAcceptedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCampaignInvitesAcceptedInput = {
@@ -2464,6 +2696,7 @@ export type UserUncheckedUpdateWithoutCampaignInvitesAcceptedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutCampaignRequestsCreatedInput = {
@@ -2504,6 +2737,7 @@ export type UserCreateWithoutCampaignRequestsCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutCampaignRequestsCreatedInput = {
@@ -2544,6 +2778,7 @@ export type UserUncheckedCreateWithoutCampaignRequestsCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutCampaignRequestsCreatedInput = {
@@ -2589,6 +2824,7 @@ export type UserCreateWithoutCampaignRequestsDecidedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutCampaignRequestsDecidedInput = {
@@ -2629,6 +2865,7 @@ export type UserUncheckedCreateWithoutCampaignRequestsDecidedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutCampaignRequestsDecidedInput = {
@@ -2685,6 +2922,7 @@ export type UserUpdateWithoutCampaignRequestsCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCampaignRequestsCreatedInput = {
@@ -2725,6 +2963,7 @@ export type UserUncheckedUpdateWithoutCampaignRequestsCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUpsertWithoutCampaignRequestsDecidedInput = {
@@ -2776,6 +3015,7 @@ export type UserUpdateWithoutCampaignRequestsDecidedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCampaignRequestsDecidedInput = {
@@ -2816,6 +3056,7 @@ export type UserUncheckedUpdateWithoutCampaignRequestsDecidedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutCampaignRequestVotesInput = {
@@ -2856,6 +3097,7 @@ export type UserCreateWithoutCampaignRequestVotesInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutCampaignRequestVotesInput = {
@@ -2896,6 +3138,7 @@ export type UserUncheckedCreateWithoutCampaignRequestVotesInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutCampaignRequestVotesInput = {
@@ -2952,6 +3195,7 @@ export type UserUpdateWithoutCampaignRequestVotesInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCampaignRequestVotesInput = {
@@ -2992,6 +3236,7 @@ export type UserUncheckedUpdateWithoutCampaignRequestVotesInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutJournalEntriesAuthoredInput = {
@@ -3032,6 +3277,7 @@ export type UserCreateWithoutJournalEntriesAuthoredInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutJournalEntriesAuthoredInput = {
@@ -3072,6 +3318,7 @@ export type UserUncheckedCreateWithoutJournalEntriesAuthoredInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutJournalEntriesAuthoredInput = {
@@ -3117,6 +3364,7 @@ export type UserCreateWithoutJournalEntriesHeldInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutJournalEntriesHeldInput = {
@@ -3157,6 +3405,7 @@ export type UserUncheckedCreateWithoutJournalEntriesHeldInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutJournalEntriesHeldInput = {
@@ -3202,6 +3451,7 @@ export type UserCreateWithoutJournalEntriesDiscoveredInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutJournalEntriesDiscoveredInput = {
@@ -3242,6 +3492,7 @@ export type UserUncheckedCreateWithoutJournalEntriesDiscoveredInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutJournalEntriesDiscoveredInput = {
@@ -3287,6 +3538,7 @@ export type UserCreateWithoutJournalEntriesArchivedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutJournalEntriesArchivedInput = {
@@ -3327,6 +3579,7 @@ export type UserUncheckedCreateWithoutJournalEntriesArchivedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutJournalEntriesArchivedInput = {
@@ -3383,6 +3636,7 @@ export type UserUpdateWithoutJournalEntriesAuthoredInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutJournalEntriesAuthoredInput = {
@@ -3423,6 +3677,7 @@ export type UserUncheckedUpdateWithoutJournalEntriesAuthoredInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUpsertWithoutJournalEntriesHeldInput = {
@@ -3474,6 +3729,7 @@ export type UserUpdateWithoutJournalEntriesHeldInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutJournalEntriesHeldInput = {
@@ -3514,6 +3770,7 @@ export type UserUncheckedUpdateWithoutJournalEntriesHeldInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUpsertWithoutJournalEntriesDiscoveredInput = {
@@ -3565,6 +3822,7 @@ export type UserUpdateWithoutJournalEntriesDiscoveredInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutJournalEntriesDiscoveredInput = {
@@ -3605,6 +3863,7 @@ export type UserUncheckedUpdateWithoutJournalEntriesDiscoveredInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUpsertWithoutJournalEntriesArchivedInput = {
@@ -3656,6 +3915,7 @@ export type UserUpdateWithoutJournalEntriesArchivedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutJournalEntriesArchivedInput = {
@@ -3696,6 +3956,7 @@ export type UserUncheckedUpdateWithoutJournalEntriesArchivedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutJournalEntryTransferFromInput = {
@@ -3736,6 +3997,7 @@ export type UserCreateWithoutJournalEntryTransferFromInput = {
   journalEntriesArchived?: Prisma.CampaignJournalEntryCreateNestedManyWithoutArchivedByUserInput
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutJournalEntryTransferFromInput = {
@@ -3776,6 +4038,7 @@ export type UserUncheckedCreateWithoutJournalEntryTransferFromInput = {
   journalEntriesArchived?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutArchivedByUserInput
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutJournalEntryTransferFromInput = {
@@ -3821,6 +4084,7 @@ export type UserCreateWithoutJournalEntryTransferToInput = {
   journalEntriesArchived?: Prisma.CampaignJournalEntryCreateNestedManyWithoutArchivedByUserInput
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutJournalEntryTransferToInput = {
@@ -3861,6 +4125,7 @@ export type UserUncheckedCreateWithoutJournalEntryTransferToInput = {
   journalEntriesArchived?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutArchivedByUserInput
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutJournalEntryTransferToInput = {
@@ -3906,6 +4171,7 @@ export type UserCreateWithoutJournalEntryTransferActionsInput = {
   journalEntriesArchived?: Prisma.CampaignJournalEntryCreateNestedManyWithoutArchivedByUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutJournalEntryTransferActionsInput = {
@@ -3946,6 +4212,7 @@ export type UserUncheckedCreateWithoutJournalEntryTransferActionsInput = {
   journalEntriesArchived?: Prisma.CampaignJournalEntryUncheckedCreateNestedManyWithoutArchivedByUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutJournalEntryTransferActionsInput = {
@@ -4002,6 +4269,7 @@ export type UserUpdateWithoutJournalEntryTransferFromInput = {
   journalEntriesArchived?: Prisma.CampaignJournalEntryUpdateManyWithoutArchivedByUserNestedInput
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutJournalEntryTransferFromInput = {
@@ -4042,6 +4310,7 @@ export type UserUncheckedUpdateWithoutJournalEntryTransferFromInput = {
   journalEntriesArchived?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutArchivedByUserNestedInput
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUpsertWithoutJournalEntryTransferToInput = {
@@ -4093,6 +4362,7 @@ export type UserUpdateWithoutJournalEntryTransferToInput = {
   journalEntriesArchived?: Prisma.CampaignJournalEntryUpdateManyWithoutArchivedByUserNestedInput
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutJournalEntryTransferToInput = {
@@ -4133,6 +4403,7 @@ export type UserUncheckedUpdateWithoutJournalEntryTransferToInput = {
   journalEntriesArchived?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutArchivedByUserNestedInput
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUpsertWithoutJournalEntryTransferActionsInput = {
@@ -4184,6 +4455,7 @@ export type UserUpdateWithoutJournalEntryTransferActionsInput = {
   journalEntriesArchived?: Prisma.CampaignJournalEntryUpdateManyWithoutArchivedByUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutJournalEntryTransferActionsInput = {
@@ -4224,6 +4496,7 @@ export type UserUncheckedUpdateWithoutJournalEntryTransferActionsInput = {
   journalEntriesArchived?: Prisma.CampaignJournalEntryUncheckedUpdateManyWithoutArchivedByUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutCalendarEventsCreatedInput = {
@@ -4264,6 +4537,7 @@ export type UserCreateWithoutCalendarEventsCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutCalendarEventsCreatedInput = {
@@ -4304,6 +4578,7 @@ export type UserUncheckedCreateWithoutCalendarEventsCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutCalendarEventsCreatedInput = {
@@ -4360,6 +4635,7 @@ export type UserUpdateWithoutCalendarEventsCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutCalendarEventsCreatedInput = {
@@ -4400,6 +4676,7 @@ export type UserUncheckedUpdateWithoutCalendarEventsCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutEncountersCreatedInput = {
@@ -4440,6 +4717,7 @@ export type UserCreateWithoutEncountersCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutEncountersCreatedInput = {
@@ -4480,6 +4758,7 @@ export type UserUncheckedCreateWithoutEncountersCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutEncountersCreatedInput = {
@@ -4536,6 +4815,7 @@ export type UserUpdateWithoutEncountersCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutEncountersCreatedInput = {
@@ -4576,6 +4856,7 @@ export type UserUncheckedUpdateWithoutEncountersCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutEncounterEventsCreatedInput = {
@@ -4616,6 +4897,7 @@ export type UserCreateWithoutEncounterEventsCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutEncounterEventsCreatedInput = {
@@ -4656,6 +4938,7 @@ export type UserUncheckedCreateWithoutEncounterEventsCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutEncounterEventsCreatedInput = {
@@ -4712,6 +4995,7 @@ export type UserUpdateWithoutEncounterEventsCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutEncounterEventsCreatedInput = {
@@ -4752,6 +5036,7 @@ export type UserUncheckedUpdateWithoutEncounterEventsCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutEncounterTemplatesCreatedInput = {
@@ -4792,6 +5077,7 @@ export type UserCreateWithoutEncounterTemplatesCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutEncounterTemplatesCreatedInput = {
@@ -4832,6 +5118,7 @@ export type UserUncheckedCreateWithoutEncounterTemplatesCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutEncounterTemplatesCreatedInput = {
@@ -4888,6 +5175,7 @@ export type UserUpdateWithoutEncounterTemplatesCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutEncounterTemplatesCreatedInput = {
@@ -4928,6 +5216,7 @@ export type UserUncheckedUpdateWithoutEncounterTemplatesCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutEncounterStatBlocksCreatedInput = {
@@ -4968,6 +5257,7 @@ export type UserCreateWithoutEncounterStatBlocksCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutEncounterStatBlocksCreatedInput = {
@@ -5008,6 +5298,7 @@ export type UserUncheckedCreateWithoutEncounterStatBlocksCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutEncounterStatBlocksCreatedInput = {
@@ -5064,6 +5355,7 @@ export type UserUpdateWithoutEncounterStatBlocksCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutEncounterStatBlocksCreatedInput = {
@@ -5104,6 +5396,7 @@ export type UserUncheckedUpdateWithoutEncounterStatBlocksCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutDungeonsCreatedInput = {
@@ -5144,6 +5437,7 @@ export type UserCreateWithoutDungeonsCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutDungeonsCreatedInput = {
@@ -5184,6 +5478,7 @@ export type UserUncheckedCreateWithoutDungeonsCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutDungeonsCreatedInput = {
@@ -5240,6 +5535,7 @@ export type UserUpdateWithoutDungeonsCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutDungeonsCreatedInput = {
@@ -5280,6 +5576,7 @@ export type UserUncheckedUpdateWithoutDungeonsCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutDungeonSnapshotsCreatedInput = {
@@ -5320,6 +5617,7 @@ export type UserCreateWithoutDungeonSnapshotsCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutDungeonSnapshotsCreatedInput = {
@@ -5360,6 +5658,7 @@ export type UserUncheckedCreateWithoutDungeonSnapshotsCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutDungeonSnapshotsCreatedInput = {
@@ -5416,6 +5715,7 @@ export type UserUpdateWithoutDungeonSnapshotsCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutDungeonSnapshotsCreatedInput = {
@@ -5456,6 +5756,7 @@ export type UserUncheckedUpdateWithoutDungeonSnapshotsCreatedInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutDocumentVersionsInput = {
@@ -5496,6 +5797,7 @@ export type UserCreateWithoutDocumentVersionsInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutDocumentVersionsInput = {
@@ -5536,6 +5838,7 @@ export type UserUncheckedCreateWithoutDocumentVersionsInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutDocumentVersionsInput = {
@@ -5592,6 +5895,7 @@ export type UserUpdateWithoutDocumentVersionsInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutDocumentVersionsInput = {
@@ -5632,6 +5936,7 @@ export type UserUncheckedUpdateWithoutDocumentVersionsInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutPlayerCharactersInput = {
@@ -5672,6 +5977,7 @@ export type UserCreateWithoutPlayerCharactersInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutPlayerCharactersInput = {
@@ -5712,6 +6018,7 @@ export type UserUncheckedCreateWithoutPlayerCharactersInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutActorUserInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutFromHolderUserInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedCreateNestedManyWithoutToHolderUserInput
+  apiKeys?: Prisma.ApiKeyUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutPlayerCharactersInput = {
@@ -5768,6 +6075,7 @@ export type UserUpdateWithoutPlayerCharactersInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPlayerCharactersInput = {
@@ -5808,6 +6116,7 @@ export type UserUncheckedUpdateWithoutPlayerCharactersInput = {
   journalEntryTransferActions?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutActorUserNestedInput
   journalEntryTransferFrom?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutFromHolderUserNestedInput
   journalEntryTransferTo?: Prisma.CampaignJournalEntryTransferHistoryUncheckedUpdateManyWithoutToHolderUserNestedInput
+  apiKeys?: Prisma.ApiKeyUncheckedUpdateManyWithoutUserNestedInput
 }
 
 
@@ -5843,6 +6152,7 @@ export type UserCountOutputType = {
   journalEntryTransferActions: number
   journalEntryTransferFrom: number
   journalEntryTransferTo: number
+  apiKeys: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -5873,6 +6183,7 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   journalEntryTransferActions?: boolean | UserCountOutputTypeCountJournalEntryTransferActionsArgs
   journalEntryTransferFrom?: boolean | UserCountOutputTypeCountJournalEntryTransferFromArgs
   journalEntryTransferTo?: boolean | UserCountOutputTypeCountJournalEntryTransferToArgs
+  apiKeys?: boolean | UserCountOutputTypeCountApiKeysArgs
 }
 
 /**
@@ -6074,6 +6385,13 @@ export type UserCountOutputTypeCountJournalEntryTransferToArgs<ExtArgs extends r
   where?: Prisma.CampaignJournalEntryTransferHistoryWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountApiKeysArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ApiKeyWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -6114,6 +6432,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   journalEntryTransferActions?: boolean | Prisma.User$journalEntryTransferActionsArgs<ExtArgs>
   journalEntryTransferFrom?: boolean | Prisma.User$journalEntryTransferFromArgs<ExtArgs>
   journalEntryTransferTo?: boolean | Prisma.User$journalEntryTransferToArgs<ExtArgs>
+  apiKeys?: boolean | Prisma.User$apiKeysArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -6188,6 +6507,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   journalEntryTransferActions?: boolean | Prisma.User$journalEntryTransferActionsArgs<ExtArgs>
   journalEntryTransferFrom?: boolean | Prisma.User$journalEntryTransferFromArgs<ExtArgs>
   journalEntryTransferTo?: boolean | Prisma.User$journalEntryTransferToArgs<ExtArgs>
+  apiKeys?: boolean | Prisma.User$apiKeysArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -6223,6 +6543,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     journalEntryTransferActions: Prisma.$CampaignJournalEntryTransferHistoryPayload<ExtArgs>[]
     journalEntryTransferFrom: Prisma.$CampaignJournalEntryTransferHistoryPayload<ExtArgs>[]
     journalEntryTransferTo: Prisma.$CampaignJournalEntryTransferHistoryPayload<ExtArgs>[]
+    apiKeys: Prisma.$ApiKeyPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -6657,6 +6978,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   journalEntryTransferActions<T extends Prisma.User$journalEntryTransferActionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$journalEntryTransferActionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignJournalEntryTransferHistoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   journalEntryTransferFrom<T extends Prisma.User$journalEntryTransferFromArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$journalEntryTransferFromArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignJournalEntryTransferHistoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   journalEntryTransferTo<T extends Prisma.User$journalEntryTransferToArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$journalEntryTransferToArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CampaignJournalEntryTransferHistoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  apiKeys<T extends Prisma.User$apiKeysArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$apiKeysArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ApiKeyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -6893,6 +7215,11 @@ export type UserFindManyArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
    * Skip the first `n` Users.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of Users.
+   */
   distinct?: Prisma.UserScalarFieldEnum | Prisma.UserScalarFieldEnum[]
 }
 
@@ -7728,6 +8055,30 @@ export type User$journalEntryTransferToArgs<ExtArgs extends runtime.Types.Extens
   take?: number
   skip?: number
   distinct?: Prisma.CampaignJournalEntryTransferHistoryScalarFieldEnum | Prisma.CampaignJournalEntryTransferHistoryScalarFieldEnum[]
+}
+
+/**
+ * User.apiKeys
+ */
+export type User$apiKeysArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ApiKey
+   */
+  select?: Prisma.ApiKeySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ApiKey
+   */
+  omit?: Prisma.ApiKeyOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ApiKeyInclude<ExtArgs> | null
+  where?: Prisma.ApiKeyWhereInput
+  orderBy?: Prisma.ApiKeyOrderByWithRelationInput | Prisma.ApiKeyOrderByWithRelationInput[]
+  cursor?: Prisma.ApiKeyWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ApiKeyScalarFieldEnum | Prisma.ApiKeyScalarFieldEnum[]
 }
 
 /**

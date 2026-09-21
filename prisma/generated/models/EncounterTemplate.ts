@@ -179,7 +179,7 @@ export type EncounterTemplateGroupByOutputType = {
   _max: EncounterTemplateMaxAggregateOutputType | null
 }
 
-type GetEncounterTemplateGroupByPayload<T extends EncounterTemplateGroupByArgs> = Prisma.PrismaPromise<
+export type GetEncounterTemplateGroupByPayload<T extends EncounterTemplateGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<EncounterTemplateGroupByOutputType, T['by']> &
       {
@@ -1492,6 +1492,11 @@ export type EncounterTemplateFindManyArgs<ExtArgs extends runtime.Types.Extensio
    * Skip the first `n` EncounterTemplates.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of EncounterTemplates.
+   */
   distinct?: Prisma.EncounterTemplateScalarFieldEnum | Prisma.EncounterTemplateScalarFieldEnum[]
 }
 

@@ -6,7 +6,7 @@ import { CharacterSyncService } from '#server/services/character-sync.service'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
-  const session = await requireUserSession(event)
+  const session = await requireApiUserSession(event)
   const { campaignId } = routeParams(event, 'campaignId')
 
   await requireCampaignPermission(event, campaignId, 'content.write')

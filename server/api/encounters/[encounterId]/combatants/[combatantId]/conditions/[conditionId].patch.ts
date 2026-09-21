@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
 
   const parsed = await validateBody(event, encounterConditionUpdateSchema, 'Invalid condition payload')
 
-  const sessionUser = await requireUserSession(event)
+  const sessionUser = await requireApiUserSession(event)
   const result = await new EncounterRuntimeService().updateCondition(encounterId, combatantId, conditionId, sessionUser.user.id, parsed)
   return ok(result)
 })

@@ -231,7 +231,7 @@ export type RecapRecordingGroupByOutputType = {
   _max: RecapRecordingMaxAggregateOutputType | null
 }
 
-type GetRecapRecordingGroupByPayload<T extends RecapRecordingGroupByArgs> = Prisma.PrismaPromise<
+export type GetRecapRecordingGroupByPayload<T extends RecapRecordingGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<RecapRecordingGroupByOutputType, T['by']> &
       {
@@ -1501,6 +1501,11 @@ export type RecapRecordingFindManyArgs<ExtArgs extends runtime.Types.Extensions.
    * Skip the first `n` RecapRecordings.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of RecapRecordings.
+   */
   distinct?: Prisma.RecapRecordingScalarFieldEnum | Prisma.RecapRecordingScalarFieldEnum[]
 }
 

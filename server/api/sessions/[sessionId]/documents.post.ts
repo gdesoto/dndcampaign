@@ -6,7 +6,7 @@ import { DocumentService } from '#server/services/document.service'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
-  const sessionUser = await requireUserSession(event)
+  const sessionUser = await requireApiUserSession(event)
   const { sessionId } = routeParams(event, 'sessionId')
 
   const session = await prisma.session.findFirst({

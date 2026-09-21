@@ -254,7 +254,7 @@ export type SessionCalendarRangeGroupByOutputType = {
   _max: SessionCalendarRangeMaxAggregateOutputType | null
 }
 
-type GetSessionCalendarRangeGroupByPayload<T extends SessionCalendarRangeGroupByArgs> = Prisma.PrismaPromise<
+export type GetSessionCalendarRangeGroupByPayload<T extends SessionCalendarRangeGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<SessionCalendarRangeGroupByOutputType, T['by']> &
       {
@@ -1524,6 +1524,11 @@ export type SessionCalendarRangeFindManyArgs<ExtArgs extends runtime.Types.Exten
    * Skip the first `n` SessionCalendarRanges.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of SessionCalendarRanges.
+   */
   distinct?: Prisma.SessionCalendarRangeScalarFieldEnum | Prisma.SessionCalendarRangeScalarFieldEnum[]
 }
 

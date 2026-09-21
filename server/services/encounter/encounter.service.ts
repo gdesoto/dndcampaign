@@ -24,6 +24,7 @@ import {
   validateEncounterCombatantSourceReferences,
   validateEncounterCalendarLink,
   validateEncounterSessionLink,
+  buildEncounterVisibilityWhere,
 } from '#server/services/encounter/encounter-shared'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 import { apiError } from '#server/utils/http'
@@ -39,10 +40,11 @@ const transitionAllowed = (from: EncounterSummary['status'], to: EncounterSummar
 }
 
 export class EncounterService {
-  async listEncounters(campaignId: string, query: EncounterListQueryInput): Promise<EncounterSummary[]> {
+  async listEncounters(campaignId: string, userId: string, query: EncounterListQueryInput): Promise<EncounterSummary[]> {
     const encounters = await prisma.campaignEncounter.findMany({
       where: {
         campaignId,
+        ...buildEncounterVisibilityWhere(userId),
         ...(query.status ? { status: query.status } : {}),
         ...(query.type ? { type: query.type } : {}),
         ...(query.sessionId ? { sessionId: query.sessionId } : {}),
@@ -131,6 +133,7 @@ export class EncounterService {
       where: {
         id: encounterId,
         campaign: buildCampaignWhereForPermission(userId, 'content.write'),
+        ...buildEncounterVisibilityWhere(userId),
       },
       select: {
         id: true,
@@ -227,6 +230,7 @@ export class EncounterService {
       where: {
         id: encounterId,
         campaign: buildCampaignWhereForPermission(userId, 'content.write'),
+        ...buildEncounterVisibilityWhere(userId),
       },
       select: { id: true },
     })

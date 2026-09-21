@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
 
   const parsed = await validateBody(event, encounterTemplateInstantiateSchema, 'Invalid instantiate payload')
 
-  const sessionUser = await requireUserSession(event)
+  const sessionUser = await requireApiUserSession(event)
   const result = await new EncounterTemplateService().instantiateTemplate(templateId, sessionUser.user.id, parsed)
   return ok(result)
 })

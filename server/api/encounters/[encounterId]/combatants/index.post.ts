@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
 
   const parsed = await validateBody(event, encounterCombatantCreateSchema, 'Invalid combatant payload')
 
-  const sessionUser = await requireUserSession(event)
+  const sessionUser = await requireApiUserSession(event)
   const result = await new EncounterService().createCombatant(encounterId, sessionUser.user.id, parsed)
   return ok(result)
 })

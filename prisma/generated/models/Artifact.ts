@@ -234,7 +234,7 @@ export type ArtifactGroupByOutputType = {
   _max: ArtifactMaxAggregateOutputType | null
 }
 
-type GetArtifactGroupByPayload<T extends ArtifactGroupByArgs> = Prisma.PrismaPromise<
+export type GetArtifactGroupByPayload<T extends ArtifactGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<ArtifactGroupByOutputType, T['by']> &
       {
@@ -1843,6 +1843,11 @@ export type ArtifactFindManyArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Skip the first `n` Artifacts.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of Artifacts.
+   */
   distinct?: Prisma.ArtifactScalarFieldEnum | Prisma.ArtifactScalarFieldEnum[]
 }
 

@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
 
   const parsed = await validateBody(event, encounterEventNoteCreateSchema, 'Invalid event note payload')
 
-  const sessionUser = await requireUserSession(event)
+  const sessionUser = await requireApiUserSession(event)
   const result = await new EncounterService().createNoteEvent(encounterId, sessionUser.user.id, parsed)
   return ok(result)
 })

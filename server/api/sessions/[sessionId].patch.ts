@@ -5,7 +5,7 @@ import { sessionUpdateSchema } from '#shared/schemas/session'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
-  const sessionUser = await requireUserSession(event)
+  const sessionUser = await requireApiUserSession(event)
   const { sessionId } = routeParams(event, 'sessionId')
 
   const parsed = await validateBody(event, sessionUpdateSchema, 'Invalid session payload')

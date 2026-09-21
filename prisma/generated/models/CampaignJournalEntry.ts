@@ -228,7 +228,7 @@ export type CampaignJournalEntryGroupByOutputType = {
   _max: CampaignJournalEntryMaxAggregateOutputType | null
 }
 
-type GetCampaignJournalEntryGroupByPayload<T extends CampaignJournalEntryGroupByArgs> = Prisma.PrismaPromise<
+export type GetCampaignJournalEntryGroupByPayload<T extends CampaignJournalEntryGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<CampaignJournalEntryGroupByOutputType, T['by']> &
       {
@@ -2668,6 +2668,11 @@ export type CampaignJournalEntryFindManyArgs<ExtArgs extends runtime.Types.Exten
    * Skip the first `n` CampaignJournalEntries.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of CampaignJournalEntries.
+   */
   distinct?: Prisma.CampaignJournalEntryScalarFieldEnum | Prisma.CampaignJournalEntryScalarFieldEnum[]
 }
 

@@ -213,7 +213,7 @@ export type DocumentVersionGroupByOutputType = {
   _max: DocumentVersionMaxAggregateOutputType | null
 }
 
-type GetDocumentVersionGroupByPayload<T extends DocumentVersionGroupByArgs> = Prisma.PrismaPromise<
+export type GetDocumentVersionGroupByPayload<T extends DocumentVersionGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<DocumentVersionGroupByOutputType, T['by']> &
       {
@@ -1521,6 +1521,11 @@ export type DocumentVersionFindManyArgs<ExtArgs extends runtime.Types.Extensions
    * Skip the first `n` DocumentVersions.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of DocumentVersions.
+   */
   distinct?: Prisma.DocumentVersionScalarFieldEnum | Prisma.DocumentVersionScalarFieldEnum[]
 }
 

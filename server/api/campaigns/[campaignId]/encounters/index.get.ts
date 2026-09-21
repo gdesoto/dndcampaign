@@ -7,9 +7,9 @@ import { EncounterService } from '#server/services/encounter/encounter.service'
 export default defineEventHandler(async (event) => {
   const { campaignId } = routeParams(event, 'campaignId')
 
-  await requireCampaignPermission(event, campaignId, 'content.read')
+  const { session } = await requireCampaignPermission(event, campaignId, 'content.read')
   const parsedQuery = validateQuery(event, encounterListQuerySchema, 'Invalid encounter query parameters')
 
-  const result = await new EncounterService().listEncounters(campaignId, parsedQuery)
+  const result = await new EncounterService().listEncounters(campaignId, session.user.id, parsedQuery)
   return ok(result)
 })

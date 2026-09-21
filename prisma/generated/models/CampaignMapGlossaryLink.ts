@@ -165,7 +165,7 @@ export type CampaignMapGlossaryLinkGroupByOutputType = {
   _max: CampaignMapGlossaryLinkMaxAggregateOutputType | null
 }
 
-type GetCampaignMapGlossaryLinkGroupByPayload<T extends CampaignMapGlossaryLinkGroupByArgs> = Prisma.PrismaPromise<
+export type GetCampaignMapGlossaryLinkGroupByPayload<T extends CampaignMapGlossaryLinkGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<CampaignMapGlossaryLinkGroupByOutputType, T['by']> &
       {
@@ -1416,6 +1416,11 @@ export type CampaignMapGlossaryLinkFindManyArgs<ExtArgs extends runtime.Types.Ex
    * Skip the first `n` CampaignMapGlossaryLinks.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of CampaignMapGlossaryLinks.
+   */
   distinct?: Prisma.CampaignMapGlossaryLinkScalarFieldEnum | Prisma.CampaignMapGlossaryLinkScalarFieldEnum[]
 }
 

@@ -78,6 +78,7 @@ const profileMenuItems = computed(() => [
       ? [{ label: 'Admin', icon: 'i-lucide-shield-check', to: '/admin' }]
       : []),
     { label: 'Settings', icon: 'i-lucide-cog', to: '/settings' },
+    { label: 'API keys', icon: 'i-lucide-key-round', to: '/settings/api-keys' },
     { label: 'Logout', icon: 'i-lucide-log-out', onSelect: () => logout() },
   ],
 ])

@@ -302,7 +302,7 @@ export type QuestGroupByOutputType = {
   _max: QuestMaxAggregateOutputType | null
 }
 
-type GetQuestGroupByPayload<T extends QuestGroupByArgs> = Prisma.PrismaPromise<
+export type GetQuestGroupByPayload<T extends QuestGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<QuestGroupByOutputType, T['by']> &
       {
@@ -2095,6 +2095,11 @@ export type QuestFindManyArgs<ExtArgs extends runtime.Types.Extensions.InternalA
    * Skip the first `n` Quests.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of Quests.
+   */
   distinct?: Prisma.QuestScalarFieldEnum | Prisma.QuestScalarFieldEnum[]
 }
 

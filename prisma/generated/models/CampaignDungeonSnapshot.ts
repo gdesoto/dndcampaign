@@ -178,7 +178,7 @@ export type CampaignDungeonSnapshotGroupByOutputType = {
   _max: CampaignDungeonSnapshotMaxAggregateOutputType | null
 }
 
-type GetCampaignDungeonSnapshotGroupByPayload<T extends CampaignDungeonSnapshotGroupByArgs> = Prisma.PrismaPromise<
+export type GetCampaignDungeonSnapshotGroupByPayload<T extends CampaignDungeonSnapshotGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<CampaignDungeonSnapshotGroupByOutputType, T['by']> &
       {
@@ -1396,6 +1396,11 @@ export type CampaignDungeonSnapshotFindManyArgs<ExtArgs extends runtime.Types.Ex
    * Skip the first `n` CampaignDungeonSnapshots.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of CampaignDungeonSnapshots.
+   */
   distinct?: Prisma.CampaignDungeonSnapshotScalarFieldEnum | Prisma.CampaignDungeonSnapshotScalarFieldEnum[]
 }
 

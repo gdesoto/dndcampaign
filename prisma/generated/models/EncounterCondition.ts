@@ -231,7 +231,7 @@ export type EncounterConditionGroupByOutputType = {
   _max: EncounterConditionMaxAggregateOutputType | null
 }
 
-type GetEncounterConditionGroupByPayload<T extends EncounterConditionGroupByArgs> = Prisma.PrismaPromise<
+export type GetEncounterConditionGroupByPayload<T extends EncounterConditionGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<EncounterConditionGroupByOutputType, T['by']> &
       {
@@ -1350,6 +1350,11 @@ export type EncounterConditionFindManyArgs<ExtArgs extends runtime.Types.Extensi
    * Skip the first `n` EncounterConditions.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of EncounterConditions.
+   */
   distinct?: Prisma.EncounterConditionScalarFieldEnum | Prisma.EncounterConditionScalarFieldEnum[]
 }
 

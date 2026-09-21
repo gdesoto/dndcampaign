@@ -62,6 +62,16 @@ export type AdminAuditLog = Prisma.AdminAuditLogModel
  */
 export type Campaign = Prisma.CampaignModel
 /**
+ * Model ApiKey
+ * 
+ */
+export type ApiKey = Prisma.ApiKeyModel
+/**
+ * Model ApiKeyCampaign
+ * 
+ */
+export type ApiKeyCampaign = Prisma.ApiKeyCampaignModel
+/**
  * Model CampaignPublicAccess
  * 
  */

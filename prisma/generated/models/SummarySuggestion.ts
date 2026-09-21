@@ -178,7 +178,7 @@ export type SummarySuggestionGroupByOutputType = {
   _max: SummarySuggestionMaxAggregateOutputType | null
 }
 
-type GetSummarySuggestionGroupByPayload<T extends SummarySuggestionGroupByArgs> = Prisma.PrismaPromise<
+export type GetSummarySuggestionGroupByPayload<T extends SummarySuggestionGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<SummarySuggestionGroupByOutputType, T['by']> &
       {
@@ -1261,6 +1261,11 @@ export type SummarySuggestionFindManyArgs<ExtArgs extends runtime.Types.Extensio
    * Skip the first `n` SummarySuggestions.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of SummarySuggestions.
+   */
   distinct?: Prisma.SummarySuggestionScalarFieldEnum | Prisma.SummarySuggestionScalarFieldEnum[]
 }
 

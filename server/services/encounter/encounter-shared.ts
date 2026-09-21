@@ -21,6 +21,21 @@ type CampaignPermission = 'content.read' | 'content.write'
 const monthShapeSchema = z.array(z.object({ length: z.number().int().min(1) }))
 const activityLogService = new ActivityLogService()
 
+export const buildEncounterVisibilityWhere = (userId: string) => ({
+  OR: [
+    { visibility: 'SHARED' as const },
+    {
+      visibility: 'DM_ONLY' as const,
+      campaign: {
+        OR: [
+          { ownerId: userId },
+          { members: { some: { userId, hasDmAccess: true } } },
+        ],
+      },
+    },
+  ],
+})
+
 export async function getEncounterWithAccess(
   encounterId: string,
   userId: string,
@@ -30,6 +45,7 @@ export async function getEncounterWithAccess(
     where: {
       id: encounterId,
       campaign: buildCampaignWhereForPermission(userId, permission),
+      ...buildEncounterVisibilityWhere(userId),
     },
     include: {
       combatants: true,

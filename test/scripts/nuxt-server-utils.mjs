@@ -4,14 +4,15 @@ import { killProcessTree } from './test-db-utils.mjs'
 
 const sleep = (ms) => new Promise((resolveDelay) => setTimeout(resolveDelay, ms))
 
-async function waitForHttp(baseUrl, { timeoutMs = 60_000, intervalMs = 300 } = {}) {
+async function waitForHttp(baseUrl, { timeoutMs = 60_000, intervalMs = 300, readinessPath = '/login', readinessStatus = 200 } = {}) {
   const deadline = Date.now() + timeoutMs
   let lastError
 
   while (Date.now() < deadline) {
     try {
-      const response = await fetch(`${baseUrl}/login`)
-      if (response.ok) return
+      const response = await fetch(`${baseUrl}${readinessPath}`, { signal: AbortSignal.timeout(5_000) })
+      if (response.status === readinessStatus) return
+      lastError = new Error(`Readiness check ${readinessPath} returned HTTP ${response.status}`)
     } catch (error) {
       lastError = error
     }
@@ -26,6 +27,8 @@ export async function startManagedNuxtDevServer({
   env = {},
   host = '127.0.0.1',
   port = 4174,
+  readinessPath = '/login',
+  readinessStatus = 200,
 } = {}) {
   if (!rootDir) {
     throw new Error('rootDir is required for startManagedNuxtDevServer')
@@ -47,7 +50,12 @@ export async function startManagedNuxtDevServer({
     }
   )
 
-  await waitForHttp(baseUrl)
+  try {
+    await waitForHttp(baseUrl, { readinessPath, readinessStatus })
+  } catch (error) {
+    killProcessTree(child.pid)
+    throw error
+  }
 
   const stop = async () => {
     if (child?.pid) {

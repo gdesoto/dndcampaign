@@ -154,7 +154,7 @@ export type CharacterImportSettingsGroupByOutputType = {
   _max: CharacterImportSettingsMaxAggregateOutputType | null
 }
 
-type GetCharacterImportSettingsGroupByPayload<T extends CharacterImportSettingsGroupByArgs> = Prisma.PrismaPromise<
+export type GetCharacterImportSettingsGroupByPayload<T extends CharacterImportSettingsGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<CharacterImportSettingsGroupByOutputType, T['by']> &
       {
@@ -1070,6 +1070,11 @@ export type CharacterImportSettingsFindManyArgs<ExtArgs extends runtime.Types.Ex
    * Skip the first `n` CharacterImportSettings.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of CharacterImportSettings.
+   */
   distinct?: Prisma.CharacterImportSettingsScalarFieldEnum | Prisma.CharacterImportSettingsScalarFieldEnum[]
 }
 

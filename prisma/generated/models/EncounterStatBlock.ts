@@ -182,7 +182,7 @@ export type EncounterStatBlockGroupByOutputType = {
   _max: EncounterStatBlockMaxAggregateOutputType | null
 }
 
-type GetEncounterStatBlockGroupByPayload<T extends EncounterStatBlockGroupByArgs> = Prisma.PrismaPromise<
+export type GetEncounterStatBlockGroupByPayload<T extends EncounterStatBlockGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<EncounterStatBlockGroupByOutputType, T['by']> &
       {
@@ -1404,6 +1404,11 @@ export type EncounterStatBlockFindManyArgs<ExtArgs extends runtime.Types.Extensi
    * Skip the first `n` EncounterStatBlocks.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of EncounterStatBlocks.
+   */
   distinct?: Prisma.EncounterStatBlockScalarFieldEnum | Prisma.EncounterStatBlockScalarFieldEnum[]
 }
 

@@ -16,6 +16,9 @@ export default async function apiGlobalSetup() {
   const server = await startManagedNuxtDevServer({
     rootDir,
     port: 4181,
+    // API tests need Nitro readiness, not a rendered Vite login page.
+    readinessPath: '/api/auth/me',
+    readinessStatus: 401,
     env: {
       ...db.env,
       VITE_HMR_PORT: '24685',

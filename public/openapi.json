@@ -3,7 +3,7 @@
   "info": {
     "title": "DND Campaign Vault Server API",
     "version": "1.0.0",
-    "description": "Comprehensive OpenAPI documentation generated from `server/api` route files and endpoint inventory.\n\nNotes:\n- All endpoints listed in `dev_plan/endpoint_cleanup/ServerApiEndpoints.md` are included.\n- Request/response envelopes follow `{ data, error }`.\n- Endpoint-specific payload models are fully defined for merged/action-heavy endpoints; other mutation endpoints use a generic request schema and examples.\n- Operations are cookie-authenticated unless explicitly public."
+    "description": "Comprehensive OpenAPI documentation for the DND Campaign Vault API.\n\nNotes:\n- Request/response envelopes follow `{ data, error }`.\n- Operations may use the existing session cookie or a scoped bearer API key (`Authorization: Bearer <key>`).\n- Bearer keys are subject to the owner's current campaign access and the key's resource permissions.\n- The stateless MCP Streamable HTTP endpoint is available at `/mcp` on this same server; it exposes only the named operations documented in `docs/AgentIntegration.md`. The API remains the authorization and business-logic authority."
   },
   "servers": [
     {
@@ -1382,10 +1382,15 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "campaigns/[campaignId].get.ts",
-        "x-generated": true
+        "x-generated": true,
+        "x-agent-tool": "campaign_get",
+        "x-agent-permission": "campaign.read"
       },
       "patch": {
         "tags": [
@@ -1436,6 +1441,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "campaigns/[campaignId].patch.ts",
@@ -1445,7 +1453,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
+                "$ref": "#/components/schemas/AgentCampaignUpdateRequest"
               },
               "example": {
                 "action": "update",
@@ -1453,7 +1461,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "campaign_update",
+        "x-agent-permission": "campaign.write"
       }
     },
     "/api/campaigns/{campaignId}/activity": {
@@ -2282,10 +2292,15 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "campaigns/[campaignId]/characters/index.get.ts",
-        "x-generated": true
+        "x-generated": true,
+        "x-agent-tool": "characters_list",
+        "x-agent-permission": "characters.read"
       },
       "post": {
         "tags": [
@@ -2336,6 +2351,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "campaigns/[campaignId]/characters/index.post.ts",
@@ -2345,7 +2363,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
+                "$ref": "#/components/schemas/AgentCharacterCreateRequest"
               },
               "example": {
                 "action": "update",
@@ -2353,7 +2371,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "characters_create",
+        "x-agent-permission": "characters.write"
       }
     },
     "/api/campaigns/{campaignId}/characters/{characterId}": {
@@ -2422,10 +2442,15 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "campaigns/[campaignId]/characters/[characterId].delete.ts",
-        "x-generated": true
+        "x-generated": true,
+        "x-agent-tool": "character_delete",
+        "x-agent-permission": "characters.write"
       },
       "patch": {
         "tags": [
@@ -2486,6 +2511,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "campaigns/[campaignId]/characters/[characterId].patch.ts",
@@ -2495,7 +2523,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
+                "$ref": "#/components/schemas/AgentCharacterUpdateRequest"
               },
               "example": {
                 "action": "update",
@@ -2503,7 +2531,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "character_update",
+        "x-agent-permission": "characters.write"
       }
     },
     "/api/campaigns/{campaignId}/dungeons": {
@@ -3590,10 +3620,15 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "campaigns/[campaignId]/encounters/index.get.ts",
-        "x-generated": true
+        "x-generated": true,
+        "x-agent-tool": "encounters_list",
+        "x-agent-permission": "encounters.read"
       },
       "post": {
         "tags": [
@@ -3644,6 +3679,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "campaigns/[campaignId]/encounters/index.post.ts",
@@ -3653,7 +3691,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
+                "$ref": "#/components/schemas/AgentEncounterCreateRequest"
               },
               "example": {
                 "action": "update",
@@ -3661,7 +3699,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "encounter_create",
+        "x-agent-permission": "encounters.write"
       }
     },
     "/api/campaigns/{campaignId}/encounters/stat-blocks": {
@@ -3714,10 +3754,15 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "campaigns/[campaignId]/encounters/stat-blocks/index.get.ts",
-        "x-generated": true
+        "x-generated": true,
+        "x-agent-tool": "encounter_stat_blocks_list",
+        "x-agent-permission": "encounters.read"
       },
       "post": {
         "tags": [
@@ -3768,6 +3813,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "campaigns/[campaignId]/encounters/stat-blocks/index.post.ts",
@@ -3777,7 +3825,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
+                "$ref": "#/components/schemas/AgentStatBlockCreateRequest"
               },
               "example": {
                 "action": "update",
@@ -3785,7 +3833,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "encounter_stat_block_create",
+        "x-agent-permission": "encounters.write"
       }
     },
     "/api/campaigns/{campaignId}/encounters/templates": {
@@ -3838,10 +3888,15 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "campaigns/[campaignId]/encounters/templates/index.get.ts",
-        "x-generated": true
+        "x-generated": true,
+        "x-agent-tool": "encounter_templates_list",
+        "x-agent-permission": "encounters.read"
       },
       "post": {
         "tags": [
@@ -3892,6 +3947,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "campaigns/[campaignId]/encounters/templates/index.post.ts",
@@ -3901,7 +3959,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
+                "$ref": "#/components/schemas/AgentTemplateCreateRequest"
               },
               "example": {
                 "action": "update",
@@ -3909,7 +3967,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "encounter_template_create",
+        "x-agent-permission": "encounters.write"
       }
     },
     "/api/campaigns/{campaignId}/glossary": {
@@ -3962,10 +4022,15 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "campaigns/[campaignId]/glossary/index.get.ts",
-        "x-generated": true
+        "x-generated": true,
+        "x-agent-tool": "glossary_list",
+        "x-agent-permission": "glossary.read"
       },
       "post": {
         "tags": [
@@ -4016,6 +4081,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "campaigns/[campaignId]/glossary/index.post.ts",
@@ -4025,7 +4093,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
+                "$ref": "#/components/schemas/AgentGlossaryCreateRequest"
               },
               "example": {
                 "action": "update",
@@ -4033,7 +4101,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "glossary_create",
+        "x-agent-permission": "glossary.write"
       }
     },
     "/api/campaigns/{campaignId}/journal/entries": {
@@ -5931,10 +6001,15 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "campaigns/[campaignId]/quests/index.get.ts",
-        "x-generated": true
+        "x-generated": true,
+        "x-agent-tool": "quests_list",
+        "x-agent-permission": "quests.read"
       },
       "post": {
         "tags": [
@@ -5985,6 +6060,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "campaigns/[campaignId]/quests/index.post.ts",
@@ -5994,7 +6072,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
+                "$ref": "#/components/schemas/AgentQuestCreateRequest"
               },
               "example": {
                 "action": "update",
@@ -6002,7 +6080,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "quests_create",
+        "x-agent-permission": "quests.write"
       }
     },
     "/api/campaigns/{campaignId}/recaps": {
@@ -6531,10 +6611,15 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "campaigns/[campaignId]/sessions/index.get.ts",
-        "x-generated": true
+        "x-generated": true,
+        "x-agent-tool": "sessions_list",
+        "x-agent-permission": "sessions.read"
       },
       "post": {
         "tags": [
@@ -6585,6 +6670,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "campaigns/[campaignId]/sessions/index.post.ts",
@@ -6594,7 +6682,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
+                "$ref": "#/components/schemas/AgentSessionCreateRequest"
               },
               "example": {
                 "action": "update",
@@ -6602,7 +6690,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "session_create",
+        "x-agent-permission": "sessions.write"
       }
     },
     "/api/campaigns/{campaignId}/workspace": {
@@ -7335,6 +7425,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "documents/[documentId].patch.ts",
@@ -7344,7 +7437,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DocumentPatchRequest"
+                "$ref": "#/components/schemas/AgentDocumentUpdateRequest"
               },
               "example": {
                 "action": "update",
@@ -7352,7 +7445,13 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tools": [
+          "session_summary_update",
+          "transcript_update"
+        ],
+        "x-agent-tool": "session_summary_update/transcript_update",
+        "x-agent-permission": "summaries.write/transcripts.write"
       }
     },
     "/api/documents/{documentId}/segments": {
@@ -7593,10 +7692,15 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "encounters/[encounterId]/index.delete.ts",
-        "x-generated": true
+        "x-generated": true,
+        "x-agent-tool": "encounter_delete",
+        "x-agent-permission": "encounters.write"
       },
       "get": {
         "tags": [
@@ -7647,10 +7751,15 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "encounters/[encounterId]/index.get.ts",
-        "x-generated": true
+        "x-generated": true,
+        "x-agent-tool": "encounter_get",
+        "x-agent-permission": "encounters.read"
       },
       "patch": {
         "tags": [
@@ -7701,6 +7810,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "encounters/[encounterId]/index.patch.ts",
@@ -7710,7 +7822,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EncounterPatchRequest"
+                "$ref": "#/components/schemas/AgentEncounterUpdateRequest"
               },
               "example": {
                 "action": "update",
@@ -7718,7 +7830,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "encounter_update",
+        "x-agent-permission": "encounters.write"
       }
     },
     "/api/encounters/{encounterId}/combatants": {
@@ -7771,10 +7885,15 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "encounters/[encounterId]/combatants/index.get.ts",
-        "x-generated": true
+        "x-generated": true,
+        "x-agent-tool": "encounter_combatants_list",
+        "x-agent-permission": "encounters.read"
       },
       "post": {
         "tags": [
@@ -7825,6 +7944,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "encounters/[encounterId]/combatants/index.post.ts",
@@ -7834,7 +7956,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
+                "$ref": "#/components/schemas/AgentCombatantCreateRequest"
               },
               "example": {
                 "action": "update",
@@ -7842,7 +7964,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "encounter_combatant_create",
+        "x-agent-permission": "encounters.write"
       }
     },
     "/api/encounters/{encounterId}/combatants/{combatantId}": {
@@ -7911,10 +8035,15 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "encounters/[encounterId]/combatants/[combatantId].delete.ts",
-        "x-generated": true
+        "x-generated": true,
+        "x-agent-tool": "encounter_combatant_delete",
+        "x-agent-permission": "encounters.write"
       },
       "patch": {
         "tags": [
@@ -7975,6 +8104,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "encounters/[encounterId]/combatants/[combatantId].patch.ts",
@@ -7984,7 +8116,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CombatantPatchRequest"
+                "$ref": "#/components/schemas/AgentCombatantUpdateRequest"
               },
               "example": {
                 "action": "update",
@@ -7992,7 +8124,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "encounter_combatant_update",
+        "x-agent-permission": "encounters.write"
       }
     },
     "/api/encounters/{encounterId}/combatants/{combatantId}/conditions": {
@@ -8055,6 +8189,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "encounters/[encounterId]/combatants/[combatantId]/conditions/index.post.ts",
@@ -8064,7 +8201,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
+                "$ref": "#/components/schemas/AgentConditionCreateRequest"
               },
               "example": {
                 "action": "update",
@@ -8072,7 +8209,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "encounter_condition_create",
+        "x-agent-permission": "encounters.write"
       }
     },
     "/api/encounters/{encounterId}/combatants/{combatantId}/conditions/{conditionId}": {
@@ -8151,10 +8290,15 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "encounters/[encounterId]/combatants/[combatantId]/conditions/[conditionId].delete.ts",
-        "x-generated": true
+        "x-generated": true,
+        "x-agent-tool": "encounter_condition_delete",
+        "x-agent-permission": "encounters.write"
       },
       "patch": {
         "tags": [
@@ -8225,6 +8369,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "encounters/[encounterId]/combatants/[combatantId]/conditions/[conditionId].patch.ts",
@@ -8234,7 +8381,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
+                "$ref": "#/components/schemas/AgentConditionUpdateRequest"
               },
               "example": {
                 "action": "update",
@@ -8242,7 +8389,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "encounter_condition_update",
+        "x-agent-permission": "encounters.write"
       }
     },
     "/api/encounters/{encounterId}/events": {
@@ -8295,10 +8444,15 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "encounters/[encounterId]/events/index.get.ts",
-        "x-generated": true
+        "x-generated": true,
+        "x-agent-tool": "encounter_events_list",
+        "x-agent-permission": "encounters.read"
       }
     },
     "/api/encounters/{encounterId}/events/note": {
@@ -8351,6 +8505,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "encounters/[encounterId]/events/note.post.ts",
@@ -8360,7 +8517,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
+                "$ref": "#/components/schemas/AgentEventNoteRequest"
               },
               "example": {
                 "action": "update",
@@ -8368,7 +8525,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "encounter_event_note_create",
+        "x-agent-permission": "encounters.write"
       }
     },
     "/api/encounters/{encounterId}/initiative": {
@@ -8421,6 +8580,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "encounters/[encounterId]/initiative/index.patch.ts",
@@ -8430,7 +8592,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EncounterInitiativePatchRequest"
+                "$ref": "#/components/schemas/AgentInitiativeRequest"
               },
               "example": {
                 "action": "update",
@@ -8438,7 +8600,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "encounter_initiative",
+        "x-agent-permission": "encounters.write"
       }
     },
     "/api/encounters/{encounterId}/summary": {
@@ -8491,6 +8655,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "encounters/[encounterId]/summary.get.ts",
@@ -8547,6 +8714,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "encounters/[encounterId]/turn/index.patch.ts",
@@ -8556,7 +8726,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EncounterTurnPatchRequest"
+                "$ref": "#/components/schemas/AgentTurnRequest"
               },
               "example": {
                 "action": "update",
@@ -8564,7 +8734,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "encounter_turn",
+        "x-agent-permission": "encounters.write"
       }
     },
     "/api/encounters/stat-blocks/{statBlockId}": {
@@ -8623,10 +8795,15 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "encounters/stat-blocks/[statBlockId]/index.delete.ts",
-        "x-generated": true
+        "x-generated": true,
+        "x-agent-tool": "encounter_stat_block_delete",
+        "x-agent-permission": "encounters.write"
       },
       "patch": {
         "tags": [
@@ -8677,6 +8854,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "encounters/stat-blocks/[statBlockId]/index.patch.ts",
@@ -8686,7 +8866,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
+                "$ref": "#/components/schemas/AgentStatBlockUpdateRequest"
               },
               "example": {
                 "action": "update",
@@ -8694,7 +8874,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "encounter_stat_block_update",
+        "x-agent-permission": "encounters.write"
       }
     },
     "/api/encounters/templates/{templateId}": {
@@ -8753,10 +8935,15 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "encounters/templates/[templateId]/index.delete.ts",
-        "x-generated": true
+        "x-generated": true,
+        "x-agent-tool": "encounter_template_delete",
+        "x-agent-permission": "encounters.write"
       },
       "patch": {
         "tags": [
@@ -8807,6 +8994,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "encounters/templates/[templateId]/index.patch.ts",
@@ -8816,7 +9006,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
+                "$ref": "#/components/schemas/AgentTemplateUpdateRequest"
               },
               "example": {
                 "action": "update",
@@ -8824,7 +9014,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "encounter_template_update",
+        "x-agent-permission": "encounters.write"
       }
     },
     "/api/encounters/templates/{templateId}/instantiate": {
@@ -8877,6 +9069,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "encounters/templates/[templateId]/instantiate/index.post.ts",
@@ -8886,7 +9081,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
+                "$ref": "#/components/schemas/AgentTemplateInstantiateRequest"
               },
               "example": {
                 "action": "update",
@@ -8894,7 +9089,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "encounter_template_instantiate",
+        "x-agent-permission": "encounters.write"
       }
     },
     "/api/glossary/{entryId}": {
@@ -8953,10 +9150,15 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "glossary/[entryId].delete.ts",
-        "x-generated": true
+        "x-generated": true,
+        "x-agent-tool": "glossary_delete",
+        "x-agent-permission": "glossary.write"
       },
       "patch": {
         "tags": [
@@ -9007,6 +9209,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "glossary/[entryId].patch.ts",
@@ -9016,7 +9221,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
+                "$ref": "#/components/schemas/AgentGlossaryUpdateRequest"
               },
               "example": {
                 "action": "update",
@@ -9024,7 +9229,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "glossary_update",
+        "x-agent-permission": "glossary.write"
       }
     },
     "/api/glossary/{entryId}/sessions/{sessionId}": {
@@ -10169,10 +10376,15 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "quests/[questId].delete.ts",
-        "x-generated": true
+        "x-generated": true,
+        "x-agent-tool": "quest_delete",
+        "x-agent-permission": "quests.write"
       },
       "patch": {
         "tags": [
@@ -10223,6 +10435,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "quests/[questId].patch.ts",
@@ -10232,7 +10447,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
+                "$ref": "#/components/schemas/AgentQuestUpdateRequest"
               },
               "example": {
                 "action": "update",
@@ -10240,7 +10455,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "quest_update",
+        "x-agent-permission": "quests.write"
       }
     },
     "/api/recaps/{recapId}": {
@@ -10868,10 +11085,15 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "sessions/[sessionId].get.ts",
-        "x-generated": true
+        "x-generated": true,
+        "x-agent-tool": "session_get",
+        "x-agent-permission": "sessions.read"
       },
       "patch": {
         "tags": [
@@ -10922,6 +11144,9 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "sessions/[sessionId].patch.ts",
@@ -10931,7 +11156,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
+                "$ref": "#/components/schemas/AgentSessionUpdateRequest"
               },
               "example": {
                 "action": "update",
@@ -10939,7 +11164,9 @@
               }
             }
           }
-        }
+        },
+        "x-agent-tool": "session_update",
+        "x-agent-permission": "sessions.write"
       }
     },
     "/api/sessions/{sessionId}/calendar/range": {
@@ -11122,10 +11349,15 @@
         "security": [
           {
             "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "x-source-file": "sessions/[sessionId]/documents.get.ts",
-        "x-generated": true
+        "x-generated": true,
+        "x-agent-tool": "session_summary_get",
+        "x-agent-permission": "summaries.read"
       },
       "post": {
         "tags": [
@@ -11812,8 +12044,7 @@
                 "$ref": "#/components/schemas/SummaryJobPatchRequest"
               },
               "example": {
-                "action": "update",
-                "notes": "Example payload. See schema and endpoint-specific docs."
+                "action": "apply"
               }
             }
           }
@@ -12129,6 +12360,412 @@
           }
         }
       }
+    },
+    "/api/sessions/{sessionId}/transcript": {
+      "get": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "Read or search a session transcript",
+        "description": "Reads 1-based transcript lines or performs a case-insensitive literal search. Omitted versionId always resolves to the latest transcript version. Requires transcripts.read in addition to campaign content.read.",
+        "operationId": "get_api_sessions_sessionId_transcript",
+        "x-agent-tool": "transcript_read",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "versionId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Transcript revision; omitted means latest."
+          },
+          {
+            "name": "startLine",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "First 1-based line for read mode."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            },
+            "description": "Maximum lines or merged passages."
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "description": "Literal search text; omit for read mode."
+          },
+          {
+            "name": "contextLines",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 50
+            },
+            "description": "Lines on each side of a search match."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "Merged passage offset for search mode."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transcript read or search response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_Transcript"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-source-file": "sessions/[sessionId]/transcript.get.ts"
+      }
+    },
+    "/api/account/api-keys": {
+      "get": {
+        "tags": [
+          "account"
+        ],
+        "summary": "List bearer API keys",
+        "description": "Cookie-authenticated key management. Secrets are never returned after creation.",
+        "operationId": "get_api_account_api_keys",
+        "responses": {
+          "200": {
+            "description": "Successful operation response envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ApiKeyListData"
+                    },
+                    "error": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Create a bearer API key",
+        "description": "Cookie-authenticated. The generated secret is returned once.",
+        "operationId": "post_api_account_api_keys",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiKeyCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful operation response envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ApiKeyCreateData"
+                    },
+                    "error": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/api/account/api-keys/{keyId}": {
+      "patch": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Update a bearer API key",
+        "description": "Cookie-authenticated key update; the secret is never returned.",
+        "operationId": "patch_api_account_api_keys_keyId",
+        "parameters": [
+          {
+            "name": "keyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiKeyUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful operation response envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ApiKey"
+                    },
+                    "error": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Revoke a bearer API key",
+        "description": "Cookie-authenticated key revocation.",
+        "operationId": "delete_api_account_api_keys_keyId",
+        "parameters": [
+          {
+            "name": "keyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation response envelope.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "error"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ApiKeyRevokeData"
+                    },
+                    "error": {
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/mcp": {
+      "post": {
+        "operationId": "post_mcp",
+        "summary": "Call the stateless MCP Streamable HTTP endpoint",
+        "description": "Send an MCP JSON-RPC request with a scoped bearer API key. Uses JSON responses and no server-side MCP session. An Origin header, when present, must match the configured public application origin. Tool calls retain REST campaign and resource authorization.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "jsonrpc",
+                  "method"
+                ],
+                "properties": {
+                  "jsonrpc": {
+                    "type": "string",
+                    "const": "2.0"
+                  },
+                  "id": {
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "integer"
+                      }
+                    ]
+                  },
+                  "method": {
+                    "type": "string"
+                  },
+                  "params": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "MCP JSON-RPC result or protocol error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "MCP notification accepted"
+          },
+          "400": {
+            "description": "Invalid MCP request"
+          },
+          "401": {
+            "description": "Missing, invalid, expired, or revoked bearer key"
+          },
+          "403": {
+            "description": "Origin is not allowed"
+          },
+          "406": {
+            "description": "Client must accept application/json and text/event-stream"
+          },
+          "415": {
+            "description": "Content-Type must be application/json"
+          },
+          "500": {
+            "description": "MCP request could not be processed"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -12138,6 +12775,12 @@
         "in": "cookie",
         "name": "auth_session",
         "description": "Session cookie set by auth endpoints."
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "DND Campaign API key",
+        "description": "Scoped API key sent as `Authorization: Bearer <key>`. Keys are never accepted in request bodies or query parameters."
       }
     },
     "responses": {
@@ -13273,6 +13916,2021 @@
         ],
         "example": {
           "action": "refresh-import"
+        }
+      },
+      "TranscriptLine": {
+        "type": "object",
+        "required": [
+          "lineNumber",
+          "text"
+        ],
+        "properties": {
+          "lineNumber": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "TranscriptSearchPassage": {
+        "type": "object",
+        "required": [
+          "startLine",
+          "endLine",
+          "matchingLineNumbers",
+          "lines"
+        ],
+        "properties": {
+          "startLine": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "endLine": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "matchingLineNumbers": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TranscriptLine"
+            }
+          }
+        }
+      },
+      "TranscriptReadResponse": {
+        "type": "object",
+        "required": [
+          "mode",
+          "documentId",
+          "versionId",
+          "totalLines",
+          "startLine",
+          "endLine",
+          "lines"
+        ],
+        "properties": {
+          "mode": {
+            "const": "read"
+          },
+          "documentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "totalLines": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "startLine": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "endLine": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TranscriptLine"
+            }
+          }
+        }
+      },
+      "TranscriptSearchResponse": {
+        "type": "object",
+        "required": [
+          "mode",
+          "documentId",
+          "versionId",
+          "totalLines",
+          "query",
+          "contextLines",
+          "offset",
+          "limit",
+          "totalMatches",
+          "totalResults",
+          "hasMore",
+          "matches"
+        ],
+        "properties": {
+          "mode": {
+            "const": "search"
+          },
+          "documentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "totalLines": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "query": {
+            "type": "string"
+          },
+          "contextLines": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          },
+          "totalMatches": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalResults": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "matches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TranscriptSearchPassage"
+            }
+          }
+        }
+      },
+      "ApiResponse_Transcript": {
+        "type": "object",
+        "required": [
+          "data",
+          "error"
+        ],
+        "properties": {
+          "data": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TranscriptReadResponse"
+              },
+              {
+                "$ref": "#/components/schemas/TranscriptSearchResponse"
+              }
+            ]
+          },
+          "error": {
+            "type": [
+              "object",
+              "null"
+            ]
+          }
+        }
+      },
+      "ApiKeyPermission": {
+        "type": "string",
+        "enum": [
+          "campaign.read",
+          "campaign.write",
+          "characters.read",
+          "characters.write",
+          "glossary.read",
+          "glossary.write",
+          "quests.read",
+          "quests.write",
+          "sessions.read",
+          "sessions.write",
+          "summaries.read",
+          "summaries.write",
+          "transcripts.read",
+          "transcripts.write",
+          "encounters.read",
+          "encounters.write"
+        ]
+      },
+      "ApiKey": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "prefix",
+          "campaignIds",
+          "permissions",
+          "expiresAt",
+          "lastUsedAt",
+          "revokedAt",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "prefix": {
+            "type": "string"
+          },
+          "campaignIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiKeyPermission"
+            }
+          },
+          "expiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "lastUsedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "revokedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ApiKeyCreateRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "campaignIds",
+          "permissions"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "campaignIds": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "permissions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/ApiKeyPermission"
+            }
+          },
+          "expiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "ApiKeyUpdateRequest": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "campaignIds": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "permissions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/ApiKeyPermission"
+            }
+          },
+          "expiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "ApiKeyListData": {
+        "type": "object",
+        "required": [
+          "keys"
+        ],
+        "properties": {
+          "keys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiKey"
+            }
+          }
+        }
+      },
+      "ApiKeyCreateData": {
+        "type": "object",
+        "required": [
+          "key",
+          "secret"
+        ],
+        "properties": {
+          "key": {
+            "$ref": "#/components/schemas/ApiKey"
+          },
+          "secret": {
+            "type": "string",
+            "description": "One-time bearer secret; never returned again."
+          }
+        }
+      },
+      "ApiKeyRevokeData": {
+        "type": "object",
+        "required": [
+          "revoked"
+        ],
+        "properties": {
+          "revoked": {
+            "type": "boolean"
+          }
+        }
+      },
+      "EncounterStatBlockCreateRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "statBlockJson"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "challengeRating": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "statBlockJson": {
+            "type": "object"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 10000
+          }
+        }
+      },
+      "EncounterStatBlockUpdateRequest": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "challengeRating": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 40
+          },
+          "statBlockJson": {
+            "type": "object"
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 10000
+          }
+        }
+      },
+      "EncounterTemplateCombatantRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "sortOrder"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "ALLY",
+              "ENEMY",
+              "NEUTRAL"
+            ]
+          },
+          "sourceType": {
+            "type": "string",
+            "enum": [
+              "CAMPAIGN_CHARACTER",
+              "PLAYER_CHARACTER",
+              "GLOSSARY_ENTRY",
+              "CUSTOM"
+            ]
+          },
+          "sourceStatBlockId": {
+            "type": "string"
+          },
+          "maxHp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "armorClass": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "speed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 5000
+          }
+        }
+      },
+      "EncounterTemplateCreateRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "COMBAT",
+              "SOCIAL",
+              "SKILL_CHALLENGE",
+              "CHASE",
+              "HAZARD"
+            ]
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "combatants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EncounterTemplateCombatantRequest"
+            }
+          }
+        }
+      },
+      "EncounterTemplateUpdateRequest": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "COMBAT",
+              "SOCIAL",
+              "SKILL_CHALLENGE",
+              "CHASE",
+              "HAZARD"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 10000
+          },
+          "combatants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EncounterTemplateCombatantRequest"
+            }
+          }
+        }
+      },
+      "EncounterTemplateInstantiateRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "calendarYear": {
+            "type": "integer"
+          },
+          "calendarMonth": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "calendarDay": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "AgentCampaignUpdateRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "system": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "dungeonMasterName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 5000
+          },
+          "currentStatus": {
+            "type": "string",
+            "maxLength": 5000
+          }
+        }
+      },
+      "AgentCharacterCreateRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "characterId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "characterId"
+        ]
+      },
+      "AgentCharacterUpdateRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          },
+          "roleLabel": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AgentGlossaryCreateRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "PC",
+              "NPC",
+              "ITEM",
+              "LOCATION"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "aliases": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "description": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 10000
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "description"
+        ]
+      },
+      "AgentGlossaryUpdateRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "PC",
+              "NPC",
+              "ITEM",
+              "LOCATION"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "aliases": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 10000
+          }
+        }
+      },
+      "AgentQuestCreateRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "CAMPAIGN",
+              "GUILD",
+              "CHARACTER"
+            ]
+          },
+          "track": {
+            "type": "string",
+            "enum": [
+              "MAIN",
+              "SIDE"
+            ]
+          },
+          "sourceType": {
+            "type": "string",
+            "enum": [
+              "FREE_TEXT",
+              "NPC",
+              "CAMPAIGN_CHARACTER"
+            ]
+          },
+          "sourceText": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "sourceNpcId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "sourceCharacterId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "reward": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "COMPLETED",
+              "FAILED",
+              "ON_HOLD"
+            ]
+          },
+          "progressNotes": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "expirationDate": {
+            "type": "object",
+            "properties": {
+              "year": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "month": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "day": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "year",
+              "month",
+              "day"
+            ]
+          }
+        },
+        "required": [
+          "title"
+        ]
+      },
+      "AgentQuestUpdateRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "CAMPAIGN",
+              "GUILD",
+              "CHARACTER"
+            ]
+          },
+          "track": {
+            "type": "string",
+            "enum": [
+              "MAIN",
+              "SIDE"
+            ]
+          },
+          "sourceType": {
+            "type": "string",
+            "enum": [
+              "FREE_TEXT",
+              "NPC",
+              "CAMPAIGN_CHARACTER"
+            ]
+          },
+          "sourceText": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sourceNpcId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sourceCharacterId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reward": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "COMPLETED",
+              "FAILED",
+              "ON_HOLD"
+            ]
+          },
+          "progressNotes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expirationDate": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "year": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "month": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "day": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "year",
+                  "month",
+                  "day"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AgentSessionCreateRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "sessionNumber": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "playedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "guestDungeonMasterName": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 10000
+          }
+        },
+        "required": [
+          "title"
+        ]
+      },
+      "AgentSessionUpdateRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "sessionNumber": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "playedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "guestDungeonMasterName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AgentDocumentUpdateRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "maxLength": 2000000
+          },
+          "format": {
+            "default": "MARKDOWN",
+            "type": "string",
+            "enum": [
+              "MARKDOWN",
+              "PLAINTEXT"
+            ]
+          }
+        },
+        "required": [
+          "content"
+        ]
+      },
+      "AgentEncounterCreateRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "type": {
+            "default": "COMBAT",
+            "type": "string",
+            "enum": [
+              "COMBAT",
+              "SOCIAL",
+              "SKILL_CHALLENGE",
+              "CHASE",
+              "HAZARD"
+            ]
+          },
+          "visibility": {
+            "default": "SHARED",
+            "type": "string",
+            "enum": [
+              "DM_ONLY",
+              "SHARED"
+            ]
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "sessionId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "calendarYear": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "calendarMonth": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "calendarDay": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "AgentEncounterUpdateRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "COMBAT",
+                  "SOCIAL",
+                  "SKILL_CHALLENGE",
+                  "CHASE",
+                  "HAZARD"
+                ]
+              },
+              "visibility": {
+                "type": "string",
+                "enum": [
+                  "DM_ONLY",
+                  "SHARED"
+                ]
+              },
+              "notes": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 10000
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "sessionId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "PLANNED",
+                  "ACTIVE",
+                  "PAUSED",
+                  "COMPLETED",
+                  "ABANDONED"
+                ]
+              },
+              "calendarYear": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "calendarMonth": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "calendarDay": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "currentRound": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "currentTurnIndex": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "start",
+                  "pause",
+                  "resume",
+                  "complete",
+                  "abandon",
+                  "reset"
+                ]
+              }
+            },
+            "required": [
+              "action"
+            ]
+          }
+        ]
+      },
+      "AgentCombatantCreateRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "side": {
+            "default": "ENEMY",
+            "type": "string",
+            "enum": [
+              "ALLY",
+              "ENEMY",
+              "NEUTRAL"
+            ]
+          },
+          "sourceType": {
+            "default": "CUSTOM",
+            "type": "string",
+            "enum": [
+              "CAMPAIGN_CHARACTER",
+              "PLAYER_CHARACTER",
+              "GLOSSARY_ENTRY",
+              "CUSTOM"
+            ]
+          },
+          "sourceCampaignCharacterId": {
+            "type": "string"
+          },
+          "sourcePlayerCharacterId": {
+            "type": "string"
+          },
+          "sourceGlossaryEntryId": {
+            "type": "string"
+          },
+          "sourceStatBlockId": {
+            "type": "string"
+          },
+          "initiative": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "maxHp": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "currentHp": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "tempHp": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "armorClass": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "speed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "isHidden": {
+            "default": false,
+            "type": "boolean"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 5000
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "AgentCombatantUpdateRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "side": {
+                "type": "string",
+                "enum": [
+                  "ALLY",
+                  "ENEMY",
+                  "NEUTRAL"
+                ]
+              },
+              "sourceType": {
+                "type": "string",
+                "enum": [
+                  "CAMPAIGN_CHARACTER",
+                  "PLAYER_CHARACTER",
+                  "GLOSSARY_ENTRY",
+                  "CUSTOM"
+                ]
+              },
+              "sourceStatBlockId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "initiative": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "sortOrder": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "maxHp": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "currentHp": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tempHp": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "armorClass": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "speed": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "isConcentrating": {
+                "type": "boolean"
+              },
+              "deathSaveSuccesses": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 3
+              },
+              "deathSaveFailures": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 3
+              },
+              "isDefeated": {
+                "type": "boolean"
+              },
+              "isHidden": {
+                "type": "boolean"
+              },
+              "notes": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 5000
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "operation": {
+                "type": "string",
+                "enum": [
+                  "damage",
+                  "heal"
+                ]
+              },
+              "amount": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9999
+              },
+              "note": {
+                "type": "string",
+                "maxLength": 500
+              }
+            },
+            "required": [
+              "operation",
+              "amount"
+            ]
+          }
+        ]
+      },
+      "AgentConditionCreateRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "duration": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "remaining": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "tickTiming": {
+            "default": "TURN_END",
+            "type": "string",
+            "enum": [
+              "TURN_START",
+              "TURN_END",
+              "ROUND_END"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "AgentConditionUpdateRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "duration": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "remaining": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tickTiming": {
+            "type": "string",
+            "enum": [
+              "TURN_START",
+              "TURN_END",
+              "ROUND_END"
+            ]
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AgentInitiativeRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "const": "roll"
+              },
+              "mode": {
+                "default": "ALL",
+                "type": "string",
+                "enum": [
+                  "ALL",
+                  "UNSET",
+                  "NON_PCS"
+                ]
+              }
+            },
+            "required": [
+              "action"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "const": "reorder"
+              },
+              "combatantOrder": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": [
+              "action",
+              "combatantOrder"
+            ]
+          }
+        ]
+      },
+      "AgentTurnRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "advance",
+                  "rewind"
+                ]
+              }
+            },
+            "required": [
+              "action"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "const": "set-active"
+              },
+              "combatantId": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "action",
+              "combatantId"
+            ]
+          }
+        ]
+      },
+      "AgentEventNoteRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "payload": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "summary"
+        ]
+      },
+      "AgentStatBlockCreateRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "challengeRating": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "statBlockJson": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 10000
+          }
+        },
+        "required": [
+          "name",
+          "statBlockJson"
+        ]
+      },
+      "AgentStatBlockUpdateRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "challengeRating": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "statBlockJson": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AgentTemplateCreateRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "type": {
+            "default": "COMBAT",
+            "type": "string",
+            "enum": [
+              "COMBAT",
+              "SOCIAL",
+              "SKILL_CHALLENGE",
+              "CHASE",
+              "HAZARD"
+            ]
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "combatants": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "side": {
+                  "default": "ENEMY",
+                  "type": "string",
+                  "enum": [
+                    "ALLY",
+                    "ENEMY",
+                    "NEUTRAL"
+                  ]
+                },
+                "sourceType": {
+                  "default": "CUSTOM",
+                  "type": "string",
+                  "enum": [
+                    "CAMPAIGN_CHARACTER",
+                    "PLAYER_CHARACTER",
+                    "GLOSSARY_ENTRY",
+                    "CUSTOM"
+                  ]
+                },
+                "sourceStatBlockId": {
+                  "type": "string"
+                },
+                "maxHp": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "armorClass": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "speed": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "quantity": {
+                  "default": 1,
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 50
+                },
+                "sortOrder": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "notes": {
+                  "type": "string",
+                  "maxLength": 5000
+                }
+              },
+              "required": [
+                "name",
+                "sortOrder"
+              ]
+            }
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "AgentTemplateUpdateRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "COMBAT",
+              "SOCIAL",
+              "SKILL_CHALLENGE",
+              "CHASE",
+              "HAZARD"
+            ]
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "combatants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "side": {
+                  "default": "ENEMY",
+                  "type": "string",
+                  "enum": [
+                    "ALLY",
+                    "ENEMY",
+                    "NEUTRAL"
+                  ]
+                },
+                "sourceType": {
+                  "default": "CUSTOM",
+                  "type": "string",
+                  "enum": [
+                    "CAMPAIGN_CHARACTER",
+                    "PLAYER_CHARACTER",
+                    "GLOSSARY_ENTRY",
+                    "CUSTOM"
+                  ]
+                },
+                "sourceStatBlockId": {
+                  "type": "string"
+                },
+                "maxHp": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "armorClass": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "speed": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "quantity": {
+                  "default": 1,
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 50
+                },
+                "sortOrder": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "notes": {
+                  "type": "string",
+                  "maxLength": 5000
+                }
+              },
+              "required": [
+                "name",
+                "sortOrder"
+              ]
+            }
+          }
+        }
+      },
+      "AgentTemplateInstantiateRequest": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "sessionId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "calendarYear": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "calendarMonth": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "calendarDay": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
         }
       }
     }

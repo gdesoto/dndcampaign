@@ -271,7 +271,7 @@ export type EncounterTemplateCombatantGroupByOutputType = {
   _max: EncounterTemplateCombatantMaxAggregateOutputType | null
 }
 
-type GetEncounterTemplateCombatantGroupByPayload<T extends EncounterTemplateCombatantGroupByArgs> = Prisma.PrismaPromise<
+export type GetEncounterTemplateCombatantGroupByPayload<T extends EncounterTemplateCombatantGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<EncounterTemplateCombatantGroupByOutputType, T['by']> &
       {
@@ -1510,6 +1510,11 @@ export type EncounterTemplateCombatantFindManyArgs<ExtArgs extends runtime.Types
    * Skip the first `n` EncounterTemplateCombatants.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of EncounterTemplateCombatants.
+   */
   distinct?: Prisma.EncounterTemplateCombatantScalarFieldEnum | Prisma.EncounterTemplateCombatantScalarFieldEnum[]
 }
 

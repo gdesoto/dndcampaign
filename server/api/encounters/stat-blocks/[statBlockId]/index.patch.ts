@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
 
   const parsed = await validateBody(event, encounterStatBlockUpdateSchema, 'Invalid stat block payload')
 
-  const sessionUser = await requireUserSession(event)
+  const sessionUser = await requireApiUserSession(event)
   const result = await new EncounterStatBlockService().updateStatBlock(statBlockId, sessionUser.user.id, parsed)
   return ok(result)
 })

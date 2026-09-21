@@ -2,6 +2,7 @@ import type { H3Event } from 'h3'
 import type { CampaignRole, Prisma } from '#server/db/prisma-client'
 import { prisma } from '#server/db/prisma'
 import { apiError } from '#server/utils/http'
+import { requireApiUserSession } from '#server/utils/api-auth'
 
 export type CampaignPermission =
   | 'campaign.read'
@@ -152,7 +153,7 @@ export const requireCampaignPermission = async (
   campaignId: string,
   permission: CampaignPermission
 ) => {
-  const session = await requireUserSession(event)
+  const session = await requireApiUserSession(event)
   const resolved = await resolveCampaignAccess(campaignId, session.user.id, session.user.systemRole)
 
   if (!resolved.exists) {

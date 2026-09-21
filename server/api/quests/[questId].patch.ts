@@ -8,7 +8,7 @@ import { QuestService } from '#server/services/quest.service'
 const questService = new QuestService()
 
 export default defineEventHandler(async (event) => {
-  const session = await requireUserSession(event)
+  const session = await requireApiUserSession(event)
   const { questId } = routeParams(event, 'questId')
 
   const parsed = await validateBody(event, questUpdateSchema, 'Invalid quest payload')

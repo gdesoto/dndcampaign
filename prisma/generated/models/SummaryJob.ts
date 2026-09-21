@@ -238,7 +238,7 @@ export type SummaryJobGroupByOutputType = {
   _max: SummaryJobMaxAggregateOutputType | null
 }
 
-type GetSummaryJobGroupByPayload<T extends SummaryJobGroupByArgs> = Prisma.PrismaPromise<
+export type GetSummaryJobGroupByPayload<T extends SummaryJobGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<SummaryJobGroupByOutputType, T['by']> &
       {
@@ -2293,6 +2293,11 @@ export type SummaryJobFindManyArgs<ExtArgs extends runtime.Types.Extensions.Inte
    * Skip the first `n` SummaryJobs.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of SummaryJobs.
+   */
   distinct?: Prisma.SummaryJobScalarFieldEnum | Prisma.SummaryJobScalarFieldEnum[]
 }
 

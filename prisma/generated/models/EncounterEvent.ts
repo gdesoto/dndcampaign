@@ -168,7 +168,7 @@ export type EncounterEventGroupByOutputType = {
   _max: EncounterEventMaxAggregateOutputType | null
 }
 
-type GetEncounterEventGroupByPayload<T extends EncounterEventGroupByArgs> = Prisma.PrismaPromise<
+export type GetEncounterEventGroupByPayload<T extends EncounterEventGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<EncounterEventGroupByOutputType, T['by']> &
       {
@@ -1320,6 +1320,11 @@ export type EncounterEventFindManyArgs<ExtArgs extends runtime.Types.Extensions.
    * Skip the first `n` EncounterEvents.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of EncounterEvents.
+   */
   distinct?: Prisma.EncounterEventScalarFieldEnum | Prisma.EncounterEventScalarFieldEnum[]
 }
 

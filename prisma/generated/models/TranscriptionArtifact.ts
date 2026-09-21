@@ -158,7 +158,7 @@ export type TranscriptionArtifactGroupByOutputType = {
   _max: TranscriptionArtifactMaxAggregateOutputType | null
 }
 
-type GetTranscriptionArtifactGroupByPayload<T extends TranscriptionArtifactGroupByArgs> = Prisma.PrismaPromise<
+export type GetTranscriptionArtifactGroupByPayload<T extends TranscriptionArtifactGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<TranscriptionArtifactGroupByOutputType, T['by']> &
       {
@@ -1250,6 +1250,11 @@ export type TranscriptionArtifactFindManyArgs<ExtArgs extends runtime.Types.Exte
    * Skip the first `n` TranscriptionArtifacts.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of TranscriptionArtifacts.
+   */
   distinct?: Prisma.TranscriptionArtifactScalarFieldEnum | Prisma.TranscriptionArtifactScalarFieldEnum[]
 }
 

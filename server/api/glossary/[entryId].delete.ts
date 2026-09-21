@@ -3,7 +3,7 @@ import { ok, apiError, routeParams } from '#server/utils/http'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
-  const session = await requireUserSession(event)
+  const session = await requireApiUserSession(event)
   const { entryId } = routeParams(event, 'entryId')
 
   const existing = await prisma.glossaryEntry.findFirst({

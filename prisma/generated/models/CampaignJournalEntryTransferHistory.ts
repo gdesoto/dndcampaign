@@ -179,7 +179,7 @@ export type CampaignJournalEntryTransferHistoryGroupByOutputType = {
   _max: CampaignJournalEntryTransferHistoryMaxAggregateOutputType | null
 }
 
-type GetCampaignJournalEntryTransferHistoryGroupByPayload<T extends CampaignJournalEntryTransferHistoryGroupByArgs> = Prisma.PrismaPromise<
+export type GetCampaignJournalEntryTransferHistoryGroupByPayload<T extends CampaignJournalEntryTransferHistoryGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<CampaignJournalEntryTransferHistoryGroupByOutputType, T['by']> &
       {
@@ -1774,6 +1774,11 @@ export type CampaignJournalEntryTransferHistoryFindManyArgs<ExtArgs extends runt
    * Skip the first `n` CampaignJournalEntryTransferHistories.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of CampaignJournalEntryTransferHistories.
+   */
   distinct?: Prisma.CampaignJournalEntryTransferHistoryScalarFieldEnum | Prisma.CampaignJournalEntryTransferHistoryScalarFieldEnum[]
 }
 

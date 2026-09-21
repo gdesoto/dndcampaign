@@ -165,7 +165,7 @@ export type CampaignDungeonLinkGroupByOutputType = {
   _max: CampaignDungeonLinkMaxAggregateOutputType | null
 }
 
-type GetCampaignDungeonLinkGroupByPayload<T extends CampaignDungeonLinkGroupByArgs> = Prisma.PrismaPromise<
+export type GetCampaignDungeonLinkGroupByPayload<T extends CampaignDungeonLinkGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<CampaignDungeonLinkGroupByOutputType, T['by']> &
       {
@@ -1285,6 +1285,11 @@ export type CampaignDungeonLinkFindManyArgs<ExtArgs extends runtime.Types.Extens
    * Skip the first `n` CampaignDungeonLinks.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of CampaignDungeonLinks.
+   */
   distinct?: Prisma.CampaignDungeonLinkScalarFieldEnum | Prisma.CampaignDungeonLinkScalarFieldEnum[]
 }
 

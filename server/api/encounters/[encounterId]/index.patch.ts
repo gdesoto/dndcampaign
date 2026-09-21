@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   const rawBody = (await readBody(event).catch(() => null)) as Record<string, unknown> | null
   const action = typeof rawBody?.action === 'string' ? rawBody.action : null
   if (action && lifecycleActions.has(action)) {
-    const sessionUser = await requireUserSession(event)
+    const sessionUser = await requireApiUserSession(event)
     const result = await new EncounterRuntimeService().transitionStatus(
       encounterId,
       sessionUser.user.id,
@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
 
   const parsed = await validateBody(event, encounterUpdateSchema, 'Invalid encounter payload')
 
-  const sessionUser = await requireUserSession(event)
+  const sessionUser = await requireApiUserSession(event)
   const result = await new EncounterService().updateEncounter(encounterId, sessionUser.user.id, parsed)
 
   return ok(result)

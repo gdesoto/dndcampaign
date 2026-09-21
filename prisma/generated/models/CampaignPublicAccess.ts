@@ -228,7 +228,7 @@ export type CampaignPublicAccessGroupByOutputType = {
   _max: CampaignPublicAccessMaxAggregateOutputType | null
 }
 
-type GetCampaignPublicAccessGroupByPayload<T extends CampaignPublicAccessGroupByArgs> = Prisma.PrismaPromise<
+export type GetCampaignPublicAccessGroupByPayload<T extends CampaignPublicAccessGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<CampaignPublicAccessGroupByOutputType, T['by']> &
       {
@@ -1602,6 +1602,11 @@ export type CampaignPublicAccessFindManyArgs<ExtArgs extends runtime.Types.Exten
    * Skip the first `n` CampaignPublicAccesses.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of CampaignPublicAccesses.
+   */
   distinct?: Prisma.CampaignPublicAccessScalarFieldEnum | Prisma.CampaignPublicAccessScalarFieldEnum[]
 }
 

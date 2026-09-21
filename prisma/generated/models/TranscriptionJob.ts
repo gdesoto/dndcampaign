@@ -276,7 +276,7 @@ export type TranscriptionJobGroupByOutputType = {
   _max: TranscriptionJobMaxAggregateOutputType | null
 }
 
-type GetTranscriptionJobGroupByPayload<T extends TranscriptionJobGroupByArgs> = Prisma.PrismaPromise<
+export type GetTranscriptionJobGroupByPayload<T extends TranscriptionJobGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<TranscriptionJobGroupByOutputType, T['by']> &
       {
@@ -1754,6 +1754,11 @@ export type TranscriptionJobFindManyArgs<ExtArgs extends runtime.Types.Extension
    * Skip the first `n` TranscriptionJobs.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of TranscriptionJobs.
+   */
   distinct?: Prisma.TranscriptionJobScalarFieldEnum | Prisma.TranscriptionJobScalarFieldEnum[]
 }
 
