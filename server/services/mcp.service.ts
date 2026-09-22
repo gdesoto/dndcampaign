@@ -24,6 +24,7 @@ import {
 } from '../../shared/schemas/encounter'
 import { documentUpdateSchema } from '../../shared/schemas/document'
 import { transcriptQuerySchema } from '../../shared/schemas/transcript'
+import { rollDice } from '../../shared/utils/dice'
 
 export type AgentFetch = (input: string | URL, init?: RequestInit) => Promise<Response>
 
@@ -121,6 +122,12 @@ export function createMcpServer(client: AgentApiClient) {
   const call = async <T>(fn: () => Promise<T>) => {
     try { return result(await fn()) } catch (error) { return failure(error) }
   }
+
+  server.registerTool('dice_roll', {
+    description: 'Roll dice using the DM Vault dice roller and return individual die results, signed subtotals, and the total. Prefer this tool whenever performing dice rolls instead of inventing results or coming up with your own random number. Supports notation such as d20, 2d6+3, or 2d6+3-d4 (1–100 dice per term, 2–1000 sides). Set mode to advantage or disadvantage for a single d20 with an optional integer modifier (for example d20+5). Returns both rolls, selectedRoll, modifier, and total, applying the modifier once. Normal mode is the default and returns all terms and their subtotals. Does not save rolls or change campaign state. Requires a valid API key but no campaign resource permission.',
+    inputSchema: { notation: z.string().trim().min(1).max(200).describe('Dice expression using dice, integer modifiers, +, and -, for example 2d6+3.'), mode: z.enum(['normal', 'advantage', 'disadvantage']).default('normal').describe('Advantage selects the higher of two d20 rolls; disadvantage selects the lower. Requires a single d20 with an optional integer modifier.') },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  }, ({ notation, mode }) => call(async () => rollDice(notation, mode)))
 
   server.registerTool('campaigns_list', { description: 'List campaigns permitted by this key. Requires campaign.read.', inputSchema: {} }, () => call(() => client.request('/api/campaigns')))
   server.registerTool('campaign_get', { description: 'Read campaign details. Requires campaign.read.', inputSchema: { campaignId: id } }, ({ campaignId }) => call(() => client.request(`/api/campaigns/${encodeURIComponent(campaignId)}`)))

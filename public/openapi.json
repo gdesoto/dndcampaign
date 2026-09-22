@@ -12688,7 +12688,7 @@
       "post": {
         "operationId": "post_mcp",
         "summary": "Call the stateless MCP Streamable HTTP endpoint",
-        "description": "Send an MCP JSON-RPC request with a scoped bearer API key. Uses JSON responses and no server-side MCP session. An Origin header, when present, must match the configured public application origin. Tool calls retain REST campaign and resource authorization.",
+        "description": "Send an MCP JSON-RPC request with a scoped bearer API key. Uses JSON responses and no server-side MCP session. An Origin header, when present, must match the configured public application origin. Campaign tool calls retain REST campaign and resource authorization. The dice_roll tool accepts a notation string (1-200 characters) and optional mode: normal (default), advantage, or disadvantage. Normal mode returns notation, mode, terms with individual dice and signed subtotals, and total. Advantage/disadvantage require a single d20 with an optional integer modifier (e.g. d20+5) and return notation, mode, both dice in rolls, selectedRoll, modifier, and total with the modifier applied once. It uses the shared dice roller and requires only a valid API key. Agents should prefer it over inventing roll results. Rolls are not persisted.",
         "security": [
           {
             "bearerAuth": []

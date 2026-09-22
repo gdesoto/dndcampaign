@@ -11,6 +11,53 @@ async function handleMcpRequest(request: Request, options: { localFetch: (input:
 }
 
 describe('MCP agent API adapter', () => {
+  it.each(['advantage', 'disadvantage', 'invalid'])('validates and returns roll mode over MCP: %s', async (mode) => {
+    const response = await handleMcpRequest(new Request('http://vault.test/mcp', {
+      method: 'POST',
+      headers: { authorization: 'Bearer dnd_test_secret', accept: 'application/json, text/event-stream', 'content-type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'dice_roll', arguments: { notation: 'd20+5', mode } } }),
+    }), { localFetch: async () => { throw new Error('Dice rolls must not call the campaign API') } })
+    const body = await response.json() as { result: { isError?: boolean, content: Array<{ text: string }> } }
+    if (mode === 'invalid') {
+      expect(body.result.isError).toBe(true)
+      return
+    }
+    expect(body.result.isError).not.toBe(true)
+    const roll = JSON.parse(body.result.content[0]!.text) as { mode: string, rolls: number[], selectedRoll: number, modifier: number, total: number }
+    expect(roll.mode).toBe(mode)
+    expect(roll.rolls).toHaveLength(2)
+    expect(roll.selectedRoll).toBe(mode === 'advantage' ? Math.max(...roll.rolls) : Math.min(...roll.rolls))
+    expect(roll.modifier).toBe(5)
+    expect(roll.total).toBe(roll.selectedRoll + 5)
+  })
+
+  it.each(['2d6+3-d4', '2d', '1d1', '101d6', 'd20+', 'd20++3', '9'.repeat(200), 'd'.repeat(201)])('rolls or rejects dice notation over MCP: %s', async (notation) => {
+    const response = await handleMcpRequest(new Request('http://vault.test/mcp', {
+      method: 'POST',
+      headers: { authorization: 'Bearer dnd_test_secret', accept: 'application/json, text/event-stream', 'content-type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'dice_roll', arguments: { notation } } }),
+    }), { localFetch: async () => { throw new Error('Dice rolls must not call the campaign API') } })
+    const body = await response.json() as { result: { isError?: boolean, content: Array<{ text: string }> } }
+    if (notation !== '2d6+3-d4') {
+      expect(body.result.isError).toBe(true)
+      return
+    }
+    expect(body.result.isError).not.toBe(true)
+    const roll = JSON.parse(body.result.content[0]!.text) as { notation: string, mode: string, total: number, terms: Array<{ rolls?: number[], subtotal: number }> }
+    expect(roll.mode).toBe('normal')
+    expect(roll.notation).toBe(notation)
+    expect(roll.terms[0]!.rolls).toHaveLength(2)
+    for (const die of roll.terms[0]!.rolls!) {
+      expect(Number.isInteger(die)).toBe(true)
+      expect(die).toBeGreaterThanOrEqual(1)
+      expect(die).toBeLessThanOrEqual(6)
+    }
+    expect(roll.terms[1]!.subtotal).toBe(3)
+    expect(roll.terms[2]!.rolls).toHaveLength(1)
+    expect(roll.terms[2]!.subtotal).toBe(-roll.terms[2]!.rolls![0]!)
+    expect(roll.total).toBe(roll.terms.reduce((sum, term) => sum + term.subtotal, 0))
+  })
+
   it('sends the configured bearer key and unwraps the API envelope', async () => {
     let request: { url: string, init?: RequestInit } | undefined
     const client = new AgentApiClient({
@@ -124,8 +171,9 @@ describe('MCP agent API adapter', () => {
 
       localFetch: async () => new Response(JSON.stringify({ data: { id: 'campaign-1' }, error: null }), { status: 200 }),
     })
-    const listedBody = await listed.json() as { result?: { tools?: Array<{ name: string }> } }
+    const listedBody = await listed.json() as { result?: { tools?: Array<{ name: string, description?: string }> } }
     expect(listedBody.result?.tools?.map((tool) => tool.name)).toContain('encounter_template_instantiate')
+    expect(listedBody.result?.tools?.find((tool) => tool.name === 'dice_roll')?.description).toContain('Prefer this tool whenever performing dice rolls')
 
     const called = await handleMcpRequest(new Request('http://vault.test/mcp', {
       method: 'POST',

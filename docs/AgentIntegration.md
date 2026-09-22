@@ -3,7 +3,7 @@
 The repository exposes a stateless MCP Streamable HTTP endpoint at `POST /mcp`.
 It uses the official Model Context Protocol TypeScript SDK inside the existing
 Nuxt/Nitro server, so it shares the application's port and deployment. The
-adapter only translates named tools into the HTTP API; campaign permissions,
+adapter translates campaign tools into the HTTP API; campaign permissions,
 resource permissions, campaign scoping, validation, DM-only visibility, and
 audit behavior remain owned by the API.
 
@@ -45,6 +45,19 @@ description states the API permission it needs. There is no arbitrary URL or
 database tool, and AI generation or transcription jobs are not exposed.
 
 Start with `campaigns_list` to discover the campaigns permitted by the key.
+
+`dice_roll` uses the same dice calculation utility as the browser roller. Pass
+`notation` such as `d20`, `2d6+3`, or `2d6+3-d4` (up to 200 characters,
+1–100 dice per term, 2–1000 sides). It returns individual rolls, signed term
+subtotals, and the total. Agents should prefer this tool for rolls instead of
+inventing results or generating their own random numbers. The optional `mode`
+accepts `normal` (default), `advantage`, or `disadvantage`. Advantage and
+disadvantage require a single d20 with an optional integer modifier, such as
+`d20+5`. Both dice are returned in `rolls`, alongside `selectedRoll`, `modifier`,
+`total`, `notation`, and `mode`; the modifier is applied once. Normal mode
+preserves the expression's `terms` and subtotals and also returns `mode`.
+Rolls are not saved and do not update encounters. The tool requires a
+valid API key but no campaign resource permission.
 
 `transcript_read` reads lines with `startLine` and `limit`, or searches with
 `q`, `contextLines`, `offset`, and `limit`. Line numbers are 1-based. An omitted

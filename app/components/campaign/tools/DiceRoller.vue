@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { rollDiceExpression, type RollResult, type RolledTerm } from '~/utils/dice'
+import { rollDiceExpression, type RollResult, type RolledTerm } from '#shared/utils/dice'
 
 type DiceHistoryItem = {
   id: string

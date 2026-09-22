@@ -35,6 +35,28 @@ type DiceParserOptions = {
   maxSides?: number
 }
 
+export type RollMode = 'normal' | 'advantage' | 'disadvantage'
+
+export const rollDice = (
+  notation: string,
+  mode: RollMode = 'normal',
+  rng: () => number = Math.random
+) => {
+  if (mode === 'normal') return { ...rollDiceExpression(notation, rng), mode }
+
+  const terms = parseDiceNotation(notation)
+  const die = terms[0]
+  const flat = terms[1]
+  if (terms.length > 2 || die?.kind !== 'dice' || die.count !== 1 || die.sides !== 20 || die.sign !== 1 || (flat && flat.kind !== 'flat')) {
+    throw new Error('Advantage and disadvantage require a single d20 with an optional integer modifier, such as d20+5.')
+  }
+  const modifier = flat?.kind === 'flat' ? flat.sign * flat.value : 0
+  const rolled = rollDiceExpression('2d20', rng).terms[0] as RolledDiceTerm
+  const rolls = rolled.rolls
+  const selectedRoll = mode === 'advantage' ? Math.max(...rolls) : Math.min(...rolls)
+  return { notation, mode, rolls, selectedRoll, modifier, total: selectedRoll + modifier }
+}
+
 const DEFAULT_MAX_DICE_COUNT = 100
 const DEFAULT_MAX_SIDES = 1000
 
@@ -54,7 +76,7 @@ export const parseDiceNotation = (
   }
 
   const rawTerms = normalized.match(/[+-]?[^+-]+/g)
-  if (!rawTerms?.length) {
+  if (!rawTerms?.length || rawTerms.join('') !== normalized) {
     throw new Error('Notation is invalid.')
   }
 
@@ -85,6 +107,9 @@ export const parseDiceNotation = (
 
     if (/^\d+$/.test(body)) {
       const value = Number(body)
+      if (!Number.isSafeInteger(value)) {
+        throw new Error('Modifiers must be safe integers.')
+      }
       return {
         kind: 'flat' as const,
         sign,
