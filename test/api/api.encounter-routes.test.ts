@@ -142,6 +142,47 @@ describe('encounter API routes', () => {
     expect(stored.status).toBe(writeStatus === 200 ? 'ACTIVE' : 'PLANNED')
   })
 
+  it('inherits source stats while preserving overrides and missing values', async () => {
+    const campaign = await prisma.campaign.findUniqueOrThrow({ where: { id: campaignId } })
+    const encounter = await prisma.campaignEncounter.create({ data: { campaignId, createdByUserId: campaign.ownerId, name: 'Stat defaults', type: 'COMBAT' } })
+    const glossary = await prisma.glossaryEntry.create({ data: { campaignId, name: 'Linked NPC', type: 'NPC', description: 'An ally' } })
+    const character = await prisma.playerCharacter.create({ data: {
+      ownerId: campaign.ownerId, name: 'Stat source',
+      sheetJson: { hitPoints: { max: 28, current: 0 }, defenses: { ac: 16, speed: 35 } },
+      summaryJson: { hp: 20, ac: 10 },
+    } })
+    const link = await prisma.campaignCharacter.create({ data: { campaignId, characterId: character.id, glossaryEntryId: glossary.id } })
+    const block = await prisma.encounterStatBlock.create({ data: {
+      campaignId, createdByUserId: campaign.ownerId, name: 'Stat source', statBlockJson: { maxHp: 12, armorClass: 13, speed: 30 },
+    } })
+    const create = async (body: Record<string, unknown>) => {
+      const response = await fetch(`${baseUrl}/api/encounters/${encounter.id}/combatants`, {
+        method: 'POST', headers: { cookie: cookies.owner, 'content-type': 'application/json' },
+        body: JSON.stringify({ name: 'Participant', ...body }),
+      })
+      expect(response.status).toBe(200)
+      return (await response.json()).data
+    }
+    for (const source of [
+      { sourceType: 'CAMPAIGN_CHARACTER', sourceCampaignCharacterId: link.id },
+      { sourceType: 'CAMPAIGN_CHARACTER', sourceCampaignCharacterId: character.id },
+      { sourceType: 'PLAYER_CHARACTER', sourcePlayerCharacterId: character.id },
+      { sourceType: 'GLOSSARY_ENTRY', sourceGlossaryEntryId: glossary.id },
+    ]) {
+      expect(await create(source)).toMatchObject({ maxHp: 28, currentHp: 0, armorClass: 16, speed: 35 })
+    }
+    expect(await create({ sourceStatBlockId: block.id })).toMatchObject({ maxHp: 12, currentHp: 12, armorClass: 13, speed: 30 })
+    expect(await create({ sourceStatBlockId: block.id, maxHp: 5, currentHp: 0, armorClass: 0, speed: 0 }))
+      .toMatchObject({ maxHp: 5, currentHp: 0, armorClass: 0, speed: 0 })
+    expect(await create({ sourceStatBlockId: block.id, maxHp: 5 })).toMatchObject({ maxHp: 5, currentHp: 5 })
+    expect(await create({})).toMatchObject({ maxHp: null, currentHp: null, armorClass: null, speed: null })
+    await prisma.encounterStatBlock.update({ where: { id: block.id }, data: { statBlockJson: { maxHp: -1, armorClass: '13', speed: 2.5 } } })
+    expect(await create({ sourceStatBlockId: block.id })).toMatchObject({ maxHp: null, currentHp: null, armorClass: null, speed: null })
+    await prisma.playerCharacter.update({ where: { id: character.id }, data: { sheetJson: {} } })
+    expect(await create({ sourceType: 'PLAYER_CHARACTER', sourcePlayerCharacterId: character.id }))
+      .toMatchObject({ maxHp: null, currentHp: 20, armorClass: 10, speed: null })
+  })
+
   it('returns not found for a missing encounter on reads and lifecycle writes', async () => {
     for (const method of ['GET', 'PATCH']) {
       const response = await fetch(`${baseUrl}/api/encounters/missing-encounter`, {

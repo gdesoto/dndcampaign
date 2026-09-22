@@ -128,7 +128,24 @@ export async function validateEncounterCombatantSourceReferences(
     sourceGlossaryEntryId?: string | null
     sourceStatBlockId?: string | null
   },
-): Promise<{ valid: true }> {
+) {
+  let defaults: { maxHp?: number; currentHp?: number; armorClass?: number; speed?: number } = {}
+  const record = (value: unknown): Record<string, unknown> =>
+    value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
+  const stat = (value: unknown) =>
+    typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : undefined
+  const fromCharacter = (character: { sheetJson: unknown; summaryJson: unknown }) => {
+    const sheet = record(character.sheetJson)
+    const summary = record(character.summaryJson)
+    const hp = record(sheet.hitPoints)
+    const defenses = record(sheet.defenses)
+    return {
+      maxHp: stat(hp.max),
+      currentHp: stat(hp.current) ?? stat(summary.hp),
+      armorClass: stat(defenses.ac) ?? stat(summary.ac),
+      speed: stat(defenses.speed),
+    }
+  }
   const fieldErrors: Record<string, string> = {}
 
   if (input.sourceType === 'CAMPAIGN_CHARACTER') {
@@ -143,8 +160,9 @@ export async function validateEncounterCombatantSourceReferences(
             { id: input.sourceCampaignCharacterId },
           ],
         },
-        select: { id: true },
+        select: { character: { select: { sheetJson: true, summaryJson: true } } },
       })
+      if (exists) defaults = fromCharacter(exists.character)
       if (!exists) {
         fieldErrors.sourceCampaignCharacterId = 'Campaign character must belong to this campaign.'
       }
@@ -160,8 +178,9 @@ export async function validateEncounterCombatantSourceReferences(
           campaignId,
           characterId: input.sourcePlayerCharacterId,
         },
-        select: { id: true },
+        select: { character: { select: { sheetJson: true, summaryJson: true } } },
       })
+      if (exists) defaults = fromCharacter(exists.character)
       if (!exists) {
         fieldErrors.sourcePlayerCharacterId = 'Player character must be linked to this campaign.'
       }
@@ -174,8 +193,9 @@ export async function validateEncounterCombatantSourceReferences(
     } else {
       const exists = await prisma.glossaryEntry.findFirst({
         where: { id: input.sourceGlossaryEntryId, campaignId },
-        select: { id: true },
+        select: { campaignCharacters: { where: { campaignId }, take: 2, select: { character: { select: { sheetJson: true, summaryJson: true } } } } },
       })
+      if (exists?.campaignCharacters.length === 1) defaults = fromCharacter(exists.campaignCharacters[0]!.character)
       if (!exists) {
         fieldErrors.sourceGlossaryEntryId = 'Glossary entry must belong to this campaign.'
       }
@@ -185,8 +205,17 @@ export async function validateEncounterCombatantSourceReferences(
   if (input.sourceStatBlockId) {
     const exists = await prisma.encounterStatBlock.findFirst({
       where: { id: input.sourceStatBlockId, campaignId },
-      select: { id: true },
+      select: { statBlockJson: true },
     })
+    if (exists) {
+      const block = record(exists.statBlockJson)
+      defaults = {
+        maxHp: stat(block.maxHp) ?? defaults.maxHp,
+        currentHp: stat(block.maxHp) ?? defaults.currentHp,
+        armorClass: stat(block.armorClass) ?? defaults.armorClass,
+        speed: stat(block.speed) ?? defaults.speed,
+      }
+    }
     if (!exists) {
       fieldErrors.sourceStatBlockId = 'Stat block must belong to this campaign.'
     }
@@ -196,7 +225,7 @@ export async function validateEncounterCombatantSourceReferences(
     throw apiError(400, 'VALIDATION_ERROR', 'Invalid combatant source references.', fieldErrors)
   }
 
-  return { valid: true }
+  return defaults
 }
 
 export async function appendEncounterEvent(

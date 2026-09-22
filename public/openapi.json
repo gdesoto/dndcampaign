@@ -7900,7 +7900,7 @@
           "encounters"
         ],
         "summary": "POST /api/encounters/{encounterId}/combatants",
-        "description": "Auto-documented from server route `encounters/[encounterId]/combatants/index.post.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Creates a combatant, filling omitted HP, armorClass, and speed from its campaign-linked character sheet or saved stat block. Glossary sources use an unambiguous linked character sheet. Explicit values (including zero) win; saved stat-block values take precedence over character defaults. Explicit maxHp initializes omitted currentHp; otherwise source current HP or default max HP is used. Missing stats remain unset. Uses the standard API envelope `{ data, error }`.",
         "operationId": "post_api_encounters_encounterId_combatants",
         "parameters": [
           {

@@ -280,7 +280,7 @@ export class EncounterService {
       _max: { sortOrder: true },
     })
 
-    await validateEncounterCombatantSourceReferences(encounter.campaignId, {
+    const defaults = await validateEncounterCombatantSourceReferences(encounter.campaignId, {
       sourceType: input.sourceType,
       sourceCampaignCharacterId: input.sourceCampaignCharacterId,
       sourcePlayerCharacterId: input.sourcePlayerCharacterId,
@@ -300,11 +300,11 @@ export class EncounterService {
         sourceStatBlockId: input.sourceStatBlockId,
         initiative: input.initiative,
         sortOrder: (maxSortOrder._max.sortOrder ?? -1) + 1,
-        maxHp: input.maxHp,
-        currentHp: input.currentHp ?? input.maxHp,
+        maxHp: input.maxHp ?? defaults.maxHp,
+        currentHp: input.currentHp ?? input.maxHp ?? defaults.currentHp ?? defaults.maxHp,
         tempHp: input.tempHp,
-        armorClass: input.armorClass,
-        speed: input.speed,
+        armorClass: input.armorClass ?? defaults.armorClass,
+        speed: input.speed ?? defaults.speed,
         isHidden: input.isHidden,
         notes: input.notes,
       },
