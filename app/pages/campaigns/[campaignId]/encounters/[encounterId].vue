@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import type { EncounterCombatant } from '#shared/types/encounter'
+import type {
+  EncounterCombatant,
+  EncounterCondition,
+  EncounterDetail,
+} from '#shared/types/encounter'
+import type { RecordAction } from '~/types/actions'
 import { buildEncounterSummary } from '#shared/utils/encounter-summary'
-import type { CampaignCalendarConfigDto } from '~/composables/useCampaignCalendar'
+import { getEncounterActions, type EncounterLifecycleAction } from '#shared/utils/encounter-policy'
+import { encounterDamageSchema } from '#shared/schemas/encounter'
 
 definePageMeta({ layout: 'dashboard' })
-
 const { route, campaignId, request, canWriteContent } = useCampaignPageContext()
 const encounterId = computed(() => route.params.encounterId as string)
-
-const detailApi = useEncounterDetail()
-const runtimeApi = useEncounterRuntime()
-const templateApi = useEncounterTemplates()
-const statBlockApi = useEncounterStatBlocks()
-
-const retainedEncounter = useRetainedResource<Awaited<ReturnType<typeof detailApi.getEncounter>>>(() => encounterId.value)
+const api = useEncounterDetail()
+const retained = useRetainedResource<EncounterDetail | null>(() => encounterId.value)
 const {
   data: encounter,
   pending,
@@ -21,1104 +21,788 @@ const {
   refresh,
 } = await useAsyncData(
   () => `encounter-${encounterId.value}`,
-  () => retainedEncounter.load(() => detailApi.getEncounter(encounterId.value)),
-  { default: retainedEncounter.get },
+  () => retained.load(() => api.getEncounter(encounterId.value)),
+  { default: retained.get },
 )
-retainedEncounter.seed(encounter.value)
-
-const { data: templates, refresh: refreshTemplates } = await useAsyncData(
-  () => `encounter-templates-inline-${campaignId.value}`,
-  () => templateApi.listTemplates(campaignId.value),
+retained.seed(encounter.value)
+const toast = useToast()
+const selectedId = ref<string>()
+const ordered = computed(() =>
+  [...(encounter.value?.combatants || [])].sort((a, b) => a.sortOrder - b.sortOrder),
 )
-const { data: statBlocks } = await useAsyncData(
-  () => `encounter-statblocks-inline-${campaignId.value}`,
-  () => statBlockApi.listStatBlocks(campaignId.value),
+const selected = computed(
+  () => ordered.value.find((p) => p.id === selectedId.value) || ordered.value[0],
 )
-type CampaignSessionOption = {
-  id: string
-  title: string
-  sessionNumber?: number | null
-}
-const { data: campaignSessions } = await useAsyncData(
-  () => `encounter-detail-sessions-${campaignId.value}`,
-  () => request<CampaignSessionOption[]>(`/api/campaigns/${campaignId.value}/sessions`),
+const conditions = computed(() =>
+  (encounter.value?.conditions || []).filter((c) => c.combatantId === selected.value?.id),
 )
-type CampaignCharacterLink = {
-  id: string
-  status: 'ACTIVE' | 'INACTIVE'
-  character: {
-    id: string
-    name: string
-    summaryJson?: Record<string, unknown>
-  }
-}
-const { data: campaignCharacterLinks } = await useAsyncData(
-  () => `encounter-detail-pcs-${campaignId.value}`,
-  () => request<CampaignCharacterLink[]>(`/api/campaigns/${campaignId.value}/characters`),
+const available = computed(() =>
+  getEncounterActions(
+    encounter.value?.status || 'PLANNED',
+    ordered.value.length,
+    canWriteContent.value,
+  ),
 )
-type CampaignQuestItem = {
-  id: string
-  title: string
-  status: 'ACTIVE' | 'COMPLETED' | 'FAILED' | 'ON_HOLD'
-}
-const { data: campaignQuests, refresh: refreshCampaignQuests } = await useAsyncData(
-  () => `encounter-detail-quests-${campaignId.value}`,
-  () => request<CampaignQuestItem[]>(`/api/campaigns/${campaignId.value}/quests`),
-)
-type CampaignMilestoneItem = {
-  id: string
-  title: string
-  isComplete: boolean
-}
-const { data: campaignMilestones, refresh: refreshCampaignMilestones } = await useAsyncData(
-  () => `encounter-detail-milestones-${campaignId.value}`,
-  () => request<CampaignMilestoneItem[]>(`/api/campaigns/${campaignId.value}/milestones`),
-)
-const { data: calendarConfig } = await useAsyncData(
-  () => `encounter-detail-calendar-config-${campaignId.value}`,
-  () => request<CampaignCalendarConfigDto | null>(`/api/campaigns/${campaignId.value}/calendar/config`),
-)
-
-const summary = computed(() => encounter.value ? buildEncounterSummary(encounter.value) : null)
+const finished = computed(() => ['COMPLETED', 'ABANDONED'].includes(encounter.value?.status || ''))
+const summary = computed(() => (encounter.value ? buildEncounterSummary(encounter.value) : null))
+const busy = ref(false)
 const actionError = ref('')
-const noteDraft = ref('')
-const preferredActiveCombatantId = ref<string | null>(null)
+const tab = ref('participants')
+const showAdd = ref(false)
+const showEdit = ref(false)
+const editing = ref<EncounterCombatant>()
+const showCondition = ref(false)
+const editingCondition = ref<EncounterCondition>()
+const conditionParticipantId = ref('')
+const note = ref('')
+useUnsavedChanges(() => Boolean(note.value.trim()), busy)
+const amount = ref<number | undefined>(undefined)
+const amountError = ref('')
+const templatesApi = useEncounterTemplates()
+const {
+  data: templates,
+  pending: templatesPending,
+  error: templatesError,
+  refresh: refreshTemplates,
+} = await useAsyncData(
+  () => `encounter-workspace-templates-${campaignId.value}`,
+  () => templatesApi.listTemplates(campaignId.value),
+)
+const selectedTemplateId = ref('')
+const templateName = ref('')
+const showDuplicate = ref(false)
+const duplicateSource = ref<EncounterCombatant>()
 
-const activeIndex = computed(() => encounter.value?.currentTurnIndex || 0)
-const sortedCombatants = computed(() => {
-  const list = encounter.value?.combatants || []
-  return [...list].sort((left, right) => left.sortOrder - right.sortOrder)
-})
-const activeCombatant = computed(() => {
-  const combatants = sortedCombatants.value
-  const indexed = combatants[activeIndex.value]
-  if (indexed) return indexed
-  if (preferredActiveCombatantId.value) {
-    return combatants.find((combatant) => combatant.id === preferredActiveCombatantId.value) || null
-  }
-  return combatants[0] || null
-})
-const activeConditions = computed(() => {
-  if (!activeCombatant.value) return []
-  return (encounter.value?.conditions || []).filter((condition) => condition.combatantId === activeCombatant.value?.id)
-})
-
-const hpModifier = ref(5)
-const selectedCampaignCharacterIds = ref<string[]>([])
-const isCombatantEditOpen = ref(false)
-const isSavingCombatant = ref(false)
-const isManageCombatantsOpen = ref(false)
-const isSavingManageCombatants = ref(false)
-const manageCombatantMode = ref<'pc' | 'statblock' | 'custom' | 'copy'>('pc')
-const selectedStatBlockId = ref('')
-const copySourceCombatantId = ref('')
-const manageQuantity = ref(1)
-const customCombatantForm = reactive<{
-  name: string
-  side: 'ALLY' | 'ENEMY' | 'NEUTRAL'
-  maxHp: number | null
-  armorClass: number | null
-  speed: number | null
-}>({
-  name: '',
-  side: 'ENEMY',
-  maxHp: null,
-  armorClass: null,
-  speed: null,
-})
-const isConditionModalOpen = ref(false)
-const isSavingCondition = ref(false)
-const editingConditionId = ref<string | null>(null)
-const conditionPreset = ref('CUSTOM')
-const isSavingEncounterSettings = ref(false)
-const isSavingSummaryShortcut = ref(false)
-const selectedShortcutQuestId = ref('')
-const selectedShortcutMilestoneId = ref('')
-const encounterSettings = reactive<{
-  sessionId: string
-  calendarYear: number | null
-  calendarMonth: number | null
-  calendarDay: number | null
-}>({
-  sessionId: '',
-  calendarYear: null,
-  calendarMonth: null,
-  calendarDay: null,
-})
-const combatantForm = reactive<{
-  id: string
-  name: string
-  side: 'ALLY' | 'ENEMY' | 'NEUTRAL'
-  sourceType: 'CUSTOM' | 'CAMPAIGN_CHARACTER' | 'PLAYER_CHARACTER' | 'GLOSSARY_ENTRY'
-  sourceStatBlockId: string
-  maxHp: number | null
-  currentHp: number | null
-  tempHp: number
-  armorClass: number | null
-  speed: number | null
-  notes: string
-}>({
-  id: '',
-  name: '',
-  side: 'ENEMY',
-  sourceType: 'CUSTOM',
-  sourceStatBlockId: '',
-  maxHp: null,
-  currentHp: null,
-  tempHp: 0,
-  armorClass: null,
-  speed: null,
-  notes: '',
-})
-const conditionForm = reactive<{
-  name: string
-  duration: number | null
-  remaining: number | null
-  tickTiming: 'TURN_START' | 'TURN_END' | 'ROUND_END'
-  source: string
-  notes: string
-}>({
-  name: '',
-  duration: null,
-  remaining: null,
-  tickTiming: 'TURN_END',
-  source: '',
-  notes: '',
-})
-
-const withAction = async (action: () => Promise<unknown>) => {
+const run = async (operation: () => Promise<unknown>, rethrow = false) => {
+  if (busy.value) return
+  busy.value = true
   actionError.value = ''
   try {
-    await action()
-    await refreshPreservingUiState()
-  } catch (error) {
-    actionError.value = (error as Error).message || 'Action failed.'
-  }
-}
-
-const refreshPreservingUiState = async () => {
-  const previousActiveId = activeCombatant.value?.id || preferredActiveCombatantId.value
-  const previousScrollY = import.meta.client ? window.scrollY : 0
-
-  await refresh()
-  await nextTick()
-
-  if (import.meta.client) {
-    window.scrollTo({
-      top: previousScrollY,
-      behavior: 'auto',
-    })
-  }
-  preferredActiveCombatantId.value = previousActiveId || null
-}
-
-const openManageCombatants = () => {
-  if (!canWriteContent.value) return
-  selectedCampaignCharacterIds.value = []
-  selectedStatBlockId.value = ''
-  copySourceCombatantId.value = ''
-  manageQuantity.value = 1
-  customCombatantForm.name = ''
-  customCombatantForm.side = 'ENEMY'
-  customCombatantForm.maxHp = null
-  customCombatantForm.armorClass = null
-  customCombatantForm.speed = null
-  isManageCombatantsOpen.value = true
-}
-
-const saveManageCombatants = async () => {
-  if (!canWriteContent.value) return
-  isSavingManageCombatants.value = true
-  const toOptionalInt = (value: number | null) =>
-    typeof value === 'number' && Number.isFinite(value) ? Math.trunc(value) : undefined
-  try {
-    await withAction(async () => {
-      if (manageCombatantMode.value === 'pc') {
-        if (!selectedCampaignCharacterIds.value.length) throw new Error('Select at least one campaign PC.')
-        const selected = (campaignCharacterLinks.value || []).filter(
-          (link) => selectedCampaignCharacterIds.value.includes(link.character.id),
-        )
-        for (const entry of selected) {
-          await runtimeApi.createCombatant(encounterId.value, {
-            name: entry.character.name,
-            side: 'ALLY',
-            sourceType: 'CAMPAIGN_CHARACTER',
-            sourceCampaignCharacterId: entry.character.id,
-            tempHp: 0,
-            isHidden: false,
-          })
-        }
-      } else if (manageCombatantMode.value === 'statblock') {
-        const statBlock = (statBlocks.value || []).find((entry) => entry.id === selectedStatBlockId.value)
-        if (!statBlock) throw new Error('Select a stat block first.')
-        const count = Math.max(1, Math.trunc(manageQuantity.value || 1))
-        const maxHp = typeof statBlock.statBlockJson.maxHp === 'number' ? Math.trunc(statBlock.statBlockJson.maxHp) : undefined
-        const armorClass = typeof statBlock.statBlockJson.armorClass === 'number' ? Math.trunc(statBlock.statBlockJson.armorClass) : undefined
-        const speed = typeof statBlock.statBlockJson.speed === 'number' ? Math.trunc(statBlock.statBlockJson.speed) : undefined
-        for (let index = 0; index < count; index += 1) {
-          await runtimeApi.createCombatant(encounterId.value, {
-            name: count > 1 ? `${statBlock.name} ${index + 1}` : statBlock.name,
-            side: 'ENEMY',
-            sourceType: 'CUSTOM',
-            sourceStatBlockId: statBlock.id,
-            maxHp,
-            currentHp: maxHp,
-            armorClass,
-            speed,
-            tempHp: 0,
-            isHidden: false,
-          })
-        }
-      } else if (manageCombatantMode.value === 'copy') {
-        const sourceCombatant = sortedCombatants.value.find((entry) => entry.id === copySourceCombatantId.value)
-        if (!sourceCombatant) throw new Error('Select an existing combatant first.')
-        const count = Math.max(1, Math.trunc(manageQuantity.value || 1))
-        for (let index = 0; index < count; index += 1) {
-          await runtimeApi.createCombatant(encounterId.value, {
-            name: count > 1 ? `${sourceCombatant.name} Copy ${index + 1}` : `${sourceCombatant.name} Copy`,
-            side: sourceCombatant.side,
-            sourceType: sourceCombatant.sourceType,
-            sourceCampaignCharacterId: sourceCombatant.sourceCampaignCharacterId || undefined,
-            sourcePlayerCharacterId: sourceCombatant.sourcePlayerCharacterId || undefined,
-            sourceGlossaryEntryId: sourceCombatant.sourceGlossaryEntryId || undefined,
-            sourceStatBlockId: sourceCombatant.sourceStatBlockId || undefined,
-            maxHp: sourceCombatant.maxHp || undefined,
-            currentHp: sourceCombatant.currentHp || undefined,
-            armorClass: sourceCombatant.armorClass || undefined,
-            speed: sourceCombatant.speed || undefined,
-            tempHp: sourceCombatant.tempHp,
-            isHidden: sourceCombatant.isHidden,
-            notes: sourceCombatant.notes || undefined,
-          })
-        }
-      } else {
-        if (!customCombatantForm.name.trim()) throw new Error('Custom combatant name is required.')
-        await runtimeApi.createCombatant(encounterId.value, {
-          name: customCombatantForm.name.trim(),
-          side: customCombatantForm.side,
-          sourceType: 'CUSTOM',
-          maxHp: toOptionalInt(customCombatantForm.maxHp),
-          currentHp: toOptionalInt(customCombatantForm.maxHp),
-          armorClass: toOptionalInt(customCombatantForm.armorClass),
-          speed: toOptionalInt(customCombatantForm.speed),
-          tempHp: 0,
-          isHidden: false,
-        })
-      }
-      isManageCombatantsOpen.value = false
-    })
+    await operation()
+    await refresh()
+    return true
+  } catch (e) {
+    actionError.value = (e as Error).message
+    if (rethrow) throw e
+    return false
   } finally {
-    isSavingManageCombatants.value = false
+    busy.value = false
   }
 }
-
-const openCombatantEditor = (combatant: EncounterCombatant) => {
-  combatantForm.id = combatant.id
-  combatantForm.name = combatant.name
-  combatantForm.side = combatant.side
-  combatantForm.sourceType = combatant.sourceType
-  combatantForm.sourceStatBlockId = combatant.sourceStatBlockId || ''
-  combatantForm.maxHp = combatant.maxHp ?? null
-  combatantForm.currentHp = combatant.currentHp ?? null
-  combatantForm.tempHp = combatant.tempHp
-  combatantForm.armorClass = combatant.armorClass ?? null
-  combatantForm.speed = combatant.speed ?? null
-  combatantForm.notes = combatant.notes || ''
-  isCombatantEditOpen.value = true
-}
-
-const saveCombatantEditor = async () => {
-  if (!canWriteContent.value || !combatantForm.id) return
-  isSavingCombatant.value = true
-  const toNullableInt = (value: number | null) =>
-    typeof value === 'number' && Number.isFinite(value) ? Math.trunc(value) : null
-  await withAction(async () => {
-    await runtimeApi.updateCombatant(encounterId.value, combatantForm.id, {
-      name: combatantForm.name,
-      side: combatantForm.side,
-      sourceType: combatantForm.sourceType,
-      sourceStatBlockId:
-        combatantForm.sourceType === 'CUSTOM' || !combatantForm.sourceStatBlockId
-          ? undefined
-          : combatantForm.sourceStatBlockId,
-      maxHp: toNullableInt(combatantForm.maxHp),
-      currentHp: toNullableInt(combatantForm.currentHp),
-      tempHp: Math.max(0, toNullableInt(combatantForm.tempHp) ?? 0),
-      armorClass: toNullableInt(combatantForm.armorClass),
-      speed: toNullableInt(combatantForm.speed),
-      notes: combatantForm.notes || undefined,
-    })
-    isCombatantEditOpen.value = false
+const transition = async (action: EncounterLifecycleAction) => {
+  if (!available.value[action].allowed) return
+  const previous = encounter.value?.status
+  const id = encounterId.value
+  const success = await run(() =>
+    request(`/api/encounters/${id}`, { method: 'PATCH', body: { action } }),
+  )
+  if (!success || !previous) return
+  const undo: EncounterLifecycleAction[] =
+    previous === 'PLANNED'
+      ? action === 'abandon'
+        ? ['reopen', 'reset']
+        : ['reset']
+      : previous === 'ACTIVE'
+        ? action === 'pause'
+          ? ['resume']
+          : ['reopen', 'resume']
+        : previous === 'PAUSED'
+          ? action === 'resume'
+            ? ['pause']
+            : ['reopen']
+          : [previous === 'COMPLETED' ? 'complete' : 'abandon']
+  toast.add({
+    title: `Encounter ${encounter.value?.status.toLowerCase()}`,
+    duration: 8000,
+    actions: [
+      {
+        label: 'Undo',
+        onClick: async () => {
+          if (id !== encounterId.value) return
+          await run(async () => {
+            for (const reversal of undo)
+              await request(`/api/encounters/${id}`, {
+                method: 'PATCH',
+                body: { action: reversal },
+              })
+          })
+        },
+      },
+    ],
   })
-  isSavingCombatant.value = false
 }
-
-const deleteCombatant = async (combatantId: string) => {
-  if (!canWriteContent.value) return
-  await runtimeApi.deleteCombatant(encounterId.value, combatantId)
-  await refreshPreservingUiState()
+const turn = (action: 'advance' | 'rewind' | 'set-active', combatantId?: string) =>
+  run(() =>
+    request(`/api/encounters/${encounterId.value}/turn`, {
+      method: 'PATCH',
+      body: { action, ...(combatantId ? { combatantId } : {}) },
+    }),
+  )
+const roll = (mode: 'ALL' | 'UNSET' | 'NON_PCS', combatantId?: string) =>
+  run(() =>
+    request(`/api/encounters/${encounterId.value}/initiative`, {
+      method: 'PATCH',
+      body: { action: 'roll', mode, ...(combatantId ? { combatantId } : {}) },
+    }),
+  )
+const clearInitiative = async (combatantId?: string) => {
+  const id = encounterId.value
+  const previous = ordered.value
+    .filter((p) => p.initiative != null && (!combatantId || p.id === combatantId))
+    .map((p) => ({ id: p.id, initiative: p.initiative }))
+  if (!previous.length) return
+  if (
+    !(await run(() =>
+      request(`/api/encounters/${id}/initiative`, {
+        method: 'PATCH',
+        body: { action: 'clear', ...(combatantId ? { combatantId } : {}) },
+      }),
+    ))
+  )
+    return
+  toast.add({
+    title: 'Initiative cleared',
+    actions: [
+      {
+        label: 'Undo',
+        onClick: () =>
+          run(async () => {
+            if (id !== encounterId.value) return
+            for (const participant of previous)
+              await request(`/api/encounters/${id}/combatants/${participant.id}`, {
+                method: 'PATCH',
+                body: { initiative: participant.initiative },
+              })
+          }),
+      },
+    ],
+  })
 }
-
-const runStatusAction = async (action: 'start' | 'pause' | 'resume' | 'complete' | 'abandon' | 'reset') => {
-  if (!canWriteContent.value) return
-  await withAction(() => runtimeApi.transition(encounterId.value, action))
-}
-
-const advanceTurn = async () => {
-  if (!canWriteContent.value) return
-  await withAction(() => runtimeApi.advanceTurn(encounterId.value))
-}
-
-const rewindTurn = async () => {
-  if (!canWriteContent.value) return
-  await withAction(() => runtimeApi.rewindTurn(encounterId.value))
-}
-
-const rollInitiative = async (mode: 'ALL' | 'UNSET' | 'NON_PCS' = 'ALL') => {
-  if (!canWriteContent.value) return
-  await withAction(() => runtimeApi.rollInitiative(encounterId.value, { mode }))
-}
-
-const moveInitiativeItem = async (payload: { combatantId: string, direction: 'up' | 'down' }) => {
-  if (!canWriteContent.value) return
-  const currentIds = sortedCombatants.value.map((combatant) => combatant.id)
-  const fromIndex = currentIds.findIndex((id) => id === payload.combatantId)
-  if (fromIndex < 0) return
-  const toIndex = payload.direction === 'up' ? fromIndex - 1 : fromIndex + 1
-  if (toIndex < 0 || toIndex >= currentIds.length) return
-  const nextIds = [...currentIds]
-  const [item] = nextIds.splice(fromIndex, 1)
-  if (!item) return
-  nextIds.splice(toIndex, 0, item)
-  await withAction(() => runtimeApi.reorderInitiative(encounterId.value, { combatantOrder: nextIds }))
-}
-
-const setManualInitiative = async (payload: { combatantId: string, initiative: number | null }) => {
-  if (!canWriteContent.value) return
-  await withAction(() =>
-    runtimeApi.updateCombatant(encounterId.value, payload.combatantId, {
-      initiative: payload.initiative,
+const move = (id: string, direction: -1 | 1) => {
+  const ids = ordered.value.map((p) => p.id)
+  const index = ids.indexOf(id)
+  const target = index + direction
+  if (index < 0 || target < 0 || target >= ids.length) return
+  ;[ids[index], ids[target]] = [ids[target]!, ids[index]!]
+  void run(() =>
+    request(`/api/encounters/${encounterId.value}/initiative`, {
+      method: 'PATCH',
+      body: { action: 'reorder', combatantOrder: ids },
     }),
   )
 }
-
-const toggleCampaignPcSelection = (characterId: string, checked: boolean) => {
-  if (checked) {
-    if (!selectedCampaignCharacterIds.value.includes(characterId)) {
-      selectedCampaignCharacterIds.value.push(characterId)
-    }
-    return
-  }
-  selectedCampaignCharacterIds.value = selectedCampaignCharacterIds.value.filter((id) => id !== characterId)
+const edit = (p: EncounterCombatant) => {
+  editing.value = p
+  showEdit.value = true
 }
-
-const setActive = async (combatantId: string) => {
-  if (!canWriteContent.value) return
-  preferredActiveCombatantId.value = combatantId
-  await withAction(() => runtimeApi.setActiveTurn(encounterId.value, { combatantId }))
+const duplicate = (p: EncounterCombatant) => {
+  duplicateSource.value = p
+  showDuplicate.value = true
 }
-
-const quickApplyDamage = async () => {
-  if (!canWriteContent.value || !activeCombatant.value) return
-  const amount = Math.max(1, Math.trunc(hpModifier.value || 0))
-  await withAction(() => runtimeApi.applyDamage(encounterId.value, activeCombatant.value!.id, amount))
-}
-
-const quickApplyHeal = async () => {
-  if (!canWriteContent.value || !activeCombatant.value) return
-  const amount = Math.max(1, Math.trunc(hpModifier.value || 0))
-  await withAction(() => runtimeApi.applyHeal(encounterId.value, activeCombatant.value!.id, amount))
-}
-
-const addNote = async () => {
-  if (!canWriteContent.value || !noteDraft.value.trim()) return
-  await withAction(async () => {
-    await detailApi.addNoteEvent(encounterId.value, noteDraft.value.trim())
-    noteDraft.value = ''
-  })
-}
-
-const resetConditionForm = () => {
-  editingConditionId.value = null
-  conditionForm.name = ''
-  conditionForm.duration = null
-  conditionForm.remaining = null
-  conditionForm.tickTiming = 'TURN_END'
-  conditionForm.source = ''
-  conditionForm.notes = ''
-}
-
-const openCreateCondition = () => {
-  if (!canWriteContent.value || !activeCombatant.value) return
-  resetConditionForm()
-  conditionPreset.value = 'CUSTOM'
-  isConditionModalOpen.value = true
-}
-
-const openEditCondition = (conditionId: string) => {
-  if (!canWriteContent.value || !activeCombatant.value) return
-  const condition = activeConditions.value.find((entry) => entry.id === conditionId)
-  if (!condition) return
-  resetConditionForm()
-  editingConditionId.value = condition.id
-  conditionForm.name = condition.name
-  conditionForm.duration = condition.duration ?? null
-  conditionForm.remaining = condition.remaining ?? null
-  conditionForm.tickTiming = condition.tickTiming
-  conditionForm.source = condition.source || ''
-  conditionForm.notes = condition.notes || ''
-  const presetMatch = standardConditionOptions.find(
-    (entry) => entry.value !== 'CUSTOM' && entry.label.toLowerCase() === condition.name.toLowerCase(),
-  )
-  conditionPreset.value = presetMatch?.value || 'CUSTOM'
-  isConditionModalOpen.value = true
-}
-
-const saveCondition = async () => {
-  if (!canWriteContent.value || !activeCombatant.value) return
-  isSavingCondition.value = true
-  const toOptionalInt = (value: number | null) =>
-    typeof value === 'number' && Number.isFinite(value) ? Math.trunc(value) : undefined
-  const toNullableInt = (value: number | null) =>
-    typeof value === 'number' && Number.isFinite(value) ? Math.trunc(value) : null
-  try {
-    await withAction(async () => {
-      const effectiveConditionName = conditionPreset.value === 'CUSTOM'
-        ? conditionForm.name.trim()
-        : standardConditionOptions.find((entry) => entry.value === conditionPreset.value)?.label || conditionForm.name.trim()
-      if (editingConditionId.value) {
-        await runtimeApi.updateCondition(
-          encounterId.value,
-          activeCombatant.value!.id,
-          editingConditionId.value,
-          {
-            name: effectiveConditionName,
-            duration: toNullableInt(conditionForm.duration),
-            remaining: toNullableInt(conditionForm.remaining),
-            tickTiming: conditionForm.tickTiming,
-            source: conditionForm.source || null,
-            notes: conditionForm.notes || null,
-          },
-        )
-      } else {
-        await runtimeApi.addCondition(encounterId.value, activeCombatant.value!.id, {
-          name: effectiveConditionName,
-          duration: toOptionalInt(conditionForm.duration),
-          remaining: toOptionalInt(conditionForm.remaining),
-          tickTiming: conditionForm.tickTiming,
-          source: conditionForm.source || undefined,
-          notes: conditionForm.notes || undefined,
-        })
-      }
-      isConditionModalOpen.value = false
-    })
-  } finally {
-    isSavingCondition.value = false
-  }
-}
-
-const deleteCondition = async (conditionId: string) => {
-  if (!canWriteContent.value || !activeCombatant.value) return
-  await withAction(() =>
-    runtimeApi.deleteCondition(encounterId.value, activeCombatant.value!.id, conditionId),
+const remove = async (id: string) => {
+  await run(
+    () =>
+      request(`/api/encounters/${encounterId.value}/combatants/${id}`, {
+        method: 'DELETE',
+      }),
+    true,
   )
 }
-
-const saveEncounterSettings = async () => {
-  if (!canWriteContent.value || !encounter.value || isSavingEncounterSettings.value) return
-  const toNullableInt = (value: number | null) =>
-    typeof value === 'number' && Number.isFinite(value) ? Math.trunc(value) : null
-  const calendarYear = toNullableInt(encounterSettings.calendarYear)
-  const calendarMonth = toNullableInt(encounterSettings.calendarMonth)
-  const calendarDay = toNullableInt(encounterSettings.calendarDay)
-  const hasAnyDatePart
-    = calendarYear !== null
-      || calendarMonth !== null
-      || calendarDay !== null
-  const hasAllDateParts
-    = calendarYear !== null
-      && calendarMonth !== null
-      && calendarDay !== null
-
-  if (hasAnyDatePart && !hasAllDateParts) {
-    actionError.value = 'Calendar year, month, and day must all be set, or all left blank.'
+const effect = async (action: 'damage' | 'heal') => {
+  amountError.value = ''
+  const parsed = encounterDamageSchema.safeParse({ amount: amount.value })
+  if (!parsed.success) {
+    amountError.value = 'Enter a whole number from 1 to 9999.'
     return
   }
-
-  const submitted = settingsDraft.snapshot()
-  isSavingEncounterSettings.value = true
-  await withAction(async () => {
-    await detailApi.updateEncounter(encounterId.value, {
-      sessionId: encounterSettings.sessionId || null,
-      calendarYear: hasAllDateParts ? calendarYear : null,
-      calendarMonth: hasAllDateParts ? calendarMonth : null,
-      calendarDay: hasAllDateParts ? calendarDay : null,
-    })
-    settingsDraft.accept(submitted)
-  })
-  isSavingEncounterSettings.value = false
-}
-
-const instantiateTemplate = async (templateId: string) => {
-  if (!canWriteContent.value) return
-  await withAction(async () => {
-    await templateApi.instantiateTemplate(templateId, {
-      name: `Copy of ${encounter.value?.name || 'Encounter'}`,
-      sessionId: encounter.value?.sessionId || undefined,
-    })
-    await refreshTemplates()
-  })
-}
-
-const markQuestCompleteFromSummary = async (questId: string = selectedShortcutQuestId.value) => {
-  if (!canWriteContent.value || !questId) return
-  isSavingSummaryShortcut.value = true
-  try {
-    await withAction(async () => {
-      await request(`/api/quests/${questId}`, {
-        method: 'PATCH',
-        body: { status: 'COMPLETED' },
-      })
-      await refreshCampaignQuests()
-      selectedShortcutQuestId.value = ''
-    })
-  } finally {
-    isSavingSummaryShortcut.value = false
-  }
-}
-
-const markMilestoneCompleteFromSummary = async (milestoneId: string = selectedShortcutMilestoneId.value) => {
-  if (!canWriteContent.value || !milestoneId) return
-  isSavingSummaryShortcut.value = true
-  try {
-    await withAction(async () => {
-      await request(`/api/milestones/${milestoneId}`, {
+  if (!selected.value) return
+  const participantId = selected.value.id
+  if (
+    await run(() =>
+      request(`/api/encounters/${encounterId.value}/combatants`, {
         method: 'PATCH',
         body: {
-          isComplete: true,
-          completedAt: new Date().toISOString(),
+          action,
+          participantIds: [participantId],
+          amount: parsed.data.amount,
         },
-      })
-      await refreshCampaignMilestones()
-      selectedShortcutMilestoneId.value = ''
-    })
-  } finally {
-    isSavingSummaryShortcut.value = false
-  }
-}
-
-const sideOptions = [
-  { label: 'Enemy', value: 'ENEMY' },
-  { label: 'Ally', value: 'ALLY' },
-  { label: 'Neutral', value: 'NEUTRAL' },
-]
-const sourceTypeOptions = [
-  { label: 'Custom', value: 'CUSTOM' },
-  { label: 'Campaign Character', value: 'CAMPAIGN_CHARACTER' },
-  { label: 'Player Character', value: 'PLAYER_CHARACTER' },
-  { label: 'Glossary Entry', value: 'GLOSSARY_ENTRY' },
-]
-const statBlockOptions = computed(() =>
-  (statBlocks.value || []).map((statBlock) => ({
-    label: statBlock.name,
-    value: statBlock.id,
-  })),
-)
-const sessionOptions = computed(() =>
-  (campaignSessions.value || []).map((session) => ({
-    label: session.sessionNumber ? `Session ${session.sessionNumber}: ${session.title}` : session.title,
-    value: session.id,
-  })),
-)
-const availableCampaignCharacters = computed(() =>
-  (campaignCharacterLinks.value || [])
-    .filter((link) => link.status === 'ACTIVE')
-    .filter((link) =>
-      !sortedCombatants.value.some(
-        (combatant) => combatant.sourceCampaignCharacterId === link.character.id,
-      ),
+      }),
     )
-    .map((link) => ({
-      id: link.character.id,
-      label: link.character.name,
-    })),
-)
-const copyCombatantOptions = computed(() =>
-  sortedCombatants.value
-    .filter((entry) => Boolean(entry.sourceStatBlockId))
-    .map((entry) => ({
-      label: entry.name,
-      value: entry.id,
-    })),
-)
-const activeQuestOptions = computed(() =>
-  (campaignQuests.value || [])
-    .filter((quest) => quest.status === 'ACTIVE' || quest.status === 'ON_HOLD')
-    .map((quest) => ({ label: quest.title, value: quest.id })),
-)
-const openMilestoneOptions = computed(() =>
-  (campaignMilestones.value || [])
-    .filter((milestone) => !milestone.isComplete)
-    .map((milestone) => ({ label: milestone.title, value: milestone.id })),
-)
-const conditionTimingOptions = [
-  { label: 'Turn start', value: 'TURN_START' },
-  { label: 'Turn end', value: 'TURN_END' },
-  { label: 'Round end', value: 'ROUND_END' },
-]
-const standardConditionOptions = [
-  { label: 'Blinded', value: 'BLINDED' },
-  { label: 'Charmed', value: 'CHARMED' },
-  { label: 'Deafened', value: 'DEAFENED' },
-  { label: 'Exhaustion', value: 'EXHAUSTION' },
-  { label: 'Frightened', value: 'FRIGHTENED' },
-  { label: 'Grappled', value: 'GRAPPLED' },
-  { label: 'Incapacitated', value: 'INCAPACITATED' },
-  { label: 'Invisible', value: 'INVISIBLE' },
-  { label: 'Paralyzed', value: 'PARALYZED' },
-  { label: 'Petrified', value: 'PETRIFIED' },
-  { label: 'Poisoned', value: 'POISONED' },
-  { label: 'Prone', value: 'PRONE' },
-  { label: 'Restrained', value: 'RESTRAINED' },
-  { label: 'Stunned', value: 'STUNNED' },
-  { label: 'Unconscious', value: 'UNCONSCIOUS' },
-  { label: 'Custom condition', value: 'CUSTOM' },
-]
-
-const settingsDraft = useEditorDraft(() => ({ ...encounterSettings }), value => Object.assign(encounterSettings, value))
-useUnsavedChanges(settingsDraft.dirty, isSavingEncounterSettings)
-
-watch(
-  () => encounter.value,
-  (value) => {
-    if (!value) return
-    if (!isSavingEncounterSettings.value) settingsDraft.sync({
-      sessionId: value.sessionId || '',
-      calendarYear: value.calendarYear ?? null,
-      calendarMonth: value.calendarMonth ?? null,
-      calendarDay: value.calendarDay ?? null,
-    }, value.id)
-    const indexed = [...(value.combatants || [])]
-      .sort((left, right) => left.sortOrder - right.sortOrder)[value.currentTurnIndex]
-    preferredActiveCombatantId.value = indexed?.id || preferredActiveCombatantId.value
-  },
-  { immediate: true },
-)
-
-let pollingHandle: ReturnType<typeof setInterval> | null = null
-
-watch(
-  () => encounter.value?.status,
-  (status) => {
-    if (pollingHandle) {
-      clearInterval(pollingHandle)
-      pollingHandle = null
-    }
-    if (status === 'ACTIVE') {
-      pollingHandle = setInterval(() => {
-        refreshPreservingUiState()
-      }, 5000)
-    }
-  },
-  { immediate: true },
-)
-
-onBeforeUnmount(() => {
-  if (pollingHandle) clearInterval(pollingHandle)
-})
-
-const confirmStatusAction = async (action: 'reset' | 'abandon') => {
-  await runStatusAction(action)
-  if (actionError.value) throw new Error(actionError.value)
+  )
+    amount.value = undefined
 }
+const openCondition = (condition?: EncounterCondition) => {
+  if (!selected.value) return
+  editingCondition.value = condition
+  conditionParticipantId.value = selected.value.id
+  showCondition.value = true
+}
+const removeCondition = async (condition: EncounterCondition) => {
+  const id = encounterId.value
+  if (
+    !(await run(
+      () =>
+        request(`/api/encounters/${id}/combatants`, {
+          method: 'PATCH',
+          body: {
+            action: 'condition-remove',
+            participantId: condition.combatantId,
+            conditionId: condition.id,
+          },
+        }),
+      true,
+    ))
+  )
+    return
+  toast.add({
+    title: `${condition.name} removed`,
+    duration: 8000,
+    actions: [
+      {
+        label: 'Undo',
+        onClick: () =>
+          run(() =>
+            request(`/api/encounters/${id}/combatants`, {
+              method: 'PATCH',
+              body: {
+                action: 'condition-add',
+                participantIds: [condition.combatantId],
+                condition: {
+                  name: condition.name,
+                  duration: condition.duration ?? undefined,
+                  remaining: condition.remaining ?? undefined,
+                  tickTiming: condition.tickTiming,
+                  source: condition.source ?? undefined,
+                  notes: condition.notes ?? undefined,
+                },
+              },
+            }),
+          ),
+      },
+    ],
+  })
+}
+const saved = async () => {
+  await refresh()
+  toast.add({ title: 'Participant saved', color: 'success' })
+}
+const addNote = async () => {
+  if (!note.value.trim()) return
+  const submitted = note.value.trim()
+  if (await run(() => api.addNoteEvent(encounterId.value, submitted))) note.value = ''
+}
+const createFromTemplate = async () => {
+  if (!selectedTemplateId.value || !templateName.value.trim()) return
+  await run(async () => {
+    const created = await templatesApi.instantiateTemplate(selectedTemplateId.value, {
+      name: templateName.value.trim(),
+      sessionId: encounter.value?.sessionId || undefined,
+    })
+    if (!created) throw new Error('The new encounter could not be loaded.')
+    await navigateTo(`/campaigns/${campaignId.value}/encounters/${created.id}`)
+  })
+}
+const lifecycleMenu = computed<RecordAction[]>(() => [
+  ...(available.value.pause.allowed
+    ? [
+        {
+          label: 'Pause',
+          icon: 'i-lucide-pause',
+          action: () => transition('pause'),
+        },
+      ]
+    : []),
+  ...(available.value.complete.allowed
+    ? [
+        {
+          label: 'Complete encounter',
+          icon: 'i-lucide-check',
+          action: () => transition('complete'),
+        },
+      ]
+    : []),
+  ...(available.value.abandon.allowed
+    ? [
+        {
+          label: 'Abandon encounter',
+          icon: 'i-lucide-x',
+          action: () => transition('abandon'),
+        },
+      ]
+    : []),
+  ...(available.value.reset.allowed
+    ? [
+        {
+          label: 'Reset turn progress',
+          icon: 'i-lucide-rotate-ccw',
+          destructive: true,
+          confirmation: {
+            message:
+              'Reset round and turn to the beginning and return to Planned? HP, conditions and history are preserved.',
+            label: 'Reset turn progress',
+          },
+          action: async () => {
+            await run(
+              () =>
+                request(`/api/encounters/${encounterId.value}`, {
+                  method: 'PATCH',
+                  body: { action: 'reset' },
+                }),
+              true,
+            )
+          },
+        },
+      ]
+    : []),
+  { label: 'Refresh', icon: 'i-lucide-refresh-cw', action: () => refresh() },
+])
+const primary = computed(() =>
+  encounter.value?.status === 'PLANNED'
+    ? { label: 'Start encounter', action: 'start' as const }
+    : encounter.value?.status === 'PAUSED'
+      ? { label: 'Resume', action: 'resume' as const }
+      : finished.value
+        ? { label: 'Reopen', action: 'reopen' as const }
+        : null,
+)
+watch(encounterId, () => {
+  selectedId.value = undefined
+  tab.value = 'participants'
+  actionError.value = ''
+  amount.value = undefined
+})
+watch(selectedId, () => {
+  amount.value = undefined
+  amountError.value = ''
+})
+let poll: ReturnType<typeof setInterval> | undefined
+onMounted(() => {
+  poll = setInterval(() => {
+    if (!busy.value && !pending.value) void refresh()
+  }, 5000)
+})
+onBeforeUnmount(() => {
+  if (poll) clearInterval(poll)
+})
 </script>
 
 <template>
-  <div class="space-y-6">
+  <UPage :aria-busy="pending">
     <SharedResourceState
-      :pending="pending"
-      :has-data="Boolean(encounter)"
+      :pending="pending && !encounter"
       :error="error"
+      :has-data="Boolean(encounter)"
       :empty="!encounter"
       error-message="Unable to load encounter."
       empty-message="Encounter not found."
-      @retry="refreshPreservingUiState"
+      @retry="refresh()"
     >
-      <template #default>
-        <EncounterRuntimeHeader
-          v-if="encounter"
-          :name="encounter.name"
-          :status="encounter.status"
-          :round="encounter.currentRound"
-          :can-write="canWriteContent"
-          :abandon-action="() => confirmStatusAction('abandon')"
-          :reset-action="() => confirmStatusAction('reset')"
-          @start="runStatusAction('start')"
-          @pause="runStatusAction('pause')"
-          @resume="runStatusAction('resume')"
-          @complete="runStatusAction('complete')"
-          @refresh="refreshPreservingUiState"
-        />
-
+      <template v-if="encounter">
+        <CampaignPageHeader :title="encounter.name">
+          <template #title-trailing>
+            <span class="inline-flex size-5 shrink-0 self-center items-center justify-center">
+              <span
+                v-if="pending"
+                role="status"
+                aria-label="Refreshing encounter"
+                class="inline-flex"
+              >
+                <UIcon
+                  name="i-lucide-loader-circle"
+                  class="size-4 text-muted motion-safe:animate-spin"
+                  aria-hidden="true"
+                />
+              </span>
+            </span>
+          </template>
+          <template #actions>
+            <UButton
+              :to="`/campaigns/${campaignId}/encounters`"
+              icon="i-lucide-arrow-left"
+              color="neutral"
+              variant="ghost"
+              >Encounters</UButton
+            >
+            <UButton
+              v-if="primary && canWriteContent"
+              color="primary"
+              variant="solid"
+              :disabled="busy || !available[primary.action].allowed"
+              :loading="busy"
+              @click="transition(primary.action)"
+              >{{ primary.label }}</UButton
+            >
+            <UButton
+              v-if="available.turn.allowed"
+              color="primary"
+              variant="solid"
+              trailing-icon="i-lucide-arrow-right"
+              :disabled="busy"
+              :loading="busy"
+              @click="turn('advance')"
+              >Next turn</UButton
+            >
+            <SharedActionMenu :name="encounter.name" :items="lifecycleMenu" :disabled="busy" />
+          </template>
+        </CampaignPageHeader>
+        <div class="flex flex-wrap items-center gap-3 text-sm">
+          <UBadge
+            :color="
+              encounter.status === 'ACTIVE'
+                ? 'success'
+                : encounter.status === 'PAUSED'
+                  ? 'warning'
+                  : 'neutral'
+            "
+            variant="soft"
+            >{{ encounter.status.charAt(0) + encounter.status.slice(1).toLowerCase() }}</UBadge
+          >
+          <span v-if="encounter.status !== 'PLANNED'" class="font-mono tabular-nums text-muted"
+            >Round {{ encounter.currentRound }}</span
+          >
+          <span v-if="encounter.status === 'PAUSED'" class="text-muted"
+            >Turn progression is paused. Participants can be corrected.</span
+          >
+          <span v-if="finished" class="text-muted">Final record. Reopen to make changes.</span>
+          <span
+            v-if="primary && canWriteContent && !available[primary.action].allowed"
+            class="text-muted"
+            >{{ available[primary.action].reason }}</span
+          >
+        </div>
         <SharedReadOnlyAlert
           v-if="!canWriteContent"
-          description="Your role can view this encounter but cannot change runtime state."
+          description="Your role can inspect this encounter but cannot change it."
         />
-
-        <UAlert v-if="actionError" color="error" variant="soft" :description="actionError" />
-
-        <div class="grid gap-4 xl:grid-cols-3">
-          <div class="space-y-4 xl:col-span-2">
-            <EncounterQuickActionsBar
-              :can-write="canWriteContent"
-              @advance="advanceTurn"
-              @rewind="rewindTurn"
-              @roll="rollInitiative"
-            />
-
-            <EncounterInitiativeBoard
-              :combatants="sortedCombatants"
-              :active-index="activeIndex"
-              :can-write="canWriteContent"
-              @select="setActive"
-              @move="moveInitiativeItem"
-              @manage="openManageCombatants"
-              @set-initiative="setManualInitiative"
-            />
-
-            <div class="grid gap-3 md:grid-cols-2">
-              <EncounterCombatantCard
-                v-for="combatant in sortedCombatants"
-                :key="combatant.id"
-                :combatant="combatant"
-                :can-write="canWriteContent"
-                :delete-action="deleteCombatant"
-                @edit="openCombatantEditor(combatant)"
-              />
-            </div>
-
-            <EncounterEventTimeline :events="encounter?.events || []" />
-
-            <UCard>
-              <template #header>
-                <h2 class=" type-section">Add note</h2>
-              </template>
-              <div class="flex flex-wrap gap-2">
-                <UInput v-model="noteDraft" class="min-w-0 flex-1" aria-label="Encounter note" placeholder="Track a quick note" />
-                <UButton icon="i-lucide-plus" variant="outline" :disabled="!canWriteContent || !noteDraft.trim()" @click="addNote">Add note</UButton>
-              </div>
-            </UCard>
-          </div>
-
-          <div class="space-y-4">
-            <EncounterSummaryPanel
-              :summary="summary"
-            />
-
-            <UCard>
-              <template #header>
-                <h2 class=" type-section">Active combatant</h2>
-              </template>
-              <div v-if="activeCombatant" class="space-y-2">
-                <p class="text-sm font-medium">{{ activeCombatant.name }}</p>
-                <div class="flex flex-wrap items-end gap-2">
-                  <UInput v-model.number="hpModifier" type="number" class="w-24" aria-label="Hit point amount" />
-                  <UButton :disabled="!canWriteContent || !activeCombatant" color="error" variant="soft" @click="quickApplyDamage">Damage</UButton>
-                  <UButton :disabled="!canWriteContent || !activeCombatant" color="success" variant="soft" @click="quickApplyHeal">Heal</UButton>
-                </div>
-                <EncounterConditionChips :conditions="activeConditions" />
-                <div class="space-y-2">
-                  <div
-                    v-for="condition in activeConditions"
-                    :key="condition.id"
-                    class="flex items-center justify-between gap-2 rounded-md border border-default/70 px-2 py-1"
-                  >
-                    <p class="text-xs text-muted">
-                      {{ condition.name }}
-                      <span v-if="typeof condition.remaining === 'number'">({{ condition.remaining }})</span>
-                      · {{ condition.tickTiming }}
-                    </p>
-                    <div class="flex gap-1">
-                      <UButton size="xs" variant="ghost" :disabled="!canWriteContent" @click="openEditCondition(condition.id)">Edit</UButton>
-                      <SharedConfirmActionPopover
-                        message="Remove condition?"
-                        content-class="w-72 p-3"
-                        confirm-label="Delete"
-                        confirm-icon="i-lucide-trash-2"
-                        @confirm="({ close }) => { deleteCondition(condition.id); close() }"
-                      >
-                        <template #trigger>
-                          <UButton size="xs" color="error" variant="ghost" :disabled="!canWriteContent">Delete</UButton>
-                        </template>
-                        <template #content>
-                          <p class="text-sm text-muted">Remove {{ condition.name }} from {{ activeCombatant?.name }}?</p>
-                        </template>
-                      </SharedConfirmActionPopover>
-                    </div>
-                  </div>
-                </div>
-                <UButton size="xs" variant="outline" :disabled="!canWriteContent" @click="openCreateCondition">Add condition</UButton>
-              </div>
-              <p v-else class="text-sm text-muted">No active combatant selected.</p>
-            </UCard>
-
-            <EncounterTemplatePicker
-              :templates="templates || []"
-              :disabled="!canWriteContent"
-              @instantiate="instantiateTemplate"
-            />
-
-            <UCard>
-              <template #header>
-                <h2 class=" type-section">Encounter settings</h2>
-              </template>
-              <div class="space-y-3">
-                <UFormField label="Linked session">
-                  <USelect
-                    v-model="encounterSettings.sessionId"
-                    :items="sessionOptions"
-                    placeholder="No linked session"
-                  />
-                </UFormField>
-
-                <UCard
-v-if="calendarConfig?.isEnabled"
-                  variant="soft"
-                  :ui="{ body: 'space-y-3 p-3' }"
+        <UAlert v-if="actionError" color="error" :description="actionError" />
+        <EncounterSummaryPanel v-if="finished" :summary="summary" />
+        <UTabs
+          v-model="tab"
+          :ui="{
+            leadingIcon: 'hidden sm:inline-flex',
+            trigger: 'px-2 sm:px-3',
+          }"
+          :unmount-on-hide="false"
+          :items="[
+            {
+              label: 'Participants',
+              value: 'participants',
+              slot: 'participants',
+              icon: 'i-lucide-users',
+            },
+            {
+              label: 'History',
+              value: 'history',
+              slot: 'history',
+              icon: 'i-lucide-history',
+            },
+            {
+              label: 'Settings',
+              value: 'settings',
+              slot: 'settings',
+              icon: 'i-lucide-settings',
+            },
+          ]"
+          variant="link"
+        >
+          <template #participants>
+            <div class="space-y-4">
+              <div v-if="available.turn.allowed" class="flex flex-wrap gap-2">
+                <UButton
+                  v-if="available.turn.allowed"
+                  icon="i-lucide-arrow-left"
+                  :disabled="
+                    busy || (encounter.currentRound === 1 && encounter.currentTurnIndex === 0)
+                  "
+                  @click="turn('rewind')"
+                  >Previous turn</UButton
                 >
-                  <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Calendar link</p>
-                  <div class="grid gap-2 sm:grid-cols-3">
-                    <UFormField label="Year">
-                      <UInput v-model.number="encounterSettings.calendarYear" type="number" />
-                    </UFormField>
-                    <UFormField label="Month">
-                      <UInput v-model.number="encounterSettings.calendarMonth" type="number" />
-                    </UFormField>
-                    <UFormField label="Day">
-                      <UInput v-model.number="encounterSettings.calendarDay" type="number" />
-                    </UFormField>
-                  </div>
-                </UCard>
-                <UAlert
-                  v-else
-                  color="neutral"
-                  variant="soft"
-                  title="Calendar disabled"
-                  description="Enable campaign calendar to link encounter date."
-                />
-
-                <div class="flex justify-end">
-                  <UButton
-                    :disabled="!canWriteContent"
-                    :loading="isSavingEncounterSettings"
-                    @click="saveEncounterSettings"
+              </div>
+              <div class="grid items-start gap-4 lg:grid-cols-5">
+                <div class="min-w-0 lg:col-span-3">
+                  <EncounterParticipantList
+                    :participants="ordered"
+                    :selected-id="selected?.id"
+                    :active-id="encounter.activeParticipantId"
+                    :can-edit="available.participants.allowed"
+                    :can-set-turn="available.turn.allowed"
+                    :can-order="available.initiative.allowed"
+                    :busy="busy"
+                    :remove="remove"
+                    @select="selectedId = $event"
+                    @edit="edit"
+                    @duplicate="duplicate"
+                    @set-turn="turn('set-active', $event)"
+                    @add="showAdd = true"
+                    @move="move"
+                    @roll="roll('ALL', $event)"
+                    @clear-initiative="clearInitiative"
                   >
-                    Save settings
-                  </UButton>
+                    <template #actions>
+                      <UDropdownMenu
+                        v-if="available.initiative.allowed"
+                        :items="[
+                          [
+                            { label: 'Roll all', onSelect: () => roll('ALL') },
+                            {
+                              label: 'Roll unset',
+                              onSelect: () => roll('UNSET'),
+                            },
+                            {
+                              label: 'Roll NPCs',
+                              onSelect: () => roll('NON_PCS'),
+                            },
+                          ],
+                          [
+                            {
+                              label: 'Clear initiative',
+                              icon: 'i-lucide-eraser',
+                              disabled: !ordered.some((p) => p.initiative != null),
+                              onSelect: () => clearInitiative(),
+                            },
+                          ],
+                        ]"
+                      >
+                        <UButton icon="i-lucide-dices" label="Roll initiative" :disabled="busy" />
+                      </UDropdownMenu>
+                    </template>
+                  </EncounterParticipantList>
                 </div>
-              </div>
-            </UCard>
-
-            <UCard>
-              <template #header>
-                <h2 class=" type-section">Quest & milestone shortcuts</h2>
-              </template>
-              <div class="space-y-3">
-                <div class="flex flex-wrap gap-2">
-                  <UButton variant="outline" size="xs" :to="`/campaigns/${campaignId}/quests`">Open quests</UButton>
-                  <UButton variant="outline" size="xs" :to="`/campaigns/${campaignId}/milestones`">Open milestones</UButton>
-                </div>
-
-                <UFormField label="Mark quest complete">
-                  <div class="flex items-center gap-2">
-                    <USelect v-model="selectedShortcutQuestId" class="flex-1" :items="activeQuestOptions" placeholder="Select quest" />
-                    <UButton
-                      size="xs"
-                      :disabled="!canWriteContent || !selectedShortcutQuestId"
-                      :loading="isSavingSummaryShortcut"
-                      @click="markQuestCompleteFromSummary()"
+                <UCard class="min-w-0 lg:sticky lg:top-4 lg:col-span-2" variant="soft">
+                  <template #header
+                    ><div class="flex items-center justify-between gap-2">
+                      <h2 class="type-section">
+                        {{ selected?.name || 'Participant details' }}
+                      </h2>
+                      <UButton
+                        v-if="selected && available.participants.allowed"
+                        icon="i-lucide-pencil"
+                        variant="ghost"
+                        :aria-label="`Edit ${selected.name}`"
+                        :disabled="busy"
+                        @click="edit(selected)"
+                      /></div
+                  ></template>
+                  <div v-if="selected" class="space-y-4">
+                    <dl class="grid grid-cols-3 gap-3 font-mono text-sm tabular-nums">
+                      <div>
+                        <dt class="text-muted">HP</dt>
+                        <dd>{{ selected.currentHp ?? '-' }}/{{ selected.maxHp ?? '-' }}</dd>
+                      </div>
+                      <div>
+                        <dt class="text-muted">Temp HP</dt>
+                        <dd>{{ selected.tempHp }}</dd>
+                      </div>
+                      <div>
+                        <dt class="text-muted">AC</dt>
+                        <dd>{{ selected.armorClass ?? '-' }}</dd>
+                      </div>
+                      <div>
+                        <dt class="text-muted">Speed</dt>
+                        <dd>{{ selected.speed ?? '-' }} ft</dd>
+                      </div>
+                      <div>
+                        <dt class="text-muted">Initiative</dt>
+                        <dd>{{ selected.initiative ?? '-' }}</dd>
+                      </div>
+                      <div>
+                        <dt class="text-muted">Side</dt>
+                        <dd>
+                          {{
+                            selected.side === 'ALLY'
+                              ? 'Ally'
+                              : selected.side === 'ENEMY'
+                                ? 'Enemy'
+                                : 'Neutral'
+                          }}
+                        </dd>
+                      </div>
+                    </dl>
+                    <div
+                      v-if="available.turn.allowed && encounter.activeParticipantId !== selected.id"
                     >
-                      Complete
-                    </UButton>
+                      <UButton
+                        icon="i-lucide-play"
+                        :disabled="busy"
+                        @click="turn('set-active', selected.id)"
+                        >Set active turn</UButton
+                      >
+                    </div>
+                    <div v-if="available.effects.allowed" class="space-y-2">
+                      <UFormField label="HP amount" :error="amountError"
+                        ><UInput
+                          v-model.number="amount"
+                          type="number"
+                          :min="1"
+                          :max="9999"
+                          :disabled="busy || selected.currentHp == null"
+                          @keydown.enter.prevent="effect('damage')"
+                      /></UFormField>
+                      <p v-if="selected.currentHp == null" class="text-sm text-muted">
+                        Set current HP in Edit before applying damage or healing.
+                      </p>
+                      <div class="flex gap-2">
+                        <UButton
+                          :disabled="busy || selected.currentHp == null"
+                          @click="effect('damage')"
+                          >Damage</UButton
+                        ><UButton
+                          :disabled="busy || selected.currentHp == null"
+                          @click="effect('heal')"
+                          >Heal</UButton
+                        >
+                      </div>
+                    </div>
+                    <div class="space-y-2">
+                      <div class="flex items-center justify-between gap-2">
+                        <h3 class="type-record">Conditions</h3>
+                        <UButton
+                          v-if="available.conditions.allowed"
+                          icon="i-lucide-plus"
+                          variant="ghost"
+                          aria-label="Add condition"
+                          :disabled="busy"
+                          @click="openCondition()"
+                        />
+                      </div>
+                      <p v-if="!conditions.length" class="text-sm text-muted">No conditions.</p>
+                      <div
+                        v-for="condition in conditions"
+                        :key="condition.id"
+                        class="flex items-center justify-between gap-2 border-t border-default py-2"
+                      >
+                        <div>
+                          <p class="text-sm">
+                            {{ condition.name }}
+                            <span v-if="condition.remaining === 0" class="text-muted"
+                              >(expired)</span
+                            >
+                          </p>
+                          <p v-if="condition.remaining != null" class="text-xs text-muted">
+                            {{ condition.remaining }} remaining -
+                            {{
+                              condition.tickTiming === 'TURN_START'
+                                ? 'Turn start'
+                                : condition.tickTiming === 'TURN_END'
+                                  ? 'Turn end'
+                                  : 'Round end'
+                            }}
+                          </p>
+                        </div>
+                        <SharedActionMenu
+                          v-if="available.conditions.allowed"
+                          :name="condition.name"
+                          :disabled="busy"
+                          :items="[
+                            {
+                              label: 'Edit',
+                              icon: 'i-lucide-pencil',
+                              action: () => openCondition(condition),
+                            },
+                            {
+                              label: 'Remove',
+                              icon: 'i-lucide-trash-2',
+                              action: () => removeCondition(condition),
+                            },
+                          ]"
+                        />
+                      </div>
+                    </div>
+                    <p v-if="selected.notes" class="whitespace-pre-wrap text-sm text-muted">
+                      {{ selected.notes }}
+                    </p>
                   </div>
-                </UFormField>
-
-                <UFormField label="Mark milestone complete">
-                  <div class="flex items-center gap-2">
-                    <USelect v-model="selectedShortcutMilestoneId" class="flex-1" :items="openMilestoneOptions" placeholder="Select milestone" />
-                    <UButton
-                      size="xs"
-                      :disabled="!canWriteContent || !selectedShortcutMilestoneId"
-                      :loading="isSavingSummaryShortcut"
-                      @click="markMilestoneCompleteFromSummary()"
-                    >
-                      Complete
-                    </UButton>
-                  </div>
-                </UFormField>
+                  <p v-else class="text-sm text-muted">Add a participant to view their details.</p>
+                </UCard>
               </div>
-            </UCard>
-          </div>
-        </div>
+            </div>
+          </template>
+          <template #history
+            ><div class="space-y-4">
+              <EncounterSummaryPanel v-if="!finished" :summary="summary" /><EncounterEventTimeline
+                :events="encounter.events"
+              /><UCard v-if="available.notes.allowed"
+                ><UFormField label="Encounter note"
+                  ><UTextarea v-model="note" :maxlength="500" class="w-full" /></UFormField
+                ><UButton class="mt-3" :disabled="busy || !note.trim()" @click="addNote"
+                  >Add note</UButton
+                ></UCard
+              >
+            </div></template
+          >
+          <template #settings
+            ><div class="space-y-4">
+              <EncounterSettings
+                :key="encounter.id"
+                :encounter="encounter"
+                :can-edit="available.edit.allowed"
+                :can-write="canWriteContent"
+                @saved="refresh()"
+              /><UCard v-if="canWriteContent"
+                ><template #header><h2 class="type-section">Create another encounter</h2></template
+                ><SharedResourceState
+                  :pending="templatesPending"
+                  :error="templatesError"
+                  :has-data="Boolean(templates)"
+                  :empty="!templates?.length"
+                  empty-message="No encounter templates yet."
+                  @retry="refreshTemplates()"
+                  ><div class="space-y-3">
+                    <UFormField label="Template"
+                      ><USelect
+                        v-model="selectedTemplateId"
+                        :items="
+                          (templates || []).map((t) => ({
+                            label: t.name,
+                            value: t.id,
+                          }))
+                        "
+                        class="w-full" /></UFormField
+                    ><UFormField label="New encounter name"
+                      ><UInput v-model="templateName" class="w-full" /></UFormField
+                    ><UButton
+                      :disabled="busy || !selectedTemplateId || !templateName.trim()"
+                      @click="createFromTemplate"
+                      >Create encounter from template</UButton
+                    >
+                  </div></SharedResourceState
+                ></UCard
+              >
+            </div></template
+          >
+        </UTabs>
+        <EncounterAddParticipants
+          v-if="showAdd"
+          v-model:open="showAdd"
+          :campaign-id="campaignId"
+          :encounter-id="encounterId"
+          @saved="saved"
+        />
+        <EncounterParticipantEditor
+          v-if="editing"
+          :key="editing.id"
+          v-model:open="showEdit"
+          :participant="editing"
+          :encounter-id="encounterId"
+          @saved="saved"
+        />
+        <EncounterParticipantEditor
+          v-if="showDuplicate && duplicateSource"
+          v-model:open="showDuplicate"
+          duplicate
+          :participant="duplicateSource"
+          :encounter-id="encounterId"
+          @saved="saved"
+        />
+        <EncounterConditionEditor
+          v-if="showCondition"
+          v-model:open="showCondition"
+          :encounter-id="encounterId"
+          :participant-id="conditionParticipantId"
+          :condition="editingCondition"
+          @saved="refresh()"
+        />
       </template>
     </SharedResourceState>
-
-    <SharedEntityFormModal
-v-model:open="isManageCombatantsOpen"
-      :state="{ manageCombatantMode, selectedStatBlockId, manageQuantity, copySourceCombatantId, customCombatantForm }"
-      title="Manage combatants"
-      submit-label="Add"
-      :saving="isSavingManageCombatants"
-      :error="actionError"
-      @submit="saveManageCombatants"
-    >
-      <UFormField label="Add mode">
-        <USelect
-          v-model="manageCombatantMode"
-          :items="[
-            { label: 'Campaign PC', value: 'pc' },
-            { label: 'Campaign stat block', value: 'statblock' },
-            { label: 'Custom combatant', value: 'custom' },
-            { label: 'Copy existing stat block combatant', value: 'copy' },
-          ]"
-        />
-      </UFormField>
-
-      <template v-if="manageCombatantMode === 'pc'">
-        <UFormField label="Campaign PCs">
-          <div v-if="availableCampaignCharacters.length" class="max-h-52 space-y-2 overflow-auto rounded-md border border-default p-2">
-            <UCheckbox
-              v-for="character in availableCampaignCharacters"
-              :key="character.id"
-              :model-value="selectedCampaignCharacterIds.includes(character.id)"
-              :label="character.label"
-              @update:model-value="(checked) => toggleCampaignPcSelection(character.id, Boolean(checked))"
-            />
-          </div>
-          <p v-else class="text-sm text-muted">All active campaign PCs are already in this encounter.</p>
-        </UFormField>
-      </template>
-
-      <template v-else-if="manageCombatantMode === 'statblock'">
-        <UFormField label="Stat block">
-          <USelect v-model="selectedStatBlockId" :items="statBlockOptions" placeholder="Select stat block" />
-        </UFormField>
-        <UFormField label="Quantity">
-          <UInput v-model.number="manageQuantity" type="number" min="1" />
-        </UFormField>
-      </template>
-
-      <template v-else-if="manageCombatantMode === 'copy'">
-        <UFormField label="Source combatant">
-          <USelect v-model="copySourceCombatantId" :items="copyCombatantOptions" placeholder="Select combatant" />
-        </UFormField>
-        <UFormField label="Quantity">
-          <UInput v-model.number="manageQuantity" type="number" min="1" />
-        </UFormField>
-      </template>
-
-      <template v-else>
-        <UFormField label="Name">
-          <UInput v-model="customCombatantForm.name" placeholder="Custom combatant" />
-        </UFormField>
-        <UFormField label="Side">
-          <USelect v-model="customCombatantForm.side" :items="sideOptions" />
-        </UFormField>
-        <div class="grid gap-3 md:grid-cols-3">
-          <UFormField label="Max HP">
-            <UInput v-model.number="customCombatantForm.maxHp" type="number" />
-          </UFormField>
-          <UFormField label="Armor Class">
-            <UInput v-model.number="customCombatantForm.armorClass" type="number" />
-          </UFormField>
-          <UFormField label="Speed">
-            <UInput v-model.number="customCombatantForm.speed" type="number" />
-          </UFormField>
-        </div>
-      </template>
-    </SharedEntityFormModal>
-
-    <SharedEntityFormModal
-v-model:open="isConditionModalOpen"
-      :state="{ conditionPreset, conditionForm }"
-      :title="editingConditionId ? 'Edit condition' : 'Add condition'"
-      submit-label="Save"
-      :saving="isSavingCondition"
-      :error="actionError"
-      @submit="saveCondition"
-    >
-      <UFormField label="Condition">
-        <USelect v-model="conditionPreset" :items="standardConditionOptions" />
-      </UFormField>
-      <UFormField v-if="conditionPreset === 'CUSTOM'" label="Custom name">
-        <UInput v-model="conditionForm.name" placeholder="Custom condition name" />
-      </UFormField>
-      <div class="grid gap-3 md:grid-cols-3">
-        <UFormField label="Duration">
-          <UInput v-model.number="conditionForm.duration" type="number" />
-        </UFormField>
-        <UFormField label="Remaining">
-          <UInput v-model.number="conditionForm.remaining" type="number" />
-        </UFormField>
-        <UFormField label="Tick timing">
-          <USelect v-model="conditionForm.tickTiming" :items="conditionTimingOptions" />
-        </UFormField>
-      </div>
-      <UFormField label="Source">
-        <UInput v-model="conditionForm.source" placeholder="Hold Person" />
-      </UFormField>
-      <UFormField label="Notes">
-        <UTextarea v-model="conditionForm.notes" :rows="3" />
-      </UFormField>
-    </SharedEntityFormModal>
-
-    <SharedEntityFormModal
-v-model:open="isCombatantEditOpen"
-      :state="combatantForm"
-      title="Edit combatant"
-      submit-label="Save"
-      :saving="isSavingCombatant"
-      :error="actionError"
-      @submit="saveCombatantEditor"
-    >
-      <UFormField label="Name">
-        <UInput v-model="combatantForm.name" />
-      </UFormField>
-      <div class="grid gap-3 md:grid-cols-2">
-        <UFormField label="Side">
-          <USelect v-model="combatantForm.side" :items="sideOptions" />
-        </UFormField>
-        <UFormField label="Source type">
-          <USelect v-model="combatantForm.sourceType" :items="sourceTypeOptions" />
-        </UFormField>
-      </div>
-      <UFormField v-if="combatantForm.sourceType !== 'CUSTOM'" label="Stat block">
-        <USelect v-model="combatantForm.sourceStatBlockId" :items="statBlockOptions" />
-      </UFormField>
-      <div class="grid gap-3 md:grid-cols-3">
-        <UFormField label="Max HP">
-          <UInput v-model.number="combatantForm.maxHp" type="number" />
-        </UFormField>
-        <UFormField label="Current HP">
-          <UInput v-model.number="combatantForm.currentHp" type="number" />
-        </UFormField>
-        <UFormField label="Temp HP">
-          <UInput v-model.number="combatantForm.tempHp" type="number" />
-        </UFormField>
-      </div>
-      <div class="grid gap-3 md:grid-cols-2">
-        <UFormField label="Armor Class">
-          <UInput v-model.number="combatantForm.armorClass" type="number" />
-        </UFormField>
-        <UFormField label="Speed">
-          <UInput v-model.number="combatantForm.speed" type="number" />
-        </UFormField>
-      </div>
-      <UFormField label="Notes">
-        <UTextarea v-model="combatantForm.notes" :rows="3" />
-      </UFormField>
-    </SharedEntityFormModal>
-  </div>
+  </UPage>
 </template>
-
-

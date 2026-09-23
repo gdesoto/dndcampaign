@@ -132,6 +132,7 @@ describe('encounter API routes', () => {
       })
       expect(response.status).toBe(readStatus)
     }
+    await prisma.encounterCombatant.create({ data: { encounterId: encounter.id, name: 'Ready', sortOrder: 0 } })
     const response = await fetch(`${baseUrl}/api/encounters/${encounter.id}`, {
       method: 'PATCH',
       headers: { cookie: cookies[role], 'content-type': 'application/json' },
@@ -260,6 +261,13 @@ describe('encounter API routes', () => {
     })
     expect(outsiderDamage.status).toBe(404)
 
+    const start = await fetch(`${baseUrl}/api/encounters/${encounterId}`, {
+      method: 'PATCH',
+      headers: { cookie: cookies.owner, 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'start' }),
+    })
+    expect(start.status).toBe(200)
+
     const ownerDamage = await fetch(`${baseUrl}/api/encounters/${encounterId}/combatants/${combatantId}`, {
       method: 'PATCH',
       headers: {
@@ -269,13 +277,6 @@ describe('encounter API routes', () => {
       body: JSON.stringify({ operation: 'damage', amount: 5 }),
     })
     expect(ownerDamage.status).toBe(200)
-
-    const start = await fetch(`${baseUrl}/api/encounters/${encounterId}`, {
-      method: 'PATCH',
-      headers: { cookie: cookies.owner, 'content-type': 'application/json' },
-      body: JSON.stringify({ action: 'start' }),
-    })
-    expect(start.status).toBe(200)
 
     const reset = await fetch(`${baseUrl}/api/encounters/${encounterId}`, {
       method: 'PATCH',
@@ -306,6 +307,10 @@ describe('encounter API routes', () => {
     const sortOrders = combatantsPayload.data.map((entry: { sortOrder: number }) => entry.sortOrder)
     expect(new Set(sortOrders).size).toBe(sortOrders.length)
 
+    expect((await fetch(`${baseUrl}/api/encounters/${encounterId}`, {
+      method: 'PATCH', headers: { cookie: cookies.owner, 'content-type': 'application/json' }, body: JSON.stringify({ action: 'start' }),
+    })).status).toBe(200)
+
     const advance = await fetch(`${baseUrl}/api/encounters/${encounterId}/turn`, {
       method: 'PATCH',
       headers: { cookie: cookies.owner, 'content-type': 'application/json' },
@@ -326,6 +331,89 @@ describe('encounter API routes', () => {
     expect(summary.status).toBe(200)
     const summaryPayload = await summary.json()
     expect(summaryPayload.data.totalDamage).toBeGreaterThanOrEqual(5)
+  })
+
+  it('runs phase-aware batches, preserves turn identity and protects finished records', async () => {
+    const owner = await prisma.user.findUniqueOrThrow({ where: { email: users.owner.email } })
+    const enc = await prisma.campaignEncounter.create({ data: { campaignId, createdByUserId: owner.id, name: 'Phase workflow' } })
+    const call = async (suffix: string, body: unknown, status = 200, method = 'PATCH') => {
+      const response = await fetch(`${baseUrl}/api/encounters/${enc.id}${suffix}`, { method, headers: { cookie: cookies.owner, 'content-type': 'application/json' }, body: JSON.stringify(body) })
+      const json = await response.json()
+      expect(response.status, JSON.stringify(json)).toBe(status)
+      return json.data
+    }
+    await call('', { action: 'start' }, 409)
+    await call('/turn', { action: 'set-active', combatantId: 'missing' }, 409)
+    await call('/combatants', { participants: [{ name: 'First', maxHp: 20 }, { name: 'Second', maxHp: 15 }] }, 200, 'POST')
+    const initial = await prisma.encounterCombatant.findMany({ where: { encounterId: enc.id }, orderBy: { sortOrder: 'asc' } })
+    const ids = initial.map(p => p.id)
+    await call('/combatants', { participants: [{ name: 'Rollback' }, { name: 'Invalid', sourceStatBlockId: 'missing' }] }, 400, 'POST')
+    expect(await prisma.encounterCombatant.count({ where: { encounterId: enc.id } })).toBe(2)
+    await call('/combatants', { action: 'damage', participantIds: ids, amount: 2 }, 409)
+    const started = await call('', { action: 'start' })
+    expect(started).toMatchObject({ status: 'ACTIVE', activeParticipantId: ids[0], availableActions: { turn: { allowed: true } } })
+    await call('/combatants', { action: 'damage', participantIds: [ids[0], 'foreign'], amount: 2 }, 404)
+    expect((await prisma.encounterCombatant.findUniqueOrThrow({ where: { id: ids[0] } })).currentHp).toBe(20)
+    const damaged = await call('/combatants', { action: 'damage', participantIds: ids, amount: 3 })
+    expect(damaged.combatants.map((p: { currentHp: number }) => p.currentHp)).toEqual([17, 12])
+    const reordered = await call('/initiative', { action: 'reorder', combatantOrder: [...ids].reverse() })
+    expect(reordered.activeParticipantId).toBe(ids[0])
+    await call('/initiative', { action: 'reorder', combatantOrder: [ids[0], ids[0]] }, 400)
+    await call('/combatants', { action: 'condition-add', participantIds: ids, condition: { name: 'Marked', duration: 3, tickTiming: 'ROUND_END' } })
+    await call('', { action: 'pause' })
+    await call('/turn', { action: 'advance' }, 409)
+    expect((await prisma.encounterCondition.findMany({ where: { combatantId: { in: ids } } })).every(c => c.remaining === 3)).toBe(true)
+    await call('/combatants', { action: 'heal', participantIds: ids, amount: 1 })
+    await call('', { action: 'resume' })
+    await call('/turn', { action: 'advance' })
+    expect((await prisma.encounterCondition.findMany({ where: { combatantId: { in: ids } } })).every(c => c.remaining === 2)).toBe(true)
+    await call('', { action: 'complete' })
+    await call('/combatants', { participants: [{ name: 'Forbidden' }] }, 409, 'POST')
+    await call(`/combatants/${ids[0]}`, { side: 'ALLY' }, 409)
+    await call('', { name: 'Forbidden' }, 409)
+    await call('', { action: 'start' }, 409)
+    await call('', { status: 'ACTIVE' }, 400)
+    await call('', { action: 'reset' }, 409)
+    const reopened = await call('', { action: 'reopen' })
+    expect(reopened.status).toBe('PAUSED')
+    expect(reopened.currentRound).toBe(2)
+    await call('/turn', { action: 'advance' }, 409)
+    const view = await fetch(`${baseUrl}/api/encounters/${enc.id}`, { headers: { cookie: cookies.viewer } })
+    expect(Object.values((await view.json()).data.availableActions).every((a: unknown) => !(a as { allowed: boolean }).allowed)).toBe(true)
+  })
+
+  it('rolls and clears individual or all initiatives without losing turn identity', async () => {
+    const send = (path: string, body: unknown, method = 'PATCH') => fetch(`${baseUrl}/api/${path}`, {
+      method, headers: { cookie: cookies.owner, 'content-type': 'application/json' }, body: JSON.stringify(body),
+    })
+    const created = await send(`campaigns/${campaignId}/encounters`, { name: 'Initiative controls' }, 'POST')
+    const id = (await created.json()).data.id
+    const added = await send(`encounters/${id}/combatants`, { participants: [
+      { name: 'One', initiative: 10 }, { name: 'Two', initiative: 20 },
+    ] }, 'POST')
+    const [one, two] = (await added.json()).data.combatants
+    await send(`encounters/${id}`, { action: 'start' })
+    const rolled = await send(`encounters/${id}/initiative`, { action: 'roll', combatantId: one.id })
+    expect(rolled.status).toBe(200)
+    const state = (await rolled.json()).data
+    expect(state.combatants.find((p: { id: string }) => p.id === one.id).initiative).toBeGreaterThanOrEqual(1)
+    expect(state.combatants.find((p: { id: string }) => p.id === one.id).initiative).toBeLessThanOrEqual(20)
+    expect(state.combatants.find((p: { id: string }) => p.id === two.id).initiative).toBe(20)
+    expect(state.activeParticipantId).toBe(one.id)
+    const cleared = await send(`encounters/${id}/initiative`, { action: 'clear', combatantId: one.id })
+    expect(cleared.status).toBe(200)
+    const single = (await cleared.json()).data
+    expect(single.combatants.find((p: { id: string }) => p.id === one.id).initiative).toBeNull()
+    expect(single.combatants.find((p: { id: string }) => p.id === two.id).initiative).toBe(20)
+    const all = await send(`encounters/${id}/initiative`, { action: 'clear' })
+    const final = (await all.json()).data
+    expect(final.combatants.every((p: { initiative: number | null }) => p.initiative === null)).toBe(true)
+    expect(final.combatants.map((p: { id: string }) => p.id)).toEqual(state.combatants.map((p: { id: string }) => p.id))
+    expect(final.activeParticipantId).toBe(one.id)
+    expect((await send(`encounters/${id}/initiative`, { action: 'roll', combatantId: 'foreign' })).status).toBe(404)
+    expect((await send(`encounters/${id}/initiative`, { action: 'clear', combatantId: 'foreign' })).status).toBe(404)
+    await send(`encounters/${id}`, { action: 'complete' })
+    expect((await send(`encounters/${id}/initiative`, { action: 'clear' })).status).toBe(409)
   })
 
   it('validates session and calendar linking rules on create', async () => {
@@ -443,7 +531,7 @@ describe('encounter API routes', () => {
         status: 'COMPLETED',
       }),
     })
-    expect(invalidTransition.status).toBe(409)
+    expect(invalidTransition.status).toBe(400)
 
     const outOfBoundsTurn = await fetch(`${baseUrl}/api/encounters/${encounterId}`, {
       method: 'PATCH',

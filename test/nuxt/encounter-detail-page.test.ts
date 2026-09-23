@@ -77,6 +77,7 @@ vi.mock('~/composables/useEncounterStatBlocks', () => ({
 }))
 
 config.global.stubs.SharedActionMenu = actionMenuStub
+config.global.stubs.UTooltip = { template: '<slot />' }
 
 describe('Encounter detail page', () => {
   beforeEach(() => {
@@ -97,6 +98,7 @@ describe('Encounter detail page', () => {
       calendarDay: null,
       currentRound: 1,
       currentTurnIndex: 0,
+      activeParticipantId: null,
       createdByUserId: 'user-1',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -163,10 +165,49 @@ describe('Encounter detail page', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('Manage combatants')
-    expect(wrapper.text()).toContain('Encounter settings')
-    expect(wrapper.text()).toContain('Active combatant')
-    expect(wrapper.text()).toContain('Quest & milestone shortcuts')
+    expect(wrapper.find('button[aria-label="Add participant"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Participants')
+    expect(wrapper.text()).toContain('Start encounter')
+    expect(wrapper.text()).not.toContain('Next turn')
+    expect(wrapper.text()).not.toContain('Set active turn')
+    wrapper.unmount()
+  })
+
+  it('selects a participant without modifying the turn', async () => {
+    const original = await mockGetEncounter()
+    mockGetEncounter.mockResolvedValue({ ...original, status: 'ACTIVE', activeParticipantId: 'combatant-1', combatants: [...original.combatants, { ...original.combatants[0], id: 'combatant-2', name: 'Ally', sortOrder: 1 }] })
+    const wrapper = await mountSuspended(EncounterDetailPage, { global: { provide: { campaignCanWriteContent: ref(true) } } })
+    mockRequest.mockClear()
+    await wrapper.get('button[aria-label="Select Ally"]').trigger('click')
+    expect(mockRequest).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Set active turn')
+    const setTurn = wrapper.findAll('button').find(button => button.text() === 'Set active turn')
+    await setTurn!.trigger('click')
+    expect(mockRequest).toHaveBeenCalledWith('/api/encounters/enc-1/turn', { method: 'PATCH', body: { action: 'set-active', combatantId: 'combatant-2' } })
+    wrapper.unmount()
+  })
+
+  it('rejects a blank HP amount without applying damage', async () => {
+    const original = await mockGetEncounter()
+    mockGetEncounter.mockResolvedValue({ ...original, status: 'ACTIVE', activeParticipantId: 'combatant-1' })
+    const wrapper = await mountSuspended(EncounterDetailPage, { global: { provide: { campaignCanWriteContent: ref(true) } } })
+    mockRequest.mockClear()
+    const damage = wrapper.findAll('button').find(button => button.text() === 'Damage')
+    await damage!.trigger('click')
+    expect(mockRequest).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('Enter a whole number from 1 to 9999.')
+    wrapper.unmount()
+  })
+
+  it('renders finished encounters as records with explicit reopening', async () => {
+    const original = await mockGetEncounter()
+    mockGetEncounter.mockResolvedValue({ ...original, status: 'COMPLETED', activeParticipantId: null })
+    const wrapper = await mountSuspended(EncounterDetailPage, { global: { provide: { campaignCanWriteContent: ref(true) } } })
+    expect(wrapper.text()).toContain('Reopen')
+    expect(wrapper.find('button[aria-label="Add participant"]').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Next turn')
+    expect(wrapper.text()).toContain('Final record')
+    wrapper.unmount()
   })
 
   it('keeps runtime content visible while manual refresh is pending', async () => {
@@ -188,6 +229,7 @@ describe('Encounter detail page', () => {
           calendarDay: null,
           currentRound: 1,
           currentTurnIndex: 0,
+      activeParticipantId: null,
           createdByUserId: 'user-1',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -239,7 +281,11 @@ describe('Encounter detail page', () => {
     await refreshButton!.trigger('click')
     await wrapper.vm.$nextTick()
 
-    expect(wrapper.text()).toContain('Active combatant')
+    expect(wrapper.text()).toContain('Participants')
     expect(wrapper.text()).toContain('Bandit')
+    expect(wrapper.text()).not.toContain('Refreshing')
+    expect(wrapper.find('[aria-label="Refreshing encounter"]').exists()).toBe(true)
+    expect(wrapper.find('[aria-label="Loading content"]').exists()).toBe(false)
+    wrapper.unmount()
   })
 })

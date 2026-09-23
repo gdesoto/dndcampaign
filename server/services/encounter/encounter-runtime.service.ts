@@ -1,3 +1,4 @@
+import { lifecycleTargets, type EncounterLifecycleAction } from '#shared/utils/encounter-policy'
 import { prisma } from '#server/db/prisma'
 import type {
   EncounterCombatant,
@@ -5,6 +6,7 @@ import type {
   EncounterSummary,
 } from '#shared/types/encounter'
 import type {
+  EncounterEffectInput,
   EncounterConditionCreateInput,
   EncounterConditionUpdateInput,
   EncounterDamageInput,
@@ -14,6 +16,7 @@ import type {
   EncounterSetActiveTurnInput,
 } from '#shared/schemas/encounter'
 import {
+  assertEncounterAction,
   appendEncounterEvent,
   getEncounterWithAccess,
   logEncounterActivity,
@@ -23,58 +26,24 @@ import {
 } from '#server/services/encounter/encounter-shared'
 import { apiError } from '#server/utils/http'
 
-type EncounterLifecycleAction = 'start' | 'pause' | 'resume' | 'complete' | 'abandon' | 'reset'
-
-const lifecycleTarget: Record<EncounterLifecycleAction, EncounterSummary['status']> = {
-  start: 'ACTIVE',
-  pause: 'PAUSED',
-  resume: 'ACTIVE',
-  complete: 'COMPLETED',
-  abandon: 'ABANDONED',
-  reset: 'PLANNED',
-}
-
-const transitionAllowed = (from: EncounterSummary['status'], to: EncounterSummary['status']) => {
-  if (from === to) return true
-  if (from === 'PLANNED' && to === 'ACTIVE') return true
-  if (from === 'ACTIVE' && (to === 'PAUSED' || to === 'COMPLETED' || to === 'ABANDONED')) return true
-  if (from === 'PAUSED' && (to === 'ACTIVE' || to === 'COMPLETED' || to === 'ABANDONED')) return true
-  if (from === 'COMPLETED' && to === 'ACTIVE') return true
-  if (from === 'ABANDONED' && to === 'ACTIVE') return true
-  return false
-}
-
 const rollInitiative = () => Math.floor(Math.random() * 20) + 1
 
 export class EncounterRuntimeService {
   private async applySortOrder(encounterId: string, orderedCombatantIds: string[]) {
-    const existing = await prisma.encounterCombatant.findMany({
-      where: { encounterId },
-      select: { id: true, sortOrder: true },
-      orderBy: { sortOrder: 'asc' },
+    await prisma.$transaction(async tx => {
+      const encounter = await tx.campaignEncounter.findUniqueOrThrow({ where: { id: encounterId }, include: { combatants: { orderBy: { sortOrder: 'asc' } } } })
+      assertEncounterAction(encounter, 'initiative')
+      const existing = encounter.combatants
+      if (orderedCombatantIds.length !== existing.length || new Set(orderedCombatantIds).size !== existing.length || orderedCombatantIds.some(id => !existing.some(p => p.id === id))) {
+        throw apiError(409, 'PARTICIPANTS_CHANGED', 'The participant list changed. Refresh and retry the order.')
+      }
+      const activeId = existing[encounter.currentTurnIndex]?.id
+      const tempStart = Math.max(...existing.map(p => p.sortOrder), 0) + existing.length + 1
+      for (const [index, participant] of existing.entries()) await tx.encounterCombatant.update({ where: { id: participant.id }, data: { sortOrder: tempStart + index } })
+      for (const [index, id] of orderedCombatantIds.entries()) await tx.encounterCombatant.update({ where: { id }, data: { sortOrder: index } })
+      const currentTurnIndex = orderedCombatantIds.indexOf(activeId || '')
+      if (currentTurnIndex >= 0) await tx.campaignEncounter.update({ where: { id: encounterId }, data: { currentTurnIndex } })
     })
-    if (!existing.length) return
-
-    const maxSortOrder = existing.reduce((max, entry) => Math.max(max, entry.sortOrder), -1)
-    const tempStart = maxSortOrder + existing.length + 1000
-
-    await prisma.$transaction(
-      existing.map((combatant, index) =>
-        prisma.encounterCombatant.update({
-          where: { id: combatant.id },
-          data: { sortOrder: tempStart + index },
-        })
-      )
-    )
-
-    await prisma.$transaction(
-      orderedCombatantIds.map((combatantId, index) =>
-        prisma.encounterCombatant.update({
-          where: { id: combatantId },
-          data: { sortOrder: index },
-        })
-      )
-    )
   }
 
   async transitionStatus(
@@ -87,26 +56,20 @@ export class EncounterRuntimeService {
       throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
 
-    const nextStatus = lifecycleTarget[action]
-    if (action !== 'reset' && !transitionAllowed(encounter.status, nextStatus)) {
-      throw apiError(409, 'INVALID_STATE_TRANSITION', `Cannot transition encounter from ${encounter.status} to ${nextStatus}.`)
-    }
+    assertEncounterAction(encounter, action)
+    const nextStatus = lifecycleTargets[action]
 
-    const updated = await prisma.campaignEncounter.update({
-      where: { id: encounterId },
-      data: {
+    const updated = await prisma.$transaction(async tx => {
+      const current = await tx.campaignEncounter.findUniqueOrThrow({ where: { id: encounterId }, include: { combatants: true } })
+      assertEncounterAction(current, action)
+      const row = await tx.campaignEncounter.update({ where: { id: encounterId }, data: {
         status: nextStatus,
         ...(action === 'start' || action === 'reset' ? { currentRound: 1, currentTurnIndex: 0 } : {}),
-      },
+      } })
+      await tx.encounterEvent.create({ data: { encounterId, eventType: 'ENCOUNTER', summary: `${action.charAt(0).toUpperCase()}${action.slice(1)} encounter`, payload: { schemaVersion: 1, action: `encounter.${action}` }, createdByUserId: userId } })
+      return row
     })
 
-    await appendEncounterEvent(
-      encounterId,
-      'ENCOUNTER',
-      `${action.charAt(0).toUpperCase()}${action.slice(1)} encounter`,
-      { schemaVersion: 1, action: `encounter.${action}` },
-      userId,
-    )
     await logEncounterActivity({
       actorUserId: userId,
       campaignId: encounter.campaignId,
@@ -132,13 +95,18 @@ export class EncounterRuntimeService {
     if (!encounter) {
       throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
+    assertEncounterAction(encounter, 'initiative')
 
     const combatants = await prisma.encounterCombatant.findMany({
       where: { encounterId },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     })
 
+    if (input.combatantId && !combatants.some(combatant => combatant.id === input.combatantId)) {
+      throw apiError(404, 'NOT_FOUND', 'Participant not found in this encounter.')
+    }
     const shouldRollCombatant = (combatant: typeof combatants[number]) => {
+      if (input.combatantId && combatant.id !== input.combatantId) return false
       if (input.mode === 'ALL') return true
       if (input.mode === 'UNSET') return combatant.initiative === null
       const isPc =
@@ -181,11 +149,28 @@ export class EncounterRuntimeService {
       encounterId,
       'TURN',
       'Rolled initiative for encounter',
-      { schemaVersion: 1, action: 'initiative.roll', mode: input.mode, affected: targets.length },
+      { schemaVersion: 1, action: 'initiative.roll', mode: input.mode, ...(input.combatantId ? { combatantId: input.combatantId } : {}), affected: targets.length },
       userId,
     )
 
     return finalOrder.map(toEncounterCombatantDto)
+  }
+
+  async clearInitiative(encounterId: string, userId: string, combatantId?: string) {
+    const encounter = await getEncounterWithAccess(encounterId, userId, 'content.write')
+    if (!encounter) throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
+    await prisma.$transaction(async tx => {
+      const current = await tx.campaignEncounter.findUniqueOrThrow({ where: { id: encounterId }, include: { combatants: true } })
+      assertEncounterAction(current, 'initiative')
+      if (combatantId && !current.combatants.some(participant => participant.id === combatantId)) {
+        throw apiError(404, 'NOT_FOUND', 'Participant not found in this encounter.')
+      }
+      await tx.encounterCombatant.updateMany({ where: { encounterId, ...(combatantId ? { id: combatantId } : {}) }, data: { initiative: null } })
+      await tx.encounterEvent.create({ data: { encounterId, createdByUserId: userId, eventType: 'TURN',
+        summary: combatantId ? `Cleared initiative for ${current.combatants.find(p => p.id === combatantId)!.name}` : 'Cleared all initiative',
+        payload: { schemaVersion: 1, action: 'initiative.clear', ...(combatantId ? { combatantId } : {}) },
+      } })
+    })
   }
 
   async reorderInitiative(
@@ -197,11 +182,13 @@ export class EncounterRuntimeService {
     if (!encounter) {
       throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
+    assertEncounterAction(encounter, 'initiative')
 
     const combatants = await prisma.encounterCombatant.findMany({ where: { encounterId } })
     const combatantSet = new Set(combatants.map((combatant) => combatant.id))
     if (
-      input.combatantOrder.length !== combatants.length
+      new Set(input.combatantOrder).size !== combatants.length
+      || input.combatantOrder.length !== combatants.length
       || input.combatantOrder.some((id) => !combatantSet.has(id))
     ) {
       throw apiError(400, 'VALIDATION_ERROR', 'Combatant order must include all encounter combatants exactly once.')
@@ -233,61 +220,37 @@ export class EncounterRuntimeService {
     return this.moveTurn(encounterId, userId, 'rewind')
   }
 
-  private async moveTurn(
-    encounterId: string,
-    userId: string,
-    direction: 'advance' | 'rewind',
-  ): Promise<EncounterSummary> {
-    const encounter = await getEncounterWithAccess(encounterId, userId, 'content.write')
-    if (!encounter) {
-      throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
-    }
-
-    const combatantCount = encounter.combatants.length
-    if (!combatantCount) {
-      throw apiError(409, 'NO_COMBATANTS', 'Cannot move turn without combatants.')
-    }
-
-    let nextTurnIndex = encounter.currentTurnIndex
-    let nextRound = encounter.currentRound
-
-    if (direction === 'advance') {
-      nextTurnIndex += 1
-      if (nextTurnIndex >= combatantCount) {
-        nextTurnIndex = 0
-        nextRound += 1
-        await this.tickRoundEndConditions(encounterId)
+  private async moveTurn(encounterId: string, userId: string, direction: 'advance' | 'rewind'): Promise<EncounterSummary> {
+    const accessible = await getEncounterWithAccess(encounterId, userId, 'content.write')
+    if (!accessible) throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
+    return prisma.$transaction(async tx => {
+      const encounter = await tx.campaignEncounter.findUniqueOrThrow({ where: { id: encounterId }, include: { combatants: { orderBy: { sortOrder: 'asc' } } } })
+      assertEncounterAction(encounter, 'turn')
+      const ordered = encounter.combatants
+      let currentTurnIndex = encounter.currentTurnIndex
+      let currentRound = encounter.currentRound
+      if (direction === 'rewind' && currentRound === 1 && currentTurnIndex === 0) throw apiError(409, 'FIRST_TURN', 'Already at the first turn.')
+      const tick = async (timing: 'TURN_START' | 'TURN_END' | 'ROUND_END', participantId?: string) => {
+        await tx.encounterCondition.updateMany({ where: {
+          combatantId: participantId || { in: ordered.map(p => p.id) }, tickTiming: timing, remaining: { gt: 0 },
+        }, data: { remaining: { decrement: 1 } } })
       }
-    } else {
-      nextTurnIndex -= 1
-      if (nextTurnIndex < 0) {
-        nextTurnIndex = combatantCount - 1
-        nextRound = Math.max(1, nextRound - 1)
+      if (direction === 'advance') {
+        await tick('TURN_END', ordered[currentTurnIndex]!.id)
+        currentTurnIndex += 1
+        if (currentTurnIndex >= ordered.length) { currentTurnIndex = 0; currentRound += 1; await tick('ROUND_END') }
+        await tick('TURN_START', ordered[currentTurnIndex]!.id)
+      } else {
+        currentTurnIndex -= 1
+        if (currentTurnIndex < 0) { currentTurnIndex = ordered.length - 1; currentRound -= 1 }
       }
-    }
-
-    const updated = await prisma.campaignEncounter.update({
-      where: { id: encounterId },
-      data: {
-        currentTurnIndex: nextTurnIndex,
-        currentRound: nextRound,
-      },
+      const row = await tx.campaignEncounter.update({ where: { id: encounterId }, data: { currentTurnIndex, currentRound } })
+      await tx.encounterEvent.create({ data: { encounterId, eventType: 'TURN', createdByUserId: userId,
+        summary: direction === 'advance' ? 'Advanced turn' : 'Rewound turn pointer (effects unchanged)',
+        payload: { schemaVersion: 1, action: `turn.${direction}`, currentTurnIndex, currentRound },
+      } })
+      return toEncounterSummaryDto(row)
     })
-
-    await appendEncounterEvent(
-      encounterId,
-      'TURN',
-      `${direction === 'advance' ? 'Advanced' : 'Rewound'} turn`,
-      {
-        schemaVersion: 1,
-        action: `turn.${direction}`,
-        currentTurnIndex: nextTurnIndex,
-        currentRound: nextRound,
-      },
-      userId,
-    )
-
-    return toEncounterSummaryDto(updated)
   }
 
   async setActiveTurn(
@@ -299,6 +262,7 @@ export class EncounterRuntimeService {
     if (!encounter) {
       throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
+    assertEncounterAction(encounter, 'turn')
 
     const ordered = [...encounter.combatants].sort((a, b) => a.sortOrder - b.sortOrder)
     const index = ordered.findIndex((combatant) => combatant.id === input.combatantId)
@@ -323,105 +287,50 @@ export class EncounterRuntimeService {
     return toEncounterSummaryDto(updated)
   }
 
-  async applyDamage(
-    encounterId: string,
-    combatantId: string,
-    userId: string,
-    input: EncounterDamageInput,
-  ): Promise<EncounterCombatant> {
+  async applyEffect(encounterId: string, userId: string, input: EncounterEffectInput) {
     const encounter = await getEncounterWithAccess(encounterId, userId, 'content.write')
-    if (!encounter) {
-      throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
-    }
-
-    const combatant = await prisma.encounterCombatant.findFirst({ where: { id: combatantId, encounterId } })
-    if (!combatant) {
-      throw apiError(404, 'NOT_FOUND', 'Combatant not found.')
-    }
-
-    let remainingDamage = input.amount
-    let tempHp = combatant.tempHp
-    let currentHp = combatant.currentHp ?? 0
-
-    if (tempHp > 0) {
-      const absorbed = Math.min(tempHp, remainingDamage)
-      tempHp -= absorbed
-      remainingDamage -= absorbed
-    }
-
-    if (remainingDamage > 0) {
-      currentHp = Math.max(0, currentHp - remainingDamage)
-    }
-
-    const updated = await prisma.encounterCombatant.update({
-      where: { id: combatantId },
-      data: {
-        tempHp,
-        currentHp,
-        isDefeated: currentHp <= 0,
-      },
+    if (!encounter) throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
+    assertEncounterAction(encounter, input.action === 'damage' || input.action === 'heal' ? 'effects' : 'conditions')
+    return prisma.$transaction(async tx => {
+      const current = await tx.campaignEncounter.findUniqueOrThrow({ where: { id: encounterId } })
+      assertEncounterAction(current, input.action === 'damage' || input.action === 'heal' ? 'effects' : 'conditions')
+      const ids = 'participantIds' in input ? input.participantIds : [input.participantId]
+      const participants = await tx.encounterCombatant.findMany({ where: { encounterId, id: { in: ids } } })
+      if (participants.length !== ids.length) throw apiError(404, 'NOT_FOUND', 'Every target must belong to this encounter; no changes were applied.')
+      for (const participant of participants) {
+        if (input.action === 'damage' || input.action === 'heal') {
+          if (participant.currentHp === null) throw apiError(409, 'HP_REQUIRED', `Set current HP for ${participant.name} before applying ${input.action}.`)
+          const absorbed = input.action === 'damage' ? Math.min(participant.tempHp, input.amount) : 0
+          const currentHp = input.action === 'damage' ? Math.max(0, participant.currentHp - input.amount + absorbed)
+            : Math.min(participant.maxHp ?? Number.MAX_SAFE_INTEGER, participant.currentHp + input.amount)
+          await tx.encounterCombatant.update({ where: { id: participant.id }, data: { currentHp, tempHp: participant.tempHp - absorbed, isDefeated: currentHp === 0 } })
+        } else if (input.action === 'condition-add') {
+          await tx.encounterCondition.create({ data: { ...input.condition, combatantId: participant.id, remaining: input.condition.remaining ?? input.condition.duration } })
+        } else {
+          const condition = await tx.encounterCondition.findFirst({ where: { id: input.conditionId, combatantId: participant.id } })
+          if (!condition) throw apiError(404, 'NOT_FOUND', 'Condition not found for this participant.')
+          if (input.action === 'condition-remove') await tx.encounterCondition.delete({ where: { id: condition.id } })
+          else await tx.encounterCondition.update({ where: { id: condition.id }, data: input.changes })
+        }
+        const hp = input.action === 'damage' || input.action === 'heal'
+        await tx.encounterEvent.create({ data: {
+          encounterId, createdByUserId: userId, eventType: hp ? 'HP' : 'CONDITION',
+          summary: `${input.action} ${hp ? input.amount : ''} — ${participant.name}`,
+          payload: { schemaVersion: 1, action: hp ? `hp.${input.action}` : input.action, combatantId: participant.id,
+            ...(hp ? { amount: input.amount, ...(input.note ? { note: input.note } : {}) } : {}) },
+        } })
+      }
     })
-
-    await appendEncounterEvent(
-      encounterId,
-      'HP',
-      `Applied ${input.amount} damage to ${combatant.name}`,
-      {
-        schemaVersion: 1,
-        action: 'hp.damage',
-        combatantId,
-        amount: input.amount,
-        note: input.note,
-      },
-      userId,
-    )
-
-    return toEncounterCombatantDto(updated)
   }
 
-  async applyHeal(
-    encounterId: string,
-    combatantId: string,
-    userId: string,
-    input: EncounterHealInput,
-  ): Promise<EncounterCombatant> {
-    const encounter = await getEncounterWithAccess(encounterId, userId, 'content.write')
-    if (!encounter) {
-      throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
-    }
+  async applyDamage(encounterId: string, combatantId: string, userId: string, input: EncounterDamageInput): Promise<EncounterCombatant> {
+    await this.applyEffect(encounterId, userId, { action: 'damage', participantIds: [combatantId], ...input })
+    return toEncounterCombatantDto(await prisma.encounterCombatant.findUniqueOrThrow({ where: { id: combatantId } }))
+  }
 
-    const combatant = await prisma.encounterCombatant.findFirst({ where: { id: combatantId, encounterId } })
-    if (!combatant) {
-      throw apiError(404, 'NOT_FOUND', 'Combatant not found.')
-    }
-
-    const baselineHp = combatant.currentHp ?? 0
-    const maxHp = combatant.maxHp ?? Number.MAX_SAFE_INTEGER
-    const currentHp = Math.min(maxHp, baselineHp + input.amount)
-
-    const updated = await prisma.encounterCombatant.update({
-      where: { id: combatantId },
-      data: {
-        currentHp,
-        isDefeated: currentHp <= 0,
-      },
-    })
-
-    await appendEncounterEvent(
-      encounterId,
-      'HP',
-      `Applied ${input.amount} healing to ${combatant.name}`,
-      {
-        schemaVersion: 1,
-        action: 'hp.heal',
-        combatantId,
-        amount: input.amount,
-        note: input.note,
-      },
-      userId,
-    )
-
-    return toEncounterCombatantDto(updated)
+  async applyHeal(encounterId: string, combatantId: string, userId: string, input: EncounterHealInput): Promise<EncounterCombatant> {
+    await this.applyEffect(encounterId, userId, { action: 'heal', participantIds: [combatantId], ...input })
+    return toEncounterCombatantDto(await prisma.encounterCombatant.findUniqueOrThrow({ where: { id: combatantId } }))
   }
 
   async createCondition(
@@ -434,6 +343,7 @@ export class EncounterRuntimeService {
     if (!encounter) {
       throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
+    assertEncounterAction(encounter, 'conditions')
 
     const combatant = await prisma.encounterCombatant.findFirst({ where: { id: combatantId, encounterId } })
     if (!combatant) {
@@ -474,6 +384,7 @@ export class EncounterRuntimeService {
     if (!encounter) {
       throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
+    assertEncounterAction(encounter, 'conditions')
 
     const condition = await prisma.encounterCondition.findFirst({
       where: { id: conditionId, combatantId },
@@ -517,6 +428,7 @@ export class EncounterRuntimeService {
     if (!encounter) {
       throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
+    assertEncounterAction(encounter, 'conditions')
 
     const condition = await prisma.encounterCondition.findFirst({
       where: { id: conditionId, combatantId },
@@ -539,30 +451,4 @@ export class EncounterRuntimeService {
     return { deleted: true }
   }
 
-  private async tickRoundEndConditions(encounterId: string) {
-    const combatants = await prisma.encounterCombatant.findMany({
-      where: { encounterId },
-      select: { id: true },
-    })
-
-    const combatantIds = combatants.map((combatant) => combatant.id)
-    if (!combatantIds.length) return
-
-    const conditions = await prisma.encounterCondition.findMany({
-      where: {
-        combatantId: { in: combatantIds },
-        tickTiming: 'ROUND_END',
-        remaining: { not: null },
-      },
-    })
-
-    await prisma.$transaction(
-      conditions.map((condition) =>
-        prisma.encounterCondition.update({
-          where: { id: condition.id },
-          data: { remaining: Math.max(0, (condition.remaining || 0) - 1) },
-        })
-      )
-    )
-  }
 }

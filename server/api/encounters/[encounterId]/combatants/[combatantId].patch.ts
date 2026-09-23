@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
     return ok(result)
   }
 
-  const parsed = await validateBody(event, encounterCombatantUpdateSchema, 'Invalid combatant payload')
+  const parsed = await validateBody(event, encounterCombatantUpdateSchema.strict(), 'Invalid combatant payload')
 
   const sessionUser = await requireApiUserSession(event)
   const result = await new EncounterService().updateCombatant(encounterId, combatantId, sessionUser.user.id, parsed)

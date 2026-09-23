@@ -50,7 +50,7 @@ const globalPolicy = (parts: string[], method: string, documentType?: 'SUMMARY' 
     }
     if (parts.length === 3) return method === 'GET' || method === 'HEAD' || method === 'PATCH' || method === 'DELETE' ? resourcePermission('encounters', method) : null
     if (parts.length === 4 && parts[3] === 'summary') return method === 'GET' || method === 'HEAD' ? 'encounters.read' : null
-    if (parts.length === 4 && parts[3] === 'combatants') return method === 'GET' || method === 'HEAD' || method === 'POST' ? resourcePermission('encounters', method) : null
+    if (parts.length === 4 && parts[3] === 'combatants') return method === 'GET' || method === 'HEAD' || method === 'POST' || method === 'PATCH' ? resourcePermission('encounters', method) : null
     if (parts.length === 4 && parts[3] === 'events') return method === 'GET' || method === 'HEAD' ? 'encounters.read' : null
     if (parts.length === 4 && (parts[3] === 'initiative' || parts[3] === 'turn')) return method === 'PATCH' ? 'encounters.write' : null
     if (parts.length === 5 && parts[3] === 'events' && parts[4] === 'note') return method === 'POST' ? 'encounters.write' : null

@@ -1,3 +1,4 @@
+import type { EncounterActionAvailability } from '../utils/encounter-policy'
 export type EncounterStatus = 'PLANNED' | 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'ABANDONED'
 export type EncounterType = 'COMBAT' | 'SOCIAL' | 'SKILL_CHALLENGE' | 'CHASE' | 'HAZARD'
 export type EncounterVisibility = 'DM_ONLY' | 'SHARED'
@@ -78,6 +79,8 @@ export type EncounterEvent = {
 }
 
 export type EncounterDetail = EncounterSummary & {
+  availableActions: EncounterActionAvailability
+  activeParticipantId: string | null
   notes?: string | null
   calendarYear?: number | null
   calendarMonth?: number | null

@@ -147,6 +147,36 @@ describe('API key management and isolation', () => {
     expect(notesCreate.status).toBe(403)
   })
 
+  it('runs an encounter through MCP with campaign-scoped phase enforcement', async () => {
+    const key = await fetch(`${baseUrl}/api/account/api-keys`, { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Encounter workflow', campaignIds: [campaignId], permissions: ['encounters.read', 'encounters.write'] }) })
+    expect(key.status).toBe(200)
+    const token = (await key.json()).data.secret
+    const call = async (name: string, args: Record<string, unknown>, failed = false) => {
+      const response = await fetch(`${baseUrl}/mcp`, { method: 'POST', headers: { authorization: `Bearer ${token}`, accept: 'application/json, text/event-stream', 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: args } }) })
+      expect(response.status).toBe(200)
+      const body = (await response.json()).result
+      expect(Boolean(body.isError), `${name}: ${JSON.stringify(body.content)}`).toBe(failed)
+      return JSON.parse(body.content[0].text)
+    }
+    const encounter = await call('encounter_create', { campaignId, body: { name: 'MCP phase encounter' } })
+    const encounterId = encounter.id
+    const added = await call('encounter_participant_add', { encounterId, body: { participants: [{ name: 'Hero', side: 'ALLY', maxHp: 20 }, { name: 'Guard', side: 'NEUTRAL', maxHp: 12 }] } })
+    expect(added.combatants).toHaveLength(2)
+    const unavailable = await call('encounter_turn', { encounterId, body: { action: 'advance' } }, true)
+    expect(unavailable.error.code).toBe('ENCOUNTER_ACTION_UNAVAILABLE')
+    await call('encounter_transition', { encounterId, body: { action: 'start' } })
+    const effect = await call('encounter_participant_effect', { encounterId, body: { action: 'damage', participantIds: added.combatants.map((p: { id: string }) => p.id), amount: 2 } })
+    expect(effect.status).toBe('ACTIVE')
+    expect(effect.combatants.map((p: { currentHp: number }) => p.currentHp)).toEqual([18, 10])
+    await call('encounter_transition', { encounterId, body: { action: 'complete' } })
+    const reopened = await call('encounter_transition', { encounterId, body: { action: 'reopen' } })
+    expect(reopened.status).toBe('PAUSED')
+    expect(reopened.availableActions.turn.allowed).toBe(false)
+    const foreignEncounter = await prisma.campaignEncounter.create({ data: { campaignId: foreignCampaignId, createdByUserId: userId, name: 'Foreign' } })
+    const denied = await call('encounter_participant_effect', { encounterId: foreignEncounter.id, body: { action: 'damage', participantIds: [added.combatants[0].id], amount: 2 } }, true)
+    expect(denied.error.status).toBe(403)
+  })
+
   it('scopes encounter stat-block mutations to selected campaigns', async () => {
     const response = await fetch(`${baseUrl}/api/account/api-keys`, { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Encounter writer', campaignIds: [campaignId], permissions: ['encounters.write'] }) })
     const encounterSecret = (await response.json()).data.secret

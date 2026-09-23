@@ -1,3 +1,4 @@
+import { getEncounterActions } from '#shared/utils/encounter-policy'
 import { prisma } from '#server/db/prisma'
 import type {
   EncounterCombatant,
@@ -14,6 +15,7 @@ import type {
   EncounterUpdateInput,
 } from '#shared/schemas/encounter'
 import {
+  assertEncounterAction,
   appendEncounterEvent,
   getEncounterWithAccess,
   logEncounterActivity,
@@ -28,16 +30,6 @@ import {
 } from '#server/services/encounter/encounter-shared'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 import { apiError } from '#server/utils/http'
-
-const transitionAllowed = (from: EncounterSummary['status'], to: EncounterSummary['status']) => {
-  if (from === to) return true
-  if (from === 'PLANNED' && to === 'ACTIVE') return true
-  if (from === 'ACTIVE' && (to === 'PAUSED' || to === 'COMPLETED' || to === 'ABANDONED')) return true
-  if (from === 'PAUSED' && (to === 'ACTIVE' || to === 'COMPLETED' || to === 'ABANDONED')) return true
-  if (from === 'COMPLETED' && to === 'ACTIVE') return true
-  if (from === 'ABANDONED' && to === 'ACTIVE') return true
-  return false
-}
 
 export class EncounterService {
   async listEncounters(campaignId: string, userId: string, query: EncounterListQueryInput): Promise<EncounterSummary[]> {
@@ -121,7 +113,10 @@ export class EncounterService {
       })
       : []
 
-    return toEncounterDetailDto(encounter, conditions)
+    const detail = toEncounterDetailDto(encounter, conditions)
+    const canWrite = await prisma.campaignEncounter.count({ where: { id: encounterId, campaign: buildCampaignWhereForPermission(userId, 'content.write') } })
+    detail.availableActions = getEncounterActions(encounter.status, encounter.combatants.length, Boolean(canWrite))
+    return detail
   }
 
   async updateEncounter(
@@ -150,6 +145,8 @@ export class EncounterService {
       throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
 
+    assertEncounterAction(existing, 'edit')
+
     const nextSessionId = Object.prototype.hasOwnProperty.call(input, 'sessionId')
       ? input.sessionId || undefined
       : existing.sessionId || undefined
@@ -169,22 +166,6 @@ export class EncounterService {
 
     await validateEncounterCalendarLink(existing.campaignId, nextCalendar)
 
-    if (input.status && !transitionAllowed(existing.status, input.status)) {
-      throw apiError(409, 'INVALID_STATE_TRANSITION', `Cannot transition encounter from ${existing.status} to ${input.status}.`)
-    }
-
-    if (typeof input.currentTurnIndex === 'number') {
-      const combatantCount = await prisma.encounterCombatant.count({
-        where: { encounterId },
-      })
-      const maxAllowedTurnIndex = Math.max(0, combatantCount - 1)
-      if (input.currentTurnIndex > maxAllowedTurnIndex) {
-        throw apiError(400, 'VALIDATION_ERROR', 'Turn index is out of bounds for current combatants.', {
-            currentTurnIndex: `Must be between 0 and ${maxAllowedTurnIndex}.`,
-          })
-      }
-    }
-
     const updated = await prisma.campaignEncounter.update({
       where: { id: encounterId },
       data: {
@@ -193,12 +174,9 @@ export class EncounterService {
         ...(input.visibility ? { visibility: input.visibility } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, 'notes') ? { notes: input.notes ?? null } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, 'sessionId') ? { sessionId: input.sessionId ?? null } : {}),
-        ...(input.status ? { status: input.status } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, 'calendarYear') ? { calendarYear: input.calendarYear ?? null } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, 'calendarMonth') ? { calendarMonth: input.calendarMonth ?? null } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, 'calendarDay') ? { calendarDay: input.calendarDay ?? null } : {}),
-        ...(typeof input.currentRound === 'number' ? { currentRound: input.currentRound } : {}),
-        ...(typeof input.currentTurnIndex === 'number' ? { currentTurnIndex: input.currentTurnIndex } : {}),
       },
     })
 
@@ -265,60 +243,36 @@ export class EncounterService {
     return combatants.map(toEncounterCombatantDto)
   }
 
-  async createCombatant(
-    encounterId: string,
-    userId: string,
-    input: EncounterCombatantCreateInput,
-  ): Promise<EncounterCombatant> {
+  async createCombatant(encounterId: string, userId: string, input: EncounterCombatantCreateInput): Promise<EncounterCombatant> {
+    return (await this.createCombatants(encounterId, userId, [input]))[0]!
+  }
+
+  async createCombatants(encounterId: string, userId: string, inputs: EncounterCombatantCreateInput[]): Promise<EncounterCombatant[]> {
     const encounter = await getEncounterWithAccess(encounterId, userId, 'content.write')
-    if (!encounter) {
-      throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
-    }
-
-    const maxSortOrder = await prisma.encounterCombatant.aggregate({
-      where: { encounterId },
-      _max: { sortOrder: true },
-    })
-
-    const defaults = await validateEncounterCombatantSourceReferences(encounter.campaignId, {
-      sourceType: input.sourceType,
-      sourceCampaignCharacterId: input.sourceCampaignCharacterId,
-      sourcePlayerCharacterId: input.sourcePlayerCharacterId,
-      sourceGlossaryEntryId: input.sourceGlossaryEntryId,
-      sourceStatBlockId: input.sourceStatBlockId,
-    })
-
-    const created = await prisma.encounterCombatant.create({
-      data: {
-        encounterId,
-        name: input.name,
-        side: input.side,
-        sourceType: input.sourceType,
-        sourceCampaignCharacterId: input.sourceCampaignCharacterId,
-        sourcePlayerCharacterId: input.sourcePlayerCharacterId,
-        sourceGlossaryEntryId: input.sourceGlossaryEntryId,
-        sourceStatBlockId: input.sourceStatBlockId,
-        initiative: input.initiative,
-        sortOrder: (maxSortOrder._max.sortOrder ?? -1) + 1,
+    if (!encounter) throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
+    assertEncounterAction(encounter, 'participants')
+    const prepared = await Promise.all(inputs.map(async input => {
+      const defaults = await validateEncounterCombatantSourceReferences(encounter.campaignId, input)
+      return {
+        ...input,
         maxHp: input.maxHp ?? defaults.maxHp,
         currentHp: input.currentHp ?? input.maxHp ?? defaults.currentHp ?? defaults.maxHp,
-        tempHp: input.tempHp,
         armorClass: input.armorClass ?? defaults.armorClass,
         speed: input.speed ?? defaults.speed,
-        isHidden: input.isHidden,
-        notes: input.notes,
-      },
+      }
+    }))
+    return prisma.$transaction(async tx => {
+      const current = await tx.campaignEncounter.findUniqueOrThrow({ where: { id: encounterId } })
+      assertEncounterAction(current, 'participants')
+      const last = await tx.encounterCombatant.aggregate({ where: { encounterId }, _max: { sortOrder: true } })
+      const created: EncounterCombatant[] = []
+      for (const [index, data] of prepared.entries()) {
+        const row = await tx.encounterCombatant.create({ data: { ...data, encounterId, sortOrder: (last._max.sortOrder ?? -1) + index + 1 } })
+        await tx.encounterEvent.create({ data: { encounterId, eventType: 'ENCOUNTER', summary: `Added participant ${row.name}`, payload: { schemaVersion: 1, action: 'combatant.create', combatantId: row.id }, createdByUserId: userId } })
+        created.push(toEncounterCombatantDto(row))
+      }
+      return created
     })
-
-    await appendEncounterEvent(
-      encounterId,
-      'ENCOUNTER',
-      `Added combatant ${created.name}`,
-      { schemaVersion: 1, action: 'combatant.create', combatantId: created.id },
-      userId,
-    )
-
-    return toEncounterCombatantDto(created)
   }
 
   async updateCombatant(
@@ -331,6 +285,7 @@ export class EncounterService {
     if (!encounter) {
       throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
+    assertEncounterAction(encounter, 'participants')
 
     const existing = await prisma.encounterCombatant.findFirst({
       where: { id: combatantId, encounterId },
@@ -365,7 +320,6 @@ export class EncounterService {
           ? { sourceStatBlockId: input.sourceStatBlockId ?? null }
           : {}),
         ...(Object.prototype.hasOwnProperty.call(input, 'initiative') ? { initiative: input.initiative ?? null } : {}),
-        ...(typeof input.sortOrder === 'number' ? { sortOrder: input.sortOrder } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, 'maxHp') ? { maxHp: input.maxHp ?? null } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, 'currentHp') ? { currentHp: input.currentHp ?? null } : {}),
         ...(typeof input.tempHp === 'number' ? { tempHp: input.tempHp } : {}),
@@ -400,9 +354,18 @@ export class EncounterService {
     if (!encounter) {
       throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
+    assertEncounterAction(encounter, 'participants')
 
-    const deleted = await prisma.encounterCombatant.deleteMany({
-      where: { id: combatantId, encounterId },
+    const ordered = [...encounter.combatants].sort((a, b) => a.sortOrder - b.sortOrder)
+    const previousActiveId = ordered[encounter.currentTurnIndex]?.id
+    const remaining = ordered.filter(item => item.id !== combatantId)
+    const preservedIndex = remaining.findIndex(item => item.id === previousActiveId)
+    const deleted = await prisma.$transaction(async tx => {
+      const result = await tx.encounterCombatant.deleteMany({ where: { id: combatantId, encounterId } })
+      if (result.count) await tx.campaignEncounter.update({ where: { id: encounterId }, data: {
+        currentTurnIndex: preservedIndex >= 0 ? preservedIndex : Math.max(0, Math.min(encounter.currentTurnIndex, remaining.length - 1)),
+      } })
+      return result
     })
 
     if (!deleted.count) {
@@ -443,6 +406,7 @@ export class EncounterService {
     if (!encounter) {
       throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
+    assertEncounterAction(encounter, 'notes')
 
     const created = await prisma.encounterEvent.create({
       data: {

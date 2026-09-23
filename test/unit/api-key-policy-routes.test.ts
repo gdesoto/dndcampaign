@@ -31,7 +31,7 @@ describe('API key route policy', () => {
   it('denies unsupported descendants and methods by default', () => {
     expect(classifyApiKeyRoute('/api/campaigns/campaign-1/encounters/future', 'GET')).toBeNull()
     expect(classifyApiKeyRoute('/api/campaigns/campaign-1/encounters/future', 'PATCH')).toBeNull()
-    expect(classifyApiKeyRoute('/api/encounters/encounter-1/combatants', 'PATCH')).toBeNull()
+    expect(classifyApiKeyRoute('/api/encounters/encounter-1/combatants', 'PATCH')).toMatchObject({ permission: 'encounters.write' })
     expect(classifyApiKeyRoute('/api/campaigns/campaign-1/public/access', 'GET')).toBeNull()
     expect(classifyApiKeyRoute('/api/campaigns/campaign-1/glossary/entry-1', 'PATCH')).toBeNull()
     expect(classifyApiKeyRoute('/api/campaigns/campaign-1/quests/quest-1', 'DELETE')).toBeNull()

@@ -58,6 +58,32 @@ describe('MCP agent API adapter', () => {
     expect(roll.total).toBe(roll.terms.reduce((sum, term) => sum + term.subtotal, 0))
   })
 
+  it.each([
+    ['encounter_transition', { action: 'reopen' }, '/api/encounters/enc-1'],
+    ['encounter_participant_add', { participants: [{ name: 'Ally', side: 'ALLY', sourceType: 'CUSTOM' }] }, '/api/encounters/enc-1/combatants'],
+    ['encounter_participant_effect', { action: 'damage', participantIds: ['a', 'b'], amount: 5 }, '/api/encounters/enc-1/combatants'],
+    ['encounter_turn', { action: 'roll', mode: 'UNSET' }, '/api/encounters/enc-1/initiative'],
+    ['encounter_turn', { action: 'roll', combatantId: 'a' }, '/api/encounters/enc-1/initiative'],
+    ['encounter_turn', { action: 'clear', combatantId: 'a' }, '/api/encounters/enc-1/initiative'],
+    ['encounter_initiative', { action: 'clear' }, '/api/encounters/enc-1/initiative'],
+  ])('routes %s to the shared phase-aware API and returns its state', async (name, input, path) => {
+    let actualPath = ''
+    let actualBody: unknown
+    const response = await handleMcpRequest(new Request('http://vault.test/mcp', {
+      method: 'POST', headers: { authorization: 'Bearer dnd_test_secret', accept: 'application/json, text/event-stream', 'content-type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: { encounterId: 'enc-1', body: input } } }),
+    }), { localFetch: async (url, init) => {
+      actualPath = String(url)
+      actualBody = JSON.parse(String(init?.body))
+      return new Response(JSON.stringify({ data: { status: 'PAUSED', availableActions: { turn: { allowed: false } } }, error: null }))
+    } })
+    expect(actualPath).toBe(path)
+    expect(actualBody).toMatchObject(input as object)
+    const output = await response.json()
+    expect(output.result.isError).not.toBe(true)
+    expect(JSON.parse(output.result.content[0].text)).toMatchObject({ status: 'PAUSED', availableActions: { turn: { allowed: false } } })
+  })
+
   it('sends the configured bearer key and unwraps the API envelope', async () => {
     let request: { url: string, init?: RequestInit } | undefined
     const client = new AgentApiClient({

@@ -11,6 +11,7 @@ defineProps<{
     <template #title>
       <span class="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
         <span class="min-w-0 break-words">{{ title }}</span>
+        <slot name="title-trailing" />
         <span v-if="count !== undefined" class="text-sm font-normal tabular-nums text-muted" :aria-label="`${count} ${count === 1 ? 'result' : 'results'}`">{{ count }}</span>
       </span>
     </template>

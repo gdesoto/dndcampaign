@@ -11,7 +11,7 @@ import type {
 export function useEncounterRuntime() {
   const { request } = useApi()
 
-  const transition = async (encounterId: string, action: 'start' | 'pause' | 'resume' | 'complete' | 'abandon' | 'reset') =>
+  const transition = async (encounterId: string, action: 'start' | 'pause' | 'resume' | 'complete' | 'abandon' | 'reset' | 'reopen') =>
     request(`/api/encounters/${encounterId}`, { method: 'PATCH', body: { action } })
 
   const rollInitiative = async (encounterId: string, input?: EncounterInitiativeRollInput) =>

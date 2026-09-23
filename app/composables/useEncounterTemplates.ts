@@ -3,7 +3,7 @@ import type {
   EncounterTemplateInstantiateInput,
   EncounterTemplateUpdateInput,
 } from '#shared/schemas/encounter'
-import type { EncounterTemplate } from '#shared/types/encounter'
+import type { EncounterTemplate, EncounterSummary } from '#shared/types/encounter'
 
 export function useEncounterTemplates() {
   const { request } = useApi()
@@ -29,7 +29,7 @@ export function useEncounterTemplates() {
     })
 
   const instantiateTemplate = async (templateId: string, input: EncounterTemplateInstantiateInput) =>
-    request(`/api/encounters/templates/${templateId}/instantiate`, {
+    request<EncounterSummary>(`/api/encounters/templates/${templateId}/instantiate`, {
       method: 'POST',
       body: input,
     })

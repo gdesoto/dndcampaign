@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { lifecycleTargets } from '../utils/encounter-policy'
 import { createCalendarDateBoundsSchema } from './calendar'
 
 export const encounterStatusSchema = z.enum(['PLANNED', 'ACTIVE', 'PAUSED', 'COMPLETED', 'ABANDONED'])
@@ -8,14 +9,6 @@ export const encounterSideSchema = z.enum(['ALLY', 'ENEMY', 'NEUTRAL'])
 export const encounterSourceTypeSchema = z.enum(['CAMPAIGN_CHARACTER', 'PLAYER_CHARACTER', 'GLOSSARY_ENTRY', 'CUSTOM'])
 export const conditionTickTimingSchema = z.enum(['TURN_START', 'TURN_END', 'ROUND_END'])
 export const encounterEventTypeSchema = z.enum(['ENCOUNTER', 'TURN', 'HP', 'CONDITION', 'NOTE', 'SYSTEM'])
-
-const stateOrder: Record<z.infer<typeof encounterStatusSchema>, number> = {
-  PLANNED: 0,
-  ACTIVE: 1,
-  PAUSED: 2,
-  COMPLETED: 3,
-  ABANDONED: 4,
-}
 
 export const encounterListQuerySchema = z.object({
   status: encounterStatusSchema.optional(),
@@ -40,32 +33,16 @@ export const encounterUpdateSchema = z.object({
   visibility: encounterVisibilitySchema.optional(),
   notes: z.string().max(10000).optional().nullable(),
   sessionId: z.string().min(1).optional().nullable(),
-  status: encounterStatusSchema.optional(),
   calendarYear: z.number().int().optional().nullable(),
   calendarMonth: z.number().int().positive().optional().nullable(),
   calendarDay: z.number().int().positive().optional().nullable(),
-  currentRound: z.number().int().min(1).optional(),
-  currentTurnIndex: z.number().int().min(0).optional(),
 }).refine((value) => Object.keys(value).length > 0, {
   message: 'At least one field is required',
   path: ['name'],
 })
 
-export const encounterStatusTransitionSchema = z.object({
-  from: encounterStatusSchema,
-  to: encounterStatusSchema,
-}).superRefine((value, ctx) => {
-  if (value.from === value.to) return
-  const fromOrder = stateOrder[value.from]
-  const toOrder = stateOrder[value.to]
-  if (toOrder < fromOrder && !(value.from === 'PAUSED' && value.to === 'ACTIVE')) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['to'],
-      message: `Invalid transition from ${value.from} to ${value.to}`,
-    })
-  }
-})
+export const encounterLifecycleSchema = z.object({ action: z.enum(Object.keys(lifecycleTargets) as [keyof typeof lifecycleTargets, ...Array<keyof typeof lifecycleTargets>]) }).strict()
+export const encounterPatchSchema = z.union([encounterLifecycleSchema, encounterUpdateSchema.strict()])
 
 export const encounterCombatantCreateSchema = z.object({
   name: z.string().trim().min(1).max(200),
@@ -91,7 +68,6 @@ export const encounterCombatantUpdateSchema = z.object({
   sourceType: encounterSourceTypeSchema.optional(),
   sourceStatBlockId: z.string().optional().nullable(),
   initiative: z.number().int().optional().nullable(),
-  sortOrder: z.number().int().min(0).optional(),
   maxHp: z.number().int().min(0).optional().nullable(),
   currentHp: z.number().int().min(0).optional().nullable(),
   tempHp: z.number().int().min(0).optional(),
@@ -150,7 +126,9 @@ export const encounterInitiativeReorderSchema = z.object({
 
 export const encounterInitiativeRollSchema = z.object({
   mode: z.enum(['ALL', 'UNSET', 'NON_PCS']).default('ALL'),
+  combatantId: z.string().min(1).optional(),
 })
+export const encounterInitiativeClearSchema = z.object({ combatantId: z.string().min(1).optional() })
 
 export const encounterSetActiveTurnSchema = z.object({
   combatantId: z.string().min(1),
@@ -273,3 +251,34 @@ export type EncounterTemplateUpdateInput = z.infer<typeof encounterTemplateUpdat
 export type EncounterTemplateInstantiateInput = z.infer<typeof encounterTemplateInstantiateSchema>
 export type EncounterStatBlockCreateInput = z.infer<typeof encounterStatBlockCreateSchema>
 export type EncounterStatBlockUpdateInput = z.infer<typeof encounterStatBlockUpdateSchema>
+
+export const encounterParticipantsAddSchema = z.object({ participants: z.array(encounterCombatantCreateSchema).min(1).max(50) }).strict()
+const targets = z.array(z.string().min(1)).min(1).max(50).refine(ids => new Set(ids).size === ids.length, 'Participant IDs must be unique')
+export const encounterEffectSchema = z.discriminatedUnion('action', [
+  encounterDamageSchema.extend({ action: z.literal('damage'), participantIds: targets }).strict(),
+  encounterHealSchema.extend({ action: z.literal('heal'), participantIds: targets }).strict(),
+  z.object({ action: z.literal('condition-add'), participantIds: targets, condition: encounterConditionCreateSchema }).strict(),
+  z.object({ action: z.literal('condition-update'), participantId: z.string().min(1), conditionId: z.string().min(1), changes: encounterConditionUpdateSchema }).strict(),
+  z.object({ action: z.literal('condition-remove'), participantId: z.string().min(1), conditionId: z.string().min(1) }).strict(),
+])
+export const encounterTurnSchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('advance') }).strict(),
+  z.object({ action: z.literal('rewind') }).strict(),
+  encounterSetActiveTurnSchema.extend({ action: z.literal('set-active') }).strict(),
+])
+export const encounterInitiativeSchema = z.discriminatedUnion('action', [
+  encounterInitiativeRollSchema.extend({ action: z.literal('roll') }).strict(),
+  encounterInitiativeClearSchema.extend({ action: z.literal('clear') }).strict(),
+  encounterInitiativeReorderSchema.extend({ action: z.literal('reorder') }).strict(),
+])
+export type EncounterEffectInput = z.infer<typeof encounterEffectSchema>
+
+// Shared draft validation for the custom-add and edit participant forms.
+const draftStat = z.preprocess(value => value === '' ? null : value, z.number().int().min(0).nullable())
+export const encounterParticipantFormSchema = z.object({
+  name: z.string().trim().min(1).max(200), side: encounterSideSchema,
+  maxHp: draftStat, currentHp: draftStat, armorClass: draftStat, speed: draftStat,
+  tempHp: z.number().int().min(0),
+  initiative: z.preprocess(value => value === '' ? null : value, z.number().int().nullable()),
+  notes: z.string().max(5000),
+})

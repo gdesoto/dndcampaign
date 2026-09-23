@@ -7707,7 +7707,7 @@
           "encounters"
         ],
         "summary": "GET /api/encounters/{encounterId}",
-        "description": "Auto-documented from server route `encounters/[encounterId]/index.get.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Read current encounter state and role-aware availableActions. Selection is local UI state and does not change the turn.",
         "operationId": "get_api_encounters_encounterId",
         "parameters": [
           {
@@ -7723,11 +7723,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful operation response envelope.",
+            "description": "Updated encounter state, including phase, participants, conditions, history, activeParticipantId, and availableActions with reasons.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_GenericRead"
+                  "$ref": "#/components/schemas/ApiResponse_EncounterDetail"
                 }
               }
             }
@@ -7766,7 +7766,7 @@
           "encounters"
         ],
         "summary": "PATCH /api/encounters/{encounterId}",
-        "description": "Auto-documented from server route `encounters/[encounterId]/index.patch.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Update metadata in Planned/Active/Paused, or execute a typed lifecycle action. start: Planned with participants; pause: Active; resume: Paused with participants; complete: Active/Paused; abandon: Planned/Active/Paused; reopen: Completed/Abandoned to Paused, preserving state; reset: Active/Paused to Planned, resetting round/turn only. Raw status/currentRound/currentTurnIndex updates are rejected. Invalid phases return 409 ENCOUNTER_ACTION_UNAVAILABLE.",
         "operationId": "patch_api_encounters_encounterId",
         "parameters": [
           {
@@ -7782,11 +7782,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful operation response envelope.",
+            "description": "Updated encounter state, including phase, participants, conditions, history, activeParticipantId, and availableActions with reasons.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_GenericMutation"
+                  "$ref": "#/components/schemas/ApiResponse_EncounterDetail"
                 }
               }
             }
@@ -7825,14 +7825,17 @@
                 "$ref": "#/components/schemas/AgentEncounterUpdateRequest"
               },
               "example": {
-                "action": "update",
-                "notes": "Example payload. See schema and endpoint-specific docs."
+                "action": "pause"
               }
             }
           }
         },
         "x-agent-tool": "encounter_update",
-        "x-agent-permission": "encounters.write"
+        "x-agent-permission": "encounters.write",
+        "x-agent-tools": [
+          "encounter_update",
+          "encounter_transition"
+        ]
       }
     },
     "/api/encounters/{encounterId}/combatants": {
@@ -7900,7 +7903,7 @@
           "encounters"
         ],
         "summary": "POST /api/encounters/{encounterId}/combatants",
-        "description": "Creates a combatant, filling omitted HP, armorClass, and speed from its campaign-linked character sheet or saved stat block. Glossary sources use an unambiguous linked character sheet. Explicit values (including zero) win; saved stat-block values take precedence over character defaults. Explicit maxHp initializes omitted currentHp; otherwise source current HP or default max HP is used. Missing stats remain unset. Uses the standard API envelope `{ data, error }`.",
+        "description": "Creates a combatant, filling omitted HP, armorClass, and speed from its campaign-linked character sheet or saved stat block. Glossary sources use an unambiguous linked character sheet. Explicit values (including zero) win; saved stat-block values take precedence over character defaults. Explicit maxHp initializes omitted currentHp; otherwise source current HP or default max HP is used. Missing stats remain unset. Uses the standard API envelope `{ data, error }`. Planned/Active/Paused only. Batch {participants:[...]} accepts 1\u00e2\u20ac\u201c50 entries atomically and returns full encounter state; legacy single input returns the created participant. No partial batch writes. Planned/Active/Paused only. Batch {participants:[...]} accepts 1\u00e2\u20ac\u201c50 entries atomically and returns full encounter state; legacy single input returns the created participant. No partial batch writes.",
         "operationId": "post_api_encounters_encounterId_combatants",
         "parameters": [
           {
@@ -7915,12 +7918,12 @@
           }
         ],
         "responses": {
-          "201": {
-            "description": "Successful operation response envelope.",
+          "200": {
+            "description": "Batch: full encounter state. Single input: created combatant in the standard envelope.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_GenericMutation"
+                  "$ref": "#/components/schemas/ApiResponse_EncounterDetail"
                 }
               }
             }
@@ -7956,17 +7959,103 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AgentCombatantCreateRequest"
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AgentCombatantCreateRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/EncounterParticipantsAddRequest"
+                  }
+                ]
               },
               "example": {
-                "action": "update",
-                "notes": "Example payload. See schema and endpoint-specific docs."
+                "participants": [
+                  {
+                    "name": "Guard",
+                    "side": "ALLY",
+                    "sourceType": "CUSTOM",
+                    "maxHp": 12
+                  }
+                ]
               }
             }
           }
         },
         "x-agent-tool": "encounter_combatant_create",
-        "x-agent-permission": "encounters.write"
+        "x-agent-permission": "encounters.write",
+        "x-agent-tools": [
+          "encounter_combatant_create",
+          "encounter_participant_add"
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Encounters"
+        ],
+        "summary": "Apply participant effects atomically",
+        "operationId": "patch_api_encounters_encounterId_combatants",
+        "description": "Damage/healing requires Active/Paused and known current HP. Conditions may be prepared in Planned and edited in Active/Paused. All target ids must belong to the encounter; duplicate or invalid targets reject the whole batch. Numeric amounts are integers 1\u00e2\u20ac\u201c9999. Finished encounters are read-only until reopened.",
+        "parameters": [
+          {
+            "name": "encounterId",
+            "in": "path",
+            "required": true,
+            "description": "Path identifier for encounterId.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "c8b2e6f8-3f9b-4b06-a4a0-87a0ef0b7a15"
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EncounterEffectRequest"
+              },
+              "example": {
+                "action": "damage",
+                "participantIds": [
+                  "participant-id"
+                ],
+                "amount": 5
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated encounter state, including phase, participants, conditions, history, activeParticipantId, and availableActions with reasons.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse_EncounterDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payload; nothing changed."
+          },
+          "404": {
+            "description": "Encounter or target inaccessible; nothing changed."
+          },
+          "409": {
+            "description": "ENCOUNTER_ACTION_UNAVAILABLE or HP_REQUIRED; nothing changed."
+          }
+        },
+        "x-agent-tool": "encounter_participant_effect",
+        "x-agent-permission": "encounters.write",
+        "x-source-file": "encounters/[encounterId]/combatants/index.patch.ts"
       }
     },
     "/api/encounters/{encounterId}/combatants/{combatantId}": {
@@ -7975,7 +8064,7 @@
           "encounters"
         ],
         "summary": "DELETE /api/encounters/{encounterId}/combatants/{combatantId}",
-        "description": "Auto-documented from server route `encounters/[encounterId]/combatants/[combatantId].delete.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Auto-documented from server route `encounters/[encounterId]/combatants/[combatantId].delete.ts`. This operation uses the project standard API envelope `{ data, error }`. Participant edits/removal require Planned/Active/Paused. Damage/healing requires Active/Paused and known current HP. Phase failures return 409.",
         "operationId": "delete_api_encounters_encounterId_combatants_combatantId",
         "parameters": [
           {
@@ -8050,7 +8139,7 @@
           "encounters"
         ],
         "summary": "PATCH /api/encounters/{encounterId}/combatants/{combatantId}",
-        "description": "Auto-documented from server route `encounters/[encounterId]/combatants/[combatantId].patch.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Auto-documented from server route `encounters/[encounterId]/combatants/[combatantId].patch.ts`. This operation uses the project standard API envelope `{ data, error }`. Participant edits/removal require Planned/Active/Paused. Damage/healing requires Active/Paused and known current HP. Phase failures return 409.",
         "operationId": "patch_api_encounters_encounterId_combatants_combatantId",
         "parameters": [
           {
@@ -8119,8 +8208,7 @@
                 "$ref": "#/components/schemas/AgentCombatantUpdateRequest"
               },
               "example": {
-                "action": "update",
-                "notes": "Example payload. See schema and endpoint-specific docs."
+                "side": "ALLY"
               }
             }
           }
@@ -8135,7 +8223,7 @@
           "encounters"
         ],
         "summary": "POST /api/encounters/{encounterId}/combatants/{combatantId}/conditions",
-        "description": "Auto-documented from server route `encounters/[encounterId]/combatants/[combatantId]/conditions/index.post.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Auto-documented from server route `encounters/[encounterId]/combatants/[combatantId]/conditions/index.post.ts`. This operation uses the project standard API envelope `{ data, error }`. Conditions can change only in Planned/Active/Paused; finished encounters return 409.",
         "operationId": "post_api_encounters_encounterId_combatants_combatantId_conditions",
         "parameters": [
           {
@@ -8220,7 +8308,7 @@
           "encounters"
         ],
         "summary": "DELETE /api/encounters/{encounterId}/combatants/{combatantId}/conditions/{conditionId}",
-        "description": "Auto-documented from server route `encounters/[encounterId]/combatants/[combatantId]/conditions/[conditionId].delete.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Auto-documented from server route `encounters/[encounterId]/combatants/[combatantId]/conditions/[conditionId].delete.ts`. This operation uses the project standard API envelope `{ data, error }`. Conditions can change only in Planned/Active/Paused; finished encounters return 409.",
         "operationId": "delete_api_encounters_encounterId_combatants_combatantId_conditions_conditionId",
         "parameters": [
           {
@@ -8305,7 +8393,7 @@
           "encounters"
         ],
         "summary": "PATCH /api/encounters/{encounterId}/combatants/{combatantId}/conditions/{conditionId}",
-        "description": "Auto-documented from server route `encounters/[encounterId]/combatants/[combatantId]/conditions/[conditionId].patch.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Auto-documented from server route `encounters/[encounterId]/combatants/[combatantId]/conditions/[conditionId].patch.ts`. This operation uses the project standard API envelope `{ data, error }`. Conditions can change only in Planned/Active/Paused; finished encounters return 409.",
         "operationId": "patch_api_encounters_encounterId_combatants_combatantId_conditions_conditionId",
         "parameters": [
           {
@@ -8461,7 +8549,7 @@
           "encounters"
         ],
         "summary": "POST /api/encounters/{encounterId}/events/note",
-        "description": "Auto-documented from server route `encounters/[encounterId]/events/note.post.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Auto-documented from server route `encounters/[encounterId]/events/note.post.ts`. This operation uses the project standard API envelope `{ data, error }`. Notes can be added only in Planned/Active/Paused; finished encounters return 409.",
         "operationId": "post_api_encounters_encounterId_events_note",
         "parameters": [
           {
@@ -8536,7 +8624,7 @@
           "encounters"
         ],
         "summary": "PATCH /api/encounters/{encounterId}/initiative",
-        "description": "Auto-documented from server route `encounters/[encounterId]/initiative/index.patch.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Roll, clear or reorder in Planned/Active/Paused. Roll and clear accept optional combatantId to target one participant. Clearing preserves order and current turn identity. Reordering requires each participant exactly once and preserves current turn identity.",
         "operationId": "patch_api_encounters_encounterId_initiative",
         "parameters": [
           {
@@ -8552,11 +8640,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful operation response envelope.",
+            "description": "Updated encounter state, including phase, participants, conditions, history, activeParticipantId, and availableActions with reasons.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_GenericMutation"
+                  "$ref": "#/components/schemas/ApiResponse_EncounterDetail"
                 }
               }
             }
@@ -8595,8 +8683,8 @@
                 "$ref": "#/components/schemas/AgentInitiativeRequest"
               },
               "example": {
-                "action": "update",
-                "notes": "Example payload. See schema and endpoint-specific docs."
+                "action": "roll",
+                "mode": "UNSET"
               }
             }
           }
@@ -8670,7 +8758,7 @@
           "encounters"
         ],
         "summary": "PATCH /api/encounters/{encounterId}/turn",
-        "description": "Auto-documented from server route `encounters/[encounterId]/turn/index.patch.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Active only. advance ticks the leaving participant TURN_END, ROUND_END on wrap, and arriving participant TURN_START conditions. rewind changes the pointer only, without undoing effects; cannot rewind before round 1 turn 1. set-active changes the pointer without ticking.",
         "operationId": "patch_api_encounters_encounterId_turn",
         "parameters": [
           {
@@ -8686,11 +8774,11 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful operation response envelope.",
+            "description": "Updated encounter state, including phase, participants, conditions, history, activeParticipantId, and availableActions with reasons.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_GenericMutation"
+                  "$ref": "#/components/schemas/ApiResponse_EncounterDetail"
                 }
               }
             }
@@ -8729,8 +8817,7 @@
                 "$ref": "#/components/schemas/AgentTurnRequest"
               },
               "example": {
-                "action": "update",
-                "notes": "Example payload. See schema and endpoint-specific docs."
+                "action": "advance"
               }
             }
           }
@@ -13195,7 +13282,7 @@
         }
       },
       "EncounterPatchRequest": {
-        "oneOf": [
+        "anyOf": [
           {
             "type": "object",
             "properties": {
@@ -13207,30 +13294,75 @@
                   "resume",
                   "complete",
                   "abandon",
+                  "reopen",
                   "reset"
                 ]
               }
             },
             "required": [
               "action"
-            ]
+            ],
+            "additionalProperties": false
           },
           {
             "type": "object",
             "properties": {
               "name": {
-                "type": "string"
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "COMBAT",
+                  "SOCIAL",
+                  "SKILL_CHALLENGE",
+                  "CHASE",
+                  "HAZARD"
+                ]
+              },
+              "visibility": {
+                "type": "string",
+                "enum": [
+                  "DM_ONLY",
+                  "SHARED"
+                ]
               },
               "notes": {
-                "type": "string"
+                "nullable": true,
+                "type": "string",
+                "maxLength": 10000
+              },
+              "sessionId": {
+                "nullable": true,
+                "type": "string",
+                "minLength": 1
+              },
+              "calendarYear": {
+                "nullable": true,
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "calendarMonth": {
+                "nullable": true,
+                "type": "integer",
+                "minimum": 0,
+                "exclusiveMinimum": true,
+                "maximum": 9007199254740991
+              },
+              "calendarDay": {
+                "nullable": true,
+                "type": "integer",
+                "minimum": 0,
+                "exclusiveMinimum": true,
+                "maximum": 9007199254740991
               }
             },
-            "minProperties": 1
+            "additionalProperties": false
           }
-        ],
-        "example": {
-          "action": "start"
-        }
+        ]
       },
       "EncounterTurnPatchRequest": {
         "oneOf": [
@@ -13240,54 +13372,106 @@
               "action": {
                 "type": "string",
                 "enum": [
-                  "advance",
+                  "advance"
+                ]
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
                   "rewind"
                 ]
               }
             },
             "required": [
               "action"
-            ]
+            ],
+            "additionalProperties": false
           },
           {
             "type": "object",
             "properties": {
+              "combatantId": {
+                "type": "string",
+                "minLength": 1
+              },
               "action": {
                 "type": "string",
                 "enum": [
                   "set-active"
                 ]
-              },
-              "combatantId": {
-                "type": "string"
               }
             },
             "required": [
-              "action",
-              "combatantId"
-            ]
+              "combatantId",
+              "action"
+            ],
+            "additionalProperties": false
           }
-        ],
-        "example": {
-          "action": "set-active",
-          "combatantId": "9c3f3a8d-0d7f-4dad-b3f6-56dd278dd54c"
-        }
+        ]
       },
       "EncounterInitiativePatchRequest": {
         "oneOf": [
           {
             "type": "object",
             "properties": {
+              "mode": {
+                "default": "ALL",
+                "type": "string",
+                "enum": [
+                  "ALL",
+                  "UNSET",
+                  "NON_PCS"
+                ]
+              },
               "action": {
                 "type": "string",
                 "enum": [
                   "roll"
                 ]
+              },
+              "combatantId": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Limit the roll to this participant."
               }
             },
             "required": [
               "action"
-            ]
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "combatantOrder": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "reorder"
+                ]
+              }
+            },
+            "required": [
+              "combatantOrder",
+              "action"
+            ],
+            "additionalProperties": false
           },
           {
             "type": "object",
@@ -13295,30 +13479,21 @@
               "action": {
                 "type": "string",
                 "enum": [
-                  "reorder"
+                  "clear"
                 ]
               },
-              "order": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
+              "combatantId": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Clear this participant, or omit to clear everyone."
               }
             },
             "required": [
-              "action",
-              "order"
-            ]
+              "action"
+            ],
+            "additionalProperties": false
           }
-        ],
-        "example": {
-          "action": "reorder",
-          "order": [
-            "c1",
-            "c2",
-            "c3"
-          ]
-        }
+        ]
       },
       "CombatantPatchRequest": {
         "oneOf": [
@@ -15047,8 +15222,28 @@
         ]
       },
       "AgentEncounterUpdateRequest": {
-        "$schema": "http://json-schema.org/draft-07/schema#",
         "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "start",
+                  "pause",
+                  "resume",
+                  "complete",
+                  "abandon",
+                  "reopen",
+                  "reset"
+                ]
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "additionalProperties": false
+          },
           {
             "type": "object",
             "properties": {
@@ -15075,108 +15270,41 @@
                 ]
               },
               "notes": {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "maxLength": 10000
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
+                "nullable": true,
+                "type": "string",
+                "maxLength": 10000
               },
               "sessionId": {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "status": {
+                "nullable": true,
                 "type": "string",
-                "enum": [
-                  "PLANNED",
-                  "ACTIVE",
-                  "PAUSED",
-                  "COMPLETED",
-                  "ABANDONED"
-                ]
+                "minLength": 1
               },
               "calendarYear": {
-                "anyOf": [
-                  {
-                    "type": "integer",
-                    "minimum": -9007199254740991,
-                    "maximum": 9007199254740991
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
+                "nullable": true,
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
               },
               "calendarMonth": {
-                "anyOf": [
-                  {
-                    "type": "integer",
-                    "exclusiveMinimum": 0,
-                    "maximum": 9007199254740991
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "calendarDay": {
-                "anyOf": [
-                  {
-                    "type": "integer",
-                    "exclusiveMinimum": 0,
-                    "maximum": 9007199254740991
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "currentRound": {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 9007199254740991
-              },
-              "currentTurnIndex": {
+                "nullable": true,
                 "type": "integer",
                 "minimum": 0,
+                "exclusiveMinimum": true,
+                "maximum": 9007199254740991
+              },
+              "calendarDay": {
+                "nullable": true,
+                "type": "integer",
+                "minimum": 0,
+                "exclusiveMinimum": true,
                 "maximum": 9007199254740991
               }
-            }
-          },
-          {
-            "type": "object",
-            "properties": {
-              "action": {
-                "type": "string",
-                "enum": [
-                  "start",
-                  "pause",
-                  "resume",
-                  "complete",
-                  "abandon",
-                  "reset"
-                ]
-              }
             },
-            "required": [
-              "action"
-            ]
+            "additionalProperties": false
           }
         ]
       },
       "AgentCombatantCreateRequest": {
-        "$schema": "http://json-schema.org/draft-07/schema#",
         "type": "object",
         "properties": {
           "name": {
@@ -15256,11 +15384,15 @@
           }
         },
         "required": [
-          "name"
-        ]
+          "name",
+          "side",
+          "sourceType",
+          "tempHp",
+          "isHidden"
+        ],
+        "additionalProperties": false
       },
       "AgentCombatantUpdateRequest": {
-        "$schema": "http://json-schema.org/draft-07/schema#",
         "anyOf": [
           {
             "type": "object",
@@ -15288,51 +15420,26 @@
                 ]
               },
               "sourceStatBlockId": {
-                "type": [
-                  "string",
-                  "null"
-                ]
+                "nullable": true,
+                "type": "string"
               },
               "initiative": {
-                "anyOf": [
-                  {
-                    "type": "integer",
-                    "minimum": -9007199254740991,
-                    "maximum": 9007199254740991
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
+                "nullable": true,
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
               },
-              "sortOrder": {
+              "maxHp": {
+                "nullable": true,
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 9007199254740991
               },
-              "maxHp": {
-                "anyOf": [
-                  {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 9007199254740991
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
               "currentHp": {
-                "anyOf": [
-                  {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 9007199254740991
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
+                "nullable": true,
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
               },
               "tempHp": {
                 "type": "integer",
@@ -15340,28 +15447,16 @@
                 "maximum": 9007199254740991
               },
               "armorClass": {
-                "anyOf": [
-                  {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 9007199254740991
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
+                "nullable": true,
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
               },
               "speed": {
-                "anyOf": [
-                  {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 9007199254740991
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
+                "nullable": true,
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
               },
               "isConcentrating": {
                 "type": "boolean"
@@ -15383,20 +15478,19 @@
                 "type": "boolean"
               },
               "notes": {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "maxLength": 5000
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
+                "nullable": true,
+                "type": "string",
+                "maxLength": 5000
               }
-            }
+            },
+            "additionalProperties": false
           },
           {
             "type": "object",
+            "required": [
+              "operation",
+              "amount"
+            ],
             "properties": {
               "operation": {
                 "type": "string",
@@ -15414,11 +15508,7 @@
                 "type": "string",
                 "maxLength": 500
               }
-            },
-            "required": [
-              "operation",
-              "amount"
-            ]
+            }
           }
         ]
       },
@@ -15529,86 +15619,59 @@
         }
       },
       "AgentInitiativeRequest": {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "anyOf": [
+        "$ref": "#/components/schemas/EncounterInitiativePatchRequest"
+      },
+      "AgentTurnRequest": {
+        "oneOf": [
           {
             "type": "object",
             "properties": {
               "action": {
                 "type": "string",
-                "const": "roll"
-              },
-              "mode": {
-                "default": "ALL",
-                "type": "string",
                 "enum": [
-                  "ALL",
-                  "UNSET",
-                  "NON_PCS"
+                  "advance"
                 ]
               }
             },
             "required": [
               "action"
-            ]
+            ],
+            "additionalProperties": false
           },
           {
             "type": "object",
             "properties": {
               "action": {
                 "type": "string",
-                "const": "reorder"
-              },
-              "combatantOrder": {
-                "minItems": 1,
-                "type": "array",
-                "items": {
-                  "type": "string",
-                  "minLength": 1
-                }
-              }
-            },
-            "required": [
-              "action",
-              "combatantOrder"
-            ]
-          }
-        ]
-      },
-      "AgentTurnRequest": {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "anyOf": [
-          {
-            "type": "object",
-            "properties": {
-              "action": {
-                "type": "string",
                 "enum": [
-                  "advance",
                   "rewind"
                 ]
               }
             },
             "required": [
               "action"
-            ]
+            ],
+            "additionalProperties": false
           },
           {
             "type": "object",
             "properties": {
-              "action": {
-                "type": "string",
-                "const": "set-active"
-              },
               "combatantId": {
                 "type": "string",
                 "minLength": 1
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "set-active"
+                ]
               }
             },
             "required": [
-              "action",
-              "combatantId"
-            ]
+              "combatantId",
+              "action"
+            ],
+            "additionalProperties": false
           }
         ]
       },
@@ -15930,6 +15993,660 @@
             "type": "integer",
             "exclusiveMinimum": 0,
             "maximum": 9007199254740991
+          }
+        }
+      },
+      "EncounterLifecycleRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "start",
+              "pause",
+              "resume",
+              "complete",
+              "abandon",
+              "reopen",
+              "reset"
+            ]
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "additionalProperties": false
+      },
+      "EncounterParticipantsAddRequest": {
+        "type": "object",
+        "properties": {
+          "participants": {
+            "minItems": 1,
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "side": {
+                  "default": "ENEMY",
+                  "type": "string",
+                  "enum": [
+                    "ALLY",
+                    "ENEMY",
+                    "NEUTRAL"
+                  ]
+                },
+                "sourceType": {
+                  "default": "CUSTOM",
+                  "type": "string",
+                  "enum": [
+                    "CAMPAIGN_CHARACTER",
+                    "PLAYER_CHARACTER",
+                    "GLOSSARY_ENTRY",
+                    "CUSTOM"
+                  ]
+                },
+                "sourceCampaignCharacterId": {
+                  "type": "string"
+                },
+                "sourcePlayerCharacterId": {
+                  "type": "string"
+                },
+                "sourceGlossaryEntryId": {
+                  "type": "string"
+                },
+                "sourceStatBlockId": {
+                  "type": "string"
+                },
+                "initiative": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "maxHp": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "currentHp": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "tempHp": {
+                  "default": 0,
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "armorClass": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "speed": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "isHidden": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "notes": {
+                  "type": "string",
+                  "maxLength": 5000
+                }
+              },
+              "required": [
+                "name",
+                "side",
+                "sourceType",
+                "tempHp",
+                "isHidden"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "participants"
+        ],
+        "additionalProperties": false
+      },
+      "EncounterEffectRequest": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9999
+              },
+              "note": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "damage"
+                ]
+              },
+              "participantIds": {
+                "minItems": 1,
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": [
+              "amount",
+              "action",
+              "participantIds"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9999
+              },
+              "note": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "heal"
+                ]
+              },
+              "participantIds": {
+                "minItems": 1,
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": [
+              "amount",
+              "action",
+              "participantIds"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "condition-add"
+                ]
+              },
+              "participantIds": {
+                "minItems": 1,
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "condition": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "duration": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "remaining": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "tickTiming": {
+                    "default": "TURN_END",
+                    "type": "string",
+                    "enum": [
+                      "TURN_START",
+                      "TURN_END",
+                      "ROUND_END"
+                    ]
+                  },
+                  "source": {
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "notes": {
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "name",
+                  "tickTiming"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "action",
+              "participantIds",
+              "condition"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "condition-update"
+                ]
+              },
+              "participantId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "conditionId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "changes": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "duration": {
+                    "nullable": true,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "remaining": {
+                    "nullable": true,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "tickTiming": {
+                    "type": "string",
+                    "enum": [
+                      "TURN_START",
+                      "TURN_END",
+                      "ROUND_END"
+                    ]
+                  },
+                  "source": {
+                    "nullable": true,
+                    "type": "string",
+                    "maxLength": 120
+                  },
+                  "notes": {
+                    "nullable": true,
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "action",
+              "participantId",
+              "conditionId",
+              "changes"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "condition-remove"
+                ]
+              },
+              "participantId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "conditionId": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "action",
+              "participantId",
+              "conditionId"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "EncounterDetail": {
+        "type": "object",
+        "required": [
+          "id",
+          "campaignId",
+          "name",
+          "status",
+          "combatants",
+          "conditions",
+          "events",
+          "activeParticipantId",
+          "availableActions"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "campaignId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PLANNED",
+              "ACTIVE",
+              "PAUSED",
+              "COMPLETED",
+              "ABANDONED"
+            ]
+          },
+          "currentRound": {
+            "type": "integer"
+          },
+          "currentTurnIndex": {
+            "type": "integer"
+          },
+          "activeParticipantId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Current turn participant in Active/Paused; null in other phases or when empty. UI selection is independent."
+          },
+          "combatants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Participant id, source links, side, initiative, HP, AC, speed, flags, notes and timestamps."
+            }
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "availableActions": {
+            "type": "object",
+            "required": [
+              "start",
+              "pause",
+              "resume",
+              "complete",
+              "abandon",
+              "reopen",
+              "reset",
+              "edit",
+              "participants",
+              "initiative",
+              "turn",
+              "effects",
+              "conditions",
+              "notes"
+            ],
+            "properties": {
+              "start": {
+                "type": "object",
+                "required": [
+                  "allowed"
+                ],
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              },
+              "pause": {
+                "type": "object",
+                "required": [
+                  "allowed"
+                ],
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              },
+              "resume": {
+                "type": "object",
+                "required": [
+                  "allowed"
+                ],
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              },
+              "complete": {
+                "type": "object",
+                "required": [
+                  "allowed"
+                ],
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              },
+              "abandon": {
+                "type": "object",
+                "required": [
+                  "allowed"
+                ],
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              },
+              "reopen": {
+                "type": "object",
+                "required": [
+                  "allowed"
+                ],
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              },
+              "reset": {
+                "type": "object",
+                "required": [
+                  "allowed"
+                ],
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              },
+              "edit": {
+                "type": "object",
+                "required": [
+                  "allowed"
+                ],
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              },
+              "participants": {
+                "type": "object",
+                "required": [
+                  "allowed"
+                ],
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              },
+              "initiative": {
+                "type": "object",
+                "required": [
+                  "allowed"
+                ],
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              },
+              "turn": {
+                "type": "object",
+                "required": [
+                  "allowed"
+                ],
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              },
+              "effects": {
+                "type": "object",
+                "required": [
+                  "allowed"
+                ],
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              },
+              "conditions": {
+                "type": "object",
+                "required": [
+                  "allowed"
+                ],
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              },
+              "notes": {
+                "type": "object",
+                "required": [
+                  "allowed"
+                ],
+                "properties": {
+                  "allowed": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ApiResponse_EncounterDetail": {
+        "type": "object",
+        "required": [
+          "data",
+          "error"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/EncounterDetail"
+          },
+          "error": {
+            "nullable": true
           }
         }
       }

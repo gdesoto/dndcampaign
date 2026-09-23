@@ -1,3 +1,4 @@
+import { getEncounterActions, type EncounterAction } from '#shared/utils/encounter-policy'
 import { z } from 'zod'
 import { prisma } from '#server/db/prisma'
 import type { Prisma } from '#server/db/prisma-client'
@@ -53,6 +54,11 @@ export async function getEncounterWithAccess(
       session: { select: { id: true, campaignId: true } },
     },
   })
+}
+
+export function assertEncounterAction(encounter: { status: EncounterSummary['status']; combatants?: unknown[] }, action: EncounterAction) {
+  const permission = getEncounterActions(encounter.status, encounter.combatants?.length ?? 1)[action]
+  if (!permission.allowed) throw apiError(409, 'ENCOUNTER_ACTION_UNAVAILABLE', permission.reason!)
 }
 
 export async function validateEncounterSessionLink(
@@ -413,6 +419,9 @@ export const toEncounterDetailDto = (
   conditions: Array<Parameters<typeof toEncounterConditionDto>[0]>,
 ): EncounterDetail => ({
   ...toEncounterSummaryDto(row),
+  availableActions: getEncounterActions(row.status, row.combatants.length),
+  activeParticipantId: row.status === 'ACTIVE' || row.status === 'PAUSED'
+    ? [...row.combatants].sort((a, b) => a.sortOrder - b.sortOrder)[row.currentTurnIndex]?.id ?? null : null,
   notes: row.notes,
   calendarYear: row.calendarYear,
   calendarMonth: row.calendarMonth,

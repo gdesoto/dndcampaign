@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import {
-  encounterStatusTransitionSchema,
+  encounterLifecycleSchema,
   encounterConditionCreateSchema,
   encounterDamageSchema,
 } from '../../shared/schemas/encounter'
 
 describe('encounter schemas', () => {
   it('accepts valid lifecycle transitions', () => {
-    const parsed = encounterStatusTransitionSchema.safeParse({ from: 'PLANNED', to: 'ACTIVE' })
+    const parsed = encounterLifecycleSchema.safeParse({ action: 'start' })
     expect(parsed.success).toBe(true)
   })
 
   it('rejects invalid lifecycle transitions', () => {
-    const parsed = encounterStatusTransitionSchema.safeParse({ from: 'COMPLETED', to: 'PLANNED' })
+    const parsed = encounterLifecycleSchema.safeParse({ action: 'unknown' })
     expect(parsed.success).toBe(false)
   })
 
