@@ -4,7 +4,6 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { ref } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import MapsPage from '../../app/pages/campaigns/[campaignId]/maps.vue'
-import CampaignCharactersPage from '../../app/pages/campaigns/[campaignId]/characters.vue'
 
 const mockRequest = vi.fn()
 
@@ -25,7 +24,7 @@ mockNuxtImport('useAsyncData', () => async (_key: string | (() => string), handl
 
 config.global.stubs.SharedActionMenu = actionMenuStub
 
-describe('UM-3 UI permission states', () => {
+describe('campaign map permissions', () => {
   beforeEach(() => {
     mockRequest.mockReset()
   })
@@ -105,75 +104,4 @@ describe('UM-3 UI permission states', () => {
     expect(importAnotherButton!.attributes('disabled')).toBeDefined()
   })
 
-  it('shows shared-access warning in character unlink confirmation and requires confirm click', async () => {
-    mockRequest.mockImplementation(async (path: string, options?: { method?: string }) => {
-      if (path === '/api/campaigns/campaign-1/characters' && (!options?.method || options.method === 'GET')) {
-        return [
-          {
-            id: 'link-1',
-            campaignId: 'campaign-1',
-            characterId: 'char-1',
-            status: 'ACTIVE',
-            roleLabel: null,
-            notes: null,
-            character: {
-              id: 'char-1',
-              name: 'Shared Character',
-              canEdit: true,
-              isOwner: true,
-              summaryJson: { level: 4, classes: ['Fighter'] },
-            },
-            accessImpact: {
-              warningRequired: true,
-              impactedUserCount: 2,
-            },
-            campaign: {
-              id: 'campaign-1',
-              name: 'Campaign One',
-            },
-          },
-        ]
-      }
-
-      if (path === '/api/characters') {
-        return [{ id: 'char-1', name: 'Shared Character', canEdit: true, isOwner: true }]
-      }
-
-      if (path === '/api/campaigns/campaign-1/characters/char-1' && options?.method === 'DELETE') {
-        return { success: true }
-      }
-
-      return null
-    })
-
-    const wrapper = await mountSuspended(CampaignCharactersPage, {
-      global: {
-        provide: {
-          campaignCanWriteContent: ref(true),
-        },
-        stubs: {
-          UPopover: {
-            template: '<div><slot /><slot name="content" :close="() => {}" /></div>',
-          },
-        },
-      },
-    })
-
-    expect(wrapper.text()).toContain('may lose access')
-
-    const removeButtons = wrapper.findAll('button').filter((button) => button.text().trim() === 'Remove')
-    expect(removeButtons.length).toBeGreaterThan(1)
-
-    await removeButtons[0]!.trigger('click')
-    expect(mockRequest).not.toHaveBeenCalledWith(
-      '/api/campaigns/campaign-1/characters/char-1',
-      expect.objectContaining({ method: 'DELETE' })
-    )
-
-    await removeButtons[1]!.trigger('click')
-    expect(mockRequest).toHaveBeenCalledWith(
-      '/api/campaigns/campaign-1/characters/char-1',
-      expect.objectContaining({ method: 'DELETE' })
-    )
-  })
 })

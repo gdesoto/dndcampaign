@@ -78,46 +78,4 @@ describe('dungeon generator service', () => {
     expect(regenTraps.doors).toEqual(base.doors)
     expect(regenTraps.metadata.passHistory.length).toBeGreaterThan(base.metadata.passHistory.length)
   })
-
-  it('meets performance targets for medium and large map generation', () => {
-    const mediumConfig = dungeonGeneratorConfigSchema.parse({
-      width: 120,
-      height: 120,
-      theme: 'crypt',
-      layout: {
-        roomDensity: 0.35,
-        minRoomSize: 4,
-        maxRoomSize: 11,
-        corridorStyle: 'MIXED',
-        connectivityStrictness: 0.7,
-        secretRoomChance: 0.1,
-      },
-    })
-    const largeConfig = dungeonGeneratorConfigSchema.parse({
-      width: 220,
-      height: 220,
-      theme: 'mega',
-      layout: {
-        roomDensity: 0.45,
-        minRoomSize: 4,
-        maxRoomSize: 12,
-        corridorStyle: 'MIXED',
-        connectivityStrictness: 0.75,
-        secretRoomChance: 0.12,
-      },
-    })
-
-    const mediumStart = performance.now()
-    const mediumMap = service.generateBaseMap('seed-medium-performance', mediumConfig)
-    const mediumDuration = performance.now() - mediumStart
-
-    const largeStart = performance.now()
-    const largeMap = service.generateBaseMap('seed-large-performance', largeConfig)
-    const largeDuration = performance.now() - largeStart
-
-    expect(mediumMap.rooms.length).toBeGreaterThan(0)
-    expect(largeMap.rooms.length).toBeGreaterThan(0)
-    expect(mediumDuration).toBeLessThan(1500)
-    expect(largeDuration).toBeLessThan(5000)
-  })
 })

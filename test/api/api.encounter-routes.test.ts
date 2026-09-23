@@ -360,6 +360,8 @@ describe('encounter API routes', () => {
     expect(reordered.activeParticipantId).toBe(ids[0])
     await call('/initiative', { action: 'reorder', combatantOrder: [ids[0], ids[0]] }, 400)
     await call('/combatants', { action: 'condition-add', participantIds: ids, condition: { name: 'Marked', duration: 3, tickTiming: 'ROUND_END' } })
+    await call('/combatants', { action: 'damage', participantIds: ids, amount: 0 }, 400)
+    await call('/combatants', { action: 'condition-add', participantIds: ids, condition: { name: 'Invalid', duration: -1 } }, 400)
     await call('', { action: 'pause' })
     await call('/turn', { action: 'advance' }, 409)
     expect((await prisma.encounterCondition.findMany({ where: { combatantId: { in: ids } } })).every(c => c.remaining === 3)).toBe(true)

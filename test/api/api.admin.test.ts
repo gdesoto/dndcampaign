@@ -8,7 +8,7 @@ import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
 const prisma = createApiTestPrismaClient()
 const hash = new Hash(new Scrypt())
 
-const password = 'um6-admin-password-12345'
+const password = 'admin-admin-password-12345'
 const baseUrl = getApiTestBaseUrl()
 const authHeaders = {
   'content-type': 'application/json',
@@ -16,10 +16,10 @@ const authHeaders = {
 }
 
 const users = {
-  admin: { email: 'um6-admin@example.com', name: 'UM6 Admin', systemRole: 'SYSTEM_ADMIN' as const },
-  ownerA: { email: 'um6-owner-a@example.com', name: 'Owner A', systemRole: 'USER' as const },
-  ownerB: { email: 'um6-owner-b@example.com', name: 'Owner B', systemRole: 'USER' as const },
-  normal: { email: 'um6-normal@example.com', name: 'Normal User', systemRole: 'USER' as const },
+  admin: { email: 'admin-admin@example.com', name: 'Admin Admin', systemRole: 'SYSTEM_ADMIN' as const },
+  ownerA: { email: 'admin-owner-a@example.com', name: 'Owner A', systemRole: 'USER' as const },
+  ownerB: { email: 'admin-owner-b@example.com', name: 'Owner B', systemRole: 'USER' as const },
+  normal: { email: 'admin-normal@example.com', name: 'Normal User', systemRole: 'USER' as const },
 }
 
 const cookies: Record<string, string> = {}
@@ -48,7 +48,7 @@ const loginAndGetCookie = async (email: string) => {
   throw new Error(`Rate-limited while logging in test user ${email}`)
 }
 
-describe('user management UM-6 admin and analytics flows', () => {
+describe('administration, audit and analytics', () => {
   beforeAll(async () => {
     const passwordHash = await hash.make(password)
 
@@ -69,7 +69,7 @@ describe('user management UM-6 admin and analytics flows', () => {
     const campaign = await prisma.campaign.create({
       data: {
         ownerId: userIds.ownerA,
-        name: 'UM6 Admin Campaign',
+        name: 'Admin Admin Campaign',
         members: {
           create: [
             {
@@ -88,7 +88,7 @@ describe('user management UM-6 admin and analytics flows', () => {
     const session = await prisma.session.create({
       data: {
         campaignId,
-        title: 'UM6 Session',
+        title: 'Admin Session',
       },
       select: { id: true },
     })
@@ -98,7 +98,7 @@ describe('user management UM-6 admin and analytics flows', () => {
         ownerId: userIds.ownerA,
         campaignId,
         provider: 'LOCAL',
-        storageKey: `um6/${campaignId}/rec.mp3`,
+        storageKey: `admin/${campaignId}/rec.mp3`,
         mimeType: 'audio/mpeg',
         byteSize: 1024,
       },
@@ -138,7 +138,7 @@ describe('user management UM-6 admin and analytics flows', () => {
         campaignId,
         sessionId: session.id,
         type: 'TRANSCRIPT',
-        title: 'UM6 Transcript',
+        title: 'Admin Transcript',
       },
       select: { id: true },
     })
@@ -164,7 +164,7 @@ describe('user management UM-6 admin and analytics flows', () => {
         campaignId,
         sessionId: session.id,
         documentId: document.id,
-        trackingId: `um6-summary-${campaignId}-1`,
+        trackingId: `admin-summary-${campaignId}-1`,
         status: 'READY_FOR_REVIEW',
         mode: 'SYNC',
       },
@@ -175,7 +175,7 @@ describe('user management UM-6 admin and analytics flows', () => {
         campaignId,
         sessionId: session.id,
         documentId: document.id,
-        trackingId: `um6-summary-${campaignId}-2`,
+        trackingId: `admin-summary-${campaignId}-2`,
         status: 'FAILED',
         mode: 'SYNC',
       },
@@ -237,6 +237,23 @@ describe('user management UM-6 admin and analytics flows', () => {
     })
 
     expect(audits.length).toBeGreaterThan(0)
+
+    expect(await prisma.activityLog.findFirst({
+      where: { actorUserId: userIds.admin, targetId: userIds.normal, action: 'ADMIN_USER_UPDATE' },
+    })).not.toBeNull()
+
+    const deniedActivity = await fetch(`${baseUrl}/api/admin/activity`, { headers: { cookie: cookies.ownerA } })
+    expect(deniedActivity.status).toBe(403)
+    const activity = await fetch(`${baseUrl}/api/admin/activity?scope=ADMIN&search=ADMIN_USER_UPDATE&pageSize=100`, {
+      headers: { cookie: cookies.admin },
+    })
+    expect(activity.status).toBe(200)
+    const logs = (await activity.json()).data.logs
+    expect(logs.length).toBeGreaterThan(0)
+    expect(logs.every((entry: { scope: string; action: string }) => entry.scope === 'ADMIN' && entry.action === 'ADMIN_USER_UPDATE')).toBe(true)
+    expect(logs).toEqual(expect.arrayContaining([
+      expect.objectContaining({ actorUserId: userIds.admin, targetId: userIds.normal, action: 'ADMIN_USER_UPDATE' }),
+    ]))
   })
 
   it('supports campaign archive + owner transfer via admin endpoint', async () => {
@@ -313,10 +330,3 @@ describe('user management UM-6 admin and analytics flows', () => {
     expect(jobsCsv).toContain('transcription_completed')
   })
 })
-
-
-
-
-
-
-

@@ -130,7 +130,7 @@ The signed-URL roadmap is **unresolved**. A future remote storage provider does 
 
 **Files:** `server/services/campaign-public-access.service.ts` and `server/services/quest.service.ts`; both routes and consumers retain their contracts.
 
-**Acceptance:** Exact public keys, exclusion of private fields, unchanged private results, date/null/source-name handling, ordering, missing slug, and disabled section. Run `test/api/api.user-management-um5-public-access.test.ts`, `test/api/api.quest-routes.test.ts`, and `test/nuxt/campaign-quests-page.test.ts`. No payload expansion or endpoint removal.
+**Acceptance:** Exact public keys, exclusion of private fields, unchanged private results, date/null/source-name handling, ordering, missing slug, and disabled section. Run `test/api/api.campaign-public-access.test.ts`, `test/api/api.quest-routes.test.ts`, and `test/nuxt/campaign-quests-page.test.ts`. No payload expansion or endpoint removal.
 
 ## CJ-10 — Make the router own campaign selection
 

@@ -16,10 +16,11 @@ const authHeaders = {
 }
 
 const users = {
-  owner: { email: 'um3-owner@example.com', name: 'UM3 Owner' },
-  collaborator: { email: 'um3-collab@example.com', name: 'UM3 Collaborator' },
-  viewer: { email: 'um3-viewer@example.com', name: 'UM3 Viewer' },
-  outsider: { email: 'um3-outsider@example.com', name: 'UM3 Outsider' },
+  owner: { email: 'permissions-owner@example.com', name: 'Permissions Owner' },
+  collaborator: { email: 'permissions-collab@example.com', name: 'Permissions Collaborator' },
+  viewer: { email: 'permissions-viewer@example.com', name: 'Permissions Viewer' },
+  outsider: { email: 'permissions-outsider@example.com', name: 'Permissions Outsider' },
+  admin: { email: 'permissions-admin@example.com', name: 'Permissions Admin' },
 }
 
 const cookies: Record<string, string> = {}
@@ -27,6 +28,7 @@ let campaignId = ''
 let sessionId = ''
 let mapId = ''
 let sharedCharacterId = ''
+let campaignArtifactId = ''
 
 const sleep = (ms: number) => new Promise((resolveDelay) => setTimeout(resolveDelay, ms))
 
@@ -47,7 +49,7 @@ const loginAndGetCookie = async (email: string) => {
   throw new Error(`Rate-limited while logging in test user ${email}`)
 }
 
-describe('user management UM-3 RBAC', () => {
+describe('campaign permissions', () => {
   beforeAll(async () => {
     const passwordHash = await hash.make(password)
 
@@ -58,6 +60,7 @@ describe('user management UM-3 RBAC', () => {
             email: user.email,
             name: user.name,
             passwordHash,
+            systemRole: user.email === users.admin.email ? 'SYSTEM_ADMIN' : 'USER',
           },
           select: { id: true, email: true },
         })
@@ -71,7 +74,7 @@ describe('user management UM-3 RBAC', () => {
     const campaign = await prisma.campaign.create({
       data: {
         ownerId,
-        name: 'UM3 RBAC Campaign',
+        name: 'Permissions RBAC Campaign',
         members: {
           create: [
             {
@@ -99,11 +102,20 @@ describe('user management UM-3 RBAC', () => {
     const session = await prisma.session.create({
       data: {
         campaignId,
-        title: 'UM3 RBAC Session',
+        title: 'Permissions RBAC Session',
       },
       select: { id: true },
     })
     sessionId = session.id
+
+    campaignArtifactId = (await prisma.artifact.create({ data: {
+      ownerId, campaignId, provider: 'LOCAL', storageKey: `permissions/${campaignId}/audio.mp3`,
+      mimeType: 'audio/mpeg', byteSize: 128,
+    } })).id
+    await prisma.recording.create({ data: {
+      sessionId, kind: 'AUDIO', filename: 'audio.mp3', mimeType: 'audio/mpeg', byteSize: 128,
+      artifactId: campaignArtifactId,
+    } })
 
     const map = await prisma.campaignMap.create({
       data: {
@@ -111,7 +123,7 @@ describe('user management UM-3 RBAC', () => {
         name: 'Shared Map',
         slug: 'shared-map',
         createdById: ownerId,
-        sourceFingerprint: 'um3-test-map-fingerprint',
+        sourceFingerprint: 'permissions-test-map-fingerprint',
       },
       select: { id: true },
     })
@@ -258,6 +270,15 @@ describe('user management UM-3 RBAC', () => {
     expect(viewerPatchPayload.error.code).toBe('FORBIDDEN')
   })
 
+  it('allows members and system admins to read campaign artifacts while denying outsiders', async () => {
+    for (const [role, status] of [['viewer', 200], ['outsider', 403], ['admin', 200]] as const) {
+      const response = await fetch(`${baseUrl}/api/artifacts/${campaignArtifactId}`, {
+        headers: { cookie: cookies[role] },
+      })
+      expect(response.status, role).toBe(status)
+    }
+  })
+
   it('allows campaign-linked shared character reads and denies non-owner character writes', async () => {
     const collaboratorCharacterGet = await fetch(`${baseUrl}/api/characters/${sharedCharacterId}`, {
       headers: { cookie: cookies.collaborator },
@@ -290,10 +311,3 @@ describe('user management UM-3 RBAC', () => {
     expect(collaboratorPatchPayload.error.code).toBe('FORBIDDEN')
   })
 })
-
-
-
-
-
-
-

@@ -8,7 +8,7 @@ import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
 const prisma = createApiTestPrismaClient()
 const hash = new Hash(new Scrypt())
 const baseUrl = getApiTestBaseUrl()
-const password = 'calendar-section4-pass'
+const password = 'calendar-api-pass'
 const authHeaders = {
   'content-type': 'application/json',
   'x-forwarded-for': '203.0.113.14',
@@ -44,7 +44,7 @@ const loginAndGetCookie = async (email: string) => {
   throw new Error(`Rate-limited while logging in test user ${email}`)
 }
 
-describe('calendar section 4 API routes', () => {
+describe('campaign calendar API', () => {
   beforeAll(async () => {
     const passwordHash = await hash.make(password)
     const emails = Object.values(users).map((user) => user.email)
@@ -82,7 +82,7 @@ describe('calendar section 4 API routes', () => {
     const campaign = await prisma.campaign.create({
       data: {
         ownerId,
-        name: 'Calendar Section 4 Campaign',
+        name: 'Calendar API Campaign',
         members: {
           create: [
             {
@@ -149,7 +149,7 @@ describe('calendar section 4 API routes', () => {
         body: JSON.stringify({
           kind: 'weekday',
           count: 4,
-          seed: 'calendar-section4-seed',
+          seed: 'calendar-api-seed',
         }),
       })
 
@@ -403,7 +403,7 @@ describe('calendar section 4 API routes', () => {
     const campaignWithoutConfig = await prisma.campaign.create({
       data: {
         ownerId: owner.id,
-        name: 'Calendar Section 4 No Config Campaign',
+        name: 'Calendar API No Config Campaign',
         members: {
           create: {
             userId: owner.id,
@@ -446,10 +446,3 @@ describe('calendar section 4 API routes', () => {
     })
   })
 })
-
-
-
-
-
-
-

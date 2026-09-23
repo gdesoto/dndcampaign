@@ -6,8 +6,8 @@ import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
 const prisma = createApiTestPrismaClient()
 
 const registerUser = {
-  name: 'UM1 Tester',
-  email: 'um1@example.com',
+  name: 'Account Tester',
+  email: 'account@example.com',
   password: 'strongpass123',
 }
 const authHeaders = {
@@ -15,7 +15,7 @@ const authHeaders = {
   'x-forwarded-for': '203.0.113.11',
 }
 
-describe('user management UM-1', () => {
+describe('account registration, profile and sessions', () => {
   const baseUrl = getApiTestBaseUrl()
   let authCookie = ''
 
@@ -120,7 +120,7 @@ describe('user management UM-1', () => {
       },
       body: JSON.stringify({
         action: 'update-profile',
-        name: 'Updated UM1 Tester',
+        name: 'Updated Account Tester',
         avatarUrl: 'https://example.com/avatar.png',
       }),
     })
@@ -129,7 +129,7 @@ describe('user management UM-1', () => {
     const patchPayload = await patchResponse.json()
     expect(patchPayload.data.profile).toEqual({
       ...profile,
-      name: 'Updated UM1 Tester',
+      name: 'Updated Account Tester',
       avatarUrl: 'https://example.com/avatar.png',
       updatedAt: expect.any(String),
     })
@@ -149,7 +149,8 @@ describe('user management UM-1', () => {
     })
 
     expect(response.status).toBe(404)
-  })
+    // A retired route reaches Nuxt's page fallback, which compiles on its first request.
+  }, 60_000)
 
   it('changes email with password re-auth', async () => {
     const response = await fetch(`${baseUrl}/api/account`, {
@@ -160,14 +161,14 @@ describe('user management UM-1', () => {
       },
       body: JSON.stringify({
         action: 'change-email',
-        newEmail: 'um1-updated@example.com',
+        newEmail: 'account-updated@example.com',
         password: registerUser.password,
       }),
     })
 
     expect(response.status).toBe(200)
     const payload = await response.json()
-    expect(payload.data.email).toBe('um1-updated@example.com')
+    expect(payload.data.email).toBe('account-updated@example.com')
   })
 
   it('changes password and allows login with new password', async () => {
@@ -190,7 +191,7 @@ describe('user management UM-1', () => {
       method: 'POST',
       headers: authHeaders,
       body: JSON.stringify({
-        email: 'um1-updated@example.com',
+        email: 'account-updated@example.com',
         password: registerUser.password,
       }),
     })
@@ -200,7 +201,7 @@ describe('user management UM-1', () => {
       method: 'POST',
       headers: authHeaders,
       body: JSON.stringify({
-        email: 'um1-updated@example.com',
+        email: 'account-updated@example.com',
         password: 'strongpass12345',
       }),
     })
@@ -237,7 +238,7 @@ describe('user management UM-1', () => {
 
   it('updates lastLoginAt after successful login', async () => {
     const userBefore = await prisma.user.findUnique({
-      where: { email: 'um1-updated@example.com' },
+      where: { email: 'account-updated@example.com' },
       select: { lastLoginAt: true },
     })
 
@@ -245,13 +246,13 @@ describe('user management UM-1', () => {
       method: 'POST',
       headers: authHeaders,
       body: JSON.stringify({
-        email: 'um1-updated@example.com',
+        email: 'account-updated@example.com',
         password: 'strongpass12345',
       }),
     })
 
     const userAfter = await prisma.user.findUnique({
-      where: { email: 'um1-updated@example.com' },
+      where: { email: 'account-updated@example.com' },
       select: { lastLoginAt: true },
     })
 
@@ -272,13 +273,13 @@ describe('user management UM-1', () => {
     }
 
     await prisma.user.update({
-      where: { email: 'um1-updated@example.com' },
+      where: { email: 'account-updated@example.com' },
       data: { isActive: false },
     })
     await assertUnauthorizedAndCleared(authCookie)
 
     await prisma.user.update({
-      where: { email: 'um1-updated@example.com' },
+      where: { email: 'account-updated@example.com' },
       data: { isActive: true, deletedAt: new Date() },
     })
     await assertUnauthorizedAndCleared(authCookie)
@@ -287,8 +288,8 @@ describe('user management UM-1', () => {
       method: 'POST',
       headers: authHeaders,
       body: JSON.stringify({
-        name: 'Missing UM1 Tester',
-        email: 'missing-um1@example.com',
+        name: 'Missing Account Tester',
+        email: 'missing-account@example.com',
         password: registerUser.password,
         termsAccepted: true,
       }),
@@ -300,10 +301,3 @@ describe('user management UM-1', () => {
     await assertUnauthorizedAndCleared(missingCookie)
   })
 })
-
-
-
-
-
-
-

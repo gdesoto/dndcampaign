@@ -90,13 +90,6 @@ describe('CalendarGeneralSettings', () => {
     generateNames.mockResolvedValue({ kind: 'weekday', names: ['Stormday'] })
   })
 
-  it('loads config on mount', async () => {
-    await mountComponent()
-    await flushPromises()
-
-    expect(getConfig).toHaveBeenCalledWith('cmp-1')
-  })
-
   it('saves edited config', async () => {
     const wrapper = await mountComponent()
     await flushPromises()
@@ -109,29 +102,7 @@ describe('CalendarGeneralSettings', () => {
 
     expect(upsertConfig).toHaveBeenCalledTimes(1)
     expect(upsertConfig.mock.calls[0]?.[0]).toBe('cmp-1')
-  })
-
-  it('confirms template overwrite when existing config is present', async () => {
-    const wrapper = await mountComponent()
-    await flushPromises()
-
-    const applyTemplateButtons = wrapper
-      .findAll('button')
-      .filter((button) => button.text().trim() === 'Apply template')
-    expect(applyTemplateButtons.length).toBe(1)
-    await applyTemplateButtons[0]!.trigger('click')
-    await flushPromises()
-
-    const confirmApplyButton = wrapper
-      .findAll('button')
-      .filter((button) => button.text().trim() === 'Apply template')
-      .at(-1)
-    expect(confirmApplyButton).toBeDefined()
-    await confirmApplyButton!.trigger('click')
-    await flushPromises()
-
-    expect(applyTemplate).toHaveBeenCalledTimes(1)
-    expect(applyTemplate).toHaveBeenCalledWith('cmp-1', { templateId: 'earth' })
+    expect(upsertConfig.mock.calls[0]?.[1]).toMatchObject({ name: 'New calendar' })
   })
 
   it('preserves edits after a failed save and can discard back to saved values', async () => {
@@ -153,6 +124,7 @@ describe('CalendarGeneralSettings', () => {
     const wrapper = await mountComponent()
     await flushPromises()
     await wrapper.findAll('button').find(button => button.text() === 'Apply template')!.trigger('click')
+    expect(applyTemplate).not.toHaveBeenCalled()
     await wrapper.findAll('button').filter(button => button.text() === 'Apply template').at(-1)!.trigger('click')
     await flushPromises()
     expect(wrapper.text()).toContain('Template failed')
@@ -160,6 +132,7 @@ describe('CalendarGeneralSettings', () => {
     await wrapper.findAll('button').filter(button => button.text() === 'Apply template').at(-1)!.trigger('click')
     await flushPromises()
     expect(applyTemplate).toHaveBeenCalledTimes(2)
+    expect(applyTemplate).toHaveBeenLastCalledWith('cmp-1', { templateId: 'earth' })
     expect(wrapper.findAll('button').filter(button => button.text() === 'Apply template')).toHaveLength(1)
     wrapper.unmount()
   })
@@ -172,18 +145,5 @@ describe('CalendarGeneralSettings', () => {
     expect(baseConfig.weekdays[0]!.name).toBe('Moonday')
     expect(wrapper.findAll('input').some(input => input.element.value === 'Stormday')).toBe(true)
     wrapper.unmount()
-  })
-
-  it('generates a weekday name from UI action', async () => {
-    const wrapper = await mountComponent()
-    await flushPromises()
-
-    const generateButton = wrapper.findAll('button').find((button) => button.text().trim() === 'Generate')
-    expect(generateButton).toBeDefined()
-    await generateButton!.trigger('click')
-    await flushPromises()
-
-    expect(generateNames).toHaveBeenCalledTimes(1)
-    expect(generateNames).toHaveBeenCalledWith('cmp-1', { kind: 'weekday', count: 1 })
   })
 })

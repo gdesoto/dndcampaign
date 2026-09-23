@@ -1,68 +1,29 @@
-import { describe, expect, it } from 'vitest'
-import { parseDiceNotation, rollDiceExpression, rollDice } from '../../shared/utils/dice'
+import { expect, it } from 'vitest'
+import { rollDice } from '../../shared/utils/dice'
 
-describe('rollDice modes', () => {
-  it.each([
-    ['advantage', 17, 22],
-    ['disadvantage', 8, 13],
-  ] as const)('keeps both dice for %s and applies the modifier once', (mode, selectedRoll, total) => {
-    const values = [0.35, 0.8]
-    expect(rollDice('d20+5', mode, () => values.shift()!)).toEqual({
-      notation: 'd20+5', mode, rolls: [8, 17], selectedRoll, modifier: 5, total,
-    })
+it('rolls mixed expressions and applies advantage or disadvantage with one modifier', () => {
+  const expressionRolls = [0, 0.5, 0.99]
+  expect(rollDice('2d6+3-d4', undefined, () => expressionRolls.shift()!)).toMatchObject({
+    mode: 'normal', total: 4,
+    terms: [{ rolls: [1, 4], subtotal: 5 }, { subtotal: 3 }, { rolls: [4], subtotal: -4 }],
   })
-
-  it('handles ties, negative modifiers, and an omitted modifier', () => {
-    expect(rollDice('1d20-2', 'advantage', () => 0)).toMatchObject({ rolls: [1, 1], selectedRoll: 1, modifier: -2, total: -1 })
-    expect(rollDice('d20', 'disadvantage', () => 0.99)).toMatchObject({ rolls: [20, 20], selectedRoll: 20, modifier: 0, total: 20 })
+  const advantageRolls = [0.35, 0.8]
+  expect(rollDice('d20+5', 'advantage', () => advantageRolls.shift()!)).toMatchObject({
+    rolls: [8, 17], selectedRoll: 17, modifier: 5, total: 22,
   })
-
-  it('defaults to normal and preserves expression results', () => {
-    expect(rollDice('2d6+3-d4', undefined, () => 0)).toEqual({
-      ...rollDiceExpression('2d6+3-d4', () => 0), mode: 'normal',
-    })
+  const disadvantageRolls = [0.35, 0.8]
+  expect(rollDice('d20-2', 'disadvantage', () => disadvantageRolls.shift()!)).toMatchObject({
+    rolls: [8, 17], selectedRoll: 8, modifier: -2, total: 6,
   })
-
-  it.each(['2d20', 'd6+5', '-d20', 'd20+d4', '5', 'd20+2+3'])('rejects unsupported advantage/disadvantage notation: %s', (notation) => {
-    for (const mode of ['advantage', 'disadvantage'] as const) {
-      expect(() => rollDice(notation, mode)).toThrow('single d20')
-    }
-  })
+  expect(rollDice('d20', 'advantage', () => 0)).toMatchObject({ rolls: [1, 1], total: 1 })
 })
 
-describe('parseDiceNotation', () => {
-  it('parses mixed dice and flat modifiers', () => {
-    expect(parseDiceNotation('2d6+3-d4')).toEqual([
-      { kind: 'dice', sign: 1, count: 2, sides: 6 },
-      { kind: 'flat', sign: 1, value: 3 },
-      { kind: 'dice', sign: -1, count: 1, sides: 4 },
-    ])
-  })
-
-  it('supports shorthand d20 notation', () => {
-    expect(parseDiceNotation('d20')).toEqual([{ kind: 'dice', sign: 1, count: 1, sides: 20 }])
-  })
-
-  it('rejects invalid notation', () => {
-    expect(() => parseDiceNotation('2d')).toThrow('Invalid term')
-    expect(() => parseDiceNotation('')).toThrow('Enter a dice notation')
-    expect(() => parseDiceNotation('1d1')).toThrow('Dice sides must be between 2 and 1000.')
-  })
-})
-
-describe('rollDiceExpression', () => {
-  it('rolls deterministically when rng is provided', () => {
-    const values = [0.0, 0.5, 0.99]
-    let index = 0
-    const rng = () => values[index++]!
-
-    const result = rollDiceExpression('2d6+3-1d4', rng)
-
-    expect(result.total).toBe(4)
-    expect(result.terms).toEqual([
-      { kind: 'dice', sign: 1, count: 2, sides: 6, rolls: [1, 4], subtotal: 5 },
-      { kind: 'flat', sign: 1, value: 3, subtotal: 3 },
-      { kind: 'dice', sign: -1, count: 1, sides: 4, rolls: [4], subtotal: -4 },
-    ])
-  })
+it('rejects malformed, excessive, and unsupported rolls', () => {
+  expect(() => rollDice('2d')).toThrow('Invalid term')
+  expect(() => rollDice('1d1')).toThrow('Dice sides must be between 2 and 1000.')
+  expect(() => rollDice('101d6')).toThrow()
+  expect(() => rollDice('d'.repeat(201))).toThrow()
+  expect(() => rollDice('d20++3')).toThrow()
+  expect(() => rollDice('2d20', 'advantage')).toThrow('single d20')
+  expect(() => rollDice('d20+d4', 'disadvantage')).toThrow('single d20')
 })

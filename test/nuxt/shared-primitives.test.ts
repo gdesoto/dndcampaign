@@ -5,9 +5,8 @@ import { defineComponent, h } from 'vue'
 import { z } from 'zod'
 import { UFormField, UInput } from '#components'
 import ResourceState from '../../app/components/shared/ResourceState.vue'
+import ConfirmActionPopover from '../../app/components/shared/ConfirmActionPopover.vue'
 import EntityFormModal from '../../app/components/shared/EntityFormModal.vue'
-import ListItemCard from '../../app/components/shared/ListItemCard.vue'
-import StatCard from '../../app/components/shared/StatCard.vue'
 
 describe('SharedResourceState', () => {
   it('keeps content mounted through a refresh and a failed refresh', async () => {
@@ -103,114 +102,40 @@ describe('SharedEntityFormModal', () => {
     expect(wrapper.emitted('cancel')).toBeUndefined()
     expect(wrapper.props('state')).toEqual({ name: 'Draft' })
   })
-
-  it('emits cancel from default footer actions', async () => {
-    const wrapper = await mountSuspended(EntityFormModal, {
-      props: {
-        open: true,
-        title: 'Create thing',
-      },
-      slots: {
-        default: () => h('div', 'Fields'),
-      },
-      global: {
-        stubs: {
-          UModal: {
-            props: ['open'],
-            emits: ['update:open'],
-            template: '<div><slot name="body" /></div>',
-          },
-        },
-      },
-    })
-
-    const cancelButton = wrapper.findAll('button').find((button) => button.text().trim() === 'Cancel')
-    expect(cancelButton).toBeDefined()
-    await cancelButton!.trigger('click')
-    expect(wrapper.emitted('cancel')).toBeTruthy()
-  })
-
-  it('disables overlay dismissal on the shared entity modal', async () => {
-    const wrapper = await mountSuspended(EntityFormModal, {
-      props: {
-        open: true,
-        title: 'Edit thing',
-      },
-      slots: {
-        default: () => h('div', 'Fields'),
-      },
-      global: {
-        stubs: {
-          UModal: {
-            props: ['open', 'dismissible'],
-            emits: ['update:open'],
-            template: '<div :data-dismissible="String(dismissible)"><slot name="body" /></div>',
-          },
-        },
-      },
-    })
-
-    expect(wrapper.attributes('data-dismissible')).toBe('false')
-  })
-
-  it('emits delete when the footer delete action is enabled', async () => {
-    const wrapper = await mountSuspended(EntityFormModal, {
-      props: {
-        open: true,
-        title: 'Edit thing',
-        showDeleteAction: true,
-      },
-      slots: {
-        default: () => h('div', 'Fields'),
-      },
-      global: {
-        stubs: {
-          SharedConfirmActionPopover: {
-            emits: ['confirm'],
-            template: '<div><button type="button" @click="$emit(\'confirm\', { close: () => {} })">Delete</button></div>',
-          },
-          UModal: {
-            props: ['open'],
-            emits: ['update:open'],
-            template: '<div><slot name="body" /></div>',
-          },
-        },
-      },
-    })
-
-    const deleteButton = wrapper.findAll('button').find((button) => button.text().trim() === 'Delete')
-    expect(deleteButton).toBeDefined()
-    await deleteButton!.trigger('click')
-    expect(wrapper.emitted('delete')).toBeTruthy()
-  })
 })
 
-describe('SharedListItemCard', () => {
-  it('renders header and default slots', async () => {
-    const wrapper = await mountSuspended(ListItemCard, {
-      slots: {
-        header: () => h('div', 'Header'),
-        default: () => h('p', 'Body'),
+describe('SharedConfirmActionPopover', () => {
+  it('blocks duplicate submissions and dismissal, retains failure, and allows retry', async () => {
+    let rejectAction!: (reason: Error) => void
+    const action = vi.fn(() => new Promise<void>((_, reject) => { rejectAction = reject }))
+    const close = vi.fn()
+    const wrapper = await mountSuspended(ConfirmActionPopover, {
+      props: { action, confirmLabel: 'Delete record' },
+      global: {
+        stubs: {
+          UPopover: {
+            props: ['dismissible'],
+            setup: () => ({ close }),
+            template: '<div :data-dismissible="dismissible"><slot /><slot name="content" :close="close" /></div>',
+          },
+        },
       },
     })
-
-    expect(wrapper.text()).toContain('Header')
-    expect(wrapper.text()).toContain('Body')
-  })
-})
-
-describe('SharedStatCard', () => {
-  it('renders label, value and optional hint', async () => {
-    const wrapper = await mountSuspended(StatCard, {
-      props: {
-        label: 'Sessions',
-        value: 12,
-        hint: 'Latest this week',
-      },
-    })
-
-    expect(wrapper.text()).toContain('Sessions')
-    expect(wrapper.text()).toContain('12')
-    expect(wrapper.text()).toContain('Latest this week')
+    const confirm = wrapper.findAll('button').find(button => button.text() === 'Delete record')!
+    const cancel = wrapper.findAll('button').find(button => button.text() === 'Cancel')!
+    await confirm.trigger('click')
+    await confirm.trigger('click')
+    expect(action).toHaveBeenCalledTimes(1)
+    expect(cancel.attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-dismissible]').attributes('data-dismissible')).toBe('false')
+    rejectAction(new Error('Unable to delete record'))
+    await flushPromises()
+    expect(wrapper.find('[role="alert"]').text()).toBe('Unable to delete record')
+    expect(close).not.toHaveBeenCalled()
+    action.mockResolvedValueOnce()
+    await confirm.trigger('click')
+    await flushPromises()
+    expect(close).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
   })
 })

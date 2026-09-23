@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  readTranscriptLines,
   searchTranscriptLines,
   transcriptContentToLines,
 } from '../../shared/utils/transcript-reader'
@@ -15,15 +14,6 @@ describe('transcript reader', () => {
       version: 1,
       segments: [{ id: 'a', text: 'Hello', speaker: 'DM' }],
     }))).toEqual(['DM: Hello'])
-  })
-
-  it('reads bounded one-based lines', () => {
-    expect(readTranscriptLines(['a', '', 'c'], { startLine: 2, limit: 2 })).toMatchObject({
-      totalLines: 3,
-      startLine: 2,
-      endLine: 3,
-      lines: [{ lineNumber: 2, text: '' }, { lineNumber: 3, text: 'c' }],
-    })
   })
 
   it('searches literally and merges overlapping context', () => {

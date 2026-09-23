@@ -9,7 +9,7 @@ import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
 const prisma = createApiTestPrismaClient()
 const hash = new Hash(new Scrypt())
 
-const password = 'um4-owner-password-12345'
+const password = 'membership-owner-password-12345'
 const baseUrl = getApiTestBaseUrl()
 const authHeaders = {
   'content-type': 'application/json',
@@ -17,10 +17,10 @@ const authHeaders = {
 }
 
 const users = {
-  owner: { email: 'um4-owner@example.com', name: 'UM4 Owner' },
-  collaborator: { email: 'um4-collaborator@example.com', name: 'UM4 Collaborator' },
-  invitee: { email: 'um4-invitee@example.com', name: 'UM4 Invitee' },
-  outsider: { email: 'um4-outsider@example.com', name: 'UM4 Outsider' },
+  owner: { email: 'membership-owner@example.com', name: 'Membership Owner' },
+  collaborator: { email: 'membership-collaborator@example.com', name: 'Membership Collaborator' },
+  invitee: { email: 'membership-invitee@example.com', name: 'Membership Invitee' },
+  outsider: { email: 'membership-outsider@example.com', name: 'Membership Outsider' },
 }
 
 const cookies: Record<string, string> = {}
@@ -48,7 +48,7 @@ const loginAndGetCookie = async (email: string) => {
   throw new Error(`Rate-limited while logging in test user ${email}`)
 }
 
-describe('user management UM-4 membership and invite flows', () => {
+describe('campaign membership and invitations', () => {
   beforeAll(async () => {
     const passwordHash = await hash.make(password)
 
@@ -67,7 +67,7 @@ describe('user management UM-4 membership and invite flows', () => {
     const campaign = await prisma.campaign.create({
       data: {
         ownerId: userIds.owner,
-        name: 'UM4 Membership Campaign',
+        name: 'Membership Membership Campaign',
         members: {
           create: [
             {
@@ -119,7 +119,7 @@ describe('user management UM-4 membership and invite flows', () => {
     expect(collaboratorPayload.error.code).toBe('FORBIDDEN')
   })
 
-  it('creates invite and prevents replay after acceptance', async () => {
+  it('stores only a hashed invite token and accepts repeated use without changing membership', async () => {
     const inviteRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/members/invites`, {
       method: 'POST',
       headers: {
@@ -136,6 +136,13 @@ describe('user management UM-4 membership and invite flows', () => {
     const invitePayload = await inviteRes.json()
     const inviteToken = invitePayload.data.inviteToken as string
     expect(inviteToken).toBeTruthy()
+
+    const inviteRow = await prisma.campaignInvite.findFirstOrThrow({
+      where: { campaignId, email: users.invitee.email, status: 'PENDING' },
+    })
+    expect(inviteRow.tokenHash).toBe(createHash('sha256').update(inviteToken).digest('hex'))
+    expect(inviteRow.tokenHash).not.toBe(inviteToken)
+    expect(inviteRow.expiresAt.getTime()).toBeGreaterThan(Date.now() + 6 * 24 * 60 * 60 * 1000)
 
     const acceptRes = await fetch(`${baseUrl}/api/campaigns/invites/${inviteToken}/accept`, {
       method: 'POST',
@@ -163,7 +170,7 @@ describe('user management UM-4 membership and invite flows', () => {
   })
 
   it('rejects expired invite acceptance and marks invite expired', async () => {
-    const expiredToken = 'expired-invite-token-um4'
+    const expiredToken = 'expired-invite-token-membership'
     const tokenHash = createHash('sha256').update(expiredToken).digest('hex')
 
     const expiredInvite = await prisma.campaignInvite.create({
@@ -199,7 +206,7 @@ describe('user management UM-4 membership and invite flows', () => {
   })
 
   it('inspects invite state for already-member, wrong-account, missing, and expired cases', async () => {
-    const viewerInviteToken = 'inspect-viewer-token-um4'
+    const viewerInviteToken = 'inspect-viewer-token-membership'
     const viewerInviteHash = createHash('sha256').update(viewerInviteToken).digest('hex')
 
     await prisma.campaignInvite.create({
@@ -223,13 +230,13 @@ describe('user management UM-4 membership and invite flows', () => {
     expect(alreadyMemberPayload.data.status).toBe('ALREADY_MEMBER')
     expect(alreadyMemberPayload.data.campaignId).toBe(campaignId)
 
-    const wrongAccountToken = 'inspect-wrong-account-token-um4'
+    const wrongAccountToken = 'inspect-wrong-account-token-membership'
     const wrongAccountHash = createHash('sha256').update(wrongAccountToken).digest('hex')
 
     await prisma.campaignInvite.create({
       data: {
         campaignId,
-        email: 'um4-different-user@example.com',
+        email: 'membership-different-user@example.com',
         role: 'VIEWER',
         tokenHash: wrongAccountHash,
         status: 'PENDING',
@@ -246,14 +253,14 @@ describe('user management UM-4 membership and invite flows', () => {
     expect(wrongAccountPayload.data.status).toBe('WRONG_ACCOUNT')
     expect(wrongAccountPayload.data.campaignId).toBeUndefined()
 
-    const notFoundInspect = await fetch(`${baseUrl}/api/campaigns/invites/does-not-exist-token-um4`, {
+    const notFoundInspect = await fetch(`${baseUrl}/api/campaigns/invites/does-not-exist-token-membership`, {
       headers: { cookie: cookies.owner },
     })
     expect(notFoundInspect.status).toBe(200)
     const notFoundPayload = await notFoundInspect.json()
     expect(notFoundPayload.data.status).toBe('INVITE_NOT_FOUND')
 
-    const expiredInspectToken = 'inspect-expired-token-um4'
+    const expiredInspectToken = 'inspect-expired-token-membership'
     const expiredInspectHash = createHash('sha256').update(expiredInspectToken).digest('hex')
 
     const expiredInvite = await prisma.campaignInvite.create({
@@ -321,6 +328,11 @@ describe('user management UM-4 membership and invite flows', () => {
     expect(updateDmAccessRes.status).toBe(200)
     const updateDmAccessPayload = await updateDmAccessRes.json()
     expect(updateDmAccessPayload.data.member.hasDmAccess).toBe(true)
+
+    expect(await prisma.activityLog.findMany({
+      where: { campaignId, actorUserId: userIds.owner, action: 'CAMPAIGN_MEMBER_ROLE_UPDATED' },
+      select: { targetId: true },
+    })).toContainEqual({ targetId: collaboratorMember!.id })
 
     const invalidUpdateRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/members/${collaboratorMember?.id}`, {
       method: 'PATCH',
@@ -420,10 +432,3 @@ describe('user management UM-4 membership and invite flows', () => {
     expect(oldOwnerManageRes.status).toBe(403)
   })
 })
-
-
-
-
-
-
-

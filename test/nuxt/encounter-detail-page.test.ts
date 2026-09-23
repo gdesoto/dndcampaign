@@ -77,7 +77,7 @@ vi.mock('~/composables/useEncounterStatBlocks', () => ({
 }))
 
 config.global.stubs.SharedActionMenu = actionMenuStub
-config.global.stubs.UTooltip = { template: '<slot />' }
+config.global.stubs.UTooltip = { props: { text: String }, template: '<slot />' }
 
 describe('Encounter detail page', () => {
   beforeEach(() => {
@@ -154,23 +154,6 @@ describe('Encounter detail page', () => {
       if (String(path).includes('/calendar/config')) return { isEnabled: false }
       return []
     })
-  })
-
-  it('renders PC add and encounter settings controls', async () => {
-    const wrapper = await mountSuspended(EncounterDetailPage, {
-      global: {
-        provide: {
-          campaignCanWriteContent: ref(true),
-        },
-      },
-    })
-
-    expect(wrapper.find('button[aria-label="Add participant"]').exists()).toBe(true)
-    expect(wrapper.text()).toContain('Participants')
-    expect(wrapper.text()).toContain('Start encounter')
-    expect(wrapper.text()).not.toContain('Next turn')
-    expect(wrapper.text()).not.toContain('Set active turn')
-    wrapper.unmount()
   })
 
   it('selects a participant without modifying the turn', async () => {

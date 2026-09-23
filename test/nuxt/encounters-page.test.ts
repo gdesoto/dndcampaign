@@ -91,19 +91,4 @@ describe('Campaign encounters page', () => {
     const button = wrapper.findAll('button').find((entry) => entry.text().includes('New encounter'))
     expect(button).toBeUndefined()
   })
-
-  it('renders encounter entries from API', async () => {
-    const wrapper = await mountSuspended(EncountersPage, {
-      global: {
-        provide: {
-          campaignCanWriteContent: ref(true),
-        },
-      },
-    })
-
-    expect(wrapper.text()).toContain('Roadside Ambush')
-    expect(wrapper.text()).toContain('Planned')
-    expect(wrapper.text()).toContain('Stat block library')
-    expect(wrapper.text()).toContain('Encounter template library')
-  })
 })

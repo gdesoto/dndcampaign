@@ -3,11 +3,12 @@ import { computed, ref } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import CharactersPage from '../../app/pages/campaigns/[campaignId]/characters.vue'
+import { actionMenuStub } from '../helpers/action-menu'
 
 const request = vi.fn()
 const refresh = vi.fn()
 const canWrite = ref(true)
-const links = ref([{ id: 'link-1', status: 'ACTIVE', character: { id: 'c1', name: 'Attached hero', canEdit: true, isOwner: true } }])
+const links = ref([{ id: 'link-1', status: 'ACTIVE', character: { id: 'c1', name: 'Attached hero', canEdit: true, isOwner: true }, accessImpact: { warningRequired: true, impactedUserCount: 2 } }])
 mockNuxtImport('useCampaignPageContext', () => () => ({ campaignId: computed(() => 'campaign-1'), request, canWriteContent: canWrite }))
 mockNuxtImport('useAsyncData', () => (key: string | (() => string)) => ({
   data: typeof key === 'string' ? ref([{ id: 'c1', name: 'Attached hero', canEdit: true }, { id: 'c2', name: 'Available hero', canEdit: true }]) : links,
@@ -37,5 +38,24 @@ it('keeps character sheets available without attachment controls for viewers', a
   const wrapper = await mountSuspended(CharactersPage, { global })
   expect(wrapper.find('select').exists()).toBe(false)
   expect(wrapper.find('a[href="/characters/c1"]').text()).toBe('Attached hero')
+  wrapper.unmount()
+})
+
+it('warns about lost shared access and unlinks only after confirmation', async () => {
+  request.mockResolvedValue({ success: true })
+  const wrapper = await mountSuspended(CharactersPage, { global: { stubs: {
+    ...global.stubs,
+    SharedActionMenu: actionMenuStub,
+    UPopover: { template: '<div><slot /><slot name="content" :close="() => {}" /></div>' },
+  } } })
+  expect(wrapper.text()).toContain('may lose access')
+  const removeButtons = wrapper.findAll('button').filter(button => button.text().trim() === 'Remove')
+  expect(removeButtons.length).toBeGreaterThan(1)
+  await removeButtons[0]!.trigger('click')
+  expect(request).not.toHaveBeenCalled()
+  await removeButtons[1]!.trigger('click')
+  await flushPromises()
+  expect(request).toHaveBeenCalledWith('/api/campaigns/campaign-1/characters/c1', expect.objectContaining({ method: 'DELETE' }))
+  expect(refresh).toHaveBeenCalledOnce()
   wrapper.unmount()
 })

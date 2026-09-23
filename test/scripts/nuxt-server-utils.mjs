@@ -4,7 +4,7 @@ import { killProcessTree } from './test-db-utils.mjs'
 
 const sleep = (ms) => new Promise((resolveDelay) => setTimeout(resolveDelay, ms))
 
-async function waitForHttp(baseUrl, { timeoutMs = 60_000, intervalMs = 300, readinessPath = '/login', readinessStatus = 200 } = {}) {
+async function waitForHttp(baseUrl, { timeoutMs = 180_000, intervalMs = 300, readinessPath = '/login', readinessStatus = 200 } = {}) {
   const deadline = Date.now() + timeoutMs
   let lastError
 

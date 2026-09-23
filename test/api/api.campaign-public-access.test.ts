@@ -8,7 +8,7 @@ import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
 const prisma = createApiTestPrismaClient()
 const hash = new Hash(new Scrypt())
 
-const password = 'um5-owner-password-12345'
+const password = 'public-owner-password-12345'
 const baseUrl = getApiTestBaseUrl()
 const authHeaders = {
   'content-type': 'application/json',
@@ -16,8 +16,8 @@ const authHeaders = {
 }
 
 const users = {
-  owner: { email: 'um5-owner@example.com', name: 'UM5 Owner' },
-  collaborator: { email: 'um5-collaborator@example.com', name: 'UM5 Collaborator' },
+  owner: { email: 'public-owner@example.com', name: 'Public Owner' },
+  collaborator: { email: 'public-collaborator@example.com', name: 'Public Collaborator' },
 }
 
 const cookies: Record<string, string> = {}
@@ -47,7 +47,7 @@ const loginAndGetCookie = async (email: string) => {
   throw new Error(`Rate-limited while logging in test user ${email}`)
 }
 
-describe('user management UM-5 public visibility', () => {
+describe('campaign public access', () => {
   beforeAll(async () => {
     const passwordHash = await hash.make(password)
 
@@ -66,7 +66,7 @@ describe('user management UM-5 public visibility', () => {
     const campaign = await prisma.campaign.create({
       data: {
         ownerId: userIds.owner,
-        name: 'UM5 Public Campaign',
+        name: 'Public Public Campaign',
         system: 'D&D 5e',
         members: {
           create: [
@@ -102,7 +102,7 @@ describe('user management UM-5 public visibility', () => {
             ownerId: userIds.owner,
             campaignId,
             provider: 'LOCAL',
-            storageKey: `um5-test-recap-${session.id}.mp3`,
+            storageKey: `public-test-recap-${session.id}.mp3`,
             mimeType: 'audio/mpeg',
             byteSize: 128,
           },
@@ -145,7 +145,7 @@ describe('user management UM-5 public visibility', () => {
         slug: 'public-region',
         isPrimary: true,
         createdById: userIds.owner,
-        sourceFingerprint: 'um5-map-fingerprint',
+        sourceFingerprint: 'public-map-fingerprint',
         rawManifestJson: {
           bounds: [[-20, -20], [20, 20]],
         },
@@ -216,6 +216,10 @@ describe('user management UM-5 public visibility', () => {
     expect(patchPayload.data.showGlossary).toBe(true)
     expect(patchPayload.data.showQuests).toBe(false)
 
+    expect(await prisma.activityLog.findFirst({
+      where: { campaignId, actorUserId: userIds.owner, action: 'CAMPAIGN_PUBLIC_ACCESS_UPDATED' },
+    })).not.toBeNull()
+
     const overviewRes = await fetch(`${baseUrl}/api/public/campaigns/${publicSlug}`)
     expect(overviewRes.status).toBe(200)
     const overviewPayload = await overviewRes.json()
@@ -264,7 +268,7 @@ describe('user management UM-5 public visibility', () => {
     const publicSlug = listingPayload.data.publicSlug as string
     expect(listingPayload.data.isListed).toBe(true)
 
-    const listedRes = await fetch(`${baseUrl}/api/public/campaigns?search=UM5`)
+    const listedRes = await fetch(`${baseUrl}/api/public/campaigns?search=Public`)
     expect(listedRes.status).toBe(200)
     const listedPayload = await listedRes.json()
     const listedItems = listedPayload.data as Array<{ publicSlug: string }>
@@ -364,10 +368,3 @@ describe('user management UM-5 public visibility', () => {
     expect(overviewPayload.error.code).toBe('PUBLIC_CAMPAIGN_NOT_FOUND')
   })
 })
-
-
-
-
-
-
-

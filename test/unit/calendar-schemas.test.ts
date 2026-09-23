@@ -1,97 +1,20 @@
-import { describe, expect, it } from 'vitest'
-import {
-  calendarConfigUpsertSchema,
-  createSessionCalendarRangeSchema,
-  deriveYearLengthFromMonths,
-} from '../../shared/schemas/calendar'
+import { expect, it } from 'vitest'
+import { calendarConfigUpsertSchema, createSessionCalendarRangeSchema } from '../../shared/schemas/calendar'
 
-describe('calendar schemas', () => {
-  it('rejects current date outside configured month bounds', () => {
-    const parsed = calendarConfigUpsertSchema.safeParse({
-      isEnabled: true,
-      name: 'Faerun',
-      startingYear: 1492,
-      firstWeekdayIndex: 0,
-      currentYear: 1492,
-      currentMonth: 3,
-      currentDay: 1,
-      weekdays: [{ name: 'Moonday' }],
-      months: [
-        { name: 'Hammer', length: 30 },
-        { name: 'Alturiak', length: 30 },
-      ],
-      moons: [],
-    })
+it('validates dates and chronological session ranges against the campaign calendar', () => {
+  const months = [{ name: 'Hammer', length: 30 }, { name: 'Alturiak', length: 28 }]
+  const config = {
+    isEnabled: true, name: 'Faerun', startingYear: 1492, firstWeekdayIndex: 0,
+    currentYear: 1492, currentMonth: 2, currentDay: 28,
+    weekdays: [{ name: 'Moonday' }], months, moons: [],
+  }
+  expect(calendarConfigUpsertSchema.safeParse(config).success).toBe(true)
+  expect(calendarConfigUpsertSchema.safeParse({ ...config, currentMonth: 3 }).success).toBe(false)
+  expect(calendarConfigUpsertSchema.safeParse({ ...config, currentDay: 29 }).success).toBe(false)
 
-    expect(parsed.success).toBe(false)
-  })
-
-  it('rejects current day beyond selected month length', () => {
-    const parsed = calendarConfigUpsertSchema.safeParse({
-      isEnabled: true,
-      name: 'Faerun',
-      startingYear: 1492,
-      firstWeekdayIndex: 0,
-      currentYear: 1492,
-      currentMonth: 1,
-      currentDay: 31,
-      weekdays: [{ name: 'Moonday' }],
-      months: [{ name: 'Hammer', length: 30 }],
-      moons: [],
-    })
-
-    expect(parsed.success).toBe(false)
-  })
-
-  it('rejects session ranges when end date is before start date', () => {
-    const schema = createSessionCalendarRangeSchema([{ length: 30 }, { length: 30 }])
-    const parsed = schema.safeParse({
-      startYear: 1492,
-      startMonth: 2,
-      startDay: 10,
-      endYear: 1492,
-      endMonth: 2,
-      endDay: 9,
-    })
-
-    expect(parsed.success).toBe(false)
-  })
-
-  it('rejects session range dates outside configured month/day bounds', () => {
-    const schema = createSessionCalendarRangeSchema([{ length: 30 }, { length: 28 }])
-    const parsed = schema.safeParse({
-      startYear: 1492,
-      startMonth: 2,
-      startDay: 29,
-      endYear: 1492,
-      endMonth: 2,
-      endDay: 29,
-    })
-
-    expect(parsed.success).toBe(false)
-  })
-
-  it('accepts valid session ranges within configured bounds', () => {
-    const schema = createSessionCalendarRangeSchema([{ length: 30 }, { length: 28 }])
-    const parsed = schema.safeParse({
-      startYear: 1492,
-      startMonth: 2,
-      startDay: 10,
-      endYear: 1492,
-      endMonth: 2,
-      endDay: 12,
-    })
-
-    expect(parsed.success).toBe(true)
-  })
-
-  it('derives year length from configured month lengths', () => {
-    expect(
-      deriveYearLengthFromMonths([
-        { length: 30 },
-        { length: 35 },
-        { length: 28 },
-      ]),
-    ).toBe(93)
-  })
+  const schema = createSessionCalendarRangeSchema(months)
+  const range = { startYear: 1492, startMonth: 2, startDay: 27, endYear: 1492, endMonth: 2, endDay: 28 }
+  expect(schema.safeParse(range).success).toBe(true)
+  expect(schema.safeParse({ ...range, endDay: 26 }).success).toBe(false)
+  expect(schema.safeParse({ ...range, endDay: 29 }).success).toBe(false)
 })

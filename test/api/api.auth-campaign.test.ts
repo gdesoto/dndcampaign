@@ -20,6 +20,8 @@ const authHeaders = {
   'x-forwarded-for': '203.0.113.10',
 }
 
+const throttleProbeHeaders = { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.77' }
+
 const sleep = (ms: number) => new Promise((resolveDelay) => setTimeout(resolveDelay, ms))
 
 const loginAndGetCookie = async (email: string, password: string) => {
@@ -138,11 +140,62 @@ describe('auth + campaigns API', () => {
     })
     expect(payload.data.name).toBe('API Created Campaign')
   })
+
+  it('applies endpoint throttling to register/login/invite-accept endpoints', async () => {
+    let registerRateLimited = false
+    for (let i = 0; i < 20; i += 1) {
+      const response = await fetch(`${baseUrl}/api/auth/register`, {
+        method: 'POST',
+        headers: throttleProbeHeaders,
+        body: JSON.stringify({}),
+      })
+      if (response.status === 429) {
+        registerRateLimited = true
+        break
+      }
+    }
+    expect(registerRateLimited).toBe(true)
+
+    let loginRateLimited = false
+    for (let i = 0; i < 30; i += 1) {
+      const response = await fetch(`${baseUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: throttleProbeHeaders,
+        // One real rejection covers credentials; malformed attempts still consume the IP budget.
+        body: JSON.stringify(i === 0 ? {
+          email: testUser.email,
+          password: 'bad-password',
+        } : {}),
+      })
+      if (response.status === 429) {
+        loginRateLimited = true
+        break
+      }
+      expect(response.status).toBe(i === 0 ? 401 : 400)
+    }
+    expect(loginRateLimited).toBe(true)
+
+    const blockedLogin = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST', headers: throttleProbeHeaders,
+      body: JSON.stringify({ email: testUser.email, password: testUser.password }),
+    })
+    expect(blockedLogin.status).toBe(429)
+    expect(Number(blockedLogin.headers.get('retry-after'))).toBeGreaterThan(0)
+
+    let inviteAcceptRateLimited = false
+    for (let i = 0; i < 30; i += 1) {
+      const response = await fetch(`${baseUrl}/api/campaigns/invites/rate-limit-probe-token/accept`, {
+        method: 'POST',
+        headers: {
+          cookie: authCookie,
+          'x-forwarded-for': '203.0.113.77',
+        },
+      })
+      if (response.status === 429) {
+        inviteAcceptRateLimited = true
+        break
+      }
+    }
+    expect(inviteAcceptRateLimited).toBe(true)
+  })
 })
-
-
-
-
-
-
-
