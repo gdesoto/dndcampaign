@@ -4,6 +4,7 @@ import { defineVitestProject } from '@nuxt/test-utils/config'
 
 export default defineConfig({
   test: {
+    isolate: false,
     projects: [
       {
         test: {
@@ -15,7 +16,7 @@ export default defineConfig({
       {
         test: {
           name: 'api',
-          // Bound shared-DB contention. This orders tests, not global server setup.
+          // Limit shared SQLite contention; global setup still runs before all workers.
           maxWorkers: 3,
           sequence: { groupOrder: 2 },
           include: ['test/api/*.{test,spec}.ts'],
@@ -26,6 +27,9 @@ export default defineConfig({
       await defineVitestProject({
         test: {
           name: 'nuxt',
+          // The Nuxt project resolves separately and does not inherit root test options.
+          isolate: false,
+          setupFiles: ['test/nuxt/setup.ts'],
           // Component startup has a separate budget from shared-database API work.
           maxWorkers: 6,
           sequence: { groupOrder: 1 },

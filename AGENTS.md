@@ -53,11 +53,12 @@ DND Campaign (DM Vault) is a Nuxt 4 web app for running tabletop campaigns: camp
 - `script setup lang="ts"` with explicitly typed props and emits. TypeScript first for API payloads and service inputs.
 
 ## Testing
-Three Vitest projects in `vitest.config.ts`:
+Three Vitest projects share `vitest.config.ts`. Isolation is disabled globally; tests must clean up state they change. When API tests are selected, global server setup completes before any project workers start.
 - **unit** — `test/unit/*.test.ts`, plain Node (no `#server` alias; keep pure modules free of server-only imports).
-- **api** — `test/api/*.test.ts`, starts a real dev server on port 4181 with its own SQLite DB. Tests run after unit/Nuxt tests with three workers to limit contention on the shared DB. Global server setup still completes before any test group runs. Server diagnostics are retained in `storage/api-test-server.log`; investigate HTTP 500s rather than increasing test timeouts.
+- **api** — `test/api/*.test.ts`, starts a real dev server on port 4181 with its own SQLite DB. Tests run after unit/Nuxt tests with three workers to limit contention on the shared DB. Server diagnostics are retained in `storage/api-test-server.log`; investigate HTTP 500s rather than increasing test timeouts.
 - **nuxt** — `test/nuxt/*.test.ts`, Nuxt + Happy DOM, runs after unit tests with six workers. Unit tests retain normal parallelism; there is no global worker cap.
 E2E tests are Playwright specs in `test/e2e/`.
+`yarn test:watch` watches all projects; add `--project api` to focus on API tests. `yarn test:coverage` writes one combined report to `coverage/`.
 
 ## Making changes
 - After JavaScript, TypeScript, or Vue changes, `yarn lint` and `yarn typecheck` must pass.

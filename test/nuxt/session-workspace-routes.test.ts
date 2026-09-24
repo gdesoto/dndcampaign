@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
@@ -39,6 +39,17 @@ const workspaceResponse = (id: string) => ({
   transcriptDoc: { id: `transcript-${id}`, type: 'TRANSCRIPT', currentVersion: { content: 'Transcript' } },
   summaryDoc: { id: `summary-${id}`, type: 'SUMMARY', currentVersion: { content: summaryContent } },
   access: { permissions: ['content.write', 'summary.run', 'recording.upload'] },
+})
+
+beforeAll(async () => {
+  // Compile the real lazy-loaded routes within the suite's setup budget.
+  // Otherwise the first workflow pays this cost inside its five-second limit.
+  await Promise.all([
+    import('../../app/pages/campaigns/[campaignId].vue'),
+    import('../../app/pages/campaigns/[campaignId]/sessions/[sessionId].vue'),
+    import('../../app/pages/campaigns/[campaignId]/sessions/[sessionId]/index.vue'),
+    import('../../app/pages/campaigns/[campaignId]/sessions/[sessionId]/[step].vue'),
+  ])
 })
 
 beforeEach(() => {

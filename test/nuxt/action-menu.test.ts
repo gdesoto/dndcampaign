@@ -6,7 +6,7 @@ import { defineComponent, h } from 'vue'
 import { TooltipProvider } from 'reka-ui'
 
 const wrappers: Awaited<ReturnType<typeof mountSuspended>>[] = []
-afterEach(() => { wrappers.splice(0).forEach(wrapper => wrapper.unmount()); document.body.innerHTML = '' })
+afterEach(() => { wrappers.splice(0).forEach(wrapper => wrapper.unmount()) })
 const settle = async () => { await flushPromises(); await new Promise(resolve => setTimeout(resolve, 250)); await flushPromises() }
 
 it('ignores pointer-restored focus but shows the tooltip for keyboard focus', async () => {
