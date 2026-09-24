@@ -55,7 +55,7 @@ DND Campaign (DM Vault) is a Nuxt 4 web app for running tabletop campaigns: camp
 ## Testing
 Three Vitest projects in `vitest.config.ts`:
 - **unit** — `test/unit/*.test.ts`, plain Node (no `#server` alias; keep pure modules free of server-only imports).
-- **api** — `test/api/*.test.ts`, starts a real dev server on port 4181 with its own SQLite DB. Files run in parallel against one DB, so an occasional SQLite busy timeout on dungeon routes is a known flake; rerun once before investigating.
+- **api** — `test/api/*.test.ts`, starts a real dev server on port 4181 with its own SQLite DB. Runs after unit/Nuxt tests with three workers to limit contention on the shared DB; other projects retain normal parallelism. Server diagnostics are retained in `storage/api-test-server.log`; investigate HTTP 500s rather than increasing test timeouts.
 - **nuxt** — `test/nuxt/*.test.ts`, Nuxt + Happy DOM.
 E2E tests are Playwright specs in `test/e2e/`.
 

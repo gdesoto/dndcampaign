@@ -85,7 +85,8 @@ describe('dungeon API routes', () => {
     await prisma.$disconnect()
   })
 
-  it('creates dungeon, generates/regenerates, and enforces viewer read-only', async () => {
+  // Generate and edit a dungeon, preserve room links, and verify role restrictions.
+  it('creates dungeon, generates/regenerates, and enforces viewer read-only', { timeout: 15_000 }, async () => {
     const createResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons`, {
       method: 'POST',
       headers: {
@@ -405,7 +406,8 @@ describe('dungeon API routes', () => {
     expect(restoredRoom.y).toBe(10)
   })
 
-  it('exports JSON/SVG/PNG/PDF, supports import, and rejects oversized import payloads', async () => {
+  // Render four export formats and round-trip imports through the real server.
+  it('exports JSON/SVG/PNG/PDF, supports import, and rejects oversized import payloads', { timeout: 30_000 }, async () => {
     const addSecretRoomResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}/map`, {
       method: 'PATCH',
       headers: {

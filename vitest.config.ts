@@ -15,6 +15,9 @@ export default defineConfig({
       {
         test: {
           name: 'api',
+          // Bound shared-DB contention after the CPU-heavy Nuxt/unit phase.
+          maxWorkers: 3,
+          sequence: { groupOrder: 1 },
           include: ['test/api/*.{test,spec}.ts'],
           environment: 'node',
           globalSetup: ['test/scripts/api-global-setup.mjs'],

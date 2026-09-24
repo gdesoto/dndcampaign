@@ -64,7 +64,8 @@ describe('audio and video session recaps', () => {
     await prisma.$disconnect()
   })
 
-  it('uploads, replaces, publishes, streams and deletes recaps without affecting the other media kind', async () => {
+  // Complete both media lifecycles, including disk uploads and private/public range reads.
+  it('uploads, replaces, publishes, streams and deletes recaps without affecting the other media kind', { timeout: 15_000 }, async () => {
     for (const mimeType of ['audio/mpeg', 'video/mp4', 'audio/mpeg', 'video/mp4']) {
       const response = await upload(mimeType)
       expect(response.status).toBe(200)

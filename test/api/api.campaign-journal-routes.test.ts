@@ -186,7 +186,8 @@ describe('campaign journal API routes', () => {
     await prisma.$disconnect()
   })
 
-  it('enforces visibility matrix and moderation write permissions', async () => {
+  // Exercise multiple visibility levels and roles through sequential HTTP reads/writes.
+  it('enforces visibility matrix and moderation write permissions', { timeout: 15_000 }, async () => {
     const createMyselfRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries`, {
       method: 'POST',
       headers: {

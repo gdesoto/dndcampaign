@@ -11,26 +11,35 @@ export default async function apiGlobalSetup() {
     sessionPassword: 'api-global-session-password-1234567890-abcdefghijklmnopqrstuvwxyz',
   })
 
-  db.prepare({ migrate: true, seed: false, stdio: 'pipe' })
-
-  const server = await startManagedNuxtDevServer({
-    rootDir,
-    port: 4181,
-    // API tests need Nitro readiness, not a rendered Vite login page.
-    readinessPath: '/api/auth/me',
-    readinessStatus: 401,
-    env: {
-      ...db.env,
-      VITE_HMR_PORT: '24685',
-      VITE_HMR_HOST: '127.0.0.1',
-    },
-  })
+  let server
+  try {
+    db.prepare({ migrate: true, seed: false, stdio: 'pipe' })
+    server = await startManagedNuxtDevServer({
+      rootDir,
+      port: 4181,
+      // API tests need Nitro readiness, not a rendered Vite login page.
+      readinessPath: '/api/auth/me',
+      readinessStatus: 401,
+      logPath: resolve(rootDir, 'storage', 'api-test-server.log'),
+      env: {
+        ...db.env,
+        VITE_HMR_PORT: '24685',
+        VITE_HMR_HOST: '127.0.0.1',
+      },
+    })
+  } catch (error) {
+    await db.cleanup()
+    throw error
+  }
 
   process.env.API_TEST_BASE_URL = server.baseUrl
   process.env.API_TEST_DATABASE_URL = db.dbUrl
 
   return async () => {
-    await server.stop()
-    await db.cleanup()
+    try {
+      await server.stop()
+    } finally {
+      await db.cleanup()
+    }
   }
 }

@@ -54,7 +54,82 @@ that introduced them. Put regression assertions into that feature's workflow.
 
 Run `yarn test` for the unit, API, and Nuxt projects, and `yarn test:e2e` for browser
 workflows. Test changes also require `yarn lint` and `yarn typecheck`.
-On resource-constrained machines, use `yarn test --maxWorkers=2`. The managed
-server allows three minutes for startup. The retired-profile route contract allows
-one minute because its first request compiles Nuxt's page fallback; other test
-timeouts are unchanged.
+Unit and Nuxt files use Vitest's normal parallelism. The API project runs afterward
+with three workers to limit contention on its shared SQLite database. This avoids
+limiting the whole suite or serializing every API file. Keep performance comparisons
+free of simultaneous lint/typecheck runs.
+
+Scheduling checkpoint (2026-09-23): the earlier two-API-worker configuration passed all 289 tests
+in 137 seconds. A global two-worker limit plus serial API files took 216 seconds;
+normal unit/Nuxt parallelism plus serial API files took 148 seconds. Restoring
+unrestricted parallelism took 117 seconds but failed four tests on timeouts and
+one on a Prisma operation timeout. The four-API-worker experiment was stopped;
+it is not a validated configuration. Timings are single local runs, not benchmarks.
+The user subsequently measured 115.89 seconds with three API workers and all tests
+passing, and reported one failure with four. Three is the current setting.
+
+## Nuxt 4 testing research and startup profile
+
+Keep real HTTP API workflows in their Node project. The `api` name is our own
+category for server integration tests; Nuxt's documented E2E helpers also run in
+Node and do not require a browser. The Nuxt runtime environment initializes the
+Vue app in Happy DOM and supports mocked endpoints; it does not automatically
+load the real `server/api` routes. Moving our API workflows there would either
+retain the real server cost while adding DOM setup, or replace real HTTP coverage
+with mocks. The shared API server already starts once per run, not once per file.
+
+A temporary profile of the three-worker configuration measured these milestones
+relative to Vitest's test-run-start event (2026-09-23):
+
+| Milestone | Elapsed |
+| --- | ---: |
+| Database migration complete | 6.0s |
+| API server ready | 38.4s |
+| First Nuxt test file queued | 42.5s |
+| First test starts | 64.5s |
+
+Before that event, evaluating the configuration, including `defineVitestProject`,
+took another 5.5 seconds (excluding initial static dependency imports). The API
+global setup blocks initial test scheduling even though API files run in the later
+group. After queueing, Nuxt worker initialization, module transforms/imports, and
+collection account for about 22 seconds before the first test. These are local
+observations, not fixed performance expectations.
+The profiled run passed all 289 tests in 106.74 seconds of Vitest time (114.84
+seconds reported by Yarn). Only temporary instrumentation was added for this run;
+the configuration and test setup were otherwise preserved. The timeline and full
+output remain in `storage/test-startup-timeline.jsonl` and
+`storage/test-startup-profile.log`.
+
+Installed versions at inspection: Nuxt 4.5.2, Test Utils 3.23.0, Vitest 4.1.11.
+Test Utils 3.23.0 declares Vitest `^3.2.0`; Test Utils 4 explicitly supports Vitest 4.
+Evaluate that upgrade before further environment changes. Its initialization and
+mocking changes require validation; no speed improvement has been measured yet.
+Keep the API project separate and shared-server lifecycle intact. Consider lazy
+project configuration for focused unit/API runs so they do not eagerly initialize
+the component-test configuration. Simply replacing the shared server with per-file
+`setup()` calls could add builds rather than remove them.
+
+Sources checked on 2026-09-23:
+
+- [Nuxt 4 testing guide](https://nuxt.com/docs/4.x/getting-started/testing)
+- [Test Utils 4 migration notes](https://github.com/nuxt/test-utils/releases/tag/v4.0.0)
+- [Current Test Utils releases](https://github.com/nuxt/test-utils/releases)
+- [Test Utils 3.23.0 peer dependencies](https://github.com/nuxt/test-utils/blob/v3.23.0/package.json)
+
+The linked Nuxt 3 article demonstrates mocked handler unit tests, including mocked
+H3 body/parameter handling. That is a different coverage boundary from these real
+authentication, persistence, multipart, streaming, and response-envelope workflows.
+
+The default test timeout remains five seconds. Individual multi-request workflows
+allow 15 seconds for throttling, journal permissions, recap lifecycle, and dungeon
+generation/editing; dungeon rendering/export/import allows 30 seconds. These are
+completion budgets, not sleeps or performance assertions. Use a local option such
+as `it('workflow', { timeout: 15_000 }, async () => { ... })` when justified by real
+work. Do not increase timeouts to hide HTTP errors or database contention.
+
+The managed server allows three minutes for startup and checks API readiness before
+tests start. It rejects an occupied port and detects premature server exit. Startup
+failures also clean up the temporary database. Server output is retained in
+`storage/api-test-server.log` (overwritten each API run) for diagnosing HTTP 500s.
+The retired-profile route contract allows one minute because its first request
+compiles Nuxt's page fallback.

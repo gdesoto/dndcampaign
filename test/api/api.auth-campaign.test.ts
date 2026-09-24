@@ -141,7 +141,8 @@ describe('auth + campaigns API', () => {
     expect(payload.data.name).toBe('API Created Campaign')
   })
 
-  it('applies endpoint throttling to register/login/invite-accept endpoints', async () => {
+  // Exhaust three real HTTP rate-limit budgets, including a password verification.
+  it('applies endpoint throttling to register/login/invite-accept endpoints', { timeout: 15_000 }, async () => {
     let registerRateLimited = false
     for (let i = 0; i < 20; i += 1) {
       const response = await fetch(`${baseUrl}/api/auth/register`, {
