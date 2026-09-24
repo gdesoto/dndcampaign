@@ -1,5 +1,5 @@
 import { PrismaClient } from '#server/db/prisma-client'
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
+import { SqliteAdapter } from '#server/db/sqlite-adapter'
 import path from 'node:path'
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
@@ -26,7 +26,7 @@ const toSqlitePath = (url: string): string => {
   return path.resolve(process.cwd(), 'prisma', rawPath)
 }
 
-const adapter = new PrismaBetterSqlite3(
+const adapter = new SqliteAdapter(
   { url: toSqlitePath(databaseUrl) },
   { timestampFormat: 'unixepoch-ms' }
 )

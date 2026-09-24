@@ -136,6 +136,22 @@ completion budgets, not sleeps or performance assertions. Use a local option suc
 as `it('workflow', { timeout: 15_000 }, async () => { ... })` when justified by real
 work. Do not increase timeouts to hide HTTP errors or database contention.
 
+The encounter participant-insert failures were SQLite lock-upgrade conflicts,
+not slow queries. The Prisma adapter starts deferred transactions and reports
+`SQLITE_BUSY` as `SocketTimeout` / "Operation has timed out". Reading encounter
+status and order before the first write allowed a separate fixture connection to
+hold the writer lock, making the read-to-write upgrade fail immediately.
+Runtime and fixture clients now share a SQLite adapter that starts transactions
+with `BEGIN IMMEDIATE`, acquiring the writer lock before any reads. Prisma 7.10's
+adapter does not expose a transaction-mode option, so the shared adapter replaces
+its empty deferred transaction while retaining its mutex and commit/rollback
+handling. This avoids service-specific locking writes or retrying partial work.
+The API regression deliberately holds another connection's write lock for 250ms;
+it checks successful insertion, stable order and audit events, and rollback when
+the competing transaction completes the encounter. Worker limits and query/test
+timeouts were not changed to address this failure. See SQLite's
+[transaction locking rules](https://www.sqlite.org/lang_transaction.html).
+
 The managed server allows three minutes for startup and checks API readiness before
 tests start. It rejects an occupied port and detects premature server exit. Startup
 failures also clean up the temporary database. Server output is retained in

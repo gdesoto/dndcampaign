@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
+import { SqliteAdapter } from '../../server/db/sqlite-adapter'
 import { PrismaClient } from '../../prisma/generated/client'
 import { getApiTestDatabaseUrl } from './api-test-context.mjs'
 
@@ -23,7 +23,7 @@ const toSqlitePath = (url: string): string => {
 }
 
 export const createApiTestPrismaClient = () => {
-  const adapter = new PrismaBetterSqlite3(
+  const adapter = new SqliteAdapter(
     { url: toSqlitePath(getApiTestDatabaseUrl()) },
     { timestampFormat: 'unixepoch-ms' }
   )

@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import { PrismaClient } from './generated/client'
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
+import { SqliteAdapter } from '../server/db/sqlite-adapter'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
 import path from 'node:path'
@@ -26,7 +26,7 @@ const toSqlitePath = (url) => {
   return path.resolve(process.cwd(), 'prisma', rawPath)
 }
 
-const adapter = new PrismaBetterSqlite3(
+const adapter = new SqliteAdapter(
   { url: toSqlitePath(databaseUrl) },
   { timestampFormat: 'unixepoch-ms' }
 )

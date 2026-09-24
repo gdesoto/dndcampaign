@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { setTimeout as delay } from 'node:timers/promises'
 import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
 import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
 import { Hash } from '@adonisjs/hash'
@@ -183,6 +184,49 @@ describe('encounter API routes', () => {
     await prisma.playerCharacter.update({ where: { id: character.id }, data: { sheetJson: {} } })
     expect(await create({ sourceType: 'PLAYER_CHARACTER', sourcePlayerCharacterId: character.id }))
       .toMatchObject({ maxHp: null, currentHp: 20, armorClass: 10, speed: null })
+  })
+
+  it('adds a participant batch during an external write without losing order or audit events', async () => {
+    const campaign = await prisma.campaign.findUniqueOrThrow({ where: { id: campaignId } })
+    const encounter = await prisma.campaignEncounter.create({ data: {
+      campaignId, createdByUserId: campaign.ownerId, name: 'Concurrent participants',
+    } })
+    const add = (names: string[]) => fetch(`${baseUrl}/api/encounters/${encounter.id}/combatants`, {
+      method: 'POST', headers: { cookie: cookies.owner, 'content-type': 'application/json' },
+      body: JSON.stringify({ participants: names.map(name => ({ name })) }),
+    })
+    // Warm the route before deliberately holding the separate fixture connection's write lock.
+    expect((await add(['Existing'])).status).toBe(200)
+    let pending!: Promise<Response>
+    await prisma.$transaction(async tx => {
+      await tx.campaignEncounter.update({ where: { id: encounter.id }, data: { notes: 'Concurrent change' } })
+      pending = add(['One', 'Two'])
+      await delay(250)
+    })
+    const response = await pending
+    const payload = await response.json()
+    expect(response.status, JSON.stringify(payload.error)).toBe(200)
+    expect(payload.data.notes).toBe('Concurrent change')
+    const participants = await prisma.encounterCombatant.findMany({ where: { encounterId: encounter.id }, orderBy: { sortOrder: 'asc' } })
+    expect(participants.map(({ name, sortOrder }) => ({ name, sortOrder }))).toEqual([
+      { name: 'Existing', sortOrder: 0 }, { name: 'One', sortOrder: 1 }, { name: 'Two', sortOrder: 2 },
+    ])
+    expect(await prisma.encounterEvent.count({ where: { encounterId: encounter.id } })).toBe(3)
+
+    // Recheck the phase after the writer commits, preserving its timestamp on rejection.
+    const completed = await prisma.$transaction(async tx => {
+      const updated = await tx.campaignEncounter.update({ where: { id: encounter.id }, data: { status: 'COMPLETED' } })
+      pending = add(['Too late'])
+      await delay(250)
+      return updated
+    })
+    const rejected = await pending
+    expect(rejected.status).toBe(409)
+    expect((await rejected.json()).error.code).toBe('ENCOUNTER_ACTION_UNAVAILABLE')
+    const stored = await prisma.campaignEncounter.findUniqueOrThrow({ where: { id: encounter.id } })
+    expect(stored.updatedAt).toEqual(completed.updatedAt)
+    expect(await prisma.encounterCombatant.count({ where: { encounterId: encounter.id } })).toBe(3)
+    expect(await prisma.encounterEvent.count({ where: { encounterId: encounter.id } })).toBe(3)
   })
 
   it('returns not found for a missing encounter on reads and lifecycle writes', async () => {
