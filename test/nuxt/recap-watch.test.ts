@@ -6,10 +6,11 @@ import { useRecapWatch } from '../../app/composables/useRecapWatch'
 import type { MediaSource } from '../../app/composables/useMediaPlayer'
 import RecapLinks from '../../app/components/campaign/RecapLinks.vue'
 
-const harness = vi.hoisted(() => ({ player: null as unknown, route: null as unknown, push: vi.fn() }))
+const harness = vi.hoisted(() => ({ player: null as unknown, route: null as { query: { recap: string } } | null, push: vi.fn() }))
 mockNuxtImport('useMediaPlayer', () => () => harness.player)
-mockNuxtImport('useRoute', () => () => harness.route)
-mockNuxtImport('useRouter', () => () => ({ push: harness.push, replace: async () => {}, resolve: (to: string) => ({ href: to }) }))
+// Mocks also run during Nuxt startup in test-utils v4; retain the real router lifecycle.
+mockNuxtImport('useRoute', original => () => ({ ...original(), ...harness.route }))
+mockNuxtImport('useRouter', original => () => ({ ...original(), push: harness.push }))
 
 describe('recap watch playlist', () => {
   const recaps = [3, 2, 1].map(number => ({

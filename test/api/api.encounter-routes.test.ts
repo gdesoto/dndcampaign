@@ -161,8 +161,9 @@ describe('encounter API routes', () => {
         method: 'POST', headers: { cookie: cookies.owner, 'content-type': 'application/json' },
         body: JSON.stringify({ name: 'Participant', ...body }),
       })
-      expect(response.status).toBe(200)
-      return (await response.json()).data
+      const payload = await response.json()
+      expect(response.status, JSON.stringify(payload.error)).toBe(200)
+      return payload.data
     }
     for (const source of [
       { sourceType: 'CAMPAIGN_CHARACTER', sourceCampaignCharacterId: link.id },
@@ -389,11 +390,15 @@ describe('encounter API routes', () => {
       method, headers: { cookie: cookies.owner, 'content-type': 'application/json' }, body: JSON.stringify(body),
     })
     const created = await send(`campaigns/${campaignId}/encounters`, { name: 'Initiative controls' }, 'POST')
-    const id = (await created.json()).data.id
+    const createdPayload = await created.json()
+    expect(created.status, JSON.stringify(createdPayload.error)).toBe(200)
+    const id = createdPayload.data.id
     const added = await send(`encounters/${id}/combatants`, { participants: [
       { name: 'One', initiative: 10 }, { name: 'Two', initiative: 20 },
     ] }, 'POST')
-    const [one, two] = (await added.json()).data.combatants
+    const addedPayload = await added.json()
+    expect(added.status, JSON.stringify(addedPayload.error)).toBe(200)
+    const [one, two] = addedPayload.data.combatants
     await send(`encounters/${id}`, { action: 'start' })
     const rolled = await send(`encounters/${id}/initiative`, { action: 'roll', combatantId: one.id })
     expect(rolled.status).toBe(200)

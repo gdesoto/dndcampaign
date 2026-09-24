@@ -15,9 +15,9 @@ export default defineConfig({
       {
         test: {
           name: 'api',
-          // Bound shared-DB contention after the CPU-heavy Nuxt/unit phase.
+          // Bound shared-DB contention. This orders tests, not global server setup.
           maxWorkers: 3,
-          sequence: { groupOrder: 1 },
+          sequence: { groupOrder: 2 },
           include: ['test/api/*.{test,spec}.ts'],
           environment: 'node',
           globalSetup: ['test/scripts/api-global-setup.mjs'],
@@ -26,6 +26,11 @@ export default defineConfig({
       await defineVitestProject({
         test: {
           name: 'nuxt',
+          // Component startup has a separate budget from shared-database API work.
+          maxWorkers: 6,
+          sequence: { groupOrder: 1 },
+          // Test-utils v4 boots Nuxt inside beforeAll, including cold plugin compilation.
+          hookTimeout: 30_000,
           include: ['test/nuxt/*.{test,spec}.ts'],
           environment: 'nuxt',
           environmentOptions: {

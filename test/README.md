@@ -54,10 +54,19 @@ that introduced them. Put regression assertions into that feature's workflow.
 
 Run `yarn test` for the unit, API, and Nuxt projects, and `yarn test:e2e` for browser
 workflows. Test changes also require `yarn lint` and `yarn typecheck`.
-Unit and Nuxt files use Vitest's normal parallelism. The API project runs afterward
-with three workers to limit contention on its shared SQLite database. This avoids
-limiting the whole suite or serializing every API file. Keep performance comparisons
-free of simultaneous lint/typecheck runs.
+Worker limits are project-specific: unit tests use Vitest's normal parallelism,
+Nuxt component tests use six workers, and API tests use three workers to limit
+contention on their shared SQLite database. Tests execute in that order; Vitest
+requires different scheduling groups for these different worker budgets. Group
+ordering does not defer API global setup: database migration and server readiness
+still happen before tests are scheduled. Keep performance comparisons free of
+simultaneous lint/typecheck runs.
+
+After upgrading to Test Utils 4.3.2, the separate budgets passed all 289 tests in
+111.13 seconds of Vitest time, compared with 131.38 seconds in the saved upgrade
+run with a global three-worker cap. These are single local runs, not a guarantee
+of performance on other machines. The Nuxt-only 30-second hook timeout remains
+because Test Utils 4 initializes the app in `beforeAll`.
 
 Scheduling checkpoint (2026-09-23): the earlier two-API-worker configuration passed all 289 tests
 in 137 seconds. A global two-worker limit plus serial API files took 216 seconds;
@@ -100,10 +109,10 @@ the configuration and test setup were otherwise preserved. The timeline and full
 output remain in `storage/test-startup-timeline.jsonl` and
 `storage/test-startup-profile.log`.
 
-Installed versions at inspection: Nuxt 4.5.2, Test Utils 3.23.0, Vitest 4.1.11.
-Test Utils 3.23.0 declares Vitest `^3.2.0`; Test Utils 4 explicitly supports Vitest 4.
-Evaluate that upgrade before further environment changes. Its initialization and
-mocking changes require validation; no speed improvement has been measured yet.
+The startup profile above predates the upgrade: it used Nuxt 4.5.2, Test Utils
+3.23.0, and Vitest 4.1.11. Test Utils is now 4.3.2, which supports Vitest 4;
+initialization and router mocks have been updated and validated. The scheduling
+comparisons above do not isolate the performance effect of the package upgrade.
 Keep the API project separate and shared-server lifecycle intact. Consider lazy
 project configuration for focused unit/API runs so they do not eagerly initialize
 the component-test configuration. Simply replacing the shared server with per-file
