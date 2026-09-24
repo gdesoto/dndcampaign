@@ -7,7 +7,7 @@ import type {
 import type { RecordAction } from '~/types/actions'
 import { buildEncounterSummary } from '#shared/utils/encounter-summary'
 import { getEncounterActions, type EncounterLifecycleAction } from '#shared/utils/encounter-policy'
-import { encounterDamageSchema } from '#shared/schemas/encounter'
+import { encounterDamageSchema, encounterEventNoteCreateSchema } from '#shared/schemas/encounter'
 
 definePageMeta({ layout: 'dashboard' })
 const { route, campaignId, request, canWriteContent } = useCampaignPageContext()
@@ -54,8 +54,8 @@ const editing = ref<EncounterCombatant>()
 const showCondition = ref(false)
 const editingCondition = ref<EncounterCondition>()
 const conditionParticipantId = ref('')
-const note = ref('')
-useUnsavedChanges(() => Boolean(note.value.trim()), busy)
+const showNote = ref(false)
+const noteForm = reactive({ summary: '' })
 const amount = ref<number | undefined>(undefined)
 const amountError = ref('')
 const templatesApi = useEncounterTemplates()
@@ -287,9 +287,13 @@ const saved = async () => {
   toast.add({ title: 'Participant saved', color: 'success' })
 }
 const addNote = async () => {
-  if (!note.value.trim()) return
-  const submitted = note.value.trim()
-  if (await run(() => api.addNoteEvent(encounterId.value, submitted))) note.value = ''
+  const parsed = encounterEventNoteCreateSchema.safeParse(noteForm)
+  if (!parsed.success || !available.value.notes.allowed) return
+  if (await run(() => api.addNoteEvent(encounterId.value, parsed.data.summary))) {
+    showNote.value = false
+    noteForm.summary = ''
+    toast.add({ title: 'Note added', color: 'success' })
+  }
 }
 const createFromTemplate = async () => {
   if (!selectedTemplateId.value || !templateName.value.trim()) return
@@ -630,9 +634,10 @@ onBeforeUnmount(() => {
                     </div>
                     <div v-if="available.effects.allowed" class="space-y-2">
                       <UFormField label="HP amount" :error="amountError"
-                        ><UInput
-                          v-model.number="amount"
-                          type="number"
+                        ><UInputNumber
+                          v-model.optional="amount"
+                          class="w-full"
+                          :step="1"
                           :min="1"
                           :max="9999"
                           :disabled="busy || selected.currentHp == null"
@@ -641,12 +646,14 @@ onBeforeUnmount(() => {
                       <p v-if="selected.currentHp == null" class="text-sm text-muted">
                         Set current HP in Edit before applying damage or healing.
                       </p>
-                      <div class="flex gap-2">
+                      <div class="grid grid-cols-2 gap-2">
                         <UButton
+                          color="error" variant="soft" icon="i-lucide-heart-crack" block
                           :disabled="busy || selected.currentHp == null"
                           @click="effect('damage')"
                           >Damage</UButton
                         ><UButton
+                          color="success" variant="soft" icon="i-lucide-heart-plus" block
                           :disabled="busy || selected.currentHp == null"
                           @click="effect('heal')"
                           >Heal</UButton
@@ -721,13 +728,16 @@ onBeforeUnmount(() => {
             ><div class="space-y-4">
               <EncounterSummaryPanel v-if="!finished" :summary="summary" /><EncounterEventTimeline
                 :events="encounter.events"
-              /><UCard v-if="available.notes.allowed"
-                ><UFormField label="Encounter note"
-                  ><UTextarea v-model="note" :maxlength="500" class="w-full" /></UFormField
-                ><UButton class="mt-3" :disabled="busy || !note.trim()" @click="addNote"
-                  >Add note</UButton
-                ></UCard
               >
+                <template v-if="available.notes.allowed" #actions>
+                  <UButton icon="i-lucide-notebook-pen" :disabled="busy" @click="actionError = ''; showNote = true">Add note</UButton>
+                </template>
+              </EncounterEventTimeline>
+              <SharedEntityFormModal v-model:open="showNote" title="Add encounter note" :state="noteForm" :schema="encounterEventNoteCreateSchema" :saving="busy" :error="actionError" submit-label="Add note" @submit="addNote" @cancel="noteForm.summary = ''">
+                <UFormField name="summary" label="Note" required>
+                  <UTextarea v-model="noteForm.summary" :maxlength="500" :rows="4" placeholder="What happened?" autofocus class="w-full" />
+                </UFormField>
+              </SharedEntityFormModal>
             </div></template
           >
           <template #settings

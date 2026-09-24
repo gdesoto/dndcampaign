@@ -26,7 +26,7 @@ test('encounter selection, editing, effects and phase controls work on desktop a
   await page.request.post(`${base}/combatants`, {
     data: {
       participants: [
-        { name: 'Aria', side: 'ALLY', maxHp: 24 },
+        { name: 'Aria', side: 'ALLY', maxHp: 24, tempHp: 5, speed: 30 },
         { name: 'Guard', side: 'NEUTRAL', maxHp: 16 },
       ],
     },
@@ -39,7 +39,11 @@ test('encounter selection, editing, effects and phase controls work on desktop a
   const heading = page.getByRole('heading', {
     name: /^Encounter workflow verification/,
   })
-  await page.evaluate(() => document.fonts.ready)
+  await heading.evaluate(async element => {
+    // Wait for the heading font to settle, including offline fallback.
+    await Promise.allSettled([document.fonts.load(getComputedStyle(element).font, element.textContent || '')])
+    await document.fonts.ready
+  })
   const initialPosition = await heading.boundingBox()
   let releaseRefresh!: () => void
   let refreshStarted!: () => void
@@ -104,17 +108,23 @@ test('encounter selection, editing, effects and phase controls work on desktop a
   await ((await moveUp.isEnabled()) ? moveUp : moveDown).click()
   await page.getByRole('button', { name: 'Add condition', exact: true }).click()
   await expect(page.getByRole('dialog', { name: 'Add condition' })).toBeVisible()
-  await page.getByLabel('Condition', { exact: true }).fill('Prone')
+  await page.getByRole('button', { name: 'Condition*', exact: true }).click()
+  await page.getByRole('option', { name: 'Prone', exact: true }).click()
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page.getByRole('dialog', { name: 'Add condition' })).toHaveCount(0)
   await expect(page.getByText('Prone', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Actions for Prone', exact: true }).click()
   await page.getByRole('menuitem', { name: 'Edit', exact: true }).click()
   await expect(page.getByRole('dialog', { name: 'Edit condition' })).toBeVisible()
-  await page.getByLabel('Condition', { exact: true }).fill('Restrained')
+  await page.getByRole('button', { name: 'Condition*', exact: true }).click()
+  await page.getByRole('option', { name: 'Custom condition…', exact: true }).click()
+  await expect(page.getByRole('listbox')).toHaveCount(0)
+  await page.getByRole('textbox', { name: /^Custom condition/ }).fill('Marked by the hunter')
+  await expect(page.getByRole('textbox', { name: /^Custom condition/ })).toHaveValue('Marked by the hunter')
+  await page.screenshot({ path: testInfo.outputPath('condition-form.png'), fullPage: true })
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page.getByRole('dialog', { name: 'Edit condition' })).toHaveCount(0)
-  await expect(page.getByText('Restrained', { exact: true })).toBeVisible()
+  await expect(page.getByText('Marked by the hunter', { exact: true })).toBeVisible()
 
   await page.getByRole('button', { name: 'Damage', exact: true }).click()
   await expect(page.getByText('Enter a whole number from 1 to 9999.')).toBeVisible()
@@ -125,6 +135,31 @@ test('encounter selection, editing, effects and phase controls work on desktop a
       has: page.getByRole('button', { name: 'Select Guard', exact: true }),
     }),
   ).toContainText('12/16')
+  await page.getByRole('tab', { name: 'History', exact: true }).click()
+  await page.getByRole('button', { name: 'Add note', exact: true }).click()
+  const noteDialog = page.getByRole('dialog', { name: 'Add encounter note' })
+  await expect(noteDialog).toBeVisible()
+  await noteDialog.getByRole('textbox', { name: /^Note/ }).fill('Guard calls for reinforcements')
+  await page.route(`${base}/events/note`, route => route.fulfill({
+    status: 500, contentType: 'application/json',
+    body: JSON.stringify({ data: null, error: { code: 'TEST_ERROR', message: 'Note could not be saved.' } }),
+  }))
+  await noteDialog.getByRole('button', { name: 'Add note', exact: true }).click()
+  await expect(noteDialog.getByRole('alert')).toContainText('Note could not be saved.')
+  await expect(noteDialog.getByRole('textbox', { name: /^Note/ })).toHaveValue('Guard calls for reinforcements')
+  await page.unroute(`${base}/events/note`)
+  await noteDialog.getByRole('button', { name: 'Add note', exact: true }).click()
+  await expect(noteDialog).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'Encounter event history' })).toContainText('Guard calls for reinforcements')
+  await page.screenshot({ path: testInfo.outputPath('timeline.png'), fullPage: true })
+  await page.getByRole('button', { name: 'Filter event types' }).click()
+  await page.getByRole('menuitemcheckbox', { name: 'Note', exact: true }).click()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('region', { name: 'Encounter event history' }).locator('time')).toHaveCount(1)
+  await page.getByRole('button', { name: 'Clear filters' }).click()
+  await page.getByRole('button', { name: 'Show oldest first' }).click()
+  await expect(page.getByRole('button', { name: 'Show newest first' })).toBeVisible()
+  await page.getByRole('tab', { name: 'Participants', exact: true }).click()
   await page.getByRole('button', { name: 'Edit Guard', exact: true }).click()
   await expect(page.getByRole('dialog', { name: 'Edit participant' })).toBeVisible()
   await page.getByLabel('Side', { exact: true }).click()

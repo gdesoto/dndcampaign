@@ -117,7 +117,7 @@ describe('Encounter detail page', () => {
           sortOrder: 0,
           maxHp: 12,
           currentHp: 12,
-          tempHp: 0,
+          tempHp: 5,
           armorClass: 12,
           speed: 30,
           isConcentrating: false,
@@ -160,6 +160,8 @@ describe('Encounter detail page', () => {
     const original = await mockGetEncounter()
     mockGetEncounter.mockResolvedValue({ ...original, status: 'ACTIVE', activeParticipantId: 'combatant-1', combatants: [...original.combatants, { ...original.combatants[0], id: 'combatant-2', name: 'Ally', sortOrder: 1 }] })
     const wrapper = await mountSuspended(EncounterDetailPage, { global: { provide: { campaignCanWriteContent: ref(true) } } })
+    expect(wrapper.get('[aria-label="Encounter participants"]').text()).toContain('(+5 temp)')
+    expect(wrapper.get('[aria-label="Encounter participants"]').text()).toContain('Speed 30 ft')
     mockRequest.mockClear()
     await wrapper.get('button[aria-label="Select Ally"]').trigger('click')
     expect(mockRequest).not.toHaveBeenCalled()

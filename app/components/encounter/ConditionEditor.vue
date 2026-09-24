@@ -50,6 +50,12 @@ const presets = [
   'Stunned',
   'Unconscious',
 ]
+const conditionChoice = ref(form.name && !presets.includes(form.name) ? '__custom' : form.name)
+const customCondition = computed(() => conditionChoice.value === '__custom')
+watch(conditionChoice, value => {
+  form.name = value === '__custom' ? '' : value
+})
+const conditionOptions = [...presets.map(name => ({ label: name, value: name })), { label: 'Custom condition…', value: '__custom' }]
 const save = async () => {
   if (saving.value) return
   saving.value = true
@@ -95,32 +101,31 @@ const save = async () => {
     :error="error"
     @submit="save"
   >
-    <UFormField name="name" label="Condition" required
-      ><UInput v-model="form.name" list="encounter-condition-presets" class="w-full" /><datalist
-        id="encounter-condition-presets"
-      >
-        <option v-for="name in presets" :key="name" :value="name" /></datalist
-    ></UFormField>
-    <div class="grid grid-cols-2 gap-3">
-      <UFormField name="duration" label="Duration"
-        ><UInput v-model.number="form.duration" type="number" :min="0" /></UFormField
-      ><UFormField name="remaining" label="Remaining"
-        ><UInput v-model.number="form.remaining" type="number" :min="0"
-      /></UFormField>
-    </div>
-    <UFormField name="tickTiming" label="Count down at"
-      ><USelect
-        v-model="form.tickTiming"
-        :items="[
+    <UFormField :name="customCondition ? undefined : 'name'" label="Condition" required>
+      <USelectMenu v-model="conditionChoice" :items="conditionOptions" value-key="value" placeholder="Select a condition" class="w-full" />
+    </UFormField>
+    <UFormField v-if="customCondition" name="name" label="Custom condition" required>
+      <UInput v-model="form.name" placeholder="e.g. Marked by the hunter" :maxlength="120" class="w-full" />
+    </UFormField>
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <UFormField name="duration" label="Duration" hint="Rounds">
+        <UInputNumber v-model="form.duration" :min="0" :step="1" placeholder="Unlimited" class="w-full" />
+      </UFormField>
+      <UFormField name="remaining" label="Remaining" hint="Rounds">
+        <UInputNumber v-model="form.remaining" :min="0" :step="1" :placeholder="condition ? 'Unlimited' : 'Use duration'" class="w-full" />
+      </UFormField>
+      <UFormField name="tickTiming" label="Count down at" class="sm:col-span-2">
+        <USelect
+          v-model="form.tickTiming" :items="[
           { label: 'Participant turn start', value: 'TURN_START' },
           { label: 'Participant turn end', value: 'TURN_END' },
           { label: 'Round end', value: 'ROUND_END' },
-        ]"
-        class="w-full"
-    /></UFormField>
-    <UFormField name="source" label="Source"
-      ><UInput v-model="form.source" class="w-full"
-    /></UFormField>
+        ]" class="w-full" />
+      </UFormField>
+    </div>
+    <UFormField name="source" label="Source">
+      <UInput v-model="form.source" placeholder="e.g. Hold Person — enemy mage" class="w-full" />
+    </UFormField>
     <UFormField name="notes" label="Notes"
       ><UTextarea v-model="form.notes" class="w-full"
     /></UFormField>

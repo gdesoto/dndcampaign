@@ -96,7 +96,7 @@ const actions = (p: EncounterCombatant): RecordAction[] =>
                 icon="i-lucide-chevron-up"
                 variant="ghost"
                 color="neutral"
-                class="size-8 justify-center"
+                size="xs"
                 :aria-label="`Move ${p.name} up`"
                 :disabled="busy || index === 0"
                 @click="emit('move', p.id, -1)"
@@ -107,7 +107,7 @@ const actions = (p: EncounterCombatant): RecordAction[] =>
                 icon="i-lucide-chevron-down"
                 variant="ghost"
                 color="neutral"
-                class="size-8 justify-center"
+                size="xs"
                 :aria-label="`Move ${p.name} down`"
                 :disabled="busy || index === participants.length - 1"
                 @click="emit('move', p.id, 1)"
@@ -157,8 +157,9 @@ const actions = (p: EncounterCombatant): RecordAction[] =>
                   />
                 </UTooltip>
               </span>
-              <span>HP {{ p.currentHp ?? '-' }}/{{ p.maxHp ?? '-' }}</span>
+              <span>HP {{ p.currentHp ?? '-' }}/{{ p.maxHp ?? '-' }} <span v-if="p.tempHp > 0" class="text-info">(+{{ p.tempHp }} temp)</span></span>
               <span>AC {{ p.armorClass ?? '-' }}</span>
+              <span>Speed {{ p.speed == null ? '-' : `${p.speed} ft` }}</span>
             </div>
           </div>
           <SharedActionMenu :name="p.name" :items="actions(p)" :disabled="busy" />
