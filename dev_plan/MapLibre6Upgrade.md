@@ -1,4 +1,4 @@
-# MapLibre GL JS 6 upgrade
+# MapLibre GL JS 6 upgrade record
 
 Reviewed and upgraded on 2026-09-10: 5.24.0 → 6.9.0 (`^6.9.0`).
 

@@ -14,8 +14,9 @@ campaigns, resource read/write permissions, and optional expiration, then copy
 the secret shown once. For a campaign assistant, grant only the content read
 and write permissions it needs. Keys cannot manage account settings,
 memberships, other keys, or generation jobs. Revoke a key from the same page
-when it is no longer needed. Existing installations must apply the API-key
-database migration with `yarn db:migrate:deploy` before using this page.
+when it is no longer needed. API-key records use the application database;
+database setup and migrations are described in
+[DeploymentRecovery.md](DeploymentRecovery.md).
 
 Configure the MCP client with the application URL and the scoped secret. The
 client sends the secret as `Authorization: Bearer <key>` on every MCP request;
@@ -49,8 +50,7 @@ Start with `campaigns_list` to discover the campaigns permitted by the key.
 `dice_roll` uses the same dice calculation utility as the browser roller. Pass
 `notation` such as `d20`, `2d6+3`, or `2d6+3-d4` (up to 200 characters,
 1–100 dice per term, 2–1000 sides). It returns individual rolls, signed term
-subtotals, and the total. Agents should prefer this tool for rolls instead of
-inventing results or generating their own random numbers. The optional `mode`
+subtotals, and the total. The optional `mode`
 accepts `normal` (default), `advantage`, or `disadvantage`. Advantage and
 disadvantage require a single d20 with an optional integer modifier, such as
 `d20+5`. Both dice are returned in `rolls`, alongside `selectedRoll`, `modifier`,

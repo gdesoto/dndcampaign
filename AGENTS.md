@@ -12,12 +12,22 @@ DND Campaign (DM Vault) is a Nuxt 4 web app for running tabletop campaigns: camp
 - `prisma/` — schema, migrations, ignored generated client. Installation and builds generate the client. The dev database is `storage/db/dev.db` (`DATABASE_URL` in `.env`).
 - `storage/` — local files (git-ignored).
 - `public/openapi.json` — hand-maintained API contract.
+- `dev_plan/` — development scratchpad for feature plans, implementation checklists, investigations, experiments, and working notes. Markdown plans are versioned; reference assets and other scratch files remain local.
+- `docs/` — organized, maintained application documentation describing the implemented system: architecture, workflows, data ownership, integrations, and operations.
 
 ## Docs to consult
-- `dev_plan/DeveloperBuildPlan.md` and `dev_plan/SoftwareDesignDocument.md` — goals, milestones, scope. Milestone checklists are under `dev_plan/initial_milestones/`; feature plans under the other `dev_plan/` folders.
+- `README.md` — project purpose and setup. `docs/README.md` — application documentation index.
 - `docs/SessionWorkspaceOwnership.md` — session workspace state ownership contract; read before touching session pages or composables.
-- `docs/CodeSimplificationPlan.md` — open cleanup tickets with ratings; check it before starting refactors.
+- `docs/SessionJobs.md`, `docs/Characters.md`, and `docs/Maps.md` — current workflow and data behavior. `docs/DeploymentRecovery.md` — runtime and recovery operations.
+- `docs/AgentIntegration.md` and `docs/EncounterWorkflow.md` — MCP integration and encounter behavior.
+- `dev_plan/README.md` — planning index. `dev_plan/CodeSimplificationPlan.md` — open cleanup tickets; check it before starting refactors. `dev_plan/FollowUps.md` — remaining work, optional ideas, and unverified QA. `dev_plan/PlanningHistory.md` — archived records and local reference assets.
 - Frontend: see "Frontend conventions" below for which guide wins.
+
+## Documentation ownership
+
+- Put feature proposals, task lists, progress reports, implementation decisions under investigation, and temporary validation notes in `dev_plan/`, grouped by feature when useful.
+- Keep `docs/` focused on how the current application works. Update the relevant document and `docs/README.md` when implemented behavior changes; promote settled explanations from plans into these documents.
+- Keep coding rules and agent instructions in `AGENTS.md`/`CLAUDE.md`, with frontend conventions in the existing skill and `StyleGuide.md`. Plans can explain intended changes, but they do not override the implemented behavior documented in `docs/`.
 
 ## Commands
 - `yarn dev`, `yarn build`, `yarn lint`, `yarn lint:fix`, `yarn typecheck`

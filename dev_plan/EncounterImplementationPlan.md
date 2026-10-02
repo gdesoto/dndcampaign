@@ -1,4 +1,4 @@
-# Encounter workspace and agent workflow
+# Encounter workspace implementation record
 
 ## Agreed behavior
 One stable participant workspace with local selection independent from the active turn. Planned encounters permit preparation; Active permits turn progression and effects; Paused permits corrections without ticking; Completed/Abandoned preserve a read-only record until explicit Reopen (to Paused). All phase restrictions apply through the API, including MCP.

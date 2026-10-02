@@ -2,6 +2,8 @@
 
 The participant list and details stay in place across phases. Selecting a participant is local inspection; it never changes whose turn it is. Initiative order changes preserve the active participant. Removing that participant selects the next surviving turn position.
 
+Background refresh uses a reserved spinner slot after the encounter name. The workspace retains its layout and local drafts during refresh. Participant details, History, and Settings share the same workspace.
+
 | Phase | Allowed operations |
 | --- | --- |
 | Planned | Edit settings/participants, prepare initiative and conditions, add notes, Start (requires participants), Abandon |
@@ -24,10 +26,8 @@ Start initializes round 1/first participant. Reopen never starts combat. Reset r
 
 New workflow tools return updated encounter state. participant_update and set-initiative also require encounters.read to retrieve it. All require encounters.write for mutation. The older combatant/condition tools remain for compatibility and enforce the same phases. Tools never start, resume, or reopen implicitly.
 
-## API compatibility
+## HTTP API
 
-Existing URLs remain. POST `/api/encounters/:id/combatants` accepts legacy single input (returns one participant) or `{participants:[...]}` (returns encounter state). PATCH on that collection applies typed effects and returns encounter state. Encounter PATCH accepts typed lifecycle actions or metadata; raw status/currentRound/currentTurnIndex writes are rejected so callers cannot bypass phases. Encounter/turn/initiative PATCH now return full encounter state (including existing summary fields). Invalid phases return 409 `ENCOUNTER_ACTION_UNAVAILABLE` with a next-step explanation. Unknown HP returns 409 `HP_REQUIRED`.
-
-No database migration is required. Changes apply to newly loaded pages and API/MCP requests; existing participant stats are not backfilled.
+POST `/api/encounters/:id/combatants` accepts legacy single input (returns one participant) or `{participants:[...]}` (returns encounter state). PATCH on that collection applies typed effects and returns encounter state. Encounter PATCH accepts typed lifecycle actions or metadata; raw status/currentRound/currentTurnIndex writes are rejected so callers cannot bypass phases. Encounter/turn/initiative PATCH return full encounter state, including summary fields. Invalid phases return 409 `ENCOUNTER_ACTION_UNAVAILABLE` with a next-step explanation. Unknown HP returns 409 `HP_REQUIRED`. Current payloads are defined in [OpenAPI](../public/openapi.json).
 
 Initiative controls live in the Participants header. Roll and clear support the whole roster or a single participant (`combatantId` through the initiative API or MCP `encounter_turn`). Clearing preserves order and the active turn; the UI offers Undo. Participant rows expose move up/down and individual roll/clear controls during Planned, Active, and Paused phases.

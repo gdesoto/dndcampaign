@@ -31,7 +31,10 @@ coverage/
 /prisma/generated/
 /prisma/db
 /db
-/dev_plan
+# Development scratch assets are local; Markdown plans remain versioned.
+/dev_plan/**
+!/dev_plan/**/
+!/dev_plan/**/*.md
 /tmp
 playwright-report/
 test-results/

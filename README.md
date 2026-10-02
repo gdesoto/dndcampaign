@@ -1,6 +1,6 @@
 # DND Campaign
 
-DND Campaign is a web app for running tabletop campaigns. It manages campaigns, sessions, glossary entries, quests, milestones, and recordings. Recordings are stored via a storage abstraction (local by default) and streamed with range support for media playback.
+DND Campaign (DM Vault) is a web app for running tabletop campaigns. It manages characters, journal entries, player requests, glossary entries, quests, milestones, encounters, dungeons, maps, and fantasy calendars. Session workflows cover recordings, ElevenLabs transcription, versioned documents, n8n summaries, suggestions, and recap playback. Campaign membership controls access, with optional public campaign pages. Artifacts use local storage and media streams support HTTP ranges.
 
 **Tech Stack**
 1. Nuxt 4
@@ -48,4 +48,15 @@ yarn test:unit
 yarn test:nuxt
 yarn test:coverage
 ```
+
+**Documentation**
+
+- [Application documentation](docs/README.md): how the implemented system works, organized by feature and operations.
+- [Development scratchpad](dev_plan/README.md): feature planning, implementation notes, investigations, and follow-ups.
+- [OpenAPI contract](public/openapi.json): canonical API paths and payloads.
+
+Contributor and agent conventions live in [AGENTS.md](AGENTS.md),
+[CLAUDE.md](CLAUDE.md), and [StyleGuide.md](StyleGuide.md). Settled system
+explanations from development plans become maintained application documentation
+in `docs/` as features are implemented.
 
