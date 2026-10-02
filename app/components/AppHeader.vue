@@ -60,7 +60,7 @@ const topNavItems = computed(() => {
   return items.map((item) => ({ ...item, active: isActivePrefix(item.to) }))
 })
 
-const { showCampaignSelect, campaignOptions, selectedCampaignId } = useCampaignSelector(
+const { showCampaignSelect, campaignOptions, selectedCampaignId, selectCampaign } = useCampaignSelector(
   route,
   router,
   campaigns,
@@ -131,7 +131,8 @@ const compactAccountMenuItems = computed(() => [
       <div class="flex w-full items-center justify-center gap-4">
         <USelectMenu
           v-if="loggedIn && showCampaignSelect"
-          v-model="selectedCampaignId"
+          :model-value="selectedCampaignId"
+          aria-label="Campaign"
           value-key="id"
           label-key="label"
           :items="campaignOptions"
@@ -139,6 +140,7 @@ const compactAccountMenuItems = computed(() => [
           size="sm"
           icon="i-lucide-sword"
           class="w-60 shrink-0"
+          @update:model-value="selectCampaign"
         />
         <UNavigationMenu class="min-w-0 flex-1 justify-center" :items="topNavItems" />
       </div>
@@ -214,7 +216,8 @@ const compactAccountMenuItems = computed(() => [
       <div class="space-y-4">
         <USelectMenu
           v-if="loggedIn && showCampaignSelect"
-          v-model="selectedCampaignId"
+          :model-value="selectedCampaignId"
+          aria-label="Campaign"
           value-key="id"
           label-key="label"
           :items="campaignOptions"
@@ -222,6 +225,7 @@ const compactAccountMenuItems = computed(() => [
           size="sm"
           icon="i-lucide-sword"
           class="w-full"
+          @update:model-value="selectCampaign"
         />
 
         <UNavigationMenu :items="topNavItems" orientation="vertical" class="-mx-2.5" />

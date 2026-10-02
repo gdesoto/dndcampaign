@@ -8,6 +8,7 @@ type CampaignNavItem = {
 type CampaignOption = {
   label: string
   id: string
+  disabled?: boolean
 }
 
 export const useCampaignSelector = (
@@ -22,52 +23,28 @@ export const useCampaignSelector = (
   })
 
   const campaignOptions = computed<CampaignOption[]>(() => {
-    const items = (campaigns.value || []).map((campaign) => ({
+    const items: CampaignOption[] = (campaigns.value || []).map((campaign) => ({
       label: campaign.name,
       id: campaign.id,
     }))
+    if (campaignId.value && !items.some((item) => item.id === campaignId.value)) {
+      items.unshift({ label: 'Current campaign', id: campaignId.value, disabled: true })
+    }
     return [{ label: 'All campaigns', id: 'all' }, ...items]
   })
 
-  const selectedCampaignId = ref<string>('all')
-  const campaignSelectReady = ref(false)
+  const selectedCampaignId = computed(() => campaignId.value || 'all')
 
-  watch(
-    () => campaignId.value,
-    (value) => {
-      selectedCampaignId.value = value || 'all'
-    },
-    { immediate: true }
-  )
-
-  watch(
-    () => campaigns.value,
-    (value) => {
-      if (!value?.length && selectedCampaignId.value !== 'all') {
-        selectedCampaignId.value = 'all'
-      }
-    }
-  )
-
-  watch(
-    () => selectedCampaignId.value,
-    (value) => {
-      if (!campaignSelectReady.value) return
-      if (!showCampaignSelect.value) return
-      if (!value) return
-      const targetPath = resolveCampaignSelectorRoute(route.path, campaignId.value, value)
-      if (targetPath === route.path) return
-      router.push(targetPath)
-    }
-  )
-
-  onMounted(() => {
-    campaignSelectReady.value = true
-  })
+  const selectCampaign = (value: string | undefined) => {
+    if (!showCampaignSelect.value || !value || value === selectedCampaignId.value) return
+    const targetPath = resolveCampaignSelectorRoute(route.path, campaignId.value, value)
+    if (targetPath !== route.path) return router.push(targetPath)
+  }
 
   return {
     showCampaignSelect,
     campaignOptions,
     selectedCampaignId,
+    selectCampaign,
   }
 }

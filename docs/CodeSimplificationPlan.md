@@ -15,7 +15,7 @@ Reduce duplicated decisions, unnecessary operations, and independently maintaine
 
 ## Completed work
 
-These tickets are complete and committed. They are not part of the open queue and do not need to be repeated or reconsidered as pending dependencies.
+The following table records completed and committed tickets. Additional completed work below records its own commit status. Completed tickets are not part of the open queue and do not need to be repeated or reconsidered as pending dependencies.
 
 | Ticket | Commit | Result |
 | --- | --- | --- |
@@ -54,25 +54,30 @@ Removed the verified orphan encounter component, unused server methods and share
 
 Validation passed: `yarn lint`, `yarn typecheck`, `yarn test` (82 files / 293 tests), and `yarn build` (421.66s). The initial sandboxed build failed on a parent-directory metadata lookup; the permission-enabled retry succeeded. Tests exited successfully with a Vite shutdown warning, and dependency/bundler warnings remain. Offline installation succeeded with the existing frozen lockfile. Browser checks covered desktop/mobile light/dark themes, quest creation/groups/empty/no-matches states and keyboard focus, campaign activity, the corrected seed character and editor level, and session status-card/transcript-editor/summary navigation. The isolated browser database was removed afterward. Logs and screenshots are under `storage/dead-code-*`.
 
+### 2026-10-01 CJ-10 — Campaign selection (complete)
+
+Campaign selection now derives from the route. Both header controls invoke navigation only on explicit selection; the selected-ID ref, three synchronization watchers, and mount gate are gone. Pending/canceled navigation retains the current selection, selecting the same campaign preserves a deep route, and missing campaign options show a disabled `Current campaign` entry until the matching name is available. Loading, empty, or failed option lists never initiate navigation. The existing section resolver and dirty-exit guards remain in place; no API change.
+
+Validation passed: `yarn lint`, `yarn typecheck`, and the campaign-selector, campaign-selector-route, and session-workspace-routes suites (3 files / 12 tests). The new selector suite uses two native controls and a real memory router for pending/canceled/successful navigation, Back/Forward, direct routes, same-target selection, and delayed/empty/failed/missing option lists. Browser checks against an isolated seeded database covered desktop/mobile selection and dirty-summary cancellation/acceptance, draft retention, missing-option display, Back/Forward, direct loading, keyboard selection, and reselecting the active campaign on a deep editor route. The test server was stopped and its database removed afterward. Logs and the desktop screenshot are under `storage/cj-10-*`. A full suite and production build were not run for this bounded navigation change.
+
 ## Open queue and sequencing
 
 | Ticket | Disposition | Scope |
 | --- | --- | --- |
 | CJ-05 | Ready | Make session transcript creation creation-only; remove unused mirrored transcript draft. |
 | CJ-06 | Ready after CJ-05 | Replace session navigation event forwarding with native destinations. |
-| CJ-07 | Ready; independent | Share the existing player-safe dungeon projection. |
+| CJ-07 | Ready; independent quick win | Share the existing player-safe dungeon projection. |
 | CJ-08 | Partially complete | Unused QuestCard props and unreachable empty branches removed; duplicate group rendering remains. |
 | CJ-09 | Conditional; narrowed | Quest listing reuse only, subject to a clear simplification with explicit public fields. |
-| CJ-10 | Ready; separate review | Make route state own campaign selection; explicitly test navigation behavior changes. |
-| CJ-11 | Conditional; lower priority | Remove unused encounter relation reads when the resulting query ownership stays simple. |
+| CJ-11 | Small deletion ready; broader work conditional | Remove the unused session include; narrow other encounter reads only when query ownership stays simple. |
 | CJ-12 | Coordinate with CJ-22 | Converge playback locally if URL endpoints stay; otherwise incorporate into CJ-22. |
 | CJ-20 | Partially complete | Encounter, initiative, and turn actions use schemas; legacy combatant amount parsing remains. |
-| CJ-21 | Conditional; redesigned | Share common map projection/parsing and SVG retrieval without private glossary enrichment. |
+| CJ-21 | Conditional; narrowed | Share common map projection/parsing without private glossary enrichment; SVG reuse is optional. |
 | CJ-22 | Roadmap decision first | Remove private playback-URL endpoints only after choosing the playback URL strategy. |
 
-Recommended session sequence: **CJ-05 → CJ-06 → playback work**. Before playback work, decide CJ-22: keep the endpoints and implement CJ-12, or remove them and complete both tickets together. Do not refactor caches in CJ-12 only to delete them in CJ-22 immediately afterward.
+With CJ-10 complete, the recommended remaining sequence is **CJ-05 → CJ-06 → conditional playback work**. Before playback work, decide CJ-22: keep the endpoints and implement CJ-12, or remove them and complete both tickets together. Do not refactor caches in CJ-12 only to delete them in CJ-22 immediately afterward.
 
-CJ-07 and CJ-08 can run independently. Give CJ-10 its own review and browser pass; placing it after the session batch is sensible risk management, not a dependency. CJ-20 can run independently of frontend work. CJ-09, CJ-11, and CJ-21 are not mandatory cleanup: defer them if the proposed implementation adds more machinery than it removes. Profiling can inform CJ-11 priority, but is not required to establish that a query loads unused relations.
+CJ-07 is a small independent win; CJ-08 and CJ-20 can also run independently. These priorities are not hard dependencies. CJ-09, broader CJ-11 query changes, and CJ-21 are not mandatory cleanup: defer them if the proposed implementation adds more machinery than it removes. CJ-11's unused session include can be deleted directly. Profiling can inform broader query-work priority, but is not required to establish that a query loads unused relations.
 
 The signed-URL roadmap is **unresolved**. A future remote storage provider does not itself require browser-facing signed URLs; server streaming remains possible. This document neither commits to signed URLs nor authorizes endpoint removal before that decision.
 
@@ -80,9 +85,9 @@ The signed-URL roadmap is **unresolved**. A future remote storage provider does 
 
 1. Read the selected ticket and current source; check all callers, Nuxt auto-import surfaces, and existing tests. Preserve unrelated working-tree changes.
 2. Establish current contracts before changing behavior. Implement the smallest concrete deletion/reuse; do not expand into neighboring tickets without a reason tied to the goal.
-3. After JavaScript/TypeScript/Vue changes, pass `yarn lint`, `yarn typecheck`, and relevant tests. Pure unreachable-code deletions do not need invented behavior tests. Run the integrated `yarn test` for a completed multi-area batch.
-4. For UI changes, inspect the affected interactions at desktop/mobile widths and in light/dark themes. Test keyboard navigation, direct URLs, Back/Forward, dirty guards, and failure recovery where applicable. A build is not browser verification.
-5. Run one production `yarn build` after the selected ticket or agreed batch is complete. Allow approximately 8 minutes and wait for actual exit status through quiet Nitro packaging; do not mistake an early tool yield for a hang or completion.
+3. After JavaScript/TypeScript/Vue changes, pass `yarn lint`, `yarn typecheck`, and relevant tests. Extend a few comprehensive workflow/contract tests rather than turning each acceptance item into a separate test. Pure unreachable-code deletions do not need invented behavior tests. Run the integrated `yarn test` for a completed multi-area batch.
+4. Match browser checks to the affected behavior: keyboard navigation, direct URLs, Back/Forward, dirty guards, and failure recovery where applicable. Cover desktop/mobile controls when both are affected; check light/dark themes when presentation changes warrant it. A build is not browser verification.
+5. Use one final production `yarn build` for an agreed implementation batch, or for a standalone change when packaging/rendering risk warrants it; do not rebuild after every small ticket. Allow approximately 8 minutes and wait for actual exit status through quiet Nitro packaging; do not mistake an early tool yield for a hang or completion.
 6. Coordinate a single API test runner: suites share port 4181. Poll yielded command sessions to completion. Do not run competing API launchers or treat a cross-server result as a valid test verdict.
 7. Review the final diff against acceptance criteria, correct gaps, and record actual checks, limitations, and commit when committed. Commit or merge according to the current user instruction; no historical per-ticket branch workflow is required. Rollback is a code revert.
 
@@ -138,53 +143,41 @@ The signed-URL roadmap is **unresolved**. A future remote storage provider does 
 
 **Acceptance:** Exact public keys, exclusion of private fields, unchanged private results, date/null/source-name handling, ordering, missing slug, and disabled section. Run `test/api/api.campaign-public-access.test.ts`, `test/api/api.quest-routes.test.ts`, and `test/nuxt/campaign-quests-page.test.ts`. No payload expansion or endpoint removal.
 
-## CJ-10 — Make the router own campaign selection
-
-**Evidence:** `useCampaignSelector` mirrors the route in a selected-ID ref, three watches, and a mount gate. A canceled navigation can leave the selection ahead of the route; an empty/loading list can indirectly initiate navigation.
-
-**Scope:** Derive selection from the route. Only user selection invokes the existing `resolveCampaignSelectorRoute` and router. Remove synchronization watches/mount gate. A missing route ID in the fetched options must remain intelligible without pretending another campaign is selected.
-
-**Deliberate correction:** Empty, loading, or failed lists no longer redirect on their own. Canceled navigation leaves the actual route selected. Review this behavior explicitly and separately from mechanical cleanup.
-
-**Files:** `app/composables/useCampaignSelector.ts` and its desktop/mobile bindings in `app/components/AppHeader.vue`. Preserve the route resolver and existing guards. No API change.
-
-**Acceptance:** Successful/canceled navigation, Back/Forward, delayed/empty/error lists, absent option, same-target selection, and desktop/mobile synchronization. Retain `test/unit/campaign-selector-route.test.ts`, add focused navigation coverage, and exercise dirty-editor exits in the browser. Can follow the session batch; no hard dependency on other tickets.
-
 ## CJ-11 — Narrow encounter reads where the result stays simple
 
-**Disposition:** Conditional and lower priority. Profiling may establish urgency or a measurable gain; it is not required to establish that unused relations are loaded. Do not claim a speedup without measurement.
+**Disposition:** Deleting the unused session include is ready. Broader query narrowing is conditional and lower priority. Profiling may establish urgency or a measurable gain; it is not required to establish that unused relations are loaded. Do not claim a speedup without measurement.
 
-**Evidence:** `getEncounterWithAccess` in `server/services/encounter/encounter-shared.ts` loads combatants, ordered event history, and session for many mutations. Some callers then query relations again. The unused runtime-board consumer is already removed.
+**Evidence:** `getEncounterWithAccess` in `server/services/encounter/encounter-shared.ts` loads combatants, ordered event history, and session. No remaining caller consumes the included session relation. Some callers do need combatants/history; others query relations again. The unused runtime-board consumer is already removed.
 
-**Scope:** Preserve the permission-scoped lookup while loading relations explicitly at consumers that need them. Remove redundant reads, not required post-write reads. No boolean-mode loader or generic query framework. Defer if the replacement adds substantial branching or scattered query machinery.
+**Scope:** Remove the unused session include without changing lookup ownership. Separately evaluate narrowing combatants/history reads while preserving the permission-scoped lookup and explicit loading at consumers that need those relations. Remove redundant reads, not required post-write reads. No boolean-mode loader or generic query framework. Defer the broader changes if they add substantial branching or scattered query machinery.
 
 **Caller inventory to recheck:** `encounter.service.ts`: get/detail, combatant list/create/update/delete, event list, notes. `encounter-runtime.service.ts`: lifecycle transitions, initiative roll/reorder, turn movement/selection, damage/heal, and condition create/update/delete. `encounter-summary.service.ts`: summary. Preserve all existing ordering and permission results.
 
-**Acceptance:** Unchanged detail/summary, missing/denied access, initiative/turns, HP, conditions, and notes. Focused query assertions should show mutations do not load unused history and list operations avoid duplicate reads. Run `test/api/api.encounter-routes.test.ts`, `test/nuxt/encounter-detail-page.test.ts`, and `test/unit/encounter-summary.test.ts`. Keep URLs/payloads unchanged. No dependency on CJ-20 endpoint consolidation, which is no longer planned here.
+**Acceptance:** Unchanged detail/summary, missing/denied access, initiative/turns, HP, conditions, and notes. For broader query changes, verify unused history and duplicate reads are removed from the affected operations without adding a separate test for each query shape. Run `test/api/api.encounter-routes.test.ts`, `test/nuxt/encounter-detail-page.test.ts`, and `test/unit/encounter-summary.test.ts` as relevant to the selected scope. Keep URLs/payloads unchanged. No dependency on CJ-20 endpoint consolidation, which is no longer planned here.
 
 ## CJ-12 — Converge playback locally if URL endpoints remain
 
 **Disposition:** Coordinate with CJ-22 before implementation. If endpoints remain, execute this ticket after CJ-05/06. If endpoint removal is chosen, incorporate this work into CJ-22 and mark CJ-12 satisfied by that change rather than implementing it twice.
 
-**Evidence:** `useSessionRecordings` and `useSessionRecap` duplicate `playSource` calls for cached/fetched URLs. Cached-path player failures bypass the common error path; recap identity can change during URL retrieval.
+**Evidence:** `useSessionRecordings` and `useSessionRecap` duplicate `playSource` calls for cached/fetched URLs. The cached call sits outside the composable's catch, but `useMediaPlayer.playSource` normally catches media-play failures and reports them through player state; moving the call into a catch alone does not fix those failures. Recap identity can change during URL retrieval, including replacement of the artifact while the recap ID stays the same.
 
-**Scope when retaining endpoints:** Resolve cached-or-fetched URL once, capture media identity before awaits, and call the existing player under common error handling. Preserve meaningful busy guards, caches, progress IDs, audio/video behavior, and drawer presentation. Do not add a generic media controller.
+**Scope when retaining endpoints:** Resolve cached-or-fetched URL once, capture media identity including `artifactId` before awaits, and call the existing player once. Use common handling for URL-fetch failures and actual thrown errors; preserve and verify the player's own media-error reporting. Retain meaningful busy guards, caches, progress IDs, audio/video behavior, and drawer presentation. Do not add a generic media controller.
 
-**Files:** `app/composables/useSessionRecordings.ts` and `useSessionRecap.ts`; inspect workspace/panel contracts when validating state. URL-presence indicators must not be confused with proof of active playback; if changed, derive them from the existing player rather than adding another playing-state owner.
+**Files:** `app/composables/useSessionRecordings.ts`, `useSessionRecap.ts`, and `shared/types/session-workflow.ts` for artifact identity already present in responses; inspect workspace/panel contracts and `useMediaPlayer`/`GlobalMediaPlayer` when validating state. URL-presence indicators must not be confused with proof of active playback; if changed, derive them from the existing player rather than adding another playing-state owner.
 
-**Acceptance:** Cached/fresh/repeated playback, fetch rejection, player rejection/retry, concurrent clicks, and media replacement/kind changes during awaits. Run `test/nuxt/session-recap-playback.test.ts`, `session-delete-recovery.test.ts`, and recording playback coverage. No API change on the endpoint-retention path.
+**Acceptance:** Cached/fresh/repeated playback, fetch rejection, real player-state errors/retry, concurrent clicks, and media replacement/kind changes during awaits, including a new artifact under the same recap ID. Extend existing playback workflows instead of relying only on a mocked rejecting `playSource`. Run `test/nuxt/session-recap-playback.test.ts`, `session-delete-recovery.test.ts`, and recording playback coverage. No API change on the endpoint-retention path.
 
 ## CJ-20 — Replace hand-parsed encounter actions with schemas
 
 **Current progress:** Encounter PATCH uses `encounterPatchSchema` for lifecycle actions or ordinary field updates. Initiative and turn PATCH routes use `encounterInitiativeSchema` and `encounterTurnSchema`. These conversions are already implemented; do not repeat them.
 
-**Remaining scope:** Keep the existing endpoints and preserve authorization and service dispatch. The legacy single-combatant PATCH still recognizes damage/heal operations manually and validates ordinary edits with `encounterCombatantUpdateSchema`. Any schema conversion must preserve or explicitly review its amount coercion and other accepted payloads. Do not move routes or rewrite client URLs as part of this ticket. Explicitly test/document changes to unknown actions, malformed bodies, error messages/fields, or parsing order.
+**Remaining scope:** Keep the existing endpoints and preserve authorization and service dispatch. The legacy single-combatant PATCH still recognizes damage/heal operations manually and validates ordinary edits with `encounterCombatantUpdateSchema`. It remains an active compatibility endpoint, including the `encounter_combatant_update` MCP tool in `server/services/mcp.service.ts`; do not treat it as dead code. Any schema conversion must preserve or explicitly review its amount coercion and other accepted payloads. Do not move routes or rewrite client URLs as part of this ticket. Explicitly test/document changes to unknown actions, malformed bodies, error messages/fields, or parsing order.
 
 **Separate amount step:** Combatant damage/heal currently uses `Number(rawBody.amount)`; existing shared amount schemas are strict numbers. Characterize numeric strings, booleans, missing/null values, fractions, and bounds before substituting validation. Preserve accepted coercion deliberately or document/test a reviewed tightening. This compatibility decision must not be hidden inside action-schema cleanup.
 
 **Files:** `server/api/encounters/[encounterId]/index.patch.ts`, `initiative/index.patch.ts`, `turn/index.patch.ts`, `combatants/[combatantId].patch.ts`, and `shared/schemas/encounter.ts` as needed. Update OpenAPI for validation changes. Endpoint consolidation is outside scope and would need a separate concrete benefit assessment.
 
-**Acceptance:** Lifecycle actions, ordinary edits, initiative roll/reorder, advance/rewind/set-active, damage/heal, invalid actions/payloads, coercion decisions, and access checks. Run `test/api/api.encounter-routes.test.ts`, `test/nuxt/encounter-detail-page.test.ts`, and focused schema tests.
+**Acceptance:** Preserve existing lifecycle, ordinary-edit, initiative, and turn coverage; extend the damage/heal workflow for validation, coercion decisions, access checks, and MCP compatibility. Run `test/api/api.encounter-routes.test.ts`, `test/nuxt/encounter-detail-page.test.ts`, and relevant MCP/schema coverage without duplicating already-covered actions.
 
 ## CJ-21 — Share common map work without private glossary enrichment
 
@@ -192,25 +185,25 @@ The signed-URL roadmap is **unresolved**. A future remote storage provider does 
 
 **Evidence:** Public and private map viewers duplicate manifest/coordinate parsing and feature projection. `MapService.getViewer` also queries glossary links/entries and computes private matching information that the public path does not need. Public routes resolve slugs/primary maps; private service methods use map IDs.
 
-**Scope:** Share a small common map projection/parsing function and appropriate SVG retrieval in the existing map domain. Keep private glossary enrichment on the private path. Resolve public slug/primary identity within the authorized campaign before reuse, preserving missing-map/missing-SVG handling. Reuse existing SVG service logic only where doing so avoids duplicated work rather than adding avoidable lookups.
+**Scope:** Evaluate a small common map projection/parsing function in the existing map domain. Keep private glossary enrichment on the private path. SVG retrieval reuse is optional: the current retrieval is small, and a wrapper or extra identity lookup may cost more than it removes. If sharing it is worthwhile, resolve public slug/primary identity within the authorized campaign and preserve missing-map/missing-SVG handling.
 
 **Boundaries:** Keep `resolvePublicAccess(publicSlug, 'maps')`, explicit public fields, existing feature-property semantics, sorting, bounds/default layers, and public glossary-indicator behavior. Do not introduce public requests to private glossary queries, rest-spread private DTOs, or a generic loader with modes. Sharing code is optional if it fails the complexity test.
 
 **Files:** `server/services/campaign-public-access.service.ts`, `server/services/map.service.ts`, and a small existing-domain utility if warranted. Private/public map routes retain URL and payload contracts.
 
-**Acceptance:** Exact public/private map shapes, no additional glossary data or queries on public reads, slug/primary selection, disabled/missing public access, coordinate fallbacks, feature order/properties, SVG bytes/content type/filename, and missing-map/missing-file errors. Run public-access API coverage, `test/nuxt/map-viewer.test.ts`, and focused map parsing/SVG coverage where existing tests are insufficient.
+**Acceptance:** Exact public/private map shapes, no additional glossary data or queries on public reads, slug/primary selection, disabled/missing public access, coordinate fallbacks, and feature order/properties. If SVG retrieval changes, also preserve bytes/content type/filename and missing-map/missing-file errors. Run public-access API coverage, `test/nuxt/map-viewer.test.ts`, and existing map parsing/SVG coverage relevant to the selected scope; extend only meaningful gaps.
 
 ## CJ-22 — Decide whether to remove private playback-URL endpoints
 
 **Decision required before implementation:** Are browser-facing signed URLs a committed near-term feature? If yes, retain the URL endpoints and implement CJ-12 independently. If no, evaluate removing the present constant-URL lookup and complete CJ-12 with this ticket. A speculative future provider is not, by itself, a reason to preserve the lookup. No roadmap answer is recorded yet.
 
-**Evidence:** Private recording/recap playback-URL routes query access and return `/api/artifacts/:artifactId/stream` with `expiresAt: null`; session DTOs already contain `artifactId`. The stream endpoint performs its own authorization. Current URL caches also drive panel text claiming media is playing.
+**Evidence:** Private recording/recap playback-URL routes query access and return `/api/artifacts/:artifactId/stream` with `expiresAt: null`; the relevant server responses already contain `artifactId`, but several client types omit it. The stream endpoint performs its own authorization. There are six private callers in total, including the two session composables. Current URL caches also drive panel text claiming media is playing. Recap replacement preserves the recap ID while changing its artifact.
 
-**Scope if removal is chosen:** Build the artifact stream URL from existing data, delete the two private URL routes and OpenAPI entries, and remove obsolete fetch/cache/reset plumbing. Converge playback/error handling as in CJ-12. Use existing player identity/state for playback indicators; keep only state needed for actual asynchronous player work. A shared URL builder is justified by current reuse, not as a speculative signed-URL framework.
+**Scope if removal is chosen:** Update all six private callers to build the artifact stream URL from existing data, add the omitted artifact identity to their client types, then delete the two private URL routes and OpenAPI entries and obsolete fetch/cache/reset plumbing. Converge playback/error handling as in CJ-12. Distinguish a changed artifact from the same recap's progress ID when guarding awaits, reusing a loaded source, and showing playback indicators. Use existing player identity/state; keep only state needed for actual asynchronous player work. A shared URL builder is justified by current reuse, not as a speculative signed-URL framework.
 
-**Files:** `server/api/recordings/[recordingId]/playback/url/index.get.ts`, `server/api/recaps/[recapId]/playback/url/index.get.ts`, both session playback composables, affected panel/view-model bindings, tests, and OpenAPI. The public recap playback-URL endpoint is outside this scope.
+**Files:** The two private playback-URL routes; all six callers: `app/composables/useSessionRecordings.ts`, `useSessionRecap.ts`, `useCampaignRecaps.ts`, and the campaign `recordings/[recordingId].vue`, `documents/[documentId].vue`, and `watch.vue` pages. Include `shared/types/session-workflow.ts`, `shared/types/campaign-overview.ts`, the document page's recording type, and `useRecapWatch`/`CampaignRecapWatch` contracts as needed, plus affected panel/view-model bindings, player error presentation, tests, and OpenAPI. The public recap playback-URL endpoint and public payload boundary remain outside this scope.
 
-**Acceptance:** Both media kinds, repeat playback, replacement/deletion, stale identity, player failures/retry, accurate indicators, preserved global-player lifetime/progress/drawer behavior, and denied/missing media. Authorization failures move from the removed lookup to stream playback; verify understandable failure handling there. Confirm retired-route behavior and no remaining private URL callers; adapt recap API and session playback/deletion tests. Do not run CJ-12 separately first if this removal path is selected.
+**Acceptance:** Cover the six private workflows, both media kinds, repeat playback, replacement/deletion, stale artifact identity, accurate indicators, and preserved global-player lifetime/progress/drawer behavior. Authorization and missing-media failures move from the lookup to the stream: verify real player-state errors and visible retry guidance for audio as well as video, rather than only mocking a rejecting `playSource`. Confirm retired-route behavior and no remaining private URL callers; extend existing recap API, watch/playlist, and session playback/deletion tests as needed. Do not run CJ-12 separately first if this removal path is selected.
 
 ## Outside the current scope
 
