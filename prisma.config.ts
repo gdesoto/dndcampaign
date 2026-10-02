@@ -1,4 +1,4 @@
-import { defineConfig, env } from 'prisma/config'
+import { defineConfig } from 'prisma/config'
 import 'dotenv/config'
 import path from 'node:path'
 
@@ -20,6 +20,8 @@ const normalizeDatasourceUrl = (url: string) => {
   return `file:${resolvedPath.replace(/\\/g, '/')}`
 }
 
+const databaseUrl = process.env.DATABASE_URL
+
 export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {
@@ -27,6 +29,7 @@ export default defineConfig({
     seed: 'tsx ./prisma/seed.ts',
   },
   datasource: {
-    url: normalizeDatasourceUrl(env('DATABASE_URL')),
+    // Client generation needs only the schema; database commands require a URL.
+    url: databaseUrl ? normalizeDatasourceUrl(databaseUrl) : undefined,
   },
 })

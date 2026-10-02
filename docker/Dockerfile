@@ -5,6 +5,8 @@ WORKDIR /app
 FROM base AS deps
 ENV NODE_ENV=development
 COPY package.json yarn.lock ./
+COPY prisma.config.ts ./
+COPY prisma/schema.prisma ./prisma/schema.prisma
 RUN corepack enable \
   && yarn install --frozen-lockfile
 
@@ -14,7 +16,6 @@ ARG DATABASE_URL=file:/tmp/prisma-build.db
 ENV DATABASE_URL=${DATABASE_URL}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npx prisma generate
 RUN yarn build
 
 FROM base AS runtime

@@ -4,6 +4,7 @@
 coverage
 dev_plan
 node_modules
+prisma/generated
 storage
 test
 .env

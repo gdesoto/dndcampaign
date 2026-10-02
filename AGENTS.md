@@ -9,7 +9,7 @@ DND Campaign (DM Vault) is a Nuxt 4 web app for running tabletop campaigns: camp
 - `app/` — pages, components, composables, layouts. No `stores/` directory; state lives in composables.
 - `server/api/` — thin route handlers. `server/services/` — business logic. `server/utils/` — auth, validation, http, multipart helpers. `server/error-handler.ts` — API error envelope.
 - `shared/` — Zod schemas, types, and utilities used by both sides.
-- `prisma/` — schema, migrations, generated client. The dev database is `storage/db/dev.db` (`DATABASE_URL` in `.env`).
+- `prisma/` — schema, migrations, ignored generated client. Installation and builds generate the client. The dev database is `storage/db/dev.db` (`DATABASE_URL` in `.env`).
 - `storage/` — local files (git-ignored).
 - `public/openapi.json` — hand-maintained API contract.
 
@@ -22,7 +22,7 @@ DND Campaign (DM Vault) is a Nuxt 4 web app for running tabletop campaigns: camp
 ## Commands
 - `yarn dev`, `yarn build`, `yarn lint`, `yarn lint:fix`, `yarn typecheck`
 - Tests: `yarn test` (all three Vitest projects), `yarn test:unit`, `yarn test:api` (real dev server + SQLite), `yarn test:nuxt` (components, Happy DOM), `yarn test:coverage`, `yarn test:e2e` (Playwright)
-- Database: `yarn db:migrate:dev`, `yarn db:migrate:deploy`, `yarn db:migrate:status`, `yarn db:seed`; `npx prisma generate` after schema changes
+- Database: `yarn db:generate`, `yarn db:migrate:dev`, `yarn db:migrate:deploy`, `yarn db:migrate:status`, `yarn db:seed`. Development migrations regenerate the client; use `yarn db:generate` after other schema edits. Generation needs no database URL; database commands require `DATABASE_URL`.
 
 ## Backend conventions
 - Handlers in `server/api/` do validation, permission checks, and response shaping only. Business logic belongs in `server/services/`. Use `#server/...` and `#shared/...` aliases in server code.
