@@ -153,13 +153,16 @@ const filteredQuests = computed(() => {
   })
 })
 
-const primaryQuests = computed(() =>
-  filteredQuests.value.filter((quest) => quest.status === 'ACTIVE' || quest.status === 'ON_HOLD')
-)
-
-const closedQuests = computed(() =>
-  filteredQuests.value.filter((quest) => quest.status === 'COMPLETED' || quest.status === 'FAILED')
-)
+const questGroups = computed(() => [
+  {
+    title: 'Active and on hold quests',
+    quests: filteredQuests.value.filter((quest) => quest.status === 'ACTIVE' || quest.status === 'ON_HOLD'),
+  },
+  {
+    title: 'Completed and failed quests',
+    quests: filteredQuests.value.filter((quest) => quest.status === 'COMPLETED' || quest.status === 'FAILED'),
+  },
+].filter((group) => group.quests.length))
 
 const npcOptions = computed(() =>
   (npcEntries.value || []).map((npc) => ({
@@ -466,38 +469,14 @@ const updateStatus = async (quest: QuestItem, status: QuestStatus) => {
         </template>
 
         <div v-if="quests?.length" class="space-y-6">
-          <section v-if="primaryQuests.length" class="space-y-3">
+          <section v-for="group in questGroups" :key="group.title" class="space-y-3">
             <div class="flex items-center justify-between">
-              <h2 class=" type-section">Active and on hold quests</h2>
-              <span class="text-xs text-muted">{{ primaryQuests.length }} shown</span>
+              <h2 class=" type-section">{{ group.title }}</h2>
+              <span class="text-xs text-muted">{{ group.quests.length }} shown</span>
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
               <CampaignQuestCard
-                v-for="quest in primaryQuests"
-                :key="quest.id"
-                :quest="quest"
-                :delete-action="() => deleteQuest(quest)"
-                :can-write-content="canWriteContent"
-                :status-options="statusOptions"
-                :status-label-map="statusLabelMap"
-                :type-label-map="typeLabelMap"
-                :track-label-map="trackLabelMap"
-                :get-source-label="getSourceLabel"
-                :get-expiration-label="getExpirationLabel"
-                @edit="(quest) => openEdit(quest as QuestItem)"
-                @update-status="(quest, status) => updateStatus(quest as QuestItem, status as QuestStatus)"
-              />
-            </div>
-          </section>
-
-          <section v-if="closedQuests.length" class="space-y-3">
-            <div class="flex items-center justify-between">
-              <h2 class=" type-section">Completed and failed quests</h2>
-              <span class="text-xs text-muted">{{ closedQuests.length }} shown</span>
-            </div>
-            <div class="grid gap-4 sm:grid-cols-2">
-              <CampaignQuestCard
-                v-for="quest in closedQuests"
+                v-for="quest in group.quests"
                 :key="quest.id"
                 :quest="quest"
                 :delete-action="() => deleteQuest(quest)"

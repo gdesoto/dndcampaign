@@ -1,6 +1,6 @@
 # Code simplification plan
 
-Updated: 2026-10-01. Historical validation baseline: `cd0ae54` on `master`; later source changes are noted below.
+Updated: 2026-10-02. Historical validation baseline: `cd0ae54` on `master`; later source changes are noted below.
 
 ## Goal and constraints
 
@@ -15,7 +15,7 @@ Reduce duplicated decisions, unnecessary operations, and independently maintaine
 
 ## Completed work
 
-The following table records all 18 completed tickets. Detailed completion and validation records follow. Only CJ-08, CJ-09, CJ-11, CJ-20, and CJ-21 remain in the open queue; completed tickets do not need to be repeated or reconsidered as pending dependencies.
+The following table records all 19 completed tickets. Detailed completion and validation records follow. Only CJ-09, CJ-11, CJ-20, and CJ-21 remain in the open queue; completed tickets do not need to be repeated or reconsidered as pending dependencies.
 
 | Ticket | Commit | Result |
 | --- | --- | --- |
@@ -26,6 +26,7 @@ The following table records all 18 completed tickets. Detailed completion and va
 | CJ-05 | `a2935f0` | Transcript creation uses one empty POST only when missing; removed the mirrored draft and unused update branch. |
 | CJ-06 | `a2935f0` | Session controls use native destinations; removed routing-event forwarding while preserving workspace ownership and dirty guards. |
 | CJ-07 | `a2935f0` | Dungeon reads, exports, and preview share the existing player-safe projection. |
+| CJ-08 | This commit | Two local quest-group descriptors share one section/card template, preserving group order, card actions, filtering, and calendar expiration labels. |
 | CJ-10 | `2d2a875` | Campaign selection derives from the route; removed duplicated selection state and synchronization watchers. |
 | CJ-12 | `b4fa8b6` | Playback uses the existing player's error/retry and source-identity handling; indicators reflect actual playback. |
 | CJ-13 | `2a6c78b` | Removed unused encounter runtime-board method and orphan types. |
@@ -56,7 +57,7 @@ CJ-17 also received desktop/mobile, light/dark browser verification with local w
 
 ### 2026-10-01 dead-code cleanup (complete, `e26dcdb`)
 
-Removed the verified orphan encounter component, unused server methods and shared declarations, ignored component props and caller bindings, unreachable quest branches, unused global styles, and redundant direct devtools dependency. Updated the seed character to the current sheet format; existing character records remain unchanged. CJ-08 and CJ-20 still have the remaining work described below.
+Removed the verified orphan encounter component, unused server methods and shared declarations, ignored component props and caller bindings, unreachable quest branches, unused global styles, and redundant direct devtools dependency. Updated the seed character to the current sheet format; existing character records remain unchanged. CJ-08's remaining group rendering was completed on 2026-10-02; CJ-20 still has the work described below.
 
 Validation passed: `yarn lint`, `yarn typecheck`, `yarn test` (82 files / 293 tests), and `yarn build` (421.66s). The initial sandboxed build failed on a parent-directory metadata lookup; the permission-enabled retry succeeded. Tests exited successfully with a Vite shutdown warning, and dependency/bundler warnings remain. Offline installation succeeded with the existing frozen lockfile. Browser checks covered desktop/mobile light/dark themes, quest creation/groups/empty/no-matches states and keyboard focus, campaign activity, the corrected seed character and editor level, and session status-card/transcript-editor/summary navigation. The isolated browser database was removed afterward. Logs and screenshots are under `storage/dead-code-*`.
 
@@ -90,19 +91,24 @@ Test cleanup removed a redundant video MIME case, duplicate status assertions, s
 
 Follow-up validation passed: `yarn lint`, `yarn typecheck`, `yarn test` (86 files / 310 tests), and final `yarn build` (396.45s). Independent review's play-token settlement finding was corrected before these final checks; the earlier build was intentionally stopped. Browser checks covered mobile audio failure/Retry, audio/video switching, drawer continuity, volume/speed, recording indicators, same-source watch continuity, public watch startup/playback, and transcript segment start/end. The isolated server, database, and media were cleaned up. Existing dependency warnings remain; logs and screenshots are under `storage/cj-playback-cleanup-*`.
 
+### 2026-10-02 CJ-08 — Quest group rendering (complete)
+
+The private quests page now derives two local group descriptors and renders one section/card template. Empty groups are omitted, active/on-hold quests remain before completed/failed quests, and each group preserves the API's quest order. Card bindings, permissions, handlers, confirmations, forms, expiration formatting, and `SharedResourceState` remain in place. No new component, composable, API change, or database migration. Application code is net 21 lines smaller. The earlier unused-prop and unreachable-branch cleanup remains complete.
+
+Extended the existing page workflow test to cover all four statuses, group/item order and counts, editing from both groups, status changes between groups, omission of an empty group after filtering, and reader permissions. Validation passed: `yarn lint`, `yarn typecheck`, and the quest page/form-schema suites (2 files / 7 tests). Browser checks against an isolated seeded database covered desktop and mobile, light/dark themes, keyboard status changes and editing, closed-group edit/save, mobile creation, no-matches/clear-filter recovery, calendar expiration labels, delete-confirmation cancellation/focus restoration, and reader presentation in both groups. No browser console errors were observed. The temporary server and database were cleaned up; logs and screenshots are under `storage/cj-08-*`. A full suite and production build were not run for this bounded template refactor.
+
 ## Open queue and sequencing
 
 | Ticket | Disposition | Scope |
 | --- | --- | --- |
-| CJ-08 | Partially complete | Unused QuestCard props and unreachable empty branches removed; duplicate group rendering remains. |
 | CJ-09 | Conditional; narrowed | Quest listing reuse only, subject to a clear simplification with explicit public fields. |
 | CJ-11 | Small deletion ready; broader work conditional | Remove the unused session include; narrow other encounter reads only when query ownership stays simple. |
 | CJ-20 | Partially complete | Encounter, initiative, and turn actions use schemas; legacy combatant amount parsing remains. |
 | CJ-21 | Conditional; narrowed | Share common map projection/parsing without private glossary enrichment; SVG reuse is optional. |
 
-With CJ-05/06/07/10/12/22 complete, CJ-08 and the unused session include in CJ-11 are the next straightforward deletions. CJ-20 needs deliberate characterization of the legacy amount coercion before implementation.
+With CJ-05/06/07/08/10/12/22 complete, the unused session include in CJ-11 is the next straightforward deletion. CJ-20 needs deliberate characterization of the legacy amount coercion before implementation.
 
-CJ-08 and CJ-20 can run independently. These priorities are not hard dependencies. CJ-09, broader CJ-11 query changes, and CJ-21 are not mandatory cleanup: defer them if the proposed implementation adds more machinery than it removes. CJ-11's unused session include can be deleted directly. Profiling can inform broader query-work priority, but is not required to establish that a query loads unused relations.
+These priorities are not hard dependencies. CJ-09, broader CJ-11 query changes, and CJ-21 are not mandatory cleanup: defer them if the proposed implementation adds more machinery than it removes. CJ-11's unused session include can be deleted directly. Profiling can inform broader query-work priority, but is not required to establish that a query loads unused relations.
 
 ## Execution and completion protocol
 
@@ -113,16 +119,6 @@ CJ-08 and CJ-20 can run independently. These priorities are not hard dependencie
 5. Use one final production `yarn build` for an agreed implementation batch, or for a standalone change when packaging/rendering risk warrants it; do not rebuild after every small ticket. Allow approximately 8 minutes and wait for actual exit status through quiet Nitro packaging; do not mistake an early tool yield for a hang or completion.
 6. Coordinate a single API test runner: suites share port 4181. Poll yielded command sessions to completion. Do not run competing API launchers or treat a cross-server result as a valid test verdict.
 7. Review the final diff against acceptance criteria, correct gaps, and record actual checks, limitations, and commit when committed. Commit or merge according to the current user instruction; no historical per-ticket branch workflow is required. Rollback is a code revert.
-
-## CJ-08 — Consolidate duplicate quest group rendering
-
-**Completed cleanup (2026-10-01):** Removed unused `typeBadgeColor`/`trackBadgeColor` props, parent helpers/bindings, and unreachable group-empty branches. The real empty/no-matches handling remains in `SharedResourceState`.
-
-**Remaining scope:** The private quests page still repeats card wiring for two groups. Use two small group descriptors and one section/card template, preserving group order. Retain real loading, empty, and no-matches behavior, permissions, handlers, confirmations, drafts, and calendar-sensitive expiration formatting.
-
-**Files:** `app/components/campaign/QuestCard.vue` and `app/pages/campaigns/[campaignId]/quests.vue` only. Cross-page label centralization and a configurable card framework are outside this ticket.
-
-**Acceptance:** Both groups, ordering, reader actions, expiration labels, create/edit flows, and existing state handling. Run `test/nuxt/campaign-quests-page.test.ts`, `test/nuxt/quest-form-schema.test.ts`, and mobile/keyboard checks. No API change.
 
 ## CJ-09 — Evaluate quest listing reuse with explicit public fields
 

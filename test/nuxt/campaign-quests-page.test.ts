@@ -1,6 +1,6 @@
-import { config } from '@vue/test-utils'
+import { config, flushPromises } from '@vue/test-utils'
 import { actionMenuStub } from '../helpers/action-menu'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import QuestsPage from '../../app/pages/campaigns/[campaignId]/quests.vue'
@@ -8,6 +8,7 @@ import { questFormSchema } from '../../app/utils/quest-form-schema'
 
 const mockRequest = vi.fn()
 const mockRefresh = vi.fn(async () => undefined)
+const canWriteContent = ref(true)
 const mockCalendarConfig = {
   id: 'calendar-1',
   campaignId: 'campaign-1',
@@ -88,7 +89,7 @@ vi.mock('~/composables/useCampaignCalendar', () => ({
 vi.mock('~/composables/useCampaignPageContext', () => ({
   useCampaignPageContext: () => ({
     campaignId: computed(() => 'campaign-1'),
-    canWriteContent: computed(() => true),
+    canWriteContent,
     request: mockRequest,
   }),
 }))
@@ -96,10 +97,17 @@ vi.mock('~/composables/useCampaignPageContext', () => ({
 config.global.stubs.SharedActionMenu = actionMenuStub
 
 describe('Campaign quests page', () => {
+  const originalQuests = questRecords.value.slice()
+
+  afterEach(() => {
+    questRecords.value = originalQuests.slice()
+    canWriteContent.value = true
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
 
-    mockRequest.mockImplementation(async (path: string, options?: { method?: string; query?: { type?: string } }) => {
+    mockRequest.mockImplementation(async (path: string, options?: { method?: string; query?: { type?: string }; body?: { status?: string } }) => {
       if (path === '/api/campaigns/campaign-1/quests' && (!options?.method || options.method === 'GET')) {
         return questRecords.value
       }
@@ -112,11 +120,21 @@ describe('Campaign quests page', () => {
         return characterLinks.value
       }
 
+      if (path.startsWith('/api/quests/') && options?.method === 'PATCH' && options.body?.status) {
+        const quest = questRecords.value.find((quest) => path === `/api/quests/${quest.id}`)
+        if (quest) quest.status = options.body.status
+      }
+
       return null
     })
   })
 
-  it('renders quest category, track, source, reward, and expiration details', async () => {
+  it('preserves grouped quest order, details, edit/status actions, and reader permissions', async () => {
+    questRecords.value.push(
+      { ...originalQuests[0]!, id: 'quest-2', title: 'Pay the ferryman', status: 'COMPLETED' },
+      { ...originalQuests[0]!, id: 'quest-3', title: 'Find the scout', status: 'ON_HOLD' },
+      { ...originalQuests[0]!, id: 'quest-4', title: 'Deliver the letter', status: 'FAILED' },
+    )
     const wrapper = await mountSuspended(QuestsPage, {
       global: {
         provide: {
@@ -212,5 +230,38 @@ describe('Campaign quests page', () => {
     expect(wrapper.text()).toContain('Guildmaster Tovin')
     expect(wrapper.text()).toContain('500 gp and a writ of passage')
     expect(wrapper.text()).toContain('Emberfall 12, Year 2026')
+
+    const sections = wrapper.findAll('section')
+    expect(sections.map((section) => section.find('h2').text())).toEqual([
+      'Active and on hold quests', 'Completed and failed quests',
+    ])
+    expect(sections.map((section) => section.find('span').text())).toEqual(['2 shown', '2 shown'])
+    expect(sections.map((section) => section.findAll('h3').map((title) => title.text()))).toEqual([
+      ['Recover the seal', 'Find the scout'], ['Pay the ferryman', 'Deliver the letter'],
+    ])
+
+    for (const [index, questId] of ['quest-1', 'quest-2'].entries()) {
+      await sections[index]!.findAll('button').find((button) => button.text() === 'Edit')!.trigger('click')
+      expect(modal.props('state').id).toBe(questId)
+    }
+
+    await sections[1]!.find('select').setValue('ACTIVE')
+    await flushPromises()
+    expect(mockRequest).toHaveBeenCalledWith('/api/quests/quest-2', { method: 'PATCH', body: { status: 'ACTIVE' } })
+    expect(mockRefresh).toHaveBeenCalledOnce()
+    expect(wrapper.findAll('section').map((section) => section.findAll('h3').map((title) => title.text()))).toEqual([
+      ['Recover the seal', 'Pay the ferryman', 'Find the scout'], ['Deliver the letter'],
+    ])
+
+    await wrapper.findAll('select')[2]!.setValue('FAILED')
+    expect(wrapper.findAll('section').map((section) => section.find('h2').text())).toEqual(['Completed and failed quests'])
+    expect(wrapper.findAll('h3').map((title) => title.text())).toEqual(['Deliver the letter'])
+
+    canWriteContent.value = false
+    await flushPromises()
+    expect(wrapper.findAll('section select')).toHaveLength(0)
+    expect(wrapper.findAll('section button')).toHaveLength(0)
+    expect(wrapper.find('section').text()).toContain('Failed')
+    wrapper.unmount()
   })
 })
