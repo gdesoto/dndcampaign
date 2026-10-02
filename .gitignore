@@ -28,7 +28,7 @@ logs
 # Test coverage
 coverage/
 
-/app/generated/prisma
+/prisma/generated/
 /prisma/db
 /db
 /dev_plan

@@ -1,0 +1,6 @@
+# Generated Prisma client
+/prisma/generated/
+
+# Bundled skill example applications
+/.agents/plugins/nuxt-ui-guidelines/skills/nuxt-ui-guidelines/assets/example-app/
+/.claude/skills/nuxt-ui-guidelines/assets/example-app/
