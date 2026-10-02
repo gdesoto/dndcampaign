@@ -11,7 +11,6 @@ type TranscriptDoc = {
 const props = defineProps<{
   deleteTranscript?: () => Promise<unknown>
   campaignId: string
-  returnToPath?: string
   canManageTranscript?: boolean
   recordings: RecordingItem[] | null | undefined
   transcriptDoc: TranscriptDoc | null | undefined

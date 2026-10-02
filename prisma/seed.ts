@@ -185,9 +185,14 @@ const main = async () => {
         name: 'Elyra Dawnshield',
         status: 'Level 3 Paladin',
         sheetJson: {
-          level: 3,
-          classes: ['Paladin'],
-          race: 'Half-Elf',
+          basics: {
+            name: 'Elyra Dawnshield',
+            level: 3,
+            alignment: 'Lawful Good',
+          },
+          classes: [{ name: 'Paladin', level: 3 }],
+          race: { name: 'Half-Elf' },
+          background: { name: 'Knight of the Order' },
         },
         summaryJson: {
           level: 3,

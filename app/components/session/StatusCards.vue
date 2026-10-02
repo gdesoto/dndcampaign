@@ -7,8 +7,6 @@ const props = defineProps<{
   summaryStatus: string
   suggestionStatus?: string
   recapStatus: string
-  mode: 'overview' | 'workflow'
-  activeStep: string
 }>()
 
 const emit = defineEmits<{

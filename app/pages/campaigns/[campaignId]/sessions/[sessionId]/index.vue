@@ -11,8 +11,6 @@ const { campaignId, resource, recording, recap, transcript, suggestions, overvie
       :summary-status="overview.summaryStatus"
       :suggestion-status="suggestions.suggestionStatusLabel"
       :recap-status="overview.recapStatus"
-      mode="overview"
-      active-step="recordings"
       @jump-step="navigation.openSessionSection"
     />
 

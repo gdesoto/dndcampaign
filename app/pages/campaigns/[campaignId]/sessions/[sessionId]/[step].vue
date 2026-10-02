@@ -1,8 +1,7 @@
 <script setup lang="ts">
-const { campaignId, sessionId, resource, recording, recap, transcript, summary, suggestions, overview, openPlayer } = useSessionWorkspaceContext()
+const { campaignId, resource, recording, recap, transcript, summary, suggestions, overview, openPlayer } = useSessionWorkspaceContext()
 const route = useRoute()
 const currentStep = computed(() => typeof route.params.step === 'string' ? route.params.step : '')
-const returnToPath = computed(() => `/campaigns/${campaignId.value}/sessions/${sessionId.value}/${currentStep.value}`)
 </script>
 
 <template>
@@ -34,7 +33,6 @@ const returnToPath = computed(() => `/campaigns/${campaignId.value}/sessions/${s
     <div v-else-if="currentStep === 'transcription'" class="space-y-4">
       <SessionTranscriptPanel
         :campaign-id="campaignId"
-        :return-to-path="returnToPath"
         :can-manage-transcript="resource.canWriteContent"
         :recordings="resource.recordings"
         :transcript-doc="resource.transcriptDoc?.id ? { id: resource.transcriptDoc.id } : null"
@@ -67,7 +65,6 @@ const returnToPath = computed(() => `/campaigns/${campaignId.value}/sessions/${s
         :can-edit="resource.canWriteContent"
         :can-generate="resource.canRunSummary"
         :campaign-id="campaignId"
-        :return-to-path="returnToPath"
         :selected-summary-job-id="summary.selectedSummaryJobId"
         :summary-job-options="summary.summaryJobOptions"
         :summary-sending="summary.summarySending"

@@ -25,8 +25,6 @@ describe('SessionStatusCards', () => {
         summaryStatus: 'Available',
         suggestionStatus: 'Ready for review',
         recapStatus: 'Attached',
-        mode: 'workflow',
-        activeStep: 'recordings',
       },
       global: {
         stubs: {

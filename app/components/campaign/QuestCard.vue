@@ -4,7 +4,6 @@ type QuestType = 'CAMPAIGN' | 'GUILD' | 'CHARACTER'
 type QuestTrack = 'MAIN' | 'SIDE'
 type QuestStatus = 'ACTIVE' | 'COMPLETED' | 'FAILED' | 'ON_HOLD'
 type QuestSourceType = 'FREE_TEXT' | 'NPC' | 'CAMPAIGN_CHARACTER'
-type UiColor = 'error' | 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'neutral'
 
 type QuestCardItem = {
   id: string
@@ -45,8 +44,6 @@ const props = defineProps<{
   statusLabelMap: Record<QuestStatus, string>
   typeLabelMap: Record<QuestType, string>
   trackLabelMap: Record<QuestTrack, string>
-  typeBadgeColor: (type: QuestType) => UiColor
-  trackBadgeColor: (track: QuestTrack) => UiColor
   getSourceLabel: (quest: QuestCardItem) => string
   getExpirationLabel: (quest: QuestCardItem) => string | null
 }>()

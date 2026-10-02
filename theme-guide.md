@@ -274,16 +274,6 @@ Nuxt UI's `colorMode` module adds a `.dark` or `.light` class to `<html>` depend
 }
 .dmvault-card:hover::before { opacity: 1; }
 
-/* ── Initiative pulse ring ── */
-@keyframes pulse-ring {
-  0%, 100% { box-shadow: inset 0 0 0 1px var(--ui-border-accented); opacity: 1; }
-  50%       { box-shadow: inset 0 0 0 1px var(--ui-border-accented); opacity: 0.3; }
-}
-.animate-pulse-ring { animation: pulse-ring 2s ease infinite; }
-
-/* ── Spell slot pip — filled state differs per mode ── */
-.dark  .pip-filled { background: var(--color-primary-700); border-color: var(--color-primary-700); }
-.light .pip-filled { background: var(--color-primary-600); border-color: var(--color-primary-500); }
 ```
 
 ---
@@ -1032,7 +1022,7 @@ Encounter lists, loot tables, NPC rosters. Header, row dividers and hover states
   :rows="initiativeOrder"
   :ui="{
     tr: (row) => row.isActive
-      ? 'bg-primary-500/8 border-l-2 border-l-primary-500 animate-pulse-ring'
+      ? 'bg-primary-500/8 border-l-2 border-l-primary-500'
       : 'hover:bg-[var(--ui-bg-accented)] cursor-pointer'
   }"
 />
@@ -1160,7 +1150,7 @@ const tagStyles: Record<string, string> = {
 <UCard
   :ui="{
     root: isActive
-      ? 'border-primary-500 bg-primary-500/8 animate-pulse-ring'
+      ? 'border-primary-500 bg-primary-500/8'
       : 'border-[var(--ui-border)]'
   }"
 />
@@ -1186,13 +1176,13 @@ const tagStyles: Record<string, string> = {
     v-for="(used, i) in spellSlots"
     :key="i"
     class="size-3 rounded-[2px] border transition-all"
-    :class="used ? 'pip-filled' : 'bg-transparent border-[var(--ui-border)] hover:border-[var(--ui-border-accented)]'"
+    :class="used ? 'bg-primary border-primary' : 'bg-transparent border-default hover:border-accented'"
     @click="toggleSlot(i)"
   />
 </div>
 ```
 
-> `pip-filled` is a utility class defined in `main.css` that maps to the correct shade per mode (see §3).
+> Use semantic background and border utilities for filled and empty slots.
 
 ---
 

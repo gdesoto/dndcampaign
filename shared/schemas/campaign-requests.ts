@@ -43,10 +43,6 @@ export const campaignRequestListQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(campaignRequestListMaxPageSize).default(campaignRequestListDefaultPageSize),
 })
 
-export const campaignRequestVoteCreateSchema = z.object({})
-export const campaignRequestVoteDeleteMineSchema = z.object({})
-export const campaignRequestCancelSchema = z.object({})
-
 export type CampaignRequestTypeInput = z.infer<typeof campaignRequestTypeSchema>
 export type CampaignRequestVisibilityInput = z.infer<typeof campaignRequestVisibilitySchema>
 export type CampaignRequestStatusInput = z.infer<typeof campaignRequestStatusSchema>

@@ -485,15 +485,6 @@ export class TranscriptionService {
     return updated
   }
 
-  async loadArtifactContent(artifactId: string) {
-    const artifact = await prisma.artifact.findUnique({ where: { id: artifactId } })
-    if (!artifact) return null
-    const adapter = getStorageAdapter()
-    const { stream } = await adapter.getObject(artifact.storageKey)
-    const buffer = await streamToBuffer(stream)
-    return { artifact, buffer }
-  }
-
   async fetchTranscription(jobId: string) {
     const job = await prisma.transcriptionJob.findUnique({
       where: { id: jobId },

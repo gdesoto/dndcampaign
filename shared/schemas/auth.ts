@@ -32,26 +32,6 @@ export const registerSchema = z.object({
   }),
 })
 
-export const authUserSchema = z.object({
-  id: z.string().uuid(),
-  email: z.string().email(),
-  name: z.string(),
-  systemRole: z.enum(['USER', 'SYSTEM_ADMIN']),
-  avatarUrl: z.string().url().nullable(),
-})
-
-export const registerResponseSchema = z.object({
-  user: authUserSchema,
-})
-
-export const accountProfileResponseSchema = z.object({
-  profile: authUserSchema.extend({
-    isActive: z.boolean(),
-    createdAt: z.string().datetime(),
-    updatedAt: z.string().datetime(),
-  }),
-})
-
 export const accountProfileUpdateSchema = z
   .object({
     name: z.string().trim().min(1).max(120).optional(),
@@ -69,23 +49,6 @@ export const changeEmailSchema = z.object({
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1),
   newPassword: passwordSchema,
-})
-
-export const sessionListItemSchema = z.object({
-  id: z.string(),
-  isCurrent: z.boolean(),
-  userAgent: z.string().nullable(),
-  ipAddress: z.string().nullable(),
-  loggedInAt: z.string().datetime().nullable(),
-  lastSeenAt: z.string().datetime(),
-})
-
-export const accountSessionsResponseSchema = z.object({
-  sessions: z.array(sessionListItemSchema),
-})
-
-export const revokeOtherSessionsResponseSchema = z.object({
-  revokedSessions: z.number().int().nonnegative(),
 })
 
 export type LoginInput = z.infer<typeof loginSchema>

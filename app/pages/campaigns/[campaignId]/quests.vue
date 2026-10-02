@@ -141,14 +141,6 @@ const trackLabelMap: Record<QuestTrack, string> = {
   SIDE: 'Side quest',
 }
 
-const typeBadgeColor = (type: QuestType) => {
-  if (type === 'CAMPAIGN') return 'primary'
-  if (type === 'CHARACTER') return 'warning'
-  return 'secondary'
-}
-
-const trackBadgeColor = (track: QuestTrack) => (track === 'MAIN' ? 'success' : 'neutral')
-
 const filteredQuests = computed(() => {
   const source = quests.value || []
   return source.filter((quest) => {
@@ -479,7 +471,7 @@ const updateStatus = async (quest: QuestItem, status: QuestStatus) => {
               <h2 class=" type-section">Active and on hold quests</h2>
               <span class="text-xs text-muted">{{ primaryQuests.length }} shown</span>
             </div>
-            <div v-if="primaryQuests.length" class="grid gap-4 sm:grid-cols-2">
+            <div class="grid gap-4 sm:grid-cols-2">
               <CampaignQuestCard
                 v-for="quest in primaryQuests"
                 :key="quest.id"
@@ -490,17 +482,12 @@ const updateStatus = async (quest: QuestItem, status: QuestStatus) => {
                 :status-label-map="statusLabelMap"
                 :type-label-map="typeLabelMap"
                 :track-label-map="trackLabelMap"
-                :type-badge-color="typeBadgeColor"
-                :track-badge-color="trackBadgeColor"
                 :get-source-label="getSourceLabel"
                 :get-expiration-label="getExpirationLabel"
                 @edit="(quest) => openEdit(quest as QuestItem)"
                 @update-status="(quest, status) => updateStatus(quest as QuestItem, status as QuestStatus)"
               />
             </div>
-            <UCard v-else>
-              <p class="text-sm text-muted">No active or on-hold quests match the current filters.</p>
-            </UCard>
           </section>
 
           <section v-if="closedQuests.length" class="space-y-3">
@@ -508,7 +495,7 @@ const updateStatus = async (quest: QuestItem, status: QuestStatus) => {
               <h2 class=" type-section">Completed and failed quests</h2>
               <span class="text-xs text-muted">{{ closedQuests.length }} shown</span>
             </div>
-            <div v-if="closedQuests.length" class="grid gap-4 sm:grid-cols-2">
+            <div class="grid gap-4 sm:grid-cols-2">
               <CampaignQuestCard
                 v-for="quest in closedQuests"
                 :key="quest.id"
@@ -519,17 +506,12 @@ const updateStatus = async (quest: QuestItem, status: QuestStatus) => {
                 :status-label-map="statusLabelMap"
                 :type-label-map="typeLabelMap"
                 :track-label-map="trackLabelMap"
-                :type-badge-color="typeBadgeColor"
-                :track-badge-color="trackBadgeColor"
                 :get-source-label="getSourceLabel"
                 :get-expiration-label="getExpirationLabel"
                 @edit="(quest) => openEdit(quest as QuestItem)"
                 @update-status="(quest, status) => updateStatus(quest as QuestItem, status as QuestStatus)"
               />
             </div>
-            <UCard v-else>
-              <p class="text-sm text-muted">No completed or failed quests match the current filters.</p>
-            </UCard>
           </section>
         </div>
       </SharedResourceState>

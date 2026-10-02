@@ -6,8 +6,6 @@ export const summarizeRequestSchema = z.object({
   mode: z.enum(['sync', 'async']).default('async'),
 })
 
-export const summaryJobKindSchema = z.enum(['SUMMARY_GENERATION', 'SUGGESTION_GENERATION'])
-
 export const n8nRequestPayloadSchema = z.object({
   trackingId: z.string().min(1).max(200),
   campaignId: z.string().min(1),
@@ -123,26 +121,3 @@ export type SummaryContent = z.infer<typeof summaryContentSchema>
 export type SummarySuggestions = z.infer<typeof summarySuggestionsSchema>
 export type N8nRequestPayload = z.infer<typeof n8nRequestPayloadSchema>
 export type N8nSuggestionRequestPayload = z.infer<typeof n8nSuggestionRequestPayloadSchema>
-export type SummaryJobKind = z.infer<typeof summaryJobKindSchema>
-
-export type SummaryJobDTO = {
-  id: string
-  status: string
-  mode: string
-  kind: SummaryJobKind
-  trackingId: string
-  promptProfile?: string | null
-  summaryDocumentId?: string | null
-  createdAt: string
-  updatedAt: string
-  meta?: Record<string, unknown> | null
-}
-
-export type SummarySuggestionDTO = {
-  id: string
-  entityType: string
-  action: string
-  status: string
-  match?: Record<string, unknown> | null
-  payload: Record<string, unknown>
-}

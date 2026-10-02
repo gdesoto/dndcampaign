@@ -6,7 +6,6 @@ const props = defineProps<{
   canEdit?: boolean
   canGenerate?: boolean
   campaignId: string
-  returnToPath?: string
   selectedSummaryJobId: string
   summaryJobOptions: Array<{ label: string; value: string }>
   summarySending: boolean

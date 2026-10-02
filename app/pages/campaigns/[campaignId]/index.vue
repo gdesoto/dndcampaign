@@ -113,7 +113,7 @@ const saveCampaign = async () => {
       <template v-if="campaign">
         <CampaignStatusEditor v-model:value="statusDraft" :readonly="!canWriteContent" :saving="isSaving" :busy="isUpdating || recapDeleting" :dirty="statusState.dirty.value" :error="saveError" :updated-at-label="new Date(campaign.updatedAt).toLocaleString()" @save="saveStatus" @discard="statusState.discard()" />
         <SharedResourceState :pending="activityPending" :error="activityError" :has-data="Boolean(activityLogs)" error-message="Unable to load recent activity." @retry="refreshActivity">
-          <CampaignRecentActivity :campaign-id="campaignId" :items="activityItems" />
+          <CampaignRecentActivity :items="activityItems" />
         </SharedResourceState>
       </template>
     </template>

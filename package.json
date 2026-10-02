@@ -41,7 +41,6 @@
     "@prisma/adapter-better-sqlite3": "^7.4.1",
     "@prisma/client": "^7.4.1",
     "@types/pdfkit": "^0.17.5",
-    "@vue/devtools-api": "^8.1.5",
     "busboy": "^1.6.0",
     "maplibre-gl": "^6.9.0",
     "nuxt": "^4.3.1",

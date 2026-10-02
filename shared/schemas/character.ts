@@ -107,21 +107,6 @@ export const characterSheetSchema = z
   })
   .passthrough()
 
-export const characterSummarySchema = z
-  .object({
-    name: z.string(),
-    level: z.number().optional(),
-    classes: z.array(z.string()).optional(),
-    race: z.string().optional(),
-    background: z.string().optional(),
-    alignment: z.string().optional(),
-    hp: z.number().optional(),
-    ac: z.number().optional(),
-    passivePerception: z.number().optional(),
-    portraitUrl: z.string().optional(),
-  })
-  .passthrough()
-
 export const characterCreateSchema = z.object({
   name: z.string().min(2).max(120),
   sheetJson: characterSheetSchema.optional(),

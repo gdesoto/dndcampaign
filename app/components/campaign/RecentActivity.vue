@@ -7,7 +7,6 @@ type ActivityItem = {
 }
 
 const props = defineProps<{
-  campaignId: string
   items: ActivityItem[]
 }>()
 

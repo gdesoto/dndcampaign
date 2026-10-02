@@ -263,10 +263,6 @@ export class DungeonGeneratorService {
     return `dungeon-${Date.now().toString(36)}`
   }
 
-  buildConfigHash(seed: string, config: DungeonGeneratorConfig) {
-    return generateConfigHash(seed, config)
-  }
-
   private generateLayoutPass(seed: string, config: DungeonGeneratorConfig) {
     const rng = passRng(seed, 'layout', generateConfigHash(seed, config))
     const area = config.width * config.height

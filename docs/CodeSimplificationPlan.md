@@ -1,6 +1,6 @@
 # Code simplification plan
 
-Updated: 2026-09-13. Current application baseline: `cd0ae54` on `master`.
+Updated: 2026-10-01. Historical validation baseline: `cd0ae54` on `master`; later source changes are noted below.
 
 ## Goal and constraints
 
@@ -48,6 +48,12 @@ Completed work used scoped Terra implementation and manager review; the initial 
 
 CJ-17 also received desktop/mobile, light/dark browser verification with local webhook fixtures. No external n8n, ElevenLabs, or DnD Beyond call was needed for these checks. Non-blocking dependency bundler/deprecation warnings remained. Completed builds supersede earlier interrupted attempts. Validation counts describe those checkpoints, not promises about subsequent work.
 
+### 2026-10-01 dead-code cleanup
+
+Removed the verified orphan encounter component, unused server methods and shared declarations, ignored component props and caller bindings, unreachable quest branches, unused global styles, and redundant direct devtools dependency. Updated the seed character to the current sheet format; existing character records remain unchanged. CJ-08 and CJ-20 still have the remaining work described below.
+
+Validation passed: `yarn lint`, `yarn typecheck`, `yarn test` (82 files / 293 tests), and `yarn build` (421.66s). The initial sandboxed build failed on a parent-directory metadata lookup; the permission-enabled retry succeeded. Tests exited successfully with a Vite shutdown warning, and dependency/bundler warnings remain. Offline installation succeeded with the existing frozen lockfile. Browser checks covered desktop/mobile light/dark themes, quest creation/groups/empty/no-matches states and keyboard focus, campaign activity, the corrected seed character and editor level, and session status-card/transcript-editor/summary navigation. The isolated browser database was removed afterward. Logs and screenshots are under `storage/dead-code-*`.
+
 ## Open queue and sequencing
 
 | Ticket | Disposition | Scope |
@@ -55,12 +61,12 @@ CJ-17 also received desktop/mobile, light/dark browser verification with local w
 | CJ-05 | Ready | Make session transcript creation creation-only; remove unused mirrored transcript draft. |
 | CJ-06 | Ready after CJ-05 | Replace session navigation event forwarding with native destinations. |
 | CJ-07 | Ready; independent | Share the existing player-safe dungeon projection. |
-| CJ-08 | Ready; narrowed | Remove unused QuestCard props and duplicate group rendering only. |
+| CJ-08 | Partially complete | Unused QuestCard props and unreachable empty branches removed; duplicate group rendering remains. |
 | CJ-09 | Conditional; narrowed | Quest listing reuse only, subject to a clear simplification with explicit public fields. |
 | CJ-10 | Ready; separate review | Make route state own campaign selection; explicitly test navigation behavior changes. |
 | CJ-11 | Conditional; lower priority | Remove unused encounter relation reads when the resulting query ownership stays simple. |
 | CJ-12 | Coordinate with CJ-22 | Converge playback locally if URL endpoints stay; otherwise incorporate into CJ-22. |
-| CJ-20 | Ready; rescoped | Replace hand-parsed actions with schemas on existing endpoints. Treat amount compatibility as a separate step. |
+| CJ-20 | Partially complete | Encounter, initiative, and turn actions use schemas; legacy combatant amount parsing remains. |
 | CJ-21 | Conditional; redesigned | Share common map projection/parsing and SVG retrieval without private glossary enrichment. |
 | CJ-22 | Roadmap decision first | Remove private playback-URL endpoints only after choosing the playback URL strategy. |
 
@@ -94,7 +100,7 @@ The signed-URL roadmap is **unresolved**. A future remote storage provider does 
 
 **Evidence:** `StepLinkButton`, `StatusCards`, `RecordingsPanel`, and `RecapPanel` forward navigation events to `useSessionWorkspaceViewModel.openSessionSection`. `WorkflowTimeline` already uses native links. Routing-only forwarding does not need a separate state owner.
 
-**Scope:** Supply destinations through `to`, retaining tooltip/accessibility presentation. Delete routing-only `open`, `open-step`, `jump-step`, and `openSessionSection` plumbing and confirmed unused props/descriptions. Keep invalid-step correction and `defaultStep` fallback. Preserve parent ownership and dirty exit guards; do not replace action events unrelated to navigation.
+**Scope:** Supply destinations through `to`, retaining tooltip/accessibility presentation. Delete routing-only `open`, `open-step`, `jump-step`, and `openSessionSection` plumbing and confirmed unused descriptions. Unused `StatusCards` mode/active-step and transcript/summary return-path props were removed in the 2026-10-01 cleanup; navigation events and document-editor `returnTo` support remain. Keep invalid-step correction and `defaultStep` fallback. Preserve parent ownership and dirty exit guards; do not replace action events unrelated to navigation.
 
 **Files:** Session `StepLinkButton`, `StatusCards`, `RecordingsPanel`, `RecapPanel`, and `WorkflowTimeline`; workspace view model; session overview/step/parent routes as needed; `docs/SessionWorkspaceOwnership.md`. No API change.
 
@@ -110,11 +116,11 @@ The signed-URL roadmap is **unresolved**. A future remote storage provider does 
 
 **Acceptance:** Secret rooms, incident corridors/doors, attached entities, no input mutation, idempotence, and client/server projection parity. Add focused pure tests; run `test/nuxt/dungeons-pages.test.ts` and export coverage in `test/api/api.dungeon-routes.test.ts`.
 
-## CJ-08 — Remove unused QuestCard props and duplicate group rendering
+## CJ-08 — Consolidate duplicate quest group rendering
 
-**Evidence:** `QuestCard` declares unused `typeBadgeColor`/`trackBadgeColor` callbacks. The private quests page repeats card wiring for two groups and contains empty branches made unreachable by outer nonempty checks.
+**Completed cleanup (2026-10-01):** Removed unused `typeBadgeColor`/`trackBadgeColor` props, parent helpers/bindings, and unreachable group-empty branches. The real empty/no-matches handling remains in `SharedResourceState`.
 
-**Scope:** Remove those props/functions/bindings. Use two small group descriptors and one section/card template, preserving group order and removing unreachable branches. Retain real loading, empty, and no-matches behavior, permissions, handlers, confirmations, drafts, and calendar-sensitive expiration formatting.
+**Remaining scope:** The private quests page still repeats card wiring for two groups. Use two small group descriptors and one section/card template, preserving group order. Retain real loading, empty, and no-matches behavior, permissions, handlers, confirmations, drafts, and calendar-sensitive expiration formatting.
 
 **Files:** `app/components/campaign/QuestCard.vue` and `app/pages/campaigns/[campaignId]/quests.vue` only. Cross-page label centralization and a configurable card framework are outside this ticket.
 
@@ -170,9 +176,9 @@ The signed-URL roadmap is **unresolved**. A future remote storage provider does 
 
 ## CJ-20 — Replace hand-parsed encounter actions with schemas
 
-**Scope:** Keep the existing encounter, initiative, turn, and combatant endpoints. Replace manual action parsing/casts with typed schemas and discriminated action unions where applicable, reusing existing payload schemas. Preserve authorization and service dispatch. Do not move initiative/turn routes or rewrite client URLs as part of this ticket.
+**Current progress:** Encounter PATCH uses `encounterPatchSchema` for lifecycle actions or ordinary field updates. Initiative and turn PATCH routes use `encounterInitiativeSchema` and `encounterTurnSchema`. These conversions are already implemented; do not repeat them.
 
-**Current contract:** The encounter PATCH manually recognizes lifecycle actions and otherwise handles ordinary field updates; it does not already have a complete action union. Preserve ordinary update requests alongside lifecycle actions. Explicitly test/document any change to unknown actions, malformed bodies, error messages/fields, or parsing order rather than silently broadening validation.
+**Remaining scope:** Keep the existing endpoints and preserve authorization and service dispatch. The legacy single-combatant PATCH still recognizes damage/heal operations manually and validates ordinary edits with `encounterCombatantUpdateSchema`. Any schema conversion must preserve or explicitly review its amount coercion and other accepted payloads. Do not move routes or rewrite client URLs as part of this ticket. Explicitly test/document changes to unknown actions, malformed bodies, error messages/fields, or parsing order.
 
 **Separate amount step:** Combatant damage/heal currently uses `Number(rawBody.amount)`; existing shared amount schemas are strict numbers. Characterize numeric strings, booleans, missing/null values, fractions, and bounds before substituting validation. Preserve accepted coercion deliberately or document/test a reviewed tightening. This compatibility decision must not be hidden inside action-schema cleanup.
 
