@@ -11,6 +11,7 @@ export default defineEventHandler(async (event) => {
     where: {
       campaignId,
       scope: 'CAMPAIGN',
+      action: { not: 'API_KEY_WRITE_ATTEMPT' },
     },
     orderBy: { createdAt: 'desc' },
     take: 25,

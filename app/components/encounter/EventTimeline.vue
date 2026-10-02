@@ -32,6 +32,7 @@ const items = computed(() => props.events
     const hpAction = event.eventType === 'HP' ? event.payload?.action : undefined
     return {
       ...event,
+      title: event.summary,
       ...presentation,
       ...(hpAction === 'hp.damage' ? { label: 'Damage', icon: 'i-lucide-heart-crack', color: 'error' as const } : {}),
       ...(hpAction === 'hp.heal' ? { label: 'Healing', icon: 'i-lucide-heart-plus', color: 'success' as const } : {}),
@@ -47,11 +48,11 @@ const items = computed(() => props.events
         <div class="flex flex-wrap items-center gap-2">
           <UDropdownMenu :items="filterItems" :content="{ align: 'end' }">
             <UTooltip text="Filter event types">
-              <UButton icon="i-lucide-list-filter" :color="selectedTypes.length ? 'primary' : 'neutral'" :variant="selectedTypes.length ? 'soft' : 'outline'" aria-label="Filter event types" />
+              <UButton icon="i-lucide-list-filter" size="sm" square :color="selectedTypes.length ? 'primary' : 'neutral'" :variant="selectedTypes.length ? 'soft' : 'ghost'" aria-label="Filter event types" />
             </UTooltip>
           </UDropdownMenu>
           <UTooltip :text="descending ? 'Newest first — show oldest first' : 'Oldest first — show newest first'">
-            <UButton :icon="descending ? 'i-lucide-arrow-down-wide-narrow' : 'i-lucide-arrow-up-wide-narrow'" :aria-label="descending ? 'Show oldest first' : 'Show newest first'" @click="descending = !descending" />
+            <UButton size="sm" square color="neutral" variant="ghost" :icon="descending ? 'i-lucide-arrow-down-wide-narrow' : 'i-lucide-arrow-up-wide-narrow'" :aria-label="descending ? 'Show oldest first' : 'Show newest first'" @click="descending = !descending" />
           </UTooltip>
           <slot name="actions" />
         </div>
@@ -61,14 +62,17 @@ const items = computed(() => props.events
       <UBadge v-for="type in selectedTypes" :key="type" :icon="eventTypes[type].icon" color="neutral" variant="soft">{{ eventTypes[type].label }}</UBadge>
       <UButton size="xs" variant="link" @click="selectedTypes = []">Clear filters</UButton>
     </div>
-    <div v-if="items.length" class="max-h-[36rem] overflow-y-auto pr-3" tabindex="0" role="region" aria-label="Encounter event history">
-      <UTimeline :items="items" size="md">
-        <template #wrapper="{ item }">
-          <div class="mb-1 flex flex-wrap items-center gap-2">
+    <div v-if="items.length" role="region" aria-label="Encounter event history">
+      <UTimeline
+        :items="items"
+        size="sm"
+        :ui="{ wrapper: 'min-w-0 pb-4 group-last:pb-0', title: 'font-normal whitespace-pre-wrap break-words', date: 'mb-1' }"
+      >
+        <template #date="{ item }">
+          <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
             <UBadge :color="item.color" variant="soft" size="sm">{{ item.label }}</UBadge>
             <time :datetime="item.createdAt" class="text-xs tabular-nums text-muted">{{ new Date(item.createdAt).toLocaleString() }}</time>
           </div>
-          <p class="whitespace-pre-wrap break-words text-sm text-highlighted">{{ item.summary }}</p>
         </template>
       </UTimeline>
     </div>

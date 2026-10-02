@@ -6,26 +6,31 @@ type ActivityItem = {
   description: string
 }
 
-defineProps<{
+const props = defineProps<{
   campaignId: string
   items: ActivityItem[]
 }>()
+
+const timelineItems = computed(() => props.items.map(item => ({
+  date: item.date,
+  title: item.description,
+  icon: 'i-lucide-history',
+})))
 </script>
 
 <template>
   <UCard variant="soft">
     <template #header>
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 class=" type-section">Recent activity</h2>
-        </div>
-      </div>
+      <h2 class="type-section">Recent activity</h2>
     </template>
-    <UTimeline v-if="items.length" :items="items" size="xs">
-      <template #indicator><UIcon name="i-lucide-history" class="size-3" aria-hidden="true" /></template>
-      <template #wrapper="{ item }">
-        <p class="text-sm text-default">{{ item.description }}</p>
-        <time :datetime="item.date" class="mt-1 block text-xs tabular-nums text-muted">{{ new Date(item.date).toLocaleString() }}</time>
+    <UTimeline
+      v-if="items.length"
+      :items="timelineItems"
+      size="sm"
+      :ui="{ wrapper: 'min-w-0 pb-4 group-last:pb-0', title: 'font-normal break-words', date: 'mb-1' }"
+    >
+      <template #date="{ item }">
+        <time :datetime="item.date" class="tabular-nums">{{ new Date(item.date).toLocaleString() }}</time>
       </template>
     </UTimeline>
     <p v-else class="text-sm text-muted">No recent activity yet.</p>

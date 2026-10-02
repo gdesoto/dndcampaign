@@ -1472,7 +1472,7 @@
           "campaigns"
         ],
         "summary": "GET /api/campaigns/{campaignId}/activity",
-        "description": "Auto-documented from server route `campaigns/[campaignId]/activity/index.get.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Returns the 25 most recent campaign activity entries, newest first, excluding API-key write-attempt audit records. Uses the standard API envelope `{ data, error }`.",
         "operationId": "get_api_campaigns_campaignId_activity",
         "parameters": [
           {

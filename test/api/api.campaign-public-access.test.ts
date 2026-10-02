@@ -180,6 +180,30 @@ describe('campaign public access', () => {
     await prisma.$disconnect()
   })
 
+  it('keeps write-attempt audit records out of recent campaign activity before limiting results', async () => {
+    const completed = await prisma.activityLog.create({ data: {
+      campaignId, actorUserId: userIds.owner, scope: 'CAMPAIGN',
+      action: 'ENCOUNTER_CREATED', summary: 'Created encounter Moonlit ambush',
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+    } })
+    await prisma.activityLog.createMany({ data: Array.from({ length: 26 }, () => ({
+      campaignId, actorUserId: userIds.owner, scope: 'CAMPAIGN' as const,
+      action: 'API_KEY_WRITE_ATTEMPT', summary: 'PATCH /api/encounters/example/combatants/example',
+      createdAt: new Date('2026-01-02T00:00:00Z'),
+    })) })
+    try {
+      const response = await fetch(`${baseUrl}/api/campaigns/${campaignId}/activity`, {
+        headers: { cookie: cookies.owner },
+      })
+      expect(response.status).toBe(200)
+      const { data } = await response.json()
+      expect(data).toEqual([expect.objectContaining({ id: completed.id, summary: completed.summary })])
+      expect(await prisma.activityLog.count({ where: { campaignId, action: 'API_KEY_WRITE_ATTEMPT' } })).toBe(26)
+    } finally {
+      await prisma.activityLog.deleteMany({ where: { campaignId } })
+    }
+  })
+
   it('enforces owner-only management and anonymous section visibility', async () => {
     const ownerGetRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public/access`, {
       headers: { cookie: cookies.owner },

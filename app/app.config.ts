@@ -56,8 +56,8 @@ export default defineAppConfig({
       variants: {
         variant: {
           outline: { root: 'bg-elevated ring ring-default divide-y divide-muted dmvault-card' },
-          soft: { root: 'bg-muted/45 ring-0 divide-y divide-muted' },
-          subtle: { root: 'bg-muted/45 ring ring-muted divide-y divide-muted' },
+          soft: { root: 'bg-muted ring-0 divide-y divide-muted' },
+          subtle: { root: 'bg-muted ring ring-muted divide-y divide-muted' },
         },
       },
       defaultVariants: {
@@ -134,6 +134,13 @@ export default defineAppConfig({
       slots: {
         content:
           'rounded-[3px] border border-[var(--ui-border)] bg-[var(--ui-bg-muted)] text-[var(--ui-text)] italic shadow-xl',
+      },
+    },
+
+    timeline: {
+      slots: {
+        indicator: 'bg-accented ring-1 ring-default',
+        separator: 'bg-[var(--ui-border)]',
       },
     },
 

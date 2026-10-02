@@ -730,7 +730,7 @@ onBeforeUnmount(() => {
                 :events="encounter.events"
               >
                 <template v-if="available.notes.allowed" #actions>
-                  <UButton icon="i-lucide-notebook-pen" :disabled="busy" @click="actionError = ''; showNote = true">Add note</UButton>
+                  <UButton icon="i-lucide-notebook-pen" size="sm" color="neutral" variant="ghost" :disabled="busy" @click="actionError = ''; showNote = true">Add note</UButton>
                 </template>
               </EncounterEventTimeline>
               <SharedEntityFormModal v-model:open="showNote" title="Add encounter note" :state="noteForm" :schema="encounterEventNoteCreateSchema" :saving="busy" :error="actionError" submit-label="Add note" @submit="addNote" @cancel="noteForm.summary = ''">
