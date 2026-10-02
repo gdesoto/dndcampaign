@@ -1,6 +1,6 @@
 # Frontend Style Guide
 
-Project-specific frontend contracts for DND Campaign (DM Vault). General interaction, layout, form, table, confirmation, feedback, and accessibility rules come from the `nuxt-ui-guidelines` skill and are not repeated here. Identity rules (palette, fonts, ornament) live in `theme-guide.md`. Precedence when they conflict: explicit user instruction, `nuxt-ui-guidelines`, this file, `theme-guide.md`. Architecture, naming, and commands are in `AGENTS.md`.
+Project-specific frontend contracts and visual identity for DND Campaign (DM Vault). General interaction, layout, form, table, confirmation, feedback, and accessibility rules come from the `nuxt-ui-guidelines` skill and are not repeated here. Precedence when they conflict: explicit user instruction, `nuxt-ui-guidelines`, this file. Architecture, naming, and commands are in `AGENTS.md`.
 
 ## Shared components and their contracts
 
@@ -24,6 +24,7 @@ Project-specific frontend contracts for DND Campaign (DM Vault). General interac
 - Use `SharedResponsiveTable` for admin records that need equivalent desktop and narrow-screen actions. Paginate against the server total and reset the page when filters change.
 
 ### Page shells and navigation
+- `app/app.vue` owns global providers and the media player; layouts own route chrome, and pages own content. Campaign routes use the `dashboard` layout. Dashboard sidebars fully hide when collapsed (`collapsed-size="0"`); panel storage keys use `dmvault-{view}-{role}`.
 - Campaign list/detail templates share `CampaignPageHeader`: one title, optional neutral result count, wrapping trailing actions. Pass counts only when data is available; use server totals for paginated collections. Detail back links belong in the header.
 - Sidebar links use native router activation with exact Overview matching. The campaign shell keeps a section active for its sibling detail routes (Nuxt index routes are not their matched ancestors) and keeps Sessions active for document and recording routes.
 - Dashboard content scrolls in `UDashboardPanel`'s native body slot; navbar and breadcrumbs go in its header slot. Do not add a full-height scroller under fixed-height chrome.
@@ -32,7 +33,9 @@ Project-specific frontend contracts for DND Campaign (DM Vault). General interac
 - Story status is readable before editing. Preserve its draft across refreshes, disable unchanged saves, and return focus to Edit after cancel or completion.
 
 ## DM Vault identity in code
-- Preserve Cinzel headings, Crimson Pro body copy, parchment light mode, and character-sheet ornament. Dark mode is the default.
+- Preserve the aged-manuscript appearance: gold accents, warm charcoal grounds in dark mode, parchment surfaces and dark ink in light mode, and restrained character-sheet ornament. Use semantic theme classes so surfaces and text adapt to both modes.
+- Preserve Cinzel headings and navigation labels, Crimson Pro body copy, and JetBrains Mono for code and monospaced values.
+- Exact palette, font, spacing, and radius values live in `app/assets/css/main.css`; shared component defaults and overrides live in `app/app.config.ts`. Reuse those definitions rather than copying values into documentation or page overrides. Appearance preference lives in `nuxt.config.ts`: follow system preference by default, with dark as the fallback.
 - Type roles: `type-title` for page titles, `type-section` for section headings, `type-record` for record names, `type-label` for short engraved labels, `type-metric` for key values, `reading-copy` for narrative passages. The scale lives in `main.css`. Labels and metadata are at least 12px; short uppercase labels get restrained 0.08em tracking; comparable values use tabular figures.
 - Main content uses the default outlined `UCard` with the themed frame and the restrained `dmvault-card` top shimmer. Supporting panels (filters, metrics, tools) and nested cards use `variant="soft"`, `subtle` when they need a boundary. Reserve shadows for overlays. Static containers do not brighten their whole border on hover. Preserve reduced-motion support.
 - Character stat boxes keep a printed-sheet structure: label, prominent score, framed modifier. Use `CharacterAbilityStat` and `sheet-compartment`; the outer sheet and section dividers carry the stronger decoration.

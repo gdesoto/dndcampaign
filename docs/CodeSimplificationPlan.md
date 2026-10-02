@@ -6,7 +6,7 @@ Updated: 2026-10-02. Historical validation baseline: `cd0ae54` on `master`; late
 
 Reduce duplicated decisions, unnecessary operations, and independently maintained state. Prefer deletion and reuse of existing domain code. Fewer lines, files, or endpoints alone do not establish a useful simplification. Proceed with a conditional ticket only when its concrete implementation reduces complexity without introducing more indirection or unnecessary work.
 
-- Follow `AGENTS.md`. For frontend work, Nuxt UI Guidelines governs interaction/layout/accessibility; `StyleGuide.md` supplies project component contracts; the DM Vault style guide and `theme-guide.md` govern identity. Use the currently installed skill paths rather than a historical plugin-cache version. No unrelated visual redesign is included.
+- Follow `AGENTS.md`. For frontend work, Nuxt UI Guidelines governs interaction/layout/accessibility; `StyleGuide.md` supplies project component contracts and DM Vault identity. Use the currently installed skill paths rather than a historical plugin-cache version. No unrelated visual redesign is included.
 - Preserve authorization, explicit public response fields, validation, errors/retries, draft retention, conflicting-action guards, keyboard access, and focus behavior.
 - Read `docs/SessionWorkspaceOwnership.md` before session work. Preserve one parent instance, pinned IDs, watcher disposal, same-session drafts, dirty exit guards, combined jobs, historical-response identity checks, exact-scope retained resources, and global playback lifetime.
 - Keep URLs and payloads unless the selected scope explicitly changes them. Update `public/openapi.json` alongside any API behavior or contract change. No planned ticket requires a database migration.
