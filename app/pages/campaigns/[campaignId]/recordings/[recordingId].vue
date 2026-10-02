@@ -2,6 +2,7 @@
 import type { RecordAction } from '~/types/actions'
 import { getFirstNameTerm } from '#shared/utils/name'
 import type { CampaignAccess } from '#shared/types/campaign-workflow'
+import { artifactStreamUrl } from '~/utils/artifact'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -85,16 +86,6 @@ const { data: recording, pending, refresh, error } = await useAsyncData(
   () => request<RecordingDetail>(`/api/recordings/${recordingId.value}`)
 )
 
-const { data: playbackUrl, pending: playbackPending } = await useAsyncData(
-  () => `recording-playback-${recordingId.value}`,
-  async () => {
-    const payload = await request<{ url: string }>(
-      `/api/recordings/${recordingId.value}/playback/url`
-    )
-    return payload?.url || ''
-  }
-)
-
 const { data: transcriptDoc, refresh: refreshTranscript } = await useAsyncData(
   () => `recording-transcript-${recordingId.value}`,
   async () => {
@@ -128,7 +119,7 @@ const videoOptions = computed(() =>
 
 const vttUrl = computed(() =>
   recording.value?.vttArtifactId
-    ? `/api/artifacts/${recording.value.vttArtifactId}/stream`
+    ? artifactStreamUrl(recording.value.vttArtifactId)
     : ''
 )
 const vttFileName = computed(() => {
@@ -574,14 +565,15 @@ const attachSubtitlesFromArtifact = async (jobId: string, artifactId: string) =>
 }
 
 const startPlayback = async () => {
-  if (!recording.value || !playbackUrl.value) return
+  const current = recording.value
+  if (!current || current.id !== recordingId.value) return
   await player.playSource(
     {
-      id: recording.value.id,
-      title: recording.value.filename,
-      subtitle: recording.value.kind,
-      kind: recording.value.kind,
-      src: playbackUrl.value,
+      id: current.id,
+      title: current.filename,
+      subtitle: current.kind,
+      kind: current.kind,
+      src: artifactStreamUrl(current.artifactId),
       vttUrl: vttUrl.value || undefined,
     },
     { presentation: 'page' }
@@ -656,18 +648,12 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
             </div>
           </template>
           <div class="space-y-4">
-            <div v-if="playbackPending" class="text-sm text-muted">
-              Preparing playback...
-            </div>
-            <div v-else-if="playbackUrl" class="space-y-3">
+            <div class="space-y-3">
               <UButton size="sm" variant="outline" @click="startPlayback">
                 Play in page player
               </UButton>
               <MediaPlayerDock dock-id="recording-player-dock" mode="page" />
             </div>
-            <p v-else class="text-sm text-muted">
-              Playback is not available right now.
-            </p>
           </div>
         </UCard>
 

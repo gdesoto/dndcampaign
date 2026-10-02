@@ -22,7 +22,7 @@ const props = withDefaults(defineProps<{
   watchBasePath?: string
   recaps: RecapItem[] | null | undefined
   selectedRecapId: string
-  playbackUrl: string
+  isPlaying: boolean
   loading: boolean
   deleting: boolean
   error: string
@@ -107,9 +107,9 @@ const recapActions = (recap: RecapItem): RecordAction[] => {
         <p class="text-sm text-muted">{{ emptyMessage || 'No recaps yet. Upload a recap on a session to build the playlist.' }}</p>
         <UButton v-if="emptyActionTo" variant="outline" :to="emptyActionTo">{{ emptyActionLabel || 'Upload a recap' }}</UButton>
       </div>
-      <div v-if="recaps?.length && (playbackUrl || savedPosition > 0)" class="flex flex-wrap items-center justify-between gap-3 border-t border-default pt-3">
+      <div v-if="recaps?.length && (isPlaying || savedPosition > 0)" class="flex flex-wrap items-center justify-between gap-3 border-t border-default pt-3">
         <p class="text-sm text-muted">{{ recaps.find(item => item.id === selectedRecapId)?.session.title }}</p>
-        <UButton v-if="playbackUrl" size="sm" variant="ghost" @click="emit('open-player')">Open player</UButton>
+        <UButton v-if="isPlaying" size="sm" variant="ghost" @click="emit('open-player')">Open player</UButton>
         <UButton v-else size="sm" variant="outline" :loading="loading" :disabled="deleting" @click="emit('play', selectedRecapId)">Resume at {{ Math.floor(savedPosition / 60) }}:{{ Math.floor(savedPosition % 60).toString().padStart(2, '0') }}</UButton>
       </div>
       <p v-if="error" role="alert" class="text-sm text-error">{{ error }}</p>

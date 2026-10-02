@@ -7,6 +7,8 @@ import {
 } from '#shared/utils/transcript'
 import { getFirstNameTerm } from '#shared/utils/name'
 import type { CampaignAccess } from '#shared/types/campaign-workflow'
+import type { MediaSource } from '~/composables/useMediaPlayer'
+import { artifactStreamUrl } from '~/utils/artifact'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -33,6 +35,7 @@ type DocumentDetail = {
 
 type SessionRecording = {
   id: string
+  artifactId: string
   kind: 'AUDIO' | 'VIDEO'
   filename: string
   createdAt: string
@@ -82,6 +85,7 @@ const canManageDocument = computed(() =>
 const hasMounted = ref(false)
 const playbackRangeError = ref('')
 let playbackRangeTimer: ReturnType<typeof setInterval> | undefined
+let playbackRangeToken = 0
 const showFullTranscript = ref(false)
 const showAdvancedFilters = ref(false)
 const showBulkEdit = ref(false)
@@ -202,17 +206,18 @@ const { data: selectedRecording } = await useLazyAsyncData(
   { watch: [selectedRecordingId] }
 )
 
-const { data: playbackUrl } = await useLazyAsyncData(
-  () => `document-recording-playback-${selectedRecordingId.value}`,
-  async () => {
-    if (!selectedRecordingId.value) return ''
-    const payload = await request<{ url: string }>(
-      `/api/recordings/${selectedRecordingId.value}/playback/url`
-    )
-    return payload?.url || ''
-  },
-  { watch: [selectedRecordingId] }
-)
+const playbackSource = computed<MediaSource | null>(() => {
+  const current = selectedRecording.value
+  if (!current || current.id !== selectedRecordingId.value) return null
+  return {
+    id: current.id,
+    title: current.filename,
+    subtitle: current.kind,
+    kind: current.kind,
+    src: artifactStreamUrl(current.artifactId),
+    vttUrl: current.vttArtifactId ? artifactStreamUrl(current.vttArtifactId) : undefined,
+  }
+})
 
 const cloneSegments = (value: TranscriptSegment[]) =>
   value.map((segment) => ({
@@ -337,22 +342,13 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  hasMounted.value = false
   player.stop()
   if (playbackRangeTimer) {
     clearInterval(playbackRangeTimer)
   }
   globalThis.window?.removeEventListener('keydown', handleTranscriptKeydown)
 })
-
-const vttUrl = computed(() =>
-  selectedRecording.value?.vttArtifactId
-    ? `/api/artifacts/${selectedRecording.value.vttArtifactId}/stream`
-    : undefined
-)
-
-const playbackReady = computed(() =>
-  hasMounted.value ? Boolean(playbackUrl.value) : false
-)
 
 watch(
   () => document.value,
@@ -981,42 +977,13 @@ const attachTranscriptToVideo = async () => {
   }
 }
 
-const startPlayback = async () => {
-  if (!selectedRecording.value || !playbackUrl.value) return
-  await player.playSource(
-    {
-      id: selectedRecording.value.id,
-      title: selectedRecording.value.filename,
-      subtitle: selectedRecording.value.kind,
-      kind: selectedRecording.value.kind,
-      src: playbackUrl.value,
-      vttUrl: vttUrl.value,
-    },
-    { presentation: 'page' }
-  )
-}
-
-const autoLoadSource = () => {
-  if (!selectedRecording.value || !playbackUrl.value) return
-  player.loadSource(
-    {
-      id: selectedRecording.value.id,
-      title: selectedRecording.value.filename,
-      subtitle: selectedRecording.value.kind,
-      kind: selectedRecording.value.kind,
-      src: playbackUrl.value,
-      vttUrl: vttUrl.value,
-    },
-    { presentation: 'page' }
-  )
-}
-
 watch(
-  playbackReady,
-  (value) => {
-    if (!value) return
-    if (player.state.value.source?.src === playbackUrl.value) return
-    autoLoadSource()
+  [hasMounted, playbackSource],
+  ([mounted, source]) => {
+    if (!mounted || !source) return
+    const active = player.state.value.source
+    if (active?.id === source.id && active.src === source.src && active.kind === source.kind && active.vttUrl === source.vttUrl) return
+    player.loadSource(source, { presentation: 'page' })
   }
 )
 
@@ -1029,7 +996,8 @@ const stopPlaybackRangeTimer = () => {
 
 const playRange = async (startMs: number, endMs: number) => {
   playbackRangeError.value = ''
-  if (!selectedRecording.value || !playbackUrl.value) {
+  const source = playbackSource.value
+  if (!source) {
     playbackRangeError.value = 'Select a recording to play this segment.'
     return
   }
@@ -1038,13 +1006,24 @@ const playRange = async (startMs: number, endMs: number) => {
     return
   }
 
-  await startPlayback()
-  player.seek(startMs / 1000)
-  await player.play()
-
   stopPlaybackRangeTimer()
+  const token = ++playbackRangeToken
+  await player.playSource({ ...source, startTime: startMs / 1000 }, { presentation: 'page' })
+  const isCurrentSource = () => hasMounted.value
+    && playbackRangeToken === token
+    && playbackSource.value?.id === source.id
+    && playbackSource.value?.src === source.src
+    && playbackSource.value?.kind === source.kind
+    && player.state.value.source?.id === source.id
+    && player.state.value.source?.src === source.src
+    && player.state.value.source?.kind === source.kind
+  if (!isCurrentSource() || player.state.value.error) return
   const endSeconds = endMs / 1000
   playbackRangeTimer = setInterval(() => {
+    if (!isCurrentSource() || player.state.value.error) {
+      stopPlaybackRangeTimer()
+      return
+    }
     const current = player.state.value.currentTime
     if (current >= endSeconds) {
       player.pause()

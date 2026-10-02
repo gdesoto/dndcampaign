@@ -31,7 +31,7 @@ watch(() => route.fullPath, () => { open.value = false })
   <div class="theme-shell">
     <div class="theme-overlay theme-overlay-noise" aria-hidden="true" />
     <div class="theme-overlay theme-overlay-pattern" aria-hidden="true" />
-    <UDashboardGroup storage-key="dmvault-admin-dashboard" unit="rem" class="z-10 overflow-clip">
+    <UDashboardGroup storage-key="dmvault-admin-dashboard" unit="rem" class="z-10 overflow-clip" style="bottom: var(--media-player-height, 0px)">
       <UDashboardSidebar id="dmvault-admin-sidebar" v-model:open="open" collapsible resizable :default-size="16" :min-size="14" :max-size="22" :collapsed-size="0" :menu="{ title: 'Admin navigation', description: 'Administration and workspace sections.' }" :ui="{ root: 'min-h-0 bg-default/80', header: 'border-b border-default', footer: 'border-t border-default' }">
         <template #header="{ collapsed }">
           <NuxtLink v-if="!collapsed" to="/admin" aria-label="DM Vault administration" class="flex min-w-0 items-center gap-3 rounded-md py-2 focus-visible:outline-2 focus-visible:outline-primary">

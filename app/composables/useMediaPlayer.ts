@@ -54,158 +54,121 @@ export const useMediaPlayer = () => {
 
   const hasSource = computed(() => Boolean(state.value.source))
 
-  let pendingCanPlayListener: { media: HTMLMediaElement; listener: () => void } | null = null
+  const matchesSource = (source: MediaSource) => {
+    const current = state.value.source
+    return current?.id === source.id && current.src === source.src && current.kind === source.kind
+  }
 
-  const clearPendingCanPlayListener = () => {
-    if (!pendingCanPlayListener) return
-    pendingCanPlayListener.media.removeEventListener('canplay', pendingCanPlayListener.listener)
-    pendingCanPlayListener = null
+  const releaseElement = (media: HTMLMediaElement) => {
+    releaseRecapProgress(media)
+    media.pause()
+    media.removeAttribute('src')
+    media.load()
+  }
+
+  const prepareElement = (media: HTMLMediaElement, source: MediaSource, reload = false) => {
+    if (media.tagName !== (source.kind === 'VIDEO' ? 'VIDEO' : 'AUDIO')) return false
+    // getAttribute preserves our relative URL; media.src resolves it to an absolute URL.
+    if (reload || media.getAttribute('src') !== source.src) {
+      media.pause()
+      trackRecapProgress(media, source.recapProgressId, source.startTime)
+      media.src = source.src
+      media.load()
+      if (source.startTime !== undefined) media.currentTime = source.startTime
+    }
+    return true
+  }
+
+  const play = async () => {
+    const media = element.value
+    const source = state.value.source
+    if (!media || !source || state.value.autoplay) return
+    const retry = Boolean(state.value.error)
+    const nextSource = retry ? { ...source, startTime: media.currentTime || source.startTime } : source
+    if (!prepareElement(media, nextSource, retry)) return
+    const token = ++state.value.playToken
+    state.value.error = ''
+    state.value.autoplay = true
+    try {
+      // Native play waits for loading; no separate canplay listener or URL cache is needed.
+      await media.play()
+      if (token !== state.value.playToken || element.value !== media) return
+      state.value.isPlaying = true
+    } catch {
+      if (token !== state.value.playToken || element.value !== media) return
+      state.value.isPlaying = false
+      state.value.error = 'Unable to play media. Retry playback.'
+    } finally {
+      if (token === state.value.playToken && element.value === media) {
+        state.value.autoplay = false
+      }
+    }
   }
 
   const setElement = (value: HTMLMediaElement | null) => {
-    clearPendingCanPlayListener()
     const previous = element.value
+    if (previous === value) return
+    state.value.playToken += 1
+    const shouldPlay = state.value.autoplay
+    state.value.autoplay = false
+    state.value.isPlaying = false
     element.value = value
-    if (previous && previous !== value) {
-      releaseRecapProgress(previous)
-      previous.pause()
-      previous.currentTime = 0
-      previous.removeAttribute('src')
-      previous.load()
-    }
+    if (previous) releaseElement(previous)
     if (!value) return
     value.volume = state.value.volume
     value.playbackRate = state.value.playbackRate
-    if (state.value.source) {
-      value.pause()
-    }
-    if (state.value.source && value.src !== state.value.source.src) {
-      trackRecapProgress(value, state.value.source.recapProgressId, state.value.source.startTime)
-      value.src = state.value.source.src
-      value.load()
-    }
-    if (state.value.autoplay) {
-      value
-        .play()
-        .catch(() => {
-          state.value.error = 'Unable to auto-play media.'
-        })
-        .finally(() => {
-          state.value.autoplay = false
-        })
-    }
+    const source = state.value.source
+    if (source) prepareElement(value, source)
+    if (shouldPlay) void play()
   }
 
-  const lastPlay = useState<{ id: string; at: number }>('media-player-last-play', () => ({
-    id: '',
-    at: 0,
-  }))
+  const selectSource = (source: MediaSource) => {
+    const changed = !matchesSource(source)
+    if (changed) {
+      state.value.playToken += 1
+      state.value.autoplay = false
+      state.value.error = ''
+      state.value.isPlaying = false
+      state.value.currentTime = 0
+      state.value.duration = 0
+    }
+    state.value.source = source
+    const media = element.value
+    if (media && !prepareElement(media, source, changed)) releaseElement(media)
+  }
 
   const playSource = async (
     source: MediaSource,
     options?: { presentation?: MediaPresentation; openDrawer?: boolean }
   ) => {
-    const now = Date.now()
-    if (lastPlay.value.id === source.id && now - lastPlay.value.at < 300) {
-      return
-    }
-    lastPlay.value = { id: source.id, at: now }
-    state.value.error = ''
-    state.value.isPlaying = false
-    state.value.source = source
-    state.value.playToken += 1
-    if (options?.presentation) {
-      state.value.presentation = options.presentation
-    }
-    if (options?.openDrawer) {
-      state.value.drawerOpen = true
-    }
-
+    selectSource(source)
+    if (options?.presentation) state.value.presentation = options.presentation
+    if (options?.openDrawer) state.value.drawerOpen = true
     const media = element.value
-    if (!media) {
+    if (!media || media.tagName !== (source.kind === 'VIDEO' ? 'VIDEO' : 'AUDIO')) {
+      // The global component mounts the matching element and starts this selection.
       state.value.autoplay = true
       return
     }
-
-    const expectedTag = source.kind === 'VIDEO' ? 'VIDEO' : 'AUDIO'
-    if (media.tagName !== expectedTag) {
-      // Element will be replaced (audio -> video or video -> audio). Defer play until new element mounts.
-      releaseRecapProgress(media)
-      media.pause()
-      media.removeAttribute('src')
-      media.load()
-      state.value.autoplay = true
-      return
-    }
-
-    if (media.src !== source.src) {
-      const token = state.value.playToken
-      state.value.autoplay = true
-      trackRecapProgress(media, source.recapProgressId, source.startTime)
-      media.src = source.src
-      media.load()
-      clearPendingCanPlayListener()
-      const onCanPlay = () => {
-        clearPendingCanPlayListener()
-        if (!state.value.autoplay || token !== state.value.playToken) return
-        media
-          .play()
-          .then(() => {
-            state.value.isPlaying = true
-          })
-          .catch(() => {
-            state.value.error = 'Unable to play media.'
-          })
-          .finally(() => {
-            state.value.autoplay = false
-          })
-      }
-      pendingCanPlayListener = { media, listener: onCanPlay }
-      media.addEventListener('canplay', onCanPlay)
-      return
-    }
-
     if (source.startTime !== undefined) media.currentTime = source.startTime
-    try {
-      await media.play()
-      state.value.error = ''
-      state.value.isPlaying = true
-    } catch (error) {
-      state.value.error =
-        (error as Error & { message?: string }).message || 'Unable to play media.'
-    }
-  }
-
-  const play = async () => {
-    const media = element.value
-    if (!media) return
-    try {
-      await media.play()
-      state.value.error = ''
-      state.value.isPlaying = true
-    } catch (error) {
-      state.value.error =
-        (error as Error & { message?: string }).message || 'Unable to play media.'
-    }
+    await play()
   }
 
   const pause = () => {
+    state.value.playToken += 1
+    state.value.autoplay = false
+    state.value.isPlaying = false
     element.value?.pause()
   }
 
   const stop = () => {
-    clearPendingCanPlayListener()
-    if (element.value) {
-      releaseRecapProgress(element.value)
-      element.value.pause()
-      element.value.currentTime = 0
-      element.value.removeAttribute('src')
-      element.value.load()
-    }
+    state.value.playToken += 1
+    state.value.autoplay = false
+    state.value.source = null
+    if (element.value) releaseElement(element.value)
     state.value.isPlaying = false
     state.value.currentTime = 0
     state.value.duration = 0
-    state.value.source = null
     state.value.drawerOpen = false
     state.value.error = ''
   }
@@ -243,29 +206,8 @@ export const useMediaPlayer = () => {
     source: MediaSource,
     options?: { presentation?: MediaPresentation }
   ) => {
-    clearPendingCanPlayListener()
-    state.value.playToken += 1
-    state.value.error = ''
-    state.value.autoplay = false
-    state.value.source = source
-    if (options?.presentation) {
-      state.value.presentation = options.presentation
-    }
-    const media = element.value
-    if (!media) return
-    const expectedTag = source.kind === 'VIDEO' ? 'VIDEO' : 'AUDIO'
-    if (media.tagName !== expectedTag) {
-      releaseRecapProgress(media)
-      media.pause()
-      media.removeAttribute('src')
-      media.load()
-      return
-    }
-    if (media.src !== source.src) {
-      trackRecapProgress(media, source.recapProgressId, source.startTime)
-      media.src = source.src
-      media.load()
-    }
+    selectSource(source)
+    if (options?.presentation) state.value.presentation = options.presentation
   }
 
   const setPresentation = (value: MediaPresentation) => {

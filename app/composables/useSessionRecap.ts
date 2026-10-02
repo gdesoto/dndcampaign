@@ -1,5 +1,6 @@
 import type { Ref } from 'vue'
 import type { SessionRecapRecording } from '#shared/types/session-workflow'
+import { artifactStreamUrl } from '~/utils/artifact'
 
 type UseSessionRecapOptions = {
   sessionId: Ref<string>
@@ -15,15 +16,21 @@ export function useSessionRecap(options: UseSessionRecapOptions) {
   const recapFile = ref<File | null>(null)
   const recapUploading = ref(false)
   const recapError = ref('')
-  const recapPlaybackUrl = ref('')
   const recapPlaybackLoading = ref(false)
   const recapDeleting = ref(false)
   const recapDeleteError = ref('')
+  const recapBusy = computed(() => recapUploading.value || recapDeleting.value || recapPlaybackLoading.value)
+  const recapPlaying = computed(() => {
+    const recap = options.recap.value
+    const { source, isPlaying, presentation } = player.state.value
+    return Boolean(recap && source && isPlaying && presentation === 'global' && source.id === recap.id
+      && source.src === artifactStreamUrl(recap.artifactId)
+      && source.kind === (recap.mimeType.startsWith('video/') ? 'VIDEO' : 'AUDIO'))
+  })
 
   watch(
-    () => [options.recap.value, options.selectedRecapKind.value],
+    [() => options.recap.value?.id, () => options.recap.value?.artifactId, options.selectedRecapKind],
     () => {
-      recapPlaybackUrl.value = ''
       recapFile.value = null
       recapError.value = ''
       recapDeleteError.value = ''
@@ -31,7 +38,7 @@ export function useSessionRecap(options: UseSessionRecapOptions) {
   )
 
   const uploadRecap = async () => {
-    if (!recapFile.value) return
+    if (!recapFile.value || recapBusy.value) return
     recapError.value = ''
     const fileKind = recapFile.value.type.startsWith('video/') ? 'VIDEO' : 'AUDIO'
     if (fileKind !== options.selectedRecapKind.value) {
@@ -57,57 +64,46 @@ export function useSessionRecap(options: UseSessionRecapOptions) {
   }
 
   const loadRecapPlayback = async () => {
-    if (!options.recap.value) return
-    if (recapPlaybackUrl.value) {
-      await player.playSource(
-        {
-          id: options.recap.value.id,
-          recapProgressId: options.recap.value.id,
-          title: options.recap.value.filename || 'Recap',
-          subtitle: 'Session recap',
-          kind: options.recap.value.mimeType?.startsWith('video/') ? 'VIDEO' : 'AUDIO',
-          src: recapPlaybackUrl.value,
-        },
-        { presentation: 'global', openDrawer: options.recap.value.mimeType?.startsWith('video/') }
-      )
-      return
-    }
-    if (recapPlaybackLoading.value) return
+    if (!options.recap.value || recapBusy.value) return
+    const { id, artifactId, filename, mimeType } = options.recap.value
+    const kind = mimeType.startsWith('video/') ? 'VIDEO' : 'AUDIO'
 
+    recapError.value = ''
     recapPlaybackLoading.value = true
     try {
-      const payload = await request<{ url: string }>(`/api/recaps/${options.recap.value.id}/playback/url`)
-      const playbackUrl = payload?.url
-      if (!playbackUrl) throw new Error('Unable to load recap playback URL.')
-      recapPlaybackUrl.value = playbackUrl
       await player.playSource(
         {
-          id: options.recap.value.id,
-          recapProgressId: options.recap.value.id,
-          title: options.recap.value.filename || 'Recap',
+          id,
+          recapProgressId: id,
+          title: filename || 'Recap',
           subtitle: 'Session recap',
-          kind: options.recap.value.mimeType?.startsWith('video/') ? 'VIDEO' : 'AUDIO',
-          src: playbackUrl,
+          kind,
+          src: artifactStreamUrl(artifactId),
         },
-        { presentation: 'global', openDrawer: options.recap.value.mimeType?.startsWith('video/') }
+        { presentation: 'global', openDrawer: kind === 'VIDEO' }
       )
     } catch (error) {
-      recapError.value =
-        (error as Error & { message?: string }).message || 'Unable to load recap.'
+      if (options.recap.value?.id === id && options.recap.value.artifactId === artifactId && options.selectedRecapKind.value === kind) {
+        recapError.value = (error as Error & { message?: string }).message || 'Unable to load recap.'
+      }
     } finally {
       recapPlaybackLoading.value = false
     }
   }
 
   const deleteRecap = async () => {
-    if (!options.recap.value) return
+    if (!options.recap.value || recapBusy.value) return
+    const { id, artifactId, mimeType } = options.recap.value
+    const deletedSrc = artifactStreamUrl(artifactId)
+    const deletedKind = mimeType.startsWith('video/') ? 'VIDEO' : 'AUDIO'
     recapDeleteError.value = ''
     recapDeleting.value = true
     try {
-      await request(`/api/recaps/${options.recap.value.id}`, {
+      await request(`/api/recaps/${id}`, {
         method: 'DELETE',
       })
-      recapPlaybackUrl.value = ''
+      const source = player.state.value.source
+      if (source?.id === id && source.src === deletedSrc && source.kind === deletedKind) player.stop()
       await options.refreshRecap()
     } catch (error) {
       recapDeleteError.value =
@@ -122,7 +118,7 @@ export function useSessionRecap(options: UseSessionRecapOptions) {
     recapFile,
     recapUploading,
     recapError,
-    recapPlaybackUrl,
+    recapPlaying,
     recapPlaybackLoading,
     recapDeleting,
     recapDeleteError,

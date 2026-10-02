@@ -37,6 +37,7 @@ export type CampaignMilestoneSummary = {
 export type CampaignRecapItem = {
   mimeType: string
   id: string
+  artifactId: string
   filename: string
   createdAt: string
   session: {

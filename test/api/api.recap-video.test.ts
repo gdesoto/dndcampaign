@@ -13,6 +13,7 @@ let cookie = ''
 let outsiderId = ''
 let outsiderCookie = ''
 const recapIds: Record<string, string> = {}
+const recordingIds = new Set<string>()
 
 const upload = (mimeType: string) => {
   const body = new FormData()
@@ -20,7 +21,7 @@ const upload = (mimeType: string) => {
   return fetch(`${baseUrl}/api/sessions/${sessionId}/recap`, { method: 'POST', headers: { cookie }, body })
 }
 
-describe('audio and video session recaps', () => {
+describe('audio and video session media', () => {
   beforeAll(async () => {
     const password = 'recap-video-password-12345'
     const user = await prisma.user.create({ data: {
@@ -55,6 +56,9 @@ describe('audio and video session recaps', () => {
   })
 
   afterAll(async () => {
+    for (const id of recordingIds) {
+      await fetch(`${baseUrl}/api/recordings/${id}`, { method: 'DELETE', headers: { cookie } })
+    }
     for (const id of Object.values(recapIds)) {
       await fetch(`${baseUrl}/api/recaps/${id}`, { method: 'DELETE', headers: { cookie } })
     }
@@ -66,22 +70,31 @@ describe('audio and video session recaps', () => {
 
   // Complete both media lifecycles, including disk uploads and private/public range reads.
   it('uploads, replaces, publishes, streams and deletes recaps without affecting the other media kind', { timeout: 15_000 }, async () => {
+    const artifactIds: Record<string, string> = {}
     for (const mimeType of ['audio/mpeg', 'video/mp4', 'audio/mpeg', 'video/mp4']) {
       const response = await upload(mimeType)
       expect(response.status).toBe(200)
       const { data } = await response.json()
       const kind = mimeType.startsWith('video/') ? 'VIDEO' : 'AUDIO'
       expect(data).toMatchObject({ mimeType, kind })
-      if (recapIds[kind]) expect(data.id).toBe(recapIds[kind])
+      expect(data.artifactId).toEqual(expect.any(String))
+      if (recapIds[kind]) {
+        expect(data.id).toBe(recapIds[kind])
+        expect(data.artifactId).not.toBe(artifactIds[kind])
+        const replaced = await fetch(`${baseUrl}/api/artifacts/${artifactIds[kind]}/stream`, { headers: { cookie } })
+        expect(replaced.status).toBe(404)
+        expect(await replaced.json()).toMatchObject({ data: null, error: { code: 'NOT_FOUND' } })
+      }
       recapIds[kind] = data.id
+      artifactIds[kind] = data.artifactId
       expect(await prisma.recapRecording.count({ where: { sessionId } })).toBe(Object.keys(recapIds).length)
-      const playback = await fetch(baseUrl + '/api/recaps/' + data.id + '/playback/url', { headers: { cookie } })
-      expect(playback.status).toBe(200)
-      const stream = await fetch(baseUrl + (await playback.json()).data.url, { headers: { cookie } })
+      const stream = await fetch(`${baseUrl}/api/artifacts/${data.artifactId}/stream`, { headers: { cookie } })
       expect(stream.status).toBe(200)
       expect(stream.headers.get('content-type')).toContain(mimeType)
       expect(await stream.text()).toBe('recap media bytes')
     }
+    const retiredPlayback = await fetch(`${baseUrl}/api/recaps/${recapIds.VIDEO}/playback/url`, { headers: { cookie } })
+    expect(retiredPlayback.status).toBe(404)
 
     for (const path of ['recap', 'workspace']) {
       const response = await fetch(baseUrl + '/api/sessions/' + sessionId + '/' + path, { headers: { cookie } })
@@ -89,6 +102,7 @@ describe('audio and video session recaps', () => {
       const { data } = await response.json()
       const recaps = path === 'workspace' ? data.recaps : data
       expect(recaps.map((item: { id: string }) => item.id)).toEqual([recapIds.AUDIO, recapIds.VIDEO])
+      expect(recaps.map((item: { artifactId: string }) => item.artifactId)).toEqual([artifactIds.AUDIO, artifactIds.VIDEO])
     }
     const video = await prisma.recapRecording.findUniqueOrThrow({ where: { id: recapIds.VIDEO } })
     expect((await upload('text/plain')).status).toBe(400)
@@ -102,10 +116,18 @@ describe('audio and video session recaps', () => {
     const publicSlug = (await settings.json()).data.publicSlug
     const publicRecaps = await fetch(baseUrl + '/api/public/campaigns/' + publicSlug + '/recaps')
     expect(publicRecaps.status).toBe(200)
-    expect((await publicRecaps.json()).data).toEqual(expect.arrayContaining([
+    const publicItems = (await publicRecaps.json()).data
+    expect(publicItems).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: recapIds.VIDEO, mimeType: 'video/mp4' }),
       expect.objectContaining({ id: recapIds.AUDIO, mimeType: 'audio/mpeg' }),
     ]))
+    for (const item of publicItems) {
+      expect(Object.keys(item).sort()).toEqual(['createdAt', 'durationSeconds', 'filename', 'id', 'mimeType', 'session'])
+      expect(Object.keys(item.session).sort()).toEqual(['id', 'playedAt', 'sessionNumber', 'title'])
+    }
+    const publicPlayback = await fetch(`${baseUrl}/api/public/campaigns/${publicSlug}/recaps/${video.id}/playback/url`)
+    expect(publicPlayback.status).toBe(200)
+    expect((await publicPlayback.json()).data).toEqual({ url: `/api/public/campaigns/${publicSlug}/recaps/${video.id}/stream` })
 
     // The parser matrix lives in media-stream.test.ts; exercise each HTTP contract here.
     const privateUrl = baseUrl + '/api/artifacts/' + video.artifactId + '/stream'
@@ -144,12 +166,61 @@ describe('audio and video session recaps', () => {
     expect(denied.status).toBe(403)
     expect(denied.headers.get('content-range')).toBeNull()
     expect(await denied.json()).toMatchObject({ data: null, error: { code: 'FORBIDDEN' } })
+    const unauthenticated = await fetch(privateUrl)
+    expect(unauthenticated.status).toBe(403)
+    expect(await unauthenticated.json()).toMatchObject({ data: null, error: { code: 'FORBIDDEN' } })
 
     expect((await fetch(baseUrl + '/api/recaps/' + recapIds.AUDIO, { method: 'DELETE', headers: { cookie } })).status).toBe(200)
     expect(await prisma.recapRecording.count({ where: { sessionId } })).toBe(1)
+    const deleted = await fetch(`${baseUrl}/api/artifacts/${artifactIds.AUDIO}/stream`, { headers: { cookie } })
+    expect(deleted.status).toBe(404)
+    expect(await deleted.json()).toMatchObject({ data: null, error: { code: 'NOT_FOUND' } })
     const retained = await fetch(privateUrl, { headers: { cookie } })
     expect(retained.status).toBe(200)
     expect(await retained.text()).toBe('recap media bytes')
     delete recapIds.AUDIO
+  })
+
+  it('plays uploaded recordings directly from their artifact identities with range, access and deletion checks', { timeout: 15_000 }, async () => {
+    for (const mimeType of ['audio/mpeg', 'video/mp4']) {
+      const body = new FormData()
+      body.append('file', new Blob(['recording media bytes'], { type: mimeType }), 'recording')
+      const uploaded = await fetch(`${baseUrl}/api/sessions/${sessionId}/recordings`, { method: 'POST', headers: { cookie }, body })
+      expect(uploaded.status).toBe(200)
+      const { data } = await uploaded.json()
+      recordingIds.add(data.id)
+      expect(data.artifactId).toEqual(expect.any(String))
+      for (const path of [`recordings/${data.id}`, `sessions/${sessionId}/recordings`]) {
+        const response = await fetch(`${baseUrl}/api/${path}`, { headers: { cookie } })
+        expect(response.status).toBe(200)
+        const payload = (await response.json()).data
+        const recording = Array.isArray(payload) ? payload.find(item => item.id === data.id) : payload
+        expect(recording).toMatchObject({ id: data.id, artifactId: data.artifactId })
+      }
+      const retiredPlayback = await fetch(`${baseUrl}/api/recordings/${data.id}/playback/url`, { headers: { cookie } })
+      expect(retiredPlayback.status).toBe(404)
+
+      const url = `${baseUrl}/api/artifacts/${data.artifactId}/stream`
+      const stream = await fetch(url, { headers: { cookie } })
+      expect(stream.status).toBe(200)
+      expect(stream.headers.get('content-type')).toContain(mimeType)
+      expect(stream.headers.get('accept-ranges')).toBe('bytes')
+      expect(await stream.text()).toBe('recording media bytes')
+      const range = await fetch(url, { headers: { cookie, range: 'bytes=0-8' } })
+      expect(range.status).toBe(206)
+      expect(range.headers.get('content-range')).toBe('bytes 0-8/21')
+      expect(await range.text()).toBe('recording')
+      for (const headers of [{ cookie: outsiderCookie }, {}]) {
+        const denied = await fetch(url, { headers })
+        expect(denied.status).toBe(403)
+        expect(await denied.json()).toMatchObject({ data: null, error: { code: 'FORBIDDEN' } })
+      }
+      const removed = await fetch(`${baseUrl}/api/recordings/${data.id}`, { method: 'DELETE', headers: { cookie } })
+      expect(removed.status).toBe(200)
+      recordingIds.delete(data.id)
+      const deleted = await fetch(url, { headers: { cookie } })
+      expect(deleted.status).toBe(404)
+      expect(await deleted.json()).toMatchObject({ data: null, error: { code: 'NOT_FOUND' } })
+    }
   })
 })

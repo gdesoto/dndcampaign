@@ -15,7 +15,7 @@ Reduce duplicated decisions, unnecessary operations, and independently maintaine
 
 ## Completed work
 
-The following table records completed and committed tickets. Additional completed work below records its own commit status. Completed tickets are not part of the open queue and do not need to be repeated or reconsidered as pending dependencies.
+The following table records all 18 completed tickets. Detailed completion and validation records follow. Only CJ-08, CJ-09, CJ-11, CJ-20, and CJ-21 remain in the open queue; completed tickets do not need to be repeated or reconsidered as pending dependencies.
 
 | Ticket | Commit | Result |
 | --- | --- | --- |
@@ -23,6 +23,11 @@ The following table records completed and committed tickets. Additional complete
 | CJ-02 | `99fb5e7` | Character import sections derive from the shared schema; client section type also reuses the shared type. |
 | CJ-03 | `9403b91` | Removed unused recording upload/artifact reader methods; buffer artifact creation delegates to streaming persistence. Existing artifact persistence failure does not gain rollback. |
 | CJ-04 | `cd0ae54` | Request, quest, calendar, and public-access row types derive from Prisma. Removed request result casts, identity conversion, and redundant policy projections. |
+| CJ-05 | `a2935f0` | Transcript creation uses one empty POST only when missing; removed the mirrored draft and unused update branch. |
+| CJ-06 | `a2935f0` | Session controls use native destinations; removed routing-event forwarding while preserving workspace ownership and dirty guards. |
+| CJ-07 | `a2935f0` | Dungeon reads, exports, and preview share the existing player-safe projection. |
+| CJ-10 | `2d2a875` | Campaign selection derives from the route; removed duplicated selection state and synchronization watchers. |
+| CJ-12 | This commit | Playback uses the existing player's error/retry and source-identity handling; indicators reflect actual playback. |
 | CJ-13 | `2a6c78b` | Removed unused encounter runtime-board method and orphan types. |
 | CJ-14 | `21524fd` | Removed the unused client public-overview wrapper; active public composable and server endpoint remain. |
 | CJ-15 | `a9d4f48` | Removed duplicate account-profile endpoint and reused account mapping; retained `/api/auth/me` with its distinct response/session behavior. |
@@ -30,6 +35,7 @@ The following table records completed and committed tickets. Additional complete
 | CJ-17 | `0fa857b` | Dev n8n endpoint uses the shared schema; removed shadow validator, optional-validation flag, and checkbox. |
 | CJ-18 | `198fa8c` | Added `DocumentService.upsertForSession`. Create-only route retains 409; imports retain titles/recording semantics. Initial summary application now writes one version instead of two identical versions, documented in OpenAPI. |
 | CJ-19 | `198fa8c` | Moved glossary PC linking, calendar month-view assembly, transcript application, and subtitle attachment into existing services. Local transcription operations do not construct an ElevenLabs client; handlers retain authorization. |
+| CJ-22 | This commit | All six private callers use existing artifact IDs; removed private playback-URL endpoints and caches, preserving the public boundary. |
 | CJ-23 | `3ae6bc3` | Removed unused `campaign.delete` permission and corresponding response/type declarations. |
 
 Shared plumbing already in place: thrown `apiError` values and the central Nitro API error envelope; campaign-route authorization passed to services and permission-scoped child lookups; shared multipart reading; shared transcript/VTT conversion. Reuse these rather than reconstructing their predecessors.
@@ -48,7 +54,7 @@ Completed work used scoped Terra implementation and manager review; the initial 
 
 CJ-17 also received desktop/mobile, light/dark browser verification with local webhook fixtures. No external n8n, ElevenLabs, or DnD Beyond call was needed for these checks. Non-blocking dependency bundler/deprecation warnings remained. Completed builds supersede earlier interrupted attempts. Validation counts describe those checkpoints, not promises about subsequent work.
 
-### 2026-10-01 dead-code cleanup
+### 2026-10-01 dead-code cleanup (complete, `e26dcdb`)
 
 Removed the verified orphan encounter component, unused server methods and shared declarations, ignored component props and caller bindings, unreachable quest branches, unused global styles, and redundant direct devtools dependency. Updated the seed character to the current sheet format; existing character records remain unchanged. CJ-08 and CJ-20 still have the remaining work described below.
 
@@ -60,7 +66,7 @@ Campaign selection now derives from the route. Both header controls invoke navig
 
 Validation passed: `yarn lint`, `yarn typecheck`, and the campaign-selector, campaign-selector-route, and session-workspace-routes suites (3 files / 12 tests). The new selector suite uses two native controls and a real memory router for pending/canceled/successful navigation, Back/Forward, direct routes, same-target selection, and delayed/empty/failed/missing option lists. Browser checks against an isolated seeded database covered desktop/mobile selection and dirty-summary cancellation/acceptance, draft retention, missing-option display, Back/Forward, direct loading, keyboard selection, and reselecting the active campaign on a deep editor route. The test server was stopped and its database removed afterward. Logs and the desktop screenshot are under `storage/cj-10-*`. A full suite and production build were not run for this bounded navigation change.
 
-### 2026-10-01 CJ-05/06/07 — Session workflow and dungeon projection (complete)
+### 2026-10-01 CJ-05/06/07 — Session workflow and dungeon projection (complete, `a2935f0`)
 
 CJ-05: Transcript creation sends one empty POST only when missing. Removed the PATCH branch and mirrored transcript draft; import, deletion, summary editing, and error/retry behavior remain. Creation/import/deletion exclude duplicate and conflicting submissions. Create disappears once the document exists, and keyboard creation hands focus to Open editor unless the user has moved focus elsewhere.
 
@@ -70,6 +76,14 @@ CJ-07: Dungeon reads, exports, and the client preview use the existing pure play
 
 Validation passed: `yarn lint`, `yarn typecheck`, `yarn test` (84 files / 300 tests), and `yarn build` (397.51s). Dependency bundler/deprecation warnings remain. Focused tests and independent review cover transcript creation/retry/conflicts/focus, native destinations and workspace ownership, and map projection immutability/idempotence/parity. Browser checks used an isolated seeded database for desktop/mobile, light/dark presentation, keyboard creation/editor access, deletion/recreation, new-tab links, Back/Forward, same-session draft retention, canceled/accepted dirty exits, and player-safe preview toggling with four secret rooms among eight rooms. The browser server was stopped and its database removed afterward. Logs and screenshots are under `storage/cj-05-07-*`.
 
+### 2026-10-01 CJ-12/22 — Private playback (complete)
+
+All six private playback flows now construct the authorized artifact stream URL from the artifact ID already present in their media response. Removed the two private playback-URL routes, their OpenAPI entries, and obsolete URL caches and fetch/reset plumbing. The public recap URL endpoint and explicit public response fields remain unchanged.
+
+The existing global player owns loading, playback failures, and Retry across inline, mini, and drawer controls. Native play promises replace duplicate readiness listeners and the arbitrary play throttle. Source identity includes ID, artifact URL, and media kind; recap progress remains keyed by recap ID. Playing indicators reflect actual player state, stale selections cannot overwrite current playback, successful deletion stops only the deleted source, and transcript ranges seek once and cannot pause a newer source. Mobile browser checks exposed the fixed mini player covering page actions; its measured height now reserves layout space, including wrapped errors.
+
+Validation passed: `yarn lint`, `yarn typecheck`, `yarn test` (86 files / 311 tests), `yarn build` (411.00s), and focused player/session/watch/playlist/recording/document tests. Non-blocking dependency bundler/deprecation warnings remain. Independent review found no actionable issues. Browser checks covered all six private callers, public playlist/watch, actual audio/video stream failures and Retry, drawer continuity, replacement under the same recap ID, saved progress, transcript segment start/end, desktop/mobile, light/dark, and keyboard/pointer controls. The isolated browser server was stopped and its database and uploaded files removed. Logs and screenshots are under `storage/cj-12-22-*`.
+
 ## Open queue and sequencing
 
 | Ticket | Disposition | Scope |
@@ -77,16 +91,12 @@ Validation passed: `yarn lint`, `yarn typecheck`, `yarn test` (84 files / 300 te
 | CJ-08 | Partially complete | Unused QuestCard props and unreachable empty branches removed; duplicate group rendering remains. |
 | CJ-09 | Conditional; narrowed | Quest listing reuse only, subject to a clear simplification with explicit public fields. |
 | CJ-11 | Small deletion ready; broader work conditional | Remove the unused session include; narrow other encounter reads only when query ownership stays simple. |
-| CJ-12 | Coordinate with CJ-22 | Converge playback locally if URL endpoints stay; otherwise incorporate into CJ-22. |
 | CJ-20 | Partially complete | Encounter, initiative, and turn actions use schemas; legacy combatant amount parsing remains. |
 | CJ-21 | Conditional; narrowed | Share common map projection/parsing without private glossary enrichment; SVG reuse is optional. |
-| CJ-22 | Roadmap decision first | Remove private playback-URL endpoints only after choosing the playback URL strategy. |
 
-With CJ-05/06/07/10 complete, the next larger opportunity is **conditional playback work**. Before implementation, decide CJ-22: keep the endpoints and implement CJ-12, or remove them and complete both tickets together. Do not refactor caches in CJ-12 only to delete them in CJ-22 immediately afterward.
+With CJ-05/06/07/10/12/22 complete, CJ-08 and the unused session include in CJ-11 are the next straightforward deletions. CJ-20 needs deliberate characterization of the legacy amount coercion before implementation.
 
 CJ-08 and CJ-20 can run independently. These priorities are not hard dependencies. CJ-09, broader CJ-11 query changes, and CJ-21 are not mandatory cleanup: defer them if the proposed implementation adds more machinery than it removes. CJ-11's unused session include can be deleted directly. Profiling can inform broader query-work priority, but is not required to establish that a query loads unused relations.
-
-The signed-URL roadmap is **unresolved**. A future remote storage provider does not itself require browser-facing signed URLs; server streaming remains possible. This document neither commits to signed URLs nor authorizes endpoint removal before that decision.
 
 ## Execution and completion protocol
 
@@ -132,18 +142,6 @@ The signed-URL roadmap is **unresolved**. A future remote storage provider does 
 
 **Acceptance:** Unchanged detail/summary, missing/denied access, initiative/turns, HP, conditions, and notes. For broader query changes, verify unused history and duplicate reads are removed from the affected operations without adding a separate test for each query shape. Run `test/api/api.encounter-routes.test.ts`, `test/nuxt/encounter-detail-page.test.ts`, and `test/unit/encounter-summary.test.ts` as relevant to the selected scope. Keep URLs/payloads unchanged. No dependency on CJ-20 endpoint consolidation, which is no longer planned here.
 
-## CJ-12 — Converge playback locally if URL endpoints remain
-
-**Disposition:** Coordinate with CJ-22 before implementation. If endpoints remain, execute this ticket after CJ-05/06. If endpoint removal is chosen, incorporate this work into CJ-22 and mark CJ-12 satisfied by that change rather than implementing it twice.
-
-**Evidence:** `useSessionRecordings` and `useSessionRecap` duplicate `playSource` calls for cached/fetched URLs. The cached call sits outside the composable's catch, but `useMediaPlayer.playSource` normally catches media-play failures and reports them through player state; moving the call into a catch alone does not fix those failures. Recap identity can change during URL retrieval, including replacement of the artifact while the recap ID stays the same.
-
-**Scope when retaining endpoints:** Resolve cached-or-fetched URL once, capture media identity including `artifactId` before awaits, and call the existing player once. Use common handling for URL-fetch failures and actual thrown errors; preserve and verify the player's own media-error reporting. Retain meaningful busy guards, caches, progress IDs, audio/video behavior, and drawer presentation. Do not add a generic media controller.
-
-**Files:** `app/composables/useSessionRecordings.ts`, `useSessionRecap.ts`, and `shared/types/session-workflow.ts` for artifact identity already present in responses; inspect workspace/panel contracts and `useMediaPlayer`/`GlobalMediaPlayer` when validating state. URL-presence indicators must not be confused with proof of active playback; if changed, derive them from the existing player rather than adding another playing-state owner.
-
-**Acceptance:** Cached/fresh/repeated playback, fetch rejection, real player-state errors/retry, concurrent clicks, and media replacement/kind changes during awaits, including a new artifact under the same recap ID. Extend existing playback workflows instead of relying only on a mocked rejecting `playSource`. Run `test/nuxt/session-recap-playback.test.ts`, `session-delete-recovery.test.ts`, and recording playback coverage. No API change on the endpoint-retention path.
-
 ## CJ-20 — Replace hand-parsed encounter actions with schemas
 
 **Current progress:** Encounter PATCH uses `encounterPatchSchema` for lifecycle actions or ordinary field updates. Initiative and turn PATCH routes use `encounterInitiativeSchema` and `encounterTurnSchema`. These conversions are already implemented; do not repeat them.
@@ -169,18 +167,6 @@ The signed-URL roadmap is **unresolved**. A future remote storage provider does 
 **Files:** `server/services/campaign-public-access.service.ts`, `server/services/map.service.ts`, and a small existing-domain utility if warranted. Private/public map routes retain URL and payload contracts.
 
 **Acceptance:** Exact public/private map shapes, no additional glossary data or queries on public reads, slug/primary selection, disabled/missing public access, coordinate fallbacks, and feature order/properties. If SVG retrieval changes, also preserve bytes/content type/filename and missing-map/missing-file errors. Run public-access API coverage, `test/nuxt/map-viewer.test.ts`, and existing map parsing/SVG coverage relevant to the selected scope; extend only meaningful gaps.
-
-## CJ-22 — Decide whether to remove private playback-URL endpoints
-
-**Decision required before implementation:** Are browser-facing signed URLs a committed near-term feature? If yes, retain the URL endpoints and implement CJ-12 independently. If no, evaluate removing the present constant-URL lookup and complete CJ-12 with this ticket. A speculative future provider is not, by itself, a reason to preserve the lookup. No roadmap answer is recorded yet.
-
-**Evidence:** Private recording/recap playback-URL routes query access and return `/api/artifacts/:artifactId/stream` with `expiresAt: null`; the relevant server responses already contain `artifactId`, but several client types omit it. The stream endpoint performs its own authorization. There are six private callers in total, including the two session composables. Current URL caches also drive panel text claiming media is playing. Recap replacement preserves the recap ID while changing its artifact.
-
-**Scope if removal is chosen:** Update all six private callers to build the artifact stream URL from existing data, add the omitted artifact identity to their client types, then delete the two private URL routes and OpenAPI entries and obsolete fetch/cache/reset plumbing. Converge playback/error handling as in CJ-12. Distinguish a changed artifact from the same recap's progress ID when guarding awaits, reusing a loaded source, and showing playback indicators. Use existing player identity/state; keep only state needed for actual asynchronous player work. A shared URL builder is justified by current reuse, not as a speculative signed-URL framework.
-
-**Files:** The two private playback-URL routes; all six callers: `app/composables/useSessionRecordings.ts`, `useSessionRecap.ts`, `useCampaignRecaps.ts`, and the campaign `recordings/[recordingId].vue`, `documents/[documentId].vue`, and `watch.vue` pages. Include `shared/types/session-workflow.ts`, `shared/types/campaign-overview.ts`, the document page's recording type, and `useRecapWatch`/`CampaignRecapWatch` contracts as needed, plus affected panel/view-model bindings, player error presentation, tests, and OpenAPI. The public recap playback-URL endpoint and public payload boundary remain outside this scope.
-
-**Acceptance:** Cover the six private workflows, both media kinds, repeat playback, replacement/deletion, stale artifact identity, accurate indicators, and preserved global-player lifetime/progress/drawer behavior. Authorization and missing-media failures move from the lookup to the stream: verify real player-state errors and visible retry guidance for audio as well as video, rather than only mocking a rejecting `playSource`. Confirm retired-route behavior and no remaining private URL callers; extend existing recap API, watch/playlist, and session playback/deletion tests as needed. Do not run CJ-12 separately first if this removal path is selected.
 
 ## Outside the current scope
 

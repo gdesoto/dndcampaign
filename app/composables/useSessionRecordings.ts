@@ -1,5 +1,6 @@
 import type { Ref } from 'vue'
 import type { RecordingKind, SessionRecordingItem } from '#shared/types/session-workflow'
+import { artifactStreamUrl } from '~/utils/artifact'
 
 type UseSessionRecordingsOptions = {
   sessionId: Ref<string>
@@ -15,14 +16,19 @@ export function useSessionRecordings(options: UseSessionRecordingsOptions) {
   const isUploading = ref(false)
   const selectedFile = ref<File | null>(null)
   const selectedKind = ref<RecordingKind>('AUDIO')
-  const playbackUrls = reactive<Record<string, string>>({})
   const playbackLoading = reactive<Record<string, boolean>>({})
   const playbackError = ref('')
   const deletingRecordingId = ref('')
   const deleteError = ref('')
+  const playingRecordingId = computed(() => {
+    const { source, isPlaying, presentation } = player.state.value
+    if (!source || !isPlaying || presentation !== 'global') return ''
+    return options.recordings.value?.find(recording => recording.id === source.id
+      && recording.kind === source.kind && artifactStreamUrl(recording.artifactId) === source.src)?.id || ''
+  })
 
   const uploadRecording = async () => {
-    if (!selectedFile.value) return
+    if (!selectedFile.value || isUploading.value || deletingRecordingId.value) return
     uploadError.value = ''
     isUploading.value = true
     try {
@@ -44,56 +50,32 @@ export function useSessionRecordings(options: UseSessionRecordingsOptions) {
   }
 
   const loadPlayback = async (recordingId: string) => {
-    const cachedUrl = playbackUrls[recordingId]
-    if (cachedUrl) {
-      const recording = options.recordings.value?.find((item) => item.id === recordingId)
-      if (recording) {
-        await player.playSource(
-          {
-            id: recordingId,
-            title: recording.filename,
-            subtitle: recording.kind,
-            kind: recording.kind,
-            src: cachedUrl,
-          },
-          { presentation: 'global' }
-        )
-      }
-      return
-    }
-
-    if (playbackLoading[recordingId]) return
+    if (playbackLoading[recordingId] || deletingRecordingId.value === recordingId) return
+    const recording = options.recordings.value?.find(item => item.id === recordingId)
+    if (!recording) return
+    const { id, artifactId, kind, filename } = recording
 
     playbackError.value = ''
     playbackLoading[recordingId] = true
     try {
-      const payload = await request<{ url: string }>(`/api/recordings/${recordingId}/playback/url`)
-      const playbackUrl = payload?.url
-      if (!playbackUrl) throw new Error('Unable to load recording playback URL.')
-      playbackUrls[recordingId] = playbackUrl
-      const recording = options.recordings.value?.find((item) => item.id === recordingId)
-      if (recording) {
-        await player.playSource(
-          {
-            id: recordingId,
-            title: recording.filename,
-            subtitle: recording.kind,
-            kind: recording.kind,
-            src: playbackUrl,
-          },
-          { presentation: 'global' }
-        )
-      }
+      await player.playSource(
+        { id, title: filename, subtitle: kind, kind, src: artifactStreamUrl(artifactId) },
+        { presentation: 'global' }
+      )
     } catch (error) {
-      playbackError.value =
-        (error as Error & { message?: string }).message || 'Unable to load playback.'
+      if (options.recordings.value?.some(item => item.id === id && item.artifactId === artifactId && item.kind === kind)) {
+        playbackError.value = (error as Error & { message?: string }).message || 'Unable to load playback.'
+      }
     } finally {
       playbackLoading[recordingId] = false
     }
   }
 
   const deleteRecording = async (recordingId: string) => {
-    if (!recordingId || deletingRecordingId.value) return
+    if (!recordingId || deletingRecordingId.value || isUploading.value || playbackLoading[recordingId]) return
+    const recording = options.recordings.value?.find(item => item.id === recordingId)
+    const deletedSrc = recording ? artifactStreamUrl(recording.artifactId) : ''
+    const deletedKind = recording?.kind
 
     deleteError.value = ''
     deletingRecordingId.value = recordingId
@@ -102,8 +84,8 @@ export function useSessionRecordings(options: UseSessionRecordingsOptions) {
       await request(`/api/recordings/${recordingId}`, {
         method: 'DELETE',
       })
-      playbackUrls[recordingId] = ''
-      playbackLoading[recordingId] = false
+      const source = player.state.value.source
+      if (source?.id === recordingId && source.src === deletedSrc && source.kind === deletedKind) player.stop()
       await options.refreshRecordings()
     } catch (error) {
       deleteError.value =
@@ -119,7 +101,7 @@ export function useSessionRecordings(options: UseSessionRecordingsOptions) {
     isUploading,
     selectedFile,
     selectedKind,
-    playbackUrls,
+    playingRecordingId,
     playbackLoading,
     playbackError,
     deletingRecordingId,

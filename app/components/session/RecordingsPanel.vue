@@ -25,7 +25,7 @@ const props = defineProps<{
   deleteError?: string
   deletingRecordingId?: string
   playbackLoading: Record<string, boolean>
-  playbackUrls: Record<string, string>
+  playingRecordingId: string
 }>()
 
 const emit = defineEmits<{
@@ -124,16 +124,17 @@ const recordingActions = (recording: RecordingItem): RecordAction[] => [
                 icon="i-lucide-play"
                 variant="outline"
                 :loading="playbackLoading[recording.id]"
+                :disabled="deletingRecordingId === recording.id"
                 @click="emit('play-recording', recording.id)"
               >
                 Play
               </UButton>
-              <SharedActionMenu :name="recording.filename" :items="recordingActions(recording)" :disabled="isUploading || Boolean(deletingRecordingId)" />
+              <SharedActionMenu :name="recording.filename" :items="recordingActions(recording)" :disabled="isUploading || Boolean(deletingRecordingId) || playbackLoading[recording.id]" />
             </div>
           </div>
 
           <div
-            v-if="playbackUrls[recording.id]"
+            v-if="playingRecordingId === recording.id"
             class="mt-3 flex items-center justify-between gap-3 text-xs text-muted"
           >
             <span>Playing in the global player.</span>

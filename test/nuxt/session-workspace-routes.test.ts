@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { NuxtPage } from '#components'
@@ -9,7 +9,7 @@ import { useSessionWorkspaceContext } from '../../app/composables/useSessionWork
 type Workspace = ReturnType<typeof useSessionWorkspaceContext>
 const { request, discard, closeModal } = vi.hoisted(() => ({ request: vi.fn(), discard: vi.fn(), closeModal: vi.fn() }))
 mockNuxtImport('useApi', () => () => ({ request }))
-mockNuxtImport('useMediaPlayer', () => () => ({ playSource: vi.fn(), openDrawer: vi.fn() }))
+mockNuxtImport('useMediaPlayer', () => () => ({ playSource: vi.fn(), openDrawer: vi.fn(), stop: vi.fn(), state: ref({ source: null, isPlaying: false, presentation: 'global' }) }))
 mockNuxtImport('useOverlay', () => () => ({ create: () => ({ open: () => ({ result: discard() }), close: closeModal }) }))
 
 const seen: Workspace[] = []
@@ -34,8 +34,8 @@ let failRefresh = false
 
 const workspaceResponse = (id: string) => ({
   session: { id, title: `Session ${id}`, notes: 'Original notes' },
-  recordings: [{ id: `recording-${id}`, kind: 'VIDEO', filename: 'Recording.mp4' }],
-  recaps: [{ id: `recap-${id}`, filename: 'Recap.mp3', mimeType: 'audio/mpeg' }],
+  recordings: [{ id: `recording-${id}`, artifactId: `recording-artifact-${id}`, kind: 'VIDEO', filename: 'Recording.mp4' }],
+  recaps: [{ id: `recap-${id}`, artifactId: `recap-artifact-${id}`, filename: 'Recap.mp3', mimeType: 'audio/mpeg' }],
   transcriptDoc: { id: `transcript-${id}`, type: 'TRANSCRIPT', currentVersion: { content: 'Transcript' } },
   summaryDoc: { id: `summary-${id}`, type: 'SUMMARY', currentVersion: { content: summaryContent } },
   access: { permissions: ['content.write', 'summary.run', 'recording.upload'] },

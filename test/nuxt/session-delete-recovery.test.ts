@@ -12,7 +12,7 @@ import { useSessionRecap } from '../../app/composables/useSessionRecap'
 
 const { request } = vi.hoisted(() => ({ request: vi.fn() }))
 mockNuxtImport('useApi', () => () => ({ request }))
-mockNuxtImport('useMediaPlayer', () => () => ({ playSource: vi.fn() }))
+mockNuxtImport('useMediaPlayer', () => () => ({ playSource: vi.fn(), stop: vi.fn(), state: ref({ source: null, isPlaying: false, presentation: 'global' }) }))
 
 it.each(['recording', 'transcript', 'recap'] as const)('keeps the %s confirmation pending, retains errors, and retries', async (kind) => {
   let rejectDelete!: (error: Error) => void
@@ -21,13 +21,13 @@ it.each(['recording', 'transcript', 'recap'] as const)('keeps the %s confirmatio
   const close = vi.fn()
   const wrapper = await mountSuspended(defineComponent({
     setup() {
-      const media = { id: 'r1', filename: 'Session audio.mp3', mimeType: 'audio/mpeg', byteSize: 100, createdAt: '2026-09-09' }
+      const media = { id: 'r1', artifactId: 'artifact-r1', filename: 'Session audio.mp3', mimeType: 'audio/mpeg', byteSize: 100, createdAt: '2026-09-09' }
       let panel: Component
       let props: Record<string, unknown>
       if (kind === 'recording') {
         const controls = useSessionRecordings({ sessionId: ref('s1'), recordings: ref([]), refreshRecordings: refresh })
         panel = RecordingsPanel
-        props = { workflowMode: true, campaignId: 'c1', canManageRecordings: true, recordings: [{ ...media, kind: 'AUDIO' }], selectedFile: null, selectedKind: 'AUDIO', isUploading: false, uploadError: '', playbackError: '', playbackLoading: {}, playbackUrls: {}, deleteRecording: controls.deleteRecording }
+        props = { workflowMode: true, campaignId: 'c1', canManageRecordings: true, recordings: [{ ...media, kind: 'AUDIO' }], selectedFile: null, selectedKind: 'AUDIO', isUploading: false, uploadError: '', playbackError: '', playbackLoading: {}, playingRecordingId: '', deleteRecording: controls.deleteRecording }
       } else if (kind === 'transcript') {
         const controls = useSessionDocuments({ sessionId: ref('s1'), sessionTitle: ref('Session'), transcriptDoc: ref({ id: 'd1', title: 'Transcript', type: 'TRANSCRIPT' }), summaryDoc: ref(null), summaryContent: ref(''), refreshTranscript: refresh, refreshSummary: refresh })
         panel = TranscriptPanel
@@ -35,7 +35,7 @@ it.each(['recording', 'transcript', 'recap'] as const)('keeps the %s confirmatio
       } else {
         const controls = useSessionRecap({ sessionId: ref('s1'), selectedRecapKind: ref('AUDIO'), recap: ref(media), refreshRecap: refresh })
         panel = RecapPanel
-        props = { workflowMode: true, canManage: true, recap: media, recaps: [media], selectedKind: 'AUDIO', recapFile: null, recapUploading: false, recapPlaybackLoading: false, recapDeleting: false, recapPlaybackUrl: '', recapError: '', recapDeleteError: '', hasRecap: true, deleteRecap: controls.deleteRecap }
+        props = { workflowMode: true, canManage: true, recap: media, recaps: [media], selectedKind: 'AUDIO', recapFile: null, recapUploading: false, recapPlaybackLoading: false, recapDeleting: false, recapPlaying: false, recapError: '', recapDeleteError: '', hasRecap: true, deleteRecap: controls.deleteRecap }
       }
       return () => h(panel, props)
     },

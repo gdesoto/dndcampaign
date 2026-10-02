@@ -21,6 +21,13 @@ const recapError = ref('')
 const recapsSortedBySessionNumber = computed(() =>
   sortRecapsByReverseSessionNumber(recaps.value)
 )
+const isRecapPlaying = computed(() => {
+  const recap = recaps.value?.find(item => item.id === selectedRecapId.value)
+  const source = player.state.value.source
+  return Boolean(recap && player.state.value.isPlaying && source?.id === recap.id
+    && source.src === recapPlaybackUrl.value
+    && source.kind === (recap.mimeType?.startsWith('video/') ? 'VIDEO' : 'AUDIO'))
+})
 
 watch(
   () => recapsSortedBySessionNumber.value,
@@ -87,7 +94,7 @@ const playRecap = async (recapId: string) => {
           :recaps="recapsSortedBySessionNumber"
           :watch-base-path="`/public/${publicSlug}`"
           :selected-recap-id="selectedRecapId"
-          :playback-url="recapPlaybackUrl"
+          :is-playing="isRecapPlaying"
           :loading="recapLoading"
           :deleting="false"
           :error="recapError"

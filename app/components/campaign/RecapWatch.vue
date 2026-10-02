@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import type { WatchRecap } from '~/composables/useRecapWatch'
+import type { WatchRecap, ResolveRecapPlayback } from '~/composables/useRecapWatch'
 import { formatSessionDate } from '~/utils/session-date'
 
 const props = defineProps<{
   recaps: WatchRecap[] | null | undefined
   basePath: string
-  resolvePlayback: (id: string) => Promise<{ url: string } | null>
+  resolvePlayback: ResolveRecapPlayback
 }>()
-const { player, playlist, selected, selectedId, selectedIndex, next, previous, loading, error, autoAdvance, choose, select } = useRecapWatch({
+const { player, playlist, selected, selectedId, selectedIndex, next, previous, loading, error, active, autoAdvance, choose, select } = useRecapWatch({
   recaps: toRef(props, 'recaps'),
   resolvePlayback: id => props.resolvePlayback(id),
 })
 const state = player.state
-const active = computed(() => Boolean(selected.value) && state.value.source?.recapProgressId === selectedId.value)
 const playlistButtons = new Map<string, HTMLButtonElement>()
 const playlistElement = useTemplateRef<HTMLOListElement>('playlistElement')
 

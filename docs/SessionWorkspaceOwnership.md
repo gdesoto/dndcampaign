@@ -69,9 +69,17 @@ latest job directly from that response; only historical selections fetch details
 Historical responses must match the selected ID before display, and refreshes
 retain previous results on failure. The endpoint reads ordered history and then
 details for at most two latest jobs, preserving its existing response contract.
-Existing global media playback and
-session-keyed job selection caches keep their established lifetimes. Standalone
-document and recording editor routes remain outside the session parent.
+Playback uses artifact stream URLs from the loaded media identity, with no private
+URL lookup or cache. Panels derive playing indicators from the global player's
+source, artifact URL, media kind, and actual playing state. Pending play actions
+capture their media identity before awaiting the player; replacement under the
+same recap ID does not reuse the old artifact URL.
+
+Existing global media playback and session-keyed job selection caches keep their
+established lifetimes. A successful explicit deletion stops playback only when
+the player still holds the deleted media's ID, artifact URL, and kind; it cannot
+stop a newer selection. Standalone document and recording editor routes remain
+outside the session parent.
 
 The change does not add a Pinia store, keep-alive cache, or automatic fallback
 factory. Ancestor ownership already provides the lifetime needed here.

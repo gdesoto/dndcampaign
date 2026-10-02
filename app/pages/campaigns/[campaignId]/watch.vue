@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CampaignRecapItem } from '#shared/types/campaign-overview'
+import { artifactStreamUrl } from '~/utils/artifact'
 definePageMeta({ layout: 'dashboard' })
 
 const { campaignId, request } = useCampaignPageContext()
@@ -7,7 +8,10 @@ const { data: recaps, pending, error, refresh } = await useAsyncData(
   () => `campaign-recaps-${campaignId.value}`,
   () => request<CampaignRecapItem[]>(`/api/campaigns/${campaignId.value}/recaps`),
 )
-const resolvePlayback = (id: string) => request<{ url: string }>(`/api/recaps/${id}/playback/url`)
+const resolvePlayback = (id: string) => {
+  const recap = recaps.value?.find(item => item.id === id)
+  return recap ? { url: artifactStreamUrl(recap.artifactId) } : null
+}
 </script>
 
 <template>

@@ -10,7 +10,7 @@ const { data: milestones, pending: milestonesPending, error: milestonesError, re
 const { data: activityLogs, pending: activityPending, error: activityError, refresh: refreshActivity } = await useOverviewResource<CampaignActivityLogItem[]>(campaignId, 'activity', () => `/api/campaigns/${campaignId.value}/activity`)
 const {
   recaps, recapsPending, recapsError, refreshRecaps, recapsSortedBySessionNumber,
-  selectedRecapId, recapPlaybackUrl, recapLoading, recapError, recapDeleting,
+  selectedRecapId, isRecapPlaying, recapLoading, recapError, recapDeleting,
   recapDeleteError, playRecap, deleteRecap, openPlayer,
 } = useCampaignRecaps(campaignId, refreshActivity)
 const { latestSession, activeQuestCount, openMilestoneCount, recentSessions, recentQuests, recentMilestones } = useCampaignOverviewMetrics(sessions, quests, milestones)
@@ -101,7 +101,7 @@ const saveCampaign = async () => {
         <SharedResourceState :pending="recapsPending" :error="recapsError" :has-data="Boolean(recaps)" error-message="Unable to load recaps." @retry="refreshRecaps">
           <CampaignRecapPlaylist
             :campaign-id="campaignId" :recaps="recapsSortedBySessionNumber" :selected-recap-id="selectedRecapId"
-            :playback-url="recapPlaybackUrl" :loading="recapLoading" :deleting="mutationBusy" :error="recapError" :delete-error="recapDeleteError"
+            :is-playing="isRecapPlaying" :loading="recapLoading" :deleting="mutationBusy" :error="recapError" :delete-error="recapDeleteError"
             :can-delete="canWriteContent" :delete-action="deleteRecap"
             :empty-action-to="`/campaigns/${campaignId}/sessions`" :empty-action-label="canWriteContent ? 'Upload a recap' : 'View sessions'"
             @play="playRecap" @select="selectedRecapId = $event" @open-player="openPlayer"

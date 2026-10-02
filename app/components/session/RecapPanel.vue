@@ -16,7 +16,7 @@ const props = defineProps<{
   recapUploading: boolean
   recapPlaybackLoading: boolean
   recapDeleting: boolean
-  recapPlaybackUrl: string
+  recapPlaying: boolean
   recapError: string
   recapDeleteError: string
   hasRecap: boolean
@@ -34,6 +34,7 @@ const recapFileModel = computed({
   get: () => props.recapFile,
   set: (value: File | null | undefined) => emit('update:recapFile', value ?? null),
 })
+const recapBusy = computed(() => props.recapUploading || props.recapDeleting || props.recapPlaybackLoading)
 
 const toast = useToast()
 const mediaKinds = ['AUDIO', 'VIDEO'] as const
@@ -54,12 +55,13 @@ watch(() => props.selectedKind, () => { isReplaceModalOpen.value = false })
 const { formatBytes } = useFormatBytes()
 
 const openReplaceModal = () => {
+  if (recapBusy.value || !props.canManage) return
   recapFileModel.value = null
   isReplaceModalOpen.value = true
 }
 
 const submitReplace = () => {
-  if (!recapFileModel.value || props.recapUploading || props.recapDeleting || !props.canManage) return
+  if (!recapFileModel.value || recapBusy.value || !props.canManage) return
   emit('upload-recap')
 }
 
@@ -125,7 +127,7 @@ const recapActions = computed<RecordAction[]>(() => {
           :color="selectedKind === kind ? 'primary' : 'neutral'"
           :aria-pressed="selectedKind === kind"
           :icon="kind === 'VIDEO' ? 'i-lucide-video' : 'i-lucide-headphones'"
-          :disabled="recapUploading || recapDeleting || recapPlaybackLoading"
+          :disabled="recapBusy"
           @click="emit('update:selectedKind', kind)"
         >
           {{ kind === 'VIDEO' ? 'Video' : 'Audio' }} · {{ hasKind(kind) ? 'Attached' : 'Not uploaded' }}
@@ -140,6 +142,7 @@ const recapActions = computed<RecordAction[]>(() => {
         <SharedFilePicker
           v-model="recapFileModel"
           :accept="acceptedTypes"
+          :disabled="recapBusy"
           label="Choose file"
           class="w-full"
         />
@@ -163,7 +166,7 @@ const recapActions = computed<RecordAction[]>(() => {
           icon="i-lucide-upload"
           color="primary"
           variant="solid"
-          :disabled="!recapFile || recapDeleting"
+          :disabled="!recapFile || recapBusy"
           :loading="recapUploading"
           class="w-full sm:w-auto"
           @click="emit('upload-recap')"
@@ -175,17 +178,17 @@ const recapActions = computed<RecordAction[]>(() => {
           size="sm"
           variant="outline"
           icon="i-lucide-play"
-          :disabled="!hasRecap"
+          :disabled="!hasRecap || recapUploading || recapDeleting"
           :loading="recapPlaybackLoading"
           class="w-full sm:w-auto"
           @click="emit('play-recap')"
         >
           Play recap
         </UButton>
-        <SharedActionMenu v-if="recap" :name="recap.filename || 'recap'" :items="recapActions" :disabled="recapUploading || recapDeleting" />
+        <SharedActionMenu v-if="recap" :name="recap.filename || 'recap'" :items="recapActions" :disabled="recapBusy" />
       </div>
 
-      <UCard v-if="recapPlaybackUrl" variant="soft">
+      <UCard v-if="recapPlaying" variant="soft">
         <div class="flex items-center justify-between gap-3 text-xs text-muted">
           <span>Recap is playing in the global player.</span>
           <UButton size="xs" variant="ghost" @click="emit('open-player')">
@@ -203,22 +206,22 @@ const recapActions = computed<RecordAction[]>(() => {
     v-model:open="isReplaceModalOpen"
     :title="`Replace ${kindLabel.toLowerCase()} recap`"
     :description="`This permanently replaces ‘${recap?.filename || 'the current recap'}’. The other media type stays attached.`"
-    :dismissible="!recapUploading && !recapDeleting"
+    :dismissible="!recapBusy"
     :close="false"
     :content="{ onOpenAutoFocus: focusCancel }"
   >
     <template #body>
       <div class="space-y-4">
         <UFormField label="Replacement file" name="recapReplacement">
-          <SharedFilePicker v-model="recapFileModel" :accept="acceptedTypes" label="Choose replacement" :disabled="recapUploading || recapDeleting" />
+          <SharedFilePicker v-model="recapFileModel" :accept="acceptedTypes" label="Choose replacement" :disabled="recapBusy" />
         </UFormField>
         <p v-if="recapError" role="alert" class="text-sm text-error">{{ recapError }}</p>
       </div>
     </template>
     <template #footer>
       <div class="flex w-full flex-wrap justify-end gap-2">
-        <UButton ref="cancelReplacement" color="neutral" variant="outline" :disabled="recapUploading || recapDeleting" @click="isReplaceModalOpen = false">Cancel</UButton>
-        <UButton color="error" variant="solid" :disabled="!recapFile || recapDeleting || !canManage" :loading="recapUploading" @click="submitReplace">Replace recap</UButton>
+        <UButton ref="cancelReplacement" color="neutral" variant="outline" :disabled="recapBusy" @click="isReplaceModalOpen = false">Cancel</UButton>
+        <UButton color="error" variant="solid" :disabled="!recapFile || recapBusy || !canManage" :loading="recapUploading" @click="submitReplace">Replace recap</UButton>
       </div>
     </template>
   </UModal>

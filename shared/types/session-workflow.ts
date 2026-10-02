@@ -15,6 +15,7 @@ export type SessionDetail = {
 
 export type SessionRecordingItem = {
   id: string
+  artifactId: string
   kind: RecordingKind
   filename: string
   mimeType: string
@@ -25,6 +26,7 @@ export type SessionRecordingItem = {
 
 export type SessionRecapRecording = {
   id: string
+  artifactId: string
   filename: string
   mimeType: string
   byteSize: number

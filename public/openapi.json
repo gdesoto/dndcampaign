@@ -879,7 +879,7 @@
           "artifacts"
         ],
         "summary": "GET /api/artifacts/{artifactId}/stream",
-        "description": "Streams a private artifact after read access is verified. A storage adapter with range support serves one valid `Range` request as 206; otherwise the complete artifact is returned. Malformed or multiple ranges deliberately fall back to 200. Starts beyond the artifact, reversed ranges, zero-length suffixes, and unsafe integer values return 416. Oversized valid ends are clamped to the artifact size.",
+        "description": "Streams a private artifact after read access is verified. Private recording and recap playback use the artifactId already included in their resource responses to request this stream directly; there is no private playback-URL lookup. Campaign media without read access returns 403, and a missing or deleted artifact returns 404. A storage adapter with range support serves one valid `Range` request as 206; otherwise the complete artifact is returned. Malformed or multiple ranges deliberately fall back to 200. Starts beyond the artifact, reversed ranges, zero-length suffixes, and unsafe integer values return 416. Oversized valid ends are clamped to the artifact size.",
         "operationId": "get_api_artifacts_artifactId_stream",
         "parameters": [
           {
@@ -10609,69 +10609,6 @@
         "x-generated": true
       }
     },
-    "/api/recaps/{recapId}/playback/url": {
-      "get": {
-        "tags": [
-          "recaps"
-        ],
-        "summary": "GET /api/recaps/{recapId}/playback/url",
-        "description": "Auto-documented from server route `recaps/[recapId]/playback/url/index.get.ts`. This operation uses the project standard API envelope `{ data, error }`.",
-        "operationId": "get_api_recaps_recapId_playback_url",
-        "parameters": [
-          {
-            "name": "recapId",
-            "in": "path",
-            "required": true,
-            "description": "Path identifier for recapId.",
-            "schema": {
-              "type": "string"
-            },
-            "example": "c8b2e6f8-3f9b-4b06-a4a0-87a0ef0b7a15"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Playback URL envelope.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_PlaybackUrl"
-                },
-                "example": {
-                  "data": {
-                    "url": "https://cdn.example.com/playback/abc123?signature=xyz",
-                    "expiresAt": "2026-03-03T13:00:00.000Z"
-                  },
-                  "error": null
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          }
-        },
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "x-source-file": "recaps/[recapId]/playback/url/index.get.ts",
-        "x-generated": true
-      }
-    },
     "/api/recordings/{recordingId}": {
       "get": {
         "tags": [
@@ -10877,69 +10814,6 @@
             }
           }
         }
-      }
-    },
-    "/api/recordings/{recordingId}/playback/url": {
-      "get": {
-        "tags": [
-          "recordings"
-        ],
-        "summary": "GET /api/recordings/{recordingId}/playback/url",
-        "description": "Auto-documented from server route `recordings/[recordingId]/playback/url/index.get.ts`. This operation uses the project standard API envelope `{ data, error }`.",
-        "operationId": "get_api_recordings_recordingId_playback_url",
-        "parameters": [
-          {
-            "name": "recordingId",
-            "in": "path",
-            "required": true,
-            "description": "Path identifier for recordingId.",
-            "schema": {
-              "type": "string"
-            },
-            "example": "c8b2e6f8-3f9b-4b06-a4a0-87a0ef0b7a15"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Playback URL envelope.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_PlaybackUrl"
-                },
-                "example": {
-                  "data": {
-                    "url": "https://cdn.example.com/playback/abc123?signature=xyz",
-                    "expiresAt": "2026-03-03T13:00:00.000Z"
-                  },
-                  "error": null
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          }
-        },
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "x-source-file": "recordings/[recordingId]/playback/url/index.get.ts",
-        "x-generated": true
       }
     },
     "/api/recordings/{recordingId}/transcriptions": {

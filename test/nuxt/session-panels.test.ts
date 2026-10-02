@@ -53,18 +53,42 @@ describe('SessionStatusCards', () => {
 })
 
 describe('SessionRecordingsPanel', () => {
-  it('links the overview panel to the recordings step without intercepting navigation', async () => {
+  it('links to the recordings step and reflects current playback and conflicting actions', async () => {
+    const recording = {
+      id: 'r1', artifactId: 'artifact-r1', kind: 'AUDIO' as const, filename: 'first.mp3',
+      mimeType: 'audio/mpeg', byteSize: 100, createdAt: '2026-09-06',
+    }
+    const secondRecording = { ...recording, id: 'r2', artifactId: 'artifact-r2', filename: 'second.mp3' }
     const wrapper = await mountSuspended(RecordingsPanel, {
       props: {
         campaignId: 'c1', workflowMode: false, to: '/campaigns/c1/sessions/s1/recordings',
-        recordings: [], selectedFile: null, selectedKind: 'AUDIO', isUploading: false,
-        uploadError: '', playbackError: '', playbackLoading: {}, playbackUrls: {},
+        recordings: [recording, secondRecording],
+        selectedFile: null, selectedKind: 'AUDIO', isUploading: false,
+        uploadError: '', playbackError: '', playbackLoading: {}, playingRecordingId: '',
       },
       global: { stubs: { UTooltip: { template: '<div><slot /></div>' } } },
     })
     expect(wrapper.get('a[aria-label="Open recordings"]').attributes('href')).toBe('/campaigns/c1/sessions/s1/recordings')
     await wrapper.setProps({ to: undefined })
     expect(wrapper.find('a[aria-label="Open recordings"]').exists()).toBe(false)
+
+    expect(wrapper.text()).not.toContain('Playing in the global player.')
+    const playButtons = () => wrapper.findAll('button').filter(button => button.text().trim() === 'Play')
+    await playButtons()[0]!.trigger('click')
+    expect(wrapper.emitted('play-recording')).toEqual([['r1']])
+    expect(wrapper.text()).not.toContain('Playing in the global player.')
+    await wrapper.setProps({ playingRecordingId: 'r1' })
+    expect(wrapper.findAll('span').filter(span => span.text() === 'Playing in the global player.')).toHaveLength(1)
+    await wrapper.setProps({ playingRecordingId: 'r2' })
+    expect(wrapper.findAll('span').filter(span => span.text() === 'Playing in the global player.')).toHaveLength(1)
+    await wrapper.setProps({ playingRecordingId: 'another-session-recording' })
+    expect(wrapper.text()).not.toContain('Playing in the global player.')
+    await wrapper.setProps({ playingRecordingId: '', deletingRecordingId: 'r1' })
+    expect((playButtons()[0]!.element as HTMLButtonElement).disabled).toBe(true)
+    expect((playButtons()[1]!.element as HTMLButtonElement).disabled).toBe(false)
+    await playButtons()[0]!.trigger('click')
+    await playButtons()[1]!.trigger('click')
+    expect(wrapper.emitted('play-recording')).toEqual([['r1'], ['r2']])
     wrapper.unmount()
   })
 })
@@ -140,26 +164,31 @@ describe('SessionSuggestionsPanel', () => {
 
 describe('SessionRecapPanel', () => {
   it('shows both attached media types and lets the user select video', async () => {
-    const audio = { id: 'audio', filename: 'recap.mp3', mimeType: 'audio/mpeg', byteSize: 100, createdAt: '2026-09-06' }
-    const video = { ...audio, id: 'video', filename: 'recap.mp4', mimeType: 'video/mp4' }
+    const audio = { id: 'audio', artifactId: 'artifact-audio', filename: 'recap.mp3', mimeType: 'audio/mpeg', byteSize: 100, createdAt: '2026-09-06' }
+    const video = { ...audio, id: 'video', artifactId: 'artifact-video', filename: 'recap.mp4', mimeType: 'video/mp4' }
     const wrapper = await mountSuspended(RecapPanel, {
       props: {
         workflowMode: true, canManage: true, recap: audio, recaps: [audio, video], selectedKind: 'AUDIO',
         to: '/campaigns/c1/sessions/s1/recap',
         recapFile: null, recapUploading: false, recapPlaybackLoading: false, recapDeleting: false,
-        recapPlaybackUrl: '', recapError: '', recapDeleteError: '', hasRecap: true,
+        recapPlaying: false, recapError: '', recapDeleteError: '', hasRecap: true,
       },
       global: { stubs: { UTooltip: { template: '<div><slot /></div>' } } },
     })
     expect(wrapper.text()).toContain('Audio · Attached')
     expect(wrapper.text()).toContain('Video · Attached')
     expect(wrapper.get('a[aria-label="Open recap"]').attributes('href')).toBe('/campaigns/c1/sessions/s1/recap')
+    expect(wrapper.text()).not.toContain('Recap is playing in the global player.')
+    await wrapper.setProps({ recapPlaying: true })
+    expect(wrapper.text()).toContain('Recap is playing in the global player.')
     const videoButton = wrapper.findAll('button').find((button) => button.text().includes('Video · Attached'))!
     await videoButton.trigger('click')
     expect(wrapper.emitted('update:selectedKind')?.[0]).toEqual(['VIDEO'])
-    await wrapper.setProps({ selectedKind: 'VIDEO', recap: video })
+    await wrapper.setProps({ selectedKind: 'VIDEO', recap: video, recapPlaying: false })
     expect(wrapper.text()).toContain('recap.mp4')
     expect(wrapper.text()).not.toContain('recap.mp3')
+    expect(wrapper.text()).not.toContain('Recap is playing in the global player.')
+    wrapper.unmount()
   })
 
   it.each(['audio/mpeg', 'video/mp4'])('emits upload/play and awaits delete actions for %s', async (mimeType) => {
@@ -175,7 +204,7 @@ describe('SessionRecapPanel', () => {
         recapUploading: false,
         recapPlaybackLoading: false,
         recapDeleting: false,
-        recapPlaybackUrl: '',
+        recapPlaying: false,
         recapError: '',
         recapDeleteError: '',
         hasRecap: false,
@@ -198,6 +227,10 @@ describe('SessionRecapPanel', () => {
 
     expect(wrapper.find('input[type="file"]').attributes('accept')).toContain(mimeType)
     await clickByText(wrapper, 'Upload recap')
+    await wrapper.setProps({ recapPlaybackLoading: true })
+    await clickByText(wrapper, 'Upload recap')
+    expect(wrapper.emitted('upload-recap')).toHaveLength(1)
+    await wrapper.setProps({ recapPlaybackLoading: false })
     await wrapper.setProps({ canManage: false })
     expect(wrapper.find('input[type="file"]').exists()).toBe(false)
     expect(wrapper.findAll('button').some(button => button.text().trim() === 'Upload recap')).toBe(false)
@@ -206,6 +239,7 @@ describe('SessionRecapPanel', () => {
     await wrapper.setProps({
       recap: {
         id: 'recap-1',
+        artifactId: 'artifact-recap-1',
         filename: 'recap.mp3',
         mimeType,
         byteSize: 1024,
@@ -216,11 +250,23 @@ describe('SessionRecapPanel', () => {
 
     expect(wrapper.text()).toContain(mimeType.startsWith('video/') ? 'Video recap' : 'Audio recap')
     await clickByText(wrapper, 'Play recap')
+    expect(wrapper.text()).not.toContain('Recap is playing in the global player.')
+    for (const busy of ['recapUploading', 'recapDeleting', 'recapPlaybackLoading'] as const) {
+      await wrapper.setProps({ [busy]: true })
+      await clickByText(wrapper, 'Play recap')
+      expect(wrapper.emitted('play-recap')).toHaveLength(1)
+      await wrapper.setProps({ [busy]: false })
+    }
+    await wrapper.setProps({ recapPlaying: true })
+    expect(wrapper.text()).toContain('Recap is playing in the global player.')
+    await wrapper.setProps({ recapPlaying: false })
+    expect(wrapper.text()).not.toContain('Recap is playing in the global player.')
     await clickByText(wrapper, 'Confirm delete recap')
 
     expect(wrapper.emitted('upload-recap')).toBeTruthy()
     expect(wrapper.emitted('play-recap')).toBeTruthy()
     expect(deleteRecap).toHaveBeenCalledOnce()
+    wrapper.unmount()
   })
 })
 

@@ -126,7 +126,7 @@ const navLinks = computed(() => {
     <div class="relative z-10 min-h-screen">
       <AppHeader />
 
-      <UDashboardGroup class="fixed inset-x-0 bottom-0 top-[var(--ui-header-height)]">
+      <UDashboardGroup class="fixed inset-x-0 top-[var(--ui-header-height)]" style="bottom: var(--media-player-height, 0px)">
         <UDashboardSidebar
           id="dmvault-campaign-sidebar"
           collapsible

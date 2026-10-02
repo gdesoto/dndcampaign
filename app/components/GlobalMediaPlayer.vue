@@ -3,10 +3,25 @@ const player = useMediaPlayer()
 const state = player.state
 
 const mediaEl = ref<HTMLMediaElement | null>(null)
+const miniPlayer = ref<HTMLElement | null>(null)
 const cleanupListeners = ref<(() => void) | null>(null)
+
+// Reserve the mini player's actual height, including wrapped text and errors.
+watch(miniPlayer, (el, _previous, onCleanup) => {
+  const updateHeight = () => {
+    document.documentElement.style.setProperty('--media-player-height', `${el?.getBoundingClientRect().height || 0}px`)
+  }
+  updateHeight()
+  if (!el) return
+  const observer = new ResizeObserver(updateHeight)
+  observer.observe(el)
+  onCleanup(() => observer.disconnect())
+}, { flush: 'post' })
 
 const isVideo = computed(() => state.value.source?.kind === 'VIDEO')
 const hasSource = computed(() => Boolean(state.value.source))
+const playbackLabel = computed(() => state.value.error ? 'Retry playback' : state.value.isPlaying ? 'Pause playback' : 'Play media')
+const playbackIcon = computed(() => state.value.error ? 'i-lucide-rotate-cw' : state.value.isPlaying ? 'i-heroicons-pause' : 'i-heroicons-play')
 const showInline = computed(
   () => hasSource.value && state.value.presentation === 'page' && Boolean(state.value.dockId)
 )
@@ -66,6 +81,8 @@ const formatTime = (value: number) => {
 }
 
 const attachListeners = (el: HTMLMediaElement) => {
+  const isCurrent = () => player.element.value === el && Boolean(state.value.source)
+    && el.getAttribute('src') === state.value.source?.src
   const pauseOtherMedia = () => {
     const root = globalThis.document
     if (!root) return
@@ -78,32 +95,42 @@ const attachListeners = (el: HTMLMediaElement) => {
   }
 
   const onTime = () => {
+    if (!isCurrent()) return
     state.value.currentTime = el.currentTime || 0
   }
   const onDuration = () => {
+    if (!isCurrent()) return
     state.value.duration = Number.isFinite(el.duration) ? el.duration : 0
   }
   const onPlay = () => {
+    if (!isCurrent() || el.paused) return
     state.value.isPlaying = true
     pauseOtherMedia()
   }
   const onPlaying = () => {
+    if (!isCurrent() || el.paused) return
     state.value.isPlaying = true
     pauseOtherMedia()
   }
   const onPause = () => {
+    if (!isCurrent() || !el.paused) return
     state.value.isPlaying = false
   }
   const onSeek = () => {
+    if (!isCurrent()) return
     state.value.isPlaying = !el.paused
     state.value.currentTime = el.currentTime || 0
   }
   const onEnded = () => {
+    if (!isCurrent() || !el.ended) return
     state.value.isPlaying = false
   }
   const onError = () => {
+    if (!isCurrent() || !el.error) return
+    state.value.playToken += 1
+    state.value.autoplay = false
     state.value.isPlaying = false
-    state.value.error = 'Unable to load media. Select it again to retry.'
+    state.value.error = 'Unable to load media. Retry playback.'
   }
   const onVolume = () => {
     state.value.volume = el.volume
@@ -149,17 +176,6 @@ watch(
 )
 
 watch(
-  () => state.value.source?.src,
-  (value) => {
-    if (!value || !mediaEl.value) return
-    if (mediaEl.value.src !== value) {
-      mediaEl.value.src = value
-      mediaEl.value.load()
-    }
-  }
-)
-
-watch(
   () => state.value.volume,
   (value) => {
     if (!mediaEl.value) return
@@ -182,10 +198,7 @@ watch(
 onBeforeUnmount(() => {
   player.setElement(null)
   cleanupListeners.value?.()
-})
-
-onMounted(() => {
-  // noop
+  document.documentElement.style.removeProperty('--media-player-height')
 })
 
 const onSeek = (event: Event) => {
@@ -238,8 +251,8 @@ const openFullPlayer = () => {
             <UTooltip text="Skip back 5 seconds">
               <UButton size="xs" variant="ghost" icon="i-lucide-rotate-ccw" aria-label="Skip back 5 seconds" @click="player.seek(Math.max(0, state.currentTime - 5))" />
             </UTooltip>
-            <UButton size="xs" variant="outline" :aria-label="state.isPlaying ? 'Pause playback' : 'Play media'" @click="player.toggle">
-              <UIcon :name="state.isPlaying ? 'i-heroicons-pause' : 'i-heroicons-play'" />
+            <UButton size="xs" variant="outline" :aria-label="playbackLabel" :loading="state.autoplay" @click="player.toggle">
+              <UIcon :name="playbackIcon" />
             </UButton>
             <UTooltip text="Skip forward 30 seconds">
               <UButton size="xs" variant="ghost" icon="i-lucide-rotate-cw" aria-label="Skip forward 30 seconds" @click="player.seek(state.currentTime + 30)" />
@@ -260,22 +273,23 @@ const openFullPlayer = () => {
             </UTooltip>
           </div>
           <p class="mt-1 truncate text-xs text-muted">{{ state.source?.title }}</p>
+          <p v-if="state.error" role="alert" class="mt-2 text-sm text-error">{{ state.error }}</p>
         </div>
       </div>
     </Teleport>
   </div>
 
-  <div v-if="showMini" class="pointer-events-none fixed bottom-0 left-0 right-0 z-40 px-6 pb-6">
+  <div v-if="showMini" ref="miniPlayer" class="pointer-events-none fixed bottom-0 left-0 right-0 z-40 px-3 pb-3 sm:px-6 sm:pb-6">
     <UCard class="pointer-events-auto">
       <div class="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Now playing</p>
-          <p class="font-semibold">{{ state.source?.title }}</p>
-          <p v-if="state.source?.subtitle" class="text-xs text-muted">{{ state.source?.subtitle }}</p>
+        <div class="min-w-0 flex-1 basis-48">
+          <p class="text-xs uppercase tracking-[0.08em] text-dimmed">{{ state.isPlaying ? 'Now playing' : 'Media player' }}</p>
+          <p class="line-clamp-2 break-words font-semibold">{{ state.source?.title }}</p>
+          <p v-if="state.source?.subtitle" class="truncate text-xs text-muted">{{ state.source?.subtitle }}</p>
         </div>
         <div class="flex items-center gap-2">
-          <UButton size="lg" variant="outline" :aria-label="state.isPlaying ? 'Pause playback' : 'Play media'" @click="player.toggle">
-            <UIcon :name="state.isPlaying ? 'i-heroicons-pause' : 'i-heroicons-play'" />
+          <UButton size="lg" variant="outline" :aria-label="playbackLabel" :loading="state.autoplay" @click="player.toggle">
+            <UIcon :name="playbackIcon" />
           </UButton>
           <UButton size="lg" variant="ghost" class="ml-3" aria-label="Open full player" @click="player.openDrawer">
             <UIcon name="i-lucide-maximize-2" />
@@ -285,6 +299,7 @@ const openFullPlayer = () => {
           </UButton>
         </div>
       </div>
+      <p v-if="state.error && !drawerOpen" role="alert" class="mt-3 text-sm text-error">{{ state.error }}</p>
     </UCard>
   </div>
 
@@ -302,10 +317,10 @@ const openFullPlayer = () => {
     <template #content>
       <div class="pointer-events-auto space-y-4 p-4">
         <div class="flex flex-wrap items-center justify-between gap-4">
-          <div>
+          <div class="min-w-0 flex-1">
             <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Player</p>
-            <p class="text-lg font-semibold">{{ state.source?.title || 'Media player' }}</p>
-            <p v-if="state.source?.subtitle" class="text-xs text-muted">{{ state.source?.subtitle }}</p>
+            <p class="break-words text-lg font-semibold">{{ state.source?.title || 'Media player' }}</p>
+            <p v-if="state.source?.subtitle" class="break-words text-xs text-muted">{{ state.source?.subtitle }}</p>
           </div>
           <UButton size="lg" variant="subtle" aria-label="Minimize media player" @click="player.closeDrawer">
             <UIcon name="i-lucide-minimize-2" />
@@ -316,8 +331,8 @@ const openFullPlayer = () => {
 
         <div class="space-y-3">
           <div class="flex flex-wrap items-center gap-3">
-            <UButton size="sm" variant="outline" :aria-label="state.isPlaying ? 'Pause playback' : 'Play media'" @click="player.toggle">
-              <UIcon :name="state.isPlaying ? 'i-heroicons-pause' : 'i-heroicons-play'" />
+            <UButton size="sm" variant="outline" :aria-label="playbackLabel" :loading="state.autoplay" @click="player.toggle">
+              <UIcon :name="playbackIcon" />
             </UButton>
             <div class="flex items-center gap-2 text-xs text-dimmed">
               <span>{{ formatTime(state.currentTime) }}</span>
@@ -363,7 +378,7 @@ const openFullPlayer = () => {
               </select>
             </label>
           </div>
-          <p v-if="state.error" class="text-sm text-error">{{ state.error }}</p>
+          <p v-if="state.error" role="alert" class="text-sm text-error">{{ state.error }}</p>
         </div>
       </div>
     </template>

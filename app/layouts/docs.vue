@@ -3,7 +3,7 @@ const { navigationItems } = useUiRefreshDocs()
 </script>
 
 <template>
-  <div class="theme-shell">
+  <div class="theme-shell" style="padding-bottom: var(--media-player-height, 0px)">
     <div class="theme-overlay theme-overlay-noise" />
     <div class="theme-overlay theme-overlay-pattern" />
 
