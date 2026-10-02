@@ -86,3 +86,68 @@ behavior is described in [DeploymentRecovery.md](../docs/DeploymentRecovery.md).
 
 Character sheet and import behavior is documented in
 [Characters.md](../docs/Characters.md).
+
+## Test-suite review
+
+Four agents reviewed unit, API, Nuxt, and E2E/infrastructure tests after the
+eight-file Nuxt consolidation on 2026-10-02. The additional proposals below are
+not implemented. Preserve meaningful assertions, permission/public-field
+contracts, scoped fixtures, and failure cleanup; fewer files alone do not
+establish a useful simplification or a production-build improvement.
+
+| Type | Recommended net reduction | Cohesive groupings |
+| --- | ---: | --- |
+| Unit | 4 | API-key policy + agent OpenAPI contracts; campaign navigation + selector destinations; journal normalization + visibility schemas; encounter policy + summaries. |
+| Nuxt | 3 | Quest form schema into quests page; calendar general settings into calendar page; journal list + entry workflows. Union existing mocks and keep scenario hooks scoped. |
+| API | 2 | Quest + milestone progression; transcript reader into session documents, retaining bearer-key permissions and version scoping. |
+| Infrastructure | 1 | Combine the ten-line API context and Prisma fixture module, which all twenty API suites import together. Preserve the existing server launcher boundaries. |
+| E2E | 0 | Keep four distinct assembled workflows; improve their assertions and resource ownership rather than merging them for count. |
+
+Conditional alternatives: another two unit files through dungeon generation/map
+and map parsing/glossary-conflict groupings; another two Nuxt files through
+artifact/recording persistence and encounter list/detail groupings; another API
+file by distributing auth/campaign checks into existing account and campaign
+permission suites. Recheck cohesion and mocks before selecting these. Leave the
+map page/viewer boundary and independent session/job/media lifetimes clear.
+
+Higher-value assertion and reliability follow-ups:
+
+- The fuzzy-name scenario in `test/unit/map-glossary-conflict.test.ts` uses equal
+  normalized names and therefore exercises the exact-match branch. Use unequal
+  overlapping names and an unrelated candidate in that same scenario. Strengthen
+  dungeon regeneration's complete door comparison, missing-full-JSON rejection,
+  and literal transcript-search punctuation in their existing unit workflows.
+- `test/nuxt/api-key-page.test.ts` claims name, campaign, and permission validation
+  but asserts only the missing name. Extend the existing scenario through the
+  remaining guards and a valid submission. Restore the clipboard descriptor in
+  `recap-watch.test.ts` and move recap-progress listener/spy cleanup into teardown
+  so failed assertions cannot contaminate later tests. Encounter scroll and
+  component-stub restoration were fixed with the consolidation batch.
+- Thirteen API suites duplicate login helpers; ten use five seconds of retries
+  against a sixty-second rate-limit window, and some reuse IPs. Give actual login
+  setup one small helper with an explicit suite-specific IP and useful failure
+  diagnostics. Keep direct authentication/throttling assertions independent.
+- Make account, API-key, and membership tests' dependent transitions explicit
+  workflows or arrange each scenario's preconditions. Verify a revoked second
+  session is denied while the current session survives; require a successful
+  login and a genuinely updated timestamp. Scope the public-directory assertion
+  to its own campaign rather than assuming no other public fixtures exist.
+- Extend progression workflows with real collaborator/viewer permissions and a
+  meaningful rejected mutation that preserves stored data. Retain explicit
+  public response fields, version ownership, and HTTP error-envelope assertions.
+  Clean up fixture IDs within their owning suites without broad table wipes.
+- E2E encounter coverage contains a malformed absent-text assertion and leaves
+  its created encounter behind. Use meaningful accessible refresh checks, check
+  fixture POST results, and delete the encounter in `finally`. Theme screenshots
+  without comparisons are capture evidence rather than automatic appearance
+  assertions; strengthen the existing loop when that behavior changes.
+- Reuse managed Nuxt startup in the E2E launcher, clean up migration/seed/spawn
+  failures, and report exhausted database-delete retries instead of swallowing
+  the final error. With zero local retries, Playwright's `on-first-retry` tracing
+  records no local failure; evaluate `retain-on-failure` without adding retries.
+
+Keep cheap unit tests in Node. Artifact/recording services and recap-progress
+currently pay Nuxt startup despite not needing an app, but moving them requires
+deliberate alias/runtime support. Do not add a new testing layer merely to move a
+few files. Shared action-menu stubs and layered unit/API/browser checks earn
+their place when they protect distinct contracts.

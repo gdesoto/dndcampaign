@@ -97,6 +97,28 @@ The private quests page now derives two local group descriptors and renders one 
 
 Extended the existing page workflow test to cover all four statuses, group/item order and counts, editing from both groups, status changes between groups, omission of an empty group after filtering, and reader permissions. Validation passed: `yarn lint`, `yarn typecheck`, and the quest page/form-schema suites (2 files / 7 tests). Browser checks against an isolated seeded database covered desktop and mobile, light/dark themes, keyboard status changes and editing, closed-group edit/save, mobile creation, no-matches/clear-filter recovery, calendar expiration labels, delete-confirmation cancellation/focus restoration, and reader presentation in both groups. No browser console errors were observed. The temporary server and database were cleaned up; logs and screenshots are under `storage/cj-08-*`. A full suite and production build were not run for this bounded template refactor.
 
+### 2026-10-02 — Test suite consolidation (complete)
+
+Thirteen Nuxt test files became five suites for shared controls, character
+components, calendar, API keys, and encounter detail: eight fewer files. AST
+comparison preserved all 29 original test definitions, 30 executed cases, and
+122 assertion expressions. Encounter component stubs are mount-local and its
+scroll override is restored after each case.
+
+Full validation exposed cold-initialization timeouts in existing Markdown and
+recap workflows. API setup now uses the managed server's rendered-login readiness
+so page-fallback compilation completes before cases begin. Markdown's actual
+first rendering fixture initializes in its existing setup hook, retaining all
+three cases and 21 assertion expressions. Test and hook budgets were not changed.
+
+Validation passed: `yarn test` (78 files / 310 tests: unit 59, Nuxt 147, API 104),
+`yarn lint`, `yarn typecheck`, and `git diff --check`. Final logs are under
+`storage/test-consolidation-final-{test,lint,typecheck}.log`. E2E files received a
+read-only review; browser tests and a production build were not run for these
+test-only changes. Four follow-up reviews by test type are recorded in
+[FollowUps.md](FollowUps.md#test-suite-review); their additional proposals remain
+unimplemented.
+
 ## Open queue and sequencing
 
 | Ticket | Disposition | Scope |

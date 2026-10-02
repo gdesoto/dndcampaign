@@ -17,9 +17,8 @@ export default async function apiGlobalSetup() {
     server = await startManagedNuxtDevServer({
       rootDir,
       port: 4181,
-      // API tests need Nitro readiness, not a rendered Vite login page.
-      readinessPath: '/api/auth/me',
-      readinessStatus: 401,
+      // Retired API routes reach Nuxt's page fallback. Wait for the rendered
+      // login page so the renderer's cold compilation finishes during setup.
       logPath: resolve(rootDir, 'storage', 'api-test-server.log'),
       env: {
         ...db.env,

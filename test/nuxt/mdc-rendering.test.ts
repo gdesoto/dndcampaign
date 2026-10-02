@@ -1,10 +1,14 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { MDC } from '#components'
 
 describe('campaign Markdown rendering', () => {
-  it('renders headings, GFM tables, task lists, links, and fenced code with the configured plugins', async () => {
-    const wrapper = await mountSuspended(MDC, {
+  let renderingFixture: Awaited<ReturnType<typeof mountSuspended<typeof MDC>>>
+
+  beforeAll(async () => {
+    // MDC lazily loads its parser and configured plugins on the first mount.
+    // Prepare the real fixture within the setup budget; setup.ts handles teardown.
+    renderingFixture = await mountSuspended(MDC, {
       props: {
         tag: 'article',
         value: [
@@ -25,7 +29,10 @@ describe('campaign Markdown rendering', () => {
         ].join('\n'),
       },
     })
+  })
 
+  it('renders headings, GFM tables, task lists, links, and fenced code with the configured plugins', () => {
+    const wrapper = renderingFixture
     expect(wrapper.find('article').exists()).toBe(true)
     expect(wrapper.get('h2').text()).toContain('Field notes')
     expect(wrapper.get('strong').text()).toBe('Clue:')
@@ -38,7 +45,6 @@ describe('campaign Markdown rendering', () => {
     expect(tasks.map(task => task.element.checked)).toEqual([true, false])
     expect(tasks.every(task => task.element.disabled)).toBe(true)
     expect(wrapper.get('pre code').text()).toContain('const clue = "silver"')
-    wrapper.unmount()
   })
 
   it('updates an editor preview and restores previously rendered content', async () => {

@@ -1,9 +1,10 @@
-import { config } from '@vue/test-utils'
 import { actionMenuStub } from '../helpers/action-menu'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import EncounterDetailPage from '../../app/pages/campaigns/[campaignId]/encounters/[encounterId].vue'
+import EventTimeline from '../../app/components/encounter/EventTimeline.vue'
+import type { EncounterEvent } from '../../shared/types/encounter'
 
 const mockGetEncounter = vi.fn()
 const mockUpdateEncounter = vi.fn()
@@ -76,10 +77,13 @@ vi.mock('~/composables/useEncounterStatBlocks', () => ({
   }),
 }))
 
-config.global.stubs.SharedActionMenu = actionMenuStub
-config.global.stubs.UTooltip = { props: { text: String }, template: '<slot />' }
-
 describe('Encounter detail page', () => {
+  const originalScrollTo = window.scrollTo
+  const stubs = {
+    SharedActionMenu: actionMenuStub,
+    UTooltip: { props: { text: String }, template: '<slot />' },
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
     window.scrollTo = vi.fn()
@@ -156,10 +160,14 @@ describe('Encounter detail page', () => {
     })
   })
 
+  afterEach(() => {
+    window.scrollTo = originalScrollTo
+  })
+
   it('selects a participant without modifying the turn', async () => {
     const original = await mockGetEncounter()
     mockGetEncounter.mockResolvedValue({ ...original, status: 'ACTIVE', activeParticipantId: 'combatant-1', combatants: [...original.combatants, { ...original.combatants[0], id: 'combatant-2', name: 'Ally', sortOrder: 1 }] })
-    const wrapper = await mountSuspended(EncounterDetailPage, { global: { provide: { campaignCanWriteContent: ref(true) } } })
+    const wrapper = await mountSuspended(EncounterDetailPage, { global: { stubs, provide: { campaignCanWriteContent: ref(true) } } })
     expect(wrapper.get('[aria-label="Encounter participants"]').text()).toContain('(+5 temp)')
     expect(wrapper.get('[aria-label="Encounter participants"]').text()).toContain('Speed 30 ft')
     mockRequest.mockClear()
@@ -175,7 +183,7 @@ describe('Encounter detail page', () => {
   it('rejects a blank HP amount without applying damage', async () => {
     const original = await mockGetEncounter()
     mockGetEncounter.mockResolvedValue({ ...original, status: 'ACTIVE', activeParticipantId: 'combatant-1' })
-    const wrapper = await mountSuspended(EncounterDetailPage, { global: { provide: { campaignCanWriteContent: ref(true) } } })
+    const wrapper = await mountSuspended(EncounterDetailPage, { global: { stubs, provide: { campaignCanWriteContent: ref(true) } } })
     mockRequest.mockClear()
     const damage = wrapper.findAll('button').find(button => button.text() === 'Damage')
     await damage!.trigger('click')
@@ -187,7 +195,7 @@ describe('Encounter detail page', () => {
   it('renders finished encounters as records with explicit reopening', async () => {
     const original = await mockGetEncounter()
     mockGetEncounter.mockResolvedValue({ ...original, status: 'COMPLETED', activeParticipantId: null })
-    const wrapper = await mountSuspended(EncounterDetailPage, { global: { provide: { campaignCanWriteContent: ref(true) } } })
+    const wrapper = await mountSuspended(EncounterDetailPage, { global: { stubs, provide: { campaignCanWriteContent: ref(true) } } })
     expect(wrapper.text()).toContain('Reopen')
     expect(wrapper.find('button[aria-label="Add participant"]').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('Next turn')
@@ -255,6 +263,7 @@ describe('Encounter detail page', () => {
 
     const wrapper = await mountSuspended(EncounterDetailPage, {
       global: {
+        stubs,
         provide: {
           campaignCanWriteContent: ref(true),
         },
@@ -272,5 +281,38 @@ describe('Encounter detail page', () => {
     expect(wrapper.find('[aria-label="Refreshing encounter"]').exists()).toBe(true)
     expect(wrapper.find('[aria-label="Loading content"]').exists()).toBe(false)
     wrapper.unmount()
+  })
+})
+
+describe('Encounter timeline', () => {
+  const events: EncounterEvent[] = [
+    { id: 'old', encounterId: 'enc', eventType: 'NOTE', summary: 'An earlier note', createdAt: '2026-09-20T10:00:00Z' },
+    { id: 'new', encounterId: 'enc', eventType: 'HP', summary: 'Guard takes damage', payload: { action: 'hp.damage' }, createdAt: '2026-09-20T11:00:00Z' },
+  ]
+
+  it('sorts newest first, reverses order, filters types, and recovers from no matches', async () => {
+    const wrapper = await mountSuspended(EventTimeline, { props: { events }, global: { stubs: {
+      UTooltip: { template: '<slot />' },
+      UDropdownMenu: { props: ['items'], template: `<div><slot /><button v-for="item in items" :key="item.label" @click="item.onUpdateChecked(!item.checked)">{{ item.label }}</button></div>` },
+    } } })
+    const history = () => wrapper.get('[aria-label="Encounter event history"]').text()
+    expect(history()).toContain('Damage')
+    expect(history().indexOf('Guard takes damage')).toBeLessThan(history().indexOf('An earlier note'))
+    await wrapper.get('[aria-label="Show oldest first"]').trigger('click')
+    expect(history().indexOf('An earlier note')).toBeLessThan(history().indexOf('Guard takes damage'))
+    await wrapper.findAll('button').find(button => button.text() === 'Note')!.trigger('click')
+    expect(history()).toContain('An earlier note')
+    expect(history()).not.toContain('Guard takes damage')
+    await wrapper.findAll('button').find(button => button.text() === 'Clear filters')!.trigger('click')
+    await wrapper.findAll('button').find(button => button.text() === 'Condition')!.trigger('click')
+    expect(wrapper.text()).toContain('No events match these filters.')
+    await wrapper.findAll('button').find(button => button.text() === 'Clear filters')!.trigger('click')
+    expect(history()).toContain('Guard takes damage')
+    expect(events[0]?.id).toBe('old')
+    await wrapper.setProps({ events: [{ ...events[1]!, summary: 'Guard regains HP', payload: { action: 'hp.heal' } }] })
+    expect(history()).toContain('Healing')
+    expect(history()).not.toContain('Damage')
+    await wrapper.setProps({ events: [] })
+    expect(wrapper.text()).toContain('No encounter events yet.')
   })
 })

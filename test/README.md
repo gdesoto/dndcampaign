@@ -19,6 +19,8 @@ The Nuxt setup restores suite-level stubs and unmounts test components and the
 Nuxt app between files; tests should not erase the shared document body.
 When API tests are selected, their global server setup completes before any workers
 start. Tests then run in unit, Nuxt, API order with separate worker limits.
+API readiness includes the rendered login page so retired endpoints can reach
+Nuxt's page fallback without compiling it inside a workflow test.
 
 `yarn test:watch` watches all projects; add `--project api` to watch only API tests.
 `yarn test:doctor` measures all projects; use `--project` to focus its comparisons.
