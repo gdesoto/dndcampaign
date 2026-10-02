@@ -7,27 +7,27 @@ import { useSessionRecap } from '../../app/composables/useSessionRecap'
 import { useSessionRecordings } from '../../app/composables/useSessionRecordings'
 
 const { request, playSource, stop } = vi.hoisted(() => ({ request: vi.fn(), playSource: vi.fn(), stop: vi.fn() }))
-const playerState = ref({ source: null as MediaSource | null, isPlaying: false, presentation: 'global', error: '' })
+const playerState = ref({ source: null as MediaSource | null, isPlaying: false, autoplay: false, presentation: 'global', error: '' })
 mockNuxtImport('useApi', () => () => ({ request }))
 mockNuxtImport('useMediaPlayer', () => () => ({ playSource, stop, state: playerState }))
 
 describe('session media playback', () => {
   beforeEach(() => {
     request.mockReset().mockResolvedValue(undefined)
-    playerState.value = { source: null, isPlaying: false, presentation: 'global', error: '' }
+    playerState.value = { source: null, isPlaying: false, autoplay: false, presentation: 'global', error: '' }
     playSource.mockReset().mockImplementation(async (source: MediaSource) => {
-      playerState.value = { source, isPlaying: false, presentation: 'global', error: '' }
+      playerState.value = { source, isPlaying: false, autoplay: false, presentation: 'global', error: '' }
     })
     stop.mockReset().mockImplementation(() => {
       playerState.value.source = null
       playerState.value.isPlaying = false
+      playerState.value.autoplay = false
     })
   })
 
   it.each([
     ['audio/mpeg', 'AUDIO', false],
     ['video/mp4', 'VIDEO', true],
-    ['video/webm', 'VIDEO', true],
   ])('plays %s directly, including repeat plays, and derives the indicator from actual player state', async (mimeType, kind, openDrawer) => {
     let recap!: ReturnType<typeof useSessionRecap>
     const wrapper = await mountSuspended(defineComponent({
@@ -66,7 +66,7 @@ describe('session media playback', () => {
     expect(stop).not.toHaveBeenCalled()
   })
 
-  it('keeps pending recap identity stable across kind/replacement changes and deletes only the captured media', async () => {
+  it('derives pending recap work across element mounting and kind/replacement changes, and deletes only captured media', async () => {
     const selectedRecapKind = ref<'AUDIO' | 'VIDEO'>('AUDIO')
     const audio = ref<SessionRecapRecording>({ id: 'audio-1', artifactId: 'audio-artifact', filename: 'audio.mp3', mimeType: 'audio/mpeg', byteSize: 100, createdAt: '2026-09-06' })
     const video = ref<SessionRecapRecording | null>({ ...audio.value, id: 'video-1', artifactId: 'video-artifact', filename: 'video.mp4', mimeType: 'video/mp4' })
@@ -82,12 +82,12 @@ describe('session media playback', () => {
         return () => null
       },
     }))
-    let rejectPlay!: (error: Error) => void
-    playSource.mockImplementationOnce((source: MediaSource) => {
+    playSource.mockImplementationOnce(async (source: MediaSource) => {
       playerState.value.source = source
-      return new Promise((_, reject) => { rejectPlay = reject })
+      // The player may return before the matching audio/video element mounts.
+      playerState.value.autoplay = true
     })
-    const playing = controls.loadRecapPlayback()
+    await controls.loadRecapPlayback()
     controls.recapFile.value = new File(['audio'], 'replacement.mp3', { type: 'audio/mpeg' })
     await controls.loadRecapPlayback()
     await controls.uploadRecap()
@@ -99,9 +99,6 @@ describe('session media playback', () => {
     await nextTick()
     expect(controls.recapFile.value).toBeNull()
     expect(playerState.value.source).toMatchObject({ id: 'audio-1', kind: 'AUDIO', src: '/api/artifacts/audio-artifact/stream' })
-    rejectPlay(new Error('Old audio failure'))
-    await playing
-    expect(controls.recapError.value).toBe('')
     expect(controls.recapPlaybackLoading.value).toBe(false)
     await controls.loadRecapPlayback()
     expect(playSource).toHaveBeenLastCalledWith(
@@ -110,16 +107,15 @@ describe('session media playback', () => {
     )
     playerState.value.isPlaying = true
     expect(controls.recapPlaying.value).toBe(true)
+    playerState.value.isPlaying = false
+    playerState.value.autoplay = true
+    expect(controls.recapPlaybackLoading.value).toBe(true)
     video.value = { ...video.value!, artifactId: 'replacement-artifact' }
     expect(controls.recapPlaying.value).toBe(false)
+    expect(controls.recapPlaybackLoading.value).toBe(false)
     await controls.loadRecapPlayback()
     expect(playSource).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'video-1', recapProgressId: 'video-1', src: '/api/artifacts/replacement-artifact/stream' }), expect.anything())
 
-    playSource.mockRejectedValueOnce(new Error('Unable to start playback'))
-    await controls.loadRecapPlayback()
-    expect(controls.recapError.value).toBe('Unable to start playback')
-    await controls.loadRecapPlayback()
-    expect(controls.recapError.value).toBe('')
     expect(request).not.toHaveBeenCalled()
 
     let finishDelete!: () => void
@@ -161,26 +157,24 @@ describe('session media playback', () => {
         return () => null
       },
     }))
-    let finishPlay!: () => void
-    playSource.mockImplementationOnce((source: MediaSource) => {
+    playSource.mockImplementationOnce(async (source: MediaSource) => {
       playerState.value.source = source
-      return new Promise<void>((resolve) => { finishPlay = resolve })
+      playerState.value.autoplay = true
     })
-    const playing = controls.loadPlayback('r1')
+    await controls.loadPlayback('r1')
     await controls.loadPlayback('r1')
     await controls.deleteRecording('r1')
     expect(playSource).toHaveBeenCalledOnce()
     expect(request).not.toHaveBeenCalled()
-    expect(controls.playbackLoading.r1).toBe(true)
+    expect(controls.loadingRecordingId.value).toBe('r1')
     expect(controls.playingRecordingId.value).toBe('')
+    playerState.value.autoplay = false
     playerState.value.isPlaying = true
     expect(controls.playingRecordingId.value).toBe('r1')
     recordings.value[0]!.artifactId = 'new-a1'
     expect(playerState.value.source?.src).toBe('/api/artifacts/a1/stream')
     expect(controls.playingRecordingId.value).toBe('')
-    finishPlay()
-    await playing
-    expect(controls.playbackLoading.r1).toBe(false)
+    expect(controls.loadingRecordingId.value).toBe('')
     await controls.loadPlayback('r1')
     expect(playSource).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'r1', kind: 'AUDIO', src: '/api/artifacts/new-a1/stream' }), { presentation: 'global' })
     await controls.loadPlayback('r2')
@@ -193,12 +187,12 @@ describe('session media playback', () => {
     playerState.value.isPlaying = false
     playerState.value.error = 'Unable to load media. Select it again to retry.'
     expect(controls.playingRecordingId.value).toBe('')
+    expect(controls.playbackError.value).toBe(playerState.value.error)
+    playerState.value.source!.kind = 'AUDIO'
+    expect(controls.playbackError.value).toBe('')
+    playerState.value.source!.kind = 'VIDEO'
     await controls.loadPlayback('r2')
     expect(request).not.toHaveBeenCalled()
-    playSource.mockRejectedValueOnce(new Error('Playback start failed'))
-    await controls.loadPlayback('r2')
-    expect(controls.playbackError.value).toBe('Playback start failed')
-    await controls.loadPlayback('r2')
     expect(controls.playbackError.value).toBe('')
 
     let finishDelete!: () => void

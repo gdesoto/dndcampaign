@@ -42,26 +42,24 @@ async function openSelector(path: string, initialCampaigns: Campaign[] | null | 
   wrapper = mount(defineComponent({
     setup() {
       selector = useCampaignSelector(useRoute(), router, campaigns)
-      return () => h('div', ['desktop', 'mobile'].map(layout => h(USelectMenu<Selector['campaignOptions']['value'], 'id'>, {
-        key: layout,
-        'data-layout': layout,
+      return () => h(USelectMenu<Selector['campaignOptions']['value'], 'id'>, {
         'aria-label': 'Campaign',
         items: selector.campaignOptions.value,
         modelValue: selector.selectedCampaignId.value,
         'onUpdate:modelValue': selector.selectCampaign,
         valueKey: 'id',
         portal: false,
-      })))
+      })
     },
   }), { attachTo: host, global: { plugins: [router] } })
   await flushPromises()
   return { campaigns, router, selector }
 }
 
-const selectedLabels = () => wrapper!.findAll('[data-slot="value"]').map(value => value.text())
+const selectedLabel = () => wrapper!.get('[data-slot="value"]').text()
 
-async function chooseCampaign(layout: 'desktop' | 'mobile', label: string) {
-  await wrapper!.get(`button[data-layout="${layout}"]`).trigger('click')
+async function chooseCampaign(label: string) {
+  await wrapper!.get('button[aria-label="Campaign"]').trigger('click')
   await flushPromises()
   const option = wrapper!.findAll('[role="option"]').find(item => item.text() === label)
   expect(option, `Campaign option not found: ${label}`).toBeDefined()
@@ -70,7 +68,7 @@ async function chooseCampaign(layout: 'desktop' | 'mobile', label: string) {
 }
 
 describe('campaign selection', () => {
-  it('keeps both native controls on the route while an exit guard is pending or canceled, then switches sections after approval', async () => {
+  it('keeps the selected campaign on the route while an exit guard is pending or canceled, then switches sections after approval', async () => {
     const { router, selector } = await openSelector('/campaigns/c1/sessions/s1/summary')
     const push = vi.spyOn(router, 'push')
     await selector.selectCampaign('c1')
@@ -80,44 +78,44 @@ describe('campaign selection', () => {
 
     let resolveExit!: (allowed: boolean) => void
     removeGuard = router.beforeEach(() => new Promise<boolean>(resolve => { resolveExit = resolve }))
-    await chooseCampaign('desktop', 'Second campaign')
-    expect(selectedLabels()).toEqual(['First campaign', 'First campaign'])
+    await chooseCampaign('Second campaign')
+    expect(selectedLabel()).toBe('First campaign')
     expect(selector.selectedCampaignId.value).toBe('c1')
     resolveExit(false)
     await flushPromises()
     expect(router.currentRoute.value.path).toBe('/campaigns/c1/sessions/s1/summary')
-    expect(selectedLabels()).toEqual(['First campaign', 'First campaign'])
+    expect(selectedLabel()).toBe('First campaign')
 
-    await chooseCampaign('mobile', 'Second campaign')
+    await chooseCampaign('Second campaign')
     resolveExit(true)
     await flushPromises()
     expect(router.currentRoute.value.path).toBe('/campaigns/c2/sessions')
-    expect(selectedLabels()).toEqual(['Second campaign', 'Second campaign'])
+    expect(selectedLabel()).toBe('Second campaign')
     expect(push).toHaveBeenCalledTimes(2)
   })
 
-  it('tracks direct navigation and Back/Forward in both controls without creating extra history entries', async () => {
+  it('tracks direct navigation and Back/Forward without creating extra history entries', async () => {
     const { router, selector } = await openSelector('/campaigns/c1/maps/map1')
-    await chooseCampaign('mobile', 'Second campaign')
+    await chooseCampaign('Second campaign')
     expect(router.currentRoute.value.path).toBe('/campaigns/c2/maps')
-    await chooseCampaign('desktop', 'All campaigns')
+    await chooseCampaign('All campaigns')
     expect(router.currentRoute.value.path).toBe('/campaigns')
-    expect(selectedLabels()).toEqual(['All campaigns', 'All campaigns'])
+    expect(selectedLabel()).toBe('All campaigns')
 
     router.back()
     await vi.waitFor(() => expect(router.currentRoute.value.path).toBe('/campaigns/c2/maps'))
-    expect(selectedLabels()).toEqual(['Second campaign', 'Second campaign'])
+    expect(selectedLabel()).toBe('Second campaign')
     router.back()
     await vi.waitFor(() => expect(router.currentRoute.value.path).toBe('/campaigns/c1/maps/map1'))
-    expect(selectedLabels()).toEqual(['First campaign', 'First campaign'])
+    expect(selectedLabel()).toBe('First campaign')
     router.forward()
     await vi.waitFor(() => expect(router.currentRoute.value.path).toBe('/campaigns/c2/maps'))
-    expect(selectedLabels()).toEqual(['Second campaign', 'Second campaign'])
+    expect(selectedLabel()).toBe('Second campaign')
 
     await router.push('/campaigns/c1/quests')
     await nextTick()
     expect(selector.selectedCampaignId.value).toBe('c1')
-    expect(selectedLabels()).toEqual(['First campaign', 'First campaign'])
+    expect(selectedLabel()).toBe('First campaign')
   })
 
   it('retains missing campaign identity through delayed, empty and failed option loads without navigating', async () => {
@@ -128,12 +126,12 @@ describe('campaign selection', () => {
       await nextTick()
       expect(selector.selectedCampaignId.value).toBe('c1')
       expect(selector.campaignOptions.value).toContainEqual({ id: 'c1', label: 'Current campaign', disabled: true })
-      expect(selectedLabels()).toEqual(['Current campaign', 'Current campaign'])
+      expect(selectedLabel()).toBe('Current campaign')
       expect(router.currentRoute.value.path).toBe('/campaigns/c1/quests')
     }
     campaigns.value = knownCampaigns
     await nextTick()
-    expect(selectedLabels()).toEqual(['First campaign', 'First campaign'])
+    expect(selectedLabel()).toBe('First campaign')
     expect(selector.campaignOptions.value.filter(option => option.id === 'c1')).toHaveLength(1)
     expect(push).not.toHaveBeenCalled()
 

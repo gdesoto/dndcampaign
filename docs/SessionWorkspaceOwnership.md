@@ -70,10 +70,11 @@ Historical responses must match the selected ID before display, and refreshes
 retain previous results on failure. The endpoint reads ordered history and then
 details for at most two latest jobs, preserving its existing response contract.
 Playback uses artifact stream URLs from the loaded media identity, with no private
-URL lookup or cache. Panels derive playing indicators from the global player's
-source, artifact URL, media kind, and actual playing state. Pending play actions
-capture their media identity before awaiting the player; replacement under the
-same recap ID does not reuse the old artifact URL.
+URL lookup or cache. Panels derive playing and pending indicators from the global
+player's source, artifact URL, media kind, and actual playback state. Playback
+failures and Retry belong to that player; callers delegate playback once without
+mirroring pending flags or errors. Upload and deletion keep their own action
+state. Replacement under the same recap ID does not reuse the old artifact URL.
 
 Existing global media playback and session-keyed job selection caches keep their
 established lifetimes. A successful explicit deletion stops playback only when

@@ -74,7 +74,6 @@ watch([selectedId, playlist], async ([id]) => {
           <p>{{ error }}</p>
           <UButton v-if="selected" variant="outline" @click="() => select(selectedId)">Try again</UButton>
         </div>
-        <p v-if="active && state.error" role="alert" class="text-sm text-error">{{ state.error }} Press Play to continue.</p>
         <p class="text-xs text-muted">{{ basePath.startsWith('/public/') ? 'Public link — no sign-in required.' : 'Campaign links require campaign access.' }} Your playback position is saved on this browser.</p>
       </section>
       <UCard class="min-w-0">

@@ -79,25 +79,30 @@ export const useMediaPlayer = () => {
     return true
   }
 
+  const failPlayback = (message = 'Unable to load media. Retry playback.') => {
+    state.value.autoplay = false
+    state.value.isPlaying = false
+    state.value.error = message
+  }
+
   const play = async () => {
     const media = element.value
     const source = state.value.source
     if (!media || !source || state.value.autoplay) return
     const retry = Boolean(state.value.error)
     const nextSource = retry ? { ...source, startTime: media.currentTime || source.startTime } : source
-    if (!prepareElement(media, nextSource, retry)) return
     const token = ++state.value.playToken
     state.value.error = ''
     state.value.autoplay = true
     try {
+      if (!prepareElement(media, nextSource, retry)) return
       // Native play waits for loading; no separate canplay listener or URL cache is needed.
       await media.play()
       if (token !== state.value.playToken || element.value !== media) return
       state.value.isPlaying = true
     } catch {
       if (token !== state.value.playToken || element.value !== media) return
-      state.value.isPlaying = false
-      state.value.error = 'Unable to play media. Retry playback.'
+      failPlayback('Unable to play media. Retry playback.')
     } finally {
       if (token === state.value.playToken && element.value === media) {
         state.value.autoplay = false
@@ -108,18 +113,22 @@ export const useMediaPlayer = () => {
   const setElement = (value: HTMLMediaElement | null) => {
     const previous = element.value
     if (previous === value) return
-    state.value.playToken += 1
+    if (previous) state.value.playToken += 1
     const shouldPlay = state.value.autoplay
-    state.value.autoplay = false
     state.value.isPlaying = false
     element.value = value
-    if (previous) releaseElement(previous)
-    if (!value) return
-    value.volume = state.value.volume
-    value.playbackRate = state.value.playbackRate
-    const source = state.value.source
-    if (source) prepareElement(value, source)
-    if (shouldPlay) void play()
+    try {
+      if (previous) releaseElement(previous)
+      if (!value) return
+      state.value.autoplay = false
+      value.volume = state.value.volume
+      value.playbackRate = state.value.playbackRate
+      const source = state.value.source
+      if (source) prepareElement(value, source)
+      if (shouldPlay) void play()
+    } catch {
+      failPlayback()
+    }
   }
 
   const selectSource = (source: MediaSource) => {
@@ -133,24 +142,38 @@ export const useMediaPlayer = () => {
       state.value.duration = 0
     }
     state.value.source = source
-    const media = element.value
-    if (media && !prepareElement(media, source, changed)) releaseElement(media)
+    try {
+      const media = element.value
+      if (media) {
+        if (!prepareElement(media, source, changed)) releaseElement(media)
+        else if (source.startTime !== undefined) media.currentTime = source.startTime
+      }
+      return true
+    } catch {
+      state.value.playToken += 1
+      failPlayback()
+      return false
+    }
+  }
+
+  const setPresentation = (value: MediaPresentation) => {
+    state.value.presentation = value
+    if (value === 'page') state.value.drawerOpen = false
   }
 
   const playSource = async (
     source: MediaSource,
     options?: { presentation?: MediaPresentation; openDrawer?: boolean }
   ) => {
-    selectSource(source)
-    if (options?.presentation) state.value.presentation = options.presentation
+    if (options?.presentation) setPresentation(options.presentation)
     if (options?.openDrawer) state.value.drawerOpen = true
+    if (!selectSource(source)) return
     const media = element.value
     if (!media || media.tagName !== (source.kind === 'VIDEO' ? 'VIDEO' : 'AUDIO')) {
       // The global component mounts the matching element and starts this selection.
       state.value.autoplay = true
       return
     }
-    if (source.startTime !== undefined) media.currentTime = source.startTime
     await play()
   }
 
@@ -206,15 +229,8 @@ export const useMediaPlayer = () => {
     source: MediaSource,
     options?: { presentation?: MediaPresentation }
   ) => {
+    if (options?.presentation) setPresentation(options.presentation)
     selectSource(source)
-    if (options?.presentation) state.value.presentation = options.presentation
-  }
-
-  const setPresentation = (value: MediaPresentation) => {
-    state.value.presentation = value
-    if (value === 'page') {
-      state.value.drawerOpen = false
-    }
   }
 
   const setDockId = (value: string) => {

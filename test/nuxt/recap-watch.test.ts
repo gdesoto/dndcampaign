@@ -17,7 +17,7 @@ describe('recap watch playlist', () => {
     id: `r${number}`, filename: `recap-${number}`, mimeType: number === 2 ? 'video/mp4' : 'audio/mpeg',
     createdAt: '2026-09-06', session: { id: `s${number}`, title: `Session ${number}`, sessionNumber: number },
   }))
-  const state = ref<{ source: MediaSource | null; presentation: string; error: string; playToken: number }>({ source: null, presentation: 'page', error: '', playToken: 0 })
+  const state = ref<{ source: MediaSource | null; presentation: string; error: string; autoplay: boolean; playToken: number }>({ source: null, presentation: 'page', error: '', autoplay: false, playToken: 0 })
   const element = shallowRef<HTMLMediaElement | null>(null)
   const loadSource = vi.fn((source: MediaSource) => { state.value.source = source })
   const playSource = vi.fn(async (source: MediaSource) => { state.value.source = source })
@@ -39,9 +39,9 @@ describe('recap watch playlist', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
-    state.value = { source: null, presentation: 'page', error: '', playToken: 0 }
+    state.value = { source: null, presentation: 'page', error: '', autoplay: false, playToken: 0 }
     element.value = document.createElement('audio')
-    harness.player = { state, element, loadSource, playSource, stop, play: vi.fn(), setPresentation: vi.fn() }
+    harness.player = { state, element, loadSource, playSource, stop }
     playSource.mockImplementation(async source => { state.value.source = source })
     resolvePlayback.mockImplementation(async id => ({ url: `https://example.test/${id}.mp4` }))
   })
@@ -104,17 +104,6 @@ describe('recap watch playlist', () => {
     expect(state.value.source?.id).toBe('r3')
     expect(playSource).toHaveBeenCalledTimes(1)
 
-    let rejectPlay!: (error: Error) => void
-    playSource.mockImplementationOnce(() => new Promise((_, reject) => { rejectPlay = reject }))
-    const oldPlay = controls.choose('r2')
-    await flushPromises()
-    await controls.choose('r1')
-    rejectPlay(new Error('Old player failure'))
-    await oldPlay
-    expect(controls.error.value).toBe('')
-    expect(controls.loading.value).toBe(false)
-    expect(state.value.source?.id).toBe('r1')
-
     resolvePlayback.mockImplementationOnce(() => new Promise(resolve => { finish = resolve }))
     const interrupted = controls.select('r2')
     state.value.source = { id: 'other', title: 'Other media', kind: 'AUDIO', src: '/other.mp3' }
@@ -127,7 +116,7 @@ describe('recap watch playlist', () => {
     wrapper.unmount()
   })
 
-  it('reuses only the same source and reloads replaced artifacts or media kinds without autoplay', async () => {
+  it('tracks the selected source and loads replacement artifacts or media kinds without autoplay', async () => {
     const items = ref<WatchRecap[]>(recaps.map(item => ({ ...item, artifactId: `artifact-${item.id}` })))
     resolvePlayback.mockImplementation(id => {
       const recap = items.value.find(item => item.id === id)
@@ -135,13 +124,16 @@ describe('recap watch playlist', () => {
     })
     state.value.source = { id: 'r1', recapProgressId: 'r1', title: 'Session 1', kind: 'AUDIO', src: '/api/artifacts/artifact-r1/stream' }
     const { wrapper, controls } = await mount('r1', items)
-    expect(loadSource).not.toHaveBeenCalled()
     expect(controls.active.value).toBe(true)
+    state.value.autoplay = true
+    expect(controls.loading.value).toBe(true)
+    state.value.autoplay = false
+    expect(controls.loading.value).toBe(false)
 
-    state.value.source!.src = '/different-source.mp3'
+    state.value.source = { ...state.value.source!, src: '/different-source.mp3' }
     expect(controls.active.value).toBe(false)
     await controls.select('r1', false)
-    expect(loadSource).toHaveBeenCalledOnce()
+    expect(state.value.source?.src).toBe('/api/artifacts/artifact-r1/stream')
     items.value.find(item => item.id === 'r1')!.artifactId = 'replacement'
     await flushPromises()
     expect(stop).toHaveBeenCalledOnce()

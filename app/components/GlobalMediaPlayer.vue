@@ -175,26 +175,6 @@ watch(
   { immediate: true }
 )
 
-watch(
-  () => state.value.volume,
-  (value) => {
-    if (!mediaEl.value) return
-    if (Math.abs(mediaEl.value.volume - value) > 0.01) {
-      mediaEl.value.volume = value
-    }
-  }
-)
-
-watch(
-  () => state.value.playbackRate,
-  (value) => {
-    if (!mediaEl.value) return
-    if (mediaEl.value.playbackRate !== value) {
-      mediaEl.value.playbackRate = value
-    }
-  }
-)
-
 onBeforeUnmount(() => {
   player.setElement(null)
   cleanupListeners.value?.()

@@ -12,8 +12,6 @@ export const useCampaignRecaps = (
   const { data: recaps, pending: recapsPending, error: recapsError, refresh: refreshRecaps } = useOverviewResource<CampaignRecapItem[]>(campaignId, 'recaps', () => `/api/campaigns/${campaignId.value}/recaps`)
 
   const selectedRecapId = ref('')
-  const recapLoading = ref(false)
-  const playbackError = ref('')
   const recapDeleting = ref(false)
   const recapDeleteError = ref('')
   const recapsSortedBySessionNumber = computed(() =>
@@ -27,9 +25,8 @@ export const useCampaignRecaps = (
       && source.kind === (recap.mimeType.startsWith('video/') ? 'VIDEO' : 'AUDIO'))
   })
   const isRecapPlaying = computed(() => activeRecap.value && player.state.value.isPlaying)
-  const recapError = computed(() => playbackError.value || (activeRecap.value ? player.state.value.error : ''))
-  let disposed = false
-  onBeforeUnmount(() => { disposed = true })
+  const recapLoading = computed(() => activeRecap.value && player.state.value.autoplay)
+  const recapError = computed(() => activeRecap.value ? player.state.value.error : '')
 
   const formatDateTime = (value?: string | null) => {
     if (!value) return 'Unscheduled'
@@ -50,40 +47,23 @@ export const useCampaignRecaps = (
     { immediate: true }
   )
 
-  const playRecap = async (recapId: string) => {
+  const playRecap = (recapId: string) => {
     if (recapLoading.value || recapDeleting.value) return
     const recap = recaps.value?.find(item => item.id === recapId)
     if (!recap) return
-    const currentCampaignId = campaignId.value
-    const artifactId = recap.artifactId
     const kind = recap.mimeType.startsWith('video/') ? 'VIDEO' : 'AUDIO'
-    let playerToken = player.state.value.playToken
     selectedRecapId.value = recapId
-    playbackError.value = ''
-    recapLoading.value = true
-    try {
-      const pending = player.playSource(
-        {
-          id: recapId,
-          recapProgressId: recapId,
-          title: recap.session.title || recap.filename || 'Session recap',
-          subtitle: `Session ${recap.session.sessionNumber ?? '-'} - ${formatDateTime(recap.createdAt)}`,
-          kind,
-          src: artifactStreamUrl(artifactId),
-        },
-        { presentation: 'global', openDrawer: kind === 'VIDEO' }
-      )
-      playerToken = player.state.value.playToken
-      await pending
-    } catch (error) {
-      const current = recaps.value?.find(item => item.id === recapId)
-      if (!disposed && playerToken === player.state.value.playToken && campaignId.value === currentCampaignId && selectedRecapId.value === recapId
-        && current?.artifactId === artifactId && (current.mimeType.startsWith('video/') ? 'VIDEO' : 'AUDIO') === kind) {
-        playbackError.value = (error as Error).message || 'Unable to load recap.'
-      }
-    } finally {
-      recapLoading.value = false
-    }
+    return player.playSource(
+      {
+        id: recapId,
+        recapProgressId: recapId,
+        title: recap.session.title || recap.filename || 'Session recap',
+        subtitle: `Session ${recap.session.sessionNumber ?? '-'} - ${formatDateTime(recap.createdAt)}`,
+        kind,
+        src: artifactStreamUrl(recap.artifactId),
+      },
+      { presentation: 'global', openDrawer: kind === 'VIDEO' }
+    )
   }
 
   const deleteRecap = async (recapId: string) => {

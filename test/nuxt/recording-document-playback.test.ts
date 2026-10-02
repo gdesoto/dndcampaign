@@ -15,17 +15,15 @@ mockNuxtImport('useRoute', original => () => ({
   ...original(), params: { campaignId: 'c1', recordingId: 'r1', documentId: 'd1' }, query: {},
 }))
 
-const state = ref<{ source: MediaSource | null; currentTime: number; error: string; isPlaying: boolean; playToken: number }>({
-  source: null, currentTime: 0, error: '', isPlaying: false, playToken: 0,
+const state = ref<{ source: MediaSource | null; currentTime: number; error: string; isPlaying: boolean }>({
+  source: null, currentTime: 0, error: '', isPlaying: false,
 })
 const loadSource = vi.fn((source: MediaSource) => {
-  state.value.playToken += 1
   state.value.source = source
   state.value.error = ''
   state.value.isPlaying = false
 })
 const playSource = vi.fn(async (source: MediaSource) => {
-  state.value.playToken += 1
   state.value.source = source
   state.value.currentTime = source.startTime ?? 0
   state.value.error = ''
@@ -66,7 +64,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   recordings = { r1: recordingFixture('r1', 'VIDEO'), r2: recordingFixture('r2', 'AUDIO') }
   failedRecordings.clear()
-  state.value = { source: null, currentTime: 0, error: '', isPlaying: false, playToken: 0 }
+  state.value = { source: null, currentTime: 0, error: '', isPlaying: false }
   harness.player = { state, loadSource, playSource, pause, stop, play, seek }
   harness.request.mockReset().mockImplementation(async (url: string) => {
     const match = url.match(/^\/api\/recordings\/(r\d+)$/)
@@ -166,7 +164,6 @@ describe('recording and transcript page playback', () => {
 
     let finishPlayback!: () => void
     playSource.mockImplementationOnce(async (source: MediaSource) => {
-      state.value.playToken += 1
       state.value.source = source
       await new Promise<void>(resolve => { finishPlayback = resolve })
     })

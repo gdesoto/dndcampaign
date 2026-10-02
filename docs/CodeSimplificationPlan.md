@@ -27,7 +27,7 @@ The following table records all 18 completed tickets. Detailed completion and va
 | CJ-06 | `a2935f0` | Session controls use native destinations; removed routing-event forwarding while preserving workspace ownership and dirty guards. |
 | CJ-07 | `a2935f0` | Dungeon reads, exports, and preview share the existing player-safe projection. |
 | CJ-10 | `2d2a875` | Campaign selection derives from the route; removed duplicated selection state and synchronization watchers. |
-| CJ-12 | This commit | Playback uses the existing player's error/retry and source-identity handling; indicators reflect actual playback. |
+| CJ-12 | `b4fa8b6` | Playback uses the existing player's error/retry and source-identity handling; indicators reflect actual playback. |
 | CJ-13 | `2a6c78b` | Removed unused encounter runtime-board method and orphan types. |
 | CJ-14 | `21524fd` | Removed the unused client public-overview wrapper; active public composable and server endpoint remain. |
 | CJ-15 | `a9d4f48` | Removed duplicate account-profile endpoint and reused account mapping; retained `/api/auth/me` with its distinct response/session behavior. |
@@ -35,7 +35,7 @@ The following table records all 18 completed tickets. Detailed completion and va
 | CJ-17 | `0fa857b` | Dev n8n endpoint uses the shared schema; removed shadow validator, optional-validation flag, and checkbox. |
 | CJ-18 | `198fa8c` | Added `DocumentService.upsertForSession`. Create-only route retains 409; imports retain titles/recording semantics. Initial summary application now writes one version instead of two identical versions, documented in OpenAPI. |
 | CJ-19 | `198fa8c` | Moved glossary PC linking, calendar month-view assembly, transcript application, and subtitle attachment into existing services. Local transcription operations do not construct an ElevenLabs client; handlers retain authorization. |
-| CJ-22 | This commit | All six private callers use existing artifact IDs; removed private playback-URL endpoints and caches, preserving the public boundary. |
+| CJ-22 | `b4fa8b6` | All six private callers use existing artifact IDs; removed private playback-URL endpoints and caches, preserving the public boundary. |
 | CJ-23 | `3ae6bc3` | Removed unused `campaign.delete` permission and corresponding response/type declarations. |
 
 Shared plumbing already in place: thrown `apiError` values and the central Nitro API error envelope; campaign-route authorization passed to services and permission-scoped child lookups; shared multipart reading; shared transcript/VTT conversion. Reuse these rather than reconstructing their predecessors.
@@ -76,13 +76,19 @@ CJ-07: Dungeon reads, exports, and the client preview use the existing pure play
 
 Validation passed: `yarn lint`, `yarn typecheck`, `yarn test` (84 files / 300 tests), and `yarn build` (397.51s). Dependency bundler/deprecation warnings remain. Focused tests and independent review cover transcript creation/retry/conflicts/focus, native destinations and workspace ownership, and map projection immutability/idempotence/parity. Browser checks used an isolated seeded database for desktop/mobile, light/dark presentation, keyboard creation/editor access, deletion/recreation, new-tab links, Back/Forward, same-session draft retention, canceled/accepted dirty exits, and player-safe preview toggling with four secret rooms among eight rooms. The browser server was stopped and its database removed afterward. Logs and screenshots are under `storage/cj-05-07-*`.
 
-### 2026-10-01 CJ-12/22 — Private playback (complete)
+### 2026-10-01 CJ-12/22 — Private playback (complete, `b4fa8b6`)
 
 All six private playback flows now construct the authorized artifact stream URL from the artifact ID already present in their media response. Removed the two private playback-URL routes, their OpenAPI entries, and obsolete URL caches and fetch/reset plumbing. The public recap URL endpoint and explicit public response fields remain unchanged.
 
 The existing global player owns loading, playback failures, and Retry across inline, mini, and drawer controls. Native play promises replace duplicate readiness listeners and the arbitrary play throttle. Source identity includes ID, artifact URL, and media kind; recap progress remains keyed by recap ID. Playing indicators reflect actual player state, stale selections cannot overwrite current playback, successful deletion stops only the deleted source, and transcript ranges seek once and cannot pause a newer source. Mobile browser checks exposed the fixed mini player covering page actions; its measured height now reserves layout space, including wrapped errors.
 
 Validation passed: `yarn lint`, `yarn typecheck`, `yarn test` (86 files / 311 tests), `yarn build` (411.00s), and focused player/session/watch/playlist/recording/document tests. Non-blocking dependency bundler/deprecation warnings remain. Independent review found no actionable issues. Browser checks covered all six private callers, public playlist/watch, actual audio/video stream failures and Retry, drawer continuity, replacement under the same recap ID, saved progress, transcript segment start/end, desktop/mobile, light/dark, and keyboard/pointer controls. The isolated browser server was stopped and its database and uploaded files removed. Logs and screenshots are under `storage/cj-12-22-*`.
+
+**Focused follow-up (2026-10-01):** Removed caller-owned playback flags and catch/reset branches; session and campaign controls now derive pending/error state from the matching global source. The watch page delegates same-source handling to the player, and volume/speed no longer have duplicate synchronization watchers. The player catches setup failures as well as native play failures. Its first empty element attachment no longer invalidates a pending public recap lookup, fixing a startup race found in browser verification. Upload/delete state, asynchronous public URL resolution guards, and exact-source deletion protection remain local to their actual owners.
+
+Test cleanup removed a redundant video MIME case, duplicate status assertions, synthetic caller playback rejections, unused mock state, and the selector test's duplicate control. Dungeon preview assertions now use explicit expected visible entities instead of the production projection helper. Existing player workflows cover setup failure/Retry and preserve pending public lookups through initial mount and play-promise rejection; no test files or test cases were added. Application code is net 53 lines smaller and tests are net 5 lines smaller than `b4fa8b6`.
+
+Follow-up validation passed: `yarn lint`, `yarn typecheck`, `yarn test` (86 files / 310 tests), and final `yarn build` (396.45s). Independent review's play-token settlement finding was corrected before these final checks; the earlier build was intentionally stopped. Browser checks covered mobile audio failure/Retry, audio/video switching, drawer continuity, volume/speed, recording indicators, same-source watch continuity, public watch startup/playback, and transcript segment start/end. The isolated server, database, and media were cleaned up. Existing dependency warnings remain; logs and screenshots are under `storage/cj-playback-cleanup-*`.
 
 ## Open queue and sequencing
 

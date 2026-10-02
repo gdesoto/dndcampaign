@@ -24,6 +24,7 @@ let wrapper: VueWrapper | undefined
 let host: HTMLDivElement
 let player: ReturnType<typeof useMediaPlayer>
 let secondPlayer: ReturnType<typeof useMediaPlayer>
+let tokenBeforeInitialMount: number
 let nativePlay: MockInstance<HTMLMediaElement['play']>
 let nativeLoad: MockInstance<HTMLMediaElement['load']>
 
@@ -67,6 +68,7 @@ beforeEach(async () => {
   wrapper = await mountSuspended(defineComponent({
     setup() {
       player = useMediaPlayer()
+      tokenBeforeInitialMount = player.state.value.playToken
       return () => h(UApp, null, { default: () => h(GlobalMediaPlayer) })
     },
   }), {
@@ -97,6 +99,8 @@ afterEach(async () => {
 
 describe('global media playback', () => {
   it('reuses a relative stream URL, replaces artifacts and media kinds, and retains recap progress and controls', async () => {
+    // Empty element attachment must not cancel a pending public playback lookup.
+    expect(player.state.value.playToken).toBe(tokenBeforeInitialMount)
     player.setVolume(0.6)
     player.setPlaybackRate(1.5)
     await player.playSource(source(), { presentation: 'global' })
@@ -195,11 +199,23 @@ describe('global media playback', () => {
     expect(nativeLoad).toHaveBeenCalledTimes(beforeRetry + 1)
     expect(player.state.value).toMatchObject({ error: '', isPlaying: true, autoplay: false })
 
+    nativeLoad.mockImplementationOnce(() => { throw new DOMException('Media setup failed') })
+    await expect(player.playSource(source({ kind, src: '/api/artifacts/setup-retry/stream' }))).resolves.toBeUndefined()
+    await nextTick()
+    expect(visibleAlert()).toContain('Unable to load media')
+    expect(player.state.value).toMatchObject({ isPlaying: false, autoplay: false })
+    await clickRetry()
+    expect(player.state.value).toMatchObject({ error: '', isPlaying: true, autoplay: false })
+
     player.pause()
     player.setDockId('test-media-dock')
     player.setPresentation('page')
     nativePlay.mockRejectedValueOnce(new Error('NotAllowedError'))
-    await player.play()
+    const rejectedPlay = player.play()
+    const resolvingToken = player.state.value.playToken
+    await rejectedPlay
+    // Settling this play must not cancel a newer public playback lookup.
+    expect(player.state.value.playToken).toBe(resolvingToken)
     await nextTick()
     expect(document.querySelector('#test-media-dock [role="alert"]')?.textContent).toContain('Unable to play media')
     await clickRetry()

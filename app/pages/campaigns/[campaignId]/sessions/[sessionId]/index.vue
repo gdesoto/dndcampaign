@@ -116,7 +116,7 @@ const sessionPath = computed(() => `/campaigns/${campaignId.value}/sessions/${se
       :playback-error="recording.playbackError"
       :delete-error="recording.deleteError"
       :deleting-recording-id="recording.deletingRecordingId"
-      :playback-loading="recording.playbackLoading"
+      :loading-recording-id="recording.loadingRecordingId"
       :playing-recording-id="recording.playingRecordingId"
       :delete-recording="resource.canUploadRecording ? recording.deleteRecording : undefined"
       @update:selected-file="recording.selectedFile = $event"

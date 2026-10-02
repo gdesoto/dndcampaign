@@ -9,7 +9,7 @@ import { useSessionWorkspaceContext } from '../../app/composables/useSessionWork
 type Workspace = ReturnType<typeof useSessionWorkspaceContext>
 const { request, discard, closeModal } = vi.hoisted(() => ({ request: vi.fn(), discard: vi.fn(), closeModal: vi.fn() }))
 mockNuxtImport('useApi', () => () => ({ request }))
-mockNuxtImport('useMediaPlayer', () => () => ({ playSource: vi.fn(), openDrawer: vi.fn(), stop: vi.fn(), state: ref({ source: null, isPlaying: false, presentation: 'global' }) }))
+mockNuxtImport('useMediaPlayer', () => () => ({ playSource: vi.fn(), openDrawer: vi.fn(), stop: vi.fn(), state: ref({ source: null, isPlaying: false, autoplay: false, error: '', presentation: 'global' }) }))
 mockNuxtImport('useOverlay', () => () => ({ create: () => ({ open: () => ({ result: discard() }), close: closeModal }) }))
 
 const seen: Workspace[] = []

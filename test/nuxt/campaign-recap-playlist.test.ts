@@ -102,7 +102,7 @@ it('plays campaign recap artifacts directly, derives status from the player, and
     { id: 'audio', artifactId: 'artifact-audio', mimeType: 'audio/mpeg', filename: 'recap.mp3', createdAt: '2026-10-01', session: { id: 's1', title: 'Session one' } },
     { id: 'video', artifactId: 'artifact-video', mimeType: 'video/mp4', filename: 'recap.mp4', createdAt: '2026-10-01', session: { id: 's2', title: 'Session two' } },
   ])
-  const state = ref<{ source: MediaSource | null; isPlaying: boolean; error: string; playToken: number }>({ source: null, isPlaying: false, error: '', playToken: 0 })
+  const state = ref<{ source: MediaSource | null; isPlaying: boolean; error: string; autoplay: boolean }>({ source: null, isPlaying: false, error: '', autoplay: false })
   const playSource = vi.fn(async (source: MediaSource) => { state.value.source = source })
   const stop = vi.fn(() => { state.value.source = null; state.value.isPlaying = false })
   const refresh = vi.fn().mockResolvedValue(undefined)
@@ -120,6 +120,10 @@ it('plays campaign recap artifacts directly, derives status from the player, and
     await controls.playRecap(id)
     expect(playSource).toHaveBeenLastCalledWith(expect.objectContaining({ id, recapProgressId: id, src: `/api/artifacts/artifact-${id}/stream`, kind }), { presentation: 'global', openDrawer: kind === 'VIDEO' })
     expect(controls.isRecapPlaying.value).toBe(false)
+    state.value.autoplay = true
+    expect(controls.recapLoading.value).toBe(true)
+    state.value.autoplay = false
+    expect(controls.recapLoading.value).toBe(false)
     state.value.isPlaying = true
     expect(controls.isRecapPlaying.value).toBe(true)
     state.value.error = 'Playback failed. Try again.'

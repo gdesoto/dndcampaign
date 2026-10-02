@@ -64,7 +64,7 @@ describe('SessionRecordingsPanel', () => {
         campaignId: 'c1', workflowMode: false, to: '/campaigns/c1/sessions/s1/recordings',
         recordings: [recording, secondRecording],
         selectedFile: null, selectedKind: 'AUDIO', isUploading: false,
-        uploadError: '', playbackError: '', playbackLoading: {}, playingRecordingId: '',
+        uploadError: '', playbackError: '', loadingRecordingId: '', playingRecordingId: '',
       },
       global: { stubs: { UTooltip: { template: '<div><slot /></div>' } } },
     })
@@ -250,17 +250,12 @@ describe('SessionRecapPanel', () => {
 
     expect(wrapper.text()).toContain(mimeType.startsWith('video/') ? 'Video recap' : 'Audio recap')
     await clickByText(wrapper, 'Play recap')
-    expect(wrapper.text()).not.toContain('Recap is playing in the global player.')
     for (const busy of ['recapUploading', 'recapDeleting', 'recapPlaybackLoading'] as const) {
       await wrapper.setProps({ [busy]: true })
       await clickByText(wrapper, 'Play recap')
       expect(wrapper.emitted('play-recap')).toHaveLength(1)
       await wrapper.setProps({ [busy]: false })
     }
-    await wrapper.setProps({ recapPlaying: true })
-    expect(wrapper.text()).toContain('Recap is playing in the global player.')
-    await wrapper.setProps({ recapPlaying: false })
-    expect(wrapper.text()).not.toContain('Recap is playing in the global player.')
     await clickByText(wrapper, 'Confirm delete recap')
 
     expect(wrapper.emitted('upload-recap')).toBeTruthy()

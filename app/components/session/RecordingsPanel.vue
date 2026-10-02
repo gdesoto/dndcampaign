@@ -24,7 +24,7 @@ const props = defineProps<{
   playbackError: string
   deleteError?: string
   deletingRecordingId?: string
-  playbackLoading: Record<string, boolean>
+  loadingRecordingId: string
   playingRecordingId: string
 }>()
 
@@ -123,13 +123,13 @@ const recordingActions = (recording: RecordingItem): RecordAction[] => [
                 size="sm"
                 icon="i-lucide-play"
                 variant="outline"
-                :loading="playbackLoading[recording.id]"
+                :loading="loadingRecordingId === recording.id"
                 :disabled="deletingRecordingId === recording.id"
                 @click="emit('play-recording', recording.id)"
               >
                 Play
               </UButton>
-              <SharedActionMenu :name="recording.filename" :items="recordingActions(recording)" :disabled="isUploading || Boolean(deletingRecordingId) || playbackLoading[recording.id]" />
+              <SharedActionMenu :name="recording.filename" :items="recordingActions(recording)" :disabled="isUploading || Boolean(deletingRecordingId) || loadingRecordingId === recording.id" />
             </div>
           </div>
 

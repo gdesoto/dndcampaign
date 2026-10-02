@@ -32,13 +32,14 @@ export const useRecapWatch = (options: {
   const selectedIndex = computed(() => playlist.value.findIndex(item => item.id === selectedId.value))
   const next = computed(() => playlist.value[selectedIndex.value + 1])
   const previous = computed(() => playlist.value[selectedIndex.value - 1])
-  const loading = ref(false)
+  const resolving = ref(false)
   const error = ref('')
   const autoAdvance = ref(true)
   const resolvedPlayback = shallowRef<{ recap: WatchRecap; source: MediaSource } | null>(null)
   let requestedRecap: WatchRecap | undefined
   const active = computed(() => Boolean(selected.value) && sameRecap(selected.value, resolvedPlayback.value?.recap)
     && sameSource(resolvedPlayback.value?.source || null, player.state.value.source))
+  const loading = computed(() => resolving.value || (active.value && player.state.value.autoplay))
   let requestToken = 0
   let disposed = false
 
@@ -46,7 +47,7 @@ export const useRecapWatch = (options: {
     const token = ++requestToken
     selectedId.value = id
     error.value = ''
-    loading.value = false
+    resolving.value = false
     const item = playlist.value.find(item => item.id === id)
     const recap = item ? { ...item } : undefined
     requestedRecap = recap
@@ -57,8 +58,8 @@ export const useRecapWatch = (options: {
     }
     const isCurrent = () => !disposed && token === requestToken
       && sameRecap(recap, playlist.value.find(item => item.id === id))
-    let playerToken = player.state.value.playToken
-    loading.value = true
+    const playerToken = player.state.value.playToken
+    resolving.value = true
     try {
       const result = options.resolvePlayback(id)
       const playback = result instanceof Promise ? await result : result
@@ -72,24 +73,12 @@ export const useRecapWatch = (options: {
         startTime: fromStart ? 0 : undefined,
       }
       resolvedPlayback.value = { recap, source }
-      if (sameSource(source, player.state.value.source) && !fromStart && !player.state.value.error) {
-        player.setPresentation('page')
-        if (autoplay) {
-          const pending = player.play()
-          playerToken = player.state.value.playToken
-          await pending
-        }
-      } else {
-        if (autoplay) {
-          const pending = player.playSource(source, { presentation: 'page' })
-          playerToken = player.state.value.playToken
-          await pending
-        } else player.loadSource(source, { presentation: 'page' })
-      }
+      if (autoplay) return player.playSource(source, { presentation: 'page' })
+      player.loadSource(source, { presentation: 'page' })
     } catch {
       if (isCurrent() && playerToken === player.state.value.playToken) error.value = 'Unable to load this recap. Try again or choose another recap.'
     } finally {
-      if (isCurrent()) loading.value = false
+      if (isCurrent()) resolving.value = false
     }
   }
 

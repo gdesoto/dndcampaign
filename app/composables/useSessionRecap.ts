@@ -16,17 +16,18 @@ export function useSessionRecap(options: UseSessionRecapOptions) {
   const recapFile = ref<File | null>(null)
   const recapUploading = ref(false)
   const recapError = ref('')
-  const recapPlaybackLoading = ref(false)
   const recapDeleting = ref(false)
   const recapDeleteError = ref('')
-  const recapBusy = computed(() => recapUploading.value || recapDeleting.value || recapPlaybackLoading.value)
-  const recapPlaying = computed(() => {
+  const matchesCurrentRecap = computed(() => {
     const recap = options.recap.value
-    const { source, isPlaying, presentation } = player.state.value
-    return Boolean(recap && source && isPlaying && presentation === 'global' && source.id === recap.id
+    const source = player.state.value.source
+    return Boolean(recap && source && source.id === recap.id
       && source.src === artifactStreamUrl(recap.artifactId)
       && source.kind === (recap.mimeType.startsWith('video/') ? 'VIDEO' : 'AUDIO'))
   })
+  const recapPlaybackLoading = computed(() => matchesCurrentRecap.value && player.state.value.autoplay)
+  const recapPlaying = computed(() => matchesCurrentRecap.value && player.state.value.isPlaying && player.state.value.presentation === 'global')
+  const recapBusy = computed(() => recapUploading.value || recapDeleting.value || recapPlaybackLoading.value)
 
   watch(
     [() => options.recap.value?.id, () => options.recap.value?.artifactId, options.selectedRecapKind],
@@ -63,32 +64,22 @@ export function useSessionRecap(options: UseSessionRecapOptions) {
     }
   }
 
-  const loadRecapPlayback = async () => {
+  const loadRecapPlayback = () => {
     if (!options.recap.value || recapBusy.value) return
     const { id, artifactId, filename, mimeType } = options.recap.value
     const kind = mimeType.startsWith('video/') ? 'VIDEO' : 'AUDIO'
 
-    recapError.value = ''
-    recapPlaybackLoading.value = true
-    try {
-      await player.playSource(
-        {
-          id,
-          recapProgressId: id,
-          title: filename || 'Recap',
-          subtitle: 'Session recap',
-          kind,
-          src: artifactStreamUrl(artifactId),
-        },
-        { presentation: 'global', openDrawer: kind === 'VIDEO' }
-      )
-    } catch (error) {
-      if (options.recap.value?.id === id && options.recap.value.artifactId === artifactId && options.selectedRecapKind.value === kind) {
-        recapError.value = (error as Error & { message?: string }).message || 'Unable to load recap.'
-      }
-    } finally {
-      recapPlaybackLoading.value = false
-    }
+    return player.playSource(
+      {
+        id,
+        recapProgressId: id,
+        title: filename || 'Recap',
+        subtitle: 'Session recap',
+        kind,
+        src: artifactStreamUrl(artifactId),
+      },
+      { presentation: 'global', openDrawer: kind === 'VIDEO' }
+    )
   }
 
   const deleteRecap = async () => {
