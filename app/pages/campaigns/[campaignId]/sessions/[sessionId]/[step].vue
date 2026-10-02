@@ -37,6 +37,7 @@ const currentStep = computed(() => typeof route.params.step === 'string' ? route
         :recordings="resource.recordings"
         :transcript-doc="resource.transcriptDoc?.id ? { id: resource.transcriptDoc.id } : null"
         :transcript-error="transcript.transcriptError"
+        :transcript-creating="transcript.transcriptCreating"
         :transcript-delete-error="transcript.transcriptDeleteError"
         :transcript-deleting="transcript.transcriptDeleting"
         :transcript-import-error="transcript.transcriptImportError"
@@ -53,7 +54,7 @@ const currentStep = computed(() => typeof route.params.step === 'string' ? route
         @update:transcript-file="transcript.transcriptFile = $event"
         @update:show-full-transcript="transcript.showFullTranscript = $event"
         @update:selected-subtitle-recording-id="transcript.selectedSubtitleRecordingId = $event"
-        @create-transcript="resource.canWriteContent && transcript.saveTranscript()"
+        @create-transcript="resource.canWriteContent && transcript.createTranscript()"
         @import-transcript="resource.canWriteContent && transcript.importTranscript()"
         @attach-subtitles="resource.canWriteContent && transcript.attachTranscriptToVideo()"
       />

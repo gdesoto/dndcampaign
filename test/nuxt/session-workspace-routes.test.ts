@@ -24,7 +24,7 @@ const slotStub = { template: '<div><slot /><slot name="actions" /></div>' }
 const stubs = {
   CampaignTemplatesDetail: slotStub, CampaignPageHeader: slotStub,
   UCard: slotStub, SessionWorkflowTimeline: true, SessionEditModal: true,
-  SessionStatusCards: true, SessionStepLinkButton: true,
+  UTooltip: slotStub,
   SessionRecordingsPanel: panel, SessionRecapPanel: panel,
   SessionSummaryPanel: panel, SessionTranscriptPanel: panel, SessionSuggestionsPanel: panel,
 }
@@ -108,7 +108,11 @@ describe('session parent workspace', () => {
     await navigate('/campaigns/c1/sessions/s1/recordings')
     await vi.waitFor(() => expect(seen.at(-1)).toBe(workspace))
     await navigate('/campaigns/c1/sessions/s1')
-    await navigate('/campaigns/c1/sessions/s1/summary')
+    const summaryLink = wrapper!.get('a[aria-label="Open summary"]')
+    expect(summaryLink.attributes('href')).toBe('/campaigns/c1/sessions/s1/summary')
+    await summaryLink.trigger('click')
+    await flushPromises()
+    await vi.waitFor(() => expect(useRouter().currentRoute.value.path).toBe('/campaigns/c1/sessions/s1/summary'))
     expect(seen.length).toBeGreaterThanOrEqual(5)
     expect(seen.every(value => value === workspace)).toBe(true)
     expect(workspace.summary.summaryForm.content).toBe('Unsaved summary')

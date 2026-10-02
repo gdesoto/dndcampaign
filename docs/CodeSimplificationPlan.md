@@ -54,19 +54,26 @@ Removed the verified orphan encounter component, unused server methods and share
 
 Validation passed: `yarn lint`, `yarn typecheck`, `yarn test` (82 files / 293 tests), and `yarn build` (421.66s). The initial sandboxed build failed on a parent-directory metadata lookup; the permission-enabled retry succeeded. Tests exited successfully with a Vite shutdown warning, and dependency/bundler warnings remain. Offline installation succeeded with the existing frozen lockfile. Browser checks covered desktop/mobile light/dark themes, quest creation/groups/empty/no-matches states and keyboard focus, campaign activity, the corrected seed character and editor level, and session status-card/transcript-editor/summary navigation. The isolated browser database was removed afterward. Logs and screenshots are under `storage/dead-code-*`.
 
-### 2026-10-01 CJ-10 — Campaign selection (complete)
+### 2026-10-01 CJ-10 — Campaign selection (complete, `2d2a875`)
 
 Campaign selection now derives from the route. Both header controls invoke navigation only on explicit selection; the selected-ID ref, three synchronization watchers, and mount gate are gone. Pending/canceled navigation retains the current selection, selecting the same campaign preserves a deep route, and missing campaign options show a disabled `Current campaign` entry until the matching name is available. Loading, empty, or failed option lists never initiate navigation. The existing section resolver and dirty-exit guards remain in place; no API change.
 
 Validation passed: `yarn lint`, `yarn typecheck`, and the campaign-selector, campaign-selector-route, and session-workspace-routes suites (3 files / 12 tests). The new selector suite uses two native controls and a real memory router for pending/canceled/successful navigation, Back/Forward, direct routes, same-target selection, and delayed/empty/failed/missing option lists. Browser checks against an isolated seeded database covered desktop/mobile selection and dirty-summary cancellation/acceptance, draft retention, missing-option display, Back/Forward, direct loading, keyboard selection, and reselecting the active campaign on a deep editor route. The test server was stopped and its database removed afterward. Logs and the desktop screenshot are under `storage/cj-10-*`. A full suite and production build were not run for this bounded navigation change.
 
+### 2026-10-01 CJ-05/06/07 — Session workflow and dungeon projection (complete)
+
+CJ-05: Transcript creation sends one empty POST only when missing. Removed the PATCH branch and mirrored transcript draft; import, deletion, summary editing, and error/retry behavior remain. Creation/import/deletion exclude duplicate and conflicting submissions. Create disappears once the document exists, and keyboard creation hands focus to Open editor unless the user has moved focus elsewhere.
+
+CJ-06: Session controls now carry native destinations, including overview cards and panel links. Removed routing-event forwarding and unused timeline descriptions. Navigation items use pinned workspace IDs; invalid-step fallback, parent ownership, request counts, same-session drafts, and dirty exit guards remain.
+
+CJ-07: Dungeon reads, exports, and the client preview use the existing pure player-safe projection from `shared/utils/dungeon-map.ts`. Secret-room geometry and attached entities are filtered consistently without changing projection semantics, authorization, or API contracts.
+
+Validation passed: `yarn lint`, `yarn typecheck`, `yarn test` (84 files / 300 tests), and `yarn build` (397.51s). Dependency bundler/deprecation warnings remain. Focused tests and independent review cover transcript creation/retry/conflicts/focus, native destinations and workspace ownership, and map projection immutability/idempotence/parity. Browser checks used an isolated seeded database for desktop/mobile, light/dark presentation, keyboard creation/editor access, deletion/recreation, new-tab links, Back/Forward, same-session draft retention, canceled/accepted dirty exits, and player-safe preview toggling with four secret rooms among eight rooms. The browser server was stopped and its database removed afterward. Logs and screenshots are under `storage/cj-05-07-*`.
+
 ## Open queue and sequencing
 
 | Ticket | Disposition | Scope |
 | --- | --- | --- |
-| CJ-05 | Ready | Make session transcript creation creation-only; remove unused mirrored transcript draft. |
-| CJ-06 | Ready after CJ-05 | Replace session navigation event forwarding with native destinations. |
-| CJ-07 | Ready; independent quick win | Share the existing player-safe dungeon projection. |
 | CJ-08 | Partially complete | Unused QuestCard props and unreachable empty branches removed; duplicate group rendering remains. |
 | CJ-09 | Conditional; narrowed | Quest listing reuse only, subject to a clear simplification with explicit public fields. |
 | CJ-11 | Small deletion ready; broader work conditional | Remove the unused session include; narrow other encounter reads only when query ownership stays simple. |
@@ -75,9 +82,9 @@ Validation passed: `yarn lint`, `yarn typecheck`, and the campaign-selector, cam
 | CJ-21 | Conditional; narrowed | Share common map projection/parsing without private glossary enrichment; SVG reuse is optional. |
 | CJ-22 | Roadmap decision first | Remove private playback-URL endpoints only after choosing the playback URL strategy. |
 
-With CJ-10 complete, the recommended remaining sequence is **CJ-05 → CJ-06 → conditional playback work**. Before playback work, decide CJ-22: keep the endpoints and implement CJ-12, or remove them and complete both tickets together. Do not refactor caches in CJ-12 only to delete them in CJ-22 immediately afterward.
+With CJ-05/06/07/10 complete, the next larger opportunity is **conditional playback work**. Before implementation, decide CJ-22: keep the endpoints and implement CJ-12, or remove them and complete both tickets together. Do not refactor caches in CJ-12 only to delete them in CJ-22 immediately afterward.
 
-CJ-07 is a small independent win; CJ-08 and CJ-20 can also run independently. These priorities are not hard dependencies. CJ-09, broader CJ-11 query changes, and CJ-21 are not mandatory cleanup: defer them if the proposed implementation adds more machinery than it removes. CJ-11's unused session include can be deleted directly. Profiling can inform broader query-work priority, but is not required to establish that a query loads unused relations.
+CJ-08 and CJ-20 can run independently. These priorities are not hard dependencies. CJ-09, broader CJ-11 query changes, and CJ-21 are not mandatory cleanup: defer them if the proposed implementation adds more machinery than it removes. CJ-11's unused session include can be deleted directly. Profiling can inform broader query-work priority, but is not required to establish that a query loads unused relations.
 
 The signed-URL roadmap is **unresolved**. A future remote storage provider does not itself require browser-facing signed URLs; server streaming remains possible. This document neither commits to signed URLs nor authorizes endpoint removal before that decision.
 
@@ -90,36 +97,6 @@ The signed-URL roadmap is **unresolved**. A future remote storage provider does 
 5. Use one final production `yarn build` for an agreed implementation batch, or for a standalone change when packaging/rendering risk warrants it; do not rebuild after every small ticket. Allow approximately 8 minutes and wait for actual exit status through quiet Nitro packaging; do not mistake an early tool yield for a hang or completion.
 6. Coordinate a single API test runner: suites share port 4181. Poll yielded command sessions to completion. Do not run competing API launchers or treat a cross-server result as a valid test verdict.
 7. Review the final diff against acceptance criteria, correct gaps, and record actual checks, limitations, and commit when committed. Commit or merge according to the current user instruction; no historical per-ticket branch workflow is required. Rollback is a code revert.
-
-## CJ-05 — Remove the transcript workspace's unused editing mode
-
-**Evidence:** `useSessionDocuments` creates or PATCHes the transcript, but the session workflow invokes it as Create. `TranscriptPanel` exposes Create even when a transcript exists. `useSessionWorkspaceViewModel` mirrors transcript content despite having no transcript input. Existing content already has a document-editor link.
-
-**Scope:** Create an empty transcript only when missing. Hide or disable Create when one exists and guard duplicate/conflicting submissions locally. Remove the PATCH branch, mirrored transcript form/ref/watch, and `transcriptContent` option. Keep the summary draft, editor link, import/delete, errors, retries, and busy protection. Continue using the create-only endpoint and its 409 behavior; do not use the new server upsert for this action.
-
-**Files:** `app/composables/useSessionDocuments.ts`, `useSessionWorkspaceViewModel.ts`, `app/components/session/TranscriptPanel.vue`, and `app/pages/campaigns/[campaignId]/sessions/[sessionId]/[step].vue`. Update ownership documentation only if its contract description changes. No backend/API change.
-
-**Acceptance:** One empty POST when missing; no create/PATCH when present; error/retry and double-submit behavior; editor link and import/delete recovery. Extend `test/nuxt/session-panels.test.ts`; run `session-delete-recovery.test.ts` and `session-workspace-routes.test.ts`.
-
-## CJ-06 — Replace session navigation event chains with native links
-
-**Evidence:** `StepLinkButton`, `StatusCards`, `RecordingsPanel`, and `RecapPanel` forward navigation events to `useSessionWorkspaceViewModel.openSessionSection`. `WorkflowTimeline` already uses native links. Routing-only forwarding does not need a separate state owner.
-
-**Scope:** Supply destinations through `to`, retaining tooltip/accessibility presentation. Delete routing-only `open`, `open-step`, `jump-step`, and `openSessionSection` plumbing and confirmed unused descriptions. Unused `StatusCards` mode/active-step and transcript/summary return-path props were removed in the 2026-10-01 cleanup; navigation events and document-editor `returnTo` support remain. Keep invalid-step correction and `defaultStep` fallback. Preserve parent ownership and dirty exit guards; do not replace action events unrelated to navigation.
-
-**Files:** Session `StepLinkButton`, `StatusCards`, `RecordingsPanel`, `RecapPanel`, and `WorkflowTimeline`; workspace view model; session overview/step/parent routes as needed; `docs/SessionWorkspaceOwnership.md`. No API change.
-
-**Acceptance:** Correct hrefs, keyboard/new-tab behavior, retained same-session drafts, guarded exits, unchanged workspace instance/request counts. Update `test/nuxt/session-panels.test.ts` to assert destinations; run `session-workspace-routes.test.ts` and browser checks. Complete after CJ-05 to avoid overlapping edits.
-
-## CJ-07 — Share the existing player-safe dungeon projection
-
-**Evidence:** `server/services/dungeon/dungeon-map-utils.ts` defines `toPlayerSafeMap`; the dungeon detail page duplicates room/corridor/door filtering but omits attached-entity filtering. `MapCanvas` already skips markers whose rooms are absent, so this is data parity and maintenance work, not evidence of a visible secret leak.
-
-**Scope:** Move the existing pure projection to `shared/utils/dungeon-map.ts` and use it from the dungeon service, export service, and client preview. Preserve server authorization and existing projection semantics; do not redefine what player-safe means or change unrelated map fields.
-
-**Files:** `server/services/dungeon/dungeon-map-utils.ts`, `dungeon.service.ts`, `dungeon-export.service.ts`, `app/pages/campaigns/[campaignId]/dungeons/[dungeonId].vue`, and the new shared utility. Keep `shared/types/dungeon.ts` contracts unchanged.
-
-**Acceptance:** Secret rooms, incident corridors/doors, attached entities, no input mutation, idempotence, and client/server projection parity. Add focused pure tests; run `test/nuxt/dungeons-pages.test.ts` and export coverage in `test/api/api.dungeon-routes.test.ts`.
 
 ## CJ-08 — Consolidate duplicate quest group rendering
 

@@ -1,16 +1,11 @@
 <script setup lang="ts">
-type WorkflowStep = 'recordings' | 'transcription' | 'summary' | 'suggestions' | 'recap'
-
 const props = defineProps<{
+  sessionPath: string
   recordingsCount: number
   transcriptStatus: string
   summaryStatus: string
   suggestionStatus?: string
   recapStatus: string
-}>()
-
-const emit = defineEmits<{
-  'jump-step': [step: WorkflowStep]
 }>()
 
 const statusCards = computed(() => [
@@ -71,7 +66,7 @@ const statusCards = computed(() => [
         <h2 class="type-label text-muted">{{ card.label }}</h2>
       </div>
       <UBadge :color="card.color" variant="subtle" class="max-w-28 whitespace-normal sm:col-span-2 sm:row-start-2 sm:mt-1 sm:max-w-none sm:justify-self-start">{{ card.value }}</UBadge>
-      <SessionStepLinkButton :step="card.id" class="sm:col-start-2 sm:row-start-1" @open="emit('jump-step', card.id)" />
+      <SessionStepLinkButton :step="card.id" :to="`${sessionPath}/${card.id}`" class="sm:col-start-2 sm:row-start-1" />
       <p class="hidden text-xs text-muted sm:col-span-2 sm:block">{{ card.hint }}</p>
     </UCard>
   </section>

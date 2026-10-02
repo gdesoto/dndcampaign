@@ -6,7 +6,6 @@ type UseSessionDocumentsOptions = {
   sessionTitle: Ref<string | null | undefined>
   transcriptDoc: Ref<SessionDocumentDetail | null | undefined>
   summaryDoc: Ref<SessionDocumentDetail | null | undefined>
-  transcriptContent: Ref<string>
   summaryContent: Ref<string>
   refreshTranscript: () => Promise<void>
   refreshSummary: () => Promise<void>
@@ -15,7 +14,7 @@ type UseSessionDocumentsOptions = {
 export function useSessionDocuments(options: UseSessionDocumentsOptions) {
   const { request } = useApi()
 
-  const transcriptSaving = ref(false)
+  const transcriptCreating = ref(false)
   const summarySaving = ref(false)
   const transcriptError = ref('')
   const summaryError = ref('')
@@ -27,6 +26,7 @@ export function useSessionDocuments(options: UseSessionDocumentsOptions) {
   const summaryFile = ref<File | null>(null)
   const transcriptDeleting = ref(false)
   const transcriptDeleteError = ref('')
+  const transcriptBusy = computed(() => transcriptCreating.value || transcriptImporting.value || transcriptDeleting.value)
 
   const createDocument = async (type: 'TRANSCRIPT' | 'SUMMARY', content = '') => {
     const titleBase = type === 'SUMMARY' ? 'Summary' : 'Transcript'
@@ -42,27 +42,18 @@ export function useSessionDocuments(options: UseSessionDocumentsOptions) {
     })
   }
 
-  const saveTranscript = async () => {
+  const createTranscript = async () => {
+    if (options.transcriptDoc.value || transcriptBusy.value) return
     transcriptError.value = ''
-    transcriptSaving.value = true
+    transcriptCreating.value = true
     try {
-      if (!options.transcriptDoc.value) {
-        await createDocument('TRANSCRIPT', options.transcriptContent.value)
-      } else {
-        await request(`/api/documents/${options.transcriptDoc.value.id}`, {
-          method: 'PATCH',
-          body: {
-            content: options.transcriptContent.value,
-            format: 'PLAINTEXT',
-          },
-        })
-      }
+      await createDocument('TRANSCRIPT')
       await options.refreshTranscript()
     } catch (error) {
       transcriptError.value =
-        (error as Error & { message?: string }).message || 'Unable to save transcript.'
+        (error as Error & { message?: string }).message || 'Unable to create transcript.'
     } finally {
-      transcriptSaving.value = false
+      transcriptCreating.value = false
     }
   }
 
@@ -120,6 +111,7 @@ export function useSessionDocuments(options: UseSessionDocumentsOptions) {
   }
 
   const importTranscript = async () => {
+    if (transcriptBusy.value || !transcriptFile.value) return
     await importDocument(
       'TRANSCRIPT',
       transcriptFile.value,
@@ -150,7 +142,7 @@ export function useSessionDocuments(options: UseSessionDocumentsOptions) {
   }
 
   const deleteTranscript = async () => {
-    if (!options.transcriptDoc.value) return
+    if (!options.transcriptDoc.value || transcriptBusy.value) return
     transcriptDeleteError.value = ''
     transcriptDeleting.value = true
     try {
@@ -168,7 +160,7 @@ export function useSessionDocuments(options: UseSessionDocumentsOptions) {
   }
 
   return {
-    transcriptSaving,
+    transcriptCreating,
     summarySaving,
     transcriptError,
     summaryError,
@@ -180,7 +172,7 @@ export function useSessionDocuments(options: UseSessionDocumentsOptions) {
     summaryFile,
     transcriptDeleting,
     transcriptDeleteError,
-    saveTranscript,
+    createTranscript,
     saveSummary,
     importTranscript,
     importSummary,

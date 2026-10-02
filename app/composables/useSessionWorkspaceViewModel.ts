@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import type { TimelineItem } from '@nuxt/ui'
+import type { NavigationMenuItem } from '@nuxt/ui'
 import {
   isSegmentedTranscript,
   parseTranscriptSegments,
@@ -52,9 +52,6 @@ export function useSessionWorkspaceViewModel(options: {
   const selectedSubtitleRecordingId = ref('')
   const showFullTranscript = ref(false)
 
-  const transcriptForm = reactive({
-    content: '',
-  })
   const summaryForm = reactive({
     content: '',
   })
@@ -89,7 +86,6 @@ export function useSessionWorkspaceViewModel(options: {
     summaryDoc,
   })
 
-  const transcriptContent = toRef(transcriptForm, 'content')
   const summaryContent = toRef(summaryForm, 'content')
 
   const documents = useSessionDocuments({
@@ -97,7 +93,6 @@ export function useSessionWorkspaceViewModel(options: {
     sessionTitle: computed(() => session.value?.title),
     transcriptDoc,
     summaryDoc,
-    transcriptContent,
     summaryContent,
     refreshTranscript: refreshWorkspace,
     refreshSummary: refreshWorkspace,
@@ -174,14 +169,6 @@ export function useSessionWorkspaceViewModel(options: {
     return trimmed.length > 240 ? `${trimmed.slice(0, 240)}...` : trimmed
   })
 
-  watch(
-    () => transcriptDoc.value,
-    (value) => {
-      transcriptForm.content = value?.currentVersion?.content || ''
-    },
-    { immediate: true }
-  )
-
   const summaryDraft = useEditorDraft(() => ({ ...summaryForm }), value => Object.assign(summaryForm, value))
   watch([sessionId, summaryDoc], ([id, value]) => {
     summaryDraft.sync({ content: value?.currentVersion?.content || '' }, id)
@@ -192,41 +179,36 @@ export function useSessionWorkspaceViewModel(options: {
     if (await documents.saveSummary()) summaryDraft.accept(submitted)
   }
 
-  const sessionNavigationItems = computed<TimelineItem[]>(() => [
+  const sessionNavigationItems = computed<NavigationMenuItem[]>(() => [
     {
-      title: 'Overview',
-      description: 'Session overview',
-      value: 'overview',
+      label: 'Overview',
+      to: `/campaigns/${campaignId.value}/sessions/${sessionId.value}`,
+      exact: true,
       icon: 'i-lucide-layout-dashboard',
     },
     {
-      title: 'Recordings',
-      description: hasRecordings.value ? 'Upload complete' : 'Upload audio/video',
-      value: 'recordings',
+      label: 'Recordings',
+      to: `/campaigns/${campaignId.value}/sessions/${sessionId.value}/recordings`,
       icon: 'i-lucide-mic',
     },
     {
-      title: 'Transcription',
-      description: hasTranscript.value ? 'Review & edit transcript' : 'Await transcript',
-      value: 'transcription',
+      label: 'Transcription',
+      to: `/campaigns/${campaignId.value}/sessions/${sessionId.value}/transcription`,
       icon: 'i-lucide-scroll-text',
     },
     {
-      title: 'Summary',
-      description: hasSummary.value ? 'Generate and review summary' : 'Send to n8n',
-      value: 'summary',
+      label: 'Summary',
+      to: `/campaigns/${campaignId.value}/sessions/${sessionId.value}/summary`,
       icon: 'i-lucide-book-open',
     },
     {
-      title: 'Suggestions',
-      description: 'Review suggested updates',
-      value: 'suggestions',
+      label: 'Suggestions',
+      to: `/campaigns/${campaignId.value}/sessions/${sessionId.value}/suggestions`,
       icon: 'i-lucide-git-merge',
     },
     {
-      title: 'Recap',
-      description: hasRecap.value ? 'Recap attached' : 'Upload audio or video recap',
-      value: 'recap',
+      label: 'Recap',
+      to: `/campaigns/${campaignId.value}/sessions/${sessionId.value}/recap`,
       icon: 'i-lucide-headphones',
     },
   ])
@@ -239,17 +221,6 @@ export function useSessionWorkspaceViewModel(options: {
     if (!hasRecap.value) return 'recap'
     return 'recordings'
   })
-
-  const openSessionSection = async (section: string) => {
-    if (section === 'overview') {
-      await navigateTo(`/campaigns/${campaignId.value}/sessions/${sessionId.value}`)
-      return
-    }
-    const normalizedStep = workflowStepOrder.includes(section as WorkflowStep)
-      ? section
-      : defaultStep.value
-    await navigateTo(`/campaigns/${campaignId.value}/sessions/${sessionId.value}/${normalizedStep}`)
-  }
 
   watch(
     () => stepParam.value,
@@ -361,13 +332,14 @@ export function useSessionWorkspaceViewModel(options: {
       importSummary: documents.importSummary,
     }),
     transcript: reactive({
+      transcriptCreating: documents.transcriptCreating,
       transcriptError: documents.transcriptError,
       transcriptDeleteError: documents.transcriptDeleteError,
       transcriptDeleting: documents.transcriptDeleting,
       transcriptImportError: documents.transcriptImportError,
       transcriptImporting: documents.transcriptImporting,
       transcriptFile: documents.transcriptFile,
-      saveTranscript: documents.saveTranscript,
+      createTranscript: documents.createTranscript,
       importTranscript: documents.importTranscript,
       deleteTranscript: documents.deleteTranscript,
       showFullTranscript,
@@ -384,7 +356,7 @@ export function useSessionWorkspaceViewModel(options: {
       sessionDungeonMasterLabel, sessionHeaderDescription, recordingsCount,
       recapStatus, transcriptStatus, summaryStatus, summaryPreview, hasTranscript, hasSummary,
     }),
-    navigation: reactive({ sessionNavigationItems, openSessionSection }),
+    navigation: reactive({ sessionNavigationItems }),
     openPlayer: player.openDrawer,
   }
 }

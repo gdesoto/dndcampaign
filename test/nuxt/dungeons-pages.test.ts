@@ -5,6 +5,7 @@ import MapCanvas from '../../app/components/dungeon/MapCanvas.vue'
 import type { DungeonMapData } from '../../shared/types/dungeon'
 import { ref } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
+import { toPlayerSafeMap } from '../../shared/utils/dungeon-map'
 import DungeonsPage from '../../app/pages/campaigns/[campaignId]/dungeons/index.vue'
 import DungeonDetailPage from '../../app/pages/campaigns/[campaignId]/dungeons/[dungeonId].vue'
 
@@ -267,6 +268,36 @@ describe('Dungeon pages', () => {
     expect(wrapper.text()).toContain('Export')
     expect(wrapper.text()).toContain('Snapshots')
     expect(wrapper.find('[data-test="map-canvas-stub"]').exists()).toBe(true)
+  })
+
+  it('uses the shared player projection for preview and restores the full map when disabled', async () => {
+    const map: DungeonMapData = {
+      ...dungeonDetailFixture.map as DungeonMapData,
+      traps: ['room-1', 'room-2'].map(roomId => ({
+        id: `trap-${roomId}`, roomId, name: 'Pit', severity: 'LOW', trigger: 'Step', effect: 'Fall',
+        detectDc: 10, disarmDc: 10, isLocked: false,
+      })),
+    }
+    mockGetDungeon.mockResolvedValue({ ...dungeonDetailFixture, map })
+    const canvasStub = { props: ['map'], template: '<div />' }
+    const wrapper = await mountSuspended(DungeonDetailPage, {
+      global: {
+        provide: { campaignCanWriteContent: ref(true) },
+        stubs: { DungeonMapCanvas: canvasStub },
+      },
+    })
+    const canvas = wrapper.findComponent(canvasStub)
+    const playerModeLabel = wrapper.findAll('label').find(label => label.text() === 'Player-safe map mode')!
+    const playerMode = wrapper.get(`button[id="${playerModeLabel.attributes('for')}"]`)
+
+    expect(canvas.props('map')).toEqual(map)
+    await playerMode.trigger('click')
+    expect(canvas.props('map')).toEqual(toPlayerSafeMap(map))
+    expect(canvas.props('map').traps.map((trap: { id: string }) => trap.id)).toEqual(['trap-room-1'])
+    await playerMode.trigger('click')
+    expect(canvas.props('map')).toEqual(map)
+    expect(mockPatchMap).not.toHaveBeenCalled()
+    wrapper.unmount()
   })
 })
 

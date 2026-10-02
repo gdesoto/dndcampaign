@@ -48,6 +48,15 @@ session still checks dirty/busy state. Browser close/reload protection remains
 active regardless of the visible step. Other users of the guard retain its
 original behavior. The session edit modal keeps its own existing protections.
 
+Session navigation uses native destinations on links and buttons. Panels receive
+their destinations explicitly; they do not forward routing events through the
+workspace. Invalid step URLs still resolve to the existing workflow fallback.
+
+The transcript panel creates an empty document only when one is missing and uses
+the standalone editor for content changes. It has no mirrored transcript draft.
+Creation, import, and deletion share a busy guard while the parent owns their
+pending state and errors across step navigation.
+
 Server refreshes still merge through `useEditorDraft`, preserving locally changed
 summary fields when the parent saves session metadata. Failed refreshes retain
 the exact session's previous resource. A new session starts with new local drafts,

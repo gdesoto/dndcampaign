@@ -15,6 +15,7 @@ const props = defineProps<{
   recordings: RecordingItem[] | null | undefined
   transcriptDoc: TranscriptDoc | null | undefined
   transcriptError: string
+  transcriptCreating: boolean
   transcriptDeleteError?: string
   transcriptDeleting?: boolean
   transcriptImportError: string
@@ -37,6 +38,23 @@ const emit = defineEmits<{
   'import-transcript': []
   'attach-subtitles': []
 }>()
+
+const transcriptBusy = computed(() => props.transcriptCreating || props.transcriptImporting || props.transcriptDeleting)
+const transcriptActions = useTemplateRef<HTMLElement>('transcriptActions')
+let createFocusTarget: EventTarget | null = null
+const createTranscript = (event: MouseEvent) => {
+  createFocusTarget = document.activeElement === event.currentTarget ? event.currentTarget : null
+  emit('create-transcript')
+}
+watch([() => props.transcriptDoc, () => props.transcriptCreating], ([doc, creating]) => {
+  if (!createFocusTarget || (!doc && creating)) return
+  const trigger = createFocusTarget
+  createFocusTarget = null
+  // Disabling/removing the Create button can leave focus on the body.
+  if (doc && (document.activeElement === trigger || document.activeElement === document.body)) {
+    transcriptActions.value?.querySelector<HTMLAnchorElement>('a[href]')?.focus()
+  }
+}, { flush: 'post' })
 
 const transcriptFileModel = computed({
   get: () => props.transcriptFile,
@@ -65,7 +83,7 @@ const selectedSubtitleRecordingIdModel = computed({
               Review the transcript and open the editor for full editing.
             </p>
           </div>
-          <div class="ml-auto flex items-center justify-end gap-2">
+          <div ref="transcriptActions" class="ml-auto flex items-center justify-end gap-2">
             <UButton
               v-if="transcriptDoc"
               variant="outline"
@@ -79,7 +97,7 @@ const selectedSubtitleRecordingIdModel = computed({
               message="Delete the current transcript document? This permanently removes the transcript and its versions."
               confirm-label="Delete transcript"
               confirm-icon="i-lucide-trash-2"
-              :confirm-loading="transcriptDeleting"
+              :confirm-loading="transcriptBusy"
               :action="deleteTranscript"
             >
               <template #trigger>
@@ -88,6 +106,7 @@ const selectedSubtitleRecordingIdModel = computed({
                   variant="outline"
                   size="sm"
                   :loading="transcriptDeleting"
+                  :disabled="transcriptBusy"
                 >
                   Delete transcript
                 </UButton>
@@ -129,7 +148,7 @@ const selectedSubtitleRecordingIdModel = computed({
               />
               <UButton
                 variant="outline"
-                :disabled="!canManageTranscript || !transcriptDoc || !selectedSubtitleRecordingIdModel || transcriptDeleting"
+                :disabled="!canManageTranscript || !transcriptDoc || !selectedSubtitleRecordingIdModel || transcriptBusy"
                 :loading="subtitleAttachLoading"
                 @click="emit('attach-subtitles')"
               >
@@ -156,7 +175,7 @@ const selectedSubtitleRecordingIdModel = computed({
         </div>
       </template>
       <div class="space-y-4">
-        <div class="grid gap-4 lg:grid-cols-3">
+        <div class="grid gap-4" :class="transcriptDoc ? 'lg:grid-cols-2' : 'lg:grid-cols-3'">
           <div class="rounded-lg bg-accented/40 p-4">
             <div class="space-y-2">
               <p class="text-sm font-semibold">From a recording</p>
@@ -177,13 +196,15 @@ const selectedSubtitleRecordingIdModel = computed({
               </div>
             </div>
           </div>
-          <div class="rounded-lg bg-accented/40 p-4">
+          <div v-if="!transcriptDoc" class="rounded-lg bg-accented/40 p-4">
             <div class="space-y-3">
               <p class="text-sm font-semibold">Write from scratch</p>
               <UButton
                 variant="outline"
                 class="w-full justify-center"
-                @click="emit('create-transcript')"
+                :loading="transcriptCreating"
+                :disabled="transcriptBusy"
+                @click="createTranscript"
               >
                 Create transcript
               </UButton>
@@ -196,12 +217,12 @@ const selectedSubtitleRecordingIdModel = computed({
               <div class="grid gap-3">
                 <SharedFilePicker
                   v-model="transcriptFileModel"
-                  :disabled="transcriptImporting || transcriptDeleting"
+                  :disabled="transcriptBusy"
                   accept=".txt,.md,.markdown,.vtt"
                   label="Select transcript file"
                 />
                 <UButton
-                  :disabled="!transcriptFile || transcriptDeleting"
+                  :disabled="!transcriptFile || transcriptBusy"
                   :loading="transcriptImporting"
                   variant="outline"
                   class="w-full justify-center"

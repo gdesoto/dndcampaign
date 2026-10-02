@@ -29,9 +29,9 @@ it.each(['recording', 'transcript', 'recap'] as const)('keeps the %s confirmatio
         panel = RecordingsPanel
         props = { workflowMode: true, campaignId: 'c1', canManageRecordings: true, recordings: [{ ...media, kind: 'AUDIO' }], selectedFile: null, selectedKind: 'AUDIO', isUploading: false, uploadError: '', playbackError: '', playbackLoading: {}, playbackUrls: {}, deleteRecording: controls.deleteRecording }
       } else if (kind === 'transcript') {
-        const controls = useSessionDocuments({ sessionId: ref('s1'), sessionTitle: ref('Session'), transcriptDoc: ref({ id: 'd1', title: 'Transcript', type: 'TRANSCRIPT' }), summaryDoc: ref(null), transcriptContent: ref(''), summaryContent: ref(''), refreshTranscript: refresh, refreshSummary: refresh })
+        const controls = useSessionDocuments({ sessionId: ref('s1'), sessionTitle: ref('Session'), transcriptDoc: ref({ id: 'd1', title: 'Transcript', type: 'TRANSCRIPT' }), summaryDoc: ref(null), summaryContent: ref(''), refreshTranscript: refresh, refreshSummary: refresh })
         panel = TranscriptPanel
-        props = { campaignId: 'c1', canManageTranscript: true, recordings: [], transcriptDoc: { id: 'd1' }, transcriptError: '', transcriptImportError: '', transcriptImporting: false, transcriptFile: null, showFullTranscript: false, transcriptPreview: '', fullTranscript: '', selectedSubtitleRecordingId: '', videoOptions: [], subtitleAttachLoading: false, subtitleAttachError: '', deleteTranscript: controls.deleteTranscript }
+        props = { campaignId: 'c1', canManageTranscript: true, recordings: [], transcriptDoc: { id: 'd1' }, transcriptCreating: false, transcriptError: '', transcriptImportError: '', transcriptImporting: false, transcriptFile: null, showFullTranscript: false, transcriptPreview: '', fullTranscript: '', selectedSubtitleRecordingId: '', videoOptions: [], subtitleAttachLoading: false, subtitleAttachError: '', deleteTranscript: controls.deleteTranscript }
       } else {
         const controls = useSessionRecap({ sessionId: ref('s1'), selectedRecapKind: ref('AUDIO'), recap: ref(media), refreshRecap: refresh })
         panel = RecapPanel

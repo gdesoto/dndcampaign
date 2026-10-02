@@ -4,6 +4,7 @@ type SessionStep = 'recordings' | 'transcription' | 'summary' | 'suggestions' | 
 const props = withDefaults(
   defineProps<{
     step: SessionStep
+    to: string
     tooltip?: string
     ariaLabel?: string
   }>(),
@@ -13,15 +14,7 @@ const props = withDefaults(
   }
 )
 
-const emit = defineEmits<{
-  open: [step: SessionStep]
-}>()
-
 const label = computed(() => `Open ${props.step === 'transcription' ? 'transcript' : props.step}`)
-
-const onClick = () => {
-  emit('open', props.step)
-}
 </script>
 
 <template>
@@ -31,7 +24,7 @@ const onClick = () => {
       variant="ghost"
       icon="i-lucide-square-arrow-out-up-right"
       :aria-label="ariaLabel || label"
-      @click="onClick"
+      :to="to"
     />
   </UTooltip>
 </template>

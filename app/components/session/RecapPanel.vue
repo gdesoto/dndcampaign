@@ -3,14 +3,12 @@ import type { RecordAction } from '~/types/actions'
 import { recapWatchLink } from '~/utils/recap-links'
 import type { SessionRecapRecording } from '#shared/types/session-workflow'
 
-type WorkflowStep = 'recordings' | 'transcription' | 'summary' | 'recap'
-
 const props = defineProps<{
   canManage?: boolean
   deleteRecap?: () => Promise<unknown>
   campaignId?: string
   workflowMode: boolean
-  openStep?: WorkflowStep
+  to?: string
   recap: SessionRecapRecording | null | undefined
   recaps: SessionRecapRecording[]
   selectedKind: 'AUDIO' | 'VIDEO'
@@ -30,7 +28,6 @@ const emit = defineEmits<{
   'upload-recap': []
   'play-recap': []
   'open-player': []
-  'open-step': [step: WorkflowStep]
 }>()
 
 const recapFileModel = computed({
@@ -111,9 +108,9 @@ const recapActions = computed<RecordAction[]>(() => {
         <div class="flex items-center gap-2">
           <UBadge v-if="hasRecap" color="success" variant="soft">Attached</UBadge>
           <SessionStepLinkButton
-            v-if="openStep"
-            :step="openStep"
-            @open="(step) => emit('open-step', step as WorkflowStep)"
+            v-if="to"
+            step="recap"
+            :to="to"
           />
         </div>
       </div>

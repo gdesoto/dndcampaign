@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { CampaignDungeonLink, CampaignDungeonRegenerateScope, CampaignDungeonRoom } from '#shared/types/dungeon'
 import type { DungeonGeneratorConfigInput, DungeonMapPatchActionInput } from '#shared/schemas/dungeon'
+import { toPlayerSafeMap } from '#shared/utils/dungeon-map'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -247,18 +248,7 @@ const regenerationItems = computed(() => [
 
 const displayedMap = computed(() => {
   if (!dungeon.value) return null
-  if (!showPlayerSafe.value) return dungeon.value.map
-  const visibleRoomIds = new Set(dungeon.value.map.rooms.filter((room) => !room.isSecret).map((room) => room.id))
-  const corridors = dungeon.value.map.corridors.filter(
-    (corridor) => visibleRoomIds.has(corridor.fromRoomId) && visibleRoomIds.has(corridor.toRoomId),
-  )
-  const corridorIds = new Set(corridors.map((corridor) => corridor.id))
-  return {
-    ...dungeon.value.map,
-    rooms: dungeon.value.map.rooms.filter((room) => !room.isSecret),
-    corridors,
-    doors: dungeon.value.map.doors.filter((door) => !door.isSecret && corridorIds.has(door.corridorId)),
-  }
+  return showPlayerSafe.value ? toPlayerSafeMap(dungeon.value.map) : dungeon.value.map
 })
 
 const selectedRoom = computed(() => {

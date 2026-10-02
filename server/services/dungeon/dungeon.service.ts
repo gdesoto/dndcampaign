@@ -16,7 +16,8 @@ import type {
   DungeonMapData,
 } from '#shared/types/dungeon'
 import { DungeonGeneratorService } from '#server/services/dungeon/dungeon-generator.service'
-import { parseDungeonMap, toPlayerSafeMap } from '#server/services/dungeon/dungeon-map-utils'
+import { parseDungeonMap } from '#server/services/dungeon/dungeon-map-utils'
+import { toPlayerSafeMap } from '#shared/utils/dungeon-map'
 import { ActivityLogService } from '#server/services/activity-log.service'
 import { apiError } from '#server/utils/http'
 import { hasCampaignDmAccess, type CampaignActor } from '#server/utils/campaign-auth'

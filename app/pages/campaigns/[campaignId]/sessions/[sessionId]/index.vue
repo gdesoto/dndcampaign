@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { formatSessionDate } from '~/utils/session-date'
-const { campaignId, resource, recording, recap, transcript, suggestions, overview, navigation, openPlayer } = useSessionWorkspaceContext()
+const { campaignId, sessionId, resource, recording, recap, transcript, suggestions, overview, openPlayer } = useSessionWorkspaceContext()
+const sessionPath = computed(() => `/campaigns/${campaignId.value}/sessions/${sessionId.value}`)
 </script>
 
 <template>
   <div class="space-y-6 theme-reveal">
     <SessionStatusCards
+      :session-path="sessionPath"
       :recordings-count="overview.recordingsCount"
       :transcript-status="overview.transcriptStatus"
       :summary-status="overview.summaryStatus"
       :suggestion-status="suggestions.suggestionStatusLabel"
       :recap-status="overview.recapStatus"
-      @jump-step="navigation.openSessionSection"
     />
 
     <UCard class="session-story">
@@ -54,7 +55,7 @@ const { campaignId, resource, recording, recap, transcript, suggestions, overvie
             </div>
             <SessionStepLinkButton
               step="transcription"
-              @open="navigation.openSessionSection('transcription')"
+              :to="`${sessionPath}/transcription`"
             />
           </div>
         </template>
@@ -82,7 +83,7 @@ const { campaignId, resource, recording, recap, transcript, suggestions, overvie
             </div>
             <SessionStepLinkButton
               step="summary"
-              @open="navigation.openSessionSection('summary')"
+              :to="`${sessionPath}/summary`"
             />
           </div>
         </template>
@@ -104,7 +105,7 @@ const { campaignId, resource, recording, recap, transcript, suggestions, overvie
 
     <SessionRecordingsPanel
       :workflow-mode="false"
-      open-step="recordings"
+      :to="`${sessionPath}/recordings`"
       :can-manage-recordings="resource.canUploadRecording"
       :campaign-id="campaignId"
       :recordings="resource.recordings"
@@ -123,14 +124,13 @@ const { campaignId, resource, recording, recap, transcript, suggestions, overvie
       @upload-recording="resource.canUploadRecording && recording.uploadRecording()"
       @play-recording="recording.loadPlayback"
       @open-player="openPlayer"
-      @open-step="navigation.openSessionSection"
     />
 
     <SessionRecapPanel
       v-model:selected-kind="recap.selectedRecapKind"
       :campaign-id="campaignId"
       :workflow-mode="false"
-      open-step="recap"
+      :to="`${sessionPath}/recap`"
       :recap="recap.recap"
       :recaps="resource.recaps"
       :recap-file="recap.recapFile"
@@ -146,7 +146,6 @@ const { campaignId, resource, recording, recap, transcript, suggestions, overvie
       @upload-recap="resource.canUploadRecording && recap.uploadRecap()"
       @play-recap="recap.loadRecapPlayback"
       @open-player="openPlayer"
-      @open-step="navigation.openSessionSection"
     />
   </div>
 </template>

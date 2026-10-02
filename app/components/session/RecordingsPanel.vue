@@ -10,12 +10,10 @@ type RecordingItem = {
   vttArtifactId?: string | null
 }
 
-type WorkflowStep = 'recordings' | 'transcription' | 'summary' | 'recap'
-
 const props = defineProps<{
   deleteRecording?: (recordingId: string) => Promise<unknown>
   workflowMode: boolean
-  openStep?: WorkflowStep
+  to?: string
   canManageRecordings?: boolean
   campaignId: string
   recordings: RecordingItem[] | null | undefined
@@ -36,7 +34,6 @@ const emit = defineEmits<{
   'upload-recording': []
   'play-recording': [recordingId: string]
   'open-player': []
-  'open-step': [step: WorkflowStep]
 }>()
 
 const selectedFileModel = computed({
@@ -68,9 +65,9 @@ const recordingActions = (recording: RecordingItem): RecordAction[] => [
           </p>
         </div>
         <SessionStepLinkButton
-          v-if="openStep"
-          :step="openStep"
-          @open="(step) => emit('open-step', step as WorkflowStep)"
+          v-if="to"
+          step="recordings"
+          :to="to"
         />
       </div>
     </template>

@@ -7,7 +7,8 @@ import type {
   DungeonPortableDocument,
   DungeonRoomGeometry,
 } from '#shared/types/dungeon'
-import { parseDungeonMap, toPlayerSafeMap } from '#server/services/dungeon/dungeon-map-utils'
+import { parseDungeonMap } from '#server/services/dungeon/dungeon-map-utils'
+import { toPlayerSafeMap } from '#shared/utils/dungeon-map'
 import sharp from 'sharp'
 import PDFDocument from 'pdfkit'
 import { ActivityLogService } from '#server/services/activity-log.service'
