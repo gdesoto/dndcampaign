@@ -146,7 +146,7 @@ These priorities are not hard dependencies. CJ-09, broader CJ-11 query changes, 
 
 **Disposition:** Conditional, quests only. Glossary and milestone unification is removed from scope; their private/public queries differ, and the public milestone query is already small. CJ-21 is a separate evaluation, not a dependency.
 
-**Evidence:** `CampaignPublicAccessService.getPublicQuests` repeats quest listing and conversion in `QuestService.listCampaignQuests`. CJ-04 already derives private quest row types from a shared typed include; do not recreate that work.
+**Evidence:** `CampaignPublicAccessService.getPublicQuests` repeats quest listing and conversion in `QuestService.listCampaignQuests`. CJ-04 removed duplicated private quest row typing before the Drizzle migration; inspect the current Drizzle query/projection types before proposing reuse.
 
 **Scope:** After `resolvePublicAccess(publicSlug, 'quests')`, reuse the existing quest listing and project an explicit public field allowlist, or share a small common query/projection if that is simpler. Keep the public boundary explicit: do not use rest-omission of `campaignId`, spread private DTOs, or add a generic serializer. Defer if reuse adds more ceremony than the duplication it removes.
 
@@ -196,6 +196,6 @@ These priorities are not hard dependencies. CJ-09, broader CJ-11 query changes, 
 
 - Generic public/private unification for glossary, milestones, or journal. Distinct queries and visibility rules require their own justification.
 - Removing encounter read endpoints merely to reduce route count. Schema cleanup in CJ-20 does not authorize this.
-- Removing storage interfaces/factories or the Prisma generated-client boundary because they are thin.
+- Removing storage interfaces/factories or the current database client boundary because they are thin.
 - Replacing session ownership, retained resources, editor drafts, confirmation components, or global player state with generic frameworks.
 - Broad page/component splitting, theme redesign, and unrelated cleanup. Revisit only with a concrete problem and bounded benefit.

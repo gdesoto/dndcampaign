@@ -7,4 +7,4 @@ if (!databaseUrl) throw new Error('DATABASE_URL is required to initialize the da
 export const db = globalDatabase.dmVaultDatabase?.$client.open ? globalDatabase.dmVaultDatabase : createDatabase(databaseUrl)
 if (process.env.NODE_ENV !== 'production') globalDatabase.dmVaultDatabase = db
 
-export type { Database, DbTransaction } from './connection'
+export type { Database } from './connection'

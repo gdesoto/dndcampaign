@@ -1,6 +1,6 @@
 # Prisma to Drizzle migration plan
 
-Status: implemented; local and production-backup rehearsals passed on `codex/drizzle-migration`; live rollout pending.
+Status: complete; local and production-backup rehearsals passed, merged to `master` and published, and live Unraid rollout verified by the user.
 Started: 2026-10-03, against repository revision `d06b7ec`.
 
 ## Implementation record
@@ -37,11 +37,12 @@ Validation results:
 - The user subsequently migrated the original local development database and
   confirmed login, browsing, and writes work. A subsequent `yarn db:check` reported
   `state: current`, `applied: 2`, and `pending: 0`. The user also confirmed production
-  is already running the Prisma version. Its migration state was subsequently
+  was then running the Prisma version. Its migration state was subsequently
   verified from the cold production backup described below.
 - The previous installed Prisma client successfully read and wrote an upgraded
-  reference database. This is client compatibility evidence; the exact production
-  image still needs a staging rollback rehearsal before deployment.
+  reference database. This is client compatibility evidence; the exact saved
+  production Prisma image was not tested locally. The rollback path remains
+  restoring the pre-upgrade database and matching files with that saved image.
 - New migration tests cover adoption, fresh initialization, date/JSON/UUID semantics,
   backup restoration, idempotence, drift/history rejection, and transactional
   recovery after failed DDL/data migration. Native transaction contention and
@@ -134,19 +135,27 @@ The old Prisma image archive remains on Unraid; that exact old image was not
 loaded or tested locally. Restoring the pre-upgrade database and matching files
 with the saved image remains the deployment rollback path.
 
-No production database, deployment, or image publication has been changed by this
-work. The sections below retain the original design and release gates; repository
-findings refer to the starting revision where files have since moved.
-The production-backup rehearsal has passed. Remaining release steps are
-publication and a controlled live cutover with a **fresh** database and
-artifact backup after stopping writers; production has continued running since
-the rehearsal snapshot. The current workflow publishes both a revision tag and
-`latest` on `master` pushes or manual dispatch. The user confirmed that Unraid
-updates are manual: image publication alone does not replace the running container.
-Use Unraid's container update/recreate operation for cutover; pulling an image and
-issuing only `docker restart` leaves a container on its original image.
-The release is prepared on `codex/drizzle-migration`; no merge or publication has
-been performed.
+### Production rollout — complete
+
+Migration commit `86ccf846a3ac369455535f4dea4db9cec9ed6592` was pushed to `master`.
+The [publication workflow](https://github.com/gdesoto/dndcampaign/actions/runs/37176053573)
+succeeded and published the immutable image reference
+`ghcr.io/gdesoto/dndcampaign@sha256:619aba1aba9c4f9bd96a93ab30dc652dac594843da6d63b634473d764eaa8c66`.
+The workflow publishes a revision tag and `latest`; the user manually updated the
+Unraid `dnd-campaign` container. Publication alone does not replace that container;
+an update/recreate operation is required because `docker restart` keeps its image.
+
+The user supplied live startup logs showing `Running database migrations...`,
+`{ action: adopted, applied: 2 }`, and `Listening on 0.0.0.0:3000`. The supplied
+readiness result was `{ state: current, applied: 2, pending: 0 }`. The user then
+confirmed the live smoke checklist: login and browsing, writes followed by reload,
+media, and restart/readiness. These live checks were performed by the user.
+No measured production migration duration or exact fresh cutover backup path was
+supplied; the cold backup and rehearsal evidence above remain recorded separately.
+External provider callback verification remains unconfirmed.
+
+The sections below retain the original design and release gates as history;
+repository findings refer to the starting revision where files have since moved.
 
 ## Recommendation and deployment outcome
 
@@ -157,8 +166,8 @@ recognizes the supported Prisma database, adopts a fixed Drizzle migration
 baseline, applies any reviewed compatibility migration, and starts the app.
 No export/import or new database server should be inherently necessary.
 
-This path is now verified on the copied production snapshot described above. The
-live Unraid deployment has not been upgraded. Here, seamless means preserving
+This path passed the copied production rehearsal and the user confirmed the live
+Unraid upgrade and smoke checks above. Here, seamless means preserving
 configuration and data in the existing volume; it does not promise zero downtime.
 
 If the existing file cannot be adopted reliably, use a planned maintenance window

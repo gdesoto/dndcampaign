@@ -10,4 +10,3 @@ export function createDatabase(url: string, options: Sqlite.Options = {}) {
 }
 
 export type Database = ReturnType<typeof createDatabase>
-export type DbTransaction = Parameters<Parameters<Database['transaction']>[0]>[0]

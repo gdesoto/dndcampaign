@@ -76,13 +76,16 @@ during this review.
 
 ## Deployment verification carried forward
 
-The archived Prisma upgrade records left container/staging startup, recording
-upload/playback, provider transcription callbacks, and document version
-restoration unconfirmed. Documentation cleanup did not validate an external
-deployment. A release verification pass should cover those workflows in the
-actual runtime image against staging database and artifact storage, alongside
-the normal checks for the release revision. Current startup and recovery
-behavior is described in [DeploymentRecovery.md](../docs/DeploymentRecovery.md).
+The [Drizzle migration record](DrizzleMigrationPlan.md) closes the older
+container/staging startup, recording upload/playback, and document version
+restoration gaps with the Linux runtime matrix and production-backup rehearsal.
+The user also confirmed live Unraid startup/readiness and the login/browsing,
+writes/reload, media, and restart smoke checklist after the published upgrade.
+Provider transcription callbacks remain unconfirmed: the production-backup
+rehearsal had no provider connectivity, and the live smoke confirmation did not
+specifically cover callbacks. Verify that workflow against the actual provider
+before marking it complete. Current startup and recovery behavior is described
+in [DeploymentRecovery.md](../docs/DeploymentRecovery.md).
 
 Character sheet and import behavior is documented in
 [Characters.md](../docs/Characters.md).
@@ -100,7 +103,7 @@ establish a useful simplification or a production-build improvement.
 | Unit | 4 | API-key policy + agent OpenAPI contracts; campaign navigation + selector destinations; journal normalization + visibility schemas; encounter policy + summaries. |
 | Nuxt | 3 | Quest form schema into quests page; calendar general settings into calendar page; journal list + entry workflows. Union existing mocks and keep scenario hooks scoped. |
 | API | 2 | Quest + milestone progression; transcript reader into session documents, retaining bearer-key permissions and version scoping. |
-| Infrastructure | 1 | Combine the ten-line API context and Prisma fixture module, which all twenty API suites import together. Preserve the existing server launcher boundaries. |
+| Infrastructure | 1 | Recheck whether combining the API context and current Drizzle fixture module simplifies their shared setup. The original proposal predates the ORM migration; preserve the existing server launcher boundaries. |
 | E2E | 0 | Keep four distinct assembled workflows; improve their assertions and resource ownership rather than merging them for count. |
 
 Conditional alternatives: another two unit files through dungeon generation/map

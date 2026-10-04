@@ -1,8 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// Frozen historical schema from the last supported Prisma revision, d06b7ec.
+// Retained as an upgrade and recovery reference; do not generate a client or edit it.
+// The active schema is server/db/schema.ts, with migrations under drizzle/.
 
 generator client {
   provider = "prisma-client"

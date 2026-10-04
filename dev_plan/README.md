@@ -21,7 +21,7 @@ Coding and agent guidance lives in [AGENTS.md](../AGENTS.md) and
 ## Implementation history and references
 
 - [Prisma to Drizzle migration](DrizzleMigrationPlan.md): completed migration,
-  validation evidence, and production rollout gates; runtime and recovery are in
+  validation evidence, and completed production rollout; runtime and recovery are in
   [DeploymentRecovery.md](../docs/DeploymentRecovery.md).
 - [Encounter implementation record](EncounterImplementationPlan.md): completed
   tasks and recorded validation; current behavior is in
