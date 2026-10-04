@@ -2,12 +2,14 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createHash } from 'node:crypto'
 import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
-import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
+import { createApiTestDatabase } from '../scripts/db-test-client'
+import * as tables from '../../server/db/schema'
+import { and, eq } from 'drizzle-orm'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
 
-const prisma = createApiTestPrismaClient()
-const hash = new Hash(new Scrypt())
+const db = createApiTestDatabase()
+const hash = new Hash(new Scrypt({}))
 
 const password = 'membership-owner-password-12345'
 const baseUrl = getApiTestBaseUrl()
@@ -30,7 +32,7 @@ let campaignId = ''
 const sleep = (ms: number) => new Promise((resolveDelay) => setTimeout(resolveDelay, ms))
 
 const loginAndGetCookie = async (email: string) => {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
+  for (let attempt = 0;attempt < 20;attempt += 1) {
     const response = await fetch(`${baseUrl}/api/auth/login`, {
       method: 'POST',
       headers: authHeaders,
@@ -53,38 +55,27 @@ describe('campaign membership and invitations', () => {
     const passwordHash = await hash.make(password)
 
     for (const [key, user] of Object.entries(users)) {
-      const created = await prisma.user.create({
-        data: {
-          email: user.email,
-          name: user.name,
-          passwordHash,
-        },
-        select: { id: true },
-      })
+      const created = db.insert(tables.user).values({
+        email: user.email,
+        name: user.name,
+        passwordHash,
+      }).returning().get()!
       userIds[key] = created.id
     }
 
-    const campaign = await prisma.campaign.create({
-      data: {
-        ownerId: userIds.owner,
-        name: 'Membership Membership Campaign',
-        members: {
-          create: [
-            {
-              userId: userIds.owner,
-              role: 'OWNER',
-              invitedByUserId: userIds.owner,
-            },
-            {
-              userId: userIds.collaborator,
-              role: 'COLLABORATOR',
-              invitedByUserId: userIds.owner,
-            },
-          ],
-        },
+    const campaign = db.insert(tables.campaign).values({ ownerId: userIds.owner, name: 'Membership Membership Campaign' }).returning().get()!
+    db.insert(tables.campaignMember).values(([
+      {
+        userId: userIds.owner,
+        role: 'OWNER',
+        invitedByUserId: userIds.owner,
       },
-      select: { id: true },
-    })
+      {
+        userId: userIds.collaborator,
+        role: 'COLLABORATOR',
+        invitedByUserId: userIds.owner,
+      },
+    ] as const).map(member => ({ ...member, campaignId: campaign.id }))).run()
 
     campaignId = campaign.id
 
@@ -94,7 +85,7 @@ describe('campaign membership and invitations', () => {
   }, 120_000)
 
   afterAll(async () => {
-    await prisma.$disconnect()
+    db.$client.close()
   })
 
   it('allows owner to list members and denies collaborator membership management', async () => {
@@ -137,9 +128,7 @@ describe('campaign membership and invitations', () => {
     const inviteToken = invitePayload.data.inviteToken as string
     expect(inviteToken).toBeTruthy()
 
-    const inviteRow = await prisma.campaignInvite.findFirstOrThrow({
-      where: { campaignId, email: users.invitee.email, status: 'PENDING' },
-    })
+    const inviteRow = (db.query.campaignInvite.findFirst({ where: and(eq(tables.campaignInvite.campaignId, campaignId), eq(tables.campaignInvite.email, users.invitee.email), eq(tables.campaignInvite.status, 'PENDING')) }).sync()!)
     expect(inviteRow.tokenHash).toBe(createHash('sha256').update(inviteToken).digest('hex'))
     expect(inviteRow.tokenHash).not.toBe(inviteToken)
     expect(inviteRow.expiresAt.getTime()).toBeGreaterThan(Date.now() + 6 * 24 * 60 * 60 * 1000)
@@ -173,18 +162,15 @@ describe('campaign membership and invitations', () => {
     const expiredToken = 'expired-invite-token-membership'
     const tokenHash = createHash('sha256').update(expiredToken).digest('hex')
 
-    const expiredInvite = await prisma.campaignInvite.create({
-      data: {
-        campaignId,
-        email: users.outsider.email,
-        role: 'VIEWER',
-        tokenHash,
-        status: 'PENDING',
-        expiresAt: new Date(Date.now() - 60_000),
-        invitedByUserId: userIds.owner,
-      },
-      select: { id: true },
-    })
+    const expiredInvite = db.insert(tables.campaignInvite).values({
+      campaignId,
+      email: users.outsider.email,
+      role: 'VIEWER',
+      tokenHash,
+      status: 'PENDING',
+      expiresAt: new Date(Date.now() - 60_000),
+      invitedByUserId: userIds.owner,
+    }).returning().get()!
 
     const acceptRes = await fetch(`${baseUrl}/api/campaigns/invites/${expiredToken}/accept`, {
       method: 'POST',
@@ -197,10 +183,7 @@ describe('campaign membership and invitations', () => {
     const payload = await acceptRes.json()
     expect(payload.error.code).toBe('INVITE_EXPIRED')
 
-    const invite = await prisma.campaignInvite.findUnique({
-      where: { id: expiredInvite.id },
-      select: { status: true },
-    })
+    const invite = (db.query.campaignInvite.findFirst({ where: eq(tables.campaignInvite.id, expiredInvite.id), columns: { status: true } }).sync() ?? null)
 
     expect(invite?.status).toBe('EXPIRED')
   })
@@ -209,17 +192,15 @@ describe('campaign membership and invitations', () => {
     const viewerInviteToken = 'inspect-viewer-token-membership'
     const viewerInviteHash = createHash('sha256').update(viewerInviteToken).digest('hex')
 
-    await prisma.campaignInvite.create({
-      data: {
-        campaignId,
-        email: users.outsider.email,
-        role: 'VIEWER',
-        tokenHash: viewerInviteHash,
-        status: 'PENDING',
-        expiresAt: new Date(Date.now() + 60_000),
-        invitedByUserId: userIds.invitee,
-      },
-    })
+    db.insert(tables.campaignInvite).values({
+      campaignId,
+      email: users.outsider.email,
+      role: 'VIEWER',
+      tokenHash: viewerInviteHash,
+      status: 'PENDING',
+      expiresAt: new Date(Date.now() + 60_000),
+      invitedByUserId: userIds.invitee,
+    }).returning().get()!
 
     const alreadyMemberInspect = await fetch(`${baseUrl}/api/campaigns/invites/${viewerInviteToken}`, {
       headers: { cookie: cookies.invitee },
@@ -233,17 +214,15 @@ describe('campaign membership and invitations', () => {
     const wrongAccountToken = 'inspect-wrong-account-token-membership'
     const wrongAccountHash = createHash('sha256').update(wrongAccountToken).digest('hex')
 
-    await prisma.campaignInvite.create({
-      data: {
-        campaignId,
-        email: 'membership-different-user@example.com',
-        role: 'VIEWER',
-        tokenHash: wrongAccountHash,
-        status: 'PENDING',
-        expiresAt: new Date(Date.now() + 60_000),
-        invitedByUserId: userIds.invitee,
-      },
-    })
+    db.insert(tables.campaignInvite).values({
+      campaignId,
+      email: 'membership-different-user@example.com',
+      role: 'VIEWER',
+      tokenHash: wrongAccountHash,
+      status: 'PENDING',
+      expiresAt: new Date(Date.now() + 60_000),
+      invitedByUserId: userIds.invitee,
+    }).returning().get()!
 
     const wrongAccountInspect = await fetch(`${baseUrl}/api/campaigns/invites/${wrongAccountToken}`, {
       headers: { cookie: cookies.outsider },
@@ -263,18 +242,15 @@ describe('campaign membership and invitations', () => {
     const expiredInspectToken = 'inspect-expired-token-membership'
     const expiredInspectHash = createHash('sha256').update(expiredInspectToken).digest('hex')
 
-    const expiredInvite = await prisma.campaignInvite.create({
-      data: {
-        campaignId,
-        email: users.outsider.email,
-        role: 'VIEWER',
-        tokenHash: expiredInspectHash,
-        status: 'PENDING',
-        expiresAt: new Date(Date.now() - 60_000),
-        invitedByUserId: userIds.invitee,
-      },
-      select: { id: true },
-    })
+    const expiredInvite = db.insert(tables.campaignInvite).values({
+      campaignId,
+      email: users.outsider.email,
+      role: 'VIEWER',
+      tokenHash: expiredInspectHash,
+      status: 'PENDING',
+      expiresAt: new Date(Date.now() - 60_000),
+      invitedByUserId: userIds.invitee,
+    }).returning().get()!
 
     const expiredInspect = await fetch(`${baseUrl}/api/campaigns/invites/${expiredInspectToken}`, {
       headers: { cookie: cookies.outsider },
@@ -283,23 +259,12 @@ describe('campaign membership and invitations', () => {
     const expiredInspectPayload = await expiredInspect.json()
     expect(expiredInspectPayload.data.status).toBe('INVITE_EXPIRED')
 
-    const expiredInviteStatus = await prisma.campaignInvite.findUnique({
-      where: { id: expiredInvite.id },
-      select: { status: true },
-    })
+    const expiredInviteStatus = (db.query.campaignInvite.findFirst({ where: eq(tables.campaignInvite.id, expiredInvite.id), columns: { status: true } }).sync() ?? null)
     expect(expiredInviteStatus?.status).toBe('EXPIRED')
   })
 
   it('supports role update/remove and enforces owner transfer re-auth', async () => {
-    const collaboratorMember = await prisma.campaignMember.findUnique({
-      where: {
-        campaignId_userId: {
-          campaignId,
-          userId: userIds.collaborator,
-        },
-      },
-      select: { id: true },
-    })
+    const collaboratorMember = (db.query.campaignMember.findFirst({ where: and(eq(tables.campaignMember.campaignId, campaignId), eq(tables.campaignMember.userId, userIds.collaborator)), columns: { id: true } }).sync() ?? null)
 
     expect(collaboratorMember?.id).toBeTruthy()
 
@@ -329,10 +294,7 @@ describe('campaign membership and invitations', () => {
     const updateDmAccessPayload = await updateDmAccessRes.json()
     expect(updateDmAccessPayload.data.member.hasDmAccess).toBe(true)
 
-    expect(await prisma.activityLog.findMany({
-      where: { campaignId, actorUserId: userIds.owner, action: 'CAMPAIGN_MEMBER_ROLE_UPDATED' },
-      select: { targetId: true },
-    })).toContainEqual({ targetId: collaboratorMember!.id })
+    expect(db.query.activityLog.findMany({ where: and(eq(tables.activityLog.campaignId, campaignId), eq(tables.activityLog.actorUserId, userIds.owner), eq(tables.activityLog.action, 'CAMPAIGN_MEMBER_ROLE_UPDATED')), columns: { targetId: true } }).sync()).toContainEqual({ targetId: collaboratorMember!.id })
 
     const invalidUpdateRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/members/${collaboratorMember?.id}`, {
       method: 'PATCH',
@@ -354,15 +316,7 @@ describe('campaign membership and invitations', () => {
 
     expect(deleteRes.status).toBe(200)
 
-    const inviteeMember = await prisma.campaignMember.findUnique({
-      where: {
-        campaignId_userId: {
-          campaignId,
-          userId: userIds.invitee,
-        },
-      },
-      select: { id: true },
-    })
+    const inviteeMember = (db.query.campaignMember.findFirst({ where: and(eq(tables.campaignMember.campaignId, campaignId), eq(tables.campaignMember.userId, userIds.invitee)), columns: { id: true } }).sync() ?? null)
 
     expect(inviteeMember?.id).toBeTruthy()
 
@@ -394,32 +348,13 @@ describe('campaign membership and invitations', () => {
 
     expect(transferRes.status).toBe(200)
 
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: campaignId },
-      select: { ownerId: true },
-    })
+    const campaign = (db.query.campaign.findFirst({ where: eq(tables.campaign.id, campaignId), columns: { ownerId: true } }).sync() ?? null)
 
     expect(campaign?.ownerId).toBe(userIds.invitee)
 
-    const ownerMember = await prisma.campaignMember.findUnique({
-      where: {
-        campaignId_userId: {
-          campaignId,
-          userId: userIds.owner,
-        },
-      },
-      select: { role: true },
-    })
+    const ownerMember = (db.query.campaignMember.findFirst({ where: and(eq(tables.campaignMember.campaignId, campaignId), eq(tables.campaignMember.userId, userIds.owner)), columns: { role: true } }).sync() ?? null)
 
-    const inviteeOwnerMember = await prisma.campaignMember.findUnique({
-      where: {
-        campaignId_userId: {
-          campaignId,
-          userId: userIds.invitee,
-        },
-      },
-      select: { role: true, hasDmAccess: true },
-    })
+    const inviteeOwnerMember = (db.query.campaignMember.findFirst({ where: and(eq(tables.campaignMember.campaignId, campaignId), eq(tables.campaignMember.userId, userIds.invitee)), columns: { role: true, hasDmAccess: true } }).sync() ?? null)
 
     expect(ownerMember?.role).toBe('COLLABORATOR')
     expect(inviteeOwnerMember?.role).toBe('OWNER')

@@ -2,9 +2,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
 import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
-import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
+import { createApiTestDatabase } from '../scripts/db-test-client'
+import * as tables from '../../server/db/schema'
+import { count, eq } from 'drizzle-orm'
 
-const prisma = createApiTestPrismaClient()
+const db = createApiTestDatabase()
 const baseUrl = getApiTestBaseUrl()
 let userId = ''
 let campaignId = ''
@@ -24,22 +26,20 @@ const upload = (mimeType: string) => {
 describe('audio and video session media', () => {
   beforeAll(async () => {
     const password = 'recap-video-password-12345'
-    const user = await prisma.user.create({ data: {
+    const user = db.insert(tables.user).values({
       email: 'recap-video@example.com', name: 'Recap Owner',
-      passwordHash: await new Hash(new Scrypt()).make(password),
-    } })
+      passwordHash: await new Hash(new Scrypt({})).make(password),
+    }).returning().get()!
     userId = user.id
-    const campaign = await prisma.campaign.create({ data: {
-      ownerId: userId, name: 'Video recap campaign', system: 'D&D 5e',
-      members: { create: { userId, role: 'OWNER', invitedByUserId: userId } },
-    } })
+    const campaign = db.insert(tables.campaign).values({ ownerId: userId, name: 'Video recap campaign', system: 'D&D 5e' }).returning().get()!
+    db.insert(tables.campaignMember).values(([{ userId, role: 'OWNER', invitedByUserId: userId }] as const).map(member => ({ ...member, campaignId: campaign.id }))).run()
     campaignId = campaign.id
-    const session = await prisma.session.create({ data: { campaignId, title: 'Video session' } })
+    const session = db.insert(tables.session).values({ campaignId, title: 'Video session' }).returning().get()!
     sessionId = session.id
-    const outsider = await prisma.user.create({ data: {
+    const outsider = db.insert(tables.user).values({
       email: 'recap-video-outsider@example.com', name: 'Recap Outsider',
-      passwordHash: await new Hash(new Scrypt()).make(password),
-    } })
+      passwordHash: await new Hash(new Scrypt({})).make(password),
+    }).returning().get()!
     outsiderId = outsider.id
     const response = await fetch(`${baseUrl}/api/auth/login`, {
       method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.91' },
@@ -62,10 +62,10 @@ describe('audio and video session media', () => {
     for (const id of Object.values(recapIds)) {
       await fetch(`${baseUrl}/api/recaps/${id}`, { method: 'DELETE', headers: { cookie } })
     }
-    if (campaignId) await prisma.campaign.delete({ where: { id: campaignId } })
-    if (userId) await prisma.user.delete({ where: { id: userId } })
-    if (outsiderId) await prisma.user.delete({ where: { id: outsiderId } })
-    await prisma.$disconnect()
+    if (campaignId) db.delete(tables.campaign).where(eq(tables.campaign.id, campaignId)).returning().get()!
+    if (userId) db.delete(tables.user).where(eq(tables.user.id, userId)).returning().get()!
+    if (outsiderId) db.delete(tables.user).where(eq(tables.user.id, outsiderId)).returning().get()!
+    db.$client.close()
   })
 
   // Complete both media lifecycles, including disk uploads and private/public range reads.
@@ -87,7 +87,7 @@ describe('audio and video session media', () => {
       }
       recapIds[kind] = data.id
       artifactIds[kind] = data.artifactId
-      expect(await prisma.recapRecording.count({ where: { sessionId } })).toBe(Object.keys(recapIds).length)
+      expect(db.select({ count: count() }).from(tables.recapRecording).where(eq(tables.recapRecording.sessionId, sessionId)).get()!.count).toBe(Object.keys(recapIds).length)
       const stream = await fetch(`${baseUrl}/api/artifacts/${data.artifactId}/stream`, { headers: { cookie } })
       expect(stream.status).toBe(200)
       expect(stream.headers.get('content-type')).toContain(mimeType)
@@ -104,9 +104,9 @@ describe('audio and video session media', () => {
       expect(recaps.map((item: { id: string }) => item.id)).toEqual([recapIds.AUDIO, recapIds.VIDEO])
       expect(recaps.map((item: { artifactId: string }) => item.artifactId)).toEqual([artifactIds.AUDIO, artifactIds.VIDEO])
     }
-    const video = await prisma.recapRecording.findUniqueOrThrow({ where: { id: recapIds.VIDEO } })
+    const video = (db.query.recapRecording.findFirst({ where: eq(tables.recapRecording.id, recapIds.VIDEO) }).sync()!)
     expect((await upload('text/plain')).status).toBe(400)
-    expect(await prisma.recapRecording.findUniqueOrThrow({ where: { id: video.id } })).toMatchObject({ artifactId: video.artifactId })
+    expect((db.query.recapRecording.findFirst({ where: eq(tables.recapRecording.id, video.id) }).sync()!)).toMatchObject({ artifactId: video.artifactId })
 
     const settings = await fetch(baseUrl + '/api/campaigns/' + campaignId + '/public/access', {
       method: 'PATCH', headers: { cookie, 'content-type': 'application/json' },
@@ -171,7 +171,7 @@ describe('audio and video session media', () => {
     expect(await unauthenticated.json()).toMatchObject({ data: null, error: { code: 'FORBIDDEN' } })
 
     expect((await fetch(baseUrl + '/api/recaps/' + recapIds.AUDIO, { method: 'DELETE', headers: { cookie } })).status).toBe(200)
-    expect(await prisma.recapRecording.count({ where: { sessionId } })).toBe(1)
+    expect(db.select({ count: count() }).from(tables.recapRecording).where(eq(tables.recapRecording.sessionId, sessionId)).get()!.count).toBe(1)
     const deleted = await fetch(`${baseUrl}/api/artifacts/${artifactIds.AUDIO}/stream`, { headers: { cookie } })
     expect(deleted.status).toBe(404)
     expect(await deleted.json()).toMatchObject({ data: null, error: { code: 'NOT_FOUND' } })

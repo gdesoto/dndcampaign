@@ -1,4 +1,6 @@
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { eq, desc } from 'drizzle-orm'
 import { ok, apiError, routeParams } from '#server/utils/http'
 import { calculateCharacterUnlinkAccessImpact, resolveCharacterAccess } from '#server/utils/character-auth'
 
@@ -10,17 +12,20 @@ export default defineEventHandler(async (event) => {
     throw apiError(404, 'NOT_FOUND', 'Character not found')
   }
 
-  const character = await prisma.playerCharacter.findUnique({
-    where: { id: characterId },
-    include: {
+  const character = await db.query.playerCharacter.findFirst({
+    where: eq(tables.playerCharacter.id, characterId),
+    with: {
       campaignLinks: {
-        include: {
+        with: {
           campaign: {
-            select: { id: true, name: true },
+            columns: { id: true, name: true },
           },
         },
       },
-      imports: { orderBy: { importedAt: 'desc' }, take: 1 },
+      imports: {
+        orderBy: [desc(tables.characterImport.importedAt)],
+        limit: 1,
+      },
     },
   })
 

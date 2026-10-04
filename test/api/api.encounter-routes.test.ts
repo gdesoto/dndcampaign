@@ -2,12 +2,14 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { setTimeout as delay } from 'node:timers/promises'
 import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
-import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
+import { createApiTestDatabase } from '../scripts/db-test-client'
+import * as tables from '../../server/db/schema'
+import { asc, count, eq, inArray } from 'drizzle-orm'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
 
-const prisma = createApiTestPrismaClient()
-const hash = new Hash(new Scrypt())
+const db = createApiTestDatabase()
+const hash = new Hash(new Scrypt({}))
 const baseUrl = getApiTestBaseUrl()
 const password = 'encounter-api-pass'
 
@@ -52,19 +54,16 @@ describe('encounter API routes', () => {
     const passwordHash = await hash.make(password)
     const emails = Object.values(users).map((user) => user.email)
 
-    await prisma.campaignMember.deleteMany({ where: { user: { email: { in: emails } } } })
-    await prisma.user.deleteMany({ where: { email: { in: emails } } })
+    db.delete(tables.campaignMember).where(inArray(tables.campaignMember.userId, db.select({ id: tables.user.id }).from(tables.user).where(inArray(tables.user.email, emails)))).run()
+    db.delete(tables.user).where(inArray(tables.user.email, emails)).run()
 
     const createdUsers = await Promise.all(
       Object.values(users).map((user) =>
-        prisma.user.create({
-          data: {
-            email: user.email,
-            name: user.name,
-            passwordHash,
-          },
-          select: { id: true, email: true },
-        }),
+        db.insert(tables.user).values({
+          email: user.email,
+          name: user.name,
+          passwordHash,
+        }).returning().get()!,
       ),
     )
 
@@ -72,32 +71,24 @@ describe('encounter API routes', () => {
     const viewerId = createdUsers.find((user) => user.email === users.viewer.email)?.id as string
     const collaboratorId = createdUsers.find((user) => user.email === users.collaborator.email)?.id as string
 
-    const campaign = await prisma.campaign.create({
-      data: {
-        ownerId,
-        name: 'Encounter API Campaign',
-        members: {
-          create: [
-            {
-              userId: collaboratorId,
-              role: 'COLLABORATOR',
-              invitedByUserId: ownerId,
-            },
-            {
-              userId: ownerId,
-              role: 'OWNER',
-              invitedByUserId: ownerId,
-            },
-            {
-              userId: viewerId,
-              role: 'VIEWER',
-              invitedByUserId: ownerId,
-            },
-          ],
-        },
+    const campaign = db.insert(tables.campaign).values({ ownerId: ownerId, name: 'Encounter API Campaign' }).returning().get()!
+    db.insert(tables.campaignMember).values(([
+      {
+        userId: collaboratorId,
+        role: 'COLLABORATOR',
+        invitedByUserId: ownerId,
       },
-      select: { id: true },
-    })
+      {
+        userId: ownerId,
+        role: 'OWNER',
+        invitedByUserId: ownerId,
+      },
+      {
+        userId: viewerId,
+        role: 'VIEWER',
+        invitedByUserId: ownerId,
+      },
+    ] as const).map(member => ({ ...member, campaignId: campaign.id }))).run()
 
     campaignId = campaign.id
     cookies.owner = await loginAndGetCookie(users.owner.email)
@@ -111,7 +102,7 @@ describe('encounter API routes', () => {
   }, 120_000)
 
   afterAll(async () => {
-    await prisma.$disconnect()
+    db.$client.close()
   })
 
   it.each([
@@ -133,30 +124,30 @@ describe('encounter API routes', () => {
       })
       expect(response.status).toBe(readStatus)
     }
-    await prisma.encounterCombatant.create({ data: { encounterId: encounter.id, name: 'Ready', sortOrder: 0 } })
+    db.insert(tables.encounterCombatant).values({ encounterId: encounter.id, name: 'Ready', sortOrder: 0 }).returning().get()!
     const response = await fetch(`${baseUrl}/api/encounters/${encounter.id}`, {
       method: 'PATCH',
       headers: { cookie: cookies[role], 'content-type': 'application/json' },
       body: JSON.stringify({ action: 'start' }),
     })
     expect(response.status).toBe(writeStatus)
-    const stored = await prisma.campaignEncounter.findUniqueOrThrow({ where: { id: encounter.id } })
+    const stored = (db.query.campaignEncounter.findFirst({ where: eq(tables.campaignEncounter.id, encounter.id) }).sync()!)
     expect(stored.status).toBe(writeStatus === 200 ? 'ACTIVE' : 'PLANNED')
   })
 
   it('inherits source stats while preserving overrides and missing values', async () => {
-    const campaign = await prisma.campaign.findUniqueOrThrow({ where: { id: campaignId } })
-    const encounter = await prisma.campaignEncounter.create({ data: { campaignId, createdByUserId: campaign.ownerId, name: 'Stat defaults', type: 'COMBAT' } })
-    const glossary = await prisma.glossaryEntry.create({ data: { campaignId, name: 'Linked NPC', type: 'NPC', description: 'An ally' } })
-    const character = await prisma.playerCharacter.create({ data: {
+    const campaign = (db.query.campaign.findFirst({ where: eq(tables.campaign.id, campaignId) }).sync()!)
+    const encounter = db.insert(tables.campaignEncounter).values({ campaignId, createdByUserId: campaign.ownerId, name: 'Stat defaults', type: 'COMBAT' }).returning().get()!
+    const glossary = db.insert(tables.glossaryEntry).values({ campaignId, name: 'Linked NPC', type: 'NPC', description: 'An ally' }).returning().get()!
+    const character = db.insert(tables.playerCharacter).values({
       ownerId: campaign.ownerId, name: 'Stat source',
       sheetJson: { hitPoints: { max: 28, current: 0 }, defenses: { ac: 16, speed: 35 } },
       summaryJson: { hp: 20, ac: 10 },
-    } })
-    const link = await prisma.campaignCharacter.create({ data: { campaignId, characterId: character.id, glossaryEntryId: glossary.id } })
-    const block = await prisma.encounterStatBlock.create({ data: {
+    }).returning().get()!
+    const link = db.insert(tables.campaignCharacter).values({ campaignId, characterId: character.id, glossaryEntryId: glossary.id }).returning().get()!
+    const block = db.insert(tables.encounterStatBlock).values({
       campaignId, createdByUserId: campaign.ownerId, name: 'Stat source', statBlockJson: { maxHp: 12, armorClass: 13, speed: 30 },
-    } })
+    }).returning().get()!
     const create = async (body: Record<string, unknown>) => {
       const response = await fetch(`${baseUrl}/api/encounters/${encounter.id}/combatants`, {
         method: 'POST', headers: { cookie: cookies.owner, 'content-type': 'application/json' },
@@ -179,18 +170,18 @@ describe('encounter API routes', () => {
       .toMatchObject({ maxHp: 5, currentHp: 0, armorClass: 0, speed: 0 })
     expect(await create({ sourceStatBlockId: block.id, maxHp: 5 })).toMatchObject({ maxHp: 5, currentHp: 5 })
     expect(await create({})).toMatchObject({ maxHp: null, currentHp: null, armorClass: null, speed: null })
-    await prisma.encounterStatBlock.update({ where: { id: block.id }, data: { statBlockJson: { maxHp: -1, armorClass: '13', speed: 2.5 } } })
+    db.update(tables.encounterStatBlock).set({ statBlockJson: { maxHp: -1, armorClass: '13', speed: 2.5 } }).where(eq(tables.encounterStatBlock.id, block.id)).returning().get()!
     expect(await create({ sourceStatBlockId: block.id })).toMatchObject({ maxHp: null, currentHp: null, armorClass: null, speed: null })
-    await prisma.playerCharacter.update({ where: { id: character.id }, data: { sheetJson: {} } })
+    db.update(tables.playerCharacter).set({ sheetJson: {} }).where(eq(tables.playerCharacter.id, character.id)).returning().get()!
     expect(await create({ sourceType: 'PLAYER_CHARACTER', sourcePlayerCharacterId: character.id }))
       .toMatchObject({ maxHp: null, currentHp: 20, armorClass: 10, speed: null })
   })
 
   it('adds a participant batch during an external write without losing order or audit events', async () => {
-    const campaign = await prisma.campaign.findUniqueOrThrow({ where: { id: campaignId } })
-    const encounter = await prisma.campaignEncounter.create({ data: {
+    const campaign = (db.query.campaign.findFirst({ where: eq(tables.campaign.id, campaignId) }).sync()!)
+    const encounter = db.insert(tables.campaignEncounter).values({
       campaignId, createdByUserId: campaign.ownerId, name: 'Concurrent participants',
-    } })
+    }).returning().get()!
     const add = (names: string[]) => fetch(`${baseUrl}/api/encounters/${encounter.id}/combatants`, {
       method: 'POST', headers: { cookie: cookies.owner, 'content-type': 'application/json' },
       body: JSON.stringify({ participants: names.map(name => ({ name })) }),
@@ -198,35 +189,45 @@ describe('encounter API routes', () => {
     // Warm the route before deliberately holding the separate fixture connection's write lock.
     expect((await add(['Existing'])).status).toBe(200)
     let pending!: Promise<Response>
-    await prisma.$transaction(async tx => {
-      await tx.campaignEncounter.update({ where: { id: encounter.id }, data: { notes: 'Concurrent change' } })
+    db.$client.exec('BEGIN IMMEDIATE')
+    try {
+      db.update(tables.campaignEncounter).set({ notes: 'Concurrent change' }).where(eq(tables.campaignEncounter.id, encounter.id)).run()
       pending = add(['One', 'Two'])
       await delay(250)
-    })
+      db.$client.exec('COMMIT')
+    } catch (error) {
+      db.$client.exec('ROLLBACK')
+      throw error
+    }
     const response = await pending
     const payload = await response.json()
     expect(response.status, JSON.stringify(payload.error)).toBe(200)
     expect(payload.data.notes).toBe('Concurrent change')
-    const participants = await prisma.encounterCombatant.findMany({ where: { encounterId: encounter.id }, orderBy: { sortOrder: 'asc' } })
+    const participants = db.query.encounterCombatant.findMany({ where: eq(tables.encounterCombatant.encounterId, encounter.id), orderBy: [asc(tables.encounterCombatant.sortOrder)] }).sync()
     expect(participants.map(({ name, sortOrder }) => ({ name, sortOrder }))).toEqual([
       { name: 'Existing', sortOrder: 0 }, { name: 'One', sortOrder: 1 }, { name: 'Two', sortOrder: 2 },
     ])
-    expect(await prisma.encounterEvent.count({ where: { encounterId: encounter.id } })).toBe(3)
+    expect(db.select({ count: count() }).from(tables.encounterEvent).where(eq(tables.encounterEvent.encounterId, encounter.id)).get()!.count).toBe(3)
 
     // Recheck the phase after the writer commits, preserving its timestamp on rejection.
-    const completed = await prisma.$transaction(async tx => {
-      const updated = await tx.campaignEncounter.update({ where: { id: encounter.id }, data: { status: 'COMPLETED' } })
+    db.$client.exec('BEGIN IMMEDIATE')
+    let completed!: typeof tables.campaignEncounter.$inferSelect
+    try {
+      completed = db.update(tables.campaignEncounter).set({ status: 'COMPLETED' }).where(eq(tables.campaignEncounter.id, encounter.id)).returning().get()!
       pending = add(['Too late'])
       await delay(250)
-      return updated
-    })
+      db.$client.exec('COMMIT')
+    } catch (error) {
+      db.$client.exec('ROLLBACK')
+      throw error
+    }
     const rejected = await pending
     expect(rejected.status).toBe(409)
     expect((await rejected.json()).error.code).toBe('ENCOUNTER_ACTION_UNAVAILABLE')
-    const stored = await prisma.campaignEncounter.findUniqueOrThrow({ where: { id: encounter.id } })
+    const stored = (db.query.campaignEncounter.findFirst({ where: eq(tables.campaignEncounter.id, encounter.id) }).sync()!)
     expect(stored.updatedAt).toEqual(completed.updatedAt)
-    expect(await prisma.encounterCombatant.count({ where: { encounterId: encounter.id } })).toBe(3)
-    expect(await prisma.encounterEvent.count({ where: { encounterId: encounter.id } })).toBe(3)
+    expect(db.select({ count: count() }).from(tables.encounterCombatant).where(eq(tables.encounterCombatant.encounterId, encounter.id)).get()!.count).toBe(3)
+    expect(db.select({ count: count() }).from(tables.encounterEvent).where(eq(tables.encounterEvent.encounterId, encounter.id)).get()!.count).toBe(3)
   })
 
   it('returns not found for a missing encounter on reads and lifecycle writes', async () => {
@@ -376,11 +377,32 @@ describe('encounter API routes', () => {
     expect(summary.status).toBe(200)
     const summaryPayload = await summary.json()
     expect(summaryPayload.data.totalDamage).toBeGreaterThanOrEqual(5)
+
+    const createTemplate = await fetch(`${baseUrl}/api/campaigns/${campaignId}/encounters/templates`, {
+      method: 'POST',
+      headers: { cookie: cookies.owner, 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'Template participant workflow' }),
+    })
+    expect(createTemplate.status).toBe(200)
+    const template = (await createTemplate.json()).data
+    for (const combatants of [[{ name: 'Template goblin', sortOrder: 0 }], []]) {
+      const updateTemplate = await fetch(`${baseUrl}/api/encounters/templates/${template.id}`, {
+        method: 'PATCH',
+        headers: { cookie: cookies.owner, 'content-type': 'application/json' },
+        body: JSON.stringify({ combatants }),
+      })
+      expect(updateTemplate.status).toBe(200)
+      const updatedTemplate = (await updateTemplate.json()).data
+      expect(updatedTemplate.combatants.map((combatant: { name: string }) => combatant.name)).toEqual(combatants.map((combatant) => combatant.name))
+      expect(updatedTemplate.name).toBe(template.name)
+      expect(updatedTemplate.updatedAt).toBe(template.updatedAt)
+    }
+
   })
 
   it('runs phase-aware batches, preserves turn identity and protects finished records', async () => {
-    const owner = await prisma.user.findUniqueOrThrow({ where: { email: users.owner.email } })
-    const enc = await prisma.campaignEncounter.create({ data: { campaignId, createdByUserId: owner.id, name: 'Phase workflow' } })
+    const owner = (db.query.user.findFirst({ where: eq(tables.user.email, users.owner.email) }).sync()!)
+    const enc = db.insert(tables.campaignEncounter).values({ campaignId, createdByUserId: owner.id, name: 'Phase workflow' }).returning().get()!
     const call = async (suffix: string, body: unknown, status = 200, method = 'PATCH') => {
       const response = await fetch(`${baseUrl}/api/encounters/${enc.id}${suffix}`, { method, headers: { cookie: cookies.owner, 'content-type': 'application/json' }, body: JSON.stringify(body) })
       const json = await response.json()
@@ -390,15 +412,15 @@ describe('encounter API routes', () => {
     await call('', { action: 'start' }, 409)
     await call('/turn', { action: 'set-active', combatantId: 'missing' }, 409)
     await call('/combatants', { participants: [{ name: 'First', maxHp: 20 }, { name: 'Second', maxHp: 15 }] }, 200, 'POST')
-    const initial = await prisma.encounterCombatant.findMany({ where: { encounterId: enc.id }, orderBy: { sortOrder: 'asc' } })
+    const initial = db.query.encounterCombatant.findMany({ where: eq(tables.encounterCombatant.encounterId, enc.id), orderBy: [asc(tables.encounterCombatant.sortOrder)] }).sync()
     const ids = initial.map(p => p.id)
     await call('/combatants', { participants: [{ name: 'Rollback' }, { name: 'Invalid', sourceStatBlockId: 'missing' }] }, 400, 'POST')
-    expect(await prisma.encounterCombatant.count({ where: { encounterId: enc.id } })).toBe(2)
+    expect(db.select({ count: count() }).from(tables.encounterCombatant).where(eq(tables.encounterCombatant.encounterId, enc.id)).get()!.count).toBe(2)
     await call('/combatants', { action: 'damage', participantIds: ids, amount: 2 }, 409)
     const started = await call('', { action: 'start' })
     expect(started).toMatchObject({ status: 'ACTIVE', activeParticipantId: ids[0], availableActions: { turn: { allowed: true } } })
     await call('/combatants', { action: 'damage', participantIds: [ids[0], 'foreign'], amount: 2 }, 404)
-    expect((await prisma.encounterCombatant.findUniqueOrThrow({ where: { id: ids[0] } })).currentHp).toBe(20)
+    expect(((db.query.encounterCombatant.findFirst({ where: eq(tables.encounterCombatant.id, ids[0]) }).sync()!)).currentHp).toBe(20)
     const damaged = await call('/combatants', { action: 'damage', participantIds: ids, amount: 3 })
     expect(damaged.combatants.map((p: { currentHp: number }) => p.currentHp)).toEqual([17, 12])
     const reordered = await call('/initiative', { action: 'reorder', combatantOrder: [...ids].reverse() })
@@ -409,11 +431,11 @@ describe('encounter API routes', () => {
     await call('/combatants', { action: 'condition-add', participantIds: ids, condition: { name: 'Invalid', duration: -1 } }, 400)
     await call('', { action: 'pause' })
     await call('/turn', { action: 'advance' }, 409)
-    expect((await prisma.encounterCondition.findMany({ where: { combatantId: { in: ids } } })).every(c => c.remaining === 3)).toBe(true)
+    expect((db.query.encounterCondition.findMany({ where: inArray(tables.encounterCondition.combatantId, ids) }).sync()).every(c => c.remaining === 3)).toBe(true)
     await call('/combatants', { action: 'heal', participantIds: ids, amount: 1 })
     await call('', { action: 'resume' })
     await call('/turn', { action: 'advance' })
-    expect((await prisma.encounterCondition.findMany({ where: { combatantId: { in: ids } } })).every(c => c.remaining === 2)).toBe(true)
+    expect((db.query.encounterCondition.findMany({ where: inArray(tables.encounterCondition.combatantId, ids) }).sync()).every(c => c.remaining === 2)).toBe(true)
     await call('', { action: 'complete' })
     await call('/combatants', { participants: [{ name: 'Forbidden' }] }, 409, 'POST')
     await call(`/combatants/${ids[0]}`, { side: 'ALLY' }, 409)
@@ -437,9 +459,11 @@ describe('encounter API routes', () => {
     const createdPayload = await created.json()
     expect(created.status, JSON.stringify(createdPayload.error)).toBe(200)
     const id = createdPayload.data.id
-    const added = await send(`encounters/${id}/combatants`, { participants: [
-      { name: 'One', initiative: 10 }, { name: 'Two', initiative: 20 },
-    ] }, 'POST')
+    const added = await send(`encounters/${id}/combatants`, {
+      participants: [
+        { name: 'One', initiative: 10 }, { name: 'Two', initiative: 20 },
+      ]
+    }, 'POST')
     const addedPayload = await added.json()
     expect(added.status, JSON.stringify(addedPayload.error)).toBe(200)
     const [one, two] = addedPayload.data.combatants
@@ -468,26 +492,17 @@ describe('encounter API routes', () => {
   })
 
   it('validates session and calendar linking rules on create', async () => {
-    const owner = await prisma.user.findUnique({
-      where: { email: users.owner.email },
-      select: { id: true },
-    })
+    const owner = (db.query.user.findFirst({ where: eq(tables.user.email, users.owner.email), columns: { id: true } }).sync() ?? null)
     expect(owner?.id).toBeTruthy()
 
-    const foreignCampaign = await prisma.campaign.create({
-      data: {
-        ownerId: owner!.id,
-        name: 'Encounter Foreign Campaign',
-      },
-      select: { id: true },
-    })
-    const foreignSession = await prisma.session.create({
-      data: {
-        campaignId: foreignCampaign.id,
-        title: 'Foreign Session',
-      },
-      select: { id: true },
-    })
+    const foreignCampaign = db.insert(tables.campaign).values({
+      ownerId: owner!.id,
+      name: 'Encounter Foreign Campaign',
+    }).returning().get()!
+    const foreignSession = db.insert(tables.session).values({
+      campaignId: foreignCampaign.id,
+      title: 'Foreign Session',
+    }).returning().get()!
 
     const invalidSessionLink = await fetch(`${baseUrl}/api/campaigns/${campaignId}/encounters`, {
       method: 'POST',
@@ -519,26 +534,24 @@ describe('encounter API routes', () => {
     })
     expect(calendarWhenDisabled.status).toBe(409)
 
-    await prisma.campaignCalendarConfig.upsert({
-      where: { campaignId },
-      update: {
+    db.insert(tables.campaignCalendarConfig).values({
+      campaignId,
+      isEnabled: true,
+      name: 'Campaign Calendar',
+      startingYear: 1000,
+      firstWeekdayIndex: 0,
+      currentYear: 1000,
+      currentMonth: 1,
+      currentDay: 1,
+      weekdaysJson: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+      monthsJson: [{ length: 30 }],
+      moonsJson: [],
+    }).onConflictDoUpdate({
+      target: tables.campaignCalendarConfig.campaignId, set: {
         isEnabled: true,
         monthsJson: [{ length: 30 }],
-      },
-      create: {
-        campaignId,
-        isEnabled: true,
-        name: 'Campaign Calendar',
-        startingYear: 1000,
-        firstWeekdayIndex: 0,
-        currentYear: 1000,
-        currentMonth: 1,
-        currentDay: 1,
-        weekdaysJson: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-        monthsJson: [{ length: 30 }],
-        moonsJson: [],
-      },
-    })
+      }
+    }).returning().get()!
 
     const invalidCalendarDate = await fetch(`${baseUrl}/api/campaigns/${campaignId}/encounters`, {
       method: 'POST',
@@ -597,10 +610,3 @@ describe('encounter API routes', () => {
     expect(outOfBoundsTurn.status).toBe(400)
   })
 })
-
-
-
-
-
-
-

@@ -1,12 +1,13 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
-import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
+import { createApiTestDatabase } from '../scripts/db-test-client'
+import * as tables from '../../server/db/schema'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
 
-const prisma = createApiTestPrismaClient()
-const hash = new Hash(new Scrypt())
+const db = createApiTestDatabase()
+const hash = new Hash(new Scrypt({}))
 
 const password = 'strongpass12345'
 const baseUrl = getApiTestBaseUrl()
@@ -33,7 +34,7 @@ let campaignArtifactId = ''
 const sleep = (ms: number) => new Promise((resolveDelay) => setTimeout(resolveDelay, ms))
 
 const loginAndGetCookie = async (email: string) => {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
+  for (let attempt = 0;attempt < 20;attempt += 1) {
     const response = await fetch(`${baseUrl}/api/auth/login`, {
       method: 'POST',
       headers: authHeaders,
@@ -55,15 +56,12 @@ describe('campaign permissions', () => {
 
     const createdUsers = await Promise.all(
       Object.values(users).map((user) =>
-        prisma.user.create({
-          data: {
-            email: user.email,
-            name: user.name,
-            passwordHash,
-            systemRole: user.email === users.admin.email ? 'SYSTEM_ADMIN' : 'USER',
-          },
-          select: { id: true, email: true },
-        })
+        db.insert(tables.user).values({
+          email: user.email,
+          name: user.name,
+          passwordHash,
+          systemRole: user.email === users.admin.email ? 'SYSTEM_ADMIN' : 'USER',
+        }).returning().get()!
       )
     )
 
@@ -71,81 +69,62 @@ describe('campaign permissions', () => {
     const collaboratorId = createdUsers.find((user) => user.email === users.collaborator.email)?.id as string
     const viewerId = createdUsers.find((user) => user.email === users.viewer.email)?.id as string
 
-    const campaign = await prisma.campaign.create({
-      data: {
-        ownerId,
-        name: 'Permissions RBAC Campaign',
-        members: {
-          create: [
-            {
-              userId: ownerId,
-              role: 'OWNER',
-              invitedByUserId: ownerId,
-            },
-            {
-              userId: collaboratorId,
-              role: 'COLLABORATOR',
-              invitedByUserId: ownerId,
-            },
-            {
-              userId: viewerId,
-              role: 'VIEWER',
-              invitedByUserId: ownerId,
-            },
-          ],
-        },
+    const campaign = db.insert(tables.campaign).values({ ownerId: ownerId, name: 'Permissions RBAC Campaign' }).returning().get()!
+    db.insert(tables.campaignMember).values(([
+      {
+        userId: ownerId,
+        role: 'OWNER',
+        invitedByUserId: ownerId,
       },
-      select: { id: true },
-    })
+      {
+        userId: collaboratorId,
+        role: 'COLLABORATOR',
+        invitedByUserId: ownerId,
+      },
+      {
+        userId: viewerId,
+        role: 'VIEWER',
+        invitedByUserId: ownerId,
+      },
+    ] as const).map(member => ({ ...member, campaignId: campaign.id }))).run()
     campaignId = campaign.id
 
-    const session = await prisma.session.create({
-      data: {
-        campaignId,
-        title: 'Permissions RBAC Session',
-      },
-      select: { id: true },
-    })
+    const session = db.insert(tables.session).values({
+      campaignId,
+      title: 'Permissions RBAC Session',
+    }).returning().get()!
     sessionId = session.id
 
-    campaignArtifactId = (await prisma.artifact.create({ data: {
+    campaignArtifactId = (db.insert(tables.artifact).values({
       ownerId, campaignId, provider: 'LOCAL', storageKey: `permissions/${campaignId}/audio.mp3`,
       mimeType: 'audio/mpeg', byteSize: 128,
-    } })).id
-    await prisma.recording.create({ data: {
+    }).returning().get()!).id
+    db.insert(tables.recording).values({
       sessionId, kind: 'AUDIO', filename: 'audio.mp3', mimeType: 'audio/mpeg', byteSize: 128,
       artifactId: campaignArtifactId,
-    } })
+    }).returning().get()!
 
-    const map = await prisma.campaignMap.create({
-      data: {
-        campaignId,
-        name: 'Shared Map',
-        slug: 'shared-map',
-        createdById: ownerId,
-        sourceFingerprint: 'permissions-test-map-fingerprint',
-      },
-      select: { id: true },
-    })
+    const map = db.insert(tables.campaignMap).values({
+      campaignId,
+      name: 'Shared Map',
+      slug: 'shared-map',
+      createdById: ownerId,
+      sourceFingerprint: 'permissions-test-map-fingerprint',
+    }).returning().get()!
     mapId = map.id
 
-    const character = await prisma.playerCharacter.create({
-      data: {
-        ownerId,
-        name: 'Shared Character',
-        sheetJson: { basics: { name: 'Shared Character' } },
-        summaryJson: { name: 'Shared Character', level: 3 },
-      },
-      select: { id: true },
-    })
+    const character = db.insert(tables.playerCharacter).values({
+      ownerId,
+      name: 'Shared Character',
+      sheetJson: { basics: { name: 'Shared Character' } },
+      summaryJson: { name: 'Shared Character', level: 3 },
+    }).returning().get()!
     sharedCharacterId = character.id
 
-    await prisma.campaignCharacter.create({
-      data: {
-        campaignId,
-        characterId: character.id,
-      },
-    })
+    db.insert(tables.campaignCharacter).values({
+      campaignId,
+      characterId: character.id,
+    }).returning().get()!
 
     for (const [key, value] of Object.entries(users)) {
       cookies[key] = await loginAndGetCookie(value.email)
@@ -153,7 +132,7 @@ describe('campaign permissions', () => {
   }, 120_000)
 
   afterAll(async () => {
-    await prisma.$disconnect()
+    db.$client.close()
   })
 
   it('allows collaborator and viewer to see shared campaign in list', async () => {

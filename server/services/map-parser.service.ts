@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import type { Prisma } from '#server/db/prisma-client'
+import type { JsonValue } from '../db/columns'
 import type { MapFeatureType } from '#shared/types/api/map'
 import { createError } from 'h3'
 
@@ -22,8 +22,8 @@ export type ParsedMapFeature = {
   normalizedName: string
   description?: string
   geometryType: string
-  geometryJson: Prisma.InputJsonValue
-  propertiesJson?: Prisma.InputJsonValue
+  geometryJson: JsonValue
+  propertiesJson?: JsonValue
   sourceRef: string
   removed: boolean
 }
@@ -33,7 +33,7 @@ export type ParsedAzgaarMap = {
   sourceFingerprint: string
   bounds: [[number, number], [number, number]]
   mapName?: string
-  metadata: Prisma.InputJsonObject
+  metadata: Record<string, JsonValue>
 }
 
 type AzgaarEntity = Record<string, unknown>
@@ -64,15 +64,15 @@ const stripLoneSurrogates = (value: string) =>
     .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '')
     .replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '')
 
-const sanitizeJsonValue = (value: unknown): Prisma.InputJsonValue => {
-  if (value === null) return null as unknown as Prisma.InputJsonValue
+const sanitizeJsonValue = (value: unknown): JsonValue => {
+  if (value === null) return null
   if (typeof value === 'string') return stripLoneSurrogates(value)
   if (typeof value === 'number' || typeof value === 'boolean') return value
   if (Array.isArray(value)) {
     return value.map((entry) => sanitizeJsonValue(entry))
   }
   if (isObject(value)) {
-    const out: Record<string, Prisma.InputJsonValue> = {}
+    const out: Record<string, JsonValue> = {}
     for (const [key, entry] of Object.entries(value)) {
       out[key] = sanitizeJsonValue(entry)
     }
@@ -547,7 +547,7 @@ export const parseAzgaarFullJson = (payload: Buffer): ParsedAzgaarMap => {
       mapCoordinates: json.mapCoordinates,
       sourceSize: payload.byteLength,
       slug: slugify(getString(json.info && isObject(json.info) ? json.info.mapName : undefined) || 'imported-map'),
-    }) as Prisma.InputJsonObject,
+    }) as Record<string, JsonValue>,
   }
 }
 

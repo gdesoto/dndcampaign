@@ -1,4 +1,6 @@
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import {} from 'drizzle-orm'
 import { ok, routeParams } from '#server/utils/http'
 import { validateBody } from '#server/utils/validate'
 import { sessionCreateSchema } from '#shared/schemas/session'
@@ -9,18 +11,24 @@ export default defineEventHandler(async (event) => {
 
   await requireCampaignPermission(event, campaignId, 'content.write')
 
-  const parsed = await validateBody(event, sessionCreateSchema, 'Invalid session payload')
+  const parsed = await validateBody(
+    event,
+    sessionCreateSchema,
+    'Invalid session payload'
+  )
 
-  const created = await prisma.session.create({
-    data: {
-      campaignId,
-      title: parsed.title,
-      sessionNumber: parsed.sessionNumber,
-      playedAt: parsed.playedAt ? new Date(parsed.playedAt) : undefined,
-      notes: parsed.notes,
-    },
-  })
+  const created = (
+    await db
+      .insert(tables.session)
+      .values({
+        campaignId,
+        title: parsed.title,
+        sessionNumber: parsed.sessionNumber,
+        playedAt: parsed.playedAt ? new Date(parsed.playedAt) : undefined,
+        notes: parsed.notes
+      })
+      .returning()
+  )[0]!
 
   return ok(created)
 })
-

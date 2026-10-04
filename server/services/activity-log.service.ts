@@ -1,5 +1,7 @@
-import { prisma } from '#server/db/prisma'
-import type { Prisma } from '#server/db/prisma-client'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+
+
 
 type ActivityScope = 'CAMPAIGN' | 'ADMIN' | 'SYSTEM'
 
@@ -11,23 +13,21 @@ type ActivityLogInput = {
   targetType?: string
   targetId?: string
   summary?: string
-  metadata?: Prisma.InputJsonValue
+  metadata?: typeof tables.activityLog.$inferInsert.metadata
 }
 
 export class ActivityLogService {
   async log(input: ActivityLogInput) {
-    await prisma.activityLog.create({
-      data: {
-        actorUserId: input.actorUserId,
-        campaignId: input.campaignId,
-        scope: input.scope,
-        action: input.action,
-        targetType: input.targetType,
-        targetId: input.targetId,
-        summary: input.summary,
-        metadata: input.metadata,
-      },
-    })
+    await db.insert(tables.activityLog).values({
+      actorUserId: input.actorUserId,
+      campaignId: input.campaignId,
+      scope: input.scope,
+      action: input.action,
+      targetType: input.targetType,
+      targetId: input.targetId,
+      summary: input.summary,
+      metadata: input.metadata
+    }).returning().get()!
   }
 }
 

@@ -1,4 +1,6 @@
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import {  } from 'drizzle-orm'
 import { ok, routeParams } from '#server/utils/http'
 import { validateBody } from '#server/utils/validate'
 import { milestoneCreateSchema } from '#shared/schemas/milestone'
@@ -11,13 +13,11 @@ export default defineEventHandler(async (event) => {
 
   const parsed = await validateBody(event, milestoneCreateSchema, 'Invalid milestone payload')
 
-  const milestone = await prisma.milestone.create({
-    data: {
-      campaignId,
-      title: parsed.title,
-      description: parsed.description,
-    },
-  })
+  const milestone = await db.insert(tables.milestone).values({
+    campaignId,
+    title: parsed.title,
+    description: parsed.description,
+  }).returning().get()
 
   return ok(milestone)
 })

@@ -1,15 +1,20 @@
 import { readBody } from 'h3'
 import { z } from 'zod'
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { and, eq, inArray } from 'drizzle-orm'
 import { TranscriptionService } from '#server/services/transcription.service'
 import { ok, apiError, routeParams } from '#server/utils/http'
-import { transcriptionApplySchema, transcriptionAttachVttSchema } from '#shared/schemas/transcription'
+import {
+  transcriptionApplySchema,
+  transcriptionAttachVttSchema
+} from '#shared/schemas/transcription'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 const transcriptionActionSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('fetch') }),
   transcriptionApplySchema.extend({ action: z.literal('apply-transcript') }),
-  transcriptionAttachVttSchema.extend({ action: z.literal('attach-vtt') }),
+  transcriptionAttachVttSchema.extend({ action: z.literal('attach-vtt') })
 ])
 
 export default defineEventHandler(async (event) => {
@@ -23,24 +28,53 @@ export default defineEventHandler(async (event) => {
   }
 
   if (parsed.data.action === 'fetch') {
-    const job = await prisma.transcriptionJob.findFirst({
-      where: {
-        id: jobId,
-        recording: { session: { campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'recording.transcribe') } },
-      },
-    })
+    const job =
+      (await db.query.transcriptionJob.findFirst({
+        where: and(
+          eq(tables.transcriptionJob.id, jobId),
+          inArray(
+            tables.transcriptionJob.recordingId,
+            db
+              .select({ id: tables.recording.id })
+              .from(tables.recording)
+              .where(
+                inArray(
+                  tables.recording.sessionId,
+                  db
+                    .select({ id: tables.session.id })
+                    .from(tables.session)
+                    .where(
+                      buildCampaignWhereForPermission(
+                        sessionUser.user.id,
+                        'recording.transcribe',
+                        tables.session.campaignId
+                      )
+                    )
+                )
+              )
+          )
+        )
+      })) ?? null
 
     if (!job) {
       throw apiError(404, 'NOT_FOUND', 'Transcription not found')
     }
 
     if (!job.externalJobId) {
-      throw apiError(400, 'VALIDATION_ERROR', 'Transcription job is missing an external id')
+      throw apiError(
+        400,
+        'VALIDATION_ERROR',
+        'Transcription job is missing an external id'
+      )
     }
 
     const config = useRuntimeConfig()
     if (!config.elevenlabs?.apiKey) {
-      throw apiError(500, 'CONFIG_ERROR', 'ElevenLabs API key is not configured')
+      throw apiError(
+        500,
+        'CONFIG_ERROR',
+        'ElevenLabs API key is not configured'
+      )
     }
 
     const service = new TranscriptionService(config.elevenlabs.apiKey)
@@ -53,16 +87,37 @@ export default defineEventHandler(async (event) => {
   }
 
   if (parsed.data.action === 'apply-transcript') {
-    const job = await prisma.transcriptionJob.findFirst({
-      where: {
-        id: jobId,
-        recording: { session: { campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'document.edit') } },
-      },
-      include: {
-        recording: { include: { session: true } },
-        artifacts: { include: { artifact: true } },
-      },
-    })
+    const job =
+      (await db.query.transcriptionJob.findFirst({
+        where: and(
+          eq(tables.transcriptionJob.id, jobId),
+          inArray(
+            tables.transcriptionJob.recordingId,
+            db
+              .select({ id: tables.recording.id })
+              .from(tables.recording)
+              .where(
+                inArray(
+                  tables.recording.sessionId,
+                  db
+                    .select({ id: tables.session.id })
+                    .from(tables.session)
+                    .where(
+                      buildCampaignWhereForPermission(
+                        sessionUser.user.id,
+                        'document.edit',
+                        tables.session.campaignId
+                      )
+                    )
+                )
+              )
+          )
+        ),
+        with: {
+          recording: { with: { session: true } },
+          artifacts: { with: { artifact: true } }
+        }
+      })) ?? null
 
     if (!job) {
       throw apiError(404, 'NOT_FOUND', 'Transcription not found')
@@ -71,7 +126,7 @@ export default defineEventHandler(async (event) => {
     const updated = await TranscriptionService.applyTranscript({
       job,
       artifactId: parsed.data.artifactId,
-      createdByUserId: sessionUser.user.id,
+      createdByUserId: sessionUser.user.id
     })
 
     return ok(updated)
@@ -81,30 +136,64 @@ export default defineEventHandler(async (event) => {
     throw apiError(400, 'VALIDATION_ERROR', 'Invalid request')
   }
 
-  const job = await prisma.transcriptionJob.findFirst({
-    where: {
-      id: jobId,
-      recording: { session: { campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'document.edit') } },
-    },
-    include: {
-      recording: { include: { session: true } },
-      artifacts: { include: { artifact: true } },
-    },
-  })
+  const job =
+    (await db.query.transcriptionJob.findFirst({
+      where: and(
+        eq(tables.transcriptionJob.id, jobId),
+        inArray(
+          tables.transcriptionJob.recordingId,
+          db
+            .select({ id: tables.recording.id })
+            .from(tables.recording)
+            .where(
+              inArray(
+                tables.recording.sessionId,
+                db
+                  .select({ id: tables.session.id })
+                  .from(tables.session)
+                  .where(
+                    buildCampaignWhereForPermission(
+                      sessionUser.user.id,
+                      'document.edit',
+                      tables.session.campaignId
+                    )
+                  )
+              )
+            )
+        )
+      ),
+      with: {
+        recording: { with: { session: true } },
+        artifacts: { with: { artifact: true } }
+      }
+    })) ?? null
 
   if (!job) {
     throw apiError(404, 'NOT_FOUND', 'Transcription not found')
   }
 
   const targetRecordingId = parsed.data.recordingId || job.recordingId
-  const targetRecording = await prisma.recording.findFirst({
-    where: {
-      id: targetRecordingId,
-      sessionId: job.recording.sessionId,
-      session: { campaign: buildCampaignWhereForPermission(sessionUser.user.id, 'document.edit') },
-    },
-    include: { session: true },
-  })
+  const targetRecording =
+    (await db.query.recording.findFirst({
+      where: and(
+        eq(tables.recording.id, targetRecordingId),
+        eq(tables.recording.sessionId, job.recording.sessionId),
+        inArray(
+          tables.recording.sessionId,
+          db
+            .select({ id: tables.session.id })
+            .from(tables.session)
+            .where(
+              buildCampaignWhereForPermission(
+                sessionUser.user.id,
+                'document.edit',
+                tables.session.campaignId
+              )
+            )
+        )
+      ),
+      with: { session: true }
+    })) ?? null
 
   if (!targetRecording) {
     throw apiError(404, 'NOT_FOUND', 'Recording not found')
@@ -114,7 +203,7 @@ export default defineEventHandler(async (event) => {
     job,
     artifactId: parsed.data.artifactId,
     targetRecording,
-    ownerId: sessionUser.user.id,
+    ownerId: sessionUser.user.id
   })
 
   return ok(updated)

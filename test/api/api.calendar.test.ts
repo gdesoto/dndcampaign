@@ -1,12 +1,14 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
-import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
+import { createApiTestDatabase } from '../scripts/db-test-client'
+import * as tables from '../../server/db/schema'
+import { eq, inArray } from 'drizzle-orm'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
 
-const prisma = createApiTestPrismaClient()
-const hash = new Hash(new Scrypt())
+const db = createApiTestDatabase()
+const hash = new Hash(new Scrypt({}))
 const baseUrl = getApiTestBaseUrl()
 const password = 'calendar-api-pass'
 const authHeaders = {
@@ -28,7 +30,7 @@ let eventId = ''
 const sleep = (ms: number) => new Promise((resolveDelay) => setTimeout(resolveDelay, ms))
 
 const loginAndGetCookie = async (email: string) => {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
+  for (let attempt = 0;attempt < 20;attempt += 1) {
     const response = await fetch(`${baseUrl}/api/auth/login`, {
       method: 'POST',
       headers: authHeaders,
@@ -49,29 +51,16 @@ describe('campaign calendar API', () => {
     const passwordHash = await hash.make(password)
     const emails = Object.values(users).map((user) => user.email)
 
-    await prisma.campaignMember.deleteMany({
-      where: {
-        user: {
-          email: { in: emails },
-        },
-      },
-    })
-    await prisma.user.deleteMany({
-      where: {
-        email: { in: emails },
-      },
-    })
+    db.delete(tables.campaignMember).where(inArray(tables.campaignMember.userId, db.select({ id: tables.user.id }).from(tables.user).where(inArray(tables.user.email, emails)))).run()
+    db.delete(tables.user).where(inArray(tables.user.email, emails)).run()
 
     const createdUsers = await Promise.all(
       Object.values(users).map((user) =>
-        prisma.user.create({
-          data: {
-            email: user.email,
-            name: user.name,
-            passwordHash,
-          },
-          select: { id: true, email: true },
-        }),
+        db.insert(tables.user).values({
+          email: user.email,
+          name: user.name,
+          passwordHash,
+        }).returning().get()!,
       ),
     )
 
@@ -79,32 +68,24 @@ describe('campaign calendar API', () => {
     const collaboratorId = createdUsers.find((user) => user.email === users.collaborator.email)?.id as string
     const viewerId = createdUsers.find((user) => user.email === users.viewer.email)?.id as string
 
-    const campaign = await prisma.campaign.create({
-      data: {
-        ownerId,
-        name: 'Calendar API Campaign',
-        members: {
-          create: [
-            {
-              userId: ownerId,
-              role: 'OWNER',
-              invitedByUserId: ownerId,
-            },
-            {
-              userId: collaboratorId,
-              role: 'COLLABORATOR',
-              invitedByUserId: ownerId,
-            },
-            {
-              userId: viewerId,
-              role: 'VIEWER',
-              invitedByUserId: ownerId,
-            },
-          ],
-        },
+    const campaign = db.insert(tables.campaign).values({ ownerId: ownerId, name: 'Calendar API Campaign' }).returning().get()!
+    db.insert(tables.campaignMember).values(([
+      {
+        userId: ownerId,
+        role: 'OWNER',
+        invitedByUserId: ownerId,
       },
-      select: { id: true },
-    })
+      {
+        userId: collaboratorId,
+        role: 'COLLABORATOR',
+        invitedByUserId: ownerId,
+      },
+      {
+        userId: viewerId,
+        role: 'VIEWER',
+        invitedByUserId: ownerId,
+      },
+    ] as const).map(member => ({ ...member, campaignId: campaign.id }))).run()
     campaignId = campaign.id
 
     for (const [key, value] of Object.entries(users)) {
@@ -113,7 +94,7 @@ describe('campaign calendar API', () => {
   }, 120_000)
 
   afterAll(async () => {
-    await prisma.$disconnect()
+    db.$client.close()
   })
 
   it('applies calendar template and allows read access', async () => {
@@ -302,63 +283,61 @@ describe('campaign calendar API', () => {
       { title: 'Ends After February', sessionNumber: 4, playedAt: new Date('2026-02-28T12:00:00.000Z') },
       { title: 'After February', sessionNumber: 5, playedAt: new Date('2026-03-02T12:00:00.000Z') },
     ]) {
-      sessions.push(await prisma.session.create({ data: { campaignId, ...data } }))
+      sessions.push(db.insert(tables.session).values({ campaignId, ...data }).returning().get()!)
     }
     const [before, first, middle, last, after] = sessions
-    await prisma.sessionCalendarRange.createMany({
-      data: [
-        {
-          campaignId,
-          sessionId: before.id,
-          startYear: 2026,
-          startMonth: 1,
-          startDay: 30,
-          endYear: 2026,
-          endMonth: 1,
-          endDay: 31,
-        },
-        {
-          campaignId,
-          sessionId: first.id,
-          startYear: 2026,
-          startMonth: 1,
-          startDay: 31,
-          endYear: 2026,
-          endMonth: 2,
-          endDay: 1,
-        },
-        {
-          campaignId,
-          sessionId: middle.id,
-          startYear: 2026,
-          startMonth: 2,
-          startDay: 15,
-          endYear: 2026,
-          endMonth: 2,
-          endDay: 15,
-        },
-        {
-          campaignId,
-          sessionId: last.id,
-          startYear: 2026,
-          startMonth: 2,
-          startDay: 28,
-          endYear: 2026,
-          endMonth: 3,
-          endDay: 1,
-        },
-        {
-          campaignId,
-          sessionId: after.id,
-          startYear: 2026,
-          startMonth: 3,
-          startDay: 1,
-          endYear: 2026,
-          endMonth: 3,
-          endDay: 2,
-        },
-      ],
-    })
+    db.insert(tables.sessionCalendarRange).values([
+      {
+        campaignId,
+        sessionId: before.id,
+        startYear: 2026,
+        startMonth: 1,
+        startDay: 30,
+        endYear: 2026,
+        endMonth: 1,
+        endDay: 31,
+      },
+      {
+        campaignId,
+        sessionId: first.id,
+        startYear: 2026,
+        startMonth: 1,
+        startDay: 31,
+        endYear: 2026,
+        endMonth: 2,
+        endDay: 1,
+      },
+      {
+        campaignId,
+        sessionId: middle.id,
+        startYear: 2026,
+        startMonth: 2,
+        startDay: 15,
+        endYear: 2026,
+        endMonth: 2,
+        endDay: 15,
+      },
+      {
+        campaignId,
+        sessionId: last.id,
+        startYear: 2026,
+        startMonth: 2,
+        startDay: 28,
+        endYear: 2026,
+        endMonth: 3,
+        endDay: 1,
+      },
+      {
+        campaignId,
+        sessionId: after.id,
+        startYear: 2026,
+        startMonth: 3,
+        startDay: 1,
+        endYear: 2026,
+        endMonth: 3,
+        endDay: 2,
+      },
+    ]).run()
 
     const response = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar/view?year=2026&month=2`, {
       headers: { cookie: cookies.viewer },
@@ -396,24 +375,13 @@ describe('campaign calendar API', () => {
   })
 
   it('keeps empty views for campaigns without a calendar and disabled calendars', async () => {
-    const owner = await prisma.user.findUniqueOrThrow({
-      where: { email: users.owner.email },
-      select: { id: true },
-    })
-    const campaignWithoutConfig = await prisma.campaign.create({
-      data: {
-        ownerId: owner.id,
-        name: 'Calendar API No Config Campaign',
-        members: {
-          create: {
-            userId: owner.id,
-            role: 'OWNER',
-            invitedByUserId: owner.id,
-          },
-        },
-      },
-      select: { id: true },
-    })
+    const owner = (db.query.user.findFirst({ where: eq(tables.user.email, users.owner.email), columns: { id: true } }).sync()!)
+    const campaignWithoutConfig = db.insert(tables.campaign).values({ ownerId: owner.id, name: 'Calendar API No Config Campaign' }).returning().get()!
+    db.insert(tables.campaignMember).values(([{
+      userId: owner.id,
+      role: 'OWNER',
+      invitedByUserId: owner.id,
+    }] as const).map(member => ({ ...member, campaignId: campaignWithoutConfig.id }))).run()
 
     const missingConfigResponse = await fetch(
       `${baseUrl}/api/campaigns/${campaignWithoutConfig.id}/calendar/view?year=2030&month=1`,
@@ -428,10 +396,7 @@ describe('campaign calendar API', () => {
       sessionRanges: [],
     })
 
-    await prisma.campaignCalendarConfig.update({
-      where: { campaignId },
-      data: { isEnabled: false },
-    })
+    db.update(tables.campaignCalendarConfig).set({ isEnabled: false }).where(eq(tables.campaignCalendarConfig.campaignId, campaignId)).returning().get()!
     const disabledResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/calendar/view`, {
       headers: { cookie: cookies.viewer },
     })

@@ -17,6 +17,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: corepack enable && yarn install --frozen-lockfile
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Test
+        run: yarn test
+
+      - name: Build application
+        run: yarn build
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -37,4 +57,5 @@ jobs:
           file: docker/Dockerfile
           push: true
           tags: |
+            ghcr.io/${{ github.repository }}:sha-${{ github.sha }}
             ghcr.io/${{ github.repository }}:latest

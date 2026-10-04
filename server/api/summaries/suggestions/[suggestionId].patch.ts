@@ -2,17 +2,19 @@ import { readBody, isError } from 'h3'
 import { z } from 'zod'
 import { ok, apiError, routeParams } from '#server/utils/http'
 import { SummarySuggestionService } from '#server/services/summary-suggestion.service'
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { eq } from 'drizzle-orm'
 import { resolveCampaignAccess } from '#server/utils/campaign-auth'
 
 const summarySuggestionPatchSchema = z.discriminatedUnion('action', [
   z.object({
     action: z.literal('apply'),
-    payload: z.record(z.string(), z.unknown()).optional(),
+    payload: z.record(z.string(), z.unknown()).optional()
   }),
   z.object({
-    action: z.literal('discard'),
-  }),
+    action: z.literal('discard')
+  })
 ])
 
 export default defineEventHandler(async (event) => {
@@ -25,10 +27,12 @@ export default defineEventHandler(async (event) => {
     throw apiError(400, 'VALIDATION_ERROR', 'Invalid suggestion action')
   }
 
-  const suggestion = await prisma.summarySuggestion.findUnique({
-    where: { id: suggestionId },
-    select: { id: true, summaryJob: { select: { campaignId: true } } },
-  })
+  const suggestion =
+    (await db.query.summarySuggestion.findFirst({
+      where: eq(tables.summarySuggestion.id, suggestionId),
+      columns: { id: true },
+      with: { summaryJob: { columns: { campaignId: true } } }
+    })) ?? null
   if (!suggestion) {
     throw apiError(404, 'NOT_FOUND', 'Suggestion not found')
   }
@@ -39,28 +43,41 @@ export default defineEventHandler(async (event) => {
     sessionUser.user.systemRole
   )
   if (!access.access?.permissions.includes('summary.run')) {
-    throw apiError(403, 'FORBIDDEN', 'You do not have permission to modify suggestions')
+    throw apiError(
+      403,
+      'FORBIDDEN',
+      'You do not have permission to modify suggestions'
+    )
   }
 
   const service = new SummarySuggestionService()
 
   if (parsed.data.action === 'apply') {
     try {
-      const result = await service.applySuggestion(sessionUser.user.id, suggestionId, parsed.data.payload)
+      const result = await service.applySuggestion(
+        sessionUser.user.id,
+        suggestionId,
+        parsed.data.payload
+      )
       if (!result) {
         throw apiError(404, 'NOT_FOUND', 'Suggestion not found')
       }
       return ok(result)
     } catch (error) {
       if (isError(error)) throw error
-      throw apiError(400,
+      throw apiError(
+        400,
         'SUGGESTION_APPLY_FAILED',
-        (error as Error & { message?: string }).message || 'Unable to apply suggestion.'
+        (error as Error & { message?: string }).message ||
+          'Unable to apply suggestion.'
       )
     }
   }
 
-  const result = await service.discardSuggestion(sessionUser.user.id, suggestionId)
+  const result = await service.discardSuggestion(
+    sessionUser.user.id,
+    suggestionId
+  )
   if (!result) {
     throw apiError(404, 'NOT_FOUND', 'Suggestion not found')
   }

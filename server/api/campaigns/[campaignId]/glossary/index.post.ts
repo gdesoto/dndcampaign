@@ -1,4 +1,6 @@
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import {  } from 'drizzle-orm'
 import { ok, routeParams } from '#server/utils/http'
 import { validateBody } from '#server/utils/validate'
 import { glossaryCreateSchema } from '#shared/schemas/glossary'
@@ -13,15 +15,13 @@ export default defineEventHandler(async (event) => {
 
   const parsed = await validateBody(event, glossaryCreateSchema, 'Invalid glossary payload')
 
-  const entry = await prisma.glossaryEntry.create({
-    data: {
-      campaignId,
-      type: parsed.type,
-      name: parsed.name,
-      aliases: parsed.aliases,
-      description: parsed.description,
-    },
-  })
+  const entry = await db.insert(tables.glossaryEntry).values({
+    campaignId,
+    type: parsed.type,
+    name: parsed.name,
+    aliases: parsed.aliases,
+    description: parsed.description,
+  }).returning().get()
 
   if (parsed.type === 'PC') {
     await new CharacterSyncService().linkGlossaryPc({

@@ -4,10 +4,12 @@ import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
 import sharp from 'sharp'
 import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
-import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
+import { createApiTestDatabase } from '../scripts/db-test-client'
+import * as tables from '../../server/db/schema'
+import { and, eq, inArray } from 'drizzle-orm'
 
-const prisma = createApiTestPrismaClient()
-const hash = new Hash(new Scrypt())
+const db = createApiTestDatabase()
+const hash = new Hash(new Scrypt({}))
 const baseUrl = getApiTestBaseUrl()
 const password = 'dungeon-api-pass'
 
@@ -43,38 +45,27 @@ describe('dungeon API routes', () => {
     const passwordHash = await hash.make(password)
     const emails = Object.values(users).map((user) => user.email)
 
-    await prisma.campaignMember.deleteMany({ where: { user: { email: { in: emails } } } })
-    await prisma.user.deleteMany({ where: { email: { in: emails } } })
+    db.delete(tables.campaignMember).where(inArray(tables.campaignMember.userId, db.select({ id: tables.user.id }).from(tables.user).where(inArray(tables.user.email, emails)))).run()
+    db.delete(tables.user).where(inArray(tables.user.email, emails)).run()
 
     const createdUsers = await Promise.all(
       Object.values(users).map((user) =>
-        prisma.user.create({
-          data: {
-            email: user.email,
-            name: user.name,
-            passwordHash,
-          },
-          select: { id: true, email: true },
-        }),
+        db.insert(tables.user).values({
+          email: user.email,
+          name: user.name,
+          passwordHash,
+        }).returning().get()!,
       ),
     )
 
     const ownerId = createdUsers.find((user) => user.email === users.owner.email)?.id as string
     const viewerId = createdUsers.find((user) => user.email === users.viewer.email)?.id as string
 
-    const campaign = await prisma.campaign.create({
-      data: {
-        ownerId,
-        name: 'Dungeon API Campaign',
-        members: {
-          create: [
-            { userId: ownerId, role: 'OWNER', invitedByUserId: ownerId },
-            { userId: viewerId, role: 'VIEWER', invitedByUserId: ownerId },
-          ],
-        },
-      },
-      select: { id: true },
-    })
+    const campaign = db.insert(tables.campaign).values({ ownerId: ownerId, name: 'Dungeon API Campaign' }).returning().get()!
+    db.insert(tables.campaignMember).values(([
+      { userId: ownerId, role: 'OWNER', invitedByUserId: ownerId },
+      { userId: viewerId, role: 'VIEWER', invitedByUserId: ownerId },
+    ] as const).map(member => ({ ...member, campaignId: campaign.id }))).run()
 
     campaignId = campaign.id
     cookies.owner = await loginAndGetCookie(users.owner.email)
@@ -82,7 +73,7 @@ describe('dungeon API routes', () => {
   }, 120_000)
 
   afterAll(async () => {
-    await prisma.$disconnect()
+    db.$client.close()
   })
 
   // Generate and edit a dungeon, preserve room links, and verify role restrictions.
@@ -225,11 +216,9 @@ describe('dungeon API routes', () => {
       },
     )
     expect(renumberResponse.status).toBe(200)
-    const retainedRoom = await prisma.campaignDungeonRoom.findUnique({ where: { id: roomRowId } })
+    const retainedRoom = (db.query.campaignDungeonRoom.findFirst({ where: eq(tables.campaignDungeonRoom.id, roomRowId) }).sync() ?? null)
     expect(retainedRoom).toMatchObject({ name: 'Edited Room', gmNotes: 'Secret lever behind statue', state: 'EXPLORED' })
-    const retainedLink = await prisma.campaignDungeonLink.findFirst({
-      where: { dungeonId, targetId: encounterFromRoomPayload.data.encounterId },
-    })
+    const retainedLink = (db.query.campaignDungeonLink.findFirst({ where: and(eq(tables.campaignDungeonLink.dungeonId, dungeonId), eq(tables.campaignDungeonLink.targetId, encounterFromRoomPayload.data.encounterId)) }).sync() ?? null)
     expect(retainedLink?.roomId).toBe(roomRowId)
 
     const createLinkResponse = await fetch(

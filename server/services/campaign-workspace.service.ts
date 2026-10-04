@@ -1,4 +1,6 @@
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { eq, and } from 'drizzle-orm'
 import { resolveCampaignAccess } from '#server/utils/campaign-auth'
 
 export class CampaignWorkspaceService {
@@ -13,15 +15,15 @@ export class CampaignWorkspaceService {
       return null
     }
 
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: campaignId },
-      select: {
+    const campaign = await db.query.campaign.findFirst({
+      where: eq(tables.campaign.id, campaignId),
+      columns: {
         id: true,
         name: true,
         system: true,
-        dungeonMasterName: true,
-      },
-    })
+        dungeonMasterName: true
+      }
+    }).sync()
 
     if (!campaign) {
       return null
@@ -35,18 +37,15 @@ export class CampaignWorkspaceService {
     } | null = null
 
     if (sessionId) {
-      sessionHeader = await prisma.session.findFirst({
-        where: {
-          id: sessionId,
-          campaignId,
-        },
-        select: {
+      sessionHeader = await db.query.session.findFirst({
+        where: and(eq(tables.session.id, sessionId), eq(tables.session.campaignId, campaignId)),
+        columns: {
           id: true,
           title: true,
           sessionNumber: true,
-          playedAt: true,
-        },
-      })
+          playedAt: true
+        }
+      }).sync() ?? null
     }
 
     return {

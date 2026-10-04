@@ -1,5 +1,7 @@
 import type { H3Event } from 'h3'
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { eq } from 'drizzle-orm'
 import { apiError } from '#server/utils/http'
 
 
@@ -45,10 +47,10 @@ export class AuthService {
   async register(input: { name: string; email: string; password: string }): Promise<AuthenticatedUserRecord> {
     const email = input.email.trim().toLowerCase()
 
-    const existing = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true },
-    })
+    const existing = await db.query.user.findFirst({
+      where: eq(tables.user.email, email),
+      columns: { id: true }
+    }).sync()
 
     if (existing) {
       throw apiError(409, 'EMAIL_ALREADY_IN_USE', 'An account with this email already exists.', {
@@ -58,23 +60,20 @@ export class AuthService {
 
     const passwordHash = await hashPassword(input.password)
 
-    const user = await prisma.user.create({
-      data: {
-        name: input.name.trim(),
-        email,
-        passwordHash,
-        lastLoginAt: new Date(),
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        systemRole: true,
-        avatarUrl: true,
-        isActive: true,
-        deletedAt: true,
-      },
-    })
+    const user = await db.insert(tables.user).values({
+      name: input.name.trim(),
+      email,
+      passwordHash,
+      lastLoginAt: new Date()
+    }).returning({
+      id: tables.user.id,
+      email: tables.user.email,
+      name: tables.user.name,
+      systemRole: tables.user.systemRole,
+      avatarUrl: tables.user.avatarUrl,
+      isActive: tables.user.isActive,
+      deletedAt: tables.user.deletedAt
+    }).get()!
 
     return user
   }
@@ -82,9 +81,9 @@ export class AuthService {
   async authenticate(emailInput: string, password: string): Promise<AuthenticatedUserRecord> {
     const email = emailInput.trim().toLowerCase()
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: {
+    const user = await db.query.user.findFirst({
+      where: eq(tables.user.email, email),
+      columns: {
         id: true,
         email: true,
         name: true,
@@ -92,9 +91,9 @@ export class AuthService {
         systemRole: true,
         avatarUrl: true,
         isActive: true,
-        deletedAt: true,
-      },
-    })
+        deletedAt: true
+      }
+    }).sync()
 
     if (!user || !user.passwordHash) {
       throw apiError(401, 'INVALID_CREDENTIALS', 'Invalid email or password')
@@ -110,22 +109,18 @@ export class AuthService {
     const shouldRehash = await passwordNeedsReHash(user.passwordHash)
     const passwordHash = shouldRehash ? await hashPassword(password) : undefined
 
-    const updated = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        ...(passwordHash ? { passwordHash } : {}),
-        lastLoginAt: new Date(),
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        systemRole: true,
-        avatarUrl: true,
-        isActive: true,
-        deletedAt: true,
-      },
-    })
+    const updated = await db.update(tables.user).set({
+      ...(passwordHash ? { passwordHash } : {}),
+      lastLoginAt: new Date()
+    }).where(eq(tables.user.id, user.id)).returning({
+      id: tables.user.id,
+      email: tables.user.email,
+      name: tables.user.name,
+      systemRole: tables.user.systemRole,
+      avatarUrl: tables.user.avatarUrl,
+      isActive: tables.user.isActive,
+      deletedAt: tables.user.deletedAt
+    }).get()!
 
     return updated
   }
@@ -138,18 +133,18 @@ export class AuthService {
   }
 
   async syncSessionForUser(event: H3Event, userId: string) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
+    const user = await db.query.user.findFirst({
+      where: eq(tables.user.id, userId),
+      columns: {
         id: true,
         email: true,
         name: true,
         systemRole: true,
         avatarUrl: true,
         isActive: true,
-        deletedAt: true,
-      },
-    })
+        deletedAt: true
+      }
+    }).sync()
 
     if (!user) {
       return

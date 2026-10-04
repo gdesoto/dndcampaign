@@ -1,6 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto'
-import type { CampaignRole } from '#server/db/prisma-client'
-import { prisma } from '#server/db/prisma'
+import type { CampaignRole } from '#server/db/schema'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { eq, and, lt, asc, desc } from 'drizzle-orm'
 import type {
   CampaignInviteCreateInput,
   CampaignMemberUpdateInput,
@@ -145,17 +147,13 @@ export class CampaignMembershipService {
   ): Promise<CampaignInviteInspection> {
     const tokenHash = hashInviteToken(inviteToken)
 
-    const invite = await prisma.campaignInvite.findUnique({
-      where: { tokenHash },
-      include: {
-        campaign: {
-          select: {
+    const invite = await db.query.campaignInvite.findFirst({
+      where: eq(tables.campaignInvite.tokenHash, tokenHash),
+      with: { campaign: { columns: {
             id: true,
-            name: true,
-          },
-        },
-      },
-    })
+            name: true
+          } } }
+    }).sync()
 
     if (!invite) {
       return {
@@ -163,18 +161,13 @@ export class CampaignMembershipService {
         }
     }
 
-    const existingMember = await prisma.campaignMember.findUnique({
-      where: {
-        campaignId_userId: {
-          campaignId: invite.campaignId,
-          userId,
-        },
-      },
-      select: {
+    const existingMember = await db.query.campaignMember.findFirst({
+      where: and(eq(tables.campaignMember.campaignId, invite.campaignId), eq(tables.campaignMember.userId, userId)),
+      columns: {
         role: true,
-        hasDmAccess: true,
-      },
-    })
+        hasDmAccess: true
+      }
+    }).sync()
 
     if (existingMember) {
       return {
@@ -193,10 +186,7 @@ export class CampaignMembershipService {
     }
 
     if (invite.expiresAt < new Date()) {
-      await prisma.campaignInvite.update({
-        where: { id: invite.id },
-        data: { status: 'EXPIRED' },
-      })
+      await db.update(tables.campaignInvite).set({ status: 'EXPIRED' }).where(eq(tables.campaignInvite.id, invite.id)).returning().get()!
 
       return {
           status: 'INVITE_EXPIRED',
@@ -217,16 +207,7 @@ export class CampaignMembershipService {
   }
 
   private async expirePendingInvites(campaignId: string) {
-    await prisma.campaignInvite.updateMany({
-      where: {
-        campaignId,
-        status: 'PENDING',
-        expiresAt: { lt: new Date() },
-      },
-      data: {
-        status: 'EXPIRED',
-      },
-    })
+    await db.update(tables.campaignInvite).set({ status: 'EXPIRED' }).where(and(eq(tables.campaignInvite.campaignId, campaignId), eq(tables.campaignInvite.status, 'PENDING'), lt(tables.campaignInvite.expiresAt, new Date()))).run()
   }
 
   async listMembers(campaignId: string): Promise<{
@@ -237,42 +218,33 @@ export class CampaignMembershipService {
   }> {
     await this.expirePendingInvites(campaignId)
 
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: campaignId },
-      select: {
+    const campaign = await db.query.campaign.findFirst({
+      where: eq(tables.campaign.id, campaignId),
+      columns: {
         id: true,
-        name: true,
+        name: true
+      },
+      with: {
         members: {
-          include: {
-            user: {
-              select: {
+          orderBy: [asc(tables.campaignMember.role), asc(tables.campaignMember.createdAt)],
+          with: { user: { columns: {
                 id: true,
                 email: true,
                 name: true,
-                avatarUrl: true,
-              },
-            },
-          },
-          orderBy: [
-            { role: 'asc' },
-            { createdAt: 'asc' },
-          ],
+                avatarUrl: true
+              } } }
         },
         invites: {
-          where: { status: 'PENDING' },
-          include: {
-            invitedByUser: {
-              select: {
+          where: eq(tables.campaignInvite.status, 'PENDING'),
+          orderBy: [desc(tables.campaignInvite.createdAt)],
+          with: { invitedByUser: { columns: {
                 id: true,
                 name: true,
-                email: true,
-              },
-            },
-          },
-          orderBy: { createdAt: 'desc' },
-        },
-      },
-    })
+                email: true
+              } } }
+        }
+      }
+    }).sync()
 
     if (!campaign) {
       throw apiError(404, 'NOT_FOUND', 'Campaign not found')
@@ -297,21 +269,16 @@ export class CampaignMembershipService {
   }> {
     const email = normalizeEmail(input.email)
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true },
-    })
+    const existingUser = await db.query.user.findFirst({
+      where: eq(tables.user.email, email),
+      columns: { id: true }
+    }).sync()
 
     if (existingUser) {
-      const existingMembership = await prisma.campaignMember.findUnique({
-        where: {
-          campaignId_userId: {
-            campaignId,
-            userId: existingUser.id,
-          },
-        },
-        select: { id: true },
-      })
+      const existingMembership = await db.query.campaignMember.findFirst({
+        where: and(eq(tables.campaignMember.campaignId, campaignId), eq(tables.campaignMember.userId, existingUser.id)),
+        columns: { id: true }
+      }).sync()
 
       if (existingMembership) {
         throw apiError(409, 'MEMBER_ALREADY_EXISTS', 'User is already a campaign member.', {
@@ -322,41 +289,28 @@ export class CampaignMembershipService {
 
     await this.expirePendingInvites(campaignId)
 
-    await prisma.campaignInvite.updateMany({
-      where: {
-        campaignId,
-        email,
-        status: 'PENDING',
-      },
-      data: {
-        status: 'REVOKED',
-      },
-    })
+    await db.update(tables.campaignInvite).set({ status: 'REVOKED' }).where(and(eq(tables.campaignInvite.campaignId, campaignId), eq(tables.campaignInvite.email, email), eq(tables.campaignInvite.status, 'PENDING'))).run()
 
     const inviteToken = randomBytes(24).toString('hex')
     const tokenHash = hashInviteToken(inviteToken)
     const expiresInDays = input.expiresInDays || DEFAULT_INVITE_EXPIRY_DAYS
     const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000)
 
-    const invite = await prisma.campaignInvite.create({
-      data: {
-        campaignId,
-        email,
-        role: input.role,
-        tokenHash,
-        expiresAt,
-        invitedByUserId,
-      },
-      include: {
-        invitedByUser: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
-    })
+    const invite = await (() => { const written = db.insert(tables.campaignInvite).values({
+      campaignId,
+      email,
+      role: input.role,
+      tokenHash,
+      expiresAt,
+      invitedByUserId
+    }).returning().get()!; return db.query.campaignInvite.findFirst({
+        where: eq(tables.campaignInvite.id, written.id),
+        with: { invitedByUser: { columns: {
+              id: true,
+              name: true,
+              email: true
+            } } }
+      }).sync()! })()
 
     await activityLogService.log({
       actorUserId: invitedByUserId,
@@ -391,33 +345,22 @@ export class CampaignMembershipService {
   }> {
     const tokenHash = hashInviteToken(inviteToken)
 
-    const invite = await prisma.campaignInvite.findUnique({
-      where: { tokenHash },
-      include: {
-        campaign: {
-          select: {
+    const invite = await db.query.campaignInvite.findFirst({
+      where: eq(tables.campaignInvite.tokenHash, tokenHash),
+      with: { campaign: { columns: {
             id: true,
-            name: true,
-          },
-        },
-      },
-    })
+            name: true
+          } } }
+    }).sync()
 
     if (!invite) {
       throw apiError(404, 'INVITE_NOT_FOUND', 'Campaign invite not found.')
     }
 
-    const existingMember = await prisma.campaignMember.findUnique({
-      where: {
-        campaignId_userId: {
-          campaignId: invite.campaignId,
-          userId,
-        },
-      },
-      select: {
-        role: true,
-      },
-    })
+    const existingMember = await db.query.campaignMember.findFirst({
+      where: and(eq(tables.campaignMember.campaignId, invite.campaignId), eq(tables.campaignMember.userId, userId)),
+      columns: { role: true }
+    }).sync()
 
     if (existingMember) {
       return {
@@ -432,10 +375,7 @@ export class CampaignMembershipService {
     }
 
     if (invite.expiresAt < new Date()) {
-      await prisma.campaignInvite.update({
-        where: { id: invite.id },
-        data: { status: 'EXPIRED' },
-      })
+      await db.update(tables.campaignInvite).set({ status: 'EXPIRED' }).where(eq(tables.campaignInvite.id, invite.id)).returning().get()!
 
       throw apiError(410, 'INVITE_EXPIRED', 'This invite has expired.')
     }
@@ -444,37 +384,26 @@ export class CampaignMembershipService {
       throw apiError(403, 'INVITE_EMAIL_MISMATCH', 'Invite email does not match your signed-in account.')
     }
 
-    const membership = await prisma.$transaction(async (tx) => {
-      const member = await tx.campaignMember.upsert({
-        where: {
-          campaignId_userId: {
-            campaignId: invite.campaignId,
-            userId,
-          },
-        },
-        update: {
+    const membership = await db.transaction((tx) => {
+      const member = tx.insert(tables.campaignMember).values({
+        campaignId: invite.campaignId,
+        userId,
+        role: invite.role,
+        hasDmAccess: false,
+        invitedByUserId: invite.invitedByUserId
+      }).onConflictDoUpdate({
+        target: [tables.campaignMember.campaignId, tables.campaignMember.userId],
+        set: {
           role: invite.role,
-          hasDmAccess: false,
-        },
-        create: {
-          campaignId: invite.campaignId,
-          userId,
-          role: invite.role,
-          hasDmAccess: false,
-          invitedByUserId: invite.invitedByUserId,
-        },
-      })
-
-      await tx.campaignInvite.update({
-        where: { id: invite.id },
-        data: {
-          status: 'ACCEPTED',
-          acceptedByUserId: userId,
-        },
-      })
-
-      return member
-    })
+          hasDmAccess: false
+        }
+      }).returning().get()!;
+      tx.update(tables.campaignInvite).set({
+        status: 'ACCEPTED',
+        acceptedByUserId: userId
+      }).where(eq(tables.campaignInvite.id, invite.id)).returning().get()!;
+      return member;
+    }, { behavior: 'immediate' })
 
     await activityLogService.log({
       actorUserId: userId,
@@ -503,22 +432,15 @@ export class CampaignMembershipService {
     actorUserId: string,
     input: CampaignMemberUpdateInput
   ): Promise<CampaignMemberRow> {
-    const member = await prisma.campaignMember.findFirst({
-      where: {
-        id: memberId,
-        campaignId,
-      },
-      include: {
-        user: {
-          select: {
+    const member = await db.query.campaignMember.findFirst({
+      where: and(eq(tables.campaignMember.id, memberId), eq(tables.campaignMember.campaignId, campaignId)),
+      with: { user: { columns: {
             id: true,
             email: true,
             name: true,
-            avatarUrl: true,
-          },
-        },
-      },
-    })
+            avatarUrl: true
+          } } }
+    }).sync()
 
     if (!member) {
       throw apiError(404, 'MEMBER_NOT_FOUND', 'Campaign member not found.')
@@ -544,20 +466,15 @@ export class CampaignMembershipService {
       updateData.hasDmAccess = input.hasDmAccess
     }
 
-    const updated = await prisma.campaignMember.update({
-      where: { id: member.id },
-      data: updateData,
-      include: {
-        user: {
-          select: {
+    const updated = await (() => { const written = db.update(tables.campaignMember).set(updateData).where(eq(tables.campaignMember.id, member.id)).returning().get()!; return db.query.campaignMember.findFirst({
+      where: eq(tables.campaignMember.id, written.id),
+      with: { user: { columns: {
             id: true,
             email: true,
             name: true,
-            avatarUrl: true,
-          },
-        },
-      },
-    })
+            avatarUrl: true
+          } } }
+    }).sync()! })()
 
     await activityLogService.log({
       actorUserId,
@@ -584,17 +501,14 @@ export class CampaignMembershipService {
     memberId: string,
     actorUserId: string
   ): Promise<{ removedMemberId: string }> {
-    const member = await prisma.campaignMember.findFirst({
-      where: {
-        id: memberId,
-        campaignId,
-      },
-      select: {
+    const member = await db.query.campaignMember.findFirst({
+      where: and(eq(tables.campaignMember.id, memberId), eq(tables.campaignMember.campaignId, campaignId)),
+      columns: {
         id: true,
         role: true,
-        userId: true,
-      },
-    })
+        userId: true
+      }
+    }).sync()
 
     if (!member) {
       throw apiError(404, 'MEMBER_NOT_FOUND', 'Campaign member not found.')
@@ -608,9 +522,7 @@ export class CampaignMembershipService {
       throw apiError(400, 'SELF_REMOVE_FORBIDDEN', 'You cannot remove your own membership from this endpoint.')
     }
 
-    await prisma.campaignMember.delete({
-      where: { id: member.id },
-    })
+    await db.delete(tables.campaignMember).where(eq(tables.campaignMember.id, member.id)).returning().get()!
 
     await activityLogService.log({
       actorUserId,
@@ -641,12 +553,10 @@ export class CampaignMembershipService {
     previousOwnerUserId: string
     newOwnerMemberId: string
   }> {
-    const owner = await prisma.user.findUnique({
-      where: { id: ownerUserId },
-      select: {
-        passwordHash: true,
-      },
-    })
+    const owner = await db.query.user.findFirst({
+      where: eq(tables.user.id, ownerUserId),
+      columns: { passwordHash: true }
+    }).sync()
 
     if (!owner?.passwordHash) {
       throw apiError(400, 'PASSWORD_REQUIRED', 'Password login is not configured for this account.')
@@ -659,17 +569,14 @@ export class CampaignMembershipService {
         })
     }
 
-    const targetMember = await prisma.campaignMember.findFirst({
-      where: {
-        id: input.targetMemberId,
-        campaignId,
-      },
-      select: {
+    const targetMember = await db.query.campaignMember.findFirst({
+      where: and(eq(tables.campaignMember.id, input.targetMemberId), eq(tables.campaignMember.campaignId, campaignId)),
+      columns: {
         id: true,
         userId: true,
-        role: true,
-      },
-    })
+        role: true
+      }
+    }).sync()
 
     if (!targetMember) {
       throw apiError(404, 'MEMBER_NOT_FOUND', 'Target member was not found for this campaign.')
@@ -679,47 +586,27 @@ export class CampaignMembershipService {
       throw apiError(400, 'OWNER_TRANSFER_INVALID_TARGET', 'Select a different member to transfer ownership.')
     }
 
-    const transferResult = await prisma.$transaction(async (tx) => {
-      await tx.campaign.update({
-        where: { id: campaignId },
-        data: {
-          ownerId: targetMember.userId,
-        },
-      })
-
-      await tx.campaignMember.upsert({
-        where: {
-          campaignId_userId: {
-            campaignId,
-            userId: ownerUserId,
-          },
-        },
-        update: {
-          role: 'COLLABORATOR',
-        },
-        create: {
-          campaignId,
-          userId: ownerUserId,
-          role: 'COLLABORATOR',
-          hasDmAccess: false,
-          invitedByUserId: ownerUserId,
-        },
-      })
-
-      const updatedOwnerMember = await tx.campaignMember.update({
-        where: { id: targetMember.id },
-        data: {
-          role: 'OWNER',
-          hasDmAccess: true,
-        },
-        select: {
-          id: true,
-          userId: true,
-        },
-      })
-
-      return updatedOwnerMember
-    })
+    const transferResult = await db.transaction((tx) => {
+      tx.update(tables.campaign).set({ ownerId: targetMember.userId }).where(eq(tables.campaign.id, campaignId)).returning().get()!;
+      tx.insert(tables.campaignMember).values({
+        campaignId,
+        userId: ownerUserId,
+        role: 'COLLABORATOR',
+        hasDmAccess: false,
+        invitedByUserId: ownerUserId
+      }).onConflictDoUpdate({
+        target: [tables.campaignMember.campaignId, tables.campaignMember.userId],
+        set: { role: 'COLLABORATOR' }
+      }).returning().get()!;
+      const updatedOwnerMember = tx.update(tables.campaignMember).set({
+        role: 'OWNER',
+        hasDmAccess: true
+      }).where(eq(tables.campaignMember.id, targetMember.id)).returning({
+        id: tables.campaignMember.id,
+        userId: tables.campaignMember.userId
+      }).get()!;
+      return updatedOwnerMember;
+    }, { behavior: 'immediate' })
 
     await activityLogService.log({
       actorUserId: ownerUserId,

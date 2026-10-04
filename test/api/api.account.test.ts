@@ -1,9 +1,11 @@
 // @vitest-environment node
+import { eq } from 'drizzle-orm'
+import * as schema from '../../server/db/schema'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
-import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
+import { createApiTestDatabase } from '../scripts/db-test-client'
 
-const prisma = createApiTestPrismaClient()
+const db = createApiTestDatabase()
 
 const registerUser = {
   name: 'Account Tester',
@@ -23,7 +25,7 @@ describe('account registration, profile and sessions', () => {
   }, 120_000)
 
   afterAll(async () => {
-    await prisma.$disconnect()
+    db.$client.close()
   })
 
   it('registers a user and creates a session', async () => {
@@ -237,10 +239,7 @@ describe('account registration, profile and sessions', () => {
   })
 
   it('updates lastLoginAt after successful login', async () => {
-    const userBefore = await prisma.user.findUnique({
-      where: { email: 'account-updated@example.com' },
-      select: { lastLoginAt: true },
-    })
+    const userBefore = db.select({ lastLoginAt: schema.user.lastLoginAt }).from(schema.user).where(eq(schema.user.email, 'account-updated@example.com')).get()
 
     await fetch(`${baseUrl}/api/auth/login`, {
       method: 'POST',
@@ -251,10 +250,7 @@ describe('account registration, profile and sessions', () => {
       }),
     })
 
-    const userAfter = await prisma.user.findUnique({
-      where: { email: 'account-updated@example.com' },
-      select: { lastLoginAt: true },
-    })
+    const userAfter = db.select({ lastLoginAt: schema.user.lastLoginAt }).from(schema.user).where(eq(schema.user.email, 'account-updated@example.com')).get()
 
     expect(userAfter?.lastLoginAt).toBeTruthy()
     expect((userAfter?.lastLoginAt?.getTime() || 0) >= (userBefore?.lastLoginAt?.getTime() || 0)).toBe(true)
@@ -272,16 +268,10 @@ describe('account registration, profile and sessions', () => {
       expect(payload.error.code).toBe('UNAUTHORIZED')
     }
 
-    await prisma.user.update({
-      where: { email: 'account-updated@example.com' },
-      data: { isActive: false },
-    })
+    db.update(schema.user).set({ isActive: false }).where(eq(schema.user.email, 'account-updated@example.com')).returning().get()!
     await assertUnauthorizedAndCleared(authCookie)
 
-    await prisma.user.update({
-      where: { email: 'account-updated@example.com' },
-      data: { isActive: true, deletedAt: new Date() },
-    })
+    db.update(schema.user).set({ isActive: true, deletedAt: new Date() }).where(eq(schema.user.email, 'account-updated@example.com')).returning().get()!
     await assertUnauthorizedAndCleared(authCookie)
 
     const missingResponse = await fetch(`${baseUrl}/api/auth/register`, {
@@ -297,7 +287,7 @@ describe('account registration, profile and sessions', () => {
     expect(missingResponse.status).toBe(200)
     const missingCookie = missingResponse.headers.get('set-cookie') || ''
     const missingPayload = await missingResponse.json()
-    await prisma.user.delete({ where: { id: missingPayload.data.user.id } })
+    db.delete(schema.user).where(eq(schema.user.id, missingPayload.data.user.id)).run()
     await assertUnauthorizedAndCleared(missingCookie)
   })
 })

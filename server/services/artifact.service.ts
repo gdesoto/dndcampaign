@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
-import { prisma } from '#server/db/prisma'
+import { eq } from 'drizzle-orm'
+import { db } from '#server/db/client'
+import { artifact } from '#server/db/schema'
 import { getStorageAdapter } from '#server/services/storage/storage.factory'
-import type { StorageProvider } from '#server/db/prisma-client'
+import type { StorageProvider } from '#server/db/schema'
 
 type CreateArtifactInput = {
   ownerId: string
@@ -37,8 +39,7 @@ export class ArtifactService {
     const storageKey = this.buildStorageKey(input)
     const result = await adapter.putObjectStream(storageKey, input.stream, input.mimeType)
 
-    return prisma.artifact.create({
-      data: {
+    return db.insert(artifact).values({
         ownerId: input.ownerId,
         campaignId: input.campaignId,
         provider: 'LOCAL' as StorageProvider,
@@ -48,21 +49,20 @@ export class ArtifactService {
         checksumSha256: result.checksumSha256,
         label: input.label,
         meta: input.meta ? JSON.stringify(input.meta) : undefined,
-      },
-    })
+    }).returning().get()!
   }
 
   async deleteArtifact(artifactId: string) {
-    const artifact = await prisma.artifact.findUnique({ where: { id: artifactId } })
-    if (!artifact) return null
-    await prisma.artifact.delete({ where: { id: artifactId } })
+    const existing = db.select().from(artifact).where(eq(artifact.id, artifactId)).get()
+    if (!existing) return null
+    db.delete(artifact).where(eq(artifact.id, artifactId)).run()
     const adapter = getStorageAdapter()
     try {
-      await adapter.deleteObject(artifact.storageKey)
+      await adapter.deleteObject(existing.storageKey)
     } catch {
       // Database row is already removed; ignore storage cleanup failures.
     }
-    return artifact
+    return existing
   }
 
   private buildStorageKey(input: Pick<CreateArtifactInput | CreateArtifactStreamInput, 'filename' | 'campaignId' | 'ownerId'>) {

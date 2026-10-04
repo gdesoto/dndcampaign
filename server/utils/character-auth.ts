@@ -1,5 +1,6 @@
-import type { Prisma } from '#server/db/prisma-client'
-import { prisma } from '#server/db/prisma'
+import { and, eq, inArray, ne, or, type SQL } from 'drizzle-orm'
+import { db } from '#server/db/client'
+import { campaignCharacter, campaignMember, playerCharacter } from '#server/db/schema'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 
 export type CharacterAccess = {
@@ -9,18 +10,12 @@ export type CharacterAccess = {
   ownerId: string | null
 }
 
-export const buildCharacterReadWhere = (userId: string): Prisma.PlayerCharacterWhereInput => ({
-  OR: [
-    { ownerId: userId },
-    {
-      campaignLinks: {
-        some: {
-          campaign: buildCampaignWhereForPermission(userId, 'content.read'),
-        },
-      },
-    },
-  ],
-})
+export const buildCharacterReadWhere = (userId: string): SQL => or(
+  eq(playerCharacter.ownerId, userId),
+  inArray(playerCharacter.id, db.select({ characterId: campaignCharacter.characterId })
+    .from(campaignCharacter)
+    .where(buildCampaignWhereForPermission(userId, 'content.read', campaignCharacter.campaignId))),
+)!
 
 export type CharacterUnlinkAccessImpact = {
   warningRequired: boolean
@@ -31,90 +26,59 @@ const allCampaignRoles = ['OWNER', 'COLLABORATOR', 'VIEWER'] as const
 
 export const calculateCharacterUnlinkAccessImpact = async (
   campaignId: string,
-  characterId: string
+  characterId: string,
 ): Promise<CharacterUnlinkAccessImpact> => {
-  const character = await prisma.playerCharacter.findUnique({
-    where: { id: characterId },
-    select: { ownerId: true },
+  const character = await db.query.playerCharacter.findFirst({
+    where: eq(playerCharacter.id, characterId),
+    columns: { ownerId: true },
   })
-  if (!character) {
-    return { warningRequired: false, impactedUserCount: 0 }
-  }
+  if (!character) return { warningRequired: false, impactedUserCount: 0 }
 
-  const campaignMembers = await prisma.campaignMember.findMany({
-    where: {
-      campaignId,
-      role: { in: [...allCampaignRoles] },
-      userId: { not: character.ownerId },
-    },
-    select: { userId: true },
+  const campaignMembers = await db.query.campaignMember.findMany({
+    where: and(
+      eq(campaignMember.campaignId, campaignId),
+      inArray(campaignMember.role, [...allCampaignRoles]),
+      ne(campaignMember.userId, character.ownerId),
+    ),
+    columns: { userId: true },
   })
-  if (!campaignMembers.length) {
-    return { warningRequired: false, impactedUserCount: 0 }
-  }
-
   let impactedUserCount = 0
-
   for (const member of campaignMembers) {
-    const hasAlternativeSharedAccess = await prisma.campaignCharacter.findFirst({
-      where: {
-        characterId,
-        campaignId: { not: campaignId },
-        campaign: buildCampaignWhereForPermission(member.userId, 'content.read'),
-      },
-      select: { id: true },
+    const alternative = await db.query.campaignCharacter.findFirst({
+      where: and(
+        eq(campaignCharacter.characterId, characterId),
+        ne(campaignCharacter.campaignId, campaignId),
+        buildCampaignWhereForPermission(member.userId, 'content.read', campaignCharacter.campaignId),
+      ),
+      columns: { id: true },
     })
-
-    if (!hasAlternativeSharedAccess) {
-      impactedUserCount += 1
-    }
+    if (!alternative) impactedUserCount += 1
   }
-
-  return {
-    warningRequired: impactedUserCount > 0,
-    impactedUserCount,
-  }
+  return { warningRequired: impactedUserCount > 0, impactedUserCount }
 }
 
 export const resolveCharacterAccess = async (
   characterId: string,
   userId: string,
-  systemRole?: 'USER' | 'SYSTEM_ADMIN'
+  systemRole?: 'USER' | 'SYSTEM_ADMIN',
 ): Promise<CharacterAccess> => {
-  const character = await prisma.playerCharacter.findUnique({
-    where: { id: characterId },
-    select: {
-      id: true,
-      ownerId: true,
+  const character = await db.query.playerCharacter.findFirst({
+    where: eq(playerCharacter.id, characterId),
+    columns: { id: true, ownerId: true },
+    with: {
       campaignLinks: {
-        where: {
-          campaign: buildCampaignWhereForPermission(userId, 'content.read'),
-        },
-        select: { id: true },
-        take: 1,
+        where: buildCampaignWhereForPermission(userId, 'content.read', campaignCharacter.campaignId),
+        columns: { id: true },
+        limit: 1,
       },
     },
   })
-
-  if (!character) {
-    return {
-      exists: false,
-      canRead: false,
-      canEdit: false,
-      ownerId: null,
-    }
-  }
-
+  if (!character) return { exists: false, canRead: false, canEdit: false, ownerId: null }
   const isOwner = character.ownerId === userId
-  const isSystemAdmin = systemRole === 'SYSTEM_ADMIN'
-  const canRead = isOwner || isSystemAdmin || character.campaignLinks.length > 0
-  const canEdit = isOwner
-
   return {
     exists: true,
-    canRead,
-    canEdit,
+    canRead: isOwner || systemRole === 'SYSTEM_ADMIN' || character.campaignLinks.length > 0,
+    canEdit: isOwner,
     ownerId: character.ownerId,
   }
 }
-

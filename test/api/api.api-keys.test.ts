@@ -1,12 +1,14 @@
 // @vitest-environment node
+import { and, eq, like } from 'drizzle-orm'
+import * as schema from '../../server/db/schema'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
 import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
-import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
+import { createApiTestDatabase } from '../scripts/db-test-client'
 
-const prisma = createApiTestPrismaClient()
-const hash = new Hash(new Scrypt())
+const db = createApiTestDatabase()
+const hash = new Hash(new Scrypt({}))
 const baseUrl = getApiTestBaseUrl()
 const email = 'api-key-crud@example.com'
 const password = 'password123'
@@ -23,27 +25,28 @@ describe('API key management and isolation', () => {
   let keyId = ''
 
   beforeAll(async () => {
-    const user = await prisma.user.upsert({ where: { email }, update: { passwordHash: await hash.make(password), name: 'API Key User' }, create: { email, passwordHash: await hash.make(password), name: 'API Key User' } })
+    const user = db.insert(schema.user).values({ email, passwordHash: await hash.make(password), name: 'API Key User' }).onConflictDoUpdate({ target: schema.user.email, set: { passwordHash: await hash.make(password), name: 'API Key User' } }).returning().get()!
     userId = user.id
-    const foreignOwner = await prisma.user.create({ data: { email: `api-key-owner-${Date.now()}@example.com`, passwordHash: await hash.make(password), name: 'Foreign Owner' } })
-    const campaign = await prisma.campaign.create({ data: { ownerId: userId, name: 'API Key Campaign' } })
+    const foreignOwner = db.insert(schema.user).values({ email: `api-key-owner-${Date.now()}@example.com`, passwordHash: await hash.make(password), name: 'Foreign Owner' }).returning().get()!
+    const campaign = db.insert(schema.campaign).values({ ownerId: userId, name: 'API Key Campaign' }).returning().get()!
     campaignId = campaign.id
-    ownSessionId = (await prisma.session.create({ data: { campaignId, title: 'Owned Session' } })).id
-    const foreign = await prisma.campaign.create({ data: { ownerId: foreignOwner.id, name: 'Foreign Campaign', members: { create: { userId, role: 'COLLABORATOR', hasDmAccess: false, invitedByUserId: foreignOwner.id } } } })
+    ownSessionId = (db.insert(schema.session).values({ campaignId, title: 'Owned Session' }).returning().get()!).id
+    const foreign = db.insert(schema.campaign).values({ ownerId: foreignOwner.id, name: 'Foreign Campaign' }).returning().get()!
+    db.insert(schema.campaignMember).values({ campaignId: foreign.id, userId, role: 'COLLABORATOR', hasDmAccess: false, invitedByUserId: foreignOwner.id }).run()
     foreignCampaignId = foreign.id
-    const session = await prisma.session.create({ data: { campaignId: foreignCampaignId, title: 'Foreign Session' } })
+    const session = db.insert(schema.session).values({ campaignId: foreignCampaignId, title: 'Foreign Session' }).returning().get()!
     foreignSessionId = session.id
-    dmEncounterId = (await prisma.campaignEncounter.create({ data: { campaignId: foreignCampaignId, sessionId: foreignSessionId, name: 'DM Encounter', visibility: 'DM_ONLY', createdByUserId: userId } })).id
+    dmEncounterId = (db.insert(schema.campaignEncounter).values({ campaignId: foreignCampaignId, sessionId: foreignSessionId, name: 'DM Encounter', visibility: 'DM_ONLY', createdByUserId: userId }).returning().get()!).id
     const login = await fetch(`${baseUrl}/api/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password }) })
     expect(login.status).toBe(200)
     cookie = login.headers.get('set-cookie') || ''
   })
 
   afterAll(async () => {
-    if (campaignId) await prisma.campaign.delete({ where: { id: campaignId } }).catch(() => undefined)
-    if (foreignCampaignId) await prisma.campaign.delete({ where: { id: foreignCampaignId } }).catch(() => undefined)
-    await prisma.user.deleteMany({ where: { email: { startsWith: 'api-key-owner-' } } })
-    await prisma.$disconnect()
+    if (campaignId) db.delete(schema.campaign).where(eq(schema.campaign.id, campaignId)).run()
+    if (foreignCampaignId) db.delete(schema.campaign).where(eq(schema.campaign.id, foreignCampaignId)).run()
+    db.delete(schema.user).where(like(schema.user.email, 'api-key-owner-' + '%')).run()
+    db.$client.close()
   })
 
   it('creates hashed one-time secrets and omits the secret from list responses', async () => {
@@ -54,7 +57,7 @@ describe('API key management and isolation', () => {
     keyId = payload.data.key.id
     expect(secret).toMatch(/^dnd_/)
     expect(payload.data.key).not.toHaveProperty('secret')
-    const stored = await prisma.apiKey.findUnique({ where: { id: keyId } })
+    const stored = db.select().from(schema.apiKey).where(eq(schema.apiKey.id, keyId)).get()
     expect(stored?.keyHash).not.toBe(secret)
     const list = await fetch(`${baseUrl}/api/account/api-keys`, { headers: { cookie } })
     expect((await list.json()).data.keys[0]).not.toHaveProperty('secret')
@@ -96,7 +99,7 @@ describe('API key management and isolation', () => {
     expect((await post(discovery, { origin: 'https://untrusted.example' })).status).toBe(403)
     const denied = await post({ jsonrpc: '2.0', id: 5, method: 'tools/call', params: { name: 'campaign_get', arguments: { campaignId: foreignCampaignId } } })
     expect((await denied.json()).result.isError).toBe(true)
-    await prisma.apiKey.update({ where: { id: mcpKey.key.id }, data: { revokedAt: new Date() } })
+    db.update(schema.apiKey).set({ revokedAt: new Date() }).where(eq(schema.apiKey.id, mcpKey.key.id)).returning().get()!
     expect((await post(discovery)).status).toBe(401)
   })
 
@@ -104,15 +107,15 @@ describe('API key management and isolation', () => {
     const response = await fetch(`${baseUrl}/api/account/api-keys`, { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Encounter key', campaignIds: [foreignCampaignId], permissions: ['encounters.read'] }) })
     const encounterSecret = (await response.json()).data.secret
     expect((await fetch(`${baseUrl}/api/encounters/${dmEncounterId}`, { headers: { authorization: `Bearer ${encounterSecret}` } })).status).toBe(404)
-    await prisma.campaignMember.update({ where: { campaignId_userId: { campaignId: foreignCampaignId, userId } }, data: { hasDmAccess: true } })
+    db.update(schema.campaignMember).set({ hasDmAccess: true }).where(and(eq(schema.campaignMember.campaignId, foreignCampaignId), eq(schema.campaignMember.userId, userId))).returning().get()!
     expect((await fetch(`${baseUrl}/api/encounters/${dmEncounterId}`, { headers: { authorization: `Bearer ${encounterSecret}` } })).status).toBe(200)
-    await prisma.campaignMember.update({ where: { campaignId_userId: { campaignId: foreignCampaignId, userId } }, data: { hasDmAccess: false } })
+    db.update(schema.campaignMember).set({ hasDmAccess: false }).where(and(eq(schema.campaignMember.campaignId, foreignCampaignId), eq(schema.campaignMember.userId, userId))).returning().get()!
   })
 
   it('intersects issued keys with current membership and resource writes', async () => {
     const memberKeyResponse = await fetch(`${baseUrl}/api/account/api-keys`, { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Member key', campaignIds: [foreignCampaignId], permissions: ['sessions.read'] }) })
     const memberSecret = (await memberKeyResponse.json()).data.secret
-    await prisma.campaignMember.deleteMany({ where: { campaignId: foreignCampaignId, userId } })
+    db.delete(schema.campaignMember).where(and(eq(schema.campaignMember.campaignId, foreignCampaignId), eq(schema.campaignMember.userId, userId))).run()
     expect((await fetch(`${baseUrl}/api/sessions/${foreignSessionId}`, { headers: { authorization: `Bearer ${memberSecret}` } })).status).toBe(403)
 
     const readOnlyResponse = await fetch(`${baseUrl}/api/account/api-keys`, { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Read key', campaignIds: [campaignId], permissions: ['sessions.read'] }) })
@@ -172,7 +175,7 @@ describe('API key management and isolation', () => {
     const reopened = await call('encounter_transition', { encounterId, body: { action: 'reopen' } })
     expect(reopened.status).toBe('PAUSED')
     expect(reopened.availableActions.turn.allowed).toBe(false)
-    const foreignEncounter = await prisma.campaignEncounter.create({ data: { campaignId: foreignCampaignId, createdByUserId: userId, name: 'Foreign' } })
+    const foreignEncounter = db.insert(schema.campaignEncounter).values({ campaignId: foreignCampaignId, createdByUserId: userId, name: 'Foreign' }).returning().get()!
     const denied = await call('encounter_participant_effect', { encounterId: foreignEncounter.id, body: { action: 'damage', participantIds: [added.combatants[0].id], amount: 2 } }, true)
     expect(denied.error.status).toBe(403)
   })

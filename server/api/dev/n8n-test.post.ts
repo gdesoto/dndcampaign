@@ -1,6 +1,8 @@
 import { readBody, isError } from 'h3'
 import { ok, apiError } from '#server/utils/http'
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { and, eq } from 'drizzle-orm'
 import { n8nWebhookPayloadSchema } from '#shared/schemas/summarization'
 
 export default defineEventHandler(async (event) => {
@@ -34,18 +36,26 @@ export default defineEventHandler(async (event) => {
     pcs: [],
     npcs: [],
     items: [],
-    locations: [],
+    locations: []
   }
   let quests: Record<string, unknown>[] = []
   let milestones: Record<string, unknown>[] = []
 
   if (body?.campaignId && body?.sessionId) {
-    const campaign = await prisma.campaign.findFirst({
-      where: { id: body.campaignId, ownerId: sessionUser.user.id },
-    })
-    const session = await prisma.session.findFirst({
-      where: { id: body.sessionId, campaignId: body.campaignId },
-    })
+    const campaign =
+      (await db.query.campaign.findFirst({
+        where: and(
+          eq(tables.campaign.id, body.campaignId),
+          eq(tables.campaign.ownerId, sessionUser.user.id)
+        )
+      })) ?? null
+    const session =
+      (await db.query.session.findFirst({
+        where: and(
+          eq(tables.session.id, body.sessionId),
+          eq(tables.session.campaignId, body.campaignId)
+        )
+      })) ?? null
 
     if (!campaign || !session) {
       throw apiError(404, 'NOT_FOUND', 'Campaign/session not found')
@@ -56,30 +66,46 @@ export default defineEventHandler(async (event) => {
     sessionNumber = session.sessionNumber ?? null
     playedAt = session.playedAt ? session.playedAt.toISOString() : null
 
-    const glossaryEntries = await prisma.glossaryEntry.findMany({
-      where: { campaignId: campaign.id },
-      select: { id: true, type: true, name: true, aliases: true, description: true },
+    const glossaryEntries = await db.query.glossaryEntry.findMany({
+      where: eq(tables.glossaryEntry.campaignId, campaign.id),
+      columns: {
+        id: true,
+        type: true,
+        name: true,
+        aliases: true,
+        description: true
+      }
     })
-    quests = await prisma.quest.findMany({
-      where: { campaignId: campaign.id },
-      select: { id: true, title: true, status: true, description: true, progressNotes: true },
+    quests = await db.query.quest.findMany({
+      where: eq(tables.quest.campaignId, campaign.id),
+      columns: {
+        id: true,
+        title: true,
+        status: true,
+        description: true,
+        progressNotes: true
+      }
     })
-    milestones = await prisma.milestone.findMany({
-      where: { campaignId: campaign.id },
-      select: { id: true, title: true, description: true, isComplete: true },
+    milestones = await db.query.milestone.findMany({
+      where: eq(tables.milestone.campaignId, campaign.id),
+      columns: { id: true, title: true, description: true, isComplete: true }
     })
 
     existingGlossary = {
       pcs: glossaryEntries.filter((entry) => entry.type === 'PC'),
       npcs: glossaryEntries.filter((entry) => entry.type === 'NPC'),
       items: glossaryEntries.filter((entry) => entry.type === 'ITEM'),
-      locations: glossaryEntries.filter((entry) => entry.type === 'LOCATION'),
+      locations: glossaryEntries.filter((entry) => entry.type === 'LOCATION')
     }
 
-    const transcriptDoc = await prisma.document.findFirst({
-      where: { sessionId: session.id, type: 'TRANSCRIPT' },
-      include: { currentVersion: true },
-    })
+    const transcriptDoc =
+      (await db.query.document.findFirst({
+        where: and(
+          eq(tables.document.sessionId, session.id),
+          eq(tables.document.type, 'TRANSCRIPT')
+        ),
+        with: { currentVersion: true }
+      })) ?? null
     if (transcriptDoc?.currentVersion?.content) {
       transcriptContent = transcriptDoc.currentVersion.content
       documentId = transcriptDoc.id
@@ -96,9 +122,11 @@ export default defineEventHandler(async (event) => {
       format: 'PLAINTEXT',
       readOnly: true,
       content: transcriptContent,
-      hash: 'sha256:devtest',
+      hash: 'sha256:devtest'
     },
-    promptProfile: body?.promptProfile || 'session-summary+highlights+quests+milestones+glossary+pcs+npcs',
+    promptProfile:
+      body?.promptProfile ||
+      'session-summary+highlights+quests+milestones+glossary+pcs+npcs',
     context: {
       campaignName,
       sessionTitle,
@@ -106,11 +134,11 @@ export default defineEventHandler(async (event) => {
       playedAt,
       existingGlossary,
       quests,
-      milestones,
+      milestones
     },
     options: {
-      mode: 'sync',
-    },
+      mode: 'sync'
+    }
   }
 
   try {
@@ -119,14 +147,19 @@ export default defineEventHandler(async (event) => {
       body: payload,
       headers: config.n8n?.webhookSecret
         ? { 'x-webhook-secret': config.n8n.webhookSecret }
-        : undefined,
+        : undefined
     })
 
     const parsed = n8nWebhookPayloadSchema.safeParse(response)
     if (!parsed.success) {
-      throw apiError(400, 'INVALID_RESPONSE', 'n8n response did not match expected schema', {
-        issues: JSON.stringify(parsed.error.issues, null, 2),
-      })
+      throw apiError(
+        400,
+        'INVALID_RESPONSE',
+        'n8n response did not match expected schema',
+        {
+          issues: JSON.stringify(parsed.error.issues, null, 2)
+        }
+      )
     }
 
     return ok({
@@ -134,13 +167,15 @@ export default defineEventHandler(async (event) => {
       trackingId,
       summaryContent: (response as Record<string, unknown>).summaryContent,
       suggestions: (response as Record<string, unknown>).suggestions || null,
-      meta: (response as Record<string, unknown>).meta || null,
+      meta: (response as Record<string, unknown>).meta || null
     })
   } catch (error) {
     if (isError(error)) throw error
-    throw apiError(500,
+    throw apiError(
+      500,
       'N8N_TEST_FAILED',
-      (error as Error & { message?: string }).message || 'Unable to reach n8n webhook.'
+      (error as Error & { message?: string }).message ||
+        'Unable to reach n8n webhook.'
     )
   }
 })

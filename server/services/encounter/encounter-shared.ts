@@ -1,7 +1,9 @@
 import { getEncounterActions, type EncounterAction } from '#shared/utils/encounter-policy'
 import { z } from 'zod'
-import { prisma } from '#server/db/prisma'
-import type { Prisma } from '#server/db/prisma-client'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { eq, and, or, inArray, asc } from 'drizzle-orm'
+import type { JsonValue } from '#server/db/columns'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 import { ActivityLogService } from '#server/services/activity-log.service'
 import { createEncounterCalendarDateSchema } from '#shared/schemas/encounter'
@@ -22,38 +24,24 @@ type CampaignPermission = 'content.read' | 'content.write'
 const monthShapeSchema = z.array(z.object({ length: z.number().int().min(1) }))
 const activityLogService = new ActivityLogService()
 
-export const buildEncounterVisibilityWhere = (userId: string) => ({
-  OR: [
-    { visibility: 'SHARED' as const },
-    {
-      visibility: 'DM_ONLY' as const,
-      campaign: {
-        OR: [
-          { ownerId: userId },
-          { members: { some: { userId, hasDmAccess: true } } },
-        ],
-      },
-    },
-  ],
-})
+export const buildEncounterVisibilityWhere = (userId: string) => or(
+  eq(tables.campaignEncounter.visibility, 'SHARED'),
+  and(eq(tables.campaignEncounter.visibility, 'DM_ONLY'), inArray(tables.campaignEncounter.campaignId,
+    db.select({ id: tables.campaign.id }).from(tables.campaign).where(or(
+      eq(tables.campaign.ownerId, userId),
+      inArray(tables.campaign.id, db.select({ campaignId: tables.campaignMember.campaignId }).from(tables.campaignMember).where(
+        and(eq(tables.campaignMember.userId, userId), eq(tables.campaignMember.hasDmAccess, true))
+      )),
+    )),
+  )),
+)
 
 export async function getEncounterWithAccess(
   encounterId: string,
   userId: string,
   permission: CampaignPermission,
 ) {
-  return prisma.campaignEncounter.findFirst({
-    where: {
-      id: encounterId,
-      campaign: buildCampaignWhereForPermission(userId, permission),
-      ...buildEncounterVisibilityWhere(userId),
-    },
-    include: {
-      combatants: true,
-      events: { orderBy: { createdAt: 'asc' } },
-      session: { select: { id: true, campaignId: true } },
-    },
-  })
+  return db.query.campaignEncounter.findFirst({where: and(eq(tables.campaignEncounter.id, encounterId), buildCampaignWhereForPermission(userId, permission, tables.campaignEncounter.campaignId), buildEncounterVisibilityWhere(userId)), with: {combatants: true, events: {orderBy: [asc(tables.encounterEvent.createdAt)]}, session: {columns: {id: true, campaignId: true}}}}).sync()
 }
 
 export function assertEncounterAction(encounter: { status: EncounterSummary['status']; combatants?: unknown[] }, action: EncounterAction) {
@@ -69,10 +57,7 @@ export async function validateEncounterSessionLink(
     return {}
   }
 
-  const session = await prisma.session.findFirst({
-    where: { id: sessionId, campaignId },
-    select: { id: true },
-  })
+  const session = db.query.session.findFirst({where: and(eq(tables.session.id, sessionId), eq(tables.session.campaignId, campaignId)), columns: {id: true}}).sync()
 
   if (!session) {
     throw apiError(400, 'VALIDATION_ERROR', 'Session must belong to the same campaign.', { sessionId: 'Session not found in this campaign.' })
@@ -94,10 +79,7 @@ export async function validateEncounterCalendarLink(
     return {}
   }
 
-  const config = await prisma.campaignCalendarConfig.findUnique({
-    where: { campaignId },
-    select: { isEnabled: true, monthsJson: true },
-  })
+  const config = db.query.campaignCalendarConfig.findFirst({where: and(eq(tables.campaignCalendarConfig.campaignId, campaignId)), columns: {isEnabled: true, monthsJson: true}}).sync()
 
   if (!config || !config.isEnabled) {
     throw apiError(409, 'CALENDAR_DISABLED', 'Calendar is currently disabled for this campaign.')
@@ -158,16 +140,7 @@ export async function validateEncounterCombatantSourceReferences(
     if (!input.sourceCampaignCharacterId) {
       fieldErrors.sourceCampaignCharacterId = 'Campaign character source id is required.'
     } else {
-      const exists = await prisma.campaignCharacter.findFirst({
-        where: {
-          campaignId,
-          OR: [
-            { characterId: input.sourceCampaignCharacterId },
-            { id: input.sourceCampaignCharacterId },
-          ],
-        },
-        select: { character: { select: { sheetJson: true, summaryJson: true } } },
-      })
+      const exists = db.query.campaignCharacter.findFirst({where: and(eq(tables.campaignCharacter.campaignId, campaignId), or(and(eq(tables.campaignCharacter.characterId, input.sourceCampaignCharacterId)), and(eq(tables.campaignCharacter.id, input.sourceCampaignCharacterId)))), with: {character: {columns: {sheetJson: true, summaryJson: true}}}}).sync()
       if (exists) defaults = fromCharacter(exists.character)
       if (!exists) {
         fieldErrors.sourceCampaignCharacterId = 'Campaign character must belong to this campaign.'
@@ -179,13 +152,7 @@ export async function validateEncounterCombatantSourceReferences(
     if (!input.sourcePlayerCharacterId) {
       fieldErrors.sourcePlayerCharacterId = 'Player character source id is required.'
     } else {
-      const exists = await prisma.campaignCharacter.findFirst({
-        where: {
-          campaignId,
-          characterId: input.sourcePlayerCharacterId,
-        },
-        select: { character: { select: { sheetJson: true, summaryJson: true } } },
-      })
+      const exists = db.query.campaignCharacter.findFirst({where: and(eq(tables.campaignCharacter.campaignId, campaignId), eq(tables.campaignCharacter.characterId, input.sourcePlayerCharacterId)), with: {character: {columns: {sheetJson: true, summaryJson: true}}}}).sync()
       if (exists) defaults = fromCharacter(exists.character)
       if (!exists) {
         fieldErrors.sourcePlayerCharacterId = 'Player character must be linked to this campaign.'
@@ -197,10 +164,7 @@ export async function validateEncounterCombatantSourceReferences(
     if (!input.sourceGlossaryEntryId) {
       fieldErrors.sourceGlossaryEntryId = 'Glossary entry source id is required.'
     } else {
-      const exists = await prisma.glossaryEntry.findFirst({
-        where: { id: input.sourceGlossaryEntryId, campaignId },
-        select: { campaignCharacters: { where: { campaignId }, take: 2, select: { character: { select: { sheetJson: true, summaryJson: true } } } } },
-      })
+      const exists = db.query.glossaryEntry.findFirst({where: and(eq(tables.glossaryEntry.id, input.sourceGlossaryEntryId), eq(tables.glossaryEntry.campaignId, campaignId)), with: {campaignCharacters: {where: and(eq(tables.campaignCharacter.campaignId, campaignId)), limit: 2, with: {character: {columns: {sheetJson: true, summaryJson: true}}}}}}).sync()
       if (exists?.campaignCharacters.length === 1) defaults = fromCharacter(exists.campaignCharacters[0]!.character)
       if (!exists) {
         fieldErrors.sourceGlossaryEntryId = 'Glossary entry must belong to this campaign.'
@@ -209,10 +173,7 @@ export async function validateEncounterCombatantSourceReferences(
   }
 
   if (input.sourceStatBlockId) {
-    const exists = await prisma.encounterStatBlock.findFirst({
-      where: { id: input.sourceStatBlockId, campaignId },
-      select: { statBlockJson: true },
-    })
+    const exists = db.query.encounterStatBlock.findFirst({where: and(eq(tables.encounterStatBlock.id, input.sourceStatBlockId), eq(tables.encounterStatBlock.campaignId, campaignId)), columns: {statBlockJson: true}}).sync()
     if (exists) {
       const block = record(exists.statBlockJson)
       defaults = {
@@ -241,15 +202,13 @@ export async function appendEncounterEvent(
   payload: Record<string, unknown> | null,
   createdByUserId?: string,
 ) {
-  await prisma.encounterEvent.create({
-    data: {
+  db.insert(tables.encounterEvent).values({
       encounterId,
       eventType,
       summary,
-      payload: (payload as Prisma.InputJsonValue) || undefined,
+      payload: (payload as JsonValue) || undefined,
       createdByUserId,
-    },
-  })
+    }).returning().get()!
 }
 
 export async function logEncounterActivity(input: {
@@ -259,7 +218,7 @@ export async function logEncounterActivity(input: {
   targetType: string
   targetId: string
   summary: string
-  metadata?: Prisma.InputJsonValue
+  metadata?: JsonValue
 }) {
   await activityLogService.log({
     actorUserId: input.actorUserId,

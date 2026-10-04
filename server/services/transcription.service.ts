@@ -1,6 +1,9 @@
 import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js'
 import { Readable } from 'node:stream'
-import { prisma } from '#server/db/prisma'
+import { eq } from 'drizzle-orm'
+import { db } from '#server/db/client'
+import { document as documentTable, transcriptionJob, transcriptionArtifact } from '#server/db/schema'
+import { isSqliteUniqueConstraintError } from '#server/db/errors'
 import { streamToBuffer } from '#server/utils/multipart'
 import { apiError } from '#server/utils/http'
 import { getStorageAdapter } from '#server/services/storage/storage.factory'
@@ -9,11 +12,14 @@ import { DocumentService } from '#server/services/document.service'
 import { RecordingService } from '#server/services/recording.service'
 import { toVtt } from '#shared/utils/transcript'
 import type {
-  Prisma,
   TranscriptionArtifactFormat,
+  TranscriptionArtifact,
+  Artifact,
+  Recording,
+  Session,
   TranscriptionJob,
   TranscriptionStatus,
-} from '#server/db/prisma-client'
+} from '#server/db/schema'
 
 type StartTranscriptionInput = {
   recordingId: string
@@ -64,20 +70,9 @@ type TranscriptionResponsePayload = {
   }[]
 }
 
-type TranscriptionJobWithArtifacts = Prisma.TranscriptionJobGetPayload<{
-  include: { artifacts: { include: { artifact: true } } }
-}>
-
-type LocalTranscriptionJob = Prisma.TranscriptionJobGetPayload<{
-  include: {
-    recording: { include: { session: true } }
-    artifacts: { include: { artifact: true } }
-  }
-}>
-
-type SubtitleTargetRecording = Prisma.RecordingGetPayload<{
-  include: { session: true }
-}>
+type TranscriptionJobWithArtifacts = TranscriptionJob & { artifacts: (TranscriptionArtifact & { artifact: Artifact })[] }
+type LocalTranscriptionJob = TranscriptionJobWithArtifacts & { recording: Recording & { session: Session } }
+type SubtitleTargetRecording = Recording & { session: Session }
 
 const parseJsonArray = (value: string | null): unknown[] => {
   if (!value) return []
@@ -266,10 +261,7 @@ export class TranscriptionService {
 
     // The response has historically reflected the upsert before this association.
     if (document.recordingId !== input.job.recordingId) {
-      await prisma.document.update({
-        where: { id: document.id },
-        data: { recordingId: input.job.recordingId },
-      })
+      db.update(documentTable).set({ recordingId: input.job.recordingId }).where(eq(documentTable.id, document.id)).returning().get()!
     }
 
     return document
@@ -339,8 +331,7 @@ export class TranscriptionService {
       .map((format) => requestFormatMap[format])
       .filter((value): value is { format: string } => Boolean(value))
 
-    const job = await prisma.transcriptionJob.create({
-      data: {
+    const job = db.insert(transcriptionJob).values({
         recordingId: input.recordingId,
         provider: 'ELEVENLABS',
         status: 'SENDING',
@@ -351,8 +342,7 @@ export class TranscriptionService {
         tagAudioEvents: input.tagAudioEvents ?? false,
         requestedFormats: JSON.stringify(input.formats),
         keyterms: input.keyterms ? JSON.stringify(input.keyterms) : undefined,
-      },
-    })
+      }).returning().get()!
 
     const adapter = getStorageAdapter()
     const { stream } = await adapter.getObject(input.storageKey)
@@ -383,35 +373,26 @@ export class TranscriptionService {
 
       if (!this.webhookEnabled) {
         await this.storeArtifacts(job.id, normalizeResponsePayload(response))
-        const updated = await prisma.transcriptionJob.update({
-          where: { id: job.id },
-          data: {
+        const updated = db.update(transcriptionJob).set({
             status: 'COMPLETED',
             externalJobId: response.transcriptionId,
             completedAt: new Date(),
-          },
-        })
+          }).where(eq(transcriptionJob.id, job.id)).returning().get()!
         return updated
       }
 
-      const updated = await prisma.transcriptionJob.update({
-        where: { id: job.id },
-        data: {
+      const updated = db.update(transcriptionJob).set({
           status: 'SENT',
           requestId: (response as { requestId?: string }).requestId,
           externalJobId: (response as { transcriptionId?: string }).transcriptionId,
-        },
-      })
+        }).where(eq(transcriptionJob.id, job.id)).returning().get()!
 
       return updated
     } catch (error) {
-      await prisma.transcriptionJob.update({
-        where: { id: job.id },
-        data: {
+      db.update(transcriptionJob).set({
           status: 'FAILED',
           errorMessage: (error as Error & { message?: string }).message || 'Transcription failed',
-        },
-      })
+        }).where(eq(transcriptionJob.id, job.id)).returning().get()!
       throw error
     }
   }
@@ -428,33 +409,24 @@ export class TranscriptionService {
     }) | null = null
 
     if (normalized.transcriptionId) {
-      job = await prisma.transcriptionJob.findFirst({
-        where: { externalJobId: normalized.transcriptionId },
-        include: {
-          recording: { include: { session: { include: { campaign: true } } } },
+      job = (db.query.transcriptionJob.findFirst({ where: eq(transcriptionJob.externalJobId, normalized.transcriptionId), with: {
+          recording: { with: { session: { with: { campaign: true } } } },
           artifacts: true,
-        },
-      })
+        } }).sync() ?? null)
     }
 
     if (!job && jobId && typeof jobId === 'string') {
-      job = await prisma.transcriptionJob.findFirst({
-        where: { id: jobId },
-        include: {
-          recording: { include: { session: { include: { campaign: true } } } },
+      job = (db.query.transcriptionJob.findFirst({ where: eq(transcriptionJob.id, jobId), with: {
+          recording: { with: { session: { with: { campaign: true } } } },
           artifacts: true,
-        },
-      })
+        } }).sync() ?? null)
     }
 
     if (!job && normalized.requestId) {
-      job = await prisma.transcriptionJob.findFirst({
-        where: { requestId: normalized.requestId },
-        include: {
-          recording: { include: { session: { include: { campaign: true } } } },
+      job = (db.query.transcriptionJob.findFirst({ where: eq(transcriptionJob.requestId, normalized.requestId), with: {
+          recording: { with: { session: { with: { campaign: true } } } },
           artifacts: true,
-        },
-      })
+        } }).sync() ?? null)
     }
 
     if (!job) {
@@ -468,27 +440,25 @@ export class TranscriptionService {
     await this.storeArtifacts(job.id, normalized)
 
     const status: TranscriptionStatus = 'COMPLETED'
-    const updated = await prisma.transcriptionJob.update({
-      where: { id: job.id },
-      data: {
+    const completedJob = job
+    const updated = db.transaction((tx) => {
+      tx.update(transcriptionJob).set({
         status,
-        externalJobId: normalized.transcriptionId || job.externalJobId,
-        requestId: normalized.requestId || job.requestId,
+        externalJobId: normalized.transcriptionId || completedJob.externalJobId,
+        requestId: normalized.requestId || completedJob.requestId,
         completedAt: new Date(),
-      },
-      include: {
-        recording: { include: { session: { include: { campaign: true } } } },
-        artifacts: true,
-      },
-    })
+      }).where(eq(transcriptionJob.id, completedJob.id)).run()
+      return tx.query.transcriptionJob.findFirst({
+        where: eq(transcriptionJob.id, completedJob.id),
+        with: { recording: { with: { session: { with: { campaign: true } } } }, artifacts: true },
+      }).sync()!
+    }, { behavior: 'immediate' })
 
     return updated
   }
 
   async fetchTranscription(jobId: string) {
-    const job = await prisma.transcriptionJob.findUnique({
-      where: { id: jobId },
-    })
+    const job = (db.query.transcriptionJob.findFirst({ where: eq(transcriptionJob.id, jobId) }).sync() ?? null)
     if (!job?.externalJobId) return null
 
     const response = (await this.client.speechToText.transcripts.get(
@@ -497,13 +467,10 @@ export class TranscriptionService {
 
     await this.storeArtifacts(job.id, normalizeResponsePayload(response))
 
-    return prisma.transcriptionJob.update({
-      where: { id: job.id },
-      data: {
+    return db.update(transcriptionJob).set({
         status: 'COMPLETED',
         completedAt: new Date(),
-      },
-    })
+      }).where(eq(transcriptionJob.id, job.id)).returning().get()!
   }
 
   async fetchTranscriptionByExternalId(jobId: string, externalJobId: string) {
@@ -513,23 +480,17 @@ export class TranscriptionService {
 
     await this.storeArtifacts(jobId, normalizeResponsePayload(response))
 
-    return prisma.transcriptionJob.update({
-      where: { id: jobId },
-      data: {
+    return db.update(transcriptionJob).set({
         status: 'COMPLETED',
         completedAt: new Date(),
-      },
-    })
+      }).where(eq(transcriptionJob.id, jobId)).returning().get()!
   }
 
   private async storeArtifacts(jobId: string, normalized: NormalizedWebhookPayload) {
-    const job = await prisma.transcriptionJob.findUnique({
-      where: { id: jobId },
-      include: {
-        recording: { include: { session: { include: { campaign: true } } } },
+    const job = (db.query.transcriptionJob.findFirst({ where: eq(transcriptionJob.id, jobId), with: {
+        recording: { with: { session: { with: { campaign: true } } } },
         artifacts: true,
-      },
-    })
+      } }).sync() ?? null)
     if (!job) return null
 
     const ownerId = job.recording.session.campaign.ownerId
@@ -563,18 +524,15 @@ export class TranscriptionService {
       })
 
       try {
-        await prisma.transcriptionArtifact.create({
-          data: {
+        db.insert(transcriptionArtifact).values({
             transcriptionJobId: job.id,
             artifactId: artifact.id,
             format: formatEnum,
-          },
-        })
+          }).returning().get()!
         existingFormats.add(formatEnum)
       } catch (error) {
-        const message = (error as Error & { code?: string }).code
         await this.deleteArtifactBestEffort(artifact.id)
-        if (message !== 'P2002') {
+        if (!isSqliteUniqueConstraintError(error)) {
           throw error
         }
       }
@@ -595,18 +553,15 @@ export class TranscriptionService {
       })
 
       try {
-        await prisma.transcriptionArtifact.create({
-          data: {
+        db.insert(transcriptionArtifact).values({
             transcriptionJobId: job.id,
             artifactId: artifact.id,
             format: 'TXT',
-          },
-        })
+          }).returning().get()!
         existingFormats.add('TXT')
       } catch (error) {
-        const message = (error as Error & { code?: string }).code
         await this.deleteArtifactBestEffort(artifact.id)
-        if (message !== 'P2002') {
+        if (!isSqliteUniqueConstraintError(error)) {
           throw error
         }
       }

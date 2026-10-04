@@ -1,20 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Readable } from 'node:stream'
-import { prisma } from '#server/db/prisma'
 import { ArtifactService } from '#server/services/artifact.service'
 import { RecordingService } from '#server/services/recording.service'
 
-const prismaMock = vi.hoisted(() => ({
-  recording: {
-    create: vi.fn(),
-  },
-}))
+const mocks = vi.hoisted(() => ({ recordingCreate: vi.fn() }))
 
-vi.mock('#server/db/prisma', () => ({ prisma: prismaMock }))
+vi.mock('#server/db/client', () => ({
+  db: { insert: () => ({ values: (data: unknown) => ({ returning: () => ({ get: () => mocks.recordingCreate(data) }) }) }) },
+}))
 
 describe('RecordingService', () => {
   afterEach(() => {
     vi.restoreAllMocks()
+    mocks.recordingCreate.mockReset()
   })
 
   it('cleans up the created artifact when recording-row persistence fails', async () => {
@@ -22,7 +20,7 @@ describe('RecordingService', () => {
     const rowFailure = new Error('recording row failed')
     const createArtifact = vi.spyOn(ArtifactService.prototype, 'createArtifactFromStream').mockResolvedValue(artifact as never)
     const deleteArtifact = vi.spyOn(ArtifactService.prototype, 'deleteArtifact').mockResolvedValue(null)
-    const createRecording = vi.mocked(prisma.recording.create).mockRejectedValue(rowFailure)
+    const createRecording = mocks.recordingCreate.mockImplementation(() => { throw rowFailure })
 
     await expect(new RecordingService().createRecordingFromStream({
       ownerId: 'owner-1',
@@ -41,13 +39,11 @@ describe('RecordingService', () => {
       mimeType: 'audio/mpeg',
       label: 'Recording audio',
     }))
-    expect(createRecording).toHaveBeenCalledWith({
-      data: expect.objectContaining({
+    expect(createRecording).toHaveBeenCalledWith(expect.objectContaining({
         sessionId: 'session-1',
         artifactId: 'artifact-1',
         byteSize: 12,
-      }),
-    })
+      }))
     expect(deleteArtifact).toHaveBeenCalledWith('artifact-1')
   })
 
@@ -55,7 +51,7 @@ describe('RecordingService', () => {
     const rowFailure = new Error('recording row failed')
     vi.spyOn(ArtifactService.prototype, 'createArtifactFromStream').mockResolvedValue({ id: 'artifact-1', byteSize: 12 } as never)
     vi.spyOn(ArtifactService.prototype, 'deleteArtifact').mockRejectedValue(new Error('cleanup failed'))
-    vi.mocked(prisma.recording.create).mockRejectedValue(rowFailure)
+    mocks.recordingCreate.mockImplementation(() => { throw rowFailure })
 
     await expect(new RecordingService().createRecordingFromStream({
       ownerId: 'owner-1',

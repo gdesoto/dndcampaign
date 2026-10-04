@@ -1,12 +1,15 @@
+import type { JsonValue } from '#server/db/columns'
+import { apiError } from '#server/utils/http'
 import { randomUUID } from 'node:crypto'
 import type {
   CampaignMapFeatureType,
   CampaignMapFileKind,
   CampaignMapGlossaryLinkType,
   GlossaryType,
-  Prisma,
-} from '#server/db/prisma-client'
-import { prisma } from '#server/db/prisma'
+} from '#server/db/schema'
+import { db } from '#server/db/client'
+import { campaign, campaignMap, campaignMapFile, campaignMapFeature, campaignMapGlossaryLink, glossaryEntry } from '#server/db/schema'
+import { eq, and, desc, asc, inArray, count, sql } from 'drizzle-orm'
 import { getStorageAdapter } from '#server/services/storage/storage.factory'
 import {
   buildFeatureDiff,
@@ -145,11 +148,11 @@ const mergeAliases = (current: string | null, incoming?: string) => {
 
 export class MapService {
   private async findCampaign(campaignId: string) {
-    return prisma.campaign.findFirst({ where: { id: campaignId }, select: { id: true } })
+    return db.query.campaign.findFirst({ where: eq(campaign.id, campaignId), columns: { id: true } }).sync()
   }
 
   private async findMap(campaignId: string, mapId: string) {
-    return prisma.campaignMap.findFirst({ where: { id: mapId, campaignId } })
+    return db.query.campaignMap.findFirst({ where: and(eq(campaignMap.id, mapId), eq(campaignMap.campaignId, campaignId)) }).sync()
   }
 
   private async allocateSlug(campaignId: string, preferred: string) {
@@ -162,10 +165,7 @@ export class MapService {
     let slug = base
     let index = 1
     while (
-      await prisma.campaignMap.findFirst({
-        where: { campaignId, slug },
-        select: { id: true },
-      })
+      db.query.campaignMap.findFirst({ where: and(eq(campaignMap.campaignId, campaignId), eq(campaignMap.slug, slug)), columns: { id: true } }).sync()
     ) {
       index += 1
       slug = `${base}-${index}`
@@ -177,7 +177,7 @@ export class MapService {
     return `campaigns/${campaignId}/maps/${mapId}/raw/${randomUUID()}-${safeFilename(filename)}`
   }
 
-  private toDbFeatureInput(campaignMapId: string, feature: ParsedMapFeature): Prisma.CampaignMapFeatureCreateManyInput {
+  private toDbFeatureInput(campaignMapId: string, feature: ParsedMapFeature): typeof campaignMapFeature.$inferInsert {
     return {
       campaignMapId,
       externalId: feature.externalId,
@@ -188,7 +188,7 @@ export class MapService {
       description: feature.description || null,
       geometryType: feature.geometryType,
       geometryJson: feature.geometryJson,
-      propertiesJson: feature.propertiesJson ?? (null as unknown as Prisma.InputJsonValue),
+      propertiesJson: feature.propertiesJson ?? null,
       sourceRef: feature.sourceRef,
       isActive: !feature.removed,
       removed: feature.removed,
@@ -196,16 +196,10 @@ export class MapService {
   }
 
   private async setPrimaryMap(campaignId: string, mapId: string) {
-    await prisma.$transaction(async (tx) => {
-      await tx.campaignMap.updateMany({
-        where: { campaignId, isPrimary: true },
-        data: { isPrimary: false },
-      })
-      await tx.campaignMap.update({
-        where: { id: mapId },
-        data: { isPrimary: true },
-      })
-    })
+    db.transaction((tx) => {
+      tx.update(campaignMap).set({ isPrimary: false }).where(and(eq(campaignMap.campaignId, campaignId), eq(campaignMap.isPrimary, true))).run()
+      tx.update(campaignMap).set({ isPrimary: true }).where(eq(campaignMap.id, mapId)).returning().get()!
+    }, { behavior: 'immediate' })
   }
 
   async createMapFromUpload(campaignId: string, userId: string, fields: Record<string, string>, files: UploadedMapFile[]) {
@@ -217,13 +211,9 @@ export class MapService {
     const mapName = (fields.name || '').trim() || parsed.mapName || 'Imported Map'
     const slug = await this.allocateSlug(campaignId, mapName)
     const isPrimaryRequested = boolFromField(fields.isPrimary)
-    const hasPrimary = await prisma.campaignMap.findFirst({
-      where: { campaignId, isPrimary: true },
-      select: { id: true },
-    })
+    const hasPrimary = db.query.campaignMap.findFirst({ where: and(eq(campaignMap.campaignId, campaignId), eq(campaignMap.isPrimary, true)), columns: { id: true } }).sync()
 
-    const map = await prisma.campaignMap.create({
-      data: {
+    const map = db.insert(campaignMap).values({
         campaignId,
         name: mapName,
         slug,
@@ -233,14 +223,13 @@ export class MapService {
         createdById: userId,
         sourceFingerprint: parsed.sourceFingerprint,
         importVersion: 1,
-        rawManifestJson: {
+        rawManifestJson: ({
           bounds: parsed.bounds,
           metadata: parsed.metadata,
           mapCoordinates: parsed.metadata.mapCoordinates,
           defaultActiveLayers: defaultMapLayerTypes,
-        } as Prisma.InputJsonValue,
-      },
-    })
+        }) as unknown as JsonValue,
+      }).returning().get()!
 
     if (isPrimaryRequested && hasPrimary) {
       await this.setPrimaryMap(campaignId, map.id)
@@ -248,7 +237,7 @@ export class MapService {
 
     const adapter = getStorageAdapter()
     const persistedFiles = [classified.fullJson, ...classified.optionalFiles]
-    const fileCreates: Prisma.CampaignMapFileCreateManyInput[] = []
+    const fileCreates: typeof campaignMapFile.$inferInsert[] = []
 
     for (const file of persistedFiles) {
       const storageKey = this.buildRawStorageKey(campaignId, map.id, file.filename)
@@ -264,32 +253,25 @@ export class MapService {
       })
     }
 
-    await prisma.campaignMapFile.createMany({ data: fileCreates })
-    await prisma.campaignMapFeature.createMany({
-      data: parsed.features.map((feature) => this.toDbFeatureInput(map.id, feature)),
-    })
+    db.insert(campaignMapFile).values(fileCreates).run()
+    if (parsed.features.length) {
+      db.insert(campaignMapFeature).values(parsed.features.map((feature) => this.toDbFeatureInput(map.id, feature))).run()
+    }
 
-    const created = await prisma.campaignMap.findUnique({
-      where: { id: map.id },
-      include: {
-        features: { select: { featureType: true } },
-        files: { select: { kind: true } },
-      },
-    })
+    const created = db.query.campaignMap.findFirst({ where: eq(campaignMap.id, map.id), with: {
+        features: { columns: { featureType: true } },
+        files: { columns: { kind: true } },
+      } }).sync()
     return created ? toSummary(created as never) : null
   }
 
   async listMaps(campaignId: string) {
     const campaign = await this.findCampaign(campaignId)
     if (!campaign) return null
-    const maps = await prisma.campaignMap.findMany({
-      where: { campaignId },
-      include: {
-        features: { select: { featureType: true } },
-        files: { select: { kind: true } },
-      },
-      orderBy: [{ isPrimary: 'desc' }, { updatedAt: 'desc' }],
-    })
+    const maps = db.query.campaignMap.findMany({ where: eq(campaignMap.campaignId, campaignId), with: {
+        features: { columns: { featureType: true } },
+        files: { columns: { kind: true } },
+      }, orderBy: [desc(campaignMap.isPrimary), desc(campaignMap.updatedAt)] }).sync()
     return maps.map((entry) => toSummary(entry as never))
   }
 
@@ -301,7 +283,7 @@ export class MapService {
       await this.setPrimaryMap(campaignId, mapId)
     }
 
-    const updateData: Prisma.CampaignMapUpdateInput = {}
+    const updateData: Partial<typeof campaignMap.$inferInsert> = {}
     if (typeof input.name === 'string') {
       updateData.name = input.name
     }
@@ -310,19 +292,13 @@ export class MapService {
     }
 
     if (Object.keys(updateData).length) {
-      await prisma.campaignMap.update({
-        where: { id: mapId },
-        data: updateData,
-      })
+      db.update(campaignMap).set(updateData).where(eq(campaignMap.id, mapId)).returning().get()!
     }
 
-    const updated = await prisma.campaignMap.findUnique({
-      where: { id: mapId },
-      include: {
-        features: { select: { featureType: true } },
-        files: { select: { kind: true } },
-      },
-    })
+    const updated = db.query.campaignMap.findFirst({ where: eq(campaignMap.id, mapId), with: {
+        features: { columns: { featureType: true } },
+        files: { columns: { kind: true } },
+      } }).sync()
     return updated ? toSummary(updated as never) : null
   }
 
@@ -330,10 +306,7 @@ export class MapService {
     const map = await this.findMap(campaignId, mapId)
     if (!map) return null
 
-    const svgFile = await prisma.campaignMapFile.findFirst({
-      where: { campaignMapId: mapId, kind: 'SVG' },
-      orderBy: { createdAt: 'desc' },
-    })
+    const svgFile = db.query.campaignMapFile.findFirst({ where: and(eq(campaignMapFile.campaignMapId, mapId), eq(campaignMapFile.kind, 'SVG')), orderBy: [desc(campaignMapFile.createdAt)] }).sync()
     if (!svgFile) return { missing: true as const }
 
     const adapter = getStorageAdapter()
@@ -350,31 +323,19 @@ export class MapService {
     const map = await this.findMap(campaignId, mapId)
     if (!map) return null
 
-    const files = await prisma.campaignMapFile.findMany({
-      where: { campaignMapId: mapId },
-      select: { storageKey: true },
-    })
+    const files = db.query.campaignMapFile.findMany({ where: eq(campaignMapFile.campaignMapId, mapId), columns: { storageKey: true } }).sync()
     const adapter = getStorageAdapter()
 
-    await prisma.$transaction(async (tx) => {
-      await tx.campaignMap.delete({
-        where: { id: mapId },
-      })
+    db.transaction((tx) => {
+      tx.delete(campaignMap).where(eq(campaignMap.id, mapId)).returning().get()!
 
       if (map.isPrimary) {
-        const replacement = await tx.campaignMap.findFirst({
-          where: { campaignId },
-          orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
-          select: { id: true },
-        })
+        const replacement = tx.query.campaignMap.findFirst({ where: eq(campaignMap.campaignId, campaignId), columns: { id: true }, orderBy: [desc(campaignMap.updatedAt), desc(campaignMap.createdAt)] }).sync()
         if (replacement) {
-          await tx.campaignMap.update({
-            where: { id: replacement.id },
-            data: { isPrimary: true },
-          })
+          tx.update(campaignMap).set({ isPrimary: true }).where(eq(campaignMap.id, replacement.id)).returning().get()!
         }
       }
-    })
+    }, { behavior: 'immediate' })
 
     for (const file of files) {
       adapter.deleteObject(file.storageKey).catch(() => undefined)
@@ -387,23 +348,14 @@ export class MapService {
     const map = await this.findMap(campaignId, mapId)
     if (!map) return null
 
-    const features = await prisma.campaignMapFeature.findMany({
-      where: { campaignMapId: mapId },
-      orderBy: [{ featureType: 'asc' }, { displayName: 'asc' }],
-    })
-    const glossaryLinks = await prisma.campaignMapGlossaryLink.findMany({
-      where: { campaignMapId: mapId },
-      select: { mapFeatureId: true },
-    })
-    const glossaryEntries = await prisma.glossaryEntry.findMany({
-      where: { campaignId: map.campaignId },
-      select: {
+    const features = db.query.campaignMapFeature.findMany({ where: eq(campaignMapFeature.campaignMapId, mapId), orderBy: [asc(campaignMapFeature.featureType), asc(campaignMapFeature.displayName)] }).sync()
+    const glossaryLinks = db.query.campaignMapGlossaryLink.findMany({ where: eq(campaignMapGlossaryLink.campaignMapId, mapId), columns: { mapFeatureId: true } }).sync()
+    const glossaryEntries = db.query.glossaryEntry.findMany({ where: eq(glossaryEntry.campaignId, map.campaignId), columns: {
         id: true,
         type: true,
         name: true,
         sourceMapFeatureId: true,
-      },
-    })
+      } }).sync()
 
     const linkedFeatureIds = new Set(glossaryLinks.map((entry) => entry.mapFeatureId))
     const normalizedGlossary = glossaryEntries.map((entry) => ({
@@ -466,20 +418,7 @@ export class MapService {
     const map = await this.findMap(campaignId, mapId)
     if (!map) return null
 
-    const features = await prisma.campaignMapFeature.findMany({
-      where: {
-        campaignMapId: mapId,
-        ...(filter.types?.length
-          ? {
-              featureType: {
-                in: filter.types.map((entry) => mapFeatureTypeToDb[entry]!),
-              },
-            }
-          : {}),
-        ...(filter.includeRemoved ? {} : { removed: false }),
-      },
-      orderBy: [{ featureType: 'asc' }, { displayName: 'asc' }],
-    })
+    const features = db.query.campaignMapFeature.findMany({ where: and(eq(campaignMapFeature.campaignMapId, mapId), (filter.types?.length ? inArray(campaignMapFeature.featureType, filter.types.map((entry) => mapFeatureTypeToDb[entry]!)) : undefined), (filter.includeRemoved ? undefined : eq(campaignMapFeature.removed, false))), orderBy: [asc(campaignMapFeature.featureType), asc(campaignMapFeature.displayName)] }).sync()
 
     return features.map((feature) => ({
       id: feature.id,
@@ -499,19 +438,13 @@ export class MapService {
     const map = await this.findMap(campaignId, mapId)
     if (!map) return null
 
-    const features = await prisma.campaignMapFeature.findMany({
-      where: { campaignMapId: mapId, id: { in: featureIds } },
-      orderBy: { displayName: 'asc' },
-    })
-    const glossary = await prisma.glossaryEntry.findMany({
-      where: { campaignId },
-      select: {
+    const features = db.query.campaignMapFeature.findMany({ where: and(eq(campaignMapFeature.campaignMapId, mapId), inArray(campaignMapFeature.id, featureIds)), orderBy: [asc(campaignMapFeature.displayName)] }).sync()
+    const glossary = db.query.glossaryEntry.findMany({ where: eq(glossaryEntry.campaignId, campaignId), columns: {
         id: true,
         type: true,
         name: true,
         sourceMapFeatureId: true,
-      },
-    })
+      } }).sync()
     const normalizedGlossary = glossary.map((entry) => ({
       ...entry,
       normalizedName: normalizeMapName(entry.name),
@@ -563,30 +496,23 @@ export class MapService {
       skipped: 0,
     }
 
-    await prisma.$transaction(async (tx) => {
+    db.transaction((tx) => {
       for (const item of items) {
-        const feature = await tx.campaignMapFeature.findFirst({
-          where: { id: item.featureId, campaignMapId: mapId },
-        })
+        const feature = tx.query.campaignMapFeature.findFirst({ where: and(eq(campaignMapFeature.id, item.featureId), eq(campaignMapFeature.campaignMapId, mapId)) }).sync()
         if (!feature || item.action === 'skip') {
           counters.skipped += 1
           continue
         }
 
-        const ensureLink = async (glossaryEntryId: string, linkType: CampaignMapGlossaryLinkType) => {
-          const existing = await tx.campaignMapGlossaryLink.findFirst({
-            where: { mapFeatureId: feature.id, glossaryEntryId },
-            select: { id: true },
-          })
+        const ensureLink = (glossaryEntryId: string, linkType: CampaignMapGlossaryLinkType) => {
+          const existing = tx.query.campaignMapGlossaryLink.findFirst({ where: and(eq(campaignMapGlossaryLink.mapFeatureId, feature.id), eq(campaignMapGlossaryLink.glossaryEntryId, glossaryEntryId)), columns: { id: true } }).sync()
           if (!existing) {
-            await tx.campaignMapGlossaryLink.create({
-              data: {
+            tx.insert(campaignMapGlossaryLink).values({
                 campaignMapId: mapId,
                 mapFeatureId: feature.id,
                 glossaryEntryId,
                 linkType,
-              },
-            })
+              }).returning().get()!
           }
         }
 
@@ -596,8 +522,7 @@ export class MapService {
             name: feature.displayName,
             description: feature.description || `${feature.displayName} imported from campaign map.`,
           }
-          const created = await tx.glossaryEntry.create({
-            data: {
+          const created = tx.insert(glossaryEntry).values({
               campaignId,
               type: payload.type,
               name: payload.name,
@@ -605,9 +530,8 @@ export class MapService {
               description: payload.description,
               sourceMapId: mapId,
               sourceMapFeatureId: feature.id,
-            },
-          })
-          await ensureLink(created.id, 'LINKED')
+            }).returning().get()!
+          ensureLink(created.id, 'LINKED')
           counters.created += 1
           continue
         }
@@ -617,16 +541,14 @@ export class MapService {
           continue
         }
 
-        const glossaryEntry = await tx.glossaryEntry.findFirst({
-          where: { id: item.glossaryEntryId, campaignId },
-        })
-        if (!glossaryEntry) {
+        const entry = tx.query.glossaryEntry.findFirst({ where: and(eq(glossaryEntry.id, item.glossaryEntryId), eq(glossaryEntry.campaignId, campaignId)) }).sync()
+        if (!entry) {
           counters.skipped += 1
           continue
         }
 
         if (item.action === 'link') {
-          await ensureLink(glossaryEntry.id, 'LINKED')
+          ensureLink(entry.id, 'LINKED')
           counters.linked += 1
           continue
         }
@@ -636,24 +558,21 @@ export class MapService {
             item.glossaryPayload?.description ||
             feature.description ||
             `${feature.displayName} imported from campaign map.`
-          const mergedDescription = glossaryEntry.description.includes(incomingDescription)
-            ? glossaryEntry.description
-            : `${glossaryEntry.description}\n\n${incomingDescription}`.trim()
-          await tx.glossaryEntry.update({
-            where: { id: glossaryEntry.id },
-            data: {
-              aliases: mergeAliases(glossaryEntry.aliases, item.glossaryPayload?.aliases),
+          const mergedDescription = entry.description.includes(incomingDescription)
+            ? entry.description
+            : `${entry.description}\n\n${incomingDescription}`.trim()
+          tx.update(glossaryEntry).set({
+              aliases: mergeAliases(entry.aliases, item.glossaryPayload?.aliases),
               description: mergedDescription,
-              sourceMapId: glossaryEntry.sourceMapId || mapId,
-              sourceMapFeatureId: glossaryEntry.sourceMapFeatureId || feature.id,
-            },
-          })
-          await ensureLink(glossaryEntry.id, 'MERGED')
+              sourceMapId: entry.sourceMapId || mapId,
+              sourceMapFeatureId: entry.sourceMapFeatureId || feature.id,
+            }).where(eq(glossaryEntry.id, entry.id)).returning().get()!
+          ensureLink(entry.id, 'MERGED')
           counters.merged += 1
           continue
         }
       }
-    })
+    }, { behavior: 'immediate' })
 
     return {
       mapId,
@@ -670,21 +589,16 @@ export class MapService {
     if (!map) return null
 
     const parsed = parseAzgaarFullJson(classifyMapUploadFiles(files).fullJson.buffer)
-    const existing = await prisma.campaignMapFeature.findMany({
-      where: { campaignMapId: mapId },
-      select: {
+    const existing = db.query.campaignMapFeature.findMany({ where: eq(campaignMapFeature.campaignMapId, mapId), columns: {
         featureType: true,
         externalId: true,
         name: true,
         displayName: true,
         removed: true,
         geometryType: true,
-      },
-    })
+      } }).sync()
     const diff = buildFeatureDiff(existing, parsed.features)
-    const impactedGlossaryLinks = await prisma.campaignMapGlossaryLink.count({
-      where: { campaignMapId: mapId },
-    })
+    const impactedGlossaryLinks = db.select({ count: count() }).from(campaignMapGlossaryLink).where(eq(campaignMapGlossaryLink.campaignMapId, mapId)).get()!.count
 
     return {
       mapId: map.id,
@@ -729,127 +643,87 @@ export class MapService {
     const parsed = parseAzgaarFullJson(classified.fullJson.buffer)
     const adapter = getStorageAdapter()
 
-    const previousLinks = await prisma.campaignMapGlossaryLink.findMany({
-      where: { campaignMapId: mapId },
-      include: {
-        mapFeature: {
-          select: {
-            featureType: true,
-            externalId: true,
-            normalizedName: true,
-          },
-        },
-      },
-    })
-    const previousFiles = await prisma.campaignMapFile.findMany({
-      where: { campaignMapId: mapId },
-      select: { id: true, storageKey: true },
-    })
+    const preparedFiles: (typeof campaignMapFile.$inferInsert)[] = []
+    let previousFiles: Array<{ id: string; storageKey: string }> = []
+    try {
+      for (const file of [classified.fullJson, ...classified.optionalFiles]) {
+        const storageKey = this.buildRawStorageKey(campaignId, mapId, file.filename)
+        // Register the distinct key before uploading so partial writes are cleaned up too.
+        preparedFiles.push({ campaignMapId: mapId, kind: mapFileKindToDb(file.filename), storageProvider: 'LOCAL', storageKey, contentType: file.mimeType, sizeBytes: file.buffer.byteLength })
+        const result = await adapter.putObject(storageKey, file.buffer, file.mimeType)
+        Object.assign(preparedFiles.at(-1)!, { storageKey: result.storageKey, sizeBytes: result.byteSize, checksum: result.checksumSha256 || null })
+      }
+      db.transaction((tx) => {
+        const currentMap = tx.query.campaignMap.findFirst({ where: and(eq(campaignMap.id, mapId), eq(campaignMap.campaignId, campaignId)) }).sync()
+        if (!currentMap) throw apiError(404, 'NOT_FOUND', 'Map not found.')
+        const previousLinks = tx.query.campaignMapGlossaryLink.findMany({
+          where: eq(campaignMapGlossaryLink.campaignMapId, mapId),
+          with: { mapFeature: { columns: { featureType: true, externalId: true, normalizedName: true } } },
+        }).sync()
+        previousFiles = tx.query.campaignMapFile.findMany({
+          where: eq(campaignMapFile.campaignMapId, mapId),
+          columns: { id: true, storageKey: true },
+        }).sync()
 
-    const updatedMap = await prisma.$transaction(async (tx) => {
-      await tx.campaignMapGlossaryLink.deleteMany({
-        where: { campaignMapId: mapId },
-      })
-      await tx.campaignMapFeature.deleteMany({
-        where: { campaignMapId: mapId },
-      })
-      await tx.campaignMapFile.deleteMany({
-        where: { campaignMapId: mapId },
-      })
+        tx.delete(campaignMapGlossaryLink).where(eq(campaignMapGlossaryLink.campaignMapId, mapId)).run()
+        tx.delete(campaignMapFeature).where(eq(campaignMapFeature.campaignMapId, mapId)).run()
+        tx.delete(campaignMapFile).where(eq(campaignMapFile.campaignMapId, mapId)).run()
 
-      const updated = await tx.campaignMap.update({
-        where: { id: mapId },
-        data: {
-          name: (mapName || '').trim() || map.name,
+        const updated = tx.update(campaignMap).set({
+          name: (mapName || '').trim() || currentMap.name,
           sourceFingerprint: parsed.sourceFingerprint,
-          importVersion: { increment: 1 },
-          rawManifestJson: {
+          importVersion: sql`${campaignMap.importVersion} + 1`,
+          rawManifestJson: ({
             bounds: parsed.bounds,
             metadata: parsed.metadata,
             mapCoordinates: parsed.metadata.mapCoordinates,
             defaultActiveLayers: defaultMapLayerTypes,
-          } as Prisma.InputJsonValue,
-        },
-      })
+          }) as unknown as JsonValue,
+        }).where(eq(campaignMap.id, mapId)).returning().get()!
 
-      await tx.campaignMapFeature.createMany({
-        data: parsed.features.map((feature) => this.toDbFeatureInput(mapId, feature)),
-      })
-
-      const persistedFiles = [classified.fullJson, ...classified.optionalFiles]
-      for (const file of persistedFiles) {
-        const storageKey = this.buildRawStorageKey(campaignId, mapId, file.filename)
-        const result = await adapter.putObject(storageKey, file.buffer, file.mimeType)
-        await tx.campaignMapFile.create({
-          data: {
+        if (parsed.features.length) {
+          tx.insert(campaignMapFeature).values(parsed.features.map((feature) => this.toDbFeatureInput(mapId, feature))).run()
+        }
+        tx.insert(campaignMapFile).values(preparedFiles).run()
+        const newFeatures = tx.query.campaignMapFeature.findMany({
+          where: eq(campaignMapFeature.campaignMapId, mapId),
+          columns: { id: true, featureType: true, externalId: true, normalizedName: true },
+        }).sync()
+        const byExternal = new Map(newFeatures.map((entry) => [mapExternalKey(entry), entry]))
+        const byName = new Map(newFeatures.map((entry) => [`${entry.featureType}:${entry.normalizedName}`, entry]))
+        const linkCreates: typeof campaignMapGlossaryLink.$inferInsert[] = []
+        for (const oldLink of previousLinks) {
+          const externalMatch = byExternal.get(mapExternalKey(oldLink.mapFeature))
+          const fallbackNameMatch = byName.get(`${oldLink.mapFeature.featureType}:${oldLink.mapFeature.normalizedName}`)
+          const target = strategy === 'replace_preserve_links' ? externalMatch : externalMatch || fallbackNameMatch
+          if (!target) continue
+          linkCreates.push({
             campaignMapId: mapId,
-            kind: mapFileKindToDb(file.filename),
-            storageProvider: 'LOCAL',
-            storageKey: result.storageKey,
-            contentType: file.mimeType,
-            sizeBytes: result.byteSize,
-            checksum: result.checksumSha256 || null,
-          },
-        })
-      }
-
-      return updated
-    })
-
+            mapFeatureId: target.id,
+            glossaryEntryId: oldLink.glossaryEntryId,
+            linkType: oldLink.linkType,
+          })
+        }
+        if (linkCreates.length) tx.insert(campaignMapGlossaryLink).values(linkCreates).run()
+        if (keepPrimary && !updated.isPrimary) {
+          tx.update(campaignMap).set({ isPrimary: false }).where(and(eq(campaignMap.campaignId, campaignId), eq(campaignMap.isPrimary, true))).run()
+          tx.update(campaignMap).set({ isPrimary: true }).where(eq(campaignMap.id, mapId)).run()
+        }
+      }, { behavior: 'immediate' })
+    } catch (error) {
+      await Promise.allSettled(preparedFiles.map(file => adapter.deleteObject(file.storageKey)))
+      throw error
+    }
+    // Cleanup only obsolete objects after commit; new references remain valid if cleanup fails.
     for (const file of previousFiles) {
-      adapter.deleteObject(file.storageKey).catch(() => undefined)
+      try { await adapter.deleteObject(file.storageKey) }
+      catch (error) { console.warn('Map reimport committed, but an obsolete file could not be deleted.', { mapId, storageKey: file.storageKey, error }) }
     }
 
-    const newFeatures = await prisma.campaignMapFeature.findMany({
-      where: { campaignMapId: mapId },
-      select: {
-        id: true,
-        featureType: true,
-        externalId: true,
-        normalizedName: true,
-      },
-    })
-    const byExternal = new Map(newFeatures.map((entry) => [mapExternalKey(entry), entry]))
-    const byName = new Map(
-      newFeatures.map((entry) => [`${entry.featureType}:${entry.normalizedName}`, entry])
-    )
-
-    const linkCreates: Prisma.CampaignMapGlossaryLinkCreateManyInput[] = []
-    for (const oldLink of previousLinks) {
-      const externalMatch = byExternal.get(mapExternalKey(oldLink.mapFeature))
-      const fallbackNameMatch = byName.get(
-        `${oldLink.mapFeature.featureType}:${oldLink.mapFeature.normalizedName}`
-      )
-      const target =
-        strategy === 'replace_preserve_links'
-          ? externalMatch
-          : externalMatch || fallbackNameMatch
-      if (!target) continue
-      linkCreates.push({
-        campaignMapId: mapId,
-        mapFeatureId: target.id,
-        glossaryEntryId: oldLink.glossaryEntryId,
-        linkType: oldLink.linkType,
-      })
-    }
-
-    if (linkCreates.length) {
-      await prisma.campaignMapGlossaryLink.createMany({
-        data: linkCreates,
-      })
-    }
-
-    if (keepPrimary && !updatedMap.isPrimary) {
-      await this.setPrimaryMap(campaignId, mapId)
-    }
-
-    const withCounts = await prisma.campaignMap.findUnique({
-      where: { id: mapId },
-      include: {
-        features: { select: { featureType: true } },
-        files: { select: { kind: true } },
-      },
-    })
+    const withCounts = db.query.campaignMap.findFirst({ where: eq(campaignMap.id, mapId), with: {
+        features: { columns: { featureType: true } },
+        files: { columns: { kind: true } },
+      } }).sync()
     return withCounts ? toSummary(withCounts as never) : null
   }
 }

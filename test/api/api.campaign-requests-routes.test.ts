@@ -3,10 +3,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
 import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
-import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
+import { createApiTestDatabase } from '../scripts/db-test-client'
+import * as tables from '../../server/db/schema'
 
-const prisma = createApiTestPrismaClient()
-const hash = new Hash(new Scrypt())
+const db = createApiTestDatabase()
+const hash = new Hash(new Scrypt({}))
 const baseUrl = getApiTestBaseUrl()
 const password = 'dmr5-campaign-requests-pass'
 
@@ -71,52 +72,41 @@ describe('campaign requests API routes', () => {
     const passwordHash = await hash.make(password)
 
     for (const [key, user] of Object.entries(users)) {
-      const created = await prisma.user.create({
-        data: {
-          email: user.email,
-          name: user.name,
-          passwordHash,
-        },
-        select: { id: true, email: true },
-      })
+      const created = db.insert(tables.user).values({
+        email: user.email,
+        name: user.name,
+        passwordHash,
+      }).returning().get()!
       userIds[key] = created.id
     }
 
-    const campaign = await prisma.campaign.create({
-      data: {
-        ownerId: userIds.owner,
-        name: 'DMR5 Request API Campaign',
-        members: {
-          create: [
-            {
-              userId: userIds.owner,
-              role: 'OWNER',
-              invitedByUserId: userIds.owner,
-              hasDmAccess: true,
-            },
-            {
-              userId: userIds.dm,
-              role: 'COLLABORATOR',
-              invitedByUserId: userIds.owner,
-              hasDmAccess: true,
-            },
-            {
-              userId: userIds.player,
-              role: 'COLLABORATOR',
-              invitedByUserId: userIds.owner,
-              hasDmAccess: false,
-            },
-            {
-              userId: userIds.viewer,
-              role: 'VIEWER',
-              invitedByUserId: userIds.owner,
-              hasDmAccess: false,
-            },
-          ],
-        },
+    const campaign = db.insert(tables.campaign).values({ ownerId: userIds.owner, name: 'DMR5 Request API Campaign' }).returning().get()!
+    db.insert(tables.campaignMember).values(([
+      {
+        userId: userIds.owner,
+        role: 'OWNER',
+        invitedByUserId: userIds.owner,
+        hasDmAccess: true,
       },
-      select: { id: true },
-    })
+      {
+        userId: userIds.dm,
+        role: 'COLLABORATOR',
+        invitedByUserId: userIds.owner,
+        hasDmAccess: true,
+      },
+      {
+        userId: userIds.player,
+        role: 'COLLABORATOR',
+        invitedByUserId: userIds.owner,
+        hasDmAccess: false,
+      },
+      {
+        userId: userIds.viewer,
+        role: 'VIEWER',
+        invitedByUserId: userIds.owner,
+        hasDmAccess: false,
+      },
+    ] as const).map(member => ({ ...member, campaignId: campaign.id }))).run()
 
     campaignId = campaign.id
 
@@ -126,7 +116,7 @@ describe('campaign requests API routes', () => {
   }, 120_000)
 
   afterAll(async () => {
-    await prisma.$disconnect()
+    db.$client.close()
   })
 
   it('enforces private visibility and membership access rules', async () => {

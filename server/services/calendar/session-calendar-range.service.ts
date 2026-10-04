@@ -1,4 +1,6 @@
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { and, eq, asc } from 'drizzle-orm'
 import { z } from 'zod'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 import {
@@ -57,9 +59,9 @@ const normalizeRangeInput = (input: SessionCalendarRangeInput): SessionCalendarR
 
 export class SessionCalendarRangeService {
   async listRanges(campaignId: string): Promise<SessionCalendarRangeDto[]> {
-    const ranges = await prisma.sessionCalendarRange.findMany({
-      where: { campaignId },
-      orderBy: [{ startYear: 'asc' }, { startMonth: 'asc' }, { startDay: 'asc' }],
+    const ranges = await db.query.sessionCalendarRange.findMany({
+      where: eq(tables.sessionCalendarRange.campaignId, campaignId),
+      orderBy: [asc(tables.sessionCalendarRange.startYear), asc(tables.sessionCalendarRange.startMonth), asc(tables.sessionCalendarRange.startDay)],
     })
     return ranges.map(toRangeDto)
   }
@@ -69,35 +71,29 @@ export class SessionCalendarRangeService {
     userId: string,
     input: SessionCalendarRangeInput,
   ): Promise<SessionCalendarRangeDto> {
-    const session = await prisma.session.findUnique({
-      where: { id: sessionId },
-      select: {
-        id: true,
-        campaignId: true,
-      },
+    const session = await db.query.session.findFirst({
+      where: eq(tables.session.id, sessionId),
+      columns: { id: true, campaignId: true },
     })
 
     if (!session) {
       throw apiError(404, 'SESSION_NOT_FOUND', 'Session not found.')
     }
 
-    const campaignAccess = await prisma.campaign.findFirst({
-      where: {
-        id: session.campaignId,
-        ...buildCampaignWhereForPermission(userId, 'campaign.update'),
-      },
-      select: { id: true },
+    const campaignAccess = await db.query.campaign.findFirst({
+      where: and(
+        eq(tables.campaign.id, session.campaignId),
+        buildCampaignWhereForPermission(userId, 'campaign.update'),
+      ),
+      columns: { id: true },
     })
     if (!campaignAccess) {
       throw apiError(403, 'FORBIDDEN', 'You do not have permission for this action.')
     }
 
-    const config = await prisma.campaignCalendarConfig.findUnique({
-      where: { campaignId: session.campaignId },
-      select: {
-        isEnabled: true,
-        monthsJson: true,
-      },
+    const config = await db.query.campaignCalendarConfig.findFirst({
+      where: eq(tables.campaignCalendarConfig.campaignId, session.campaignId),
+      columns: { isEnabled: true, monthsJson: true },
     })
 
     if (!config) {
@@ -112,55 +108,49 @@ export class SessionCalendarRangeService {
       normalizeRangeInput(input),
     )
 
-    const range = await prisma.sessionCalendarRange.upsert({
-      where: { sessionId },
-      create: {
-        sessionId,
-        campaignId: session.campaignId,
+    const range = await db.insert(tables.sessionCalendarRange).values({
+      sessionId,
+      campaignId: session.campaignId,
+      startYear: parsedInput.startYear,
+      startMonth: parsedInput.startMonth,
+      startDay: parsedInput.startDay,
+      endYear: parsedInput.endYear,
+      endMonth: parsedInput.endMonth,
+      endDay: parsedInput.endDay,
+    }).onConflictDoUpdate({ target: [tables.sessionCalendarRange.sessionId], set: {
         startYear: parsedInput.startYear,
         startMonth: parsedInput.startMonth,
         startDay: parsedInput.startDay,
         endYear: parsedInput.endYear,
         endMonth: parsedInput.endMonth,
         endDay: parsedInput.endDay,
-      },
-      update: {
-        startYear: parsedInput.startYear,
-        startMonth: parsedInput.startMonth,
-        startDay: parsedInput.startDay,
-        endYear: parsedInput.endYear,
-        endMonth: parsedInput.endMonth,
-        endDay: parsedInput.endDay,
-      },
-    })
+      } }).returning().get()
 
     return toRangeDto(range)
   }
 
   async deleteRange(sessionId: string, userId: string): Promise<{ deleted: true }> {
-    const session = await prisma.session.findUnique({
-      where: { id: sessionId },
-      select: { id: true },
+    const session = await db.query.session.findFirst({
+      where: eq(tables.session.id, sessionId),
+      columns: { id: true },
     })
 
     if (!session) {
       throw apiError(404, 'SESSION_NOT_FOUND', 'Session not found.')
     }
 
-    const campaignAccess = await prisma.session.findFirst({
-      where: {
-        id: sessionId,
-        campaign: buildCampaignWhereForPermission(userId, 'campaign.update'),
-      },
-      select: { id: true },
+    const campaignAccess = await db.query.session.findFirst({
+      where: and(
+        eq(tables.session.id, sessionId),
+        buildCampaignWhereForPermission(userId, 'campaign.update', tables.session.campaignId),
+      ),
+      columns: { id: true },
     })
     if (!campaignAccess) {
       throw apiError(403, 'FORBIDDEN', 'You do not have permission for this action.')
     }
 
-    await prisma.sessionCalendarRange.deleteMany({
-      where: { sessionId },
-    })
+    await db.delete(tables.sessionCalendarRange).where(eq(tables.sessionCalendarRange.sessionId, sessionId)).run()
 
     return { deleted: true }
   }

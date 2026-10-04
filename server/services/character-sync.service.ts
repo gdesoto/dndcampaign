@@ -1,5 +1,8 @@
-import { prisma } from '#server/db/prisma'
-import type { GlossaryEntry, Prisma } from '#server/db/prisma-client'
+import type { JsonValue } from '#server/db/columns'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { and, eq, inArray } from 'drizzle-orm'
+import type { GlossaryEntry } from '#server/db/schema'
 import { computeCharacterSummary } from './character.service'
 
 const buildGlossaryDescription = (sheetJson: Record<string, unknown>) => {
@@ -23,8 +26,11 @@ export class CharacterSyncService {
     ownerId: string
     entry: Pick<GlossaryEntry, 'id' | 'campaignId' | 'name' | 'description'>
   }) {
-    const existingCharacter = await prisma.playerCharacter.findFirst({
-      where: { ownerId: params.ownerId, name: params.entry.name },
+    const existingCharacter = await db.query.playerCharacter.findFirst({
+      where: and(
+        eq(tables.playerCharacter.ownerId, params.ownerId),
+        eq(tables.playerCharacter.name, params.entry.name),
+      ),
     })
     const sheetJson = {
       basics: { name: params.entry.name },
@@ -32,24 +38,18 @@ export class CharacterSyncService {
     }
     const character =
       existingCharacter ||
-      (await prisma.playerCharacter.create({
-        data: {
-          ownerId: params.ownerId,
-          name: params.entry.name,
-          sheetJson: sheetJson as Prisma.InputJsonValue,
-          summaryJson: computeCharacterSummary(params.entry.name, sheetJson) as Prisma.InputJsonValue,
-        },
-      }))
+      (await db.insert(tables.playerCharacter).values({
+        ownerId: params.ownerId,
+        name: params.entry.name,
+        sheetJson: sheetJson as JsonValue,
+        summaryJson: computeCharacterSummary(params.entry.name, sheetJson) as JsonValue,
+      }).returning().get())
 
-    const link = await prisma.campaignCharacter.upsert({
-      where: { campaignId_characterId: { campaignId: params.entry.campaignId, characterId: character.id } },
-      update: { glossaryEntryId: params.entry.id },
-      create: {
-        campaignId: params.entry.campaignId,
-        characterId: character.id,
-        glossaryEntryId: params.entry.id,
-      },
-    })
+    const link = await db.insert(tables.campaignCharacter).values({
+      campaignId: params.entry.campaignId,
+      characterId: character.id,
+      glossaryEntryId: params.entry.id,
+    }).onConflictDoUpdate({ target: [tables.campaignCharacter.campaignId, tables.campaignCharacter.characterId], set: { glossaryEntryId: params.entry.id } }).returning().get()
 
     return { character, link }
   }
@@ -59,13 +59,19 @@ export class CharacterSyncService {
     campaignId: string
     characterId: string
   }) {
-    const character = await prisma.playerCharacter.findFirst({
-      where: { id: params.characterId, ownerId: params.ownerId },
+    const character = await db.query.playerCharacter.findFirst({
+      where: and(
+        eq(tables.playerCharacter.id, params.characterId),
+        eq(tables.playerCharacter.ownerId, params.ownerId),
+      ),
     })
     if (!character) return null
 
-    const existingLink = await prisma.campaignCharacter.findUnique({
-      where: { campaignId_characterId: { campaignId: params.campaignId, characterId: params.characterId } },
+    const existingLink = await db.query.campaignCharacter.findFirst({
+      where: and(
+        eq(tables.campaignCharacter.campaignId, params.campaignId),
+        eq(tables.campaignCharacter.characterId, params.characterId),
+      ),
     })
 
     if (existingLink?.glossaryEntryId) {
@@ -73,70 +79,76 @@ export class CharacterSyncService {
     }
 
     const description = buildGlossaryDescription(character.sheetJson as Record<string, unknown>)
-    const existingEntry = await prisma.glossaryEntry.findFirst({
-      where: { campaignId: params.campaignId, type: 'PC', name: character.name },
+    const existingEntry = await db.query.glossaryEntry.findFirst({
+      where: and(
+        eq(tables.glossaryEntry.campaignId, params.campaignId),
+        eq(tables.glossaryEntry.type, 'PC'),
+        eq(tables.glossaryEntry.name, character.name),
+      ),
     })
     const glossaryEntry =
       existingEntry ||
-      (await prisma.glossaryEntry.create({
-        data: {
-          campaignId: params.campaignId,
-          type: 'PC',
-          name: character.name,
-          description: description || 'Player character',
-        },
-      }))
+      (await db.insert(tables.glossaryEntry).values({
+        campaignId: params.campaignId,
+        type: 'PC',
+        name: character.name,
+        description: description || 'Player character',
+      }).returning().get())
 
     if (existingLink) {
-      return prisma.campaignCharacter.update({
-        where: { id: existingLink.id },
-        data: { glossaryEntryId: glossaryEntry.id },
-      })
+      return db.update(tables.campaignCharacter).set({ glossaryEntryId: glossaryEntry.id }).where(eq(tables.campaignCharacter.id, existingLink.id)).returning().get()!
     }
 
-    return prisma.campaignCharacter.create({
-      data: {
-        campaignId: params.campaignId,
-        characterId: params.characterId,
-        glossaryEntryId: glossaryEntry.id,
-      },
-    })
+    return db.insert(tables.campaignCharacter).values({
+      campaignId: params.campaignId,
+      characterId: params.characterId,
+      glossaryEntryId: glossaryEntry.id,
+    }).returning().get()
   }
 
   async syncGlossaryForCharacter(characterId: string, ownerId: string) {
-    const character = await prisma.playerCharacter.findFirst({
-      where: { id: characterId, ownerId },
-      include: { campaignLinks: true },
+    const character = await db.query.playerCharacter.findFirst({
+      where: and(
+        eq(tables.playerCharacter.id, characterId),
+        eq(tables.playerCharacter.ownerId, ownerId),
+      ),
+      with: {
+        campaignLinks: true,
+      },
     })
     if (!character) return
 
     const description = buildGlossaryDescription(character.sheetJson as Record<string, unknown>)
-    const updates = character.campaignLinks
-      .filter((link) => Boolean(link.glossaryEntryId))
-      .map((link) =>
-        prisma.glossaryEntry.update({
-          where: { id: link.glossaryEntryId! },
-          data: {
+    const links = character.campaignLinks.filter((link) => Boolean(link.glossaryEntryId))
+    if (links.length) {
+      db.transaction((tx) => {
+        for (const link of links) {
+          tx.update(tables.glossaryEntry).set({
             name: character.name,
             description: description || undefined,
-          },
-        })
-      )
-
-    if (updates.length) {
-      await prisma.$transaction(updates)
+          }).where(eq(tables.glossaryEntry.id, link.glossaryEntryId!)).run()
+        }
+      }, { behavior: 'immediate' })
     }
   }
 
   async syncCharacterFromGlossary(entryId: string, ownerId: string) {
-    const link = await prisma.campaignCharacter.findFirst({
-      where: { glossaryEntryId: entryId, campaign: { ownerId } },
-      include: { character: true },
+    const link = await db.query.campaignCharacter.findFirst({
+      where: and(
+        eq(tables.campaignCharacter.glossaryEntryId, entryId),
+        inArray(tables.campaignCharacter.campaignId, db.select({ id: tables.campaign.id }).from(tables.campaign).where(eq(tables.campaign.ownerId, ownerId))),
+      ),
+      with: {
+        character: true,
+      },
     })
     if (!link) return null
 
-    const entry = await prisma.glossaryEntry.findFirst({
-      where: { id: entryId, campaign: { ownerId } },
+    const entry = await db.query.glossaryEntry.findFirst({
+      where: and(
+        eq(tables.glossaryEntry.id, entryId),
+        inArray(tables.glossaryEntry.campaignId, db.select({ id: tables.campaign.id }).from(tables.campaign).where(eq(tables.campaign.ownerId, ownerId))),
+      ),
     })
     if (!entry) return null
 
@@ -148,14 +160,11 @@ export class CharacterSyncService {
 
     const summary = computeCharacterSummary(entry.name, sheetJson, link.character.portraitUrl)
 
-    return prisma.playerCharacter.update({
-      where: { id: link.characterId },
-      data: {
-        name: entry.name,
-        sheetJson: sheetJson as Prisma.InputJsonValue,
-        summaryJson: summary as Prisma.InputJsonValue,
-      },
-    })
+    return db.update(tables.playerCharacter).set({
+      name: entry.name,
+      sheetJson: sheetJson as JsonValue,
+      summaryJson: summary as JsonValue,
+    }).where(eq(tables.playerCharacter.id, link.characterId)).returning().get()!
   }
 }
 

@@ -1,5 +1,7 @@
-import { prisma } from '#server/db/prisma'
-import type { Prisma } from '#server/db/prisma-client'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+
+
 
 type AdminAuditLogInput = {
   actorUserId: string
@@ -7,21 +9,19 @@ type AdminAuditLogInput = {
   targetType: string
   targetId?: string
   summary?: string
-  metadata?: Prisma.InputJsonValue
+  metadata?: typeof tables.adminAuditLog.$inferInsert.metadata
 }
 
 export class AdminAuditService {
   async log(input: AdminAuditLogInput) {
-    await prisma.adminAuditLog.create({
-      data: {
-        actorUserId: input.actorUserId,
-        action: input.action,
-        targetType: input.targetType,
-        targetId: input.targetId,
-        summary: input.summary,
-        metadata: input.metadata,
-      },
-    })
+    await db.insert(tables.adminAuditLog).values({
+      actorUserId: input.actorUserId,
+      action: input.action,
+      targetType: input.targetType,
+      targetId: input.targetId,
+      summary: input.summary,
+      metadata: input.metadata
+    }).returning().get()!
   }
 }
 

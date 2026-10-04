@@ -1,5 +1,7 @@
 import { getQuery } from 'h3'
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { and, or, eq, like, asc, desc } from 'drizzle-orm'
 import { ok, apiError, routeParams } from '#server/utils/http'
 import { glossaryTypeSchema } from '#shared/schemas/glossary'
 import { requireCampaignPermission } from '#server/utils/campaign-auth'
@@ -18,43 +20,34 @@ export default defineEventHandler(async (event) => {
     throw apiError(400, 'VALIDATION_ERROR', 'Invalid glossary type')
   }
 
-  const entries = await prisma.glossaryEntry.findMany({
-    where: {
-      campaignId,
-      ...(typeParsed?.success ? { type: typeParsed.data } : {}),
-      ...(search
-        ? {
-            OR: [
-              { name: { contains: search } },
-              { description: { contains: search } },
-              { aliases: { contains: search } },
-            ],
-          }
-        : {}),
-    },
-    include: {
+  const entries = await db.query.glossaryEntry.findMany({
+    where: and(
+      eq(tables.glossaryEntry.campaignId, campaignId),
+      typeParsed?.success ? eq(tables.glossaryEntry.type, typeParsed.data) : undefined,
+      search ? or(
+        like(tables.glossaryEntry.name, `%${search}%`),
+        like(tables.glossaryEntry.description, `%${search}%`),
+        like(tables.glossaryEntry.aliases, `%${search}%`),
+      ) : undefined,
+    ),
+    with: {
       sessions: {
-        include: {
+        with: {
           session: {
-            select: {
-              id: true,
-              title: true,
-              sessionNumber: true,
-              playedAt: true,
-            },
+            columns: { id: true, title: true, sessionNumber: true, playedAt: true },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: [desc(tables.glossarySessionLink.createdAt)],
       },
       campaignCharacters: {
-        include: {
+        with: {
           character: {
-            select: { id: true, name: true },
+            columns: { id: true, name: true },
           },
         },
       },
     },
-    orderBy: { name: 'asc' },
+    orderBy: [asc(tables.glossaryEntry.name)],
   })
 
   return ok(entries)

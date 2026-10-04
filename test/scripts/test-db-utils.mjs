@@ -43,7 +43,7 @@ export function createTestDbContext({
     writeFileSync(dbPath, '')
 
     if (migrate) {
-      execSync('npx prisma migrate deploy', {
+      execSync('node scripts/database.mjs migrate', {
         cwd: rootDir,
         env,
         stdio,
@@ -52,7 +52,7 @@ export function createTestDbContext({
     }
 
     if (seed) {
-      execSync('node --import tsx prisma/seed.ts', {
+      execSync('node --import tsx scripts/seed.ts', {
         cwd: rootDir,
         env,
         stdio,
@@ -64,7 +64,9 @@ export function createTestDbContext({
   const cleanup = async ({ retries = 20, delayMs = 200 } = {}) => {
     for (let attempt = 0; attempt < retries; attempt += 1) {
       try {
-        rmSync(dbPath, { force: true })
+        for (const suffix of ['', '-journal', '-wal', '-shm']) {
+          rmSync(`${dbPath}${suffix}`, { force: true })
+        }
         return
       } catch {
         await sleep(delayMs)

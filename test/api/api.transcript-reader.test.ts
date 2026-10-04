@@ -3,10 +3,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
 import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
-import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
+import { createApiTestDatabase } from '../scripts/db-test-client'
+import * as tables from '../../server/db/schema'
+import { eq } from 'drizzle-orm'
 
-const prisma = createApiTestPrismaClient()
-const hash = new Hash(new Scrypt())
+const db = createApiTestDatabase()
+const hash = new Hash(new Scrypt({}))
 const baseUrl = getApiTestBaseUrl()
 const password = 'password123'
 const email = 'transcript-reader-api@example.com'
@@ -20,45 +22,25 @@ describe('agent transcript reader API', () => {
   let deniedBearer = ''
 
   beforeAll(async () => {
-    const user = await prisma.user.upsert({
-      where: { email },
-      update: { passwordHash: await hash.make(password), name: 'Transcript API User' },
-      create: { email, passwordHash: await hash.make(password), name: 'Transcript API User' },
-    })
-    const campaign = await prisma.campaign.create({
-      data: { ownerId: user.id, name: 'Transcript Reader Campaign', system: 'D&D 5e' },
-    })
+    const user = db.insert(tables.user).values({ email, passwordHash: await hash.make(password), name: 'Transcript API User' }).onConflictDoUpdate({ target: tables.user.email, set: { passwordHash: await hash.make(password), name: 'Transcript API User' } }).returning().get()!
+    const campaign = db.insert(tables.campaign).values({ ownerId: user.id, name: 'Transcript Reader Campaign', system: 'D&D 5e' }).returning().get()!
     campaignId = campaign.id
-    const session = await prisma.session.create({
-      data: { campaignId, title: 'Transcript Reader Session', sessionNumber: 1 },
-    })
+    const session = db.insert(tables.session).values({ campaignId, title: 'Transcript Reader Session', sessionNumber: 1 }).returning().get()!
     sessionId = session.id
-    const document = await prisma.document.create({
-      data: { campaignId, sessionId, type: 'TRANSCRIPT', title: 'Transcript' },
-    })
-    await prisma.documentVersion.create({
-      data: { documentId: document.id, versionNumber: 1, content: 'old line', format: 'PLAINTEXT' },
-    })
-    const latest = await prisma.documentVersion.create({
-      data: {
-        documentId: document.id,
-        versionNumber: 2,
-        content: 'First line\n\nThe dragon appears\nThe dragon retreats',
-        format: 'PLAINTEXT',
-      },
-    })
+    const document = db.insert(tables.document).values({ campaignId, sessionId, type: 'TRANSCRIPT', title: 'Transcript' }).returning().get()!
+    db.insert(tables.documentVersion).values({ documentId: document.id, versionNumber: 1, content: 'old line', format: 'PLAINTEXT' }).returning().get()!
+    const latest = db.insert(tables.documentVersion).values({
+      documentId: document.id,
+      versionNumber: 2,
+      content: 'First line\n\nThe dragon appears\nThe dragon retreats',
+      format: 'PLAINTEXT',
+    }).returning().get()!
     latestVersionId = latest.id
-    await prisma.document.update({ where: { id: document.id }, data: { currentVersionId: latest.id } })
+    db.update(tables.document).set({ currentVersionId: latest.id }).where(eq(tables.document.id, document.id)).returning().get()!
 
-    const otherSession = await prisma.session.create({
-      data: { campaignId, title: 'Other Transcript Session', sessionNumber: 2 },
-    })
-    const otherDocument = await prisma.document.create({
-      data: { campaignId, sessionId: otherSession.id, type: 'TRANSCRIPT', title: 'Other Transcript' },
-    })
-    const foreignVersion = await prisma.documentVersion.create({
-      data: { documentId: otherDocument.id, versionNumber: 1, content: 'foreign', format: 'PLAINTEXT' },
-    })
+    const otherSession = db.insert(tables.session).values({ campaignId, title: 'Other Transcript Session', sessionNumber: 2 }).returning().get()!
+    const otherDocument = db.insert(tables.document).values({ campaignId, sessionId: otherSession.id, type: 'TRANSCRIPT', title: 'Other Transcript' }).returning().get()!
+    const foreignVersion = db.insert(tables.documentVersion).values({ documentId: otherDocument.id, versionNumber: 1, content: 'foreign', format: 'PLAINTEXT' }).returning().get()!
     foreignVersionId = foreignVersion.id
 
     const login = await fetch(`${baseUrl}/api/auth/login`, {
@@ -82,8 +64,8 @@ describe('agent transcript reader API', () => {
   }, 120_000)
 
   afterAll(async () => {
-    if (campaignId) await prisma.campaign.delete({ where: { id: campaignId } })
-    await prisma.$disconnect()
+    if (campaignId) db.delete(tables.campaign).where(eq(tables.campaign.id, campaignId)).returning().get()!
+    db.$client.close()
   })
 
   it('defaults to the latest version and supports bounded line reads', async () => {

@@ -1,4 +1,4 @@
-import type { GlossaryType } from '#server/db/prisma-client'
+import type { GlossaryType } from '#server/db/schema'
 
 export const buildGlossaryConflictCandidates = (
   entries: Array<{ id: string; type: GlossaryType; name: string; normalizedName: string; sourceMapFeatureId: string | null }>,

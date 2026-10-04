@@ -1,6 +1,8 @@
 import type { H3Event } from 'h3'
 import { getRequestIP, getHeader } from 'h3'
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { eq } from 'drizzle-orm'
 import { AuthService, toAuthUserDto } from '#server/services/auth.service'
 import { apiError } from '#server/utils/http'
 
@@ -45,10 +47,10 @@ const profileSelect = {
 
 export class AccountService {
   private async findProfile(userId: string): Promise<ProfileRecord | null> {
-    return prisma.user.findUnique({
-      where: { id: userId },
-      select: profileSelect,
-    })
+    return db.query.user.findFirst({
+      where: eq(tables.user.id, userId),
+      columns: profileSelect
+    }).sync() ?? null
   }
 
   async getProfile(userId: string): Promise<ProfileRecord> {
@@ -69,14 +71,10 @@ export class AccountService {
   async updateProfile(userId: string, input: { name?: string; avatarUrl?: string | null }): Promise<ProfileRecord> {
     await this.getProfile(userId)
 
-    const user = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        ...(input.name !== undefined ? { name: input.name.trim() } : {}),
-        ...(input.avatarUrl !== undefined ? { avatarUrl: input.avatarUrl } : {}),
-      },
-      select: profileSelect,
-    })
+    const user = await db.update(tables.user).set({
+      ...(input.name !== undefined ? { name: input.name.trim() } : {}),
+      ...(input.avatarUrl !== undefined ? { avatarUrl: input.avatarUrl } : {})
+    }).where(eq(tables.user.id, userId)).returning().get()!
 
     return user
   }
@@ -106,10 +104,10 @@ export class AccountService {
         }
     }
 
-    const taken = await prisma.user.findUnique({
-      where: { email: normalizedEmail },
-      select: { id: true },
-    })
+    const taken = await db.query.user.findFirst({
+      where: eq(tables.user.email, normalizedEmail),
+      columns: { id: true }
+    }).sync()
 
     if (taken && taken.id !== userId) {
       throw apiError(409, 'EMAIL_ALREADY_IN_USE', 'An account with this email already exists.', {
@@ -117,10 +115,7 @@ export class AccountService {
         })
     }
 
-    await prisma.user.update({
-      where: { id: userId },
-      data: { email: normalizedEmail },
-    })
+    await db.update(tables.user).set({ email: normalizedEmail }).where(eq(tables.user.id, userId)).returning().get()!
 
     return {
         email: normalizedEmail,
@@ -153,10 +148,7 @@ export class AccountService {
     }
 
     const nextPasswordHash = await hashPassword(input.newPassword)
-    await prisma.user.update({
-      where: { id: userId },
-      data: { passwordHash: nextPasswordHash },
-    })
+    await db.update(tables.user).set({ passwordHash: nextPasswordHash }).where(eq(tables.user.id, userId)).returning().get()!
 
     return true
   }

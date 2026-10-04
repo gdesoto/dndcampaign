@@ -1,6 +1,8 @@
-import { prisma } from '#server/db/prisma'
+import { eq } from 'drizzle-orm'
+import { db } from '#server/db/client'
+import { recording } from '#server/db/schema'
 import { ArtifactService } from './artifact.service'
-import type { RecordingKind } from '#server/db/prisma-client'
+import type { RecordingKind } from '#server/db/schema'
 import type { Readable } from 'node:stream'
 
 type CreateRecordingStreamInput = {
@@ -37,8 +39,7 @@ export class RecordingService {
     })
 
     try {
-      return await prisma.recording.create({
-        data: {
+      return db.insert(recording).values({
           sessionId: input.sessionId,
           kind: input.kind,
           filename: input.filename,
@@ -46,8 +47,7 @@ export class RecordingService {
           byteSize: artifact.byteSize,
           durationSeconds: input.durationSeconds,
           artifactId: artifact.id,
-        },
-      })
+      }).returning().get()!
     } catch (error) {
       await this.deleteArtifactBestEffort(artifact.id)
       throw error
@@ -69,10 +69,9 @@ export class RecordingService {
     })
 
     try {
-      return await prisma.recording.update({
-        where: { id: input.recordingId },
-        data: { vttArtifactId: artifact.id },
-      })
+      const updated = db.update(recording).set({ vttArtifactId: artifact.id }).where(eq(recording.id, input.recordingId)).returning().get()
+      if (!updated) throw new Error('Recording not found')
+      return updated
     } catch (error) {
       await this.deleteArtifactBestEffort(artifact.id)
       throw error
@@ -80,43 +79,29 @@ export class RecordingService {
   }
 
   async deleteRecording(recordingId: string) {
-    const recording = await prisma.recording.findUnique({
-      where: { id: recordingId },
-      select: {
-        id: true,
-        artifactId: true,
-        vttArtifactId: true,
-        transcriptionJobs: {
-          select: {
-            artifacts: {
-              select: {
-                artifactId: true,
-              },
-            },
-          },
-        },
-      },
-    })
+    const existing = db.query.recording.findFirst({
+      where: eq(recording.id, recordingId),
+      columns: { id: true, artifactId: true, vttArtifactId: true },
+      with: { transcriptionJobs: { columns: {}, with: { artifacts: { columns: { artifactId: true } } } } },
+    }).sync()
 
-    if (!recording) {
+    if (!existing) {
       return null
     }
 
     const relatedArtifactIds = new Set<string>([
-      recording.artifactId,
-      ...(recording.vttArtifactId ? [recording.vttArtifactId] : []),
-      ...recording.transcriptionJobs.flatMap((job) => job.artifacts.map((artifact) => artifact.artifactId)),
+      existing.artifactId,
+      ...(existing.vttArtifactId ? [existing.vttArtifactId] : []),
+      ...existing.transcriptionJobs.flatMap((job) => job.artifacts.map((artifact) => artifact.artifactId)),
     ])
 
-    await prisma.recording.delete({
-      where: { id: recording.id },
-    })
+    db.delete(recording).where(eq(recording.id, existing.id)).run()
 
     for (const artifactId of relatedArtifactIds) {
       await this.deleteArtifactBestEffort(artifactId)
     }
 
-    return recording
+    return existing
   }
 
   private async deleteArtifactBestEffort(artifactId: string) {

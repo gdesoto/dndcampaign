@@ -1,5 +1,7 @@
 import { lifecycleTargets, type EncounterLifecycleAction } from '#shared/utils/encounter-policy'
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { eq, and, inArray, gt, asc, desc, sql } from 'drizzle-orm'
 import type {
   EncounterCombatant,
   EncounterCondition,
@@ -30,8 +32,8 @@ const rollInitiative = () => Math.floor(Math.random() * 20) + 1
 
 export class EncounterRuntimeService {
   private async applySortOrder(encounterId: string, orderedCombatantIds: string[]) {
-    await prisma.$transaction(async tx => {
-      const encounter = await tx.campaignEncounter.findUniqueOrThrow({ where: { id: encounterId }, include: { combatants: { orderBy: { sortOrder: 'asc' } } } })
+    db.transaction( tx => {
+      const encounter = tx.query.campaignEncounter.findFirst({where: and(eq(tables.campaignEncounter.id, encounterId)), with: {combatants: {orderBy: [asc(tables.encounterCombatant.sortOrder)]}}}).sync()!
       assertEncounterAction(encounter, 'initiative')
       const existing = encounter.combatants
       if (orderedCombatantIds.length !== existing.length || new Set(orderedCombatantIds).size !== existing.length || orderedCombatantIds.some(id => !existing.some(p => p.id === id))) {
@@ -39,11 +41,11 @@ export class EncounterRuntimeService {
       }
       const activeId = existing[encounter.currentTurnIndex]?.id
       const tempStart = Math.max(...existing.map(p => p.sortOrder), 0) + existing.length + 1
-      for (const [index, participant] of existing.entries()) await tx.encounterCombatant.update({ where: { id: participant.id }, data: { sortOrder: tempStart + index } })
-      for (const [index, id] of orderedCombatantIds.entries()) await tx.encounterCombatant.update({ where: { id }, data: { sortOrder: index } })
+      for (const [index, participant] of existing.entries()) tx.update(tables.encounterCombatant).set({ sortOrder: tempStart + index }).where(and(eq(tables.encounterCombatant.id, participant.id))).returning().get()!
+      for (const [index, id] of orderedCombatantIds.entries()) tx.update(tables.encounterCombatant).set({ sortOrder: index }).where(and(eq(tables.encounterCombatant.id, id))).returning().get()!
       const currentTurnIndex = orderedCombatantIds.indexOf(activeId || '')
-      if (currentTurnIndex >= 0) await tx.campaignEncounter.update({ where: { id: encounterId }, data: { currentTurnIndex } })
-    })
+      if (currentTurnIndex >= 0) tx.update(tables.campaignEncounter).set({ currentTurnIndex }).where(and(eq(tables.campaignEncounter.id, encounterId))).returning().get()!
+    }, { behavior: 'immediate' })
   }
 
   async transitionStatus(
@@ -59,16 +61,16 @@ export class EncounterRuntimeService {
     assertEncounterAction(encounter, action)
     const nextStatus = lifecycleTargets[action]
 
-    const updated = await prisma.$transaction(async tx => {
-      const current = await tx.campaignEncounter.findUniqueOrThrow({ where: { id: encounterId }, include: { combatants: true } })
+    const updated = db.transaction( tx => {
+      const current = tx.query.campaignEncounter.findFirst({where: and(eq(tables.campaignEncounter.id, encounterId)), with: {combatants: true}}).sync()!
       assertEncounterAction(current, action)
-      const row = await tx.campaignEncounter.update({ where: { id: encounterId }, data: {
+      const row = tx.update(tables.campaignEncounter).set({
         status: nextStatus,
         ...(action === 'start' || action === 'reset' ? { currentRound: 1, currentTurnIndex: 0 } : {}),
-      } })
-      await tx.encounterEvent.create({ data: { encounterId, eventType: 'ENCOUNTER', summary: `${action.charAt(0).toUpperCase()}${action.slice(1)} encounter`, payload: { schemaVersion: 1, action: `encounter.${action}` }, createdByUserId: userId } })
+      }).where(and(eq(tables.campaignEncounter.id, encounterId))).returning().get()!
+      tx.insert(tables.encounterEvent).values({ encounterId, eventType: 'ENCOUNTER', summary: `${action.charAt(0).toUpperCase()}${action.slice(1)} encounter`, payload: { schemaVersion: 1, action: `encounter.${action}` }, createdByUserId: userId }).returning().get()!
       return row
-    })
+    }, { behavior: 'immediate' })
 
     await logEncounterActivity({
       actorUserId: userId,
@@ -97,10 +99,7 @@ export class EncounterRuntimeService {
     }
     assertEncounterAction(encounter, 'initiative')
 
-    const combatants = await prisma.encounterCombatant.findMany({
-      where: { encounterId },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-    })
+    const combatants = db.query.encounterCombatant.findMany({where: and(eq(tables.encounterCombatant.encounterId, encounterId)), orderBy: [asc(tables.encounterCombatant.sortOrder), asc(tables.encounterCombatant.createdAt)]}).sync()
 
     if (input.combatantId && !combatants.some(combatant => combatant.id === input.combatantId)) {
       throw apiError(404, 'NOT_FOUND', 'Participant not found in this encounter.')
@@ -118,32 +117,19 @@ export class EncounterRuntimeService {
     const targets = combatants.filter(shouldRollCombatant)
 
     if (targets.length) {
-      await prisma.$transaction(
-        targets.map((combatant) =>
-          prisma.encounterCombatant.update({
-            where: { id: combatant.id },
-            data: {
-              initiative: rollInitiative(),
-            },
-          })
-        )
-      )
+      db.transaction(tx => {
+        for (const combatant of targets) tx.update(tables.encounterCombatant).set({ initiative: rollInitiative() }).where(eq(tables.encounterCombatant.id, combatant.id)).run()
+      }, { behavior: 'immediate' })
     }
 
-    const refreshed = await prisma.encounterCombatant.findMany({
-      where: { encounterId },
-      orderBy: [{ initiative: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'asc' }],
-    })
+    const refreshed = db.query.encounterCombatant.findMany({where: and(eq(tables.encounterCombatant.encounterId, encounterId)), orderBy: [desc(tables.encounterCombatant.initiative), asc(tables.encounterCombatant.sortOrder), asc(tables.encounterCombatant.createdAt)]}).sync()
 
     await this.applySortOrder(
       encounterId,
       refreshed.map((combatant) => combatant.id),
     )
 
-    const finalOrder = await prisma.encounterCombatant.findMany({
-      where: { encounterId },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-    })
+    const finalOrder = db.query.encounterCombatant.findMany({where: and(eq(tables.encounterCombatant.encounterId, encounterId)), orderBy: [asc(tables.encounterCombatant.sortOrder), asc(tables.encounterCombatant.createdAt)]}).sync()
 
     await appendEncounterEvent(
       encounterId,
@@ -159,18 +145,18 @@ export class EncounterRuntimeService {
   async clearInitiative(encounterId: string, userId: string, combatantId?: string) {
     const encounter = await getEncounterWithAccess(encounterId, userId, 'content.write')
     if (!encounter) throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
-    await prisma.$transaction(async tx => {
-      const current = await tx.campaignEncounter.findUniqueOrThrow({ where: { id: encounterId }, include: { combatants: true } })
+    db.transaction( tx => {
+      const current = tx.query.campaignEncounter.findFirst({where: and(eq(tables.campaignEncounter.id, encounterId)), with: {combatants: true}}).sync()!
       assertEncounterAction(current, 'initiative')
       if (combatantId && !current.combatants.some(participant => participant.id === combatantId)) {
         throw apiError(404, 'NOT_FOUND', 'Participant not found in this encounter.')
       }
-      await tx.encounterCombatant.updateMany({ where: { encounterId, ...(combatantId ? { id: combatantId } : {}) }, data: { initiative: null } })
-      await tx.encounterEvent.create({ data: { encounterId, createdByUserId: userId, eventType: 'TURN',
+      tx.update(tables.encounterCombatant).set({ initiative: null }).where(and(eq(tables.encounterCombatant.encounterId, encounterId), combatantId ? and(eq(tables.encounterCombatant.id, combatantId)) : undefined)).run()
+      tx.insert(tables.encounterEvent).values({ encounterId, createdByUserId: userId, eventType: 'TURN',
         summary: combatantId ? `Cleared initiative for ${current.combatants.find(p => p.id === combatantId)!.name}` : 'Cleared all initiative',
         payload: { schemaVersion: 1, action: 'initiative.clear', ...(combatantId ? { combatantId } : {}) },
-      } })
-    })
+      }).returning().get()!
+    }, { behavior: 'immediate' })
   }
 
   async reorderInitiative(
@@ -184,7 +170,7 @@ export class EncounterRuntimeService {
     }
     assertEncounterAction(encounter, 'initiative')
 
-    const combatants = await prisma.encounterCombatant.findMany({ where: { encounterId } })
+    const combatants = db.query.encounterCombatant.findMany({where: and(eq(tables.encounterCombatant.encounterId, encounterId))}).sync()
     const combatantSet = new Set(combatants.map((combatant) => combatant.id))
     if (
       new Set(input.combatantOrder).size !== combatants.length
@@ -204,10 +190,7 @@ export class EncounterRuntimeService {
       userId,
     )
 
-    const ordered = await prisma.encounterCombatant.findMany({
-      where: { encounterId },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-    })
+    const ordered = db.query.encounterCombatant.findMany({where: and(eq(tables.encounterCombatant.encounterId, encounterId)), orderBy: [asc(tables.encounterCombatant.sortOrder), asc(tables.encounterCombatant.createdAt)]}).sync()
 
     return ordered.map(toEncounterCombatantDto)
   }
@@ -223,34 +206,32 @@ export class EncounterRuntimeService {
   private async moveTurn(encounterId: string, userId: string, direction: 'advance' | 'rewind'): Promise<EncounterSummary> {
     const accessible = await getEncounterWithAccess(encounterId, userId, 'content.write')
     if (!accessible) throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
-    return prisma.$transaction(async tx => {
-      const encounter = await tx.campaignEncounter.findUniqueOrThrow({ where: { id: encounterId }, include: { combatants: { orderBy: { sortOrder: 'asc' } } } })
+    return db.transaction( tx => {
+      const encounter = tx.query.campaignEncounter.findFirst({where: and(eq(tables.campaignEncounter.id, encounterId)), with: {combatants: {orderBy: [asc(tables.encounterCombatant.sortOrder)]}}}).sync()!
       assertEncounterAction(encounter, 'turn')
       const ordered = encounter.combatants
       let currentTurnIndex = encounter.currentTurnIndex
       let currentRound = encounter.currentRound
       if (direction === 'rewind' && currentRound === 1 && currentTurnIndex === 0) throw apiError(409, 'FIRST_TURN', 'Already at the first turn.')
-      const tick = async (timing: 'TURN_START' | 'TURN_END' | 'ROUND_END', participantId?: string) => {
-        await tx.encounterCondition.updateMany({ where: {
-          combatantId: participantId || { in: ordered.map(p => p.id) }, tickTiming: timing, remaining: { gt: 0 },
-        }, data: { remaining: { decrement: 1 } } })
+      const tick = (timing: 'TURN_START' | 'TURN_END' | 'ROUND_END', participantId?: string) => {
+        tx.update(tables.encounterCondition).set({ remaining: sql`${tables.encounterCondition.remaining} - 1` }).where(and(participantId ? eq(tables.encounterCondition.combatantId, participantId) : inArray(tables.encounterCondition.combatantId, ordered.map(p => p.id)), eq(tables.encounterCondition.tickTiming, timing), and(gt(tables.encounterCondition.remaining, 0)))).run()
       }
       if (direction === 'advance') {
-        await tick('TURN_END', ordered[currentTurnIndex]!.id)
+        tick('TURN_END', ordered[currentTurnIndex]!.id)
         currentTurnIndex += 1
-        if (currentTurnIndex >= ordered.length) { currentTurnIndex = 0; currentRound += 1; await tick('ROUND_END') }
-        await tick('TURN_START', ordered[currentTurnIndex]!.id)
+        if (currentTurnIndex >= ordered.length) { currentTurnIndex = 0; currentRound += 1; tick('ROUND_END') }
+        tick('TURN_START', ordered[currentTurnIndex]!.id)
       } else {
         currentTurnIndex -= 1
         if (currentTurnIndex < 0) { currentTurnIndex = ordered.length - 1; currentRound -= 1 }
       }
-      const row = await tx.campaignEncounter.update({ where: { id: encounterId }, data: { currentTurnIndex, currentRound } })
-      await tx.encounterEvent.create({ data: { encounterId, eventType: 'TURN', createdByUserId: userId,
+      const row = tx.update(tables.campaignEncounter).set({ currentTurnIndex, currentRound }).where(and(eq(tables.campaignEncounter.id, encounterId))).returning().get()!
+      tx.insert(tables.encounterEvent).values({ encounterId, eventType: 'TURN', createdByUserId: userId,
         summary: direction === 'advance' ? 'Advanced turn' : 'Rewound turn pointer (effects unchanged)',
         payload: { schemaVersion: 1, action: `turn.${direction}`, currentTurnIndex, currentRound },
-      } })
+      }).returning().get()!
       return toEncounterSummaryDto(row)
-    })
+    }, { behavior: 'immediate' })
   }
 
   async setActiveTurn(
@@ -271,10 +252,7 @@ export class EncounterRuntimeService {
       throw apiError(404, 'NOT_FOUND', 'Combatant not found.')
     }
 
-    const updated = await prisma.campaignEncounter.update({
-      where: { id: encounterId },
-      data: { currentTurnIndex: index },
-    })
+    const updated = db.update(tables.campaignEncounter).set({ currentTurnIndex: index }).where(and(eq(tables.campaignEncounter.id, encounterId))).returning().get()!
 
     await appendEncounterEvent(
       encounterId,
@@ -291,11 +269,11 @@ export class EncounterRuntimeService {
     const encounter = await getEncounterWithAccess(encounterId, userId, 'content.write')
     if (!encounter) throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     assertEncounterAction(encounter, input.action === 'damage' || input.action === 'heal' ? 'effects' : 'conditions')
-    return prisma.$transaction(async tx => {
-      const current = await tx.campaignEncounter.findUniqueOrThrow({ where: { id: encounterId } })
+    return db.transaction( tx => {
+      const current = tx.query.campaignEncounter.findFirst({where: and(eq(tables.campaignEncounter.id, encounterId))}).sync()!
       assertEncounterAction(current, input.action === 'damage' || input.action === 'heal' ? 'effects' : 'conditions')
       const ids = 'participantIds' in input ? input.participantIds : [input.participantId]
-      const participants = await tx.encounterCombatant.findMany({ where: { encounterId, id: { in: ids } } })
+      const participants = tx.query.encounterCombatant.findMany({where: and(eq(tables.encounterCombatant.encounterId, encounterId), and(inArray(tables.encounterCombatant.id, ids)))}).sync()
       if (participants.length !== ids.length) throw apiError(404, 'NOT_FOUND', 'Every target must belong to this encounter; no changes were applied.')
       for (const participant of participants) {
         if (input.action === 'damage' || input.action === 'heal') {
@@ -303,34 +281,34 @@ export class EncounterRuntimeService {
           const absorbed = input.action === 'damage' ? Math.min(participant.tempHp, input.amount) : 0
           const currentHp = input.action === 'damage' ? Math.max(0, participant.currentHp - input.amount + absorbed)
             : Math.min(participant.maxHp ?? Number.MAX_SAFE_INTEGER, participant.currentHp + input.amount)
-          await tx.encounterCombatant.update({ where: { id: participant.id }, data: { currentHp, tempHp: participant.tempHp - absorbed, isDefeated: currentHp === 0 } })
+          tx.update(tables.encounterCombatant).set({ currentHp, tempHp: participant.tempHp - absorbed, isDefeated: currentHp === 0 }).where(and(eq(tables.encounterCombatant.id, participant.id))).returning().get()!
         } else if (input.action === 'condition-add') {
-          await tx.encounterCondition.create({ data: { ...input.condition, combatantId: participant.id, remaining: input.condition.remaining ?? input.condition.duration } })
+          tx.insert(tables.encounterCondition).values({ ...input.condition, combatantId: participant.id, remaining: input.condition.remaining ?? input.condition.duration }).returning().get()!
         } else {
-          const condition = await tx.encounterCondition.findFirst({ where: { id: input.conditionId, combatantId: participant.id } })
+          const condition = tx.query.encounterCondition.findFirst({where: and(eq(tables.encounterCondition.id, input.conditionId), eq(tables.encounterCondition.combatantId, participant.id))}).sync()
           if (!condition) throw apiError(404, 'NOT_FOUND', 'Condition not found for this participant.')
-          if (input.action === 'condition-remove') await tx.encounterCondition.delete({ where: { id: condition.id } })
-          else await tx.encounterCondition.update({ where: { id: condition.id }, data: input.changes })
+          if (input.action === 'condition-remove') tx.delete(tables.encounterCondition).where(and(eq(tables.encounterCondition.id, condition.id))).returning().get()!
+          else tx.update(tables.encounterCondition).set(input.changes).where(and(eq(tables.encounterCondition.id, condition.id))).returning().get()!
         }
         const hp = input.action === 'damage' || input.action === 'heal'
-        await tx.encounterEvent.create({ data: {
+        tx.insert(tables.encounterEvent).values({
           encounterId, createdByUserId: userId, eventType: hp ? 'HP' : 'CONDITION',
           summary: `${input.action} ${hp ? input.amount : ''} — ${participant.name}`,
           payload: { schemaVersion: 1, action: hp ? `hp.${input.action}` : input.action, combatantId: participant.id,
             ...(hp ? { amount: input.amount, ...(input.note ? { note: input.note } : {}) } : {}) },
-        } })
+        }).returning().get()!
       }
-    })
+    }, { behavior: 'immediate' })
   }
 
   async applyDamage(encounterId: string, combatantId: string, userId: string, input: EncounterDamageInput): Promise<EncounterCombatant> {
     await this.applyEffect(encounterId, userId, { action: 'damage', participantIds: [combatantId], ...input })
-    return toEncounterCombatantDto(await prisma.encounterCombatant.findUniqueOrThrow({ where: { id: combatantId } }))
+    return toEncounterCombatantDto(db.query.encounterCombatant.findFirst({where: and(eq(tables.encounterCombatant.id, combatantId))}).sync()!)
   }
 
   async applyHeal(encounterId: string, combatantId: string, userId: string, input: EncounterHealInput): Promise<EncounterCombatant> {
     await this.applyEffect(encounterId, userId, { action: 'heal', participantIds: [combatantId], ...input })
-    return toEncounterCombatantDto(await prisma.encounterCombatant.findUniqueOrThrow({ where: { id: combatantId } }))
+    return toEncounterCombatantDto(db.query.encounterCombatant.findFirst({where: and(eq(tables.encounterCombatant.id, combatantId))}).sync()!)
   }
 
   async createCondition(
@@ -345,13 +323,12 @@ export class EncounterRuntimeService {
     }
     assertEncounterAction(encounter, 'conditions')
 
-    const combatant = await prisma.encounterCombatant.findFirst({ where: { id: combatantId, encounterId } })
+    const combatant = db.query.encounterCombatant.findFirst({where: and(eq(tables.encounterCombatant.id, combatantId), eq(tables.encounterCombatant.encounterId, encounterId))}).sync()
     if (!combatant) {
       throw apiError(404, 'NOT_FOUND', 'Combatant not found.')
     }
 
-    const created = await prisma.encounterCondition.create({
-      data: {
+    const created = db.insert(tables.encounterCondition).values({
         combatantId,
         name: input.name,
         duration: input.duration,
@@ -359,8 +336,7 @@ export class EncounterRuntimeService {
         tickTiming: input.tickTiming,
         source: input.source,
         notes: input.notes,
-      },
-    })
+      }).returning().get()!
 
     await appendEncounterEvent(
       encounterId,
@@ -386,26 +362,20 @@ export class EncounterRuntimeService {
     }
     assertEncounterAction(encounter, 'conditions')
 
-    const condition = await prisma.encounterCondition.findFirst({
-      where: { id: conditionId, combatantId },
-      include: { combatant: true },
-    })
+    const condition = db.query.encounterCondition.findFirst({where: and(eq(tables.encounterCondition.id, conditionId), eq(tables.encounterCondition.combatantId, combatantId)), with: {combatant: true}}).sync()
 
     if (!condition || condition.combatant.encounterId !== encounterId) {
       throw apiError(404, 'NOT_FOUND', 'Condition not found.')
     }
 
-    const updated = await prisma.encounterCondition.update({
-      where: { id: conditionId },
-      data: {
+    const updated = db.update(tables.encounterCondition).set({
         ...(input.name ? { name: input.name } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, 'duration') ? { duration: input.duration ?? null } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, 'remaining') ? { remaining: input.remaining ?? null } : {}),
         ...(input.tickTiming ? { tickTiming: input.tickTiming } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, 'source') ? { source: input.source ?? null } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, 'notes') ? { notes: input.notes ?? null } : {}),
-      },
-    })
+      }).where(and(eq(tables.encounterCondition.id, conditionId))).returning().get()!
 
     await appendEncounterEvent(
       encounterId,
@@ -430,15 +400,12 @@ export class EncounterRuntimeService {
     }
     assertEncounterAction(encounter, 'conditions')
 
-    const condition = await prisma.encounterCondition.findFirst({
-      where: { id: conditionId, combatantId },
-      include: { combatant: true },
-    })
+    const condition = db.query.encounterCondition.findFirst({where: and(eq(tables.encounterCondition.id, conditionId), eq(tables.encounterCondition.combatantId, combatantId)), with: {combatant: true}}).sync()
     if (!condition || condition.combatant.encounterId !== encounterId) {
       throw apiError(404, 'NOT_FOUND', 'Condition not found.')
     }
 
-    await prisma.encounterCondition.delete({ where: { id: conditionId } })
+    db.delete(tables.encounterCondition).where(and(eq(tables.encounterCondition.id, conditionId))).returning().get()!
 
     await appendEncounterEvent(
       encounterId,

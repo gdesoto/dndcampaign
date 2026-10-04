@@ -1,4 +1,6 @@
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { eq, and, or, inArray, lte, gte, like, desc, sql, count } from 'drizzle-orm'
 import type {
   AdminActivityLogListQuery,
   AdminCampaignListQuery,
@@ -37,8 +39,8 @@ const toDateRange = (from?: string, to?: string) => {
 }
 
 const getPagination = (page: number, pageSize: number) => ({
-  skip: (page - 1) * pageSize,
-  take: pageSize,
+  offset: (page - 1) * pageSize,
+  limit: pageSize,
 })
 
 export class AdminService {
@@ -87,27 +89,21 @@ export class AdminService {
   async listUsers(query: AdminUserListQuery) {
     const search = normalizeSearch(query.search)
 
-    const where = {
-      ...(search
-        ? {
-            OR: [
-              { email: { contains: search } },
-              { name: { contains: search } },
-            ],
-          }
-        : {}),
-      ...(query.status === 'active' ? { isActive: true } : {}),
-      ...(query.status === 'inactive' ? { isActive: false } : {}),
-      ...(query.role !== 'all' ? { systemRole: query.role } : {}),
-    }
+    const where = and(
+      search ? or(like(tables.user.email, `%${search}%`), like(tables.user.name, `%${search}%`)) : undefined,
+      query.status === 'active' ? eq(tables.user.isActive, true) : undefined,
+      query.status === 'inactive' ? eq(tables.user.isActive, false) : undefined,
+      query.role !== 'all' ? eq(tables.user.systemRole, query.role) : undefined
+    )
 
     const [total, users] = await Promise.all([
-      prisma.user.count({ where }),
-      prisma.user.findMany({
-        where,
-        orderBy: [{ createdAt: 'desc' }],
-        ...getPagination(query.page, query.pageSize),
-        select: {
+      db.select({ count: count() }).from(tables.user).where(where).get()!.count,
+      db.query.user.findMany({
+        where, ...getPagination(query.page, query.pageSize),
+        orderBy: [desc(tables.user.createdAt)],
+        extras: { campaignsCount: sql<number>`(select count(*) from "Campaign" where "Campaign"."ownerId" = ${sql.raw('"user"."id"')})`.mapWith(Number).as('campaigns_count'),
+          campaignMembershipsCount: sql<number>`(select count(*) from "CampaignMember" where "CampaignMember"."userId" = ${sql.raw('"user"."id"')})`.mapWith(Number).as('campaignMemberships_count') },
+        columns: {
           id: true,
           email: true,
           name: true,
@@ -116,15 +112,9 @@ export class AdminService {
           avatarUrl: true,
           lastLoginAt: true,
           createdAt: true,
-          updatedAt: true,
-          _count: {
-            select: {
-              campaigns: true,
-              campaignMemberships: true,
-            },
-          },
-        },
-      }),
+          updatedAt: true
+        }
+      }).sync(),
     ])
 
     return {
@@ -138,8 +128,8 @@ export class AdminService {
         lastLoginAt: user.lastLoginAt?.toISOString() || null,
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
-        ownedCampaignCount: user._count.campaigns,
-        memberCampaignCount: user._count.campaignMemberships,
+        ownedCampaignCount: user.campaignsCount,
+        memberCampaignCount: user.campaignMembershipsCount,
       })),
       page: query.page,
       pageSize: query.pageSize,
@@ -166,9 +156,11 @@ export class AdminService {
       updatedAt: string
     }>
   }> {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
+    const user = await db.query.user.findFirst({
+      where: eq(tables.user.id, userId),
+      extras: { campaignsCount: sql<number>`(select count(*) from "Campaign" where "Campaign"."ownerId" = ${sql.raw('"user"."id"')})`.mapWith(Number).as('campaigns_count'),
+          campaignMembershipsCount: sql<number>`(select count(*) from "CampaignMember" where "CampaignMember"."userId" = ${sql.raw('"user"."id"')})`.mapWith(Number).as('campaignMemberships_count') },
+      columns: {
         id: true,
         email: true,
         name: true,
@@ -177,25 +169,19 @@ export class AdminService {
         avatarUrl: true,
         lastLoginAt: true,
         createdAt: true,
-        updatedAt: true,
-        _count: {
-          select: {
-            campaigns: true,
-            campaignMemberships: true,
-          },
-        },
-        campaigns: {
-          orderBy: { updatedAt: 'desc' },
-          take: 5,
-          select: {
+        updatedAt: true
+      },
+      with: { campaigns: {
+          orderBy: [desc(tables.campaign.updatedAt)],
+          limit: 5,
+          columns: {
             id: true,
             name: true,
             isArchived: true,
-            updatedAt: true,
-          },
-        },
-      },
-    })
+            updatedAt: true
+          }
+        } }
+    }).sync()
 
     if (!user) {
       throw apiError(404, 'NOT_FOUND', 'User not found')
@@ -211,8 +197,8 @@ export class AdminService {
         lastLoginAt: user.lastLoginAt?.toISOString() || null,
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString(),
-        ownedCampaignCount: user._count.campaigns,
-        memberCampaignCount: user._count.campaignMemberships,
+        ownedCampaignCount: user.campaignsCount,
+        memberCampaignCount: user.campaignMembershipsCount,
         recentOwnedCampaigns: user.campaigns.map((campaign) => ({
           id: campaign.id,
           name: campaign.name,
@@ -232,32 +218,28 @@ export class AdminService {
     isActive: boolean
     updatedAt: string
   }> {
-    const existing = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
+    const existing = await db.query.user.findFirst({
+      where: eq(tables.user.id, userId),
+      columns: {
         id: true,
         systemRole: true,
-        isActive: true,
-      },
-    })
+        isActive: true
+      }
+    }).sync()
 
     if (!existing) {
       throw apiError(404, 'NOT_FOUND', 'User not found')
     }
 
-    const updated = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        ...(input.systemRole !== undefined ? { systemRole: input.systemRole } : {}),
-        ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
-      },
-      select: {
-        id: true,
-        systemRole: true,
-        isActive: true,
-        updatedAt: true,
-      },
-    })
+    const updated = await db.update(tables.user).set({
+      ...(input.systemRole !== undefined ? { systemRole: input.systemRole } : {}),
+      ...(input.isActive !== undefined ? { isActive: input.isActive } : {})
+    }).where(eq(tables.user.id, userId)).returning({
+      id: tables.user.id,
+      systemRole: tables.user.systemRole,
+      isActive: tables.user.isActive,
+      updatedAt: tables.user.updatedAt
+    }).get()!
 
     await auditService.log({
       actorUserId,
@@ -300,51 +282,37 @@ export class AdminService {
   async listCampaigns(query: AdminCampaignListQuery) {
     const search = normalizeSearch(query.search)
 
-    const where = {
-      ...(search
-        ? {
-            OR: [
-              { name: { contains: search } },
-              { description: { contains: search } },
-            ],
-          }
-        : {}),
-      ...(query.archived === 'active' ? { isArchived: false } : {}),
-      ...(query.archived === 'archived' ? { isArchived: true } : {}),
-    }
+    const where = and(
+      search ? or(like(tables.campaign.name, `%${search}%`), like(tables.campaign.description, `%${search}%`)) : undefined,
+      query.archived === 'active' ? eq(tables.campaign.isArchived, false) : undefined,
+      query.archived === 'archived' ? eq(tables.campaign.isArchived, true) : undefined
+    )
 
     const [total, campaigns] = await Promise.all([
-      prisma.campaign.count({ where }),
-      prisma.campaign.findMany({
-        where,
-        orderBy: [{ updatedAt: 'desc' }],
-        ...getPagination(query.page, query.pageSize),
-        select: {
+      db.select({ count: count() }).from(tables.campaign).where(where).get()!.count,
+      db.query.campaign.findMany({
+        where, ...getPagination(query.page, query.pageSize),
+        orderBy: [desc(tables.campaign.updatedAt)],
+        extras: { membersCount: sql<number>`(select count(*) from "CampaignMember" where "CampaignMember"."campaignId" = ${sql.raw('"campaign"."id"')})`.mapWith(Number).as('members_count'),
+          sessionsCount: sql<number>`(select count(*) from "Session" where "Session"."campaignId" = ${sql.raw('"campaign"."id"')})`.mapWith(Number).as('sessions_count'),
+          glossaryCount: sql<number>`(select count(*) from "GlossaryEntry" where "GlossaryEntry"."campaignId" = ${sql.raw('"campaign"."id"')})`.mapWith(Number).as('glossary_count'),
+          questsCount: sql<number>`(select count(*) from "Quest" where "Quest"."campaignId" = ${sql.raw('"campaign"."id"')})`.mapWith(Number).as('quests_count'),
+          milestonesCount: sql<number>`(select count(*) from "Milestone" where "Milestone"."campaignId" = ${sql.raw('"campaign"."id"')})`.mapWith(Number).as('milestones_count'),
+          documentsCount: sql<number>`(select count(*) from "Document" where "Document"."campaignId" = ${sql.raw('"campaign"."id"')})`.mapWith(Number).as('documents_count') },
+        columns: {
           id: true,
           name: true,
           system: true,
           isArchived: true,
           createdAt: true,
-          updatedAt: true,
-          owner: {
-            select: {
+          updatedAt: true
+        },
+        with: { owner: { columns: {
               id: true,
               email: true,
-              name: true,
-            },
-          },
-          _count: {
-            select: {
-              members: true,
-              sessions: true,
-              glossary: true,
-              quests: true,
-              milestones: true,
-              documents: true,
-            },
-          },
-        },
-      }),
+              name: true
+            } } }
+      }).sync(),
     ])
 
     return {
@@ -354,12 +322,12 @@ export class AdminService {
         system: campaign.system,
         isArchived: campaign.isArchived,
         owner: campaign.owner,
-        memberCount: Math.max(1, campaign._count.members),
-        sessionCount: campaign._count.sessions,
-        glossaryCount: campaign._count.glossary,
-        questCount: campaign._count.quests,
-        milestoneCount: campaign._count.milestones,
-        documentCount: campaign._count.documents,
+        memberCount: Math.max(1, campaign.membersCount),
+        sessionCount: campaign.sessionsCount,
+        glossaryCount: campaign.glossaryCount,
+        questCount: campaign.questsCount,
+        milestoneCount: campaign.milestonesCount,
+        documentCount: campaign.documentsCount,
         createdAt: campaign.createdAt.toISOString(),
         updatedAt: campaign.updatedAt.toISOString(),
       })),
@@ -373,34 +341,27 @@ export class AdminService {
     const search = normalizeSearch(query.search)
     const dateRange = toDateRange(query.from, query.to)
 
-    const where = {
-      ...(query.scope !== 'all' ? { scope: query.scope } : {}),
-      ...(query.action ? { action: query.action.trim() } : {}),
-      ...(query.actorUserId ? { actorUserId: query.actorUserId } : {}),
-      ...(query.campaignId ? { campaignId: query.campaignId } : {}),
-      ...(dateRange ? { createdAt: dateRange } : {}),
-      ...(search
-        ? {
-            OR: [
-              { action: { contains: search } },
-              { summary: { contains: search } },
-              { targetType: { contains: search } },
-              { targetId: { contains: search } },
-              { actorUser: { email: { contains: search } } },
-              { actorUser: { name: { contains: search } } },
-              { campaign: { name: { contains: search } } },
-            ],
-          }
-        : {}),
-    }
+    const where = and(
+      query.scope !== 'all' ? eq(tables.activityLog.scope, query.scope) : undefined,
+      query.action ? eq(tables.activityLog.action, query.action.trim()) : undefined,
+      query.actorUserId ? eq(tables.activityLog.actorUserId, query.actorUserId) : undefined,
+      query.campaignId ? eq(tables.activityLog.campaignId, query.campaignId) : undefined,
+      dateRange?.gte ? gte(tables.activityLog.createdAt, dateRange.gte) : undefined,
+      dateRange?.lte ? lte(tables.activityLog.createdAt, dateRange.lte) : undefined,
+      search ? or(
+        like(tables.activityLog.action, `%${search}%`), like(tables.activityLog.summary, `%${search}%`),
+        like(tables.activityLog.targetType, `%${search}%`), like(tables.activityLog.targetId, `%${search}%`),
+        inArray(tables.activityLog.actorUserId, db.select({ id: tables.user.id }).from(tables.user).where(or(like(tables.user.email, `%${search}%`), like(tables.user.name, `%${search}%`)))),
+        inArray(tables.activityLog.campaignId, db.select({ id: tables.campaign.id }).from(tables.campaign).where(like(tables.campaign.name, `%${search}%`)))
+      ) : undefined
+    )
 
     const [total, rows] = await Promise.all([
-      prisma.activityLog.count({ where }),
-      prisma.activityLog.findMany({
-        where,
-        orderBy: [{ createdAt: 'desc' }],
-        ...getPagination(query.page, query.pageSize),
-        select: {
+      db.select({ count: count() }).from(tables.activityLog).where(where).get()!.count,
+      db.query.activityLog.findMany({
+        where, ...getPagination(query.page, query.pageSize),
+        orderBy: [desc(tables.activityLog.createdAt)],
+        columns: {
           id: true,
           scope: true,
           action: true,
@@ -410,22 +371,20 @@ export class AdminService {
           metadata: true,
           createdAt: true,
           actorUserId: true,
-          actorUser: {
-            select: {
+          campaignId: true
+        },
+        with: {
+          actorUser: { columns: {
               id: true,
               email: true,
-              name: true,
-            },
-          },
-          campaignId: true,
-          campaign: {
-            select: {
+              name: true
+            } },
+          campaign: { columns: {
               id: true,
-              name: true,
-            },
-          },
-        },
-      }),
+              name: true
+            } }
+        }
+      }).sync(),
     ])
 
     return {
@@ -493,64 +452,55 @@ export class AdminService {
       }
     }>
   }> {
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: campaignId },
-      select: {
+    const campaign = await db.query.campaign.findFirst({
+      where: eq(tables.campaign.id, campaignId),
+      extras: { membersCount: sql<number>`(select count(*) from "CampaignMember" where "CampaignMember"."campaignId" = ${sql.raw('"campaign"."id"')})`.mapWith(Number).as('members_count'),
+          sessionsCount: sql<number>`(select count(*) from "Session" where "Session"."campaignId" = ${sql.raw('"campaign"."id"')})`.mapWith(Number).as('sessions_count'),
+          glossaryCount: sql<number>`(select count(*) from "GlossaryEntry" where "GlossaryEntry"."campaignId" = ${sql.raw('"campaign"."id"')})`.mapWith(Number).as('glossary_count'),
+          questsCount: sql<number>`(select count(*) from "Quest" where "Quest"."campaignId" = ${sql.raw('"campaign"."id"')})`.mapWith(Number).as('quests_count'),
+          milestonesCount: sql<number>`(select count(*) from "Milestone" where "Milestone"."campaignId" = ${sql.raw('"campaign"."id"')})`.mapWith(Number).as('milestones_count'),
+          documentsCount: sql<number>`(select count(*) from "Document" where "Document"."campaignId" = ${sql.raw('"campaign"."id"')})`.mapWith(Number).as('documents_count') },
+      columns: {
         id: true,
         name: true,
         description: true,
         system: true,
         isArchived: true,
         createdAt: true,
-        updatedAt: true,
-        owner: {
-          select: {
+        updatedAt: true
+      },
+      with: {
+        owner: { columns: {
             id: true,
             email: true,
-            name: true,
-          },
-        },
-        _count: {
-          select: {
-            members: true,
-            sessions: true,
-            glossary: true,
-            quests: true,
-            milestones: true,
-            documents: true,
-          },
-        },
+            name: true
+          } },
         sessions: {
-          select: {
-            _count: {
-              select: { recordings: true },
-            },
-          },
+          extras: { recordingsCount: sql<number>`(select count(*) from "Recording" where "Recording"."sessionId" = ${tables.session.id})`.mapWith(Number).as('recordings_count') },
+          columns: {}
         },
         members: {
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-          select: {
+          orderBy: [desc(tables.campaignMember.createdAt)],
+          limit: 10,
+          columns: {
             id: true,
             userId: true,
             role: true,
-            createdAt: true,
-            user: {
-              select: {
-                email: true,
-                name: true,
-              },
-            },
+            createdAt: true
           },
-        },
-      },
-    })
+          with: { user: { columns: {
+                email: true,
+                name: true
+              } } }
+        }
+      }
+    }).sync()
 
     if (!campaign) {
       throw apiError(404, 'NOT_FOUND', 'Campaign not found')
     }
 
-    const recordings = campaign.sessions.reduce((total, session) => total + session._count.recordings, 0)
+    const recordings = campaign.sessions.reduce((total, session) => total + session.recordingsCount, 0)
 
     return {
         id: campaign.id,
@@ -562,13 +512,13 @@ export class AdminService {
         createdAt: campaign.createdAt.toISOString(),
         updatedAt: campaign.updatedAt.toISOString(),
         counts: {
-          members: Math.max(1, campaign._count.members),
-          sessions: campaign._count.sessions,
-          glossary: campaign._count.glossary,
-          quests: campaign._count.quests,
-          milestones: campaign._count.milestones,
+          members: Math.max(1, campaign.membersCount),
+          sessions: campaign.sessionsCount,
+          glossary: campaign.glossaryCount,
+          quests: campaign.questsCount,
+          milestones: campaign.milestonesCount,
           recordings,
-          documents: campaign._count.documents,
+          documents: campaign.documentsCount,
         },
         recentMembers: campaign.members.map((member) => ({
           id: member.id,
@@ -590,24 +540,27 @@ export class AdminService {
     isArchived: boolean
     updatedAt: string
   }> {
-    const existing = await prisma.campaign.findUnique({
-      where: { id: campaignId },
-      select: {
+    const existing = await db.query.campaign.findFirst({
+      where: eq(tables.campaign.id, campaignId),
+      columns: {
         id: true,
         ownerId: true,
-        isArchived: true,
-      },
-    })
+        isArchived: true
+      }
+    }).sync()
 
     if (!existing) {
       throw apiError(404, 'NOT_FOUND', 'Campaign not found')
     }
 
     if (input.transferOwnerUserId) {
-      const targetUser = await prisma.user.findUnique({
-        where: { id: input.transferOwnerUserId },
-        select: { id: true, isActive: true },
-      })
+      const targetUser = await db.query.user.findFirst({
+        where: eq(tables.user.id, input.transferOwnerUserId),
+        columns: {
+          id: true,
+          isActive: true
+        }
+      }).sync()
 
       if (!targetUser) {
         throw apiError(404, 'TARGET_USER_NOT_FOUND', 'Target owner user was not found.')
@@ -618,59 +571,37 @@ export class AdminService {
       }
     }
 
-    const updated = await prisma.$transaction(async (tx) => {
+    const updated = await db.transaction((tx) => {
       if (input.transferOwnerUserId && input.transferOwnerUserId !== existing.ownerId) {
-        await tx.campaignMember.upsert({
-          where: {
-            campaignId_userId: {
-              campaignId,
-              userId: existing.ownerId,
-            },
-          },
-          update: {
-            role: 'COLLABORATOR',
-          },
-          create: {
-            campaignId,
-            userId: existing.ownerId,
-            role: 'COLLABORATOR',
-            invitedByUserId: actorUserId,
-          },
-        })
-
-        await tx.campaignMember.upsert({
-          where: {
-            campaignId_userId: {
-              campaignId,
-              userId: input.transferOwnerUserId,
-            },
-          },
-          update: {
-            role: 'OWNER',
-          },
-          create: {
-            campaignId,
-            userId: input.transferOwnerUserId,
-            role: 'OWNER',
-            invitedByUserId: actorUserId,
-          },
-        })
+        tx.insert(tables.campaignMember).values({
+          campaignId,
+          userId: existing.ownerId,
+          role: 'COLLABORATOR',
+          invitedByUserId: actorUserId
+        }).onConflictDoUpdate({
+          target: [tables.campaignMember.campaignId, tables.campaignMember.userId],
+          set: { role: 'COLLABORATOR' }
+        }).returning().get()!;
+        tx.insert(tables.campaignMember).values({
+          campaignId,
+          userId: input.transferOwnerUserId,
+          role: 'OWNER',
+          invitedByUserId: actorUserId
+        }).onConflictDoUpdate({
+          target: [tables.campaignMember.campaignId, tables.campaignMember.userId],
+          set: { role: 'OWNER' }
+        }).returning().get()!;
       }
-
-      return tx.campaign.update({
-        where: { id: campaignId },
-        data: {
-          ...(input.isArchived !== undefined ? { isArchived: input.isArchived } : {}),
-          ...(input.transferOwnerUserId ? { ownerId: input.transferOwnerUserId } : {}),
-        },
-        select: {
-          id: true,
-          ownerId: true,
-          isArchived: true,
-          updatedAt: true,
-        },
-      })
-    })
+      return tx.update(tables.campaign).set({
+        ...(input.isArchived !== undefined ? { isArchived: input.isArchived } : {}),
+        ...(input.transferOwnerUserId ? { ownerId: input.transferOwnerUserId } : {})
+      }).where(eq(tables.campaign.id, campaignId)).returning({
+        id: tables.campaign.id,
+        ownerId: tables.campaign.ownerId,
+        isArchived: tables.campaign.isArchived,
+        updatedAt: tables.campaign.updatedAt
+      }).get()!;
+    }, { behavior: 'immediate' })
 
     await auditService.log({
       actorUserId,

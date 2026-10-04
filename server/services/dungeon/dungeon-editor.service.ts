@@ -1,5 +1,8 @@
+import type { JsonValue } from '#server/db/columns'
 import { z } from 'zod'
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import { campaignDungeon, campaignDungeonRoom, campaignDungeonLink } from '#server/db/schema'
+import { eq, and, notInArray, asc, desc } from 'drizzle-orm'
 import type {
   DungeonLinkCreateInput,
   DungeonMapPatchActionInput,
@@ -79,20 +82,14 @@ const toLinkDto = (row: {
 })
 
 const withDungeonAccess = async (campaignId: string, dungeonId: string) =>
-  prisma.campaignDungeon.findFirst({
-    where: {
-      id: dungeonId,
-      campaignId,
-    },
-    select: {
+  db.query.campaignDungeon.findFirst({ where: and(eq(campaignDungeon.id, dungeonId), eq(campaignDungeon.campaignId, campaignId)), columns: {
       id: true,
       mapJson: true,
-    },
-  })
+    } }).sync()
 
 const syncRoomRowsToMap = async (dungeonId: string, previousRooms: DungeonRoomGeometry[], map: DungeonMapData) => {
-  await prisma.$transaction(async (tx) => {
-    const existing = await tx.campaignDungeonRoom.findMany({ where: { dungeonId } })
+  db.transaction((tx) => {
+    const existing = tx.query.campaignDungeonRoom.findMany({ where: eq(campaignDungeonRoom.dungeonId, dungeonId) }).sync()
     const byNumber = new Map(existing.map(room => [room.roomNumber, room]))
     // Geometry ids survive movement and renumbering; database ids preserve notes and links.
     const byGeometryId = new Map(previousRooms.map(room => [room.id, byNumber.get(room.roomNumber)]))
@@ -100,10 +97,10 @@ const syncRoomRowsToMap = async (dungeonId: string, previousRooms: DungeonRoomGe
       const current = byGeometryId.get(room.id)
       return current ? [current.id] : []
     })
-    await tx.campaignDungeonRoom.deleteMany({ where: { dungeonId, id: { notIn: retainedIds } } })
+    tx.delete(campaignDungeonRoom).where(and(eq(campaignDungeonRoom.dungeonId, dungeonId), notInArray(campaignDungeonRoom.id, retainedIds))).run()
     // Vacate unique room numbers before applying a permutation.
     for (const [index, id] of retainedIds.entries()) {
-      await tx.campaignDungeonRoom.update({ where: { id }, data: { roomNumber: -index - 1 } })
+      tx.update(campaignDungeonRoom).set({ roomNumber: -index - 1 }).where(eq(campaignDungeonRoom.id, id)).returning().get()!
     }
     for (const room of map.rooms) {
       const current = byGeometryId.get(room.id)
@@ -112,13 +109,13 @@ const syncRoomRowsToMap = async (dungeonId: string, previousRooms: DungeonRoomGe
         boundsJson: { x: room.x, y: room.y, width: room.width, height: room.height },
       }
       if (current) {
-        await tx.campaignDungeonRoom.update({ where: { id: current.id }, data })
+        tx.update(campaignDungeonRoom).set(data).where(eq(campaignDungeonRoom.id, current.id)).returning().get()!
       } else {
-        await tx.campaignDungeonRoom.create({ data: { ...data, dungeonId, name: `Room ${room.roomNumber}`, tagsJson: [] } })
+        tx.insert(campaignDungeonRoom).values({ ...data, dungeonId, name: `Room ${room.roomNumber}`, tagsJson: [] }).returning().get()!
       }
     }
-    await tx.campaignDungeon.update({ where: { id: dungeonId }, data: { mapJson: map } })
-  })
+    tx.update(campaignDungeon).set({ mapJson: (map) as unknown as JsonValue }).where(eq(campaignDungeon.id, dungeonId)).returning().get()!
+  }, { behavior: 'immediate' })
 }
 
 const makeRoomId = () => `room-${Math.random().toString(36).slice(2, 10)}`
@@ -391,10 +388,7 @@ export class DungeonEditorService {
       throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
-    const rows = await prisma.campaignDungeonRoom.findMany({
-      where: { dungeonId: access.id },
-      orderBy: [{ roomNumber: 'asc' }],
-    })
+    const rows = db.query.campaignDungeonRoom.findMany({ where: eq(campaignDungeonRoom.dungeonId, access.id), orderBy: [asc(campaignDungeonRoom.roomNumber)] }).sync()
     const isViewer = actor.access.role === 'VIEWER'
     return rows.map((row) => {
         const dto = toRoomDto(row)
@@ -414,17 +408,12 @@ export class DungeonEditorService {
       throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
-    const existing = await prisma.campaignDungeonRoom.findFirst({
-      where: { id: roomId, dungeonId: access.id },
-      select: { id: true },
-    })
+    const existing = db.query.campaignDungeonRoom.findFirst({ where: and(eq(campaignDungeonRoom.id, roomId), eq(campaignDungeonRoom.dungeonId, access.id)), columns: { id: true } }).sync()
     if (!existing) {
       throw apiError(404, 'NOT_FOUND', 'Room not found.')
     }
 
-    const updated = await prisma.campaignDungeonRoom.update({
-      where: { id: roomId },
-      data: {
+    const updated = db.update(campaignDungeonRoom).set({
         ...(input.name ? { name: input.name } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, 'description') ? { description: input.description ?? null } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, 'gmNotes') ? { gmNotes: input.gmNotes ?? null } : {}),
@@ -432,8 +421,7 @@ export class DungeonEditorService {
         ...(Object.prototype.hasOwnProperty.call(input, 'readAloud') ? { readAloud: input.readAloud ?? null } : {}),
         ...(input.tags ? { tagsJson: input.tags } : {}),
         ...(input.state ? { state: input.state } : {}),
-      },
-    })
+      }).where(eq(campaignDungeonRoom.id, roomId)).returning().get()!
 
     return toRoomDto(updated)
   }
@@ -482,9 +470,7 @@ export class DungeonEditorService {
       throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
-    const room = await prisma.campaignDungeonRoom.findFirst({
-      where: { dungeonId: access.id, id: roomId },
-    })
+    const room = db.query.campaignDungeonRoom.findFirst({ where: and(eq(campaignDungeonRoom.dungeonId, access.id), eq(campaignDungeonRoom.id, roomId)) }).sync()
     if (!room) {
       throw apiError(404, 'NOT_FOUND', 'Room not found.')
     }
@@ -501,14 +487,12 @@ export class DungeonEditorService {
     }
     const created = await new EncounterService().createEncounter(campaignId, userId, encounter)
 
-    await prisma.campaignDungeonLink.create({
-      data: {
+    db.insert(campaignDungeonLink).values({
         dungeonId: access.id,
         roomId,
         linkType: 'ENCOUNTER',
         targetId: created.id,
-      },
-    })
+      }).returning().get()!
     await activityLogService.log({
       actorUserId: userId,
       campaignId,
@@ -532,10 +516,7 @@ export class DungeonEditorService {
       throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
-    const rows = await prisma.campaignDungeonLink.findMany({
-      where: { dungeonId: access.id },
-      orderBy: [{ createdAt: 'desc' }],
-    })
+    const rows = db.query.campaignDungeonLink.findMany({ where: eq(campaignDungeonLink.dungeonId, access.id), orderBy: [desc(campaignDungeonLink.createdAt)] }).sync()
     return rows.map(toLinkDto)
   }
 
@@ -551,23 +532,18 @@ export class DungeonEditorService {
     }
 
     if (input.roomId) {
-      const room = await prisma.campaignDungeonRoom.findFirst({
-        where: { id: input.roomId, dungeonId: access.id },
-        select: { id: true },
-      })
+      const room = db.query.campaignDungeonRoom.findFirst({ where: and(eq(campaignDungeonRoom.id, input.roomId), eq(campaignDungeonRoom.dungeonId, access.id)), columns: { id: true } }).sync()
       if (!room) {
         throw apiError(400, 'VALIDATION_ERROR', 'Room id is invalid for this dungeon.', { roomId: 'Room not found in this dungeon.' })
       }
     }
 
-    const created = await prisma.campaignDungeonLink.create({
-      data: {
+    const created = db.insert(campaignDungeonLink).values({
         dungeonId: access.id,
         roomId: input.roomId || null,
         linkType: input.linkType,
         targetId: input.targetId,
-      },
-    })
+      }).returning().get()!
     return toLinkDto(created)
   }
 
@@ -581,17 +557,12 @@ export class DungeonEditorService {
       throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
-    const existing = await prisma.campaignDungeonLink.findFirst({
-      where: { id: linkId, dungeonId: access.id },
-      select: { id: true },
-    })
+    const existing = db.query.campaignDungeonLink.findFirst({ where: and(eq(campaignDungeonLink.id, linkId), eq(campaignDungeonLink.dungeonId, access.id)), columns: { id: true } }).sync()
     if (!existing) {
       throw apiError(404, 'NOT_FOUND', 'Dungeon link not found.')
     }
 
-    await prisma.campaignDungeonLink.delete({
-      where: { id: linkId },
-    })
+    db.delete(campaignDungeonLink).where(eq(campaignDungeonLink.id, linkId)).returning().get()!
 
     return { deleted: true }
   }

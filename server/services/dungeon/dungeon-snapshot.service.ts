@@ -1,5 +1,6 @@
-import { prisma } from '#server/db/prisma'
-import type { Prisma } from '#server/db/prisma-client'
+import { db } from '#server/db/client'
+import { campaignDungeon, campaignDungeonRoom, campaignDungeonSnapshot } from '#server/db/schema'
+import { eq, and, desc } from 'drizzle-orm'
 import type { DungeonSnapshotCreateInput } from '#shared/schemas/dungeon'
 import type { CampaignDungeonSnapshot, DungeonMapData } from '#shared/types/dungeon'
 import { parseDungeonMap } from '#server/services/dungeon/dungeon-map-utils'
@@ -27,28 +28,19 @@ const toSnapshotDto = (row: {
 })
 
 const withDungeonAccess = async (campaignId: string, dungeonId: string) =>
-  prisma.campaignDungeon.findFirst({
-    where: {
-      id: dungeonId,
-      campaignId,
-    },
-    select: {
+  db.query.campaignDungeon.findFirst({ where: and(eq(campaignDungeon.id, dungeonId), eq(campaignDungeon.campaignId, campaignId)), columns: {
       id: true,
       seed: true,
       generatorVersion: true,
       configJson: true,
       mapJson: true,
-    },
-  })
+    } }).sync()
 
 const syncRoomRowsToMap = async (dungeonId: string, map: DungeonMapData) => {
-  await prisma.$transaction(async (tx) => {
-    await tx.campaignDungeonRoom.deleteMany({
-      where: { dungeonId },
-    })
+  db.transaction((tx) => {
+    tx.delete(campaignDungeonRoom).where(eq(campaignDungeonRoom.dungeonId, dungeonId)).run()
     for (const room of map.rooms) {
-      await tx.campaignDungeonRoom.create({
-        data: {
+      tx.insert(campaignDungeonRoom).values({
           dungeonId,
           roomNumber: room.roomNumber,
           name: `Room ${room.roomNumber}`,
@@ -59,10 +51,9 @@ const syncRoomRowsToMap = async (dungeonId: string, map: DungeonMapData) => {
           tagsJson: [],
           state: 'UNSEEN',
           boundsJson: { x: room.x, y: room.y, width: room.width, height: room.height },
-        },
-      })
+        }).returning().get()!
     }
-  })
+  }, { behavior: 'immediate' })
 }
 
 export class DungeonSnapshotService {
@@ -72,10 +63,7 @@ export class DungeonSnapshotService {
       throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
-    const rows = await prisma.campaignDungeonSnapshot.findMany({
-      where: { dungeonId: access.id },
-      orderBy: [{ createdAt: 'desc' }],
-    })
+    const rows = db.query.campaignDungeonSnapshot.findMany({ where: eq(campaignDungeonSnapshot.dungeonId, access.id), orderBy: [desc(campaignDungeonSnapshot.createdAt)] }).sync()
     return rows.map(toSnapshotDto)
   }
 
@@ -91,17 +79,15 @@ export class DungeonSnapshotService {
       throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
-    const created = await prisma.campaignDungeonSnapshot.create({
-      data: {
+    const created = db.insert(campaignDungeonSnapshot).values({
         dungeonId: access.id,
         snapshotType: input.snapshotType,
         seed: access.seed,
         generatorVersion: access.generatorVersion,
-        configJson: access.configJson as Prisma.InputJsonValue,
-        mapJson: access.mapJson as Prisma.InputJsonValue,
+        configJson: access.configJson,
+        mapJson: access.mapJson,
         createdByUserId: userId,
-      },
-    })
+      }).returning().get()!
     await activityLogService.log({
       actorUserId: userId,
       campaignId,
@@ -126,29 +112,23 @@ export class DungeonSnapshotService {
       throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
-    const snapshot = await prisma.campaignDungeonSnapshot.findFirst({
-      where: { id: snapshotId, dungeonId: access.id },
-      select: {
+    const snapshot = db.query.campaignDungeonSnapshot.findFirst({ where: and(eq(campaignDungeonSnapshot.id, snapshotId), eq(campaignDungeonSnapshot.dungeonId, access.id)), columns: {
         seed: true,
         generatorVersion: true,
         configJson: true,
         mapJson: true,
-      },
-    })
+      } }).sync()
     if (!snapshot) {
       throw apiError(404, 'NOT_FOUND', 'Snapshot not found.')
     }
 
     const map = parseDungeonMap(snapshot.mapJson)
-    await prisma.campaignDungeon.update({
-      where: { id: access.id },
-      data: {
+    db.update(campaignDungeon).set({
         seed: snapshot.seed,
         generatorVersion: snapshot.generatorVersion,
-        configJson: snapshot.configJson as Prisma.InputJsonValue,
-        mapJson: snapshot.mapJson as Prisma.InputJsonValue,
-      },
-    })
+        configJson: snapshot.configJson,
+        mapJson: snapshot.mapJson,
+      }).where(eq(campaignDungeon.id, access.id)).returning().get()!
     await syncRoomRowsToMap(access.id, map)
     await activityLogService.log({
       actorUserId: userId,

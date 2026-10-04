@@ -59,7 +59,7 @@ describe('map parser', () => {
     expect(marker?.description).toContain('dangerous volcano')
   })
 
-  it('strips lone surrogate characters before Prisma-bound payload creation', () => {
+  it('strips lone surrogate characters before database payload creation', () => {
     const payload = Buffer.from(
       JSON.stringify({
         notes: [{ id: 'marker0', name: 'Bad\uD83DName', legend: 'Legend\uD83Dtext' }],

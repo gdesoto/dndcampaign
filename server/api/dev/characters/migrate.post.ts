@@ -1,4 +1,6 @@
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { and, eq, inArray } from 'drizzle-orm'
 import { ok, apiError } from '#server/utils/http'
 import { CharacterSyncService } from '#server/services/character-sync.service'
 import { readBody } from 'h3'
@@ -11,12 +13,12 @@ export default defineEventHandler(async (event) => {
   const session = await requireUserSession(event)
   const body = (await readBody(event)) as { campaignId?: string; deleteGlossary?: boolean }
 
-  const campaigns = await prisma.campaign.findMany({
-    where: {
-      ownerId: session.user.id,
-      id: body.campaignId || undefined,
-    },
-    select: { id: true },
+  const campaigns = await db.query.campaign.findMany({
+    where: and(
+      eq(tables.campaign.ownerId, session.user.id),
+      body.campaignId ? eq(tables.campaign.id, body.campaignId) : undefined,
+    ),
+    columns: { id: true },
   })
 
   if (!campaigns.length) {
@@ -25,11 +27,11 @@ export default defineEventHandler(async (event) => {
 
   const campaignIds = campaigns.map((campaign) => campaign.id)
 
-  const glossaryEntries = await prisma.glossaryEntry.findMany({
-    where: {
-      campaignId: { in: campaignIds },
-      type: 'PC',
-    },
+  const glossaryEntries = await db.query.glossaryEntry.findMany({
+    where: and(
+      inArray(tables.glossaryEntry.campaignId, campaignIds),
+      eq(tables.glossaryEntry.type, 'PC'),
+    ),
   })
 
   const results: Array<{ glossaryId: string; characterId: string }> = []
@@ -41,9 +43,7 @@ export default defineEventHandler(async (event) => {
   }
 
   if (body.deleteGlossary) {
-    await prisma.glossaryEntry.deleteMany({
-      where: { id: { in: glossaryEntries.map((entry) => entry.id) } },
-    })
+    await db.delete(tables.glossaryEntry).where(inArray(tables.glossaryEntry.id, glossaryEntries.map((entry) => entry.id))).run()
   }
 
   return ok({ migrated: results.length, results })

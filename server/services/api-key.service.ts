@@ -1,6 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { prisma } from '#server/db/prisma'
-import type { Prisma } from '#server/db/prisma-client'
+import { db } from '#server/db/client'
+import { apiKey, apiKeyCampaign, campaign } from '#server/db/schema'
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
+import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
 import { apiError } from '#server/utils/http'
 import type { ApiKeyCreateInput, ApiKeyPermission, ApiKeyUpdateInput } from '#shared/schemas/api-key'
 import { apiKeyPermissionSchema } from '#shared/schemas/api-key'
@@ -8,10 +10,10 @@ import { z } from 'zod'
 
 const hashKey = (secret: string) => createHash('sha256').update(secret).digest('hex')
 const keySecret = () => `dnd_${randomBytes(32).toString('base64url')}`
+const keyRelations = { campaigns: { columns: { campaignId: true } } } as const
 
-const include = { campaigns: { select: { campaignId: true } } } as const
-type ApiKeyDtoRecord = Prisma.ApiKeyGetPayload<{ include: typeof include }>
-type KeyRecord = Awaited<ReturnType<typeof findKeyBySecret>>
+type ApiKeyDtoRecord = typeof apiKey.$inferSelect & { campaigns: Array<{ campaignId: string }> }
+type KeyRecord = ReturnType<typeof findKeyBySecret>
 export type ApiKeyAuth = Omit<NonNullable<KeyRecord>, 'permissions'> & { permissions: ApiKeyPermission[] }
 
 const dto = (key: ApiKeyDtoRecord) => ({
@@ -24,67 +26,105 @@ const dto = (key: ApiKeyDtoRecord) => ({
   createdAt: key.createdAt.toISOString(),
 })
 
-async function findKeyBySecret(secret: string) {
-  const key = await prisma.apiKey.findUnique({ where: { keyHash: hashKey(secret) }, include: { user: { select: { id: true, email: true, name: true, systemRole: true, avatarUrl: true, isActive: true, deletedAt: true } }, ...include } })
+function findKeyBySecret(secret: string) {
+  const key = db.query.apiKey.findFirst({
+    where: eq(apiKey.keyHash, hashKey(secret)),
+    with: {
+      user: { columns: {
+          id: true,
+          email: true,
+          name: true,
+          systemRole: true,
+          avatarUrl: true,
+          isActive: true,
+          deletedAt: true
+        } },
+      ...keyRelations
+    }
+  }).sync()
   if (!key || key.revokedAt || (key.expiresAt && key.expiresAt <= new Date()) || !key.user.isActive || key.user.deletedAt) return null
   return key
 }
 
-const assertCampaignSelection = async (userId: string, campaignIds: string[]) => {
+const assertCampaignSelection = (userId: string, campaignIds: string[]) => {
   if (new Set(campaignIds).size !== campaignIds.length) throw apiError(400, 'VALIDATION_ERROR', 'Campaign IDs must be unique')
-  const campaigns = await prisma.campaign.findMany({
-    where: { id: { in: campaignIds }, OR: [{ ownerId: userId }, { members: { some: { userId } } }] },
-    select: { id: true },
-  })
+  const campaigns = db.select({ id: campaign.id }).from(campaign).where(and(inArray(campaign.id, campaignIds), buildCampaignWhereForPermission(userId, 'campaign.read'))).all()
   if (campaigns.length !== campaignIds.length) throw apiError(403, 'FORBIDDEN', 'You do not have access to every selected campaign')
 }
 
 export class ApiKeyService {
   async list(userId: string) {
-    const keys = await prisma.apiKey.findMany({ where: { userId }, include, orderBy: { createdAt: 'desc' } })
-    return keys.map(dto)
+    return db.query.apiKey.findMany({
+      where: eq(apiKey.userId, userId),
+      with: keyRelations,
+      orderBy: desc(apiKey.createdAt)
+    }).sync().map(dto)
   }
 
   async create(userId: string, input: ApiKeyCreateInput) {
-    await assertCampaignSelection(userId, input.campaignIds)
+    assertCampaignSelection(userId, input.campaignIds)
     const secret = keySecret()
-    const key = await prisma.apiKey.create({
-      data: {
-        userId, name: input.name, prefix: secret.slice(0, 12), keyHash: hashKey(secret),
-        permissions: input.permissions, expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
-        campaigns: { create: input.campaignIds.map((campaignId) => ({ campaignId })) },
-      }, include,
-    })
+    const key = db.transaction((tx) => {
+      const created = tx.insert(apiKey).values({
+        userId,
+        name: input.name,
+        prefix: secret.slice(0, 12),
+        keyHash: hashKey(secret),
+        permissions: input.permissions,
+        expiresAt: input.expiresAt ? new Date(input.expiresAt) : null
+      }).returning().get()!;
+      if (input.campaignIds.length)
+        tx.insert(apiKeyCampaign).values(input.campaignIds.map((campaignId) => ({
+          campaignId,
+          apiKeyId: created.id
+        }))).run();
+      return tx.query.apiKey.findFirst({
+        where: eq(apiKey.id, created.id),
+        with: keyRelations
+      }).sync()!;
+    }, { behavior: 'immediate' })
     return { key: dto(key), secret }
   }
 
   async update(userId: string, id: string, input: ApiKeyUpdateInput) {
-    const existing = await prisma.apiKey.findFirst({ where: { id, userId } })
+    const existing = db.query.apiKey.findFirst({ where: and(eq(apiKey.id, id), eq(apiKey.userId, userId)) }).sync()
     if (!existing) throw apiError(404, 'NOT_FOUND', 'API key not found')
-    if (input.campaignIds) {
-      await assertCampaignSelection(userId, input.campaignIds)
-    }
-    const key = await prisma.apiKey.update({ where: { id }, data: {
-      ...(input.name === undefined ? {} : { name: input.name }),
-      ...(input.permissions === undefined ? {} : { permissions: input.permissions }),
-      ...(input.expiresAt === undefined ? {} : { expiresAt: input.expiresAt ? new Date(input.expiresAt) : null }),
-      ...(input.campaignIds ? { campaigns: { deleteMany: {}, create: input.campaignIds.map((campaignId) => ({ campaignId })) } } : {}),
-    }, include })
+    if (input.campaignIds) assertCampaignSelection(userId, input.campaignIds)
+    const key = db.transaction((tx) => {
+      tx.update(apiKey).set({
+        ...(input.name === undefined ? {} : { name: input.name }),
+        ...(input.permissions === undefined ? {} : { permissions: input.permissions }),
+        ...(input.expiresAt === undefined ? {} : { expiresAt: input.expiresAt ? new Date(input.expiresAt) : null }),
+        updatedAt: new Date()
+      }).where(eq(apiKey.id, id)).run();
+      if (input.campaignIds) {
+        tx.delete(apiKeyCampaign).where(eq(apiKeyCampaign.apiKeyId, id)).run();
+        if (input.campaignIds.length)
+          tx.insert(apiKeyCampaign).values(input.campaignIds.map((campaignId) => ({
+            campaignId,
+            apiKeyId: id
+          }))).run();
+      }
+      return tx.query.apiKey.findFirst({
+        where: eq(apiKey.id, id),
+        with: keyRelations
+      }).sync()!;
+    }, { behavior: 'immediate' })
     return dto(key)
   }
 
   async revoke(userId: string, id: string) {
-    const result = await prisma.apiKey.updateMany({ where: { id, userId, revokedAt: null }, data: { revokedAt: new Date() } })
-    if (!result.count) throw apiError(404, 'NOT_FOUND', 'API key not found')
+    const result = db.update(apiKey).set({ revokedAt: new Date() }).where(and(eq(apiKey.id, id), eq(apiKey.userId, userId), isNull(apiKey.revokedAt))).run()
+    if (!result.changes) throw apiError(404, 'NOT_FOUND', 'API key not found')
     return { revoked: true }
   }
 
   async authenticate(secret: string): Promise<ApiKeyAuth | null> {
-    const key = await findKeyBySecret(secret)
+    const key = findKeyBySecret(secret)
     if (!key) return null
     const permissions = z.array(apiKeyPermissionSchema).safeParse(key.permissions)
     if (!permissions.success) return null
-    await prisma.apiKey.update({ where: { id: key.id }, data: { lastUsedAt: new Date() } })
+    db.update(apiKey).set({ lastUsedAt: new Date() }).where(eq(apiKey.id, key.id)).run()
     return { ...key, permissions: permissions.data }
   }
 }

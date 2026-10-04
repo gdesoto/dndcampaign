@@ -1,58 +1,33 @@
 import { getMediaStream } from '#server/utils/media-stream'
 import { randomBytes } from 'node:crypto'
-import { Prisma, type CampaignPublicAccess } from '#server/db/prisma-client'
-import { prisma } from '#server/db/prisma'
-import { defaultMapLayerTypes, type MapFeatureType } from '#shared/schemas/map'
+import type { CampaignPublicAccess } from '#server/db/schema'
+import { isSqliteUniqueConstraintError } from '#server/db/errors'
+import { db } from '#server/db/client'
+import { asc,desc,and,or,eq,inArray,like,count } from 'drizzle-orm'
+import { campaignJournalTag,campaignJournalEntrySessionLink,campaignPublicAccess,campaignJournalEntry,campaign,campaignCharacter,recapRecording,session,glossaryEntry,quest,milestone,campaignMap,campaignMapFeature,campaignMapFile } from '#server/db/schema'
+import { defaultMapLayerTypes,type MapFeatureType } from '#shared/schemas/map'
 import { getStorageAdapter } from '#server/services/storage/storage.factory'
-import type {
-  CampaignPublicAccessOwnerDto,
-  CampaignPublicAccessSection,
-  CampaignPublicAccessUpdateInput,
-  CampaignPublicOverviewDto,
-  PublicCampaignDirectoryItem,
-} from '#shared/schemas/campaign-public-access'
+import type { CampaignPublicAccessOwnerDto,CampaignPublicAccessSection,CampaignPublicAccessUpdateInput,CampaignPublicOverviewDto,PublicCampaignDirectoryItem,} from '#shared/schemas/campaign-public-access'
 import type { PublicCampaignJournalListQueryInput } from '#shared/schemas/campaign-journal'
-import {
-  campaignJournalListDefaultPage,
-  campaignJournalListDefaultPageSize,
-} from '#shared/schemas/campaign-journal'
+import { campaignJournalListDefaultPage,campaignJournalListDefaultPageSize,} from '#shared/schemas/campaign-journal'
 import { normalizeJournalTagLabel } from '#shared/utils/campaign-journal-tags'
 import type { CampaignJournalListResponse } from '#shared/types/campaign-journal'
 import { ActivityLogService } from '#server/services/activity-log.service'
 import { apiError } from '#server/utils/http'
-
-const PUBLIC_SLUG_BYTE_LENGTH = 16
-const activityLogService = new ActivityLogService()
-
-type CampaignPublicAccessRecord = Pick<
-  CampaignPublicAccess,
-  | 'campaignId'
-  | 'isEnabled'
-  | 'isListed'
-  | 'publicSlug'
-  | 'showCharacters'
-  | 'showRecaps'
-  | 'showSessions'
-  | 'showGlossary'
-  | 'showQuests'
-  | 'showMilestones'
-  | 'showMaps'
-  | 'showJournal'
-  | 'updatedAt'
->
-
-type PublicResolverResult = {
+const PUBLIC_SLUG_BYTE_LENGTH=16
+const activityLogService=new ActivityLogService()
+type CampaignPublicAccessRecord=Pick<CampaignPublicAccess,'campaignId'|'isEnabled'|'isListed'|'publicSlug'|'showCharacters'|'showRecaps'|'showSessions'|'showGlossary'|'showQuests'|'showMilestones'|'showMaps'|'showJournal'|'updatedAt'>
+type PublicResolverResult={
   campaignId: string
   access: CampaignPublicAccessRecord
   campaign: {
     name: string
     system: string
-    description: string | null
-    dungeonMasterName: string | null
+    description: string|null
+    dungeonMasterName: string|null
   }
 }
-
-const sectionToFlag: Record<CampaignPublicAccessSection, keyof CampaignPublicAccessRecord> = {
+const sectionToFlag: Record<CampaignPublicAccessSection,keyof CampaignPublicAccessRecord>={
   characters: 'showCharacters',
   recaps: 'showRecaps',
   sessions: 'showSessions',
@@ -62,8 +37,7 @@ const sectionToFlag: Record<CampaignPublicAccessSection, keyof CampaignPublicAcc
   maps: 'showMaps',
   journal: 'showJournal',
 }
-
-const toOwnerDto = (record: CampaignPublicAccessRecord): CampaignPublicAccessOwnerDto => ({
+const toOwnerDto=(record: CampaignPublicAccessRecord): CampaignPublicAccessOwnerDto => ({
   campaignId: record.campaignId,
   isEnabled: record.isEnabled,
   isListed: record.isListed,
@@ -79,15 +53,14 @@ const toOwnerDto = (record: CampaignPublicAccessRecord): CampaignPublicAccessOwn
   showJournal: record.showJournal,
   updatedAt: record.updatedAt.toISOString(),
 })
-
-const toDirectoryItem = (entry: {
+const toDirectoryItem=(entry: {
   publicSlug: string
   updatedAt: Date
   campaign: {
     name: string
     system: string
-    description: string | null
-    dungeonMasterName: string | null
+    description: string|null
+    dungeonMasterName: string|null
   }
 }): PublicCampaignDirectoryItem => ({
   publicSlug: entry.publicSlug,
@@ -98,28 +71,18 @@ const toDirectoryItem = (entry: {
   dungeonMasterName: entry.campaign.dungeonMasterName,
   updatedAt: entry.updatedAt.toISOString(),
 })
-
-const getPublicUrl = (slug: string) => {
-  const config = useRuntimeConfig()
-  const appUrl = (config.public.appUrl || '').trim()
-  const path = `/public/${slug}`
-
-  if (!appUrl) {
+const getPublicUrl=(slug: string) => {
+  const config=useRuntimeConfig()
+  const appUrl=(config.public.appUrl||'').trim()
+  const path=`/public/${slug}`
+  if(!appUrl) {
     return path
   }
-
-  return `${appUrl.replace(/\/$/, '')}${path}`
+  return `${appUrl.replace(/\/$/,'')}${path}`
 }
-
-const buildSlug = () => randomBytes(PUBLIC_SLUG_BYTE_LENGTH).toString('hex')
-
-const isUniqueConstraintError = (error: unknown) =>
-  error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'
-
-const mapFeatureTypeToApi: Record<
-  'STATE' | 'PROVINCE' | 'BURG' | 'MARKER' | 'RIVER' | 'ROUTE' | 'CELL',
-  MapFeatureType
-> = {
+const buildSlug=() => randomBytes(PUBLIC_SLUG_BYTE_LENGTH).toString('hex')
+const isUniqueConstraintError=isSqliteUniqueConstraintError
+const mapFeatureTypeToApi: Record<'STATE'|'PROVINCE'|'BURG'|'MARKER'|'RIVER'|'ROUTE'|'CELL',MapFeatureType>={
   STATE: 'state',
   PROVINCE: 'province',
   BURG: 'burg',
@@ -128,106 +91,72 @@ const mapFeatureTypeToApi: Record<
   ROUTE: 'route',
   CELL: 'cell',
 }
-
-const parseMapCoordinates = (
-  value: unknown
-):
-  | {
-      latT: number
-      latN: number
-      latS: number
-      lonT: number
-      lonW: number
-      lonE: number
-    }
-  | undefined => {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
-  const entry = value as Record<string, unknown>
-  const latT = typeof entry.latT === 'number' && Number.isFinite(entry.latT) ? entry.latT : null
-  const latN = typeof entry.latN === 'number' && Number.isFinite(entry.latN) ? entry.latN : null
-  const latS = typeof entry.latS === 'number' && Number.isFinite(entry.latS) ? entry.latS : null
-  const lonT = typeof entry.lonT === 'number' && Number.isFinite(entry.lonT) ? entry.lonT : null
-  const lonW = typeof entry.lonW === 'number' && Number.isFinite(entry.lonW) ? entry.lonW : null
-  const lonE = typeof entry.lonE === 'number' && Number.isFinite(entry.lonE) ? entry.lonE : null
-  if (
-    latT === null ||
-    latN === null ||
-    latS === null ||
-    lonT === null ||
-    lonW === null ||
-    lonE === null
-  ) {
+const parseMapCoordinates=(value: unknown): {
+  latT: number
+  latN: number
+  latS: number
+  lonT: number
+  lonW: number
+  lonE: number
+}|undefined => {
+  if(!value||typeof value!=='object'||Array.isArray(value))
+    return undefined
+  const entry=value as Record<string,unknown>
+  const latT=typeof entry.latT==='number'&&Number.isFinite(entry.latT)? entry.latT:null
+  const latN=typeof entry.latN==='number'&&Number.isFinite(entry.latN)? entry.latN:null
+  const latS=typeof entry.latS==='number'&&Number.isFinite(entry.latS)? entry.latS:null
+  const lonT=typeof entry.lonT==='number'&&Number.isFinite(entry.lonT)? entry.lonT:null
+  const lonW=typeof entry.lonW==='number'&&Number.isFinite(entry.lonW)? entry.lonW:null
+  const lonE=typeof entry.lonE==='number'&&Number.isFinite(entry.lonE)? entry.lonE:null
+  if(latT===null||
+    latN===null||
+    latS===null||
+    lonT===null||
+    lonW===null||
+    lonE===null) {
     return undefined
   }
-  return { latT, latN, latS, lonT, lonW, lonE }
+  return { latT,latN,latS,lonT,lonW,lonE }
 }
-
-const createAccessRecord = async (
-  campaignId: string,
-  updatedByUserId: string,
-  patch: Partial<CampaignPublicAccessUpdateInput> = {}
-): Promise<CampaignPublicAccessRecord> => {
-  for (let attempt = 0; attempt < 5; attempt += 1) {
+const createAccessRecord=async (campaignId: string,updatedByUserId: string,patch: Partial<CampaignPublicAccessUpdateInput>={}): Promise<CampaignPublicAccessRecord> => {
+  for(let attempt=0;attempt<5;attempt+=1) {
     try {
-      return await prisma.campaignPublicAccess.create({
-        data: {
-          campaignId,
-          updatedByUserId,
-          publicSlug: buildSlug(),
-          ...patch,
-        },
-      })
-    } catch (error) {
-      if (!isUniqueConstraintError(error)) {
+      return db.insert(campaignPublicAccess).values({
+        campaignId,
+        updatedByUserId,
+        publicSlug: buildSlug(),
+        ...patch,
+      }).returning().get()
+    }
+    catch(error) {
+      if(!isUniqueConstraintError(error)) {
         throw error
       }
     }
   }
-
   throw new Error('Unable to generate a unique public campaign slug.')
 }
-
 export class CampaignPublicAccessService {
-  async getOwnerSettings(
-    campaignId: string,
-    updatedByUserId: string
-  ): Promise<CampaignPublicAccessOwnerDto> {
-    const existing = await prisma.campaignPublicAccess.findUnique({
-      where: { campaignId },
-    })
-
-    if (existing) {
+  async getOwnerSettings(campaignId: string,updatedByUserId: string): Promise<CampaignPublicAccessOwnerDto> {
+    const existing=db.query.campaignPublicAccess.findFirst({ where: eq(campaignPublicAccess.campaignId,campaignId) }).sync()
+    if(existing) {
       return toOwnerDto(existing)
     }
-
-    const created = await createAccessRecord(campaignId, updatedByUserId)
+    const created=await createAccessRecord(campaignId,updatedByUserId)
     return toOwnerDto(created)
   }
-
-  async updateOwnerSettings(
-    campaignId: string,
-    updatedByUserId: string,
-    input: CampaignPublicAccessUpdateInput
-  ): Promise<CampaignPublicAccessOwnerDto> {
-    const normalizedInput: CampaignPublicAccessUpdateInput = { ...input }
-    if (normalizedInput.isEnabled === false) {
-      normalizedInput.isListed = false
+  async updateOwnerSettings(campaignId: string,updatedByUserId: string,input: CampaignPublicAccessUpdateInput): Promise<CampaignPublicAccessOwnerDto> {
+    const normalizedInput: CampaignPublicAccessUpdateInput={ ...input }
+    if(normalizedInput.isEnabled===false) {
+      normalizedInput.isListed=false
     }
-
-    const existing = await prisma.campaignPublicAccess.findUnique({
-      where: { campaignId },
-    })
-
-    const updated = existing
-      ? await prisma.campaignPublicAccess.update({
-          where: { campaignId },
-          data: {
-            ...normalizedInput,
-            updatedByUserId,
-          },
-        })
-      : await createAccessRecord(campaignId, updatedByUserId, normalizedInput)
-
+    const existing=db.query.campaignPublicAccess.findFirst({ where: eq(campaignPublicAccess.campaignId,campaignId) }).sync()
+    const updated=existing
+      ? db.update(campaignPublicAccess).set({
+        ...normalizedInput,
+        updatedByUserId,
+      }).where(eq(campaignPublicAccess.campaignId,campaignId)).returning().get()!
+      :await createAccessRecord(campaignId,updatedByUserId,normalizedInput)
     await activityLogService.log({
       actorUserId: updatedByUserId,
       campaignId,
@@ -239,19 +168,19 @@ export class CampaignPublicAccessService {
       metadata: {
         previous: existing
           ? {
-              isEnabled: existing.isEnabled,
-              isListed: existing.isListed,
-              showCharacters: existing.showCharacters,
-              showRecaps: existing.showRecaps,
-              showSessions: existing.showSessions,
-              showGlossary: existing.showGlossary,
-              showQuests: existing.showQuests,
-              showMilestones: existing.showMilestones,
-              showMaps: existing.showMaps,
-              showJournal: existing.showJournal,
-              publicSlug: existing.publicSlug,
-            }
-          : null,
+            isEnabled: existing.isEnabled,
+            isListed: existing.isListed,
+            showCharacters: existing.showCharacters,
+            showRecaps: existing.showRecaps,
+            showSessions: existing.showSessions,
+            showGlossary: existing.showGlossary,
+            showQuests: existing.showQuests,
+            showMilestones: existing.showMilestones,
+            showMaps: existing.showMaps,
+            showJournal: existing.showJournal,
+            publicSlug: existing.publicSlug,
+          }
+          :null,
         next: {
           isEnabled: updated.isEnabled,
           isListed: updated.isListed,
@@ -267,36 +196,23 @@ export class CampaignPublicAccessService {
         },
       },
     })
-
     return toOwnerDto(updated)
   }
-
-  async regenerateSlug(
-    campaignId: string,
-    updatedByUserId: string
-  ): Promise<CampaignPublicAccessOwnerDto> {
-    for (let attempt = 0; attempt < 5; attempt += 1) {
+  async regenerateSlug(campaignId: string,updatedByUserId: string): Promise<CampaignPublicAccessOwnerDto> {
+    for(let attempt=0;attempt<5;attempt+=1) {
       try {
-        const existing = await prisma.campaignPublicAccess.findUnique({
-          where: { campaignId },
-        })
-        const nextSlug = buildSlug()
-        const updated = existing
-          ? await prisma.campaignPublicAccess.update({
-              where: { campaignId },
-              data: {
-                publicSlug: nextSlug,
-                updatedByUserId,
-              },
-            })
-          : await prisma.campaignPublicAccess.create({
-              data: {
-                campaignId,
-                publicSlug: nextSlug,
-                updatedByUserId,
-              },
-            })
-
+        const existing=db.query.campaignPublicAccess.findFirst({ where: eq(campaignPublicAccess.campaignId,campaignId) }).sync()
+        const nextSlug=buildSlug()
+        const updated=existing
+          ? db.update(campaignPublicAccess).set({
+            publicSlug: nextSlug,
+            updatedByUserId,
+          }).where(eq(campaignPublicAccess.campaignId,campaignId)).returning().get()!
+          :db.insert(campaignPublicAccess).values({
+            campaignId,
+            publicSlug: nextSlug,
+            updatedByUserId,
+          }).returning().get()
         await activityLogService.log({
           actorUserId: updatedByUserId,
           campaignId,
@@ -306,52 +222,31 @@ export class CampaignPublicAccessService {
           targetId: campaignId,
           summary: 'Regenerated campaign public slug.',
           metadata: {
-            previousPublicSlug: existing?.publicSlug || null,
+            previousPublicSlug: existing?.publicSlug||null,
             nextPublicSlug: updated.publicSlug,
           },
         })
-
         return toOwnerDto(updated)
-      } catch (error) {
-        if (!isUniqueConstraintError(error)) {
+      }
+      catch(error) {
+        if(!isUniqueConstraintError(error)) {
           throw error
         }
       }
     }
-
-    throw apiError(500, 'PUBLIC_SLUG_GENERATION_FAILED', 'Unable to regenerate a unique public URL. Try again.')
+    throw apiError(500,'PUBLIC_SLUG_GENERATION_FAILED','Unable to regenerate a unique public URL. Try again.')
   }
-
-  private async resolvePublicAccess(
-    publicSlug: string,
-    section?: CampaignPublicAccessSection
-  ): Promise<PublicResolverResult> {
-    const access = await prisma.campaignPublicAccess.findUnique({
-      where: { publicSlug },
-      include: {
-        campaign: {
-          select: {
-            id: true,
-            name: true,
-            system: true,
-            description: true,
-            dungeonMasterName: true,
-          },
-        },
-      },
-    })
-
-    if (!access || !access.isEnabled) {
-      throw apiError(404, 'PUBLIC_CAMPAIGN_NOT_FOUND', 'Public campaign not found.')
+  private async resolvePublicAccess(publicSlug: string,section?: CampaignPublicAccessSection): Promise<PublicResolverResult> {
+    const access=db.query.campaignPublicAccess.findFirst({ where: eq(campaignPublicAccess.publicSlug,publicSlug),with: { campaign: { columns: { id: true,name: true,system: true,description: true,dungeonMasterName: true } } } }).sync()
+    if(!access||!access.isEnabled) {
+      throw apiError(404,'PUBLIC_CAMPAIGN_NOT_FOUND','Public campaign not found.')
     }
-
-    if (section) {
-      const flag = sectionToFlag[section]
-      if (!access[flag]) {
-        throw apiError(404, 'PUBLIC_SECTION_NOT_AVAILABLE', 'This public section is not available.')
+    if(section) {
+      const flag=sectionToFlag[section]
+      if(!access[flag]) {
+        throw apiError(404,'PUBLIC_SECTION_NOT_AVAILABLE','This public section is not available.')
       }
     }
-
     return {
       campaignId: access.campaign.id,
       access,
@@ -363,597 +258,281 @@ export class CampaignPublicAccessService {
       },
     }
   }
-
   async getPublicOverview(publicSlug: string): Promise<CampaignPublicOverviewDto> {
-    const resolved = await this.resolvePublicAccess(publicSlug)
-
+    const resolved=await this.resolvePublicAccess(publicSlug)
     return {
-        campaign: resolved.campaign,
-        sections: {
-          showCharacters: resolved.access.showCharacters,
-          showRecaps: resolved.access.showRecaps,
-          showSessions: resolved.access.showSessions,
-          showGlossary: resolved.access.showGlossary,
-          showQuests: resolved.access.showQuests,
-          showMilestones: resolved.access.showMilestones,
-          showMaps: resolved.access.showMaps,
-          showJournal: resolved.access.showJournal,
-        },
-      }
-  }
-
-  async getPublicJournalEntries(
-    publicSlug: string,
-    query: PublicCampaignJournalListQueryInput
-  ): Promise<CampaignJournalListResponse> {
-    const resolved = await this.resolvePublicAccess(publicSlug, 'journal')
-
-    const page = query.page || campaignJournalListDefaultPage
-    const pageSize = query.pageSize || campaignJournalListDefaultPageSize
-    const normalizedTag = query.tag ? normalizeJournalTagLabel(query.tag) : undefined
-
-    const where: Prisma.CampaignJournalEntryWhereInput = {
-      campaignId: resolved.campaignId,
-      visibility: 'CAMPAIGN',
-      isArchived: false,
-      ...(query.sessionId
-        ? {
-            sessionLinks: {
-              some: {
-                sessionId: query.sessionId,
-              },
-            },
-          }
-        : {}),
-      ...(normalizedTag
-        ? {
-            tags: {
-              some: {
-                normalizedLabel: normalizedTag,
-              },
-            },
-          }
-        : {}),
-      ...(query.search
-        ? {
-            OR: [
-              { title: { contains: query.search } },
-              { contentMarkdown: { contains: query.search } },
-              { tags: { some: { displayLabel: { contains: query.search } } } },
-            ],
-          }
-        : {}),
+      campaign: resolved.campaign,
+      sections: {
+        showCharacters: resolved.access.showCharacters,
+        showRecaps: resolved.access.showRecaps,
+        showSessions: resolved.access.showSessions,
+        showGlossary: resolved.access.showGlossary,
+        showQuests: resolved.access.showQuests,
+        showMilestones: resolved.access.showMilestones,
+        showMaps: resolved.access.showMaps,
+        showJournal: resolved.access.showJournal,
+      },
     }
-
-    const [total, rows] = await prisma.$transaction([
-      prisma.campaignJournalEntry.count({ where }),
-      prisma.campaignJournalEntry.findMany({
-        where,
-        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-        include: {
-          authorUser: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          tags: {
-            include: {
-              glossaryEntry: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
-            },
-            orderBy: [{ tagType: 'asc' }, { displayLabel: 'asc' }],
-          },
-          sessionLinks: {
-            include: {
-              session: {
-                select: {
-                  id: true,
-                  title: true,
-                  sessionNumber: true,
-                },
-              },
-            },
-            orderBy: [{ createdAt: 'asc' }],
-          },
-        },
-      }),
-    ])
-
+  }
+  async getPublicJournalEntries(publicSlug: string,query: PublicCampaignJournalListQueryInput): Promise<CampaignJournalListResponse> {
+    const resolved=await this.resolvePublicAccess(publicSlug,'journal')
+    const page=query.page||campaignJournalListDefaultPage
+    const pageSize=query.pageSize||campaignJournalListDefaultPageSize
+    const normalizedTag=query.tag? normalizeJournalTagLabel(query.tag):undefined
+    const where=and(eq(campaignJournalEntry.campaignId,resolved.campaignId),eq(campaignJournalEntry.visibility,'CAMPAIGN'),eq(campaignJournalEntry.isArchived,false),(query.sessionId? inArray(campaignJournalEntry.id,db.select({ id: campaignJournalEntrySessionLink.campaignJournalEntryId }).from(campaignJournalEntrySessionLink).where(eq(campaignJournalEntrySessionLink.sessionId,query.sessionId))):undefined),(normalizedTag? inArray(campaignJournalEntry.id,db.select({ id: campaignJournalTag.campaignJournalEntryId }).from(campaignJournalTag).where(eq(campaignJournalTag.normalizedLabel,normalizedTag))):undefined),(query.search? or(like(campaignJournalEntry.title,'%'+query.search+'%'),like(campaignJournalEntry.contentMarkdown,'%'+query.search+'%'),inArray(campaignJournalEntry.id,db.select({ id: campaignJournalTag.campaignJournalEntryId }).from(campaignJournalTag).where(like(campaignJournalTag.displayLabel,'%'+query.search+'%')))):undefined))
+    const [total,rows]=db.transaction(() => [
+      db.select({ value: count() }).from(campaignJournalEntry).where(where).get()!.value,
+      db.query.campaignJournalEntry.findMany({ where: where,orderBy: (row,{ desc }) => [desc(row.updatedAt),desc(row.id)],offset: (page-1)*pageSize,limit: pageSize,with: { authorUser: { columns: { id: true,name: true } },tags: { orderBy: (row,{ asc }) => [asc(row.tagType),asc(row.displayLabel)],with: { glossaryEntry: { columns: { id: true,name: true } } } },sessionLinks: { orderBy: (row,{ asc }) => [asc(row.createdAt)],with: { session: { columns: { id: true,title: true,sessionNumber: true } } } } } }).sync(),
+    ] as const,{ behavior: 'immediate' })
     return {
-        items: rows.map((row) => ({
-          id: row.id,
-          campaignId: row.campaignId,
-          authorUserId: row.authorUserId,
-          authorName: row.authorUser.name,
-          title: row.title,
-          contentMarkdown: row.contentMarkdown,
-          visibility: row.visibility,
-          isDiscoverable: row.isDiscoverable,
-          discoveredAt: row.discoveredAt?.toISOString() || null,
-          isArchived: row.isArchived,
-          sessions: row.sessionLinks.map((link) => ({
-            sessionId: link.session.id,
-            title: link.session.title,
-            sessionNumber: link.session.sessionNumber,
-          })),
-          tags: row.tags.map((tag) => {
-            if (tag.tagType === 'CUSTOM') {
-              return {
-                id: tag.id,
-                tagType: 'CUSTOM' as const,
-                displayLabel: tag.displayLabel,
-                normalizedLabel: tag.normalizedLabel,
-                glossaryEntryId: null,
-                glossaryEntryName: null,
-                isOrphanedGlossaryTag: false as const,
-              }
+      items: rows.map((row) => ({
+        id: row.id,
+        campaignId: row.campaignId,
+        authorUserId: row.authorUserId,
+        authorName: row.authorUser.name,
+        title: row.title,
+        contentMarkdown: row.contentMarkdown,
+        visibility: row.visibility,
+        isDiscoverable: row.isDiscoverable,
+        discoveredAt: row.discoveredAt?.toISOString()||null,
+        isArchived: row.isArchived,
+        sessions: row.sessionLinks.map((link) => ({
+          sessionId: link.session.id,
+          title: link.session.title,
+          sessionNumber: link.session.sessionNumber,
+        })),
+        tags: row.tags.map((tag) => {
+          if(tag.tagType==='CUSTOM') {
+            return {
+              id: tag.id,
+              tagType: 'CUSTOM' as const,
+              displayLabel: tag.displayLabel,
+              normalizedLabel: tag.normalizedLabel,
+              glossaryEntryId: null,
+              glossaryEntryName: null,
+              isOrphanedGlossaryTag: false as const,
             }
-
-            if (tag.glossaryEntryId && tag.glossaryEntry) {
-              return {
-                id: tag.id,
-                tagType: 'GLOSSARY' as const,
-                displayLabel: tag.displayLabel,
-                normalizedLabel: tag.normalizedLabel,
-                glossaryEntryId: tag.glossaryEntry.id,
-                glossaryEntryName: tag.glossaryEntry.name,
-                isOrphanedGlossaryTag: false as const,
-              }
-            }
-
+          }
+          if(tag.glossaryEntryId&&tag.glossaryEntry) {
             return {
               id: tag.id,
               tagType: 'GLOSSARY' as const,
               displayLabel: tag.displayLabel,
               normalizedLabel: tag.normalizedLabel,
-              glossaryEntryId: null,
-              glossaryEntryName: null,
-              isOrphanedGlossaryTag: true as const,
+              glossaryEntryId: tag.glossaryEntry.id,
+              glossaryEntryName: tag.glossaryEntry.name,
+              isOrphanedGlossaryTag: false as const,
             }
-          }),
-          createdAt: row.createdAt.toISOString(),
-          updatedAt: row.updatedAt.toISOString(),
-          canView: true,
-          canEdit: false,
-          canDelete: false,
-        })),
-        pagination: {
-          page,
-          pageSize,
-          total,
-          totalPages: Math.max(1, Math.ceil(total / pageSize)),
-        },
-      }
+          }
+          return {
+            id: tag.id,
+            tagType: 'GLOSSARY' as const,
+            displayLabel: tag.displayLabel,
+            normalizedLabel: tag.normalizedLabel,
+            glossaryEntryId: null,
+            glossaryEntryName: null,
+            isOrphanedGlossaryTag: true as const,
+          }
+        }),
+        createdAt: row.createdAt.toISOString(),
+        updatedAt: row.updatedAt.toISOString(),
+        canView: true,
+        canEdit: false,
+        canDelete: false,
+      })),
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1,Math.ceil(total/pageSize)),
+      },
+    }
   }
-
   async listPublicCampaignDirectory(input: {
     limit?: number
     search?: string
     random?: boolean
   }) {
-    const limit = Math.min(Math.max(input.limit || 24, 1), 100)
-    const search = (input.search || '').trim()
-
-    const rows = await prisma.campaignPublicAccess.findMany({
-      where: {
-        isEnabled: true,
-        isListed: true,
-        ...(search
-          ? {
-              campaign: {
-                OR: [
-                  { name: { contains: search } },
-                  { description: { contains: search } },
-                  { dungeonMasterName: { contains: search } },
-                  { system: { contains: search } },
-                ],
-              },
-            }
-          : {}),
-      },
-      select: {
-        publicSlug: true,
-        updatedAt: true,
-        campaign: {
-          select: {
-            name: true,
-            system: true,
-            description: true,
-            dungeonMasterName: true,
-          },
-        },
-      },
-      orderBy: { updatedAt: 'desc' },
-      take: input.random ? 100 : limit,
-    })
-
-    const sorted = rows.map(toDirectoryItem)
-    if (!input.random) {
+    const limit=Math.min(Math.max(input.limit||24,1),100)
+    const search=(input.search||'').trim()
+    const rows=db.query.campaignPublicAccess.findMany({ where: and(eq(campaignPublicAccess.isEnabled,true),eq(campaignPublicAccess.isListed,true),(search? inArray(campaignPublicAccess.campaignId,db.select({ id: campaign.id }).from(campaign).where(or(like(campaign.name,'%'+search+'%'),like(campaign.description,'%'+search+'%'),like(campaign.dungeonMasterName,'%'+search+'%'),like(campaign.system,'%'+search+'%')))):undefined)),orderBy: (row,{ desc }) => [desc(row.updatedAt)],limit: input.random? 100:limit,columns: { publicSlug: true,updatedAt: true },with: { campaign: { columns: { name: true,system: true,description: true,dungeonMasterName: true } } } }).sync()
+    const sorted=rows.map(toDirectoryItem)
+    if(!input.random) {
       return sorted
     }
-
-    const shuffled = [...sorted]
-    for (let i = shuffled.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1))
-      const tmp = shuffled[i]!
-      shuffled[i] = shuffled[j]!
-      shuffled[j] = tmp
+    const shuffled=[...sorted]
+    for(let i=shuffled.length-1;i>0;i-=1) {
+      const j=Math.floor(Math.random()*(i+1))
+      const tmp=shuffled[i]!
+      shuffled[i]=shuffled[j]!
+      shuffled[j]=tmp
     }
-
-    return shuffled.slice(0, limit)
+    return shuffled.slice(0,limit)
   }
-
   async getPublicCharacters(publicSlug: string) {
-    const resolved = await this.resolvePublicAccess(publicSlug, 'characters')
-
-    const rows = await prisma.campaignCharacter.findMany({
-      where: { campaignId: resolved.campaignId },
-      select: {
-        status: true,
-        roleLabel: true,
-        notes: true,
-        character: {
-          select: {
-            name: true,
-            status: true,
-            portraitUrl: true,
-          },
-        },
-      },
-      orderBy: { updatedAt: 'desc' },
-    })
-
+    const resolved=await this.resolvePublicAccess(publicSlug,'characters')
+    const rows=db.query.campaignCharacter.findMany({ where: eq(campaignCharacter.campaignId,resolved.campaignId),orderBy: (row,{ desc }) => [desc(row.updatedAt)],columns: { status: true,roleLabel: true,notes: true },with: { character: { columns: { name: true,status: true,portraitUrl: true } } } }).sync()
     return rows.map((row) => ({
-        name: row.character.name,
-        status: row.character.status,
-        portraitUrl: row.character.portraitUrl,
-        campaignStatus: row.status,
-        roleLabel: row.roleLabel,
-        notes: row.notes,
-      }))
+      name: row.character.name,
+      status: row.character.status,
+      portraitUrl: row.character.portraitUrl,
+      campaignStatus: row.status,
+      roleLabel: row.roleLabel,
+      notes: row.notes,
+    }))
   }
-
   async getPublicRecaps(publicSlug: string) {
-    const resolved = await this.resolvePublicAccess(publicSlug, 'recaps')
-
-    const rows = await prisma.recapRecording.findMany({
-      where: { session: { campaignId: resolved.campaignId } },
-      select: {
-        id: true,
-        filename: true,
-        mimeType: true,
-        durationSeconds: true,
-        createdAt: true,
-        session: {
-          select: {
-            id: true,
-            title: true,
-            sessionNumber: true,
-            playedAt: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    })
-
+    const resolved=await this.resolvePublicAccess(publicSlug,'recaps')
+    const rows=db.query.recapRecording.findMany({ where: inArray(recapRecording.sessionId,db.select({ id: session.id }).from(session).where(eq(session.campaignId,resolved.campaignId))),orderBy: (row,{ desc }) => [desc(row.createdAt)],columns: { id: true,filename: true,mimeType: true,durationSeconds: true,createdAt: true },with: { session: { columns: { id: true,title: true,sessionNumber: true,playedAt: true } } } }).sync()
     return rows
   }
-
-  async getPublicRecapPlayback(publicSlug: string, recapId: string) {
-    const resolved = await this.resolvePublicAccess(publicSlug, 'recaps')
-
-    const recap = await prisma.recapRecording.findFirst({
-      where: {
-        id: recapId,
-        session: {
-          campaignId: resolved.campaignId,
-        },
-      },
-      select: { id: true },
-    })
-    if (!recap) {
-      throw apiError(404, 'NOT_FOUND', 'Recap not found.')
+  async getPublicRecapPlayback(publicSlug: string,recapId: string) {
+    const resolved=await this.resolvePublicAccess(publicSlug,'recaps')
+    const recap=db.query.recapRecording.findFirst({ where: and(eq(recapRecording.id,recapId),inArray(recapRecording.sessionId,db.select({ id: session.id }).from(session).where(eq(session.campaignId,resolved.campaignId)))),columns: { id: true } }).sync()
+    if(!recap) {
+      throw apiError(404,'NOT_FOUND','Recap not found.')
     }
-
     return {
-        url: `/api/public/campaigns/${publicSlug}/recaps/${recapId}/stream`,
-      }
-  }
-
-  async getPublicRecapStream(publicSlug: string, recapId: string, rangeHeader?: string) {
-    const resolved = await this.resolvePublicAccess(publicSlug, 'recaps')
-
-    const recap = await prisma.recapRecording.findFirst({
-      where: {
-        id: recapId,
-        session: {
-          campaignId: resolved.campaignId,
-        },
-      },
-      select: {
-        id: true,
-        filename: true,
-        mimeType: true,
-        artifact: {
-          select: {
-            storageKey: true,
-          },
-        },
-      },
-    })
-
-    if (!recap) {
-      throw apiError(404, 'NOT_FOUND', 'Recap not found.')
+      url: `/api/public/campaigns/${publicSlug}/recaps/${recapId}/stream`,
     }
-
-    const adapter = getStorageAdapter()
-    const stream = await getMediaStream(adapter, recap.artifact.storageKey, rangeHeader)
-    return {
-        contentType: recap.mimeType,
-        filename: recap.filename,
-        stream,
-      }
   }
-
+  async getPublicRecapStream(publicSlug: string,recapId: string,rangeHeader?: string) {
+    const resolved=await this.resolvePublicAccess(publicSlug,'recaps')
+    const recap=db.query.recapRecording.findFirst({ where: and(eq(recapRecording.id,recapId),inArray(recapRecording.sessionId,db.select({ id: session.id }).from(session).where(eq(session.campaignId,resolved.campaignId)))),columns: { id: true,filename: true,mimeType: true },with: { artifact: { columns: { storageKey: true } } } }).sync()
+    if(!recap) {
+      throw apiError(404,'NOT_FOUND','Recap not found.')
+    }
+    const adapter=getStorageAdapter()
+    const stream=await getMediaStream(adapter,recap.artifact.storageKey,rangeHeader)
+    return {
+      contentType: recap.mimeType,
+      filename: recap.filename,
+      stream,
+    }
+  }
   async getPublicSessions(publicSlug: string) {
-    const resolved = await this.resolvePublicAccess(publicSlug, 'sessions')
-
-    const rows = await prisma.session.findMany({
-      where: { campaignId: resolved.campaignId },
-      select: {
-        title: true,
-        sessionNumber: true,
-        playedAt: true,
-        notes: true,
-        createdAt: true,
-      },
-      orderBy: [{ sessionNumber: 'asc' }, { playedAt: 'desc' }, { createdAt: 'desc' }],
-    })
-
+    const resolved=await this.resolvePublicAccess(publicSlug,'sessions')
+    const rows=db.query.session.findMany({ where: eq(session.campaignId,resolved.campaignId),orderBy: (row,{ asc,desc }) => [asc(row.sessionNumber),desc(row.playedAt),desc(row.createdAt)],columns: { title: true,sessionNumber: true,playedAt: true,notes: true,createdAt: true } }).sync()
     return rows
   }
-
   async getPublicGlossary(publicSlug: string) {
-    const resolved = await this.resolvePublicAccess(publicSlug, 'glossary')
-
-    const rows = await prisma.glossaryEntry.findMany({
-      where: { campaignId: resolved.campaignId },
-      select: {
-        type: true,
-        name: true,
-        aliases: true,
-        description: true,
-        sessions: {
-          select: {
-            session: {
-              select: {
-                title: true,
-                sessionNumber: true,
-                playedAt: true,
-              },
-            },
-          },
-          orderBy: { createdAt: 'desc' },
-        },
-      },
-      orderBy: { name: 'asc' },
-    })
-
+    const resolved=await this.resolvePublicAccess(publicSlug,'glossary')
+    const rows=db.query.glossaryEntry.findMany({ where: eq(glossaryEntry.campaignId,resolved.campaignId),orderBy: (row,{ asc }) => [asc(row.name)],columns: { type: true,name: true,aliases: true,description: true },with: { sessions: { orderBy: (row,{ desc }) => [desc(row.createdAt)],with: { session: { columns: { title: true,sessionNumber: true,playedAt: true } } } } } }).sync()
     return rows
   }
-
   async getPublicQuests(publicSlug: string) {
-    const resolved = await this.resolvePublicAccess(publicSlug, 'quests')
-
-      const rows = await prisma.quest.findMany({
-        where: { campaignId: resolved.campaignId },
-        include: {
-          sourceNpc: {
-            select: {
-              name: true,
-            },
-          },
-          sourceCharacter: {
-            select: {
-              name: true,
-            },
-          },
-        },
-        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-      })
-
+    const resolved=await this.resolvePublicAccess(publicSlug,'quests')
+    const rows=db.query.quest.findMany({ where: eq(quest.campaignId,resolved.campaignId),orderBy: (row,{ asc,desc }) => [asc(row.sortOrder),desc(row.createdAt)],with: { sourceNpc: { columns: { name: true } },sourceCharacter: { columns: { name: true } } } }).sync()
     return rows.map((row) => ({
-        id: row.id,
-        title: row.title,
-        description: row.description,
-        type: row.type,
-        track: row.track,
-        sourceType: row.sourceType,
-          sourceText: row.sourceText,
-          sourceNpcId: row.sourceNpcId,
-          sourceNpcName: row.sourceNpc?.name || null,
-          sourceCharacterId: row.sourceCharacterId,
-          sourceCharacterName: row.sourceCharacter?.name || null,
-          reward: row.reward,
-        status: row.status,
-        progressNotes: row.progressNotes,
-        expirationDate:
-          row.expirationYear !== null && row.expirationMonth !== null && row.expirationDay !== null
-            ? {
-                year: row.expirationYear,
-                month: row.expirationMonth,
-                day: row.expirationDay,
-              }
-            : null,
-        sortOrder: row.sortOrder,
-        createdAt: row.createdAt.toISOString(),
-        updatedAt: row.updatedAt.toISOString(),
-      }))
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      type: row.type,
+      track: row.track,
+      sourceType: row.sourceType,
+      sourceText: row.sourceText,
+      sourceNpcId: row.sourceNpcId,
+      sourceNpcName: row.sourceNpc?.name||null,
+      sourceCharacterId: row.sourceCharacterId,
+      sourceCharacterName: row.sourceCharacter?.name||null,
+      reward: row.reward,
+      status: row.status,
+      progressNotes: row.progressNotes,
+      expirationDate: row.expirationYear!==null&&row.expirationMonth!==null&&row.expirationDay!==null
+        ? {
+          year: row.expirationYear,
+          month: row.expirationMonth,
+          day: row.expirationDay,
+        }
+        :null,
+      sortOrder: row.sortOrder,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    }))
   }
-
   async getPublicMilestones(publicSlug: string) {
-    const resolved = await this.resolvePublicAccess(publicSlug, 'milestones')
-
-    const rows = await prisma.milestone.findMany({
-      where: { campaignId: resolved.campaignId },
-      select: {
-        title: true,
-        description: true,
-        isComplete: true,
-        completedAt: true,
-        createdAt: true,
-      },
-      orderBy: [{ isComplete: 'asc' }, { createdAt: 'desc' }],
-    })
-
+    const resolved=await this.resolvePublicAccess(publicSlug,'milestones')
+    const rows=db.query.milestone.findMany({ where: eq(milestone.campaignId,resolved.campaignId),orderBy: (row,{ asc,desc }) => [asc(row.isComplete),desc(row.createdAt)],columns: { title: true,description: true,isComplete: true,completedAt: true,createdAt: true } }).sync()
     return rows
   }
-
   async getPublicMaps(publicSlug: string) {
-    const resolved = await this.resolvePublicAccess(publicSlug, 'maps')
-
-    const rows = await prisma.campaignMap.findMany({
-      where: { campaignId: resolved.campaignId },
-      select: {
-        name: true,
-        slug: true,
-        isPrimary: true,
-        status: true,
-        createdAt: true,
-      },
-      orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
-    })
-
+    const resolved=await this.resolvePublicAccess(publicSlug,'maps')
+    const rows=db.query.campaignMap.findMany({ where: eq(campaignMap.campaignId,resolved.campaignId),orderBy: (row,{ asc,desc }) => [desc(row.isPrimary),asc(row.createdAt)],columns: { name: true,slug: true,isPrimary: true,status: true,createdAt: true } }).sync()
     return rows
   }
-
-  async getPublicMapViewer(publicSlug: string, mapSlug?: string) {
-    const resolved = await this.resolvePublicAccess(publicSlug, 'maps')
-
-    const map = await prisma.campaignMap.findFirst({
-      where: {
-        campaignId: resolved.campaignId,
-        ...(mapSlug ? { slug: mapSlug } : { isPrimary: true }),
-      },
-      select: {
-        id: true,
-        campaignId: true,
-        name: true,
-        isPrimary: true,
-        status: true,
-        importVersion: true,
-        sourceFingerprint: true,
-        rawManifestJson: true,
-      },
-      orderBy: mapSlug ? undefined : [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
-    })
-
-    if (!map) {
-      throw apiError(404, 'NOT_FOUND', 'Map not found.')
+  async getPublicMapViewer(publicSlug: string,mapSlug?: string) {
+    const resolved=await this.resolvePublicAccess(publicSlug,'maps')
+    const map=db.query.campaignMap.findFirst({ where: and(eq(campaignMap.campaignId,resolved.campaignId),(mapSlug? eq(campaignMap.slug,mapSlug):eq(campaignMap.isPrimary,true))),orderBy: mapSlug? undefined:[desc(campaignMap.isPrimary),asc(campaignMap.createdAt)],columns: { id: true,campaignId: true,name: true,isPrimary: true,status: true,importVersion: true,sourceFingerprint: true,rawManifestJson: true } }).sync()
+    if(!map) {
+      throw apiError(404,'NOT_FOUND','Map not found.')
     }
-
-    const features = await prisma.campaignMapFeature.findMany({
-      where: { campaignMapId: map.id },
-      orderBy: [{ featureType: 'asc' }, { displayName: 'asc' }],
-      select: {
-        id: true,
-        geometryJson: true,
-        propertiesJson: true,
-        displayName: true,
-        description: true,
-        externalId: true,
-        removed: true,
-        sourceRef: true,
-        featureType: true,
-      },
-    })
-
-    const manifest = (map.rawManifestJson || {}) as Record<string, unknown>
-    const bounds =
-      Array.isArray(manifest.bounds) && manifest.bounds.length === 2
-        ? (manifest.bounds as [[number, number], [number, number]])
-        : [[-180, -85], [180, 85]]
-    const mapCoordinates = parseMapCoordinates(manifest.mapCoordinates)
-
+    const features=db.query.campaignMapFeature.findMany({ where: eq(campaignMapFeature.campaignMapId,map.id),orderBy: (row,{ asc }) => [asc(row.featureType),asc(row.displayName)],columns: { id: true,geometryJson: true,propertiesJson: true,displayName: true,description: true,externalId: true,removed: true,sourceRef: true,featureType: true } }).sync()
+    const manifest=(map.rawManifestJson||{}) as Record<string,unknown>
+    const bounds=Array.isArray(manifest.bounds)&&manifest.bounds.length===2
+      ? (manifest.bounds as [
+        [
+          number,
+          number
+        ],
+        [
+          number,
+          number
+        ]
+      ])
+      :[[-180,-85],[180,85]]
+    const mapCoordinates=parseMapCoordinates(manifest.mapCoordinates)
     return {
-        map: {
-          id: map.id,
-          campaignId: map.campaignId,
-          name: map.name,
-          isPrimary: map.isPrimary,
-          status: map.status,
-          importVersion: map.importVersion,
-          sourceFingerprint: map.sourceFingerprint,
-          bounds,
-          mapCoordinates,
-          defaultActiveLayers: [...defaultMapLayerTypes],
+      map: {
+        id: map.id,
+        campaignId: map.campaignId,
+        name: map.name,
+        isPrimary: map.isPrimary,
+        status: map.status,
+        importVersion: map.importVersion,
+        sourceFingerprint: map.sourceFingerprint,
+        bounds,
+        mapCoordinates,
+        defaultActiveLayers: [...defaultMapLayerTypes],
+      },
+      features: features.map((feature) => ({
+        id: feature.id,
+        type: 'Feature' as const,
+        geometry: feature.geometryJson as {
+          type: string
+          coordinates: unknown
         },
-        features: features.map((feature) => ({
-          id: feature.id,
-          type: 'Feature' as const,
-          geometry: feature.geometryJson as { type: string; coordinates: unknown },
-          properties: {
-            mapFeatureId: feature.id,
-            featureType: mapFeatureTypeToApi[feature.featureType],
-            displayName: feature.displayName,
-            description: feature.description,
-            externalId: feature.externalId,
-            removed: feature.removed,
-            sourceRef: feature.sourceRef,
-            glossaryLinked: false,
-            glossaryMatched: false,
-            glossaryLinkedOrMatched: false,
-            ...(feature.propertiesJson as Record<string, unknown> | null | undefined),
-          },
-        })),
-      }
+        properties: {
+          mapFeatureId: feature.id,
+          featureType: mapFeatureTypeToApi[feature.featureType],
+          displayName: feature.displayName,
+          description: feature.description,
+          externalId: feature.externalId,
+          removed: feature.removed,
+          sourceRef: feature.sourceRef,
+          glossaryLinked: false,
+          glossaryMatched: false,
+          glossaryLinkedOrMatched: false,
+          ...(feature.propertiesJson as Record<string,unknown>|null|undefined),
+        },
+      })),
+    }
   }
-
-  async getPublicMapSvg(publicSlug: string, mapSlug: string) {
-    const resolved = await this.resolvePublicAccess(publicSlug, 'maps')
-
-    const map = await prisma.campaignMap.findFirst({
-      where: {
-        campaignId: resolved.campaignId,
-        slug: mapSlug,
-      },
-      select: {
-        slug: true,
-        files: {
-          where: { kind: 'SVG' },
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-          select: {
-            storageKey: true,
-            contentType: true,
-          },
-        },
-      },
-    })
-
-    if (!map) {
-      throw apiError(404, 'NOT_FOUND', 'Map not found.')
+  async getPublicMapSvg(publicSlug: string,mapSlug: string) {
+    const resolved=await this.resolvePublicAccess(publicSlug,'maps')
+    const map=db.query.campaignMap.findFirst({ where: and(eq(campaignMap.campaignId,resolved.campaignId),eq(campaignMap.slug,mapSlug)),columns: { slug: true },with: { files: { where: eq(campaignMapFile.kind,'SVG'),orderBy: (row,{ desc }) => [desc(row.createdAt)],limit: 1,columns: { storageKey: true,contentType: true } } } }).sync()
+    if(!map) {
+      throw apiError(404,'NOT_FOUND','Map not found.')
     }
-
-    const svgFile = map.files[0]
-    if (!svgFile) {
-      throw apiError(404, 'NOT_FOUND', 'No SVG source file found for this map.')
+    const svgFile=map.files[0]
+    if(!svgFile) {
+      throw apiError(404,'NOT_FOUND','No SVG source file found for this map.')
     }
-
-    const adapter = getStorageAdapter()
-    const stream = await adapter.getObject(svgFile.storageKey)
+    const adapter=getStorageAdapter()
+    const stream=await adapter.getObject(svgFile.storageKey)
     return {
-        contentType: svgFile.contentType || 'image/svg+xml',
-        filename: `${map.slug || 'map'}.svg`,
-        stream,
-      }
+      contentType: svgFile.contentType||'image/svg+xml',
+      filename: `${map.slug||'map'}.svg`,
+      stream,
+    }
   }
 }
-

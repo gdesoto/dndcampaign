@@ -1,12 +1,14 @@
 // @vitest-environment node
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
-import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
+import { createApiTestDatabase } from '../scripts/db-test-client'
+import * as tables from '../../server/db/schema'
+import { eq } from 'drizzle-orm'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
 
-const prisma = createApiTestPrismaClient()
-const hash = new Hash(new Scrypt())
+const db = createApiTestDatabase()
+const hash = new Hash(new Scrypt({}))
 const baseUrl = getApiTestBaseUrl()
 
 const ownerUser = {
@@ -23,7 +25,7 @@ const authHeaders = {
 const sleep = (ms: number) => new Promise((resolveDelay) => setTimeout(resolveDelay, ms))
 
 const loginAndGetCookie = async (email: string, password: string) => {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
+  for (let attempt = 0;attempt < 20;attempt += 1) {
     const response = await fetch(`${baseUrl}/api/auth/login`, {
       method: 'POST',
       headers: authHeaders,
@@ -50,51 +52,45 @@ describe('milestone API routes', () => {
   beforeAll(async () => {
     const ownerPasswordHash = await hash.make(ownerUser.password)
 
-    const owner = await prisma.user.upsert({
-      where: { email: ownerUser.email },
-      update: {
+    const owner = db.insert(tables.user).values({
+      email: ownerUser.email,
+      passwordHash: ownerPasswordHash,
+      name: ownerUser.name,
+    }).onConflictDoUpdate({
+      target: tables.user.email, set: {
         passwordHash: ownerPasswordHash,
         name: ownerUser.name,
-      },
-      create: {
-        email: ownerUser.email,
-        passwordHash: ownerPasswordHash,
-        name: ownerUser.name,
-      },
-    })
+      }
+    }).returning().get()!
     ownerId = owner.id
 
-    await prisma.campaign.deleteMany({ where: { ownerId } })
+    db.delete(tables.campaign).where(eq(tables.campaign.ownerId, ownerId)).run()
 
-    const campaign = await prisma.campaign.create({
-      data: {
-        ownerId,
-        name: 'Milestone Route Test Campaign',
-        system: 'D&D 5e',
-        description: 'Campaign for milestone route tests.',
-      },
-    })
+    const campaign = db.insert(tables.campaign).values({
+      ownerId,
+      name: 'Milestone Route Test Campaign',
+      system: 'D&D 5e',
+      description: 'Campaign for milestone route tests.',
+    }).returning().get()!
     campaignId = campaign.id
 
     ownerCookie = await loginAndGetCookie(ownerUser.email, ownerUser.password)
   }, 120_000)
 
   beforeEach(async () => {
-    await prisma.milestone.deleteMany({ where: { campaignId } })
+    db.delete(tables.milestone).where(eq(tables.milestone.campaignId, campaignId)).run()
   })
 
   afterAll(async () => {
-    await prisma.$disconnect()
+    db.$client.close()
   })
 
   it('allows a content writer to delete a milestone', async () => {
-    const milestone = await prisma.milestone.create({
-      data: {
-        campaignId,
-        title: 'Recover the relic',
-        description: 'Milestone to delete in the route test.',
-      },
-    })
+    const milestone = db.insert(tables.milestone).values({
+      campaignId,
+      title: 'Recover the relic',
+      description: 'Milestone to delete in the route test.',
+    }).returning().get()!
 
     const response = await fetch(`${baseUrl}/api/milestones/${milestone.id}`, {
       method: 'DELETE',
@@ -102,22 +98,20 @@ describe('milestone API routes', () => {
     })
 
     expect(response.status).toBe(200)
-    await expect(prisma.milestone.findUnique({ where: { id: milestone.id } })).resolves.toBeNull()
+    expect((db.query.milestone.findFirst({ where: eq(tables.milestone.id, milestone.id) }).sync() ?? null)).toBeNull()
   })
 
   it('rejects milestone deletion without authentication', async () => {
-    const milestone = await prisma.milestone.create({
-      data: {
-        campaignId,
-        title: 'Defend the village',
-      },
-    })
+    const milestone = db.insert(tables.milestone).values({
+      campaignId,
+      title: 'Defend the village',
+    }).returning().get()!
 
     const response = await fetch(`${baseUrl}/api/milestones/${milestone.id}`, {
       method: 'DELETE',
     })
 
     expect(response.status).toBe(401)
-    await expect(prisma.milestone.findUnique({ where: { id: milestone.id } })).resolves.not.toBeNull()
+    expect((db.query.milestone.findFirst({ where: eq(tables.milestone.id, milestone.id) }).sync() ?? null)).not.toBeNull()
   })
 })

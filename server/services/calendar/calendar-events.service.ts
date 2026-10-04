@@ -1,5 +1,7 @@
 import { z } from 'zod'
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { and, eq, asc } from 'drizzle-orm'
 import {
   calendarEventCreateSchema,
   calendarEventQuerySchema,
@@ -44,13 +46,13 @@ export class CalendarEventsService {
   async listEvents(campaignId: string, query: CalendarEventQueryInput): Promise<CampaignCalendarEventDto[]> {
     const parsedQuery = calendarEventQuerySchema.parse(query)
 
-    const events = await prisma.campaignCalendarEvent.findMany({
-      where: {
-        campaignId,
-        ...(typeof parsedQuery.year === 'number' ? { year: parsedQuery.year } : {}),
-        ...(typeof parsedQuery.month === 'number' ? { month: parsedQuery.month } : {}),
-      },
-      orderBy: [{ year: 'asc' }, { month: 'asc' }, { day: 'asc' }, { createdAt: 'asc' }],
+    const events = await db.query.campaignCalendarEvent.findMany({
+      where: and(
+        eq(tables.campaignCalendarEvent.campaignId, campaignId),
+        typeof parsedQuery.year === 'number' ? eq(tables.campaignCalendarEvent.year, parsedQuery.year) : undefined,
+        typeof parsedQuery.month === 'number' ? eq(tables.campaignCalendarEvent.month, parsedQuery.month) : undefined,
+      ),
+      orderBy: [asc(tables.campaignCalendarEvent.year), asc(tables.campaignCalendarEvent.month), asc(tables.campaignCalendarEvent.day), asc(tables.campaignCalendarEvent.createdAt)],
     })
 
     return events.map(toEventDto)
@@ -61,9 +63,9 @@ export class CalendarEventsService {
     userId: string,
     input: CalendarEventCreateInput,
   ): Promise<CampaignCalendarEventDto> {
-    const config = await prisma.campaignCalendarConfig.findUnique({
-      where: { campaignId },
-      select: { isEnabled: true, monthsJson: true },
+    const config = await db.query.campaignCalendarConfig.findFirst({
+      where: eq(tables.campaignCalendarConfig.campaignId, campaignId),
+      columns: { isEnabled: true, monthsJson: true },
     })
 
     if (!config) {
@@ -82,17 +84,15 @@ export class CalendarEventsService {
       day: parsedInput.day,
     })
 
-    const created = await prisma.campaignCalendarEvent.create({
-      data: {
-        campaignId,
-        year: parsedInput.year,
-        month: parsedInput.month,
-        day: parsedInput.day,
-        title: parsedInput.title,
-        description: parsedInput.description,
-        createdByUserId: userId,
-      },
-    })
+    const created = await db.insert(tables.campaignCalendarEvent).values({
+      campaignId,
+      year: parsedInput.year,
+      month: parsedInput.month,
+      day: parsedInput.day,
+      title: parsedInput.title,
+      description: parsedInput.description,
+      createdByUserId: userId,
+    }).returning().get()
 
     return toEventDto(created)
   }
@@ -102,8 +102,11 @@ export class CalendarEventsService {
     eventId: string,
     input: CalendarEventUpdateInput,
   ): Promise<CampaignCalendarEventDto> {
-    const existing = await prisma.campaignCalendarEvent.findFirst({
-      where: { id: eventId, campaignId },
+    const existing = await db.query.campaignCalendarEvent.findFirst({
+      where: and(
+        eq(tables.campaignCalendarEvent.id, eventId),
+        eq(tables.campaignCalendarEvent.campaignId, campaignId),
+      ),
     })
 
     if (!existing) {
@@ -120,9 +123,9 @@ export class CalendarEventsService {
       || typeof parsedInput.month === 'number'
       || typeof parsedInput.day === 'number'
     ) {
-      const config = await prisma.campaignCalendarConfig.findUnique({
-        where: { campaignId },
-        select: { isEnabled: true, monthsJson: true },
+      const config = await db.query.campaignCalendarConfig.findFirst({
+        where: eq(tables.campaignCalendarConfig.campaignId, campaignId),
+        columns: { isEnabled: true, monthsJson: true },
       })
       if (!config) {
         throw apiError(404, 'CALENDAR_CONFIG_NOT_FOUND', 'Calendar config not found for campaign.')
@@ -137,26 +140,21 @@ export class CalendarEventsService {
       })
     }
 
-    const updated = await prisma.campaignCalendarEvent.update({
-      where: { id: existing.id },
-      data: {
-        ...(typeof parsedInput.year === 'number' ? { year: parsedInput.year } : {}),
-        ...(typeof parsedInput.month === 'number' ? { month: parsedInput.month } : {}),
-        ...(typeof parsedInput.day === 'number' ? { day: parsedInput.day } : {}),
-        ...(typeof parsedInput.title === 'string' ? { title: parsedInput.title } : {}),
-        ...(Object.prototype.hasOwnProperty.call(parsedInput, 'description')
-          ? { description: parsedInput.description ?? null }
-          : {}),
-      },
-    })
+    const updated = await db.update(tables.campaignCalendarEvent).set({
+      ...(typeof parsedInput.year === 'number' ? { year: parsedInput.year } : {}),
+      ...(typeof parsedInput.month === 'number' ? { month: parsedInput.month } : {}),
+      ...(typeof parsedInput.day === 'number' ? { day: parsedInput.day } : {}),
+      ...(typeof parsedInput.title === 'string' ? { title: parsedInput.title } : {}),
+      ...(Object.prototype.hasOwnProperty.call(parsedInput, 'description')
+        ? { description: parsedInput.description ?? null }
+        : {}),
+    }).where(eq(tables.campaignCalendarEvent.id, existing.id)).returning().get()!
 
     return toEventDto(updated)
   }
 
   async deleteEvent(campaignId: string, eventId: string): Promise<{ deleted: true }> {
-    await prisma.campaignCalendarEvent.deleteMany({
-      where: { id: eventId, campaignId },
-    })
+    await db.delete(tables.campaignCalendarEvent).where(and(eq(tables.campaignCalendarEvent.id, eventId), eq(tables.campaignCalendarEvent.campaignId, campaignId))).run()
 
     return { deleted: true }
   }

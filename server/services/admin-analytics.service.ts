@@ -1,4 +1,6 @@
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { and, inArray, lte, gte, isNotNull, desc, sql, count } from 'drizzle-orm'
 import type {
   AdminAnalyticsJobsQuery,
   AdminAnalyticsOverviewQuery,
@@ -38,39 +40,35 @@ export class AdminAnalyticsService {
 
     const [totalUsers, totalCampaigns, dauUsers, wauUsers, campaigns, storageByProvider, storageByCampaign] =
       await Promise.all([
-        prisma.user.count(),
-        prisma.campaign.count(),
-        prisma.user.count({
-          where: { lastLoginAt: { gte: dayAgo, lte: asOf } },
-        }),
-        prisma.user.count({
-          where: { lastLoginAt: { gte: weekAgo, lte: asOf } },
-        }),
-        prisma.campaign.findMany({
-          select: {
-            id: true,
-            _count: { select: { members: true } },
-          },
-        }),
-        prisma.artifact.groupBy({
-          by: ['provider'],
-          _sum: { byteSize: true },
-          _count: { _all: true },
-        }),
-        prisma.artifact.groupBy({
-          by: ['campaignId'],
-          _sum: { byteSize: true },
-          _count: { _all: true },
-          where: { campaignId: { not: null } },
-        }),
+        db.select({ count: count() }).from(tables.user).get()!.count,
+        db.select({ count: count() }).from(tables.campaign).get()!.count,
+        db.select({ count: count() }).from(tables.user).where(and(gte(tables.user.lastLoginAt, dayAgo), lte(tables.user.lastLoginAt, asOf))).get()!.count,
+        db.select({ count: count() }).from(tables.user).where(and(gte(tables.user.lastLoginAt, weekAgo), lte(tables.user.lastLoginAt, asOf))).get()!.count,
+        db.query.campaign.findMany({
+          extras: { membersCount: sql<number>`(select count(*) from "CampaignMember" where "CampaignMember"."campaignId" = ${sql.raw('"campaign"."id"')})`.mapWith(Number).as('members_count') },
+          columns: { id: true }
+        }).sync(),
+        db.select({
+          provider: tables.artifact.provider,
+          _sum: { byteSize: sql<number | null> `sum(${tables.artifact.byteSize})`.mapWith(Number) },
+          artifactCount: count()
+        }).from(tables.artifact).groupBy(tables.artifact.provider).all(),
+        db.select({
+          campaignId: tables.artifact.campaignId,
+          _sum: { byteSize: sql<number | null> `sum(${tables.artifact.byteSize})`.mapWith(Number) },
+          artifactCount: count()
+        }).from(tables.artifact).where(isNotNull(tables.artifact.campaignId)).groupBy(tables.artifact.campaignId).all(),
       ])
 
     const campaignIds = storageByCampaign.map((entry) => entry.campaignId).filter(Boolean) as string[]
     const campaignNames = campaignIds.length
-      ? await prisma.campaign.findMany({
-          where: { id: { in: campaignIds } },
-          select: { id: true, name: true },
-        })
+      ? await db.query.campaign.findMany({
+        where: inArray(tables.campaign.id, campaignIds),
+        columns: {
+          id: true,
+          name: true
+        }
+      }).sync()
       : []
 
     const campaignNameMap = new Map(campaignNames.map((campaign) => [campaign.id, campaign.name]))
@@ -83,7 +81,7 @@ export class AdminAnalyticsService {
     }
 
     for (const campaign of campaigns) {
-      const count = Math.max(1, campaign._count.members)
+      const count = Math.max(1, campaign.membersCount)
       if (count === 1) buckets['1'] += 1
       else if (count <= 5) buckets['2-5'] += 1
       else if (count <= 10) buckets['6-10'] += 1
@@ -107,13 +105,13 @@ export class AdminAnalyticsService {
       storageByProvider: storageByProvider.map((entry) => ({
         provider: entry.provider,
         totalBytes: entry._sum.byteSize || 0,
-        artifactCount: entry._count._all,
+        artifactCount: entry.artifactCount,
       })),
       storageByCampaign: storageByCampaign.map((entry) => ({
         campaignId: entry.campaignId,
         campaignName: entry.campaignId ? campaignNameMap.get(entry.campaignId) || 'Unknown campaign' : 'Unknown campaign',
         totalBytes: entry._sum.byteSize || 0,
-        artifactCount: entry._count._all,
+        artifactCount: entry.artifactCount,
       })),
     }
   }
@@ -122,48 +120,34 @@ export class AdminAnalyticsService {
     const { start, end } = parseDateRange(query.from, query.to)
 
     const [users, campaigns, artifacts] = await Promise.all([
-      prisma.user.findMany({
-        where: {
-          lastLoginAt: {
-            gte: start,
-            lte: end,
-          },
-        },
-        select: {
+      db.query.user.findMany({
+        where: and(gte(tables.user.lastLoginAt, start), lte(tables.user.lastLoginAt, end)),
+        columns: {
           id: true,
-          lastLoginAt: true,
-        },
-      }),
-      prisma.campaign.findMany({
-        orderBy: { updatedAt: 'desc' },
-        take: query.campaignLimit,
-        select: {
+          lastLoginAt: true
+        }
+      }).sync(),
+      db.query.campaign.findMany({
+        orderBy: [desc(tables.campaign.updatedAt)],
+        limit: query.campaignLimit,
+        extras: { membersCount: sql<number>`(select count(*) from "CampaignMember" where "CampaignMember"."campaignId" = ${sql.raw('"campaign"."id"')})`.mapWith(Number).as('members_count'),
+          sessionsCount: sql<number>`(select count(*) from "Session" where "Session"."campaignId" = ${sql.raw('"campaign"."id"')})`.mapWith(Number).as('sessions_count') },
+        columns: {
           id: true,
           name: true,
           isArchived: true,
-          updatedAt: true,
-          owner: {
-            select: {
+          updatedAt: true
+        },
+        with: { owner: { columns: {
               email: true,
-              name: true,
-            },
-          },
-          _count: {
-            select: {
-              members: true,
-              sessions: true,
-            },
-          },
-        },
-      }),
-      prisma.artifact.groupBy({
-        by: ['campaignId'],
-        where: {
-          campaignId: { not: null },
-        },
-        _sum: { byteSize: true },
-        _count: { _all: true },
-      }),
+              name: true
+            } } }
+      }).sync(),
+      db.select({
+        campaignId: tables.artifact.campaignId,
+        _sum: { byteSize: sql<number | null> `sum(${tables.artifact.byteSize})`.mapWith(Number) },
+        artifactCount: count()
+      }).from(tables.artifact).where(isNotNull(tables.artifact.campaignId)).groupBy(tables.artifact.campaignId).all(),
     ])
 
     const daySet = new Map<string, Set<string>>()
@@ -183,7 +167,7 @@ export class AdminAnalyticsService {
         entry.campaignId as string,
         {
           totalBytes: entry._sum.byteSize || 0,
-          artifactCount: entry._count._all,
+          artifactCount: entry.artifactCount,
         },
       ])
     )
@@ -196,8 +180,8 @@ export class AdminAnalyticsService {
         ownerEmail: campaign.owner.email,
         ownerName: campaign.owner.name,
         isArchived: campaign.isArchived,
-        memberCount: Math.max(1, campaign._count.members),
-        sessionCount: campaign._count.sessions,
+        memberCount: Math.max(1, campaign.membersCount),
+        sessionCount: campaign.sessionsCount,
         artifactCount: artifactUsage?.artifactCount || 0,
         storageBytes: artifactUsage?.totalBytes || 0,
         updatedAt: campaign.updatedAt.toISOString(),
@@ -218,22 +202,22 @@ export class AdminAnalyticsService {
     const { start, end } = parseDateRange(query.from, query.to)
 
     const [transcriptionJobs, summaryJobs] = await Promise.all([
-      prisma.transcriptionJob.findMany({
-        where: { createdAt: { gte: start, lte: end } },
-        select: {
+      db.query.transcriptionJob.findMany({
+        where: and(gte(tables.transcriptionJob.createdAt, start), lte(tables.transcriptionJob.createdAt, end)),
+        columns: {
           id: true,
           status: true,
-          createdAt: true,
-        },
-      }),
-      prisma.summaryJob.findMany({
-        where: { createdAt: { gte: start, lte: end } },
-        select: {
+          createdAt: true
+        }
+      }).sync(),
+      db.query.summaryJob.findMany({
+        where: and(gte(tables.summaryJob.createdAt, start), lte(tables.summaryJob.createdAt, end)),
+        columns: {
           id: true,
           status: true,
-          createdAt: true,
-        },
-      }),
+          createdAt: true
+        }
+      }).sync(),
     ])
 
     const transcriptionCompleted = transcriptionJobs.filter((job) => job.status === 'COMPLETED').length

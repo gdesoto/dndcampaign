@@ -1,5 +1,7 @@
 import { getEncounterActions } from '#shared/utils/encounter-policy'
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { eq, and, inArray, asc, desc, count, max } from 'drizzle-orm'
 import type {
   EncounterCombatant,
   EncounterDetail,
@@ -33,16 +35,7 @@ import { apiError } from '#server/utils/http'
 
 export class EncounterService {
   async listEncounters(campaignId: string, userId: string, query: EncounterListQueryInput): Promise<EncounterSummary[]> {
-    const encounters = await prisma.campaignEncounter.findMany({
-      where: {
-        campaignId,
-        ...buildEncounterVisibilityWhere(userId),
-        ...(query.status ? { status: query.status } : {}),
-        ...(query.type ? { type: query.type } : {}),
-        ...(query.sessionId ? { sessionId: query.sessionId } : {}),
-      },
-      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
-    })
+    const encounters = db.query.campaignEncounter.findMany({where: and(eq(tables.campaignEncounter.campaignId, campaignId), buildEncounterVisibilityWhere(userId), query.status ? and(eq(tables.campaignEncounter.status, query.status)) : undefined, query.type ? and(eq(tables.campaignEncounter.type, query.type)) : undefined, query.sessionId ? and(eq(tables.campaignEncounter.sessionId, query.sessionId)) : undefined), orderBy: [desc(tables.campaignEncounter.updatedAt), desc(tables.campaignEncounter.createdAt)]}).sync()
 
     return encounters.map(toEncounterSummaryDto)
   }
@@ -60,8 +53,7 @@ export class EncounterService {
       calendarDay: input.calendarDay,
     })
 
-    const created = await prisma.campaignEncounter.create({
-      data: {
+    const created = db.insert(tables.campaignEncounter).values({
         campaignId,
         sessionId: input.sessionId,
         name: input.name,
@@ -72,8 +64,7 @@ export class EncounterService {
         calendarMonth: dateLink.calendarMonth,
         calendarDay: dateLink.calendarDay,
         createdByUserId: userId,
-      },
-    })
+      }).returning().get()!
 
     await appendEncounterEvent(
       created.id,
@@ -107,14 +98,11 @@ export class EncounterService {
 
     const combatantIds = encounter.combatants.map((combatant) => combatant.id)
     const conditions = combatantIds.length
-      ? await prisma.encounterCondition.findMany({
-        where: { combatantId: { in: combatantIds } },
-        orderBy: [{ createdAt: 'asc' }],
-      })
+      ? db.query.encounterCondition.findMany({where: and(and(inArray(tables.encounterCondition.combatantId, combatantIds))), orderBy: [asc(tables.encounterCondition.createdAt)]}).sync()
       : []
 
     const detail = toEncounterDetailDto(encounter, conditions)
-    const canWrite = await prisma.campaignEncounter.count({ where: { id: encounterId, campaign: buildCampaignWhereForPermission(userId, 'content.write') } })
+    const canWrite = db.select({ count: count() }).from(tables.campaignEncounter).where(and(eq(tables.campaignEncounter.id, encounterId), buildCampaignWhereForPermission(userId, 'content.write', tables.campaignEncounter.campaignId))).get()!.count
     detail.availableActions = getEncounterActions(encounter.status, encounter.combatants.length, Boolean(canWrite))
     return detail
   }
@@ -124,22 +112,7 @@ export class EncounterService {
     userId: string,
     input: EncounterUpdateInput,
   ): Promise<EncounterSummary> {
-    const existing = await prisma.campaignEncounter.findFirst({
-      where: {
-        id: encounterId,
-        campaign: buildCampaignWhereForPermission(userId, 'content.write'),
-        ...buildEncounterVisibilityWhere(userId),
-      },
-      select: {
-        id: true,
-        campaignId: true,
-        status: true,
-        sessionId: true,
-        calendarYear: true,
-        calendarMonth: true,
-        calendarDay: true,
-      },
-    })
+    const existing = db.query.campaignEncounter.findFirst({where: and(eq(tables.campaignEncounter.id, encounterId), buildCampaignWhereForPermission(userId, 'content.write', tables.campaignEncounter.campaignId), buildEncounterVisibilityWhere(userId)), columns: {id: true, campaignId: true, status: true, sessionId: true, calendarYear: true, calendarMonth: true, calendarDay: true}}).sync()
 
     if (!existing) {
       throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
@@ -166,9 +139,7 @@ export class EncounterService {
 
     await validateEncounterCalendarLink(existing.campaignId, nextCalendar)
 
-    const updated = await prisma.campaignEncounter.update({
-      where: { id: encounterId },
-      data: {
+    const updated = db.update(tables.campaignEncounter).set({
         ...(input.name ? { name: input.name } : {}),
         ...(input.type ? { type: input.type } : {}),
         ...(input.visibility ? { visibility: input.visibility } : {}),
@@ -177,8 +148,7 @@ export class EncounterService {
         ...(Object.prototype.hasOwnProperty.call(input, 'calendarYear') ? { calendarYear: input.calendarYear ?? null } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, 'calendarMonth') ? { calendarMonth: input.calendarMonth ?? null } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, 'calendarDay') ? { calendarDay: input.calendarDay ?? null } : {}),
-      },
-    })
+      }).where(and(eq(tables.campaignEncounter.id, encounterId))).returning().get()!
 
     await appendEncounterEvent(
       encounterId,
@@ -204,20 +174,13 @@ export class EncounterService {
   }
 
   async deleteEncounter(encounterId: string, userId: string): Promise<{ deleted: true }> {
-    const existing = await prisma.campaignEncounter.findFirst({
-      where: {
-        id: encounterId,
-        campaign: buildCampaignWhereForPermission(userId, 'content.write'),
-        ...buildEncounterVisibilityWhere(userId),
-      },
-      select: { id: true },
-    })
+    const existing = db.query.campaignEncounter.findFirst({where: and(eq(tables.campaignEncounter.id, encounterId), buildCampaignWhereForPermission(userId, 'content.write', tables.campaignEncounter.campaignId), buildEncounterVisibilityWhere(userId)), columns: {id: true}}).sync()
 
     if (!existing) {
       throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
 
-    const deleted = await prisma.campaignEncounter.delete({ where: { id: encounterId } })
+    const deleted = db.delete(tables.campaignEncounter).where(and(eq(tables.campaignEncounter.id, encounterId))).returning().get()!
     await logEncounterActivity({
       actorUserId: userId,
       campaignId: deleted.campaignId,
@@ -235,10 +198,7 @@ export class EncounterService {
       throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
 
-    const combatants = await prisma.encounterCombatant.findMany({
-      where: { encounterId },
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-    })
+    const combatants = db.query.encounterCombatant.findMany({where: and(eq(tables.encounterCombatant.encounterId, encounterId)), orderBy: [asc(tables.encounterCombatant.sortOrder), asc(tables.encounterCombatant.createdAt)]}).sync()
 
     return combatants.map(toEncounterCombatantDto)
   }
@@ -261,18 +221,18 @@ export class EncounterService {
         speed: input.speed ?? defaults.speed,
       }
     }))
-    return prisma.$transaction(async tx => {
-      const current = await tx.campaignEncounter.findUniqueOrThrow({ where: { id: encounterId } })
+    return db.transaction( tx => {
+      const current = tx.query.campaignEncounter.findFirst({where: and(eq(tables.campaignEncounter.id, encounterId))}).sync()!
       assertEncounterAction(current, 'participants')
-      const last = await tx.encounterCombatant.aggregate({ where: { encounterId }, _max: { sortOrder: true } })
+      const last = tx.select({ sortOrder: max(tables.encounterCombatant.sortOrder) }).from(tables.encounterCombatant).where(and(eq(tables.encounterCombatant.encounterId, encounterId))).get()!
       const created: EncounterCombatant[] = []
       for (const [index, data] of prepared.entries()) {
-        const row = await tx.encounterCombatant.create({ data: { ...data, encounterId, sortOrder: (last._max.sortOrder ?? -1) + index + 1 } })
-        await tx.encounterEvent.create({ data: { encounterId, eventType: 'ENCOUNTER', summary: `Added participant ${row.name}`, payload: { schemaVersion: 1, action: 'combatant.create', combatantId: row.id }, createdByUserId: userId } })
+        const row = tx.insert(tables.encounterCombatant).values({ ...data, encounterId, sortOrder: (last.sortOrder ?? -1) + index + 1 }).returning().get()!
+        tx.insert(tables.encounterEvent).values({ encounterId, eventType: 'ENCOUNTER', summary: `Added participant ${row.name}`, payload: { schemaVersion: 1, action: 'combatant.create', combatantId: row.id }, createdByUserId: userId }).returning().get()!
         created.push(toEncounterCombatantDto(row))
       }
       return created
-    })
+    }, { behavior: 'immediate' })
   }
 
   async updateCombatant(
@@ -287,9 +247,7 @@ export class EncounterService {
     }
     assertEncounterAction(encounter, 'participants')
 
-    const existing = await prisma.encounterCombatant.findFirst({
-      where: { id: combatantId, encounterId },
-    })
+    const existing = db.query.encounterCombatant.findFirst({where: and(eq(tables.encounterCombatant.id, combatantId), eq(tables.encounterCombatant.encounterId, encounterId))}).sync()
     if (!existing) {
       throw apiError(404, 'NOT_FOUND', 'Combatant not found.')
     }
@@ -310,9 +268,7 @@ export class EncounterService {
       sourceStatBlockId: nextSourceStatBlockId,
     })
 
-    const updated = await prisma.encounterCombatant.update({
-      where: { id: combatantId },
-      data: {
+    const updated = db.update(tables.encounterCombatant).set({
         ...(input.name ? { name: input.name } : {}),
         ...(input.side ? { side: input.side } : {}),
         ...(input.sourceType ? { sourceType: input.sourceType } : {}),
@@ -331,8 +287,7 @@ export class EncounterService {
         ...(typeof input.isDefeated === 'boolean' ? { isDefeated: input.isDefeated } : {}),
         ...(typeof input.isHidden === 'boolean' ? { isHidden: input.isHidden } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, 'notes') ? { notes: input.notes ?? null } : {}),
-      },
-    })
+      }).where(and(eq(tables.encounterCombatant.id, combatantId))).returning().get()!
 
     await appendEncounterEvent(
       encounterId,
@@ -360,15 +315,15 @@ export class EncounterService {
     const previousActiveId = ordered[encounter.currentTurnIndex]?.id
     const remaining = ordered.filter(item => item.id !== combatantId)
     const preservedIndex = remaining.findIndex(item => item.id === previousActiveId)
-    const deleted = await prisma.$transaction(async tx => {
-      const result = await tx.encounterCombatant.deleteMany({ where: { id: combatantId, encounterId } })
-      if (result.count) await tx.campaignEncounter.update({ where: { id: encounterId }, data: {
+    const deleted = db.transaction( tx => {
+      const result = tx.delete(tables.encounterCombatant).where(and(eq(tables.encounterCombatant.id, combatantId), eq(tables.encounterCombatant.encounterId, encounterId))).run()
+      if (result.changes) tx.update(tables.campaignEncounter).set({
         currentTurnIndex: preservedIndex >= 0 ? preservedIndex : Math.max(0, Math.min(encounter.currentTurnIndex, remaining.length - 1)),
-      } })
+      }).where(and(eq(tables.campaignEncounter.id, encounterId))).returning().get()!
       return result
-    })
+    }, { behavior: 'immediate' })
 
-    if (!deleted.count) {
+    if (!deleted.changes) {
       throw apiError(404, 'NOT_FOUND', 'Combatant not found.')
     }
 
@@ -389,10 +344,7 @@ export class EncounterService {
       throw apiError(404, 'NOT_FOUND', 'Encounter not found or access denied.')
     }
 
-    const events = await prisma.encounterEvent.findMany({
-      where: { encounterId },
-      orderBy: { createdAt: 'asc' },
-    })
+    const events = db.query.encounterEvent.findMany({where: and(eq(tables.encounterEvent.encounterId, encounterId)), orderBy: [asc(tables.encounterEvent.createdAt)]}).sync()
 
     return events.map(toEncounterEventDto)
   }
@@ -408,8 +360,7 @@ export class EncounterService {
     }
     assertEncounterAction(encounter, 'notes')
 
-    const created = await prisma.encounterEvent.create({
-      data: {
+    const created = db.insert(tables.encounterEvent).values({
         encounterId,
         eventType: 'NOTE',
         summary: input.summary,
@@ -418,8 +369,7 @@ export class EncounterService {
           ...(input.payload || {}),
         },
         createdByUserId: userId,
-      },
-    })
+      }).returning().get()!
 
     return toEncounterEventDto(created)
   }

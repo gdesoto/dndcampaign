@@ -1,5 +1,7 @@
-import { prisma } from '#server/db/prisma'
-import type { Prisma } from '#server/db/prisma-client'
+import type { JsonValue } from '#server/db/columns'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { and, eq, desc } from 'drizzle-orm'
 import { createHash } from 'node:crypto'
 import { ofetch } from 'ofetch'
 import { characterSectionSchema, type CharacterSection } from '#shared/schemas/character'
@@ -138,9 +140,14 @@ export class CharacterImportService {
     rawJson: unknown,
     options: ImportOptions
   ) {
-    const character = await prisma.playerCharacter.findFirst({
-      where: { id: characterId, ownerId },
-      include: { importSettings: true },
+    const character = await db.query.playerCharacter.findFirst({
+      where: and(
+        eq(tables.playerCharacter.id, characterId),
+        eq(tables.playerCharacter.ownerId, ownerId),
+      ),
+      with: {
+        importSettings: true,
+      },
     })
     if (!character) return null
 
@@ -169,16 +176,13 @@ export class CharacterImportService {
       ((sheet.portrait as Record<string, unknown> | undefined)?.avatarUrl as string | undefined)
     const summary = computeCharacterSummary(name, nextSheet, portraitUrl)
 
-    const updated = await prisma.playerCharacter.update({
-      where: { id: character.id },
-      data: {
-        name,
-        sheetJson: nextSheet as Prisma.InputJsonValue,
-        summaryJson: summary as Prisma.InputJsonValue,
-        sourceProvider: 'DND_BEYOND',
-        portraitUrl: portraitUrl ?? character.portraitUrl,
-      },
-    })
+    const updated = await db.update(tables.playerCharacter).set({
+      name,
+      sheetJson: nextSheet as JsonValue,
+      summaryJson: summary as JsonValue,
+      sourceProvider: 'DND_BEYOND',
+      portraitUrl: portraitUrl ?? character.portraitUrl,
+    }).where(eq(tables.playerCharacter.id, character.id)).returning().get()!
     await this.syncService.syncGlossaryForCharacter(updated.id, ownerId)
     return updated
   }
@@ -192,25 +196,25 @@ export class CharacterImportService {
       | undefined
     const summary = computeCharacterSummary(name, sheet, portraitUrl)
 
-    const character = await prisma.playerCharacter.create({
-      data: {
+    const character = db.transaction((tx) => {
+      const created = tx.insert(tables.playerCharacter).values({
         ownerId,
         name,
-        sheetJson: sheet as Prisma.InputJsonValue,
-        summaryJson: summary as Prisma.InputJsonValue,
+        sheetJson: sheet as JsonValue,
+        summaryJson: summary as JsonValue,
         portraitUrl,
         sourceProvider: 'DND_BEYOND',
-        imports: {
-          create: {
-            provider: 'DND_BEYOND',
-            externalId,
-            sourceUrl: `https://www.dndbeyond.com/characters/${externalId}`,
-            rawJson: rawJson as Prisma.InputJsonValue,
-            rawHash: hashJson(rawJson),
-          },
-        },
-      },
-    })
+      }).returning().get()
+      tx.insert(tables.characterImport).values({
+        characterId: created.id,
+        provider: 'DND_BEYOND',
+        externalId,
+        sourceUrl: `https://www.dndbeyond.com/characters/${externalId}`,
+        rawJson: rawJson as JsonValue,
+        rawHash: hashJson(rawJson),
+      }).run()
+      return created
+    }, { behavior: 'immediate' })
 
     await this.applyImport(character.id, ownerId, rawJson, options)
     return character
@@ -226,26 +230,24 @@ export class CharacterImportService {
     const updated = await this.applyImport(characterId, ownerId, rawJson, options)
     if (!updated) return null
 
-    await prisma.characterImport.create({
-      data: {
-        characterId: updated.id,
-        provider: 'DND_BEYOND',
-        externalId,
-        sourceUrl: `https://www.dndbeyond.com/characters/${externalId}`,
-        rawJson: rawJson as Prisma.InputJsonValue,
-        rawHash: hashJson(rawJson),
-        lastSyncedAt: new Date(),
-        lastSyncStatus: 'SUCCESS',
-      },
-    })
+    await db.insert(tables.characterImport).values({
+      characterId: updated.id,
+      provider: 'DND_BEYOND',
+      externalId,
+      sourceUrl: `https://www.dndbeyond.com/characters/${externalId}`,
+      rawJson: rawJson as JsonValue,
+      rawHash: hashJson(rawJson),
+      lastSyncedAt: new Date(),
+      lastSyncStatus: 'SUCCESS',
+    }).returning().get()
 
     return updated
   }
 
   async refreshImport(characterId: string, ownerId: string, options: ImportOptions) {
-    const latest = await prisma.characterImport.findFirst({
-      where: { characterId },
-      orderBy: { importedAt: 'desc' },
+    const latest = await db.query.characterImport.findFirst({
+      where: eq(tables.characterImport.characterId, characterId),
+      orderBy: [desc(tables.characterImport.importedAt)],
     })
     if (!latest?.externalId) return null
     return this.importIntoCharacter(characterId, ownerId, latest.externalId, options)

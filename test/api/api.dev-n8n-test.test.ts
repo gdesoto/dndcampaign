@@ -3,10 +3,11 @@ import { afterAll, beforeAll, expect, it } from 'vitest'
 import { createServer, type Server } from 'node:http'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
-import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
+import { createApiTestDatabase } from '../scripts/db-test-client'
+import * as tables from '../../server/db/schema'
 import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
 
-const prisma = createApiTestPrismaClient()
+const db = createApiTestDatabase()
 const baseUrl = getApiTestBaseUrl()
 let cookie = ''
 let webhookUrl = ''
@@ -16,10 +17,8 @@ let webhookServer: Server
 
 beforeAll(async () => {
   const password = 'dev-n8n-test-password'
-  const passwordHash = await new Hash(new Scrypt()).make(password)
-  const user = await prisma.user.create({
-    data: { email: 'dev-n8n-test@example.com', name: 'Dev n8n Tester', passwordHash },
-  })
+  const passwordHash = await new Hash(new Scrypt({})).make(password)
+  const user = db.insert(tables.user).values({ email: 'dev-n8n-test@example.com', name: 'Dev n8n Tester', passwordHash }).returning().get()!
   const login = await fetch(`${baseUrl}/api/auth/login`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-forwarded-for': '198.51.100.22' },
@@ -41,7 +40,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await new Promise<void>((resolveClose) => webhookServer.close(() => resolveClose()))
-  await prisma.$disconnect()
+  db.$client.close()
 })
 
 const runN8nTest = () => fetch(`${baseUrl}/api/dev/n8n-test`, {

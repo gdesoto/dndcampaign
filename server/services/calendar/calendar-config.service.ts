@@ -1,6 +1,7 @@
 import { z } from 'zod'
-import type { Prisma } from '#server/db/prisma-client'
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { eq } from 'drizzle-orm'
 import {
   calendarConfigUpsertSchema,
   calendarMonthSchema,
@@ -25,26 +26,7 @@ import { CalendarEventsService } from '#server/services/calendar/calendar-events
 import { SessionCalendarRangeService } from '#server/services/calendar/session-calendar-range.service'
 import { apiError } from '#server/utils/http'
 
-const calendarConfigSelect = {
-  id: true,
-  campaignId: true,
-  isEnabled: true,
-  name: true,
-  startingYear: true,
-  firstWeekdayIndex: true,
-  currentYear: true,
-  currentMonth: true,
-  currentDay: true,
-  weekdaysJson: true,
-  monthsJson: true,
-  moonsJson: true,
-  createdAt: true,
-  updatedAt: true,
-} satisfies Prisma.CampaignCalendarConfigSelect
-
-type CampaignCalendarConfigRow = Prisma.CampaignCalendarConfigGetPayload<{
-  select: typeof calendarConfigSelect
-}>
+type CampaignCalendarConfigRow = import('#server/db/schema').CampaignCalendarConfig
 
 export type CampaignCalendarConfigDto = CampaignCalendarConfig & {
   yearLength: number
@@ -288,9 +270,8 @@ const buildTemplate = (templateId: CalendarTemplateId, seed?: string): CalendarC
 
 export class CalendarConfigService {
   private async getConfigRow(campaignId: string) {
-    return prisma.campaignCalendarConfig.findUnique({
-      where: { campaignId },
-      select: calendarConfigSelect,
+    return db.query.campaignCalendarConfig.findFirst({
+      where: eq(tables.campaignCalendarConfig.campaignId, campaignId),
     })
   }
 
@@ -327,14 +308,9 @@ export class CalendarConfigService {
     const [events, ranges, sessions] = await Promise.all([
       calendarEventsService.listEvents(campaignId, { year: selectedYear, month: selectedMonth }),
       sessionCalendarRangeService.listRanges(campaignId),
-      prisma.session.findMany({
-        where: { campaignId },
-        select: {
-          id: true,
-          title: true,
-          sessionNumber: true,
-          playedAt: true,
-        },
+      db.query.session.findMany({
+        where: eq(tables.session.campaignId, campaignId),
+        columns: { id: true, title: true, sessionNumber: true, playedAt: true },
       }),
     ])
     const sessionById = new Map(sessions.map((session) => [session.id, session]))
@@ -391,10 +367,19 @@ export class CalendarConfigService {
   async upsertConfig(campaignId: string, input: CalendarConfigUpsertInput): Promise<CampaignCalendarConfigDto> {
     const parsedInput = calendarConfigUpsertSchema.parse(input)
 
-    const updated = await prisma.campaignCalendarConfig.upsert({
-      where: { campaignId },
-      create: {
-        campaignId,
+    const updated = await db.insert(tables.campaignCalendarConfig).values({
+      campaignId,
+      isEnabled: parsedInput.isEnabled,
+      name: parsedInput.name,
+      startingYear: parsedInput.startingYear,
+      firstWeekdayIndex: parsedInput.firstWeekdayIndex,
+      currentYear: parsedInput.currentYear,
+      currentMonth: parsedInput.currentMonth,
+      currentDay: parsedInput.currentDay,
+      weekdaysJson: parsedInput.weekdays,
+      monthsJson: parsedInput.months,
+      moonsJson: parsedInput.moons,
+    }).onConflictDoUpdate({ target: [tables.campaignCalendarConfig.campaignId], set: {
         isEnabled: parsedInput.isEnabled,
         name: parsedInput.name,
         startingYear: parsedInput.startingYear,
@@ -405,21 +390,7 @@ export class CalendarConfigService {
         weekdaysJson: parsedInput.weekdays,
         monthsJson: parsedInput.months,
         moonsJson: parsedInput.moons,
-      },
-      update: {
-        isEnabled: parsedInput.isEnabled,
-        name: parsedInput.name,
-        startingYear: parsedInput.startingYear,
-        firstWeekdayIndex: parsedInput.firstWeekdayIndex,
-        currentYear: parsedInput.currentYear,
-        currentMonth: parsedInput.currentMonth,
-        currentDay: parsedInput.currentDay,
-        weekdaysJson: parsedInput.weekdays,
-        monthsJson: parsedInput.months,
-        moonsJson: parsedInput.moons,
-      },
-      select: calendarConfigSelect,
-    })
+      } }).returning().get()
 
     return toConfigDto(updated)
   }
@@ -447,15 +418,11 @@ export class CalendarConfigService {
     const months = monthArraySchema.parse(existing.monthsJson)
     createCalendarDateBoundsSchema(months).parse(input)
 
-    const updated = await prisma.campaignCalendarConfig.update({
-      where: { campaignId },
-      data: {
-        currentYear: input.year,
-        currentMonth: input.month,
-        currentDay: input.day,
-      },
-      select: calendarConfigSelect,
-    })
+    const updated = await db.update(tables.campaignCalendarConfig).set({
+      currentYear: input.year,
+      currentMonth: input.month,
+      currentDay: input.day,
+    }).where(eq(tables.campaignCalendarConfig.campaignId, campaignId)).returning().get()!
 
     return toConfigDto(updated)
   }

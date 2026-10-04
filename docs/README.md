@@ -21,7 +21,7 @@ Pages, components, layouts, and composable state live in `app/`. API handlers in
 behavior lives in `server/services/`. Shared schemas, types, and utilities live
 in `shared/`.
 
-Prisma persists application data in SQLite. Local artifact storage holds files
+Drizzle ORM with better-sqlite3 persists application data in SQLite. Local artifact storage holds files
 separately from database records and build output. Recording and recap playback
 uses HTTP range streaming. ElevenLabs handles transcription, while n8n workflows
 return generated summary and suggestion results to the application.
@@ -45,6 +45,6 @@ payload reference is [OpenAPI](../public/openapi.json).
 | Topic | Explanation |
 | --- | --- |
 | [Agent integration](AgentIntegration.md) | MCP connection, scoped API keys, tools, and API permissions. |
-| [Deployment and recovery](DeploymentRecovery.md) | Container startup, persistent storage, database migrations, and recovery. |
+| [Deployment and recovery](DeploymentRecovery.md) | Container startup, Drizzle migrations, legacy database adoption, backups, and recovery. |
 | [Project setup](../README.md) | Installation, environment, local development, and test commands. |
 | [HTTP API](../public/openapi.json) | Resource paths, request/response schemas, and authentication. |

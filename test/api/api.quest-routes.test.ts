@@ -1,12 +1,14 @@
 // @vitest-environment node
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
-import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
+import { createApiTestDatabase } from '../scripts/db-test-client'
+import * as tables from '../../server/db/schema'
+import { eq } from 'drizzle-orm'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
 
-const prisma = createApiTestPrismaClient()
-const hash = new Hash(new Scrypt())
+const db = createApiTestDatabase()
+const hash = new Hash(new Scrypt({}))
 const baseUrl = getApiTestBaseUrl()
 
 const ownerUser = {
@@ -23,7 +25,7 @@ const authHeaders = {
 const sleep = (ms: number) => new Promise((resolveDelay) => setTimeout(resolveDelay, ms))
 
 const loginAndGetCookie = async (email: string, password: string) => {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
+  for (let attempt = 0;attempt < 20;attempt += 1) {
     const response = await fetch(`${baseUrl}/api/auth/login`, {
       method: 'POST',
       headers: authHeaders,
@@ -50,29 +52,25 @@ describe('quest API routes', () => {
   beforeAll(async () => {
     const ownerPasswordHash = await hash.make(ownerUser.password)
 
-    const owner = await prisma.user.upsert({
-      where: { email: ownerUser.email },
-      update: {
+    const owner = db.insert(tables.user).values({
+      email: ownerUser.email,
+      passwordHash: ownerPasswordHash,
+      name: ownerUser.name,
+    }).onConflictDoUpdate({
+      target: tables.user.email, set: {
         passwordHash: ownerPasswordHash,
         name: ownerUser.name,
-      },
-      create: {
-        email: ownerUser.email,
-        passwordHash: ownerPasswordHash,
-        name: ownerUser.name,
-      },
-    })
+      }
+    }).returning().get()!
     ownerId = owner.id
 
-    await prisma.campaign.deleteMany({ where: { ownerId } })
+    db.delete(tables.campaign).where(eq(tables.campaign.ownerId, ownerId)).run()
 
-    const campaign = await prisma.campaign.create({
-      data: {
-        ownerId,
-        name: 'Quest Route Test Campaign',
-        system: 'D&D 5e',
-      },
-    })
+    const campaign = db.insert(tables.campaign).values({
+      ownerId,
+      name: 'Quest Route Test Campaign',
+      system: 'D&D 5e',
+    }).returning().get()!
     campaignId = campaign.id
 
     ownerCookie = await loginAndGetCookie(ownerUser.email, ownerUser.password)
@@ -90,39 +88,33 @@ describe('quest API routes', () => {
   }, 120_000)
 
   beforeEach(async () => {
-    await prisma.quest.deleteMany({ where: { campaignId } })
-    await prisma.glossaryEntry.deleteMany({ where: { campaignId } })
+    db.delete(tables.quest).where(eq(tables.quest.campaignId, campaignId)).run()
+    db.delete(tables.glossaryEntry).where(eq(tables.glossaryEntry.campaignId, campaignId)).run()
   })
 
   afterAll(async () => {
-    await prisma.$disconnect()
+    db.$client.close()
   })
 
   it('creates and updates a quest with category, track, source, reward, and expiration date', async () => {
-    const npc = await prisma.glossaryEntry.create({
-      data: {
-        campaignId,
-        type: 'NPC',
-        name: 'Guildmaster Tovin',
-        description: 'Guildmaster issuing work to the party.',
-      },
-    })
+    const npc = db.insert(tables.glossaryEntry).values({
+      campaignId,
+      type: 'NPC',
+      name: 'Guildmaster Tovin',
+      description: 'Guildmaster issuing work to the party.',
+    }).returning().get()!
 
-    const sourceCharacter = await prisma.playerCharacter.create({
-      data: {
-        ownerId,
-        name: 'Sir Rowan',
-        sheetJson: {},
-        summaryJson: {},
-      },
-    })
+    const sourceCharacter = db.insert(tables.playerCharacter).values({
+      ownerId,
+      name: 'Sir Rowan',
+      sheetJson: {},
+      summaryJson: {},
+    }).returning().get()!
 
-    await prisma.campaignCharacter.create({
-      data: {
-        campaignId,
-        characterId: sourceCharacter.id,
-      },
-    })
+    db.insert(tables.campaignCharacter).values({
+      campaignId,
+      characterId: sourceCharacter.id,
+    }).returning().get()!
 
     const createResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/quests`, {
       method: 'POST',

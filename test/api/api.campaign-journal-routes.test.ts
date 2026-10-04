@@ -3,10 +3,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
 import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
-import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
+import { createApiTestDatabase } from '../scripts/db-test-client'
+import * as tables from '../../server/db/schema'
+import { eq } from 'drizzle-orm'
 
-const prisma = createApiTestPrismaClient()
-const hash = new Hash(new Scrypt())
+const db = createApiTestDatabase()
+const hash = new Hash(new Scrypt({}))
 const baseUrl = getApiTestBaseUrl()
 const password = 'cj6-journal-pass-12345'
 
@@ -29,7 +31,7 @@ let relicGlossaryId = ''
 const wait = (ms: number) => new Promise((resolveDelay) => setTimeout(resolveDelay, ms))
 
 const loginAndGetCookie = async (email: string) => {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
+  for (let attempt = 0;attempt < 20;attempt += 1) {
     const response = await fetch(`${baseUrl}/api/auth/login`, {
       method: 'POST',
       headers: {
@@ -58,124 +60,90 @@ describe('campaign journal API routes', () => {
     const passwordHash = await hash.make(password)
 
     for (const [key, user] of Object.entries(users)) {
-      const created = await prisma.user.create({
-        data: {
-          email: user.email,
-          name: user.name,
-          passwordHash,
-        },
-        select: { id: true },
-      })
+      const created = db.insert(tables.user).values({
+        email: user.email,
+        name: user.name,
+        passwordHash,
+      }).returning().get()!
       userIds[key] = created.id
     }
 
-    const campaign = await prisma.campaign.create({
-      data: {
-        ownerId: userIds.owner,
-        name: 'CJ6 Journal Campaign',
-        system: 'D&D 5e',
-        members: {
-          create: [
-            {
-              userId: userIds.owner,
-              role: 'OWNER',
-              invitedByUserId: userIds.owner,
-              hasDmAccess: true,
-            },
-            {
-              userId: userIds.dm,
-              role: 'COLLABORATOR',
-              invitedByUserId: userIds.owner,
-              hasDmAccess: true,
-            },
-            {
-              userId: userIds.player,
-              role: 'COLLABORATOR',
-              invitedByUserId: userIds.owner,
-              hasDmAccess: false,
-            },
-            {
-              userId: userIds.viewer,
-              role: 'VIEWER',
-              invitedByUserId: userIds.owner,
-              hasDmAccess: false,
-            },
-          ],
-        },
+    const campaign = db.insert(tables.campaign).values({ ownerId: userIds.owner, name: 'CJ6 Journal Campaign', system: 'D&D 5e' }).returning().get()!
+    db.insert(tables.campaignMember).values(([
+      {
+        userId: userIds.owner,
+        role: 'OWNER',
+        invitedByUserId: userIds.owner,
+        hasDmAccess: true,
       },
-      select: { id: true },
-    })
+      {
+        userId: userIds.dm,
+        role: 'COLLABORATOR',
+        invitedByUserId: userIds.owner,
+        hasDmAccess: true,
+      },
+      {
+        userId: userIds.player,
+        role: 'COLLABORATOR',
+        invitedByUserId: userIds.owner,
+        hasDmAccess: false,
+      },
+      {
+        userId: userIds.viewer,
+        role: 'VIEWER',
+        invitedByUserId: userIds.owner,
+        hasDmAccess: false,
+      },
+    ] as const).map(member => ({ ...member, campaignId: campaign.id }))).run()
     campaignId = campaign.id
 
-    const otherCampaign = await prisma.campaign.create({
-      data: {
-        ownerId: userIds.outsider,
-        name: 'CJ6 Other Campaign',
-        members: {
-          create: [
-            {
-              userId: userIds.outsider,
-              role: 'OWNER',
-              invitedByUserId: userIds.outsider,
-              hasDmAccess: true,
-            },
-          ],
-        },
+    const otherCampaign = db.insert(tables.campaign).values({ ownerId: userIds.outsider, name: 'CJ6 Other Campaign' }).returning().get()!
+    db.insert(tables.campaignMember).values(([
+      {
+        userId: userIds.outsider,
+        role: 'OWNER',
+        invitedByUserId: userIds.outsider,
+        hasDmAccess: true,
       },
-      select: { id: true },
-    })
+    ] as const).map(member => ({ ...member, campaignId: otherCampaign.id }))).run()
 
-    const [sessionOne, sessionTwo, otherSession] = await prisma.$transaction([
-      prisma.session.create({
-        data: {
-          campaignId,
-          title: 'Session One',
-          sessionNumber: 1,
-          notes: 'CJ6 notes',
-        },
-        select: { id: true },
-      }),
-      prisma.session.create({
-        data: {
-          campaignId,
-          title: 'Session Two',
-          sessionNumber: 2,
-          notes: 'CJ6 notes second',
-        },
-        select: { id: true },
-      }),
-      prisma.session.create({
-        data: {
-          campaignId: otherCampaign.id,
-          title: 'Foreign Session',
-          sessionNumber: 1,
-        },
-        select: { id: true },
-      }),
+    const [sessionOne, sessionTwo, otherSession] = await Promise.all([
+      db.insert(tables.session).values({
+        campaignId,
+        title: 'Session One',
+        sessionNumber: 1,
+        notes: 'CJ6 notes',
+      }).returning().get()!,
+      db.insert(tables.session).values({
+        campaignId,
+        title: 'Session Two',
+        sessionNumber: 2,
+        notes: 'CJ6 notes second',
+      }).returning().get()!,
+      db.insert(tables.session).values({
+        campaignId: otherCampaign.id,
+        title: 'Foreign Session',
+        sessionNumber: 1,
+      }).returning().get()!,
     ])
     sessionOneId = sessionOne.id
     sessionTwoId = sessionTwo.id
     otherCampaignSessionId = otherSession.id
 
-    const relicGlossary = await prisma.glossaryEntry.create({
-      data: {
-        campaignId,
-        type: 'ITEM',
-        name: 'Ancient Relic',
-        description: 'A mysterious relic tied to the first age.',
-      },
-      select: { id: true },
-    })
+    const relicGlossary = db.insert(tables.glossaryEntry).values({
+      campaignId,
+      type: 'ITEM',
+      name: 'Ancient Relic',
+      description: 'A mysterious relic tied to the first age.',
+    }).returning().get()!
     relicGlossaryId = relicGlossary.id
 
-    await prisma.glossaryEntry.create({
-      data: {
-        campaignId,
-        type: 'LOCATION',
-        name: 'Grey Harbor',
-        description: 'A storm-worn city on the western coast.',
-      },
-    })
+    db.insert(tables.glossaryEntry).values({
+      campaignId,
+      type: 'LOCATION',
+      name: 'Grey Harbor',
+      description: 'A storm-worn city on the western coast.',
+    }).returning().get()!
 
     for (const [key, user] of Object.entries(users)) {
       cookies[key] = await loginAndGetCookie(user.email)
@@ -183,7 +151,7 @@ describe('campaign journal API routes', () => {
   }, 120_000)
 
   afterAll(async () => {
-    await prisma.$disconnect()
+    db.$client.close()
   })
 
   // Exercise multiple visibility levels and roles through sequential HTTP reads/writes.
@@ -342,6 +310,7 @@ describe('campaign journal API routes', () => {
     const createPayload = await createRes.json()
     const created = createPayload.data as {
       id: string
+      updatedAt: string
       sessions: Array<{ sessionId: string }>
       tags: Array<{ tagType: string; normalizedLabel: string; glossaryEntryId: string | null }>
     }
@@ -403,6 +372,30 @@ describe('campaign journal API routes', () => {
     expect(
       (sessionFilterPayload.data.items as Array<{ id: string }>).some((entry) => entry.id === created.id)
     ).toBe(true)
+
+    const tagOnlyResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries/${created.id}`, {
+      method: 'PATCH',
+      headers: { cookie: cookies.player, 'content-type': 'application/json' },
+      body: JSON.stringify({ tags: [{ type: 'CUSTOM', label: 'New clue' }] }),
+    })
+    expect(tagOnlyResponse.status).toBe(200)
+    const tagOnly = (await tagOnlyResponse.json()).data
+    expect(tagOnly.tags).toEqual(expect.arrayContaining([expect.objectContaining({ normalizedLabel: 'new-clue' })]))
+    expect(tagOnly.sessions.map((session: { sessionId: string }) => session.sessionId).sort()).toEqual([sessionOneId, sessionTwoId].sort())
+    expect(tagOnly.updatedAt).toBe(created.updatedAt)
+
+    const sessionOnlyResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries/${created.id}`, {
+      method: 'PATCH',
+      headers: { cookie: cookies.player, 'content-type': 'application/json' },
+      body: JSON.stringify({ sessionIds: [sessionOneId] }),
+    })
+    expect(sessionOnlyResponse.status).toBe(200)
+    const sessionOnly = (await sessionOnlyResponse.json()).data
+    expect(sessionOnly.sessions.map((session: { sessionId: string }) => session.sessionId)).toEqual([sessionOneId])
+    expect(sessionOnly.title).toBe('Harbor Investigation Notes')
+    expect(sessionOnly.contentMarkdown).toBe('KeywordRaven appears here. #Mystery #mystery [[Ancient Relic]]')
+    expect(sessionOnly.updatedAt).toBe(created.updatedAt)
+
   })
 
   it('enforces discoverable holder editing/delete rules and archived list filters', async () => {
@@ -422,15 +415,12 @@ describe('campaign journal API routes', () => {
     const createPayload = await createRes.json()
     const entryId = createPayload.data.id as string
 
-    await prisma.campaignJournalEntry.update({
-      where: { id: entryId },
-      data: {
-        isDiscoverable: true,
-        holderUserId: userIds.player,
-        discoveredAt: new Date(),
-        discoveredByUserId: userIds.dm,
-      },
-    })
+    db.update(tables.campaignJournalEntry).set({
+      isDiscoverable: true,
+      holderUserId: userIds.player,
+      discoveredAt: new Date(),
+      discoveredByUserId: userIds.dm,
+    }).where(eq(tables.campaignJournalEntry.id, entryId)).returning().get()!
 
     const holderVisibilityPatchRes = await fetch(
       `${baseUrl}/api/campaigns/${campaignId}/journal/entries/${entryId}`,
@@ -467,14 +457,11 @@ describe('campaign journal API routes', () => {
     })
     expect(holderDeleteRes.status).toBe(403)
 
-    await prisma.campaignJournalEntry.update({
-      where: { id: entryId },
-      data: {
-        isArchived: true,
-        archivedAt: new Date(),
-        archivedByUserId: userIds.player,
-      },
-    })
+    db.update(tables.campaignJournalEntry).set({
+      isArchived: true,
+      archivedAt: new Date(),
+      archivedByUserId: userIds.player,
+    }).where(eq(tables.campaignJournalEntry.id, entryId)).returning().get()!
 
     const defaultListRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/entries`, {
       headers: { cookie: cookies.dm },
@@ -704,9 +691,7 @@ describe('campaign journal API routes', () => {
     })
     expect(createRes.status).toBe(200)
 
-    await prisma.glossaryEntry.delete({
-      where: { id: relicGlossaryId },
-    })
+    db.delete(tables.glossaryEntry).where(eq(tables.glossaryEntry.id, relicGlossaryId)).returning().get()!
 
     const tagsRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/journal/tags?type=GLOSSARY`, {
       headers: { cookie: cookies.player },

@@ -1,5 +1,8 @@
-import { prisma } from '#server/db/prisma'
-import { Prisma } from '#server/db/prisma-client'
+import type { JsonValue } from '#server/db/columns'
+import { jsonNull } from '#server/db/columns'
+import { db } from '#server/db/client'
+import { campaignDungeon, campaignDungeonRoom, campaignDungeonLink } from '#server/db/schema'
+import { eq, and } from 'drizzle-orm'
 import type { DungeonExportInput, DungeonImportInput } from '#shared/schemas/dungeon'
 import type {
   DungeonExportResult,
@@ -18,16 +21,10 @@ import type { CampaignActor } from '#server/utils/campaign-auth'
 const activityLogService = new ActivityLogService()
 
 const withDungeonAccess = async (campaignId: string, dungeonId: string) =>
-  prisma.campaignDungeon.findFirst({
-    where: {
-      id: dungeonId,
-      campaignId,
-    },
-    include: {
+  db.query.campaignDungeon.findFirst({ where: and(eq(campaignDungeon.id, dungeonId), eq(campaignDungeon.campaignId, campaignId)), with: {
       rooms: true,
       links: true,
-    },
-  })
+    } }).sync()
 
 const toSvg = (map: DungeonMapData, options: Pick<DungeonExportInput, 'includeGrid' | 'includeLabels'>) => {
   const worldWidth = map.width * map.cellSize
@@ -130,11 +127,10 @@ const toPdfBase64 = async (map: DungeonMapData, svg: string) =>
   })
 
 const syncRoomsFromImportedMap = async (dungeonId: string, rooms: DungeonRoomGeometry[]) => {
-  await prisma.$transaction(async (tx) => {
-    await tx.campaignDungeonRoom.deleteMany({ where: { dungeonId } })
+  db.transaction((tx) => {
+    tx.delete(campaignDungeonRoom).where(eq(campaignDungeonRoom.dungeonId, dungeonId)).run()
     for (const room of rooms) {
-      await tx.campaignDungeonRoom.create({
-        data: {
+      tx.insert(campaignDungeonRoom).values({
           dungeonId,
           roomNumber: room.roomNumber,
           name: `Room ${room.roomNumber}`,
@@ -150,10 +146,9 @@ const syncRoomsFromImportedMap = async (dungeonId: string, rooms: DungeonRoomGeo
             width: room.width,
             height: room.height,
           },
-        },
-      })
+        }).returning().get()!
     }
-  })
+  }, { behavior: 'immediate' })
 }
 
 export class DungeonExportService {
@@ -291,8 +286,7 @@ export class DungeonExportService {
   ): Promise<{ id: string }> {
     const userId = actor.userId
     const source = input.source
-    const created = await prisma.campaignDungeon.create({
-      data: {
+    const created = db.insert(campaignDungeon).values({
         campaignId,
         name: input.nameOverride || source.dungeon.name,
         status: source.dungeon.status,
@@ -300,26 +294,21 @@ export class DungeonExportService {
         seed: source.dungeon.seed,
         gridType: source.dungeon.gridType,
         generatorVersion: source.dungeon.generatorVersion,
-        configJson: source.dungeon.config as Prisma.InputJsonValue,
-        mapJson: source.dungeon.map as Prisma.InputJsonValue,
+        configJson: (source.dungeon.config) as unknown as JsonValue,
+        mapJson: (source.dungeon.map) as unknown as JsonValue,
         playerViewJson:
           source.dungeon.playerView === null
-            ? Prisma.JsonNull
-            : (source.dungeon.playerView as Prisma.InputJsonValue),
+            ? jsonNull
+            : (source.dungeon.playerView as unknown as JsonValue),
         createdByUserId: userId,
-      },
-      select: { id: true },
-    })
+      }).returning().get()!
 
     await syncRoomsFromImportedMap(created.id, source.dungeon.map.rooms)
-    const importedRooms = await prisma.campaignDungeonRoom.findMany({
-      where: { dungeonId: created.id },
-      select: {
+    const importedRooms = db.query.campaignDungeonRoom.findMany({ where: eq(campaignDungeonRoom.dungeonId, created.id), columns: {
         id: true,
         roomNumber: true,
         boundsJson: true,
-      },
-    })
+      } }).sync()
     const mapByRoomNumber = new Map(importedRooms.map((room) => [room.roomNumber, room.id]))
     for (const link of source.links) {
       let mappedRoomId: string | null = null
@@ -329,14 +318,12 @@ export class DungeonExportService {
           mappedRoomId = mapByRoomNumber.get(sourceRoom.roomNumber) || null
         }
       }
-      await prisma.campaignDungeonLink.create({
-        data: {
+      db.insert(campaignDungeonLink).values({
           dungeonId: created.id,
           roomId: mappedRoomId,
           linkType: link.linkType,
           targetId: link.targetId,
-        },
-      })
+        }).returning().get()!
     }
 
     await activityLogService.log({

@@ -1,0 +1,244 @@
+[
+  {
+    "name": "20260201002108_init",
+    "checksums": [
+      "6a20149ddc657959992099049978879bc7ba23403c3774f6a54a7014160b0ff9",
+      "522598b063fae24bc9dcc56c02cef6eab27e3c22ff7b0b091c6a3fe7106c6e47"
+    ]
+  },
+  {
+    "name": "20260201070830_milestone_b",
+    "checksums": [
+      "1cb39648b1039393787b464560119773e5a4177a3d9e5abd6fd9d3de9ad79e6a",
+      "b67477d594faac98b2979504256ddaafb4c8541e3f6d4013dc1c688f544b2313"
+    ]
+  },
+  {
+    "name": "20260201214630_milestone_c",
+    "checksums": [
+      "e028c43ea657173becf449d75d2cc543f85be434d51d0d7cd37e2daa9153e8c9",
+      "501e5d7b94b379a1b71537a4c498da5a183215efaff84c23bfca9ddc431be426"
+    ]
+  },
+  {
+    "name": "20260202051023_milestone_d",
+    "checksums": [
+      "7262657c704dcb3abfd8857dc65feee78296bfd3b6b9098b87b37a4843d3d717",
+      "77fcae11162656baa8f0b457a8d6a9174151191238a6a9ca38c4f2210b941963"
+    ]
+  },
+  {
+    "name": "20260202060831_recap_recordings",
+    "checksums": [
+      "2e04a5ec32172d18b480a8af0e84a77ade0395b8864eeeb11616993ff2cc90f5",
+      "1d4c258ee284342090545e9dbf219a891b86a62dcc26c57f6a23acfacbfdd4e5"
+    ]
+  },
+  {
+    "name": "20260203054240_add_transcription_jobs",
+    "checksums": [
+      "4f664017a230caa2d7c06ebbfff8fb47e6afb34d87e1f4ea285f9803350b829f",
+      "42c64b78d59ceb52d0a47512ce4064ddb81a0a152747573d6600c3cb0c1f217c"
+    ]
+  },
+  {
+    "name": "20260205214554_add_player_characters",
+    "checksums": [
+      "116ca4b02974b4ce76b206d62fdd4688d8a75cd0d57fac44b7f1ab20c519d2ff",
+      "a763aae55652dc7c8c24f3d93412896a63491fa01304f5d260e69dada2293358"
+    ]
+  },
+  {
+    "name": "20260206060817_add_character_glossary_link",
+    "checksums": [
+      "e0293910d5c0b5517945f119ef51d90aaa9ab57ad9d0f900736dc61906078f99",
+      "ef20c9ba7b98095e281532c3c9969b55f54605e8097b6b9cf96afaff8804e99f"
+    ]
+  },
+  {
+    "name": "20260206093000_add_summary_jobs",
+    "checksums": [
+      "4ca9ffc4a4cf4e666680be4b284612e09c35663641bf0838b71cd018d47e37ee",
+      "1261d9c869cbd8403975223dab0bfcddd536e0c07a0686812ef14622a002137a",
+      "7431c5b9d4eca801eade26bcee72f8070af2d88f98403a135908d446bc1c40c1"
+    ]
+  },
+  {
+    "name": "20260206211820_add_dm_tracking",
+    "checksums": [
+      "991f8af2446b67cceb3452fbea1e49dff3fcfcb2e79bf10cc51e3ac902ed4f44",
+      "ed219a43d999881263a3951e22f05fcb10c4e643823b77cfad27d743c67dfd76"
+    ]
+  },
+  {
+    "name": "20260207091500_add_summary_session_suggestions",
+    "checksums": [
+      "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    ]
+  },
+  {
+    "name": "20260208001914_add_elevenlabs_audio_events_toggle",
+    "checksums": [
+      "60d36d847c9331fd777fd5bf701e4ab86af1dbf0a52495cb58b38407d8b018cc",
+      "f3f495dc7f0594bb0a9ecec9d45091888a384d34cf655592fd69ac8722c85cbb"
+    ]
+  },
+  {
+    "name": "20260209060815_map_import_glossary_integration",
+    "checksums": [
+      "e0ae94756c8c3ce8eb298e41b170fd2b5d51e36eee1faf74caa8f147d266ba7f",
+      "b2ab5adf786b5ff58e1cc5a3b76effcfc3646fb7c76a430fa1a62858c6a0910f"
+    ]
+  },
+  {
+    "name": "20260209081051_add_quest_type",
+    "checksums": [
+      "fbe8f2ff847d55926cdbe13b7309017830ea7468bcceca0462be08d1667ad775",
+      "3506dff4e4b660506b6ddb3e99c643ebe098c30e5d34754577ee34bf6e66fae6"
+    ]
+  },
+  {
+    "name": "20260209121000_add_summary_job_kind",
+    "checksums": [
+      "dd93d534bdd951bdc0ed492ae4bb1704b829eb9f1028c82c6cbeb0e361eb2c88",
+      "92545967731dc8b766bfb4c34f4dd371490ba67650cb022ffd5b1ee1dbb180d0",
+      "b0d1351c71f1e69d1d5bb3e56c24ebbdcb30c59d2d805a5c8bb73da09a0f87e3"
+    ]
+  },
+  {
+    "name": "20260218043410_add_user_management_um1_fields",
+    "checksums": [
+      "3d9d5dc20342310b6bc9d0c9703b7539662649cac283529413d9f9361a1d23bf",
+      "107cca32c75e0c5167369992be6ad59133f06f61a064ca402004d15f1136c8f4"
+    ]
+  },
+  {
+    "name": "20260218045742_add_user_management_um2_membership_data_layer",
+    "checksums": [
+      "17eb9646a47573e18a13b9db0d2498f47b7f6a60615a8b07cf2802787d14aecf",
+      "7cefe96d48f7592eac06139d3f8daf4ec6e905f22c5c2de06cbc894748173d33"
+    ]
+  },
+  {
+    "name": "20260219015641_add_campaign_public_access_um5",
+    "checksums": [
+      "bd5667255098a45cb8ffe150af45effc1ed0e3a2d8a36c3282f68cdc0c63771a",
+      "11db0ba1cceb91fb690df9c7bcc5a68bc531219fc49492a60b88ce3a02cc6210"
+    ]
+  },
+  {
+    "name": "20260219023954_add_public_campaign_directory_listing",
+    "checksums": [
+      "fdc91275f3db65093c6565f9fd2c6dae1905319f9111e9960214377baec10063",
+      "bfb22b54835928f2db21fd2049f0c2fb5c1875102207d937eabfe0288cad4419"
+    ]
+  },
+  {
+    "name": "20260219030611_add_admin_audit_log_um6",
+    "checksums": [
+      "1f3a749fe022ca363dc0cb1f3569bf0952037ac22870c3dd362346b95a2f14d8",
+      "2826cde8bfa33b497e32fc33f57c4384c51a31b4350f2b06c6ffe0df1f47c7fc"
+    ]
+  },
+  {
+    "name": "20260219030652_add_campaign_archived_um6",
+    "checksums": [
+      "911635e93df0b2766e74e22d858d7a849824f6905936c7aa73362079912d78b1",
+      "ce46f4d5a8b59348f3611f657b98af639b9889931d8ef7632c8ae47ecedc2325"
+    ]
+  },
+  {
+    "name": "20260219103000_add_activity_log_um7",
+    "checksums": [
+      "f397fa55bddde7613c9ef5eeb486799ddbde0679e304d71fd28f4260fdd6c367",
+      "3604e8999fcff91ed6e5b1f7a0bfba9499799c2c3993c5eeadc64972da3e66b3",
+      "337ac9f785d84d76b2d535ca4beabac69e7886017d27a7a367ac04434e6567e6"
+    ]
+  },
+  {
+    "name": "20260219123000_backfill_owner_campaign_memberships",
+    "checksums": [
+      "d0140f5a736afd8ccb7d41de399b7c1cc58fd3f4e6b3efc09d4df460361c8cf6",
+      "4c59c6f8cacc001cdbf5c85bc94a565433de9b6af5992953037bebf30820c2b2"
+    ]
+  },
+  {
+    "name": "20260221120000_add_campaign_calendar_models",
+    "checksums": [
+      "6678b4eb4b9dbb76a27baf0334aef8dfb1ea8fc7f7b70c623c9b2872f37ad23c",
+      "20ab9f1a5b2d173f9b5677e4fe9ba4163fe19752ec135a9e50d28b2a090769b1"
+    ]
+  },
+  {
+    "name": "20260224140000_add_encounter_models",
+    "checksums": [
+      "3784823c5e3b623883a3e3c11b51a1b78c3ea4419ef1bc59a4d6ac17bcf807be",
+      "362f4e4a669d984bcc0ea16776d992aa84829579f8d29994d4f8227e36d168e5"
+    ]
+  },
+  {
+    "name": "20260225022707_add_dungeon_builder_models",
+    "checksums": [
+      "d2fe10fc070c04be3476c0b8f4be0ff59bd27e8cbecd2de87e154529e097d884",
+      "14d41e988e7ed49d82e42a755543eae8b79e610b7be0dbd7b13ff78a2dd1d81c"
+    ]
+  },
+  {
+    "name": "20260225113000_add_campaign_member_dm_access",
+    "checksums": [
+      "c18924d187fe797c95b94ae7d871fb4da0657de879ebb1c3bb8c15a99ce96ee3",
+      "e5e9ff3290cf6fa28c114f930317dbbb3b35d27a2bfe9ce009a820f8af24fed6",
+      "79baefb376728cd14ca5f264add48d5f9533707c0dcdb9575f4aa4b26b8ec6bc"
+    ]
+  },
+  {
+    "name": "20260226020409_add_campaign_requests",
+    "checksums": [
+      "311a3158b39eaaad3df8b9a45ba623dfafaaa56bd65ead77a8bd56166faf0bc9",
+      "822dcb81df8a6a096570dde5779d1f5b228ab9895a84c62e170de1fa07bb124d"
+    ]
+  },
+  {
+    "name": "20260226054831_campaign_journal_cj1",
+    "checksums": [
+      "4caa456ed0c1bd9b881c9b039b9296341cce944c96f10aca346b8c9029d55f42",
+      "47c78023768df4f6c7d8700ef6cce921c335a08a3d9b6c9c549a44dc02f9f2d0"
+    ]
+  },
+  {
+    "name": "20260226161040_campaign_journal_discoverable_notes_cj81",
+    "checksums": [
+      "d76a98c922b56bec0472fedc754442104ff95892d2ee1a321700a01527958ca3",
+      "ec3407a7cf47e619dd5f0436bf3d195e4173df73c024578f78e2c9d2867cb463"
+    ]
+  },
+  {
+    "name": "20260313010000_expand_quest_metadata",
+    "checksums": [
+      "9978b02e4f2c979f205e9b63294cf558ed2af09b8559e6ded3475e1afd77be55",
+      "49f05e3cbf7bf210e24b949c7047832e9a7060ab5184bc5a8af47cdb41332f84"
+    ]
+  },
+  {
+    "name": "20260313052850_quest_character_source",
+    "checksums": [
+      "c7a6c1142262701db45c0428eba9def3f6e8eac16c5fe53060a4bc10be936c8e",
+      "bfa81a4ff8f71a947ddf03230117d5e6d004db843bff2464cd7d081dc1847dfe"
+    ]
+  },
+  {
+    "name": "20260906173000_session_recap_media_kinds",
+    "checksums": [
+      "1661aee6166ea4903af1f8ff8b6c24c105ab517263913547e1182c06679fc072",
+      "762ce3af8f207804b37266eae4d898efaf262b808562c9795a6f3fd96228196b"
+    ]
+  },
+  {
+    "name": "20260921000000_api_keys",
+    "checksums": [
+      "f4933627d2d3ec2d6e4c19294f2ce0cc43eb4354b305eb1fd884cd74d8a241fb",
+      "48588a38b855384bd3dfebd88a001fa30eed9b1e0466d8ccb85e7214f28e5faf"
+    ]
+  }
+]

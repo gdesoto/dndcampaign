@@ -1,4 +1,6 @@
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { and, eq } from 'drizzle-orm'
 import { ok, apiError, routeParams } from '#server/utils/http'
 import { readBody } from 'h3'
 import { CharacterSyncService } from '#server/services/character-sync.service'
@@ -13,19 +15,18 @@ export default defineEventHandler(async (event) => {
     throw apiError(400, 'VALIDATION_ERROR', 'Character id is required')
   }
 
-  const character = await prisma.playerCharacter.findFirst({
-    where: { id: body.characterId, ownerId: authz.session.user.id },
+  const character = await db.query.playerCharacter.findFirst({
+    where: and(
+      eq(tables.playerCharacter.id, body.characterId),
+      eq(tables.playerCharacter.ownerId, authz.session.user.id),
+    ),
   })
   if (!character) {
     throw apiError(404, 'NOT_FOUND', 'Character not found')
   }
 
   const syncService = new CharacterSyncService()
-  const link = await prisma.campaignCharacter.upsert({
-    where: { campaignId_characterId: { campaignId, characterId: body.characterId } },
-    update: { status: 'ACTIVE' },
-    create: { campaignId, characterId: body.characterId },
-  })
+  const link = await db.insert(tables.campaignCharacter).values({ campaignId, characterId: body.characterId }).onConflictDoUpdate({ target: [tables.campaignCharacter.campaignId, tables.campaignCharacter.characterId], set: { status: 'ACTIVE' } }).returning().get()
 
   await syncService.ensureGlossaryEntryForCharacter({
     ownerId: authz.session.user.id,

@@ -3,13 +3,13 @@
 Source of truth for agent guidance in this repo. `CLAUDE.md` points here and adds Claude Code specifics only.
 
 ## Overview
-DND Campaign (DM Vault) is a Nuxt 4 web app for running tabletop campaigns: campaigns, sessions, journal, glossary, quests, milestones, characters, encounters, dungeons, maps, calendar, recordings, and public campaign pages. The backend is Nuxt server routes plus Prisma on SQLite. Recordings and artifacts go through a storage abstraction (local by default) and stream with HTTP range support.
+DND Campaign (DM Vault) is a Nuxt 4 web app for running tabletop campaigns: campaigns, sessions, journal, glossary, quests, milestones, characters, encounters, dungeons, maps, calendar, recordings, and public campaign pages. The backend is Nuxt server routes plus Drizzle ORM and better-sqlite3 on SQLite. Recordings and artifacts go through a storage abstraction (local by default) and stream with HTTP range support.
 
 ## Where things live
 - `app/` — pages, components, composables, layouts. No `stores/` directory; state lives in composables.
 - `server/api/` — thin route handlers. `server/services/` — business logic. `server/utils/` — auth, validation, http, multipart helpers. `server/error-handler.ts` — API error envelope.
 - `shared/` — Zod schemas, types, and utilities used by both sides.
-- `prisma/` — schema, migrations, ignored generated client. Installation and builds generate the client. The dev database is `storage/db/dev.db` (`DATABASE_URL` in `.env`).
+- `server/db/` — Drizzle schema, SQLite connection, column codecs, and migration support. `drizzle/` holds versioned SQL migrations and the frozen legacy compatibility manifest. Historical Prisma migrations remain under `prisma/migrations/`; relative database URLs still resolve from `prisma/`. The dev database is `storage/db/dev.db` (`DATABASE_URL` in `.env`).
 - `storage/` — local files (git-ignored).
 - `public/openapi.json` — hand-maintained API contract.
 - `dev_plan/` — development scratchpad for feature plans, implementation checklists, investigations, experiments, and working notes. Markdown plans are versioned; reference assets and other scratch files remain local.
@@ -32,7 +32,7 @@ DND Campaign (DM Vault) is a Nuxt 4 web app for running tabletop campaigns: camp
 ## Commands
 - `yarn dev`, `yarn build`, `yarn lint`, `yarn lint:fix`, `yarn typecheck`
 - Tests: `yarn test` (all three Vitest projects), `yarn test:unit`, `yarn test:api` (real dev server + SQLite), `yarn test:nuxt` (components, Happy DOM), `yarn test:coverage`, `yarn test:e2e` (Playwright)
-- Database: `yarn db:generate`, `yarn db:migrate:dev`, `yarn db:migrate:deploy`, `yarn db:migrate:status`, `yarn db:seed`. Development migrations regenerate the client; use `yarn db:generate` after other schema edits. Generation needs no database URL; database commands require `DATABASE_URL`.
+- Database: `yarn db:generate`, `yarn db:migrate:dev`, `yarn db:migrate:deploy`, `yarn db:migrate:status`, `yarn db:seed`. Use `yarn db:generate` to generate SQL after editing `server/db/schema.ts`, review it, then apply it with a migration command. Installation and builds need no live database. Database operations require `DATABASE_URL`; `node scripts/database.mjs check` verifies readiness and `node scripts/database.mjs backup <destination>` creates a consistent SQLite backup.
 
 ## Backend conventions
 - Handlers in `server/api/` do validation, permission checks, and response shaping only. Business logic belongs in `server/services/`. Use `#server/...` and `#shared/...` aliases in server code.
@@ -40,6 +40,8 @@ DND Campaign (DM Vault) is a Nuxt 4 web app for running tabletop campaigns: camp
 - **Authorization lives in the handler.** Campaign-scoped routes call `requireCampaignPermission(event, campaignId, permission)` once and pass the returned `access` or `actor` (`{ userId, access }`) into services. Services take a trusted `campaignId` and never re-resolve membership. Routes keyed by a child id (`/encounters/:id`, `/sessions/:id`, `/documents/:id`) scope the lookup with `buildCampaignWhereForPermission` instead. Use `assertCampaignPermission(access, permission)` when one handler branches on the action.
 - Multipart uploads use `readSingleFileUpload` / `readMultipartUpload` from `server/utils/multipart.ts`. Caption conversion uses `toVtt` from `shared/utils/transcript.ts`. Do not add another Busboy loop or VTT converter.
 - Route params come from `routeParams(event, 'campaignId', ...)`; do not add "id is required" guards.
+
+- **Database operations use Drizzle directly.** Import `db` from `#server/db/client` and tables/types from `#server/db/schema`. Keep transaction callbacks synchronous; use `.get()`, `.all()`, `.run()`, or relational `.sync()` inside `db.transaction(..., { behavior: 'immediate' })`. Never await within a better-sqlite3 transaction. Preserve explicit projections and response shapes; JSON literal null uses `jsonNull` from `#server/db/columns`, while ordinary null stores SQL NULL.
 
 ## API design
 - Resource-first namespace paths: `/api/campaigns/:campaignId/journal/entries`, not `/journal-entries`. Shallow nesting is fine: list and create under the parent, update and delete on `/quests/:questId`.

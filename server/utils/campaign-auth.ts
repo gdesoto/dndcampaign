@@ -1,6 +1,9 @@
 import type { H3Event } from 'h3'
-import type { CampaignRole, Prisma } from '#server/db/prisma-client'
-import { prisma } from '#server/db/prisma'
+import type { CampaignRole } from '#server/db/schema'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { eq, and, or, inArray, type SQL } from 'drizzle-orm'
+import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
 import { apiError } from '#server/utils/http'
 import { requireApiUserSession } from '#server/utils/api-auth'
 
@@ -68,36 +71,20 @@ type CampaignAccessResolution = {
 
 export const buildCampaignWhereForPermission = (
   userId: string,
-  permission: CampaignPermission
-): Prisma.CampaignWhereInput => {
-  const allowedRoles = permissionRoles[permission]
-  const nonOwnerRoles = allowedRoles.filter((role) => role !== 'OWNER')
-
-  if (!allowedRoles.length) {
-    return { id: '__forbidden__' }
-  }
-
-  if (allowedRoles.length === 1 && allowedRoles[0] === 'OWNER') {
-    return { ownerId: userId }
-  }
-
-  if (!nonOwnerRoles.length) {
-    return { ownerId: userId }
-  }
-
-  return {
-    OR: [
-      { ownerId: userId },
-      {
-        members: {
-          some: {
-            userId,
-            role: { in: nonOwnerRoles },
-          },
-        },
-      },
-    ],
-  }
+  permission: CampaignPermission,
+  campaignIdColumn: AnySQLiteColumn = tables.campaign.id
+): SQL => {
+  const nonOwnerRoles = permissionRoles[permission].filter((role) => role !== 'OWNER')
+  return inArray(campaignIdColumn, db.select({ id: tables.campaign.id }).from(tables.campaign).where(
+    or(
+      eq(tables.campaign.ownerId, userId),
+      nonOwnerRoles.length ? inArray(tables.campaign.id,
+        db.select({ campaignId: tables.campaignMember.campaignId }).from(tables.campaignMember).where(
+          and(eq(tables.campaignMember.userId, userId), inArray(tables.campaignMember.role, nonOwnerRoles))
+        )
+      ) : undefined
+    )
+  ))
 }
 
 export const resolveCampaignAccess = async (
@@ -105,18 +92,21 @@ export const resolveCampaignAccess = async (
   userId: string,
   systemRole?: 'USER' | 'SYSTEM_ADMIN'
 ): Promise<CampaignAccessResolution> => {
-  const campaign = await prisma.campaign.findUnique({
-    where: { id: campaignId },
-    select: {
+  const campaign = await db.query.campaign.findFirst({
+    where: eq(tables.campaign.id, campaignId),
+    columns: {
       id: true,
-      ownerId: true,
-      members: {
-        where: { userId },
-        select: { role: true, hasDmAccess: true },
-        take: 1,
-      },
+      ownerId: true
     },
-  })
+    with: { members: {
+        where: eq(tables.campaignMember.userId, userId),
+        limit: 1,
+        columns: {
+          role: true,
+          hasDmAccess: true
+        }
+      } }
+  }).sync()
 
   if (!campaign) {
     return { exists: false, access: null }

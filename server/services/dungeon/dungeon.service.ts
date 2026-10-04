@@ -1,5 +1,7 @@
-import { prisma } from '#server/db/prisma'
-import type { Prisma } from '#server/db/prisma-client'
+import type { JsonValue } from '#server/db/columns'
+import { db } from '#server/db/client'
+import { campaignDungeon, campaignDungeonRoom, campaignDungeonSnapshot } from '#server/db/schema'
+import { eq, and, desc } from 'drizzle-orm'
 import {
   dungeonGeneratorConfigSchema,
   type DungeonCreateInput,
@@ -95,23 +97,15 @@ const toDetail = (row: {
 }
 
 const withDungeonAccess = async (campaignId: string, dungeonId: string) =>
-  prisma.campaignDungeon.findFirst({
-    where: {
-      id: dungeonId,
-      campaignId,
-    },
-  })
+  db.query.campaignDungeon.findFirst({ where: and(eq(campaignDungeon.id, dungeonId), eq(campaignDungeon.campaignId, campaignId)) }).sync()
 
 const syncRoomsFromMap = async (dungeonId: string, map: DungeonMapData) => {
-  await prisma.$transaction(async (tx) => {
-    await tx.campaignDungeonRoom.deleteMany({
-      where: { dungeonId },
-    })
+  db.transaction((tx) => {
+    tx.delete(campaignDungeonRoom).where(eq(campaignDungeonRoom.dungeonId, dungeonId)).run()
 
     if (!map.rooms.length) return
 
-    await tx.campaignDungeonRoom.createMany({
-      data: map.rooms.map((room) => ({
+    tx.insert(campaignDungeonRoom).values(map.rooms.map((room) => ({
         dungeonId,
         roomNumber: room.roomNumber,
         name: `Room ${room.roomNumber}`,
@@ -126,9 +120,8 @@ const syncRoomsFromMap = async (dungeonId: string, map: DungeonMapData) => {
           width: room.width,
           height: room.height,
         },
-      })),
-    })
-  })
+      }))).run()
+  }, { behavior: 'immediate' })
 }
 
 export class DungeonService {
@@ -142,14 +135,7 @@ export class DungeonService {
       actor.access.role === 'OWNER' || actor.access.hasDmAccess,
     )
 
-    const rows = await prisma.campaignDungeon.findMany({
-      where: {
-        campaignId,
-        ...(query.status ? { status: query.status } : {}),
-        ...(query.theme ? { theme: query.theme } : {}),
-      },
-      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
-    })
+    const rows = db.query.campaignDungeon.findMany({ where: and(eq(campaignDungeon.campaignId, campaignId), (query.status ? eq(campaignDungeon.status, query.status) : undefined), (query.theme ? eq(campaignDungeon.theme, query.theme) : undefined)), orderBy: [desc(campaignDungeon.updatedAt), desc(campaignDungeon.createdAt)] }).sync()
 
     return rows.map((row) => toSummary(row, canDeleteAsOwnerOrDm || row.createdByUserId === userId))
   }
@@ -170,8 +156,7 @@ export class DungeonService {
 
     const map = generator.generateBaseMap(seed, normalizedConfig)
 
-    const created = await prisma.campaignDungeon.create({
-      data: {
+    const created = db.insert(campaignDungeon).values({
         campaignId,
         name: input.name,
         status: 'DRAFT',
@@ -179,18 +164,17 @@ export class DungeonService {
         seed,
         gridType: 'SQUARE',
         generatorVersion: generator.getGeneratorVersion(),
-        configJson: normalizedConfig,
-        mapJson: map,
+        configJson: (normalizedConfig) as unknown as JsonValue,
+        mapJson: (map) as unknown as JsonValue,
         createdByUserId: userId,
-      },
-    })
+      }).returning().get()!
 
     await syncRoomsFromMap(created.id, map)
 
     return toDetail({
         ...created,
-        configJson: normalizedConfig,
-        mapJson: map,
+        configJson: (normalizedConfig) as unknown as JsonValue,
+        mapJson: (map) as unknown as JsonValue,
         playerViewJson: created.playerViewJson,
       })
   }
@@ -220,16 +204,13 @@ export class DungeonService {
     const currentConfig = dungeonGeneratorConfigSchema.parse(existing.configJson)
     const nextConfig = input.config || currentConfig
 
-    const updated = await prisma.campaignDungeon.update({
-      where: { id: dungeonId },
-      data: {
+    const updated = db.update(campaignDungeon).set({
         ...(input.name ? { name: input.name } : {}),
         ...(input.status ? { status: input.status } : {}),
         ...(input.theme ? { theme: input.theme } : {}),
         ...(input.seed ? { seed: input.seed } : {}),
-        ...(input.config ? { configJson: nextConfig } : {}),
-      },
-    })
+        ...(input.config ? { configJson: (nextConfig) as unknown as JsonValue } : {}),
+      }).where(eq(campaignDungeon.id, dungeonId)).returning().get()!
 
     await activityLogService.log({
       actorUserId: userId,
@@ -241,15 +222,12 @@ export class DungeonService {
       summary: `Updated dungeon "${updated.name}".`,
     })
 
-    return toDetail({ ...updated, configJson: nextConfig })
+    return toDetail({ ...updated, configJson: (nextConfig) as unknown as JsonValue })
   }
 
   async deleteDungeon(campaignId: string, dungeonId: string, actor: CampaignActor): Promise<{ deleted: true }> {
     const userId = actor.userId
-    const existing = await prisma.campaignDungeon.findFirst({
-      where: { id: dungeonId, campaignId },
-      select: { id: true, campaignId: true, name: true, createdByUserId: true },
-    })
+    const existing = db.query.campaignDungeon.findFirst({ where: and(eq(campaignDungeon.id, dungeonId), eq(campaignDungeon.campaignId, campaignId)), columns: { id: true, campaignId: true, name: true, createdByUserId: true } }).sync()
     if (!existing) {
       throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
@@ -258,7 +236,7 @@ export class DungeonService {
       throw apiError(403, 'FORBIDDEN', 'You do not have permission to delete this dungeon.')
     }
 
-    await prisma.campaignDungeon.delete({ where: { id: dungeonId } })
+    db.delete(campaignDungeon).where(eq(campaignDungeon.id, dungeonId)).returning().get()!
     await activityLogService.log({
       actorUserId: userId,
       campaignId,
@@ -289,16 +267,13 @@ export class DungeonService {
       : dungeonGeneratorConfigSchema.parse(existing.configJson)
 
     const map = generator.generateBaseMap(seed, config)
-    const updated = await prisma.campaignDungeon.update({
-      where: { id: dungeonId },
-      data: {
+    const updated = db.update(campaignDungeon).set({
         seed,
         theme: config.theme,
-        configJson: config,
-        mapJson: map,
+        configJson: (config) as unknown as JsonValue,
+        mapJson: (map) as unknown as JsonValue,
         generatorVersion: generator.getGeneratorVersion(),
-      },
-    })
+      }).where(eq(campaignDungeon.id, dungeonId)).returning().get()!
 
     await syncRoomsFromMap(existing.id, map)
     await activityLogService.log({
@@ -315,7 +290,7 @@ export class DungeonService {
       },
     })
 
-    return toDetail({ ...updated, configJson: config, mapJson: map })
+    return toDetail({ ...updated, configJson: (config) as unknown as JsonValue, mapJson: (map) as unknown as JsonValue })
   }
 
   async regenerateDungeon(
@@ -337,26 +312,21 @@ export class DungeonService {
       preserveLocks: input.preserveLocks,
     })
 
-    await prisma.campaignDungeonSnapshot.create({
-      data: {
+    db.insert(campaignDungeonSnapshot).values({
         dungeonId: existing.id,
         snapshotType: 'PRE_REGENERATE',
         seed: existing.seed,
         generatorVersion: existing.generatorVersion,
-        configJson: existing.configJson as Prisma.InputJsonValue,
-        mapJson: existing.mapJson as Prisma.InputJsonValue,
+        configJson: (existing.configJson) as unknown as JsonValue,
+        mapJson: (existing.mapJson) as unknown as JsonValue,
         createdByUserId: userId,
-      },
-    })
+      }).returning().get()!
 
-    const updated = await prisma.campaignDungeon.update({
-      where: { id: dungeonId },
-      data: {
+    const updated = db.update(campaignDungeon).set({
         seed,
-        mapJson: regenerated,
+        mapJson: (regenerated) as unknown as JsonValue,
         generatorVersion: generator.getGeneratorVersion(),
-      },
-    })
+      }).where(eq(campaignDungeon.id, dungeonId)).returning().get()!
 
     if (input.scope === 'FULL' || input.scope === 'LAYOUT') {
       await syncRoomsFromMap(existing.id, regenerated)
@@ -377,7 +347,7 @@ export class DungeonService {
       },
     })
 
-    return toDetail({ ...updated, configJson: config, mapJson: regenerated })
+    return toDetail({ ...updated, configJson: (config) as unknown as JsonValue, mapJson: (regenerated) as unknown as JsonValue })
   }
 
   async setPublishStatus(
@@ -387,17 +357,12 @@ export class DungeonService {
     status: 'READY' | 'DRAFT',
   ): Promise<CampaignDungeonDetail> {
     const userId = actor.userId
-    const existing = await prisma.campaignDungeon.findFirst({
-      where: { id: dungeonId, campaignId },
-    })
+    const existing = db.query.campaignDungeon.findFirst({ where: and(eq(campaignDungeon.id, dungeonId), eq(campaignDungeon.campaignId, campaignId)) }).sync()
     if (!existing) {
       throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
-    const updated = await prisma.campaignDungeon.update({
-      where: { id: dungeonId },
-      data: { status },
-    })
+    const updated = db.update(campaignDungeon).set({ status }).where(eq(campaignDungeon.id, dungeonId)).returning().get()!
     await activityLogService.log({
       actorUserId: userId,
       campaignId,

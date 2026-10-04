@@ -1,13 +1,15 @@
 // @vitest-environment node
+import { eq } from 'drizzle-orm'
+import * as schema from '../../server/db/schema'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
-import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
+import { createApiTestDatabase } from '../scripts/db-test-client'
 import { ofetch } from 'ofetch'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
 
-const prisma = createApiTestPrismaClient()
-const hash = new Hash(new Scrypt())
+const db = createApiTestDatabase()
+const hash = new Hash(new Scrypt({}))
 const baseUrl = getApiTestBaseUrl()
 
 const testUser = {
@@ -46,34 +48,28 @@ describe('auth + campaigns API', () => {
 
   beforeAll(async () => {
     const passwordHash = await hash.make(testUser.password)
-    const user = await prisma.user.upsert({
-      where: { email: testUser.email },
-      update: {
-        passwordHash,
-        name: testUser.name,
-      },
-      create: {
+    const user = db.insert(schema.user).values({
         email: testUser.email,
         passwordHash,
         name: testUser.name,
-      },
-    })
+      }).onConflictDoUpdate({ target: schema.user.email, set: {
+        passwordHash,
+        name: testUser.name,
+      } }).returning().get()!
 
-    await prisma.campaign.deleteMany({ where: { ownerId: user.id } })
-    await prisma.campaign.create({
-      data: {
+    db.delete(schema.campaign).where(eq(schema.campaign.ownerId, user.id)).run()
+    db.insert(schema.campaign).values({
         ownerId: user.id,
         name: 'Test Campaign',
         system: 'D&D 5e',
         description: 'Seeded for API tests.',
-      },
-    })
+      }).returning().get()!
 
     authCookie = await loginAndGetCookie(testUser.email, testUser.password)
   }, 120_000)
 
   afterAll(async () => {
-    await prisma.$disconnect()
+    db.$client.close()
   })
 
   it('rejects campaign list without auth', async () => {

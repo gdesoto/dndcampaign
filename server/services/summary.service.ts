@@ -1,5 +1,8 @@
+import type { JsonValue } from '#server/db/columns'
 import { createHash, randomUUID } from 'node:crypto'
-import { prisma } from '#server/db/prisma'
+import { and, count, desc, eq, inArray } from 'drizzle-orm'
+import { db } from '#server/db/client'
+import { glossaryEntry as glossaryEntryTable, quest as questTable, milestone as milestoneTable, document as documentTable, summaryJob as summaryJobTable, session as sessionTable, summarySuggestion as summarySuggestionTable } from '#server/db/schema'
 import { DocumentService } from '#server/services/document.service'
 import { isSegmentedTranscript, parseTranscriptSegments, segmentsToPlainText } from '#shared/utils/transcript'
 import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
@@ -10,7 +13,7 @@ import type {
   SummarySuggestions,
 } from '#shared/schemas/summarization'
 import { n8nWebhookPayloadSchema } from '#shared/schemas/summarization'
-import type { Document, DocumentFormat, Prisma } from '#server/db/prisma-client'
+import type { Document, DocumentFormat} from '#server/db/schema'
 
 export type StartSummarizationInput = {
   documentId: string
@@ -160,18 +163,9 @@ export class SummaryService {
   private documentService = new DocumentService()
 
   private async loadCampaignContext(campaignId: string) {
-    const glossaryEntries = await prisma.glossaryEntry.findMany({
-      where: { campaignId },
-      select: { id: true, type: true, name: true, aliases: true, description: true },
-    })
-    const quests = await prisma.quest.findMany({
-      where: { campaignId },
-      select: { id: true, title: true, status: true, description: true, progressNotes: true },
-    })
-    const milestones = await prisma.milestone.findMany({
-      where: { campaignId },
-      select: { id: true, title: true, description: true, isComplete: true },
-    })
+    const glossaryEntries = (db.query.glossaryEntry.findMany({ where: eq(glossaryEntryTable.campaignId, campaignId), columns: { id: true, type: true, name: true, aliases: true, description: true } }).sync())
+    const quests = (db.query.quest.findMany({ where: eq(questTable.campaignId, campaignId), columns: { id: true, title: true, status: true, description: true, progressNotes: true } }).sync())
+    const milestones = (db.query.milestone.findMany({ where: eq(milestoneTable.campaignId, campaignId), columns: { id: true, title: true, description: true, isComplete: true } }).sync())
 
     return {
       groupedGlossary: {
@@ -187,15 +181,7 @@ export class SummaryService {
 
   private async resolveSummarySourceForSuggestions(input: StartSuggestionGenerationInput): Promise<SummarySource> {
     const summaryDocument = input.summaryDocumentId
-      ? await prisma.document.findFirst({
-          where: {
-            id: input.summaryDocumentId,
-            type: 'SUMMARY',
-            sessionId: input.sessionId,
-            campaign: buildCampaignWhereForPermission(input.userId, 'summary.run'),
-          },
-          include: { currentVersion: true },
-        })
+      ? (db.query.document.findFirst({ where: and(eq(documentTable.id, input.summaryDocumentId), eq(documentTable.type, 'SUMMARY'), eq(documentTable.sessionId, input.sessionId), buildCampaignWhereForPermission(input.userId, 'summary.run', documentTable.campaignId)), with: { currentVersion: true } }).sync() ?? null)
       : null
     if (summaryDocument?.currentVersion?.content) {
       const content = summaryDocument.currentVersion.content.trim()
@@ -208,16 +194,9 @@ export class SummaryService {
     }
 
     const referencedJob = input.summaryJobId
-      ? await prisma.summaryJob.findFirst({
-          where: {
-            id: input.summaryJobId,
-            sessionId: input.sessionId,
-            campaign: buildCampaignWhereForPermission(input.userId, 'summary.run'),
-          },
-          include: {
-            summaryDocument: { include: { currentVersion: true } },
-          },
-        })
+      ? (db.query.summaryJob.findFirst({ where: and(eq(summaryJobTable.id, input.summaryJobId), eq(summaryJobTable.sessionId, input.sessionId), buildCampaignWhereForPermission(input.userId, 'summary.run', summaryJobTable.campaignId)), with: {
+            summaryDocument: { with: { currentVersion: true } },
+          } }).sync() ?? null)
       : null
     if (referencedJob?.summaryDocument?.currentVersion?.content) {
       const content = referencedJob.summaryDocument.currentVersion.content.trim()
@@ -243,15 +222,7 @@ export class SummaryService {
       }
     }
 
-    const latestSummaryDocument = await prisma.document.findFirst({
-      where: {
-        sessionId: input.sessionId,
-        type: 'SUMMARY',
-        campaign: buildCampaignWhereForPermission(input.userId, 'summary.run'),
-      },
-      include: { currentVersion: true },
-      orderBy: { updatedAt: 'desc' },
-    })
+    const latestSummaryDocument = (db.query.document.findFirst({ where: and(eq(documentTable.sessionId, input.sessionId), eq(documentTable.type, 'SUMMARY'), buildCampaignWhereForPermission(input.userId, 'summary.run', documentTable.campaignId)), with: { currentVersion: true }, orderBy: [desc(documentTable.updatedAt)] }).sync() ?? null)
     if (latestSummaryDocument?.currentVersion?.content) {
       const content = latestSummaryDocument.currentVersion.content.trim()
       return {
@@ -262,14 +233,7 @@ export class SummaryService {
       }
     }
 
-    const latestSummaryJob = await prisma.summaryJob.findFirst({
-      where: {
-        sessionId: input.sessionId,
-        campaign: buildCampaignWhereForPermission(input.userId, 'summary.run'),
-        kind: 'SUMMARY_GENERATION',
-      },
-      orderBy: { createdAt: 'desc' },
-    })
+    const latestSummaryJob = (db.query.summaryJob.findFirst({ where: and(eq(summaryJobTable.sessionId, input.sessionId), buildCampaignWhereForPermission(input.userId, 'summary.run', summaryJobTable.campaignId), eq(summaryJobTable.kind, 'SUMMARY_GENERATION')), orderBy: [desc(summaryJobTable.createdAt)] }).sync() ?? null)
     const latestSummaryJobText = resolveSummaryText(
       (latestSummaryJob?.meta as { summaryContent?: SummaryContent } | null)?.summaryContent
     ).trim()
@@ -316,24 +280,18 @@ export class SummaryService {
         }
       }
 
-      await prisma.summaryJob.update({
-        where: { id: input.jobId },
-        data: {
+      db.update(summaryJobTable).set({
           status: 'SENT',
-        },
-      })
+        }).where(eq(summaryJobTable.id, input.jobId)).returning().get()!
 
       console.info('[summary] sent', { trackingId: input.trackingId, jobId: input.jobId })
 
       return { trackingId: input.trackingId }
     } catch (error) {
-      await prisma.summaryJob.update({
-        where: { id: input.jobId },
-        data: {
+      db.update(summaryJobTable).set({
           status: 'FAILED',
           errorMessage: (error as Error & { message?: string }).message || input.failureMessage,
-        },
-      })
+        }).where(eq(summaryJobTable.id, input.jobId)).returning().get()!
       console.info('[summary] failed', {
         trackingId: input.trackingId,
         jobId: input.jobId,
@@ -350,18 +308,11 @@ export class SummaryService {
       throw new Error('n8n webhook URL is not configured')
     }
 
-    const document = await prisma.document.findFirst({
-      where: {
-        id: input.documentId,
-        type: 'TRANSCRIPT',
-        campaign: buildCampaignWhereForPermission(input.userId, 'summary.run'),
-      },
-      include: {
+    const document = (db.query.document.findFirst({ where: and(eq(documentTable.id, input.documentId), eq(documentTable.type, 'TRANSCRIPT'), buildCampaignWhereForPermission(input.userId, 'summary.run', documentTable.campaignId)), with: {
         currentVersion: true,
         session: true,
         campaign: true,
-      },
-    })
+      } }).sync() ?? null)
 
     if (!document || !document.session) {
       throw new Error('Transcript document not found')
@@ -376,8 +327,7 @@ export class SummaryService {
 
     const { groupedGlossary, quests, milestones } = await this.loadCampaignContext(document.campaignId)
 
-    const job = await prisma.summaryJob.create({
-      data: {
+    const job = (db.insert(summaryJobTable).values({
         campaignId: document.campaignId,
         sessionId: document.sessionId || document.session.id,
         documentId: document.id,
@@ -388,8 +338,7 @@ export class SummaryService {
         promptProfile: input.promptProfile || null,
         webhookUrl,
         requestHash: transcript.hash,
-      },
-    })
+      }).returning().get()!)
 
     console.info('[summary] start', {
       trackingId,
@@ -445,15 +394,9 @@ export class SummaryService {
       throw new Error('n8n webhook URL is not configured')
     }
 
-    const session = await prisma.session.findFirst({
-      where: {
-        id: input.sessionId,
-        campaign: buildCampaignWhereForPermission(input.userId, 'summary.run'),
-      },
-      include: {
+    const session = (db.query.session.findFirst({ where: and(eq(sessionTable.id, input.sessionId), buildCampaignWhereForPermission(input.userId, 'summary.run', sessionTable.campaignId)), with: {
         campaign: true,
-      },
-    })
+      } }).sync() ?? null)
     if (!session) {
       throw new Error('Session not found')
     }
@@ -463,22 +406,15 @@ export class SummaryService {
     const { groupedGlossary, quests, milestones } = await this.loadCampaignContext(session.campaignId)
 
     const baseDocument =
-      (await prisma.document.findFirst({
-        where: { sessionId: session.id, type: 'TRANSCRIPT' },
-        select: { id: true },
-      })) ||
+      ((db.query.document.findFirst({ where: and(eq(documentTable.sessionId, session.id), eq(documentTable.type, 'TRANSCRIPT')), columns: { id: true } }).sync() ?? null)) ||
       (summarySource.summaryDocumentId
-        ? await prisma.document.findFirst({
-            where: { id: summarySource.summaryDocumentId, sessionId: session.id, type: 'SUMMARY' },
-            select: { id: true },
-          })
+        ? (db.query.document.findFirst({ where: and(eq(documentTable.id, summarySource.summaryDocumentId), eq(documentTable.sessionId, session.id), eq(documentTable.type, 'SUMMARY')), columns: { id: true } }).sync() ?? null)
         : null)
     if (!baseDocument) {
       throw new Error('Unable to resolve a document for this suggestion job')
     }
 
-    const job = await prisma.summaryJob.create({
-      data: {
+    const job = (db.insert(summaryJobTable).values({
         campaignId: session.campaignId,
         sessionId: session.id,
         documentId: baseDocument.id,
@@ -490,8 +426,7 @@ export class SummaryService {
         promptProfile: input.promptProfile || null,
         webhookUrl,
         requestHash: summarySource.hash,
-      },
-    })
+      }).returning().get()!)
 
     console.info('[summary] suggestion-start', {
       trackingId,
@@ -542,14 +477,11 @@ export class SummaryService {
   }
 
   async handleSummaryResult(payload: SummaryResultPayload) {
-    const job = await prisma.summaryJob.findFirst({
-      where: { trackingId: payload.trackingId },
-      include: {
+    const job = (db.query.summaryJob.findFirst({ where: eq(summaryJobTable.trackingId, payload.trackingId), with: {
         session: true,
         campaign: true,
         summaryDocument: true,
-      },
-    })
+      } }).sync() ?? null)
 
     if (!job || !job.session) {
       return null
@@ -563,26 +495,20 @@ export class SummaryService {
     }
 
     if (payload.status === 'FAILED') {
-      const failed = await prisma.summaryJob.update({
-        where: { id: job.id },
-        data: {
+      const failed = (db.update(summaryJobTable).set({
           status: 'FAILED',
           errorMessage: job.errorMessage || 'Summarization failed',
-          meta: (payload.meta || job.meta || undefined) as Prisma.InputJsonValue | undefined,
-        },
-      })
+          meta: payload.meta ? JSON.parse(JSON.stringify(payload.meta)) as JsonValue : job.meta || undefined,
+        }).where(eq(summaryJobTable.id, job.id)).returning().get()!)
       console.info('[summary] webhook failed', { trackingId: payload.trackingId, jobId: job.id })
       return failed
     }
 
     if (payload.status === 'PROCESSING' && !payload.summaryContent) {
-      return prisma.summaryJob.update({
-        where: { id: job.id },
-        data: {
+      return (db.update(summaryJobTable).set({
           status: 'PROCESSING',
-          meta: (payload.meta || job.meta || undefined) as Prisma.InputJsonValue | undefined,
-        },
-      })
+          meta: payload.meta ? JSON.parse(JSON.stringify(payload.meta)) as JsonValue : job.meta || undefined,
+        }).where(eq(summaryJobTable.id, job.id)).returning().get()!)
     }
 
     const suggestionInputs = flattenSuggestions(payload.suggestions)
@@ -590,25 +516,21 @@ export class SummaryService {
       job.kind === 'SUMMARY_GENERATION' && suggestionInputs.length > 0
     const mirroredTrackingId = getMirroredSuggestionTrackingId(job.trackingId)
 
-    await prisma.$transaction(async (tx) => {
-      await tx.summarySuggestion.deleteMany({ where: { summaryJobId: job.id } })
+    db.transaction((tx) => {
+      tx.delete(summarySuggestionTable).where(eq(summarySuggestionTable.summaryJobId, job.id)).run()
       if (suggestionInputs.length) {
-        await tx.summarySuggestion.createMany({
-          data: suggestionInputs.map((entry) => ({
+        tx.insert(summarySuggestionTable).values(suggestionInputs.map((entry) => ({
             summaryJobId: job.id,
             entityType: entry.entityType,
             action: entry.action,
-            status: 'PENDING',
-            match: (entry.match || undefined) as Prisma.InputJsonValue | undefined,
-            payload: entry.payload as Prisma.InputJsonValue,
-          })),
-        })
+            status: 'PENDING' as const,
+            match: entry.match ? JSON.parse(JSON.stringify(entry.match)) as JsonValue : undefined,
+            payload: JSON.parse(JSON.stringify(entry.payload)) as JsonValue,
+          }))).run()
       }
 
       if (shouldMirrorIntoSuggestionJob) {
-        const mirroredJob = await tx.summaryJob.upsert({
-          where: { trackingId: mirroredTrackingId },
-          create: {
+        const mirroredJob = (tx.insert(summaryJobTable).values({
             campaignId: job.campaignId,
             sessionId: job.sessionId,
             documentId: job.documentId,
@@ -627,9 +549,8 @@ export class SummaryService {
               source: 'SUMMARY_GENERATION_CALLBACK',
               sourceSummaryJobId: job.id,
               sourceTrackingId: job.trackingId,
-            } as Prisma.InputJsonValue,
-          },
-          update: {
+            },
+          }).onConflictDoUpdate({ target: summaryJobTable.trackingId, set: {
             status: 'READY_FOR_REVIEW',
             summaryDocumentId: job.summaryDocumentId,
             promptProfile: job.promptProfile,
@@ -642,24 +563,21 @@ export class SummaryService {
               source: 'SUMMARY_GENERATION_CALLBACK',
               sourceSummaryJobId: job.id,
               sourceTrackingId: job.trackingId,
-            } as Prisma.InputJsonValue,
+            },
             errorMessage: null,
-          },
-        })
+          } }).returning().get()!)
 
-        await tx.summarySuggestion.deleteMany({ where: { summaryJobId: mirroredJob.id } })
-        await tx.summarySuggestion.createMany({
-          data: suggestionInputs.map((entry) => ({
+        tx.delete(summarySuggestionTable).where(eq(summarySuggestionTable.summaryJobId, mirroredJob.id)).run()
+        tx.insert(summarySuggestionTable).values(suggestionInputs.map((entry) => ({
             summaryJobId: mirroredJob.id,
             entityType: entry.entityType,
             action: entry.action,
-            status: 'PENDING',
-            match: (entry.match || undefined) as Prisma.InputJsonValue | undefined,
-            payload: entry.payload as Prisma.InputJsonValue,
-          })),
-        })
+            status: 'PENDING' as const,
+            match: entry.match ? JSON.parse(JSON.stringify(entry.match)) as JsonValue : undefined,
+            payload: JSON.parse(JSON.stringify(entry.payload)) as JsonValue,
+          }))).run()
       }
-    })
+    }, { behavior: 'immediate' })
 
     const responseHash = createHash('sha256')
       .update(JSON.stringify({ summaryContent: payload.summaryContent, suggestions: payload.suggestions }))
@@ -674,21 +592,15 @@ export class SummaryService {
       nextMeta.summaryContent = payload.summaryContent
     }
 
-    return prisma.summaryJob.update({
-      where: { id: job.id },
-      data: {
+    return (db.update(summaryJobTable).set({
         status: 'READY_FOR_REVIEW',
         responseHash,
-        meta: nextMeta as Prisma.InputJsonValue,
-      },
-    })
+        meta: JSON.parse(JSON.stringify(nextMeta)) as JsonValue,
+      }).where(eq(summaryJobTable.id, job.id)).returning().get()!)
   }
 
   async applySummaryFromJob(jobId: string, userId: string) {
-    const job = await prisma.summaryJob.findFirst({
-      where: { id: jobId, campaign: buildCampaignWhereForPermission(userId, 'summary.run') },
-      include: { session: true },
-    })
+    const job = (db.query.summaryJob.findFirst({ where: and(eq(summaryJobTable.id, jobId), buildCampaignWhereForPermission(userId, 'summary.run', summaryJobTable.campaignId)), with: { session: true } }).sync() ?? null)
     if (!job) return null
     if (job.kind !== 'SUMMARY_GENERATION') {
       throw new Error('Only summary-generation jobs can apply summary content')
@@ -724,40 +636,21 @@ export class SummaryService {
       })
     }
 
-    const pendingCount = await prisma.summarySuggestion.count({
-      where: { summaryJobId: job.id, status: 'PENDING' },
-    })
+    const pendingCount = (db.select({ count: count() }).from(summarySuggestionTable).where(and(eq(summarySuggestionTable.summaryJobId, job.id), eq(summarySuggestionTable.status, 'PENDING'))).get()!.count)
 
-    return prisma.summaryJob.update({
-      where: { id: job.id },
-      data: {
+    return (db.update(summaryJobTable).set({
         summaryDocumentId,
         status: pendingCount === 0 ? 'APPLIED' : job.status,
-      },
-    })
+      }).where(eq(summaryJobTable.id, job.id)).returning().get()!)
   }
 
   async getJobsForSession(sessionId: string, userId: string) {
-    const where = { sessionId, campaign: buildCampaignWhereForPermission(userId, 'content.read') }
-    const jobs = await prisma.summaryJob.findMany({
-      where,
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-      select: {
-        id: true, status: true, mode: true, kind: true, trackingId: true,
-        summaryDocumentId: true, createdAt: true, updatedAt: true,
-      },
-    })
+    const where = and(eq(summaryJobTable.sessionId, sessionId), buildCampaignWhereForPermission(userId, 'content.read', summaryJobTable.campaignId))
+    const jobs = (db.query.summaryJob.findMany({ where: where, orderBy: [desc(summaryJobTable.createdAt), desc(summaryJobTable.id)], columns: { id: true, status: true, mode: true, kind: true, trackingId: true, summaryDocumentId: true, createdAt: true, updatedAt: true } }).sync())
     const summaryId = jobs.find(job => job.kind === 'SUMMARY_GENERATION')?.id
     const suggestionId = jobs.find(job => job.kind === 'SUGGESTION_GENERATION')?.id
     const latestIds = [summaryId, suggestionId].filter((id): id is string => Boolean(id))
-    const latestJobs = latestIds.length ? await prisma.summaryJob.findMany({
-      where: { ...where, id: { in: latestIds } },
-      select: {
-        id: true, status: true, mode: true, kind: true, trackingId: true,
-        promptProfile: true, summaryDocumentId: true, createdAt: true, updatedAt: true, meta: true,
-        suggestions: { select: { id: true, entityType: true, action: true, status: true, match: true, payload: true } },
-      },
-    }) : []
+    const latestJobs = latestIds.length ? (db.query.summaryJob.findMany({ where: and(where, inArray(summaryJobTable.id, latestIds)), columns: { id: true, status: true, mode: true, kind: true, trackingId: true, promptProfile: true, summaryDocumentId: true, createdAt: true, updatedAt: true, meta: true }, with: { suggestions: { columns: { id: true, entityType: true, action: true, status: true, match: true, payload: true } } } }).sync()) : []
     const latestSummary = latestJobs.find(job => job.id === summaryId)
     const latestSuggestion = latestJobs.find(job => job.id === suggestionId)
     const latest = latestJobs.find(job => job.id === jobs[0]?.id)
@@ -778,16 +671,10 @@ export class SummaryService {
   }
 
   async getJobById(jobId: string, userId: string) {
-    return prisma.summaryJob.findFirst({
-      where: {
-        id: jobId,
-        campaign: buildCampaignWhereForPermission(userId, 'content.read'),
-      },
-      include: {
+    return (db.query.summaryJob.findFirst({ where: and(eq(summaryJobTable.id, jobId), buildCampaignWhereForPermission(userId, 'content.read', summaryJobTable.campaignId)), with: {
         summaryDocument: true,
         suggestions: true,
-      },
-    })
+      } }).sync() ?? null)
   }
 }
 

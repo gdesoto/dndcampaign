@@ -1,0 +1,6915 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "0d0ed36b-c93d-4960-9771-4bbd426ddf28",
+  "prevId": "f35c98a1-dec8-4b23-8170-6ceed633ae63",
+  "tables": {
+    "ActivityLog": {
+      "name": "ActivityLog",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "actorUserId": {
+          "name": "actorUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "targetType": {
+          "name": "targetType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "targetId": {
+          "name": "targetId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "ActivityLog_scope_action_createdAt_idx": {
+          "name": "ActivityLog_scope_action_createdAt_idx",
+          "columns": [
+            "scope",
+            "action",
+            "createdAt"
+          ],
+          "isUnique": false
+        },
+        "ActivityLog_campaignId_createdAt_idx": {
+          "name": "ActivityLog_campaignId_createdAt_idx",
+          "columns": [
+            "campaignId",
+            "createdAt"
+          ],
+          "isUnique": false
+        },
+        "ActivityLog_actorUserId_createdAt_idx": {
+          "name": "ActivityLog_actorUserId_createdAt_idx",
+          "columns": [
+            "actorUserId",
+            "createdAt"
+          ],
+          "isUnique": false
+        },
+        "ActivityLog_createdAt_idx": {
+          "name": "ActivityLog_createdAt_idx",
+          "columns": [
+            "createdAt"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "ActivityLog_campaignId_fkey": {
+          "name": "ActivityLog_campaignId_fkey",
+          "tableFrom": "ActivityLog",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "ActivityLog_actorUserId_fkey": {
+          "name": "ActivityLog_actorUserId_fkey",
+          "tableFrom": "ActivityLog",
+          "tableTo": "User",
+          "columnsFrom": [
+            "actorUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "AdminAuditLog": {
+      "name": "AdminAuditLog",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "actorUserId": {
+          "name": "actorUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "targetType": {
+          "name": "targetType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "targetId": {
+          "name": "targetId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "AdminAuditLog_action_createdAt_idx": {
+          "name": "AdminAuditLog_action_createdAt_idx",
+          "columns": [
+            "action",
+            "createdAt"
+          ],
+          "isUnique": false
+        },
+        "AdminAuditLog_targetType_createdAt_idx": {
+          "name": "AdminAuditLog_targetType_createdAt_idx",
+          "columns": [
+            "targetType",
+            "createdAt"
+          ],
+          "isUnique": false
+        },
+        "AdminAuditLog_actorUserId_createdAt_idx": {
+          "name": "AdminAuditLog_actorUserId_createdAt_idx",
+          "columns": [
+            "actorUserId",
+            "createdAt"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "AdminAuditLog_actorUserId_fkey": {
+          "name": "AdminAuditLog_actorUserId_fkey",
+          "tableFrom": "AdminAuditLog",
+          "tableTo": "User",
+          "columnsFrom": [
+            "actorUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "ApiKey": {
+      "name": "ApiKey",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "prefix": {
+          "name": "prefix",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "keyHash": {
+          "name": "keyHash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "permissions": {
+          "name": "permissions",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expiresAt": {
+          "name": "expiresAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "lastUsedAt": {
+          "name": "lastUsedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "revokedAt": {
+          "name": "revokedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "ApiKey_expiresAt_idx": {
+          "name": "ApiKey_expiresAt_idx",
+          "columns": [
+            "expiresAt"
+          ],
+          "isUnique": false
+        },
+        "ApiKey_userId_revokedAt_idx": {
+          "name": "ApiKey_userId_revokedAt_idx",
+          "columns": [
+            "userId",
+            "revokedAt"
+          ],
+          "isUnique": false
+        },
+        "ApiKey_keyHash_key": {
+          "name": "ApiKey_keyHash_key",
+          "columns": [
+            "keyHash"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "ApiKey_userId_fkey": {
+          "name": "ApiKey_userId_fkey",
+          "tableFrom": "ApiKey",
+          "tableTo": "User",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "ApiKeyCampaign": {
+      "name": "ApiKeyCampaign",
+      "columns": {
+        "apiKeyId": {
+          "name": "apiKeyId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "ApiKeyCampaign_campaignId_idx": {
+          "name": "ApiKeyCampaign_campaignId_idx",
+          "columns": [
+            "campaignId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "ApiKeyCampaign_campaignId_fkey": {
+          "name": "ApiKeyCampaign_campaignId_fkey",
+          "tableFrom": "ApiKeyCampaign",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "ApiKeyCampaign_apiKeyId_fkey": {
+          "name": "ApiKeyCampaign_apiKeyId_fkey",
+          "tableFrom": "ApiKeyCampaign",
+          "tableTo": "ApiKey",
+          "columnsFrom": [
+            "apiKeyId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "ApiKeyCampaign_apiKeyId_campaignId_pk": {
+          "columns": [
+            "apiKeyId",
+            "campaignId"
+          ],
+          "name": "ApiKeyCampaign_apiKeyId_campaignId_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "Artifact": {
+      "name": "Artifact",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ownerId": {
+          "name": "ownerId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "storageKey": {
+          "name": "storageKey",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mimeType": {
+          "name": "mimeType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "byteSize": {
+          "name": "byteSize",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "checksumSha256": {
+          "name": "checksumSha256",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "meta": {
+          "name": "meta",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "Artifact_provider_storageKey_key": {
+          "name": "Artifact_provider_storageKey_key",
+          "columns": [
+            "provider",
+            "storageKey"
+          ],
+          "isUnique": true
+        },
+        "Artifact_campaignId_idx": {
+          "name": "Artifact_campaignId_idx",
+          "columns": [
+            "campaignId"
+          ],
+          "isUnique": false
+        },
+        "Artifact_ownerId_idx": {
+          "name": "Artifact_ownerId_idx",
+          "columns": [
+            "ownerId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "Campaign": {
+      "name": "Campaign",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ownerId": {
+          "name": "ownerId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "system": {
+          "name": "system",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'D&D 5e'"
+        },
+        "isArchived": {
+          "name": "isArchived",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "dungeonMasterName": {
+          "name": "dungeonMasterName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "currentStatus": {
+          "name": "currentStatus",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "Campaign_ownerId_idx": {
+          "name": "Campaign_ownerId_idx",
+          "columns": [
+            "ownerId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "Campaign_ownerId_fkey": {
+          "name": "Campaign_ownerId_fkey",
+          "tableFrom": "Campaign",
+          "tableTo": "User",
+          "columnsFrom": [
+            "ownerId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CampaignCalendarConfig": {
+      "name": "CampaignCalendarConfig",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "isEnabled": {
+          "name": "isEnabled",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "startingYear": {
+          "name": "startingYear",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "firstWeekdayIndex": {
+          "name": "firstWeekdayIndex",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "currentYear": {
+          "name": "currentYear",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "currentMonth": {
+          "name": "currentMonth",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "currentDay": {
+          "name": "currentDay",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "weekdaysJson": {
+          "name": "weekdaysJson",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "monthsJson": {
+          "name": "monthsJson",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "moonsJson": {
+          "name": "moonsJson",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "CampaignCalendarConfig_campaignId_isEnabled_idx": {
+          "name": "CampaignCalendarConfig_campaignId_isEnabled_idx",
+          "columns": [
+            "campaignId",
+            "isEnabled"
+          ],
+          "isUnique": false
+        },
+        "CampaignCalendarConfig_campaignId_key": {
+          "name": "CampaignCalendarConfig_campaignId_key",
+          "columns": [
+            "campaignId"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "CampaignCalendarConfig_campaignId_fkey": {
+          "name": "CampaignCalendarConfig_campaignId_fkey",
+          "tableFrom": "CampaignCalendarConfig",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CampaignCalendarEvent": {
+      "name": "CampaignCalendarEvent",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "year": {
+          "name": "year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "month": {
+          "name": "month",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "day": {
+          "name": "day",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdByUserId": {
+          "name": "createdByUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "CampaignCalendarEvent_createdByUserId_idx": {
+          "name": "CampaignCalendarEvent_createdByUserId_idx",
+          "columns": [
+            "createdByUserId"
+          ],
+          "isUnique": false
+        },
+        "CampaignCalendarEvent_campaignId_createdAt_idx": {
+          "name": "CampaignCalendarEvent_campaignId_createdAt_idx",
+          "columns": [
+            "campaignId",
+            "createdAt"
+          ],
+          "isUnique": false
+        },
+        "CampaignCalendarEvent_campaignId_year_month_day_idx": {
+          "name": "CampaignCalendarEvent_campaignId_year_month_day_idx",
+          "columns": [
+            "campaignId",
+            "year",
+            "month",
+            "day"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "CampaignCalendarEvent_createdByUserId_fkey": {
+          "name": "CampaignCalendarEvent_createdByUserId_fkey",
+          "tableFrom": "CampaignCalendarEvent",
+          "tableTo": "User",
+          "columnsFrom": [
+            "createdByUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "CampaignCalendarEvent_campaignId_fkey": {
+          "name": "CampaignCalendarEvent_campaignId_fkey",
+          "tableFrom": "CampaignCalendarEvent",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CampaignCharacter": {
+      "name": "CampaignCharacter",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "characterId": {
+          "name": "characterId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "glossaryEntryId": {
+          "name": "glossaryEntryId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'ACTIVE'"
+        },
+        "roleLabel": {
+          "name": "roleLabel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "CampaignCharacter_campaignId_characterId_key": {
+          "name": "CampaignCharacter_campaignId_characterId_key",
+          "columns": [
+            "campaignId",
+            "characterId"
+          ],
+          "isUnique": true
+        },
+        "CampaignCharacter_glossaryEntryId_idx": {
+          "name": "CampaignCharacter_glossaryEntryId_idx",
+          "columns": [
+            "glossaryEntryId"
+          ],
+          "isUnique": false
+        },
+        "CampaignCharacter_characterId_idx": {
+          "name": "CampaignCharacter_characterId_idx",
+          "columns": [
+            "characterId"
+          ],
+          "isUnique": false
+        },
+        "CampaignCharacter_campaignId_status_idx": {
+          "name": "CampaignCharacter_campaignId_status_idx",
+          "columns": [
+            "campaignId",
+            "status"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "CampaignCharacter_glossaryEntryId_fkey": {
+          "name": "CampaignCharacter_glossaryEntryId_fkey",
+          "tableFrom": "CampaignCharacter",
+          "tableTo": "GlossaryEntry",
+          "columnsFrom": [
+            "glossaryEntryId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "CampaignCharacter_characterId_fkey": {
+          "name": "CampaignCharacter_characterId_fkey",
+          "tableFrom": "CampaignCharacter",
+          "tableTo": "PlayerCharacter",
+          "columnsFrom": [
+            "characterId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "CampaignCharacter_campaignId_fkey": {
+          "name": "CampaignCharacter_campaignId_fkey",
+          "tableFrom": "CampaignCharacter",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CampaignDungeon": {
+      "name": "CampaignDungeon",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'DRAFT'"
+        },
+        "theme": {
+          "name": "theme",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "seed": {
+          "name": "seed",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "gridType": {
+          "name": "gridType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'SQUARE'"
+        },
+        "generatorVersion": {
+          "name": "generatorVersion",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "configJson": {
+          "name": "configJson",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mapJson": {
+          "name": "mapJson",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "playerViewJson": {
+          "name": "playerViewJson",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdByUserId": {
+          "name": "createdByUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "CampaignDungeon_createdByUserId_idx": {
+          "name": "CampaignDungeon_createdByUserId_idx",
+          "columns": [
+            "createdByUserId"
+          ],
+          "isUnique": false
+        },
+        "CampaignDungeon_campaignId_status_updatedAt_idx": {
+          "name": "CampaignDungeon_campaignId_status_updatedAt_idx",
+          "columns": [
+            "campaignId",
+            "status",
+            "updatedAt"
+          ],
+          "isUnique": false
+        },
+        "CampaignDungeon_campaignId_updatedAt_idx": {
+          "name": "CampaignDungeon_campaignId_updatedAt_idx",
+          "columns": [
+            "campaignId",
+            "updatedAt"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "CampaignDungeon_createdByUserId_fkey": {
+          "name": "CampaignDungeon_createdByUserId_fkey",
+          "tableFrom": "CampaignDungeon",
+          "tableTo": "User",
+          "columnsFrom": [
+            "createdByUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "CampaignDungeon_campaignId_fkey": {
+          "name": "CampaignDungeon_campaignId_fkey",
+          "tableFrom": "CampaignDungeon",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CampaignDungeonLink": {
+      "name": "CampaignDungeonLink",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "dungeonId": {
+          "name": "dungeonId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "roomId": {
+          "name": "roomId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "linkType": {
+          "name": "linkType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "targetId": {
+          "name": "targetId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "CampaignDungeonLink_linkType_targetId_idx": {
+          "name": "CampaignDungeonLink_linkType_targetId_idx",
+          "columns": [
+            "linkType",
+            "targetId"
+          ],
+          "isUnique": false
+        },
+        "CampaignDungeonLink_roomId_idx": {
+          "name": "CampaignDungeonLink_roomId_idx",
+          "columns": [
+            "roomId"
+          ],
+          "isUnique": false
+        },
+        "CampaignDungeonLink_dungeonId_createdAt_idx": {
+          "name": "CampaignDungeonLink_dungeonId_createdAt_idx",
+          "columns": [
+            "dungeonId",
+            "createdAt"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "CampaignDungeonLink_roomId_fkey": {
+          "name": "CampaignDungeonLink_roomId_fkey",
+          "tableFrom": "CampaignDungeonLink",
+          "tableTo": "CampaignDungeonRoom",
+          "columnsFrom": [
+            "roomId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "CampaignDungeonLink_dungeonId_fkey": {
+          "name": "CampaignDungeonLink_dungeonId_fkey",
+          "tableFrom": "CampaignDungeonLink",
+          "tableTo": "CampaignDungeon",
+          "columnsFrom": [
+            "dungeonId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CampaignDungeonRoom": {
+      "name": "CampaignDungeonRoom",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "dungeonId": {
+          "name": "dungeonId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "roomNumber": {
+          "name": "roomNumber",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "gmNotes": {
+          "name": "gmNotes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "playerNotes": {
+          "name": "playerNotes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "readAloud": {
+          "name": "readAloud",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "tagsJson": {
+          "name": "tagsJson",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "boundsJson": {
+          "name": "boundsJson",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'UNSEEN'"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "CampaignDungeonRoom_dungeonId_roomNumber_key": {
+          "name": "CampaignDungeonRoom_dungeonId_roomNumber_key",
+          "columns": [
+            "dungeonId",
+            "roomNumber"
+          ],
+          "isUnique": true
+        },
+        "CampaignDungeonRoom_dungeonId_roomNumber_idx": {
+          "name": "CampaignDungeonRoom_dungeonId_roomNumber_idx",
+          "columns": [
+            "dungeonId",
+            "roomNumber"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "CampaignDungeonRoom_dungeonId_fkey": {
+          "name": "CampaignDungeonRoom_dungeonId_fkey",
+          "tableFrom": "CampaignDungeonRoom",
+          "tableTo": "CampaignDungeon",
+          "columnsFrom": [
+            "dungeonId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CampaignDungeonSnapshot": {
+      "name": "CampaignDungeonSnapshot",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "dungeonId": {
+          "name": "dungeonId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "snapshotType": {
+          "name": "snapshotType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "seed": {
+          "name": "seed",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "generatorVersion": {
+          "name": "generatorVersion",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "configJson": {
+          "name": "configJson",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mapJson": {
+          "name": "mapJson",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdByUserId": {
+          "name": "createdByUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "CampaignDungeonSnapshot_createdByUserId_idx": {
+          "name": "CampaignDungeonSnapshot_createdByUserId_idx",
+          "columns": [
+            "createdByUserId"
+          ],
+          "isUnique": false
+        },
+        "CampaignDungeonSnapshot_dungeonId_createdAt_idx": {
+          "name": "CampaignDungeonSnapshot_dungeonId_createdAt_idx",
+          "columns": [
+            "dungeonId",
+            "createdAt"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "CampaignDungeonSnapshot_createdByUserId_fkey": {
+          "name": "CampaignDungeonSnapshot_createdByUserId_fkey",
+          "tableFrom": "CampaignDungeonSnapshot",
+          "tableTo": "User",
+          "columnsFrom": [
+            "createdByUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "CampaignDungeonSnapshot_dungeonId_fkey": {
+          "name": "CampaignDungeonSnapshot_dungeonId_fkey",
+          "tableFrom": "CampaignDungeonSnapshot",
+          "tableTo": "CampaignDungeon",
+          "columnsFrom": [
+            "dungeonId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CampaignEncounter": {
+      "name": "CampaignEncounter",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sessionId": {
+          "name": "sessionId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'COMBAT'"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'PLANNED'"
+        },
+        "visibility": {
+          "name": "visibility",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'SHARED'"
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "calendarYear": {
+          "name": "calendarYear",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "calendarMonth": {
+          "name": "calendarMonth",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "calendarDay": {
+          "name": "calendarDay",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "currentRound": {
+          "name": "currentRound",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
+        "currentTurnIndex": {
+          "name": "currentTurnIndex",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "createdByUserId": {
+          "name": "createdByUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "CampaignEncounter_createdByUserId_idx": {
+          "name": "CampaignEncounter_createdByUserId_idx",
+          "columns": [
+            "createdByUserId"
+          ],
+          "isUnique": false
+        },
+        "CampaignEncounter_sessionId_idx": {
+          "name": "CampaignEncounter_sessionId_idx",
+          "columns": [
+            "sessionId"
+          ],
+          "isUnique": false
+        },
+        "CampaignEncounter_campaignId_status_updatedAt_idx": {
+          "name": "CampaignEncounter_campaignId_status_updatedAt_idx",
+          "columns": [
+            "campaignId",
+            "status",
+            "updatedAt"
+          ],
+          "isUnique": false
+        },
+        "CampaignEncounter_campaignId_createdAt_idx": {
+          "name": "CampaignEncounter_campaignId_createdAt_idx",
+          "columns": [
+            "campaignId",
+            "createdAt"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "CampaignEncounter_createdByUserId_fkey": {
+          "name": "CampaignEncounter_createdByUserId_fkey",
+          "tableFrom": "CampaignEncounter",
+          "tableTo": "User",
+          "columnsFrom": [
+            "createdByUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "CampaignEncounter_sessionId_fkey": {
+          "name": "CampaignEncounter_sessionId_fkey",
+          "tableFrom": "CampaignEncounter",
+          "tableTo": "Session",
+          "columnsFrom": [
+            "sessionId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "CampaignEncounter_campaignId_fkey": {
+          "name": "CampaignEncounter_campaignId_fkey",
+          "tableFrom": "CampaignEncounter",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CampaignInvite": {
+      "name": "CampaignInvite",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tokenHash": {
+          "name": "tokenHash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'PENDING'"
+        },
+        "expiresAt": {
+          "name": "expiresAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "invitedByUserId": {
+          "name": "invitedByUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "acceptedByUserId": {
+          "name": "acceptedByUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "CampaignInvite_expiresAt_idx": {
+          "name": "CampaignInvite_expiresAt_idx",
+          "columns": [
+            "expiresAt"
+          ],
+          "isUnique": false
+        },
+        "CampaignInvite_email_status_idx": {
+          "name": "CampaignInvite_email_status_idx",
+          "columns": [
+            "email",
+            "status"
+          ],
+          "isUnique": false
+        },
+        "CampaignInvite_campaignId_status_idx": {
+          "name": "CampaignInvite_campaignId_status_idx",
+          "columns": [
+            "campaignId",
+            "status"
+          ],
+          "isUnique": false
+        },
+        "CampaignInvite_tokenHash_key": {
+          "name": "CampaignInvite_tokenHash_key",
+          "columns": [
+            "tokenHash"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "CampaignInvite_acceptedByUserId_fkey": {
+          "name": "CampaignInvite_acceptedByUserId_fkey",
+          "tableFrom": "CampaignInvite",
+          "tableTo": "User",
+          "columnsFrom": [
+            "acceptedByUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "CampaignInvite_invitedByUserId_fkey": {
+          "name": "CampaignInvite_invitedByUserId_fkey",
+          "tableFrom": "CampaignInvite",
+          "tableTo": "User",
+          "columnsFrom": [
+            "invitedByUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "CampaignInvite_campaignId_fkey": {
+          "name": "CampaignInvite_campaignId_fkey",
+          "tableFrom": "CampaignInvite",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CampaignJournalEntry": {
+      "name": "CampaignJournalEntry",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "authorUserId": {
+          "name": "authorUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "holderUserId": {
+          "name": "holderUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "discoveredByUserId": {
+          "name": "discoveredByUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "archivedByUserId": {
+          "name": "archivedByUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "contentMarkdown": {
+          "name": "contentMarkdown",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "visibility": {
+          "name": "visibility",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'MYSELF'"
+        },
+        "isDiscoverable": {
+          "name": "isDiscoverable",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "discoveredAt": {
+          "name": "discoveredAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "isArchived": {
+          "name": "isArchived",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "archivedAt": {
+          "name": "archivedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "CampaignJournalEntry_campaignId_isArchived_updatedAt_idx": {
+          "name": "CampaignJournalEntry_campaignId_isArchived_updatedAt_idx",
+          "columns": [
+            "campaignId",
+            "isArchived",
+            "updatedAt"
+          ],
+          "isUnique": false
+        },
+        "CampaignJournalEntry_campaignId_holderUserId_updatedAt_idx": {
+          "name": "CampaignJournalEntry_campaignId_holderUserId_updatedAt_idx",
+          "columns": [
+            "campaignId",
+            "holderUserId",
+            "updatedAt"
+          ],
+          "isUnique": false
+        },
+        "CampaignJournalEntry_campaignId_isDiscoverable_updatedAt_idx": {
+          "name": "CampaignJournalEntry_campaignId_isDiscoverable_updatedAt_idx",
+          "columns": [
+            "campaignId",
+            "isDiscoverable",
+            "updatedAt"
+          ],
+          "isUnique": false
+        },
+        "CampaignJournalEntry_campaignId_createdAt_idx": {
+          "name": "CampaignJournalEntry_campaignId_createdAt_idx",
+          "columns": [
+            "campaignId",
+            "createdAt"
+          ],
+          "isUnique": false
+        },
+        "CampaignJournalEntry_campaignId_authorUserId_createdAt_idx": {
+          "name": "CampaignJournalEntry_campaignId_authorUserId_createdAt_idx",
+          "columns": [
+            "campaignId",
+            "authorUserId",
+            "createdAt"
+          ],
+          "isUnique": false
+        },
+        "CampaignJournalEntry_campaignId_visibility_createdAt_idx": {
+          "name": "CampaignJournalEntry_campaignId_visibility_createdAt_idx",
+          "columns": [
+            "campaignId",
+            "visibility",
+            "createdAt"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "CampaignJournalEntry_archivedByUserId_fkey": {
+          "name": "CampaignJournalEntry_archivedByUserId_fkey",
+          "tableFrom": "CampaignJournalEntry",
+          "tableTo": "User",
+          "columnsFrom": [
+            "archivedByUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "CampaignJournalEntry_discoveredByUserId_fkey": {
+          "name": "CampaignJournalEntry_discoveredByUserId_fkey",
+          "tableFrom": "CampaignJournalEntry",
+          "tableTo": "User",
+          "columnsFrom": [
+            "discoveredByUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "CampaignJournalEntry_holderUserId_fkey": {
+          "name": "CampaignJournalEntry_holderUserId_fkey",
+          "tableFrom": "CampaignJournalEntry",
+          "tableTo": "User",
+          "columnsFrom": [
+            "holderUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "CampaignJournalEntry_authorUserId_fkey": {
+          "name": "CampaignJournalEntry_authorUserId_fkey",
+          "tableFrom": "CampaignJournalEntry",
+          "tableTo": "User",
+          "columnsFrom": [
+            "authorUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "CampaignJournalEntry_campaignId_fkey": {
+          "name": "CampaignJournalEntry_campaignId_fkey",
+          "tableFrom": "CampaignJournalEntry",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CampaignJournalEntrySessionLink": {
+      "name": "CampaignJournalEntrySessionLink",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignJournalEntryId": {
+          "name": "campaignJournalEntryId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sessionId": {
+          "name": "sessionId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "CampaignJournalEntrySessionLink_campaignJournalEntryId_sessionId_key": {
+          "name": "CampaignJournalEntrySessionLink_campaignJournalEntryId_sessionId_key",
+          "columns": [
+            "campaignJournalEntryId",
+            "sessionId"
+          ],
+          "isUnique": true
+        },
+        "CampaignJournalEntrySessionLink_campaignJournalEntryId_createdAt_idx": {
+          "name": "CampaignJournalEntrySessionLink_campaignJournalEntryId_createdAt_idx",
+          "columns": [
+            "campaignJournalEntryId",
+            "createdAt"
+          ],
+          "isUnique": false
+        },
+        "CampaignJournalEntrySessionLink_campaignId_sessionId_idx": {
+          "name": "CampaignJournalEntrySessionLink_campaignId_sessionId_idx",
+          "columns": [
+            "campaignId",
+            "sessionId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "CampaignJournalEntrySessionLink_campaignId_fkey": {
+          "name": "CampaignJournalEntrySessionLink_campaignId_fkey",
+          "tableFrom": "CampaignJournalEntrySessionLink",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "CampaignJournalEntrySessionLink_sessionId_campaignId_fkey": {
+          "name": "CampaignJournalEntrySessionLink_sessionId_campaignId_fkey",
+          "tableFrom": "CampaignJournalEntrySessionLink",
+          "tableTo": "Session",
+          "columnsFrom": [
+            "sessionId",
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id",
+            "campaignId"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "CampaignJournalEntrySessionLink_campaignJournalEntryId_fkey": {
+          "name": "CampaignJournalEntrySessionLink_campaignJournalEntryId_fkey",
+          "tableFrom": "CampaignJournalEntrySessionLink",
+          "tableTo": "CampaignJournalEntry",
+          "columnsFrom": [
+            "campaignJournalEntryId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CampaignJournalEntryTransferHistory": {
+      "name": "CampaignJournalEntryTransferHistory",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignJournalEntryId": {
+          "name": "campaignJournalEntryId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "fromHolderUserId": {
+          "name": "fromHolderUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "toHolderUserId": {
+          "name": "toHolderUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "actorUserId": {
+          "name": "actorUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "CampaignJournalEntryTransferHistory_campaignId_createdAt_idx": {
+          "name": "CampaignJournalEntryTransferHistory_campaignId_createdAt_idx",
+          "columns": [
+            "campaignId",
+            "createdAt"
+          ],
+          "isUnique": false
+        },
+        "CampaignJournalEntryTransferHistory_campaignJournalEntryId_createdAt_idx": {
+          "name": "CampaignJournalEntryTransferHistory_campaignJournalEntryId_createdAt_idx",
+          "columns": [
+            "campaignJournalEntryId",
+            "createdAt"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "CampaignJournalEntryTransferHistory_actorUserId_fkey": {
+          "name": "CampaignJournalEntryTransferHistory_actorUserId_fkey",
+          "tableFrom": "CampaignJournalEntryTransferHistory",
+          "tableTo": "User",
+          "columnsFrom": [
+            "actorUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "CampaignJournalEntryTransferHistory_toHolderUserId_fkey": {
+          "name": "CampaignJournalEntryTransferHistory_toHolderUserId_fkey",
+          "tableFrom": "CampaignJournalEntryTransferHistory",
+          "tableTo": "User",
+          "columnsFrom": [
+            "toHolderUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "CampaignJournalEntryTransferHistory_fromHolderUserId_fkey": {
+          "name": "CampaignJournalEntryTransferHistory_fromHolderUserId_fkey",
+          "tableFrom": "CampaignJournalEntryTransferHistory",
+          "tableTo": "User",
+          "columnsFrom": [
+            "fromHolderUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "CampaignJournalEntryTransferHistory_campaignId_fkey": {
+          "name": "CampaignJournalEntryTransferHistory_campaignId_fkey",
+          "tableFrom": "CampaignJournalEntryTransferHistory",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "CampaignJournalEntryTransferHistory_campaignJournalEntryId_fkey": {
+          "name": "CampaignJournalEntryTransferHistory_campaignJournalEntryId_fkey",
+          "tableFrom": "CampaignJournalEntryTransferHistory",
+          "tableTo": "CampaignJournalEntry",
+          "columnsFrom": [
+            "campaignJournalEntryId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CampaignJournalTag": {
+      "name": "CampaignJournalTag",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignJournalEntryId": {
+          "name": "campaignJournalEntryId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tagType": {
+          "name": "tagType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "normalizedLabel": {
+          "name": "normalizedLabel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "displayLabel": {
+          "name": "displayLabel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "glossaryEntryId": {
+          "name": "glossaryEntryId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "CampaignJournalTag_campaignJournalEntryId_tagType_normalizedLabel_key": {
+          "name": "CampaignJournalTag_campaignJournalEntryId_tagType_normalizedLabel_key",
+          "columns": [
+            "campaignJournalEntryId",
+            "tagType",
+            "normalizedLabel"
+          ],
+          "isUnique": true
+        },
+        "CampaignJournalTag_campaignId_glossaryEntryId_idx": {
+          "name": "CampaignJournalTag_campaignId_glossaryEntryId_idx",
+          "columns": [
+            "campaignId",
+            "glossaryEntryId"
+          ],
+          "isUnique": false
+        },
+        "CampaignJournalTag_campaignJournalEntryId_tagType_idx": {
+          "name": "CampaignJournalTag_campaignJournalEntryId_tagType_idx",
+          "columns": [
+            "campaignJournalEntryId",
+            "tagType"
+          ],
+          "isUnique": false
+        },
+        "CampaignJournalTag_campaignId_normalizedLabel_idx": {
+          "name": "CampaignJournalTag_campaignId_normalizedLabel_idx",
+          "columns": [
+            "campaignId",
+            "normalizedLabel"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "CampaignJournalTag_glossaryEntryId_fkey": {
+          "name": "CampaignJournalTag_glossaryEntryId_fkey",
+          "tableFrom": "CampaignJournalTag",
+          "tableTo": "GlossaryEntry",
+          "columnsFrom": [
+            "glossaryEntryId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "CampaignJournalTag_campaignId_fkey": {
+          "name": "CampaignJournalTag_campaignId_fkey",
+          "tableFrom": "CampaignJournalTag",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "CampaignJournalTag_campaignJournalEntryId_fkey": {
+          "name": "CampaignJournalTag_campaignJournalEntryId_fkey",
+          "tableFrom": "CampaignJournalTag",
+          "tableTo": "CampaignJournalEntry",
+          "columnsFrom": [
+            "campaignJournalEntryId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CampaignMap": {
+      "name": "CampaignMap",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "isPrimary": {
+          "name": "isPrimary",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'ACTIVE'"
+        },
+        "sourceType": {
+          "name": "sourceType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'AZGAAR_FULL_JSON'"
+        },
+        "createdById": {
+          "name": "createdById",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "rawManifestJson": {
+          "name": "rawManifestJson",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "importVersion": {
+          "name": "importVersion",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
+        "sourceFingerprint": {
+          "name": "sourceFingerprint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "CampaignMap_campaignId_slug_key": {
+          "name": "CampaignMap_campaignId_slug_key",
+          "columns": [
+            "campaignId",
+            "slug"
+          ],
+          "isUnique": true
+        },
+        "CampaignMap_campaignId_isPrimary_idx": {
+          "name": "CampaignMap_campaignId_isPrimary_idx",
+          "columns": [
+            "campaignId",
+            "isPrimary"
+          ],
+          "isUnique": false
+        },
+        "CampaignMap_campaignId_idx": {
+          "name": "CampaignMap_campaignId_idx",
+          "columns": [
+            "campaignId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "CampaignMap_campaignId_fkey": {
+          "name": "CampaignMap_campaignId_fkey",
+          "tableFrom": "CampaignMap",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CampaignMapFeature": {
+      "name": "CampaignMapFeature",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignMapId": {
+          "name": "campaignMapId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "externalId": {
+          "name": "externalId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "featureType": {
+          "name": "featureType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "displayName": {
+          "name": "displayName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "normalizedName": {
+          "name": "normalizedName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "geometryType": {
+          "name": "geometryType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "geometryJson": {
+          "name": "geometryJson",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "propertiesJson": {
+          "name": "propertiesJson",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sourceRef": {
+          "name": "sourceRef",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "isActive": {
+          "name": "isActive",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": true
+        },
+        "removed": {
+          "name": "removed",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "CampaignMapFeature_campaignMapId_featureType_externalId_key": {
+          "name": "CampaignMapFeature_campaignMapId_featureType_externalId_key",
+          "columns": [
+            "campaignMapId",
+            "featureType",
+            "externalId"
+          ],
+          "isUnique": true
+        },
+        "CampaignMapFeature_campaignMapId_normalizedName_idx": {
+          "name": "CampaignMapFeature_campaignMapId_normalizedName_idx",
+          "columns": [
+            "campaignMapId",
+            "normalizedName"
+          ],
+          "isUnique": false
+        },
+        "CampaignMapFeature_campaignMapId_featureType_idx": {
+          "name": "CampaignMapFeature_campaignMapId_featureType_idx",
+          "columns": [
+            "campaignMapId",
+            "featureType"
+          ],
+          "isUnique": false
+        },
+        "CampaignMapFeature_campaignMapId_idx": {
+          "name": "CampaignMapFeature_campaignMapId_idx",
+          "columns": [
+            "campaignMapId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "CampaignMapFeature_campaignMapId_fkey": {
+          "name": "CampaignMapFeature_campaignMapId_fkey",
+          "tableFrom": "CampaignMapFeature",
+          "tableTo": "CampaignMap",
+          "columnsFrom": [
+            "campaignMapId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CampaignMapFile": {
+      "name": "CampaignMapFile",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignMapId": {
+          "name": "campaignMapId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "storageProvider": {
+          "name": "storageProvider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "storageKey": {
+          "name": "storageKey",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "contentType": {
+          "name": "contentType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sizeBytes": {
+          "name": "sizeBytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "checksum": {
+          "name": "checksum",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "CampaignMapFile_kind_idx": {
+          "name": "CampaignMapFile_kind_idx",
+          "columns": [
+            "kind"
+          ],
+          "isUnique": false
+        },
+        "CampaignMapFile_campaignMapId_idx": {
+          "name": "CampaignMapFile_campaignMapId_idx",
+          "columns": [
+            "campaignMapId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "CampaignMapFile_campaignMapId_fkey": {
+          "name": "CampaignMapFile_campaignMapId_fkey",
+          "tableFrom": "CampaignMapFile",
+          "tableTo": "CampaignMap",
+          "columnsFrom": [
+            "campaignMapId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CampaignMapGlossaryLink": {
+      "name": "CampaignMapGlossaryLink",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignMapId": {
+          "name": "campaignMapId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mapFeatureId": {
+          "name": "mapFeatureId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "glossaryEntryId": {
+          "name": "glossaryEntryId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "linkType": {
+          "name": "linkType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "CampaignMapGlossaryLink_mapFeatureId_glossaryEntryId_key": {
+          "name": "CampaignMapGlossaryLink_mapFeatureId_glossaryEntryId_key",
+          "columns": [
+            "mapFeatureId",
+            "glossaryEntryId"
+          ],
+          "isUnique": true
+        },
+        "CampaignMapGlossaryLink_glossaryEntryId_idx": {
+          "name": "CampaignMapGlossaryLink_glossaryEntryId_idx",
+          "columns": [
+            "glossaryEntryId"
+          ],
+          "isUnique": false
+        },
+        "CampaignMapGlossaryLink_campaignMapId_idx": {
+          "name": "CampaignMapGlossaryLink_campaignMapId_idx",
+          "columns": [
+            "campaignMapId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "CampaignMapGlossaryLink_glossaryEntryId_fkey": {
+          "name": "CampaignMapGlossaryLink_glossaryEntryId_fkey",
+          "tableFrom": "CampaignMapGlossaryLink",
+          "tableTo": "GlossaryEntry",
+          "columnsFrom": [
+            "glossaryEntryId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "CampaignMapGlossaryLink_mapFeatureId_fkey": {
+          "name": "CampaignMapGlossaryLink_mapFeatureId_fkey",
+          "tableFrom": "CampaignMapGlossaryLink",
+          "tableTo": "CampaignMapFeature",
+          "columnsFrom": [
+            "mapFeatureId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "CampaignMapGlossaryLink_campaignMapId_fkey": {
+          "name": "CampaignMapGlossaryLink_campaignMapId_fkey",
+          "tableFrom": "CampaignMapGlossaryLink",
+          "tableTo": "CampaignMap",
+          "columnsFrom": [
+            "campaignMapId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CampaignMember": {
+      "name": "CampaignMember",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "invitedByUserId": {
+          "name": "invitedByUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "hasDmAccess": {
+          "name": "hasDmAccess",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        }
+      },
+      "indexes": {
+        "CampaignMember_campaignId_userId_key": {
+          "name": "CampaignMember_campaignId_userId_key",
+          "columns": [
+            "campaignId",
+            "userId"
+          ],
+          "isUnique": true
+        },
+        "CampaignMember_campaignId_role_idx": {
+          "name": "CampaignMember_campaignId_role_idx",
+          "columns": [
+            "campaignId",
+            "role"
+          ],
+          "isUnique": false
+        },
+        "CampaignMember_userId_idx": {
+          "name": "CampaignMember_userId_idx",
+          "columns": [
+            "userId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "CampaignMember_invitedByUserId_fkey": {
+          "name": "CampaignMember_invitedByUserId_fkey",
+          "tableFrom": "CampaignMember",
+          "tableTo": "User",
+          "columnsFrom": [
+            "invitedByUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "CampaignMember_userId_fkey": {
+          "name": "CampaignMember_userId_fkey",
+          "tableFrom": "CampaignMember",
+          "tableTo": "User",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "CampaignMember_campaignId_fkey": {
+          "name": "CampaignMember_campaignId_fkey",
+          "tableFrom": "CampaignMember",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CampaignPublicAccess": {
+      "name": "CampaignPublicAccess",
+      "columns": {
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "isEnabled": {
+          "name": "isEnabled",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "isListed": {
+          "name": "isListed",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "publicSlug": {
+          "name": "publicSlug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "showCharacters": {
+          "name": "showCharacters",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "showRecaps": {
+          "name": "showRecaps",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "showSessions": {
+          "name": "showSessions",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "showGlossary": {
+          "name": "showGlossary",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "showQuests": {
+          "name": "showQuests",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "showMilestones": {
+          "name": "showMilestones",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "showMaps": {
+          "name": "showMaps",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "showJournal": {
+          "name": "showJournal",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "updatedByUserId": {
+          "name": "updatedByUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "CampaignPublicAccess_isEnabled_idx": {
+          "name": "CampaignPublicAccess_isEnabled_idx",
+          "columns": [
+            "isEnabled"
+          ],
+          "isUnique": false
+        },
+        "CampaignPublicAccess_publicSlug_key": {
+          "name": "CampaignPublicAccess_publicSlug_key",
+          "columns": [
+            "publicSlug"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "CampaignPublicAccess_updatedByUserId_fkey": {
+          "name": "CampaignPublicAccess_updatedByUserId_fkey",
+          "tableFrom": "CampaignPublicAccess",
+          "tableTo": "User",
+          "columnsFrom": [
+            "updatedByUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "CampaignPublicAccess_campaignId_fkey": {
+          "name": "CampaignPublicAccess_campaignId_fkey",
+          "tableFrom": "CampaignPublicAccess",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CampaignRequest": {
+      "name": "CampaignRequest",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdByUserId": {
+          "name": "createdByUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "visibility": {
+          "name": "visibility",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'PENDING'"
+        },
+        "decisionNote": {
+          "name": "decisionNote",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "decidedByUserId": {
+          "name": "decidedByUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "decidedAt": {
+          "name": "decidedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "CampaignRequest_campaignId_status_decidedAt_idx": {
+          "name": "CampaignRequest_campaignId_status_decidedAt_idx",
+          "columns": [
+            "campaignId",
+            "status",
+            "decidedAt"
+          ],
+          "isUnique": false
+        },
+        "CampaignRequest_campaignId_createdByUserId_createdAt_idx": {
+          "name": "CampaignRequest_campaignId_createdByUserId_createdAt_idx",
+          "columns": [
+            "campaignId",
+            "createdByUserId",
+            "createdAt"
+          ],
+          "isUnique": false
+        },
+        "CampaignRequest_campaignId_visibility_status_createdAt_idx": {
+          "name": "CampaignRequest_campaignId_visibility_status_createdAt_idx",
+          "columns": [
+            "campaignId",
+            "visibility",
+            "status",
+            "createdAt"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "CampaignRequest_decidedByUserId_fkey": {
+          "name": "CampaignRequest_decidedByUserId_fkey",
+          "tableFrom": "CampaignRequest",
+          "tableTo": "User",
+          "columnsFrom": [
+            "decidedByUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "CampaignRequest_createdByUserId_fkey": {
+          "name": "CampaignRequest_createdByUserId_fkey",
+          "tableFrom": "CampaignRequest",
+          "tableTo": "User",
+          "columnsFrom": [
+            "createdByUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "CampaignRequest_campaignId_fkey": {
+          "name": "CampaignRequest_campaignId_fkey",
+          "tableFrom": "CampaignRequest",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CampaignRequestVote": {
+      "name": "CampaignRequestVote",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignRequestId": {
+          "name": "campaignRequestId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "CampaignRequestVote_campaignRequestId_userId_key": {
+          "name": "CampaignRequestVote_campaignRequestId_userId_key",
+          "columns": [
+            "campaignRequestId",
+            "userId"
+          ],
+          "isUnique": true
+        },
+        "CampaignRequestVote_campaignId_userId_createdAt_idx": {
+          "name": "CampaignRequestVote_campaignId_userId_createdAt_idx",
+          "columns": [
+            "campaignId",
+            "userId",
+            "createdAt"
+          ],
+          "isUnique": false
+        },
+        "CampaignRequestVote_campaignRequestId_createdAt_idx": {
+          "name": "CampaignRequestVote_campaignRequestId_createdAt_idx",
+          "columns": [
+            "campaignRequestId",
+            "createdAt"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "CampaignRequestVote_userId_fkey": {
+          "name": "CampaignRequestVote_userId_fkey",
+          "tableFrom": "CampaignRequestVote",
+          "tableTo": "User",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "CampaignRequestVote_campaignId_fkey": {
+          "name": "CampaignRequestVote_campaignId_fkey",
+          "tableFrom": "CampaignRequestVote",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "CampaignRequestVote_campaignRequestId_fkey": {
+          "name": "CampaignRequestVote_campaignRequestId_fkey",
+          "tableFrom": "CampaignRequestVote",
+          "tableTo": "CampaignRequest",
+          "columnsFrom": [
+            "campaignRequestId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CharacterImport": {
+      "name": "CharacterImport",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "characterId": {
+          "name": "characterId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "externalId": {
+          "name": "externalId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sourceUrl": {
+          "name": "sourceUrl",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "rawJson": {
+          "name": "rawJson",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "rawHash": {
+          "name": "rawHash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "importedAt": {
+          "name": "importedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "lastSyncedAt": {
+          "name": "lastSyncedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "lastSyncStatus": {
+          "name": "lastSyncStatus",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "lastSyncMessage": {
+          "name": "lastSyncMessage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "CharacterImport_provider_externalId_idx": {
+          "name": "CharacterImport_provider_externalId_idx",
+          "columns": [
+            "provider",
+            "externalId"
+          ],
+          "isUnique": false
+        },
+        "CharacterImport_characterId_idx": {
+          "name": "CharacterImport_characterId_idx",
+          "columns": [
+            "characterId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "CharacterImport_characterId_fkey": {
+          "name": "CharacterImport_characterId_fkey",
+          "tableFrom": "CharacterImport",
+          "tableTo": "PlayerCharacter",
+          "columnsFrom": [
+            "characterId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "CharacterImportSettings": {
+      "name": "CharacterImportSettings",
+      "columns": {
+        "characterId": {
+          "name": "characterId",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "lockedSections": {
+          "name": "lockedSections",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "defaultOverwriteMode": {
+          "name": "defaultOverwriteMode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'SECTIONS'"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "CharacterImportSettings_characterId_fkey": {
+          "name": "CharacterImportSettings_characterId_fkey",
+          "tableFrom": "CharacterImportSettings",
+          "tableTo": "PlayerCharacter",
+          "columnsFrom": [
+            "characterId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "Document": {
+      "name": "Document",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sessionId": {
+          "name": "sessionId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "recordingId": {
+          "name": "recordingId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "currentVersionId": {
+          "name": "currentVersionId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "Document_sessionId_type_key": {
+          "name": "Document_sessionId_type_key",
+          "columns": [
+            "sessionId",
+            "type"
+          ],
+          "isUnique": true
+        },
+        "Document_recordingId_idx": {
+          "name": "Document_recordingId_idx",
+          "columns": [
+            "recordingId"
+          ],
+          "isUnique": false
+        },
+        "Document_sessionId_idx": {
+          "name": "Document_sessionId_idx",
+          "columns": [
+            "sessionId"
+          ],
+          "isUnique": false
+        },
+        "Document_campaignId_idx": {
+          "name": "Document_campaignId_idx",
+          "columns": [
+            "campaignId"
+          ],
+          "isUnique": false
+        },
+        "Document_currentVersionId_key": {
+          "name": "Document_currentVersionId_key",
+          "columns": [
+            "currentVersionId"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "Document_currentVersionId_fkey": {
+          "name": "Document_currentVersionId_fkey",
+          "tableFrom": "Document",
+          "tableTo": "DocumentVersion",
+          "columnsFrom": [
+            "currentVersionId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "Document_recordingId_fkey": {
+          "name": "Document_recordingId_fkey",
+          "tableFrom": "Document",
+          "tableTo": "Recording",
+          "columnsFrom": [
+            "recordingId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "Document_sessionId_fkey": {
+          "name": "Document_sessionId_fkey",
+          "tableFrom": "Document",
+          "tableTo": "Session",
+          "columnsFrom": [
+            "sessionId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "Document_campaignId_fkey": {
+          "name": "Document_campaignId_fkey",
+          "tableFrom": "Document",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "DocumentVersion": {
+      "name": "DocumentVersion",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "documentId": {
+          "name": "documentId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "versionNumber": {
+          "name": "versionNumber",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "format": {
+          "name": "format",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'MARKDOWN'"
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'USER_EDIT'"
+        },
+        "createdByUserId": {
+          "name": "createdByUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "DocumentVersion_documentId_versionNumber_key": {
+          "name": "DocumentVersion_documentId_versionNumber_key",
+          "columns": [
+            "documentId",
+            "versionNumber"
+          ],
+          "isUnique": true
+        },
+        "DocumentVersion_createdByUserId_idx": {
+          "name": "DocumentVersion_createdByUserId_idx",
+          "columns": [
+            "createdByUserId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "DocumentVersion_createdByUserId_fkey": {
+          "name": "DocumentVersion_createdByUserId_fkey",
+          "tableFrom": "DocumentVersion",
+          "tableTo": "User",
+          "columnsFrom": [
+            "createdByUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "DocumentVersion_documentId_fkey": {
+          "name": "DocumentVersion_documentId_fkey",
+          "tableFrom": "DocumentVersion",
+          "tableTo": "Document",
+          "columnsFrom": [
+            "documentId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "EncounterCombatant": {
+      "name": "EncounterCombatant",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "encounterId": {
+          "name": "encounterId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "side": {
+          "name": "side",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'ENEMY'"
+        },
+        "sourceType": {
+          "name": "sourceType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'CUSTOM'"
+        },
+        "sourceCampaignCharacterId": {
+          "name": "sourceCampaignCharacterId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sourcePlayerCharacterId": {
+          "name": "sourcePlayerCharacterId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sourceGlossaryEntryId": {
+          "name": "sourceGlossaryEntryId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sourceStatBlockId": {
+          "name": "sourceStatBlockId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "initiative": {
+          "name": "initiative",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sortOrder": {
+          "name": "sortOrder",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "maxHp": {
+          "name": "maxHp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "currentHp": {
+          "name": "currentHp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "tempHp": {
+          "name": "tempHp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "armorClass": {
+          "name": "armorClass",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "speed": {
+          "name": "speed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "isConcentrating": {
+          "name": "isConcentrating",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "deathSaveSuccesses": {
+          "name": "deathSaveSuccesses",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "deathSaveFailures": {
+          "name": "deathSaveFailures",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "isDefeated": {
+          "name": "isDefeated",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "isHidden": {
+          "name": "isHidden",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "EncounterCombatant_encounterId_sortOrder_key": {
+          "name": "EncounterCombatant_encounterId_sortOrder_key",
+          "columns": [
+            "encounterId",
+            "sortOrder"
+          ],
+          "isUnique": true
+        },
+        "EncounterCombatant_sourceStatBlockId_idx": {
+          "name": "EncounterCombatant_sourceStatBlockId_idx",
+          "columns": [
+            "sourceStatBlockId"
+          ],
+          "isUnique": false
+        },
+        "EncounterCombatant_encounterId_initiative_idx": {
+          "name": "EncounterCombatant_encounterId_initiative_idx",
+          "columns": [
+            "encounterId",
+            "initiative"
+          ],
+          "isUnique": false
+        },
+        "EncounterCombatant_encounterId_sortOrder_idx": {
+          "name": "EncounterCombatant_encounterId_sortOrder_idx",
+          "columns": [
+            "encounterId",
+            "sortOrder"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "EncounterCombatant_encounterId_fkey": {
+          "name": "EncounterCombatant_encounterId_fkey",
+          "tableFrom": "EncounterCombatant",
+          "tableTo": "CampaignEncounter",
+          "columnsFrom": [
+            "encounterId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "EncounterCondition": {
+      "name": "EncounterCondition",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "combatantId": {
+          "name": "combatantId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "duration": {
+          "name": "duration",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "remaining": {
+          "name": "remaining",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "tickTiming": {
+          "name": "tickTiming",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'TURN_END'"
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "EncounterCondition_combatantId_createdAt_idx": {
+          "name": "EncounterCondition_combatantId_createdAt_idx",
+          "columns": [
+            "combatantId",
+            "createdAt"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "EncounterCondition_combatantId_fkey": {
+          "name": "EncounterCondition_combatantId_fkey",
+          "tableFrom": "EncounterCondition",
+          "tableTo": "EncounterCombatant",
+          "columnsFrom": [
+            "combatantId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "EncounterEvent": {
+      "name": "EncounterEvent",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "encounterId": {
+          "name": "encounterId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "eventType": {
+          "name": "eventType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "payload": {
+          "name": "payload",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdByUserId": {
+          "name": "createdByUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "EncounterEvent_createdByUserId_idx": {
+          "name": "EncounterEvent_createdByUserId_idx",
+          "columns": [
+            "createdByUserId"
+          ],
+          "isUnique": false
+        },
+        "EncounterEvent_eventType_createdAt_idx": {
+          "name": "EncounterEvent_eventType_createdAt_idx",
+          "columns": [
+            "eventType",
+            "createdAt"
+          ],
+          "isUnique": false
+        },
+        "EncounterEvent_encounterId_createdAt_idx": {
+          "name": "EncounterEvent_encounterId_createdAt_idx",
+          "columns": [
+            "encounterId",
+            "createdAt"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "EncounterEvent_createdByUserId_fkey": {
+          "name": "EncounterEvent_createdByUserId_fkey",
+          "tableFrom": "EncounterEvent",
+          "tableTo": "User",
+          "columnsFrom": [
+            "createdByUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "EncounterEvent_encounterId_fkey": {
+          "name": "EncounterEvent_encounterId_fkey",
+          "tableFrom": "EncounterEvent",
+          "tableTo": "CampaignEncounter",
+          "columnsFrom": [
+            "encounterId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "EncounterStatBlock": {
+      "name": "EncounterStatBlock",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "challengeRating": {
+          "name": "challengeRating",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "statBlockJson": {
+          "name": "statBlockJson",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdByUserId": {
+          "name": "createdByUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "EncounterStatBlock_campaignId_name_key": {
+          "name": "EncounterStatBlock_campaignId_name_key",
+          "columns": [
+            "campaignId",
+            "name"
+          ],
+          "isUnique": true
+        },
+        "EncounterStatBlock_createdByUserId_idx": {
+          "name": "EncounterStatBlock_createdByUserId_idx",
+          "columns": [
+            "createdByUserId"
+          ],
+          "isUnique": false
+        },
+        "EncounterStatBlock_campaignId_createdAt_idx": {
+          "name": "EncounterStatBlock_campaignId_createdAt_idx",
+          "columns": [
+            "campaignId",
+            "createdAt"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "EncounterStatBlock_createdByUserId_fkey": {
+          "name": "EncounterStatBlock_createdByUserId_fkey",
+          "tableFrom": "EncounterStatBlock",
+          "tableTo": "User",
+          "columnsFrom": [
+            "createdByUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "EncounterStatBlock_campaignId_fkey": {
+          "name": "EncounterStatBlock_campaignId_fkey",
+          "tableFrom": "EncounterStatBlock",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "EncounterTemplate": {
+      "name": "EncounterTemplate",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'COMBAT'"
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdByUserId": {
+          "name": "createdByUserId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "EncounterTemplate_createdByUserId_idx": {
+          "name": "EncounterTemplate_createdByUserId_idx",
+          "columns": [
+            "createdByUserId"
+          ],
+          "isUnique": false
+        },
+        "EncounterTemplate_campaignId_createdAt_idx": {
+          "name": "EncounterTemplate_campaignId_createdAt_idx",
+          "columns": [
+            "campaignId",
+            "createdAt"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "EncounterTemplate_createdByUserId_fkey": {
+          "name": "EncounterTemplate_createdByUserId_fkey",
+          "tableFrom": "EncounterTemplate",
+          "tableTo": "User",
+          "columnsFrom": [
+            "createdByUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "EncounterTemplate_campaignId_fkey": {
+          "name": "EncounterTemplate_campaignId_fkey",
+          "tableFrom": "EncounterTemplate",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "EncounterTemplateCombatant": {
+      "name": "EncounterTemplateCombatant",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "templateId": {
+          "name": "templateId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "side": {
+          "name": "side",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'ENEMY'"
+        },
+        "sourceType": {
+          "name": "sourceType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'CUSTOM'"
+        },
+        "sourceStatBlockId": {
+          "name": "sourceStatBlockId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "maxHp": {
+          "name": "maxHp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "armorClass": {
+          "name": "armorClass",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "speed": {
+          "name": "speed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
+        "sortOrder": {
+          "name": "sortOrder",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "EncounterTemplateCombatant_templateId_sortOrder_key": {
+          "name": "EncounterTemplateCombatant_templateId_sortOrder_key",
+          "columns": [
+            "templateId",
+            "sortOrder"
+          ],
+          "isUnique": true
+        },
+        "EncounterTemplateCombatant_templateId_sortOrder_idx": {
+          "name": "EncounterTemplateCombatant_templateId_sortOrder_idx",
+          "columns": [
+            "templateId",
+            "sortOrder"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "EncounterTemplateCombatant_templateId_fkey": {
+          "name": "EncounterTemplateCombatant_templateId_fkey",
+          "tableFrom": "EncounterTemplateCombatant",
+          "tableTo": "EncounterTemplate",
+          "columnsFrom": [
+            "templateId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "GlossaryEntry": {
+      "name": "GlossaryEntry",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "aliases": {
+          "name": "aliases",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sourceMapId": {
+          "name": "sourceMapId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sourceMapFeatureId": {
+          "name": "sourceMapFeatureId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "GlossaryEntry_sourceMapFeatureId_idx": {
+          "name": "GlossaryEntry_sourceMapFeatureId_idx",
+          "columns": [
+            "sourceMapFeatureId"
+          ],
+          "isUnique": false
+        },
+        "GlossaryEntry_sourceMapId_idx": {
+          "name": "GlossaryEntry_sourceMapId_idx",
+          "columns": [
+            "sourceMapId"
+          ],
+          "isUnique": false
+        },
+        "GlossaryEntry_campaignId_type_idx": {
+          "name": "GlossaryEntry_campaignId_type_idx",
+          "columns": [
+            "campaignId",
+            "type"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "GlossaryEntry_sourceMapFeatureId_fkey": {
+          "name": "GlossaryEntry_sourceMapFeatureId_fkey",
+          "tableFrom": "GlossaryEntry",
+          "tableTo": "CampaignMapFeature",
+          "columnsFrom": [
+            "sourceMapFeatureId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "GlossaryEntry_sourceMapId_fkey": {
+          "name": "GlossaryEntry_sourceMapId_fkey",
+          "tableFrom": "GlossaryEntry",
+          "tableTo": "CampaignMap",
+          "columnsFrom": [
+            "sourceMapId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "GlossaryEntry_campaignId_fkey": {
+          "name": "GlossaryEntry_campaignId_fkey",
+          "tableFrom": "GlossaryEntry",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "GlossarySessionLink": {
+      "name": "GlossarySessionLink",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "glossaryEntryId": {
+          "name": "glossaryEntryId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sessionId": {
+          "name": "sessionId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "GlossarySessionLink_glossaryEntryId_sessionId_key": {
+          "name": "GlossarySessionLink_glossaryEntryId_sessionId_key",
+          "columns": [
+            "glossaryEntryId",
+            "sessionId"
+          ],
+          "isUnique": true
+        },
+        "GlossarySessionLink_sessionId_idx": {
+          "name": "GlossarySessionLink_sessionId_idx",
+          "columns": [
+            "sessionId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "GlossarySessionLink_sessionId_fkey": {
+          "name": "GlossarySessionLink_sessionId_fkey",
+          "tableFrom": "GlossarySessionLink",
+          "tableTo": "Session",
+          "columnsFrom": [
+            "sessionId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "GlossarySessionLink_glossaryEntryId_fkey": {
+          "name": "GlossarySessionLink_glossaryEntryId_fkey",
+          "tableFrom": "GlossarySessionLink",
+          "tableTo": "GlossaryEntry",
+          "columnsFrom": [
+            "glossaryEntryId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "Milestone": {
+      "name": "Milestone",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "isComplete": {
+          "name": "isComplete",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "completedAt": {
+          "name": "completedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "Milestone_campaignId_idx": {
+          "name": "Milestone_campaignId_idx",
+          "columns": [
+            "campaignId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "Milestone_campaignId_fkey": {
+          "name": "Milestone_campaignId_fkey",
+          "tableFrom": "Milestone",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "PlayerCharacter": {
+      "name": "PlayerCharacter",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ownerId": {
+          "name": "ownerId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "portraitUrl": {
+          "name": "portraitUrl",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "portraitArtifactId": {
+          "name": "portraitArtifactId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sheetJson": {
+          "name": "sheetJson",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "summaryJson": {
+          "name": "summaryJson",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sourceProvider": {
+          "name": "sourceProvider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'MANUAL'"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "PlayerCharacter_name_idx": {
+          "name": "PlayerCharacter_name_idx",
+          "columns": [
+            "name"
+          ],
+          "isUnique": false
+        },
+        "PlayerCharacter_ownerId_idx": {
+          "name": "PlayerCharacter_ownerId_idx",
+          "columns": [
+            "ownerId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "PlayerCharacter_portraitArtifactId_fkey": {
+          "name": "PlayerCharacter_portraitArtifactId_fkey",
+          "tableFrom": "PlayerCharacter",
+          "tableTo": "Artifact",
+          "columnsFrom": [
+            "portraitArtifactId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "PlayerCharacter_ownerId_fkey": {
+          "name": "PlayerCharacter_ownerId_fkey",
+          "tableFrom": "PlayerCharacter",
+          "tableTo": "User",
+          "columnsFrom": [
+            "ownerId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "Quest": {
+      "name": "Quest",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'CAMPAIGN'"
+        },
+        "track": {
+          "name": "track",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'SIDE'"
+        },
+        "sourceType": {
+          "name": "sourceType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'FREE_TEXT'"
+        },
+        "sourceText": {
+          "name": "sourceText",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sourceNpcId": {
+          "name": "sourceNpcId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sourceCharacterId": {
+          "name": "sourceCharacterId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "reward": {
+          "name": "reward",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'ACTIVE'"
+        },
+        "progressNotes": {
+          "name": "progressNotes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "expirationYear": {
+          "name": "expirationYear",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "expirationMonth": {
+          "name": "expirationMonth",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "expirationDay": {
+          "name": "expirationDay",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sortOrder": {
+          "name": "sortOrder",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "Quest_sourceCharacterId_idx": {
+          "name": "Quest_sourceCharacterId_idx",
+          "columns": [
+            "sourceCharacterId"
+          ],
+          "isUnique": false
+        },
+        "Quest_sourceNpcId_idx": {
+          "name": "Quest_sourceNpcId_idx",
+          "columns": [
+            "sourceNpcId"
+          ],
+          "isUnique": false
+        },
+        "Quest_campaignId_idx": {
+          "name": "Quest_campaignId_idx",
+          "columns": [
+            "campaignId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "Quest_sourceCharacterId_fkey": {
+          "name": "Quest_sourceCharacterId_fkey",
+          "tableFrom": "Quest",
+          "tableTo": "PlayerCharacter",
+          "columnsFrom": [
+            "sourceCharacterId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "Quest_sourceNpcId_fkey": {
+          "name": "Quest_sourceNpcId_fkey",
+          "tableFrom": "Quest",
+          "tableTo": "GlossaryEntry",
+          "columnsFrom": [
+            "sourceNpcId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "Quest_campaignId_fkey": {
+          "name": "Quest_campaignId_fkey",
+          "tableFrom": "Quest",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "RecapRecording": {
+      "name": "RecapRecording",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sessionId": {
+          "name": "sessionId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "filename": {
+          "name": "filename",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mimeType": {
+          "name": "mimeType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "byteSize": {
+          "name": "byteSize",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "durationSeconds": {
+          "name": "durationSeconds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "artifactId": {
+          "name": "artifactId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'AUDIO'"
+        }
+      },
+      "indexes": {
+        "RecapRecording_sessionId_kind_key": {
+          "name": "RecapRecording_sessionId_kind_key",
+          "columns": [
+            "sessionId",
+            "kind"
+          ],
+          "isUnique": true
+        },
+        "RecapRecording_artifactId_idx": {
+          "name": "RecapRecording_artifactId_idx",
+          "columns": [
+            "artifactId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "RecapRecording_artifactId_fkey": {
+          "name": "RecapRecording_artifactId_fkey",
+          "tableFrom": "RecapRecording",
+          "tableTo": "Artifact",
+          "columnsFrom": [
+            "artifactId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "RecapRecording_sessionId_fkey": {
+          "name": "RecapRecording_sessionId_fkey",
+          "tableFrom": "RecapRecording",
+          "tableTo": "Session",
+          "columnsFrom": [
+            "sessionId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "Recording": {
+      "name": "Recording",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sessionId": {
+          "name": "sessionId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "filename": {
+          "name": "filename",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mimeType": {
+          "name": "mimeType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "byteSize": {
+          "name": "byteSize",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "durationSeconds": {
+          "name": "durationSeconds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "artifactId": {
+          "name": "artifactId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "vttArtifactId": {
+          "name": "vttArtifactId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "Recording_vttArtifactId_idx": {
+          "name": "Recording_vttArtifactId_idx",
+          "columns": [
+            "vttArtifactId"
+          ],
+          "isUnique": false
+        },
+        "Recording_artifactId_idx": {
+          "name": "Recording_artifactId_idx",
+          "columns": [
+            "artifactId"
+          ],
+          "isUnique": false
+        },
+        "Recording_sessionId_idx": {
+          "name": "Recording_sessionId_idx",
+          "columns": [
+            "sessionId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "Recording_vttArtifactId_fkey": {
+          "name": "Recording_vttArtifactId_fkey",
+          "tableFrom": "Recording",
+          "tableTo": "Artifact",
+          "columnsFrom": [
+            "vttArtifactId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "Recording_artifactId_fkey": {
+          "name": "Recording_artifactId_fkey",
+          "tableFrom": "Recording",
+          "tableTo": "Artifact",
+          "columnsFrom": [
+            "artifactId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "Recording_sessionId_fkey": {
+          "name": "Recording_sessionId_fkey",
+          "tableFrom": "Recording",
+          "tableTo": "Session",
+          "columnsFrom": [
+            "sessionId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "Session": {
+      "name": "Session",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sessionNumber": {
+          "name": "sessionNumber",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "playedAt": {
+          "name": "playedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "guestDungeonMasterName": {
+          "name": "guestDungeonMasterName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "Session_id_campaignId_key": {
+          "name": "Session_id_campaignId_key",
+          "columns": [
+            "id",
+            "campaignId"
+          ],
+          "isUnique": true
+        },
+        "Session_campaignId_idx": {
+          "name": "Session_campaignId_idx",
+          "columns": [
+            "campaignId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "Session_campaignId_fkey": {
+          "name": "Session_campaignId_fkey",
+          "tableFrom": "Session",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "SessionCalendarRange": {
+      "name": "SessionCalendarRange",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sessionId": {
+          "name": "sessionId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "startYear": {
+          "name": "startYear",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "startMonth": {
+          "name": "startMonth",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "startDay": {
+          "name": "startDay",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "endYear": {
+          "name": "endYear",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "endMonth": {
+          "name": "endMonth",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "endDay": {
+          "name": "endDay",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "SessionCalendarRange_sessionId_campaignId_key": {
+          "name": "SessionCalendarRange_sessionId_campaignId_key",
+          "columns": [
+            "sessionId",
+            "campaignId"
+          ],
+          "isUnique": true
+        },
+        "SessionCalendarRange_campaignId_endYear_endMonth_endDay_idx": {
+          "name": "SessionCalendarRange_campaignId_endYear_endMonth_endDay_idx",
+          "columns": [
+            "campaignId",
+            "endYear",
+            "endMonth",
+            "endDay"
+          ],
+          "isUnique": false
+        },
+        "SessionCalendarRange_campaignId_startYear_startMonth_startDay_idx": {
+          "name": "SessionCalendarRange_campaignId_startYear_startMonth_startDay_idx",
+          "columns": [
+            "campaignId",
+            "startYear",
+            "startMonth",
+            "startDay"
+          ],
+          "isUnique": false
+        },
+        "SessionCalendarRange_campaignId_idx": {
+          "name": "SessionCalendarRange_campaignId_idx",
+          "columns": [
+            "campaignId"
+          ],
+          "isUnique": false
+        },
+        "SessionCalendarRange_sessionId_key": {
+          "name": "SessionCalendarRange_sessionId_key",
+          "columns": [
+            "sessionId"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "SessionCalendarRange_campaignId_fkey": {
+          "name": "SessionCalendarRange_campaignId_fkey",
+          "tableFrom": "SessionCalendarRange",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "SessionCalendarRange_sessionId_campaignId_fkey": {
+          "name": "SessionCalendarRange_sessionId_campaignId_fkey",
+          "tableFrom": "SessionCalendarRange",
+          "tableTo": "Session",
+          "columnsFrom": [
+            "sessionId",
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id",
+            "campaignId"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "SummaryJob": {
+      "name": "SummaryJob",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaignId": {
+          "name": "campaignId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sessionId": {
+          "name": "sessionId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "documentId": {
+          "name": "documentId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "summaryDocumentId": {
+          "name": "summaryDocumentId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "trackingId": {
+          "name": "trackingId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mode": {
+          "name": "mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "promptProfile": {
+          "name": "promptProfile",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "webhookUrl": {
+          "name": "webhookUrl",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "requestHash": {
+          "name": "requestHash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "responseHash": {
+          "name": "responseHash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "errorMessage": {
+          "name": "errorMessage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "meta": {
+          "name": "meta",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'SUMMARY_GENERATION'"
+        }
+      },
+      "indexes": {
+        "SummaryJob_sessionId_kind_createdAt_idx": {
+          "name": "SummaryJob_sessionId_kind_createdAt_idx",
+          "columns": [
+            "sessionId",
+            "kind",
+            "createdAt"
+          ],
+          "isUnique": false
+        },
+        "SummaryJob_kind_idx": {
+          "name": "SummaryJob_kind_idx",
+          "columns": [
+            "kind"
+          ],
+          "isUnique": false
+        },
+        "SummaryJob_status_idx": {
+          "name": "SummaryJob_status_idx",
+          "columns": [
+            "status"
+          ],
+          "isUnique": false
+        },
+        "SummaryJob_documentId_idx": {
+          "name": "SummaryJob_documentId_idx",
+          "columns": [
+            "documentId"
+          ],
+          "isUnique": false
+        },
+        "SummaryJob_sessionId_idx": {
+          "name": "SummaryJob_sessionId_idx",
+          "columns": [
+            "sessionId"
+          ],
+          "isUnique": false
+        },
+        "SummaryJob_campaignId_idx": {
+          "name": "SummaryJob_campaignId_idx",
+          "columns": [
+            "campaignId"
+          ],
+          "isUnique": false
+        },
+        "SummaryJob_trackingId_key": {
+          "name": "SummaryJob_trackingId_key",
+          "columns": [
+            "trackingId"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "SummaryJob_summaryDocumentId_fkey": {
+          "name": "SummaryJob_summaryDocumentId_fkey",
+          "tableFrom": "SummaryJob",
+          "tableTo": "Document",
+          "columnsFrom": [
+            "summaryDocumentId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
+        "SummaryJob_documentId_fkey": {
+          "name": "SummaryJob_documentId_fkey",
+          "tableFrom": "SummaryJob",
+          "tableTo": "Document",
+          "columnsFrom": [
+            "documentId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "SummaryJob_sessionId_fkey": {
+          "name": "SummaryJob_sessionId_fkey",
+          "tableFrom": "SummaryJob",
+          "tableTo": "Session",
+          "columnsFrom": [
+            "sessionId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "SummaryJob_campaignId_fkey": {
+          "name": "SummaryJob_campaignId_fkey",
+          "tableFrom": "SummaryJob",
+          "tableTo": "Campaign",
+          "columnsFrom": [
+            "campaignId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "SummarySuggestion": {
+      "name": "SummarySuggestion",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "summaryJobId": {
+          "name": "summaryJobId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "entityType": {
+          "name": "entityType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'PENDING'"
+        },
+        "match": {
+          "name": "match",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "payload": {
+          "name": "payload",
+          "type": "JSONB",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "SummarySuggestion_status_idx": {
+          "name": "SummarySuggestion_status_idx",
+          "columns": [
+            "status"
+          ],
+          "isUnique": false
+        },
+        "SummarySuggestion_summaryJobId_idx": {
+          "name": "SummarySuggestion_summaryJobId_idx",
+          "columns": [
+            "summaryJobId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "SummarySuggestion_summaryJobId_fkey": {
+          "name": "SummarySuggestion_summaryJobId_fkey",
+          "tableFrom": "SummarySuggestion",
+          "tableTo": "SummaryJob",
+          "columnsFrom": [
+            "summaryJobId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "TranscriptionArtifact": {
+      "name": "TranscriptionArtifact",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "transcriptionJobId": {
+          "name": "transcriptionJobId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "artifactId": {
+          "name": "artifactId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "format": {
+          "name": "format",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        }
+      },
+      "indexes": {
+        "TranscriptionArtifact_transcriptionJobId_format_key": {
+          "name": "TranscriptionArtifact_transcriptionJobId_format_key",
+          "columns": [
+            "transcriptionJobId",
+            "format"
+          ],
+          "isUnique": true
+        },
+        "TranscriptionArtifact_artifactId_idx": {
+          "name": "TranscriptionArtifact_artifactId_idx",
+          "columns": [
+            "artifactId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "TranscriptionArtifact_artifactId_fkey": {
+          "name": "TranscriptionArtifact_artifactId_fkey",
+          "tableFrom": "TranscriptionArtifact",
+          "tableTo": "Artifact",
+          "columnsFrom": [
+            "artifactId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "TranscriptionArtifact_transcriptionJobId_fkey": {
+          "name": "TranscriptionArtifact_transcriptionJobId_fkey",
+          "tableFrom": "TranscriptionArtifact",
+          "tableTo": "TranscriptionJob",
+          "columnsFrom": [
+            "transcriptionJobId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "TranscriptionJob": {
+      "name": "TranscriptionJob",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "recordingId": {
+          "name": "recordingId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "requestId": {
+          "name": "requestId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "externalJobId": {
+          "name": "externalJobId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "modelId": {
+          "name": "modelId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "languageCode": {
+          "name": "languageCode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "numSpeakers": {
+          "name": "numSpeakers",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "diarize": {
+          "name": "diarize",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": true
+        },
+        "tagAudioEvents": {
+          "name": "tagAudioEvents",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "requestedFormats": {
+          "name": "requestedFormats",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "keyterms": {
+          "name": "keyterms",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "errorMessage": {
+          "name": "errorMessage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "completedAt": {
+          "name": "completedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "TranscriptionJob_status_idx": {
+          "name": "TranscriptionJob_status_idx",
+          "columns": [
+            "status"
+          ],
+          "isUnique": false
+        },
+        "TranscriptionJob_recordingId_idx": {
+          "name": "TranscriptionJob_recordingId_idx",
+          "columns": [
+            "recordingId"
+          ],
+          "isUnique": false
+        },
+        "TranscriptionJob_externalJobId_key": {
+          "name": "TranscriptionJob_externalJobId_key",
+          "columns": [
+            "externalJobId"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "TranscriptionJob_recordingId_fkey": {
+          "name": "TranscriptionJob_recordingId_fkey",
+          "tableFrom": "TranscriptionJob",
+          "tableTo": "Recording",
+          "columnsFrom": [
+            "recordingId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "User": {
+      "name": "User",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "passwordHash": {
+          "name": "passwordHash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "systemRole": {
+          "name": "systemRole",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'USER'"
+        },
+        "isActive": {
+          "name": "isActive",
+          "type": "BOOLEAN",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": true
+        },
+        "lastLoginAt": {
+          "name": "lastLoginAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "avatarUrl": {
+          "name": "avatarUrl",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "deletedAt": {
+          "name": "deletedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(CAST(unixepoch('subsec') * 1000 AS INTEGER))"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "DATETIME",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "User_email_idx": {
+          "name": "User_email_idx",
+          "columns": [
+            "email"
+          ],
+          "isUnique": false
+        },
+        "User_email_key": {
+          "name": "User_email_key",
+          "columns": [
+            "email"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

@@ -1,6 +1,8 @@
 import { z } from 'zod'
-import type { Prisma } from '#server/db/prisma-client'
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import type { Quest } from '#server/db/schema'
+import { and, eq, asc, desc } from 'drizzle-orm'
 import type {
   questSourceTypeSchema,
   questTrackSchema,
@@ -53,14 +55,14 @@ const monthShapeSchema = z.array(z.object({ length: z.number().int().min(1) }))
 
 const questInclude = {
   sourceNpc: {
-    select: { name: true },
+    columns: { name: true },
   },
   sourceCharacter: {
-    select: { name: true },
+    columns: { name: true },
   },
-} satisfies Prisma.QuestInclude
+} as const
 
-type QuestRow = Prisma.QuestGetPayload<{ include: typeof questInclude }>
+type QuestRow = Quest & { sourceNpc: { name: string } | null; sourceCharacter: { name: string } | null }
 
 const toQuestDto = (row: QuestRow): QuestDto => ({
   id: row.id,
@@ -117,10 +119,10 @@ const toExpirationParts = (value: QuestExpirationDateDto | undefined) => {
 
 export class QuestService {
   async listCampaignQuests(campaignId: string): Promise<QuestDto[]> {
-    const rows = await prisma.quest.findMany({
-      where: { campaignId },
-      include: questInclude,
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+    const rows = await db.query.quest.findMany({
+      where: eq(tables.quest.campaignId, campaignId),
+      with: questInclude,
+      orderBy: [asc(tables.quest.sortOrder), desc(tables.quest.createdAt)],
     })
 
     return rows.map(toQuestDto)
@@ -129,8 +131,8 @@ export class QuestService {
   async createQuest(campaignId: string, input: QuestCreateInput): Promise<QuestDto> {
     const validation = await this.validateQuestInput(campaignId, input, { validateExpiration: true })
 
-    const created = await prisma.quest.create({
-      data: {
+    const created = db.transaction((tx) => {
+      const row = tx.insert(tables.quest).values({
         campaignId,
         title: input.title,
         description: normalizeOptionalText(input.description) ?? null,
@@ -146,9 +148,12 @@ export class QuestService {
         expirationYear: validation.expirationYear,
         expirationMonth: validation.expirationMonth,
         expirationDay: validation.expirationDay,
-      },
-      include: questInclude,
-    })
+      }).returning().get()!
+      return tx.query.quest.findFirst({
+        where: eq(tables.quest.id, row.id),
+        with: questInclude,
+      }).sync()!
+    }, { behavior: 'immediate' })
 
     return toQuestDto(created)
   }
@@ -157,26 +162,9 @@ export class QuestService {
     questId: string,
     input: QuestUpdateInput,
   ): Promise<QuestDto> {
-    const existing = await prisma.quest.findUnique({
-      where: { id: questId },
-      select: {
-        id: true,
-        campaignId: true,
-        title: true,
-        description: true,
-        type: true,
-        track: true,
-        sourceType: true,
-        sourceText: true,
-        sourceNpcId: true,
-        sourceCharacterId: true,
-        reward: true,
-        status: true,
-        progressNotes: true,
-        expirationYear: true,
-        expirationMonth: true,
-        expirationDay: true,
-      },
+    const existing = await db.query.quest.findFirst({
+      where: eq(tables.quest.id, questId),
+      columns: { id: true, campaignId: true, title: true, description: true, type: true, track: true, sourceType: true, sourceText: true, sourceNpcId: true, sourceCharacterId: true, reward: true, status: true, progressNotes: true, expirationYear: true, expirationMonth: true, expirationDay: true },
     })
 
     if (!existing) {
@@ -224,9 +212,16 @@ export class QuestService {
       validateExpiration: input.expirationDate !== undefined,
     })
 
-    const updated = await prisma.quest.update({
-      where: { id: questId },
-      data: {
+    if (!Object.values(input).some((value) => value !== undefined)) {
+      const row = await db.query.quest.findFirst({
+        where: eq(tables.quest.id, questId),
+        with: questInclude,
+      })
+      return toQuestDto(row!)
+    }
+
+    const updated = db.transaction((tx) => {
+      const row = tx.update(tables.quest).set({
         ...(input.title !== undefined ? { title: input.title } : {}),
         ...(input.description !== undefined ? { description: normalizeOptionalText(input.description) } : {}),
         ...(input.type !== undefined ? { type: input.type } : {}),
@@ -239,9 +234,12 @@ export class QuestService {
         ...(input.status !== undefined ? { status: input.status } : {}),
         ...(input.progressNotes !== undefined ? { progressNotes: normalizeOptionalText(input.progressNotes) } : {}),
         ...(input.expirationDate !== undefined ? toExpirationParts(input.expirationDate) : {}),
-      },
-      include: questInclude,
-    })
+      }).where(eq(tables.quest.id, questId)).returning().get()!
+      return tx.query.quest.findFirst({
+        where: eq(tables.quest.id, row.id),
+        with: questInclude,
+      }).sync()!
+    }, { behavior: 'immediate' })
 
     return toQuestDto(updated)
   }
@@ -285,13 +283,13 @@ export class QuestService {
     }
 
     if (sourceType === 'NPC') {
-      const npc = await prisma.glossaryEntry.findFirst({
-        where: {
-          id: sourceNpcId || '__missing__',
-          campaignId,
-          type: 'NPC',
-        },
-        select: { id: true },
+      const npc = await db.query.glossaryEntry.findFirst({
+        where: and(
+          eq(tables.glossaryEntry.id, sourceNpcId || '__missing__'),
+          eq(tables.glossaryEntry.campaignId, campaignId),
+          eq(tables.glossaryEntry.type, 'NPC'),
+        ),
+        columns: { id: true },
       })
 
       if (!npc) {
@@ -304,12 +302,12 @@ export class QuestService {
     }
 
     if (sourceType === 'CAMPAIGN_CHARACTER') {
-      const characterLink = await prisma.campaignCharacter.findFirst({
-        where: {
-          campaignId,
-          characterId: sourceCharacterId || '__missing__',
-        },
-        select: { id: true },
+      const characterLink = await db.query.campaignCharacter.findFirst({
+        where: and(
+          eq(tables.campaignCharacter.campaignId, campaignId),
+          eq(tables.campaignCharacter.characterId, sourceCharacterId || '__missing__'),
+        ),
+        columns: { id: true },
       })
 
       if (!characterLink) {
@@ -322,12 +320,9 @@ export class QuestService {
     }
 
     if (options.validateExpiration && expirationDate) {
-      const calendarConfig = await prisma.campaignCalendarConfig.findUnique({
-        where: { campaignId },
-        select: {
-          isEnabled: true,
-          monthsJson: true,
-        },
+      const calendarConfig = await db.query.campaignCalendarConfig.findFirst({
+        where: eq(tables.campaignCalendarConfig.campaignId, campaignId),
+        columns: { isEnabled: true, monthsJson: true },
       })
 
       if (!calendarConfig?.isEnabled) {

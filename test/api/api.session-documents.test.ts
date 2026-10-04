@@ -2,10 +2,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { readFile, unlink, writeFile } from 'node:fs/promises'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
-import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
+import { createApiTestDatabase } from '../scripts/db-test-client'
+import * as tables from '../../server/db/schema'
+import { and, asc, eq, inArray } from 'drizzle-orm'
 import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
 
-const prisma = createApiTestPrismaClient()
+const db = createApiTestDatabase()
 const baseUrl = getApiTestBaseUrl()
 let ownerId = ''
 let viewerId = ''
@@ -30,23 +32,23 @@ const request = (cookie: string, action: Record<string, string>) => fetch(`${bas
 })
 
 const createRecording = async (sessionId: string, kind: 'AUDIO' | 'VIDEO', suffix: string) => {
-  const artifact = await prisma.artifact.create({ data: {
+  const artifact = db.insert(tables.artifact).values({
     ownerId, campaignId, provider: 'LOCAL', storageKey: `documents-recording-${suffix}`,
     mimeType: kind === 'VIDEO' ? 'video/mp4' : 'audio/mpeg', byteSize: 1,
-  } })
-  return prisma.recording.create({ data: {
+  }).returning().get()!
+  return db.insert(tables.recording).values({
     sessionId, kind, filename: `documents-${suffix}`, mimeType: artifact.mimeType, byteSize: 1, artifactId: artifact.id,
-  } })
+  }).returning().get()!
 }
 
 const createTranscriptArtifact = async (format: 'TXT' | 'SRT', content: string) => {
   const storageKey = `documents-${format.toLowerCase()}-${crypto.randomUUID()}.${format.toLowerCase()}`
   storageKeys.push(storageKey)
   await writeFile(`storage/${storageKey}`, content)
-  return prisma.artifact.create({ data: {
+  return db.insert(tables.artifact).values({
     ownerId, campaignId, provider: 'LOCAL', storageKey,
     mimeType: format === 'SRT' ? 'text/srt' : 'text/plain', byteSize: Buffer.byteLength(content),
-  } })
+  }).returning().get()!
 }
 
 const createDocument = (type: 'TRANSCRIPT' | 'SUMMARY' | 'NOTES', title: string, content: string) => fetch(
@@ -71,30 +73,28 @@ const importDocument = (type: 'TRANSCRIPT' | 'SUMMARY' | 'NOTES', title: string,
 describe('session documents, transcription and subtitles', () => {
   beforeAll(async () => {
     const password = 'documents-transcription-local-password'
-    const passwordHash = await new Hash(new Scrypt()).make(password)
+    const passwordHash = await new Hash(new Scrypt({})).make(password)
     const [owner, viewer] = await Promise.all([
-      prisma.user.create({ data: { email: 'documents-transcription-owner@example.com', name: 'Document Owner', passwordHash } }),
-      prisma.user.create({ data: { email: 'documents-transcription-viewer@example.com', name: 'Document Viewer', passwordHash } }),
+      db.insert(tables.user).values({ email: 'documents-transcription-owner@example.com', name: 'Document Owner', passwordHash }).returning().get()!,
+      db.insert(tables.user).values({ email: 'documents-transcription-viewer@example.com', name: 'Document Viewer', passwordHash }).returning().get()!,
     ])
     ownerId = owner.id
     viewerId = viewer.id
-    const campaign = await prisma.campaign.create({ data: {
-      ownerId, name: 'Document transcription campaign',
-      members: { create: { userId: viewerId, role: 'VIEWER', invitedByUserId: ownerId } },
-    } })
+    const campaign = db.insert(tables.campaign).values({ ownerId: ownerId, name: 'Document transcription campaign' }).returning().get()!
+    db.insert(tables.campaignMember).values(([{ userId: viewerId, role: 'VIEWER', invitedByUserId: ownerId }] as const).map(member => ({ ...member, campaignId: campaign.id }))).run()
     campaignId = campaign.id
     const [session, otherSession] = await Promise.all([
-      prisma.session.create({ data: { campaignId, title: 'Document session' } }),
-      prisma.session.create({ data: { campaignId, title: 'Document other session' } }),
+      db.insert(tables.session).values({ campaignId, title: 'Document session' }).returning().get()!,
+      db.insert(tables.session).values({ campaignId, title: 'Document other session' }).returning().get()!,
     ])
-    documentSessionId = (await prisma.session.create({ data: { campaignId, title: 'Document imports' } })).id
+    documentSessionId = (db.insert(tables.session).values({ campaignId, title: 'Document imports' }).returning().get()!).id
     sourceRecordingId = (await createRecording(session.id, 'AUDIO', 'source')).id
     videoRecordingId = (await createRecording(session.id, 'VIDEO', 'video')).id
     audioRecordingId = (await createRecording(session.id, 'AUDIO', 'audio')).id
     otherSessionVideoRecordingId = (await createRecording(otherSession.id, 'VIDEO', 'other-video')).id
-    jobId = (await prisma.transcriptionJob.create({ data: {
+    jobId = (db.insert(tables.transcriptionJob).values({
       recordingId: sourceRecordingId, provider: 'ELEVENLABS', status: 'COMPLETED',
-    } })).id
+    }).returning().get()!).id
 
     const textArtifact = await createTranscriptArtifact('TXT', 'First local transcript')
     textArtifactId = textArtifact.id
@@ -102,10 +102,10 @@ describe('session documents, transcription and subtitles', () => {
     subtitleArtifactId = subtitleArtifact.id
     const foreignArtifact = await createTranscriptArtifact('TXT', 'Unlinked artifact')
     foreignArtifactId = foreignArtifact.id
-    await prisma.transcriptionArtifact.createMany({ data: [
+    db.insert(tables.transcriptionArtifact).values([
       { transcriptionJobId: jobId, artifactId: textArtifactId, format: 'TXT' },
       { transcriptionJobId: jobId, artifactId: subtitleArtifactId, format: 'SRT' },
-    ] })
+    ]).run()
 
     const login = async (email: string) => {
       const response = await fetch(`${baseUrl}/api/auth/login`, {
@@ -120,12 +120,12 @@ describe('session documents, transcription and subtitles', () => {
   }, 120_000)
 
   afterAll(async () => {
-    await Promise.all(storageKeys.map((key) => unlink(`storage/${key}`).catch(() => {})))
-    if (campaignId) await prisma.campaign.delete({ where: { id: campaignId } })
-    if (ownerId || viewerId) await prisma.artifact.deleteMany({ where: { ownerId: { in: [ownerId, viewerId] } } })
-    if (viewerId) await prisma.user.delete({ where: { id: viewerId } })
-    if (ownerId) await prisma.user.delete({ where: { id: ownerId } })
-    await prisma.$disconnect()
+    await Promise.all(storageKeys.map((key) => unlink(`storage/${key}`).catch(() => { })))
+    if (campaignId) db.delete(tables.campaign).where(eq(tables.campaign.id, campaignId)).returning().get()!
+    if (ownerId || viewerId) db.delete(tables.artifact).where(inArray(tables.artifact.ownerId, [ownerId, viewerId])).run()
+    if (viewerId) db.delete(tables.user).where(eq(tables.user.id, viewerId)).returning().get()!
+    if (ownerId) db.delete(tables.user).where(eq(tables.user.id, ownerId)).returning().get()!
+    db.$client.close()
   })
 
   it('applies the TXT fallback and updates the retained transcript without an ElevenLabs key', async () => {
@@ -139,9 +139,7 @@ describe('session documents, transcription and subtitles', () => {
     expect(second.status).toBe(200)
     expect((await second.json()).data.id).toBe(firstPayload.data.id)
 
-    const document = await prisma.document.findUniqueOrThrow({
-      where: { id: firstPayload.data.id }, include: { currentVersion: true, versions: { orderBy: { versionNumber: 'asc' } } },
-    })
+    const document = (db.query.document.findFirst({ where: eq(tables.document.id, firstPayload.data.id), with: { currentVersion: true, versions: { orderBy: [asc(tables.documentVersion.versionNumber)] } } }).sync()!)
     expect(document.recordingId).toBe(sourceRecordingId)
     expect(document.currentVersion).toMatchObject({ content: 'Updated local transcript', source: 'ELEVENLABS_IMPORT' })
     expect(document.versions).toHaveLength(2)
@@ -155,7 +153,7 @@ describe('session documents, transcription and subtitles', () => {
     const payload = await attached.json()
     expect(payload.data).toMatchObject({ id: videoRecordingId, vttArtifactId: expect.any(String) })
 
-    const vttArtifact = await prisma.artifact.findUniqueOrThrow({ where: { id: payload.data.vttArtifactId } })
+    const vttArtifact = (db.query.artifact.findFirst({ where: eq(tables.artifact.id, payload.data.vttArtifactId) }).sync()!)
     expect(vttArtifact.ownerId).toBe(ownerId)
     expect(vttArtifact.mimeType).toBe('text/vtt')
     storageKeys.push(vttArtifact.storageKey)
@@ -194,9 +192,7 @@ describe('session documents, transcription and subtitles', () => {
     expect(duplicate.status).toBe(409)
     expect(await duplicate.json()).toMatchObject({ error: { code: 'ALREADY_EXISTS' } })
 
-    const stored = await prisma.document.findUniqueOrThrow({
-      where: { id: data.id }, include: { versions: { orderBy: { versionNumber: 'asc' } } },
-    })
+    const stored = (db.query.document.findFirst({ where: eq(tables.document.id, data.id), with: { versions: { orderBy: [asc(tables.documentVersion.versionNumber)] } } }).sync()!)
     expect(stored.title).toBe('Explicit notes')
     expect(stored.versions).toHaveLength(1)
     expect(stored.versions[0]).toMatchObject({ versionNumber: 1, content: 'first notes', source: 'USER_EDIT' })
@@ -212,10 +208,7 @@ describe('session documents, transcription and subtitles', () => {
     const secondPayload = await second.json()
     expect(secondPayload.data.id).toBe(firstPayload.data.id)
 
-    const stored = await prisma.document.findUniqueOrThrow({
-      where: { id: firstPayload.data.id },
-      include: { currentVersion: true, versions: { orderBy: { versionNumber: 'asc' } } },
-    })
+    const stored = (db.query.document.findFirst({ where: eq(tables.document.id, firstPayload.data.id), with: { currentVersion: true, versions: { orderBy: [asc(tables.documentVersion.versionNumber)] } } }).sync()!)
     expect(stored.title).toBe('Imported transcript')
     expect(stored.currentVersion).toMatchObject({
       versionNumber: 2, content: 'second import', format: 'PLAINTEXT', source: 'USER_IMPORT', createdByUserId: ownerId,
@@ -227,13 +220,13 @@ describe('session documents, transcription and subtitles', () => {
       { versionNumber: 2, content: 'second import', format: 'PLAINTEXT', source: 'USER_IMPORT' },
     ])
     const recording = await createRecording(documentSessionId, 'AUDIO', 'import-source')
-    const job = await prisma.transcriptionJob.create({ data: {
+    const job = db.insert(tables.transcriptionJob).values({
       recordingId: recording.id, provider: 'ELEVENLABS', status: 'COMPLETED',
-    } })
+    }).returning().get()!
     const transcriptArtifact = await createTranscriptArtifact('TXT', 'transcription import')
-    await prisma.transcriptionArtifact.create({ data: {
+    db.insert(tables.transcriptionArtifact).values({
       transcriptionJobId: job.id, artifactId: transcriptArtifact.id, format: 'TXT',
-    } })
+    }).returning().get()!
 
     const applied = await fetch(`${baseUrl}/api/transcriptions/${job.id}`, {
       method: 'PATCH', headers: { cookie: ownerCookie, 'content-type': 'application/json' }, body: JSON.stringify({ action: 'apply-transcript' }),
@@ -242,9 +235,7 @@ describe('session documents, transcription and subtitles', () => {
     const { data } = await applied.json()
     expect(data.id).toBe(firstPayload.data.id)
     expect(data.recordingId).toBeNull()
-    const transcript = await prisma.document.findUniqueOrThrow({
-      where: { id: data.id }, include: { currentVersion: true, versions: { orderBy: { versionNumber: 'asc' } } },
-    })
+    const transcript = (db.query.document.findFirst({ where: eq(tables.document.id, data.id), with: { currentVersion: true, versions: { orderBy: [asc(tables.documentVersion.versionNumber)] } } }).sync()!)
     expect(transcript.title).toBe('Imported transcript')
     expect(transcript.recordingId).toBe(recording.id)
     expect(transcript.currentVersion).toMatchObject({
@@ -254,11 +245,11 @@ describe('session documents, transcription and subtitles', () => {
   })
 
   it('applies each summary job as one N8N version and associates both jobs with the retained summary document', async () => {
-    const transcript = await prisma.document.findFirstOrThrow({ where: { sessionId: documentSessionId, type: 'TRANSCRIPT' } })
-    const firstJob = await prisma.summaryJob.create({ data: {
+    const transcript = (db.query.document.findFirst({ where: and(eq(tables.document.sessionId, documentSessionId), eq(tables.document.type, 'TRANSCRIPT')) }).sync()!)
+    const firstJob = db.insert(tables.summaryJob).values({
       campaignId, sessionId: documentSessionId, documentId: transcript.id, trackingId: 'document-import-summary-first',
       kind: 'SUMMARY_GENERATION', mode: 'ASYNC', status: 'READY_FOR_REVIEW', meta: { summaryContent: 'First summary' },
-    } })
+    }).returning().get()!
 
     const firstApply = await fetch(`${baseUrl}/api/summaries/jobs/${firstJob.id}`, {
       method: 'PATCH', headers: { cookie: ownerCookie, 'content-type': 'application/json' }, body: JSON.stringify({ action: 'apply' }),
@@ -268,10 +259,10 @@ describe('session documents, transcription and subtitles', () => {
     const summaryId = firstApplied.summaryDocumentId
     expect(summaryId).toEqual(expect.any(String))
 
-    const secondJob = await prisma.summaryJob.create({ data: {
+    const secondJob = db.insert(tables.summaryJob).values({
       campaignId, sessionId: documentSessionId, documentId: transcript.id, trackingId: 'document-import-summary-second',
       kind: 'SUMMARY_GENERATION', mode: 'ASYNC', status: 'READY_FOR_REVIEW', meta: { summaryContent: 'Second summary' },
-    } })
+    }).returning().get()!
     const secondApply = await fetch(`${baseUrl}/api/summaries/jobs/${secondJob.id}`, {
       method: 'PATCH', headers: { cookie: ownerCookie, 'content-type': 'application/json' }, body: JSON.stringify({ action: 'apply' }),
     })
@@ -279,34 +270,26 @@ describe('session documents, transcription and subtitles', () => {
     const { data: secondApplied } = await secondApply.json()
     expect(secondApplied.summaryDocumentId).toBe(summaryId)
 
-    const summary = await prisma.document.findUniqueOrThrow({
-      where: { id: summaryId }, include: { currentVersion: true, versions: { orderBy: { versionNumber: 'asc' } } },
-    })
+    const summary = (db.query.document.findFirst({ where: eq(tables.document.id, summaryId), with: { currentVersion: true, versions: { orderBy: [asc(tables.documentVersion.versionNumber)] } } }).sync()!)
     expect(summary.title).toBe('Summary: Document imports')
     expect(summary.currentVersion).toMatchObject({ versionNumber: 2, content: 'Second summary', format: 'MARKDOWN', source: 'N8N_IMPORT' })
     expect(summary.versions.map(version => ({ versionNumber: version.versionNumber, content: version.content, source: version.source }))).toEqual([
       { versionNumber: 1, content: 'First summary', source: 'N8N_IMPORT' },
       { versionNumber: 2, content: 'Second summary', source: 'N8N_IMPORT' },
     ])
-    expect(await prisma.summaryJob.findMany({
-      where: { id: { in: [firstJob.id, secondJob.id] } }, select: { summaryDocumentId: true, status: true },
-    })).toEqual(expect.arrayContaining([
+    expect(db.query.summaryJob.findMany({ where: inArray(tables.summaryJob.id, [firstJob.id, secondJob.id]), columns: { summaryDocumentId: true, status: true } }).sync()).toEqual(expect.arrayContaining([
       { summaryDocumentId: summaryId, status: 'APPLIED' },
       { summaryDocumentId: summaryId, status: 'APPLIED' },
     ]))
 
-    await prisma.summaryJob.update({
-      where: { id: secondJob.id }, data: { meta: { summaryContent: 'Reapplied summary' } },
-    })
+    db.update(tables.summaryJob).set({ meta: { summaryContent: 'Reapplied summary' } }).where(eq(tables.summaryJob.id, secondJob.id)).returning().get()!
     const reapplied = await fetch(`${baseUrl}/api/summaries/jobs/${secondJob.id}`, {
       method: 'PATCH', headers: { cookie: ownerCookie, 'content-type': 'application/json' }, body: JSON.stringify({ action: 'apply' }),
     })
     expect(reapplied.status).toBe(200)
     expect((await reapplied.json()).data.summaryDocumentId).toBe(summaryId)
 
-    const reloadedSummary = await prisma.document.findUniqueOrThrow({
-      where: { id: summaryId }, include: { currentVersion: true, versions: { orderBy: { versionNumber: 'asc' } } },
-    })
+    const reloadedSummary = (db.query.document.findFirst({ where: eq(tables.document.id, summaryId), with: { currentVersion: true, versions: { orderBy: [asc(tables.documentVersion.versionNumber)] } } }).sync()!)
     expect(reloadedSummary.currentVersion).toMatchObject({
       versionNumber: 3, content: 'Reapplied summary', format: 'MARKDOWN', source: 'N8N_IMPORT',
     })

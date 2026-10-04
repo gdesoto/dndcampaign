@@ -1,5 +1,6 @@
-import { prisma } from '#server/db/prisma'
-import type { Prisma } from '#server/db/prisma-client'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { and, or, eq, desc, count, sql } from 'drizzle-orm'
 import { ActivityLogService } from '#server/services/activity-log.service'
 import {
   canVoteOnRequest,
@@ -51,8 +52,8 @@ const toRequestListItem = (
     decidedAt: request.decidedAt ? request.decidedAt.toISOString() : null,
     createdAt: request.createdAt.toISOString(),
     updatedAt: request.updatedAt.toISOString(),
-    voteCount: request._count.votes,
-    viewerHasVoted: request.votes.length > 0,
+    voteCount: request.voteCount,
+    viewerHasVoted: request.votes.some((vote) => vote.userId === viewerUserId),
     canModerate: isModeratableByAccess(access, request.status),
     canEdit: isCreatorOfPendingRequest(viewerUserId, request),
     canCancel: isCreatorOfPendingRequest(viewerUserId, request),
@@ -78,49 +79,22 @@ const toRequestDetail = (
     : null,
 })
 
-const requestSelect = {
-  id: true,
-  campaignId: true,
-  createdByUserId: true,
-  type: true,
-  visibility: true,
-  title: true,
-  description: true,
-  status: true,
-  decisionNote: true,
-  decidedByUserId: true,
-  decidedAt: true,
-  createdAt: true,
-  updatedAt: true,
-  createdByUser: {
-    select: {
-      id: true,
-      name: true,
-    },
-  },
-  decidedByUser: {
-    select: {
-      id: true,
-      name: true,
-    },
-  },
-} as const satisfies Prisma.CampaignRequestSelect
+const requestRelations = (viewerUserId: string) => ({
+  createdByUser: { columns: { id: true, name: true } },
+  decidedByUser: { columns: { id: true, name: true } },
+  votes: { columns: { userId: true }, where: eq(tables.campaignRequestVote.userId, viewerUserId), limit: 1 },
+}) as const
 
-const requestSelectForViewer = (viewerUserId: string) => ({
-  ...requestSelect,
-  votes: {
-    where: { userId: viewerUserId },
-    select: { userId: true },
-    take: 1,
-  },
-  _count: {
-    select: { votes: true },
-  },
-}) as const satisfies Prisma.CampaignRequestSelect
+const requestExtras = {
+  voteCount: sql<number>`(select count(*) from "CampaignRequestVote" where "CampaignRequestVote"."campaignRequestId" = "campaignRequest"."id")`.mapWith(Number).as('voteCount'),
+}
 
-type CampaignRequestWithViewerRelations = Prisma.CampaignRequestGetPayload<{
-  select: ReturnType<typeof requestSelectForViewer>
-}>
+type CampaignRequestWithViewerRelations = import('#server/db/schema').CampaignRequest & {
+  createdByUser: { id: string; name: string }
+  decidedByUser: { id: string; name: string } | null
+  votes: { userId: string }[]
+  voteCount: number
+}
 
 const getPagination = (query: CampaignRequestListQueryInput) => {
   const page = query.page || campaignRequestListDefaultPage
@@ -140,12 +114,13 @@ export class CampaignRequestsService {
     userId: string,
     access: ResolvedCampaignAccess,
   ): Promise<CampaignRequestWithViewerRelations> {
-    const request = await prisma.campaignRequest.findFirst({
-      where: {
-        id: requestId,
-        campaignId,
-      },
-      select: requestSelectForViewer(userId),
+    const request = await db.query.campaignRequest.findFirst({
+      where: and(
+        eq(tables.campaignRequest.id, requestId),
+        eq(tables.campaignRequest.campaignId, campaignId),
+      ),
+      with: requestRelations(userId),
+      extras: requestExtras,
     })
 
     if (!request) {
@@ -166,17 +141,21 @@ export class CampaignRequestsService {
   ): Promise<CampaignRequestDetail> {
     const campaignId = access.campaignId
 
-    const created = await prisma.campaignRequest.create({
-      data: {
+    const created = await db.transaction((tx) => {
+      const row = tx.insert(tables.campaignRequest).values({
         campaignId,
         createdByUserId: userId,
         type: input.type,
         visibility: input.visibility,
         title: input.title,
         description: input.description,
-      },
-      select: requestSelectForViewer(userId),
-    })
+      }).returning().get()!
+      return tx.query.campaignRequest.findFirst({
+        where: eq(tables.campaignRequest.id, row.id),
+        with: requestRelations(userId),
+        extras: requestExtras,
+      }).sync()!
+    }, { behavior: 'immediate' })
 
     await activityLogService.log({
       actorUserId: userId,
@@ -207,40 +186,29 @@ export class CampaignRequestsService {
       throw apiError(403, 'FORBIDDEN', 'DM access is required for moderation queue')
     }
 
-    const visibilityWhere = hasCampaignDmAccess(access)
-      ? {}
-      : {
-          OR: [
-            { visibility: 'PUBLIC' as const },
-            {
-              visibility: 'PRIVATE' as const,
-              createdByUserId: userId,
-            },
-          ],
-        }
-
-    const where = {
-      campaignId,
-      ...(query.visibility ? { visibility: query.visibility } : {}),
-      ...(query.status ? { status: query.status } : {}),
-      ...(query.type ? { type: query.type } : {}),
-      ...(query.mine ? { createdByUserId: userId } : {}),
-      ...(query.moderationQueue ? { status: 'PENDING' as const } : {}),
-      ...visibilityWhere,
-    }
-
+    const where = and(
+      eq(tables.campaignRequest.campaignId, campaignId),
+      query.visibility ? eq(tables.campaignRequest.visibility, query.visibility) : undefined,
+      query.moderationQueue ? eq(tables.campaignRequest.status, 'PENDING') : query.status ? eq(tables.campaignRequest.status, query.status) : undefined,
+      query.type ? eq(tables.campaignRequest.type, query.type) : undefined,
+      query.mine ? eq(tables.campaignRequest.createdByUserId, userId) : undefined,
+      hasCampaignDmAccess(access) ? undefined : or(
+        eq(tables.campaignRequest.visibility, 'PUBLIC'),
+        and(eq(tables.campaignRequest.visibility, 'PRIVATE'), eq(tables.campaignRequest.createdByUserId, userId)),
+      ),
+    )
     const pagination = getPagination(query)
-
-    const [total, rows] = await prisma.$transaction([
-      prisma.campaignRequest.count({ where }),
-      prisma.campaignRequest.findMany({
-        where,
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        skip: pagination.skip,
-        take: pagination.take,
-        select: requestSelectForViewer(userId),
-      }),
-    ])
+    const { total, rows } = db.transaction((tx) => ({
+      total: tx.select({ value: count() }).from(tables.campaignRequest).where(where).get()!.value,
+      rows: tx.query.campaignRequest.findMany({
+        where: where,
+        orderBy: [desc(tables.campaignRequest.createdAt), desc(tables.campaignRequest.id)],
+        offset: pagination.skip,
+        limit: pagination.take,
+        with: requestRelations(userId),
+        extras: requestExtras,
+      }).sync(),
+    }), { behavior: 'immediate' })
 
     const items = rows.map((row) => toRequestListItem(row, userId, access))
     return {
@@ -280,16 +248,19 @@ export class CampaignRequestsService {
       throw apiError(403, 'FORBIDDEN', 'Only the creator can edit a pending request')
     }
 
-    const updated = await prisma.campaignRequest.update({
-      where: { id: existing.id },
-      data: {
+    const updated = await db.transaction((tx) => {
+      const row = tx.update(tables.campaignRequest).set({
         ...(input.type !== undefined ? { type: input.type } : {}),
         ...(input.visibility !== undefined ? { visibility: input.visibility } : {}),
         ...(input.title !== undefined ? { title: input.title } : {}),
         ...(input.description !== undefined ? { description: input.description } : {}),
-      },
-      select: requestSelectForViewer(userId),
-    })
+      }).where(eq(tables.campaignRequest.id, existing.id)).returning().get()!
+      return tx.query.campaignRequest.findFirst({
+        where: eq(tables.campaignRequest.id, row.id),
+        with: requestRelations(userId),
+        extras: requestExtras,
+      }).sync()!
+    }, { behavior: 'immediate' })
 
     await activityLogService.log({
       actorUserId: userId,
@@ -317,13 +288,16 @@ export class CampaignRequestsService {
       throw apiError(403, 'FORBIDDEN', 'Only the creator can cancel a pending request')
     }
 
-    const canceled = await prisma.campaignRequest.update({
-      where: { id: existing.id },
-      data: {
+    const canceled = await db.transaction((tx) => {
+      const row = tx.update(tables.campaignRequest).set({
         status: 'CANCELED',
-      },
-      select: requestSelectForViewer(userId),
-    })
+      }).where(eq(tables.campaignRequest.id, existing.id)).returning().get()!
+      return tx.query.campaignRequest.findFirst({
+        where: eq(tables.campaignRequest.id, row.id),
+        with: requestRelations(userId),
+        extras: requestExtras,
+      }).sync()!
+    }, { behavior: 'immediate' })
 
     await activityLogService.log({
       actorUserId: userId,
@@ -351,25 +325,15 @@ export class CampaignRequestsService {
       throw apiError(409, 'INVALID_REQUEST_STATE', 'Voting is only available for public pending requests')
     }
 
-    const vote = await prisma.campaignRequestVote.findUnique({
-      where: {
-        campaignRequestId_userId: {
-          campaignRequestId: existing.id,
-          userId,
-        },
-      },
-      select: { id: true },
-    })
+    const inserted = db.insert(tables.campaignRequestVote).values({
+      campaignRequestId: existing.id,
+      campaignId,
+      userId,
+    }).onConflictDoNothing({
+      target: [tables.campaignRequestVote.campaignRequestId, tables.campaignRequestVote.userId],
+    }).run()
 
-    if (!vote) {
-      await prisma.campaignRequestVote.create({
-        data: {
-          campaignRequestId: existing.id,
-          campaignId,
-          userId,
-        },
-      })
-
+    if (inserted.changes > 0) {
       await activityLogService.log({
         actorUserId: userId,
         campaignId,
@@ -399,14 +363,9 @@ export class CampaignRequestsService {
       throw apiError(409, 'INVALID_REQUEST_STATE', 'Voting is only available for public pending requests')
     }
 
-    const deleted = await prisma.campaignRequestVote.deleteMany({
-      where: {
-        campaignRequestId: existing.id,
-        userId,
-      },
-    })
+    const deleted = await db.delete(tables.campaignRequestVote).where(and(eq(tables.campaignRequestVote.campaignRequestId, existing.id), eq(tables.campaignRequestVote.userId, userId))).run()
 
-    if (deleted.count > 0) {
+    if (deleted.changes > 0) {
       await activityLogService.log({
         actorUserId: userId,
         campaignId,
@@ -441,16 +400,19 @@ export class CampaignRequestsService {
       throw apiError(409, 'INVALID_REQUEST_STATE', 'Only pending requests can be decided')
     }
 
-    const updated = await prisma.campaignRequest.update({
-      where: { id: existing.id },
-      data: {
+    const updated = await db.transaction((tx) => {
+      const row = tx.update(tables.campaignRequest).set({
         status: input.decision,
         decisionNote: input.decisionNote || null,
         decidedByUserId: userId,
         decidedAt: new Date(),
-      },
-      select: requestSelectForViewer(userId),
-    })
+      }).where(eq(tables.campaignRequest.id, existing.id)).returning().get()!
+      return tx.query.campaignRequest.findFirst({
+        where: eq(tables.campaignRequest.id, row.id),
+        with: requestRelations(userId),
+        extras: requestExtras,
+      }).sync()!
+    }, { behavior: 'immediate' })
 
     await activityLogService.log({
       actorUserId: userId,

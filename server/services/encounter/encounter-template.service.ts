@@ -1,4 +1,6 @@
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { eq, and, asc, desc } from 'drizzle-orm'
 import type {
   EncounterSummary,
   EncounterTemplate,
@@ -21,11 +23,7 @@ import { apiError } from '#server/utils/http'
 
 export class EncounterTemplateService {
   async listTemplates(campaignId: string): Promise<EncounterTemplate[]> {
-    const templates = await prisma.encounterTemplate.findMany({
-      where: { campaignId },
-      include: { combatants: { orderBy: { sortOrder: 'asc' } } },
-      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
-    })
+    const templates = db.query.encounterTemplate.findMany({where: and(eq(tables.encounterTemplate.campaignId, campaignId)), with: {combatants: {orderBy: [asc(tables.encounterTemplateCombatant.sortOrder)]}}, orderBy: [desc(tables.encounterTemplate.updatedAt), desc(tables.encounterTemplate.createdAt)]}).sync()
 
     return templates.map(toEncounterTemplateDto)
   }
@@ -35,30 +33,11 @@ export class EncounterTemplateService {
     userId: string,
     input: EncounterTemplateCreateInput,
   ): Promise<EncounterTemplate> {
-    const template = await prisma.encounterTemplate.create({
-      data: {
-        campaignId,
-        name: input.name,
-        type: input.type,
-        notes: input.notes,
-        createdByUserId: userId,
-        combatants: {
-          create: input.combatants.map((combatant) => ({
-            name: combatant.name,
-            side: combatant.side,
-            sourceType: combatant.sourceType,
-            sourceStatBlockId: combatant.sourceStatBlockId,
-            maxHp: combatant.maxHp,
-            armorClass: combatant.armorClass,
-            speed: combatant.speed,
-            quantity: combatant.quantity,
-            sortOrder: combatant.sortOrder,
-            notes: combatant.notes,
-          })),
-        },
-      },
-      include: { combatants: { orderBy: { sortOrder: 'asc' } } },
-    })
+    const template = db.transaction(tx => {
+      const row = tx.insert(tables.encounterTemplate).values({ campaignId, name: input.name, type: input.type, notes: input.notes, createdByUserId: userId }).returning().get()!
+      if (input.combatants.length) tx.insert(tables.encounterTemplateCombatant).values(input.combatants.map(combatant => ({ ...combatant, templateId: row.id }))).run()
+      return tx.query.encounterTemplate.findFirst({ where: eq(tables.encounterTemplate.id, row.id), with: { combatants: { orderBy: asc(tables.encounterTemplateCombatant.sortOrder) } } }).sync()!
+    }, { behavior: 'immediate' })
 
     return toEncounterTemplateDto(template)
   }
@@ -68,33 +47,26 @@ export class EncounterTemplateService {
     userId: string,
     input: EncounterTemplateUpdateInput,
   ): Promise<EncounterTemplate> {
-    const existing = await prisma.encounterTemplate.findFirst({
-      where: {
-        id: templateId,
-        campaign: buildCampaignWhereForPermission(userId, 'content.write'),
-      },
-      select: { id: true },
-    })
+    const existing = db.query.encounterTemplate.findFirst({where: and(eq(tables.encounterTemplate.id, templateId), buildCampaignWhereForPermission(userId, 'content.write', tables.encounterTemplate.campaignId)), columns: {id: true}}).sync()
 
     if (!existing) {
       throw apiError(404, 'NOT_FOUND', 'Encounter template not found or access denied.')
     }
 
-    const template = await prisma.$transaction(async (tx) => {
-      const updated = await tx.encounterTemplate.update({
-        where: { id: templateId },
-        data: {
-          ...(input.name ? { name: input.name } : {}),
-          ...(input.type ? { type: input.type } : {}),
-          ...(Object.prototype.hasOwnProperty.call(input, 'notes') ? { notes: input.notes ?? null } : {}),
-        },
-      })
+    const template = db.transaction( (tx) => {
+      const updateData = {
+        ...(input.name ? { name: input.name } : {}),
+        ...(input.type ? { type: input.type } : {}),
+        ...(Object.prototype.hasOwnProperty.call(input, 'notes') ? { notes: input.notes ?? null } : {}),
+      }
+      if (Object.keys(updateData).length) {
+        tx.update(tables.encounterTemplate).set(updateData).where(eq(tables.encounterTemplate.id, templateId)).run()
+      }
 
       if (input.combatants) {
-        await tx.encounterTemplateCombatant.deleteMany({ where: { templateId } })
+        tx.delete(tables.encounterTemplateCombatant).where(and(eq(tables.encounterTemplateCombatant.templateId, templateId))).run()
         if (input.combatants.length) {
-          await tx.encounterTemplateCombatant.createMany({
-            data: input.combatants.map((combatant) => ({
+          tx.insert(tables.encounterTemplateCombatant).values(input.combatants.map((combatant) => ({
               templateId,
               name: combatant.name,
               side: combatant.side,
@@ -106,18 +78,14 @@ export class EncounterTemplateService {
               quantity: combatant.quantity,
               sortOrder: combatant.sortOrder,
               notes: combatant.notes,
-            })),
-          })
+            }))).run()
         }
       }
 
-      return updated
-    })
+      return existing
+    }, { behavior: 'immediate' })
 
-    const full = await prisma.encounterTemplate.findUnique({
-      where: { id: template.id },
-      include: { combatants: { orderBy: { sortOrder: 'asc' } } },
-    })
+    const full = db.query.encounterTemplate.findFirst({where: and(eq(tables.encounterTemplate.id, template.id)), with: {combatants: {orderBy: [asc(tables.encounterTemplateCombatant.sortOrder)]}}}).sync()
 
     if (!full) {
       throw apiError(404, 'NOT_FOUND', 'Encounter template not found.')
@@ -127,19 +95,13 @@ export class EncounterTemplateService {
   }
 
   async deleteTemplate(templateId: string, userId: string): Promise<{ deleted: true }> {
-    const existing = await prisma.encounterTemplate.findFirst({
-      where: {
-        id: templateId,
-        campaign: buildCampaignWhereForPermission(userId, 'content.write'),
-      },
-      select: { id: true },
-    })
+    const existing = db.query.encounterTemplate.findFirst({where: and(eq(tables.encounterTemplate.id, templateId), buildCampaignWhereForPermission(userId, 'content.write', tables.encounterTemplate.campaignId)), columns: {id: true}}).sync()
 
     if (!existing) {
       throw apiError(404, 'NOT_FOUND', 'Encounter template not found or access denied.')
     }
 
-    await prisma.encounterTemplate.delete({ where: { id: templateId } })
+    db.delete(tables.encounterTemplate).where(and(eq(tables.encounterTemplate.id, templateId))).returning().get()!
     return { deleted: true }
   }
 
@@ -148,13 +110,7 @@ export class EncounterTemplateService {
     userId: string,
     input: EncounterTemplateInstantiateInput,
   ): Promise<EncounterSummary> {
-    const template = await prisma.encounterTemplate.findFirst({
-      where: {
-        id: templateId,
-        campaign: buildCampaignWhereForPermission(userId, 'content.write'),
-      },
-      include: { combatants: { orderBy: { sortOrder: 'asc' } } },
-    })
+    const template = db.query.encounterTemplate.findFirst({where: and(eq(tables.encounterTemplate.id, templateId), buildCampaignWhereForPermission(userId, 'content.write', tables.encounterTemplate.campaignId)), with: {combatants: {orderBy: [asc(tables.encounterTemplateCombatant.sortOrder)]}}}).sync()
 
     if (!template) {
       throw apiError(404, 'NOT_FOUND', 'Encounter template not found or access denied.')
@@ -168,9 +124,8 @@ export class EncounterTemplateService {
       calendarDay: input.calendarDay,
     })
 
-    const created = await prisma.$transaction(async (tx) => {
-      const encounter = await tx.campaignEncounter.create({
-        data: {
+    const created = db.transaction( (tx) => {
+      const encounter = tx.insert(tables.campaignEncounter).values({
           campaignId: template.campaignId,
           name: input.name || template.name,
           type: template.type,
@@ -180,14 +135,12 @@ export class EncounterTemplateService {
           calendarMonth: calendarValidation.calendarMonth,
           calendarDay: calendarValidation.calendarDay,
           createdByUserId: userId,
-        },
-      })
+        }).returning().get()!
 
       let sortOrder = 0
       for (const combatant of template.combatants) {
         for (let i = 0; i < combatant.quantity; i += 1) {
-          await tx.encounterCombatant.create({
-            data: {
+          tx.insert(tables.encounterCombatant).values({
               encounterId: encounter.id,
               name: combatant.quantity > 1 ? `${combatant.name} ${i + 1}` : combatant.name,
               side: combatant.side,
@@ -199,14 +152,13 @@ export class EncounterTemplateService {
               speed: combatant.speed,
               sortOrder,
               notes: combatant.notes,
-            },
-          })
+            }).returning().get()!
           sortOrder += 1
         }
       }
 
       return encounter
-    })
+    }, { behavior: 'immediate' })
 
     await appendEncounterEvent(
       created.id,

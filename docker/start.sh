@@ -43,8 +43,10 @@ if [ -n "${DATABASE_URL:-}" ]; then
 fi
 
 if [ "${RUN_MIGRATIONS:-1}" = "1" ]; then
-  echo "Running Prisma migrations..."
-  npx prisma migrate deploy
+  echo "Running database migrations..."
+  node scripts/database.mjs migrate
+else
+  node scripts/database.mjs check
 fi
 
 exec node .output/server/index.mjs

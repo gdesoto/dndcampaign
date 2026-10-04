@@ -1,12 +1,14 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
-import { createApiTestPrismaClient } from '../scripts/prisma-test-client'
+import { createApiTestDatabase } from '../scripts/db-test-client'
+import * as tables from '../../server/db/schema'
+import { and, count, eq } from 'drizzle-orm'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
 
-const prisma = createApiTestPrismaClient()
-const hash = new Hash(new Scrypt())
+const db = createApiTestDatabase()
+const hash = new Hash(new Scrypt({}))
 
 const password = 'public-owner-password-12345'
 const baseUrl = getApiTestBaseUrl()
@@ -29,7 +31,7 @@ let mapSlug = ''
 const sleep = (ms: number) => new Promise((resolveDelay) => setTimeout(resolveDelay, ms))
 
 const loginAndGetCookie = async (email: string) => {
-  for (let attempt = 0; attempt < 20; attempt += 1) {
+  for (let attempt = 0;attempt < 20;attempt += 1) {
     const response = await fetch(`${baseUrl}/api/auth/login`, {
       method: 'POST',
       headers: authHeaders,
@@ -52,124 +54,94 @@ describe('campaign public access', () => {
     const passwordHash = await hash.make(password)
 
     for (const [key, user] of Object.entries(users)) {
-      const created = await prisma.user.create({
-        data: {
-          email: user.email,
-          name: user.name,
-          passwordHash,
-        },
-        select: { id: true },
-      })
+      const created = db.insert(tables.user).values({
+        email: user.email,
+        name: user.name,
+        passwordHash,
+      }).returning().get()!
       userIds[key] = created.id
     }
 
-    const campaign = await prisma.campaign.create({
-      data: {
-        ownerId: userIds.owner,
-        name: 'Public Public Campaign',
-        system: 'D&D 5e',
-        members: {
-          create: [
-            {
-              userId: userIds.owner,
-              role: 'OWNER',
-              invitedByUserId: userIds.owner,
-            },
-            {
-              userId: userIds.collaborator,
-              role: 'COLLABORATOR',
-              invitedByUserId: userIds.owner,
-            },
-          ],
-        },
+    const campaign = db.insert(tables.campaign).values({ ownerId: userIds.owner, name: 'Public Public Campaign', system: 'D&D 5e' }).returning().get()!
+    db.insert(tables.campaignMember).values(([
+      {
+        userId: userIds.owner,
+        role: 'OWNER',
+        invitedByUserId: userIds.owner,
       },
-      select: { id: true },
-    })
+      {
+        userId: userIds.collaborator,
+        role: 'COLLABORATOR',
+        invitedByUserId: userIds.owner,
+      },
+    ] as const).map(member => ({ ...member, campaignId: campaign.id }))).run()
     campaignId = campaign.id
 
-    await prisma.session.create({
-      select: { id: true },
-      data: {
+    const session = db.insert(tables.session).values({
+      campaignId,
+      title: 'Session One',
+      sessionNumber: 1,
+      notes: 'Public notes',
+    }).returning().get()!
+    {
+      const artifact = db.insert(tables.artifact).values({
+        ownerId: userIds.owner,
         campaignId,
-        title: 'Session One',
-        sessionNumber: 1,
-        notes: 'Public notes',
-      },
-    })
-      .then(async (session) => {
-        const artifact = await prisma.artifact.create({
-          data: {
-            ownerId: userIds.owner,
-            campaignId,
-            provider: 'LOCAL',
-            storageKey: `public-test-recap-${session.id}.mp3`,
-            mimeType: 'audio/mpeg',
-            byteSize: 128,
-          },
-          select: { id: true },
-        })
-        const recap = await prisma.recapRecording.create({
-          data: {
-            sessionId: session.id,
-            filename: 'session-one.mp3',
-            mimeType: 'audio/mpeg',
-            byteSize: 128,
-            artifactId: artifact.id,
-          },
-          select: { id: true },
-        })
-        recapId = recap.id
-      })
+        provider: 'LOCAL',
+        storageKey: `public-test-recap-${session.id}.mp3`,
+        mimeType: 'audio/mpeg',
+        byteSize: 128,
+      }).returning().get()!
+      const recap = db.insert(tables.recapRecording).values({
+        sessionId: session.id,
+        filename: 'session-one.mp3',
+        mimeType: 'audio/mpeg',
+        byteSize: 128,
+        artifactId: artifact.id,
+      }).returning().get()!
+      recapId = recap.id
+    }
 
-    await prisma.glossaryEntry.create({
-      data: {
-        campaignId,
-        type: 'NPC',
-        name: 'Elandra',
-        description: 'Archivist of the Dawn Library.',
-      },
-    })
+    db.insert(tables.glossaryEntry).values({
+      campaignId,
+      type: 'NPC',
+      name: 'Elandra',
+      description: 'Archivist of the Dawn Library.',
+    }).returning().get()!
 
-    await prisma.quest.create({
-      data: {
-        campaignId,
-        title: 'Secret Quest',
-        status: 'ACTIVE',
-      },
-    })
+    db.insert(tables.quest).values({
+      campaignId,
+      title: 'Secret Quest',
+      status: 'ACTIVE',
+    }).returning().get()!
 
-    const map = await prisma.campaignMap.create({
-      data: {
-        campaignId,
-        name: 'Public Region',
-        slug: 'public-region',
-        isPrimary: true,
-        createdById: userIds.owner,
-        sourceFingerprint: 'public-map-fingerprint',
-        rawManifestJson: {
-          bounds: [[-20, -20], [20, 20]],
-        },
+    const map = db.insert(tables.campaignMap).values({
+      campaignId,
+      name: 'Public Region',
+      slug: 'public-region',
+      isPrimary: true,
+      createdById: userIds.owner,
+      sourceFingerprint: 'public-map-fingerprint',
+      rawManifestJson: {
+        bounds: [[-20, -20], [20, 20]],
       },
-      select: { id: true, slug: true },
-    })
+    }).returning().get()!
     mapSlug = map.slug
 
-    await prisma.campaignMapFeature.create({
-      data: {
-        campaignMapId: map.id,
-        externalId: 'state-1',
-        featureType: 'STATE',
-        name: 'Public State',
-        displayName: 'Public State',
-        normalizedName: 'public state',
-        geometryType: 'Polygon',
-        geometryJson: {
-          type: 'Polygon',
-          coordinates: [[[0, 0], [0, 10], [10, 10], [10, 0], [0, 0]]],
-        },
-        sourceRef: 'state:1',
+    db.insert(tables.campaignMapFeature).values({
+      campaignMapId: map.id,
+      externalId: 'state-1',
+      featureType: 'STATE',
+      name: 'Public State',
+      displayName: 'Public State',
+      normalizedName: 'public state',
+      geometryType: 'Polygon',
+      geometryJson: {
+        type: 'Polygon',
+        coordinates: [[[0, 0], [0, 10], [10, 10], [10, 0], [0, 0]]],
       },
-    })
+      sourceRef: 'state:1',
+    }).returning().get()!
 
     for (const [key, value] of Object.entries(users)) {
       cookies[key] = await loginAndGetCookie(value.email)
@@ -177,20 +149,20 @@ describe('campaign public access', () => {
   }, 120_000)
 
   afterAll(async () => {
-    await prisma.$disconnect()
+    db.$client.close()
   })
 
   it('keeps write-attempt audit records out of recent campaign activity before limiting results', async () => {
-    const completed = await prisma.activityLog.create({ data: {
+    const completed = db.insert(tables.activityLog).values({
       campaignId, actorUserId: userIds.owner, scope: 'CAMPAIGN',
       action: 'ENCOUNTER_CREATED', summary: 'Created encounter Moonlit ambush',
       createdAt: new Date('2026-01-01T00:00:00Z'),
-    } })
-    await prisma.activityLog.createMany({ data: Array.from({ length: 26 }, () => ({
+    }).returning().get()!
+    db.insert(tables.activityLog).values(Array.from({ length: 26 }, () => ({
       campaignId, actorUserId: userIds.owner, scope: 'CAMPAIGN' as const,
       action: 'API_KEY_WRITE_ATTEMPT', summary: 'PATCH /api/encounters/example/combatants/example',
       createdAt: new Date('2026-01-02T00:00:00Z'),
-    })) })
+    }))).run()
     try {
       const response = await fetch(`${baseUrl}/api/campaigns/${campaignId}/activity`, {
         headers: { cookie: cookies.owner },
@@ -198,9 +170,9 @@ describe('campaign public access', () => {
       expect(response.status).toBe(200)
       const { data } = await response.json()
       expect(data).toEqual([expect.objectContaining({ id: completed.id, summary: completed.summary })])
-      expect(await prisma.activityLog.count({ where: { campaignId, action: 'API_KEY_WRITE_ATTEMPT' } })).toBe(26)
+      expect(db.select({ count: count() }).from(tables.activityLog).where(and(eq(tables.activityLog.campaignId, campaignId), eq(tables.activityLog.action, 'API_KEY_WRITE_ATTEMPT'))).get()!.count).toBe(26)
     } finally {
-      await prisma.activityLog.deleteMany({ where: { campaignId } })
+      db.delete(tables.activityLog).where(eq(tables.activityLog.campaignId, campaignId)).run()
     }
   })
 
@@ -240,9 +212,7 @@ describe('campaign public access', () => {
     expect(patchPayload.data.showGlossary).toBe(true)
     expect(patchPayload.data.showQuests).toBe(false)
 
-    expect(await prisma.activityLog.findFirst({
-      where: { campaignId, actorUserId: userIds.owner, action: 'CAMPAIGN_PUBLIC_ACCESS_UPDATED' },
-    })).not.toBeNull()
+    expect((db.query.activityLog.findFirst({ where: and(eq(tables.activityLog.campaignId, campaignId), eq(tables.activityLog.actorUserId, userIds.owner), eq(tables.activityLog.action, 'CAMPAIGN_PUBLIC_ACCESS_UPDATED')) }).sync() ?? null)).not.toBeNull()
 
     const overviewRes = await fetch(`${baseUrl}/api/public/campaigns/${publicSlug}`)
     expect(overviewRes.status).toBe(200)

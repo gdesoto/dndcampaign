@@ -1,5 +1,7 @@
-import { prisma } from '#server/db/prisma'
-import type { Prisma } from '#server/db/prisma-client'
+import type { JsonValue } from '#server/db/columns'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { and, eq } from 'drizzle-orm'
 import type { CharacterSection } from '#shared/schemas/character'
 import { CharacterSyncService } from './character-sync.service'
 
@@ -151,20 +153,21 @@ export class CharacterService {
   async createManualCharacter(ownerId: string, name: string, sheetJson?: Record<string, unknown>) {
     const sheet = sheetJson || { basics: { name } }
     const summary = computeCharacterSummary(name, sheet)
-    return prisma.playerCharacter.create({
-      data: {
-        ownerId,
-        name,
-        sheetJson: sheet as Prisma.InputJsonValue,
-        summaryJson: summary as Prisma.InputJsonValue,
-        sourceProvider: 'MANUAL',
-      },
-    })
+    return db.insert(tables.playerCharacter).values({
+      ownerId,
+      name,
+      sheetJson: sheet as JsonValue,
+      summaryJson: summary as JsonValue,
+      sourceProvider: 'MANUAL',
+    }).returning().get()
   }
 
   async updateCharacterSection(characterId: string, ownerId: string, section: CharacterSection, payload: unknown) {
-    const character = await prisma.playerCharacter.findFirst({
-      where: { id: characterId, ownerId },
+    const character = await db.query.playerCharacter.findFirst({
+      where: and(
+        eq(tables.playerCharacter.id, characterId),
+        eq(tables.playerCharacter.ownerId, ownerId),
+      ),
     })
     if (!character) return null
 
@@ -172,13 +175,10 @@ export class CharacterService {
     const updatedSheet = setSheetSection({ ...sheetJson }, section, payload)
     const summary = computeCharacterSummary(character.name, updatedSheet, character.portraitUrl)
 
-    const updated = await prisma.playerCharacter.update({
-      where: { id: character.id },
-      data: {
-        sheetJson: updatedSheet as Prisma.InputJsonValue,
-        summaryJson: summary as Prisma.InputJsonValue,
-      },
-    })
+    const updated = await db.update(tables.playerCharacter).set({
+      sheetJson: updatedSheet as JsonValue,
+      summaryJson: summary as JsonValue,
+    }).where(eq(tables.playerCharacter.id, character.id)).returning().get()!
     await this.syncService.syncGlossaryForCharacter(updated.id, ownerId)
     return updated
   }
@@ -188,8 +188,11 @@ export class CharacterService {
     ownerId: string,
     data: { name?: string; status?: string | null; portraitUrl?: string | null }
   ) {
-    const character = await prisma.playerCharacter.findFirst({
-      where: { id: characterId, ownerId },
+    const character = await db.query.playerCharacter.findFirst({
+      where: and(
+        eq(tables.playerCharacter.id, characterId),
+        eq(tables.playerCharacter.ownerId, ownerId),
+      ),
     })
     if (!character) return null
 
@@ -197,15 +200,12 @@ export class CharacterService {
     const sheetJson = (character.sheetJson as Record<string, unknown>) || {}
     const summary = computeCharacterSummary(name, sheetJson, data.portraitUrl ?? character.portraitUrl)
 
-    const updated = await prisma.playerCharacter.update({
-      where: { id: character.id },
-      data: {
-        name,
-        status: data.status ?? character.status,
-        portraitUrl: data.portraitUrl ?? character.portraitUrl,
-        summaryJson: summary as Prisma.InputJsonValue,
-      },
-    })
+    const updated = await db.update(tables.playerCharacter).set({
+      name,
+      status: data.status ?? character.status,
+      portraitUrl: data.portraitUrl ?? character.portraitUrl,
+      summaryJson: summary as JsonValue,
+    }).where(eq(tables.playerCharacter.id, character.id)).returning().get()!
     await this.syncService.syncGlossaryForCharacter(updated.id, ownerId)
     return updated
   }

@@ -5,15 +5,11 @@ WORKDIR /app
 FROM base AS deps
 ENV NODE_ENV=development
 COPY package.json yarn.lock ./
-COPY prisma.config.ts ./
-COPY prisma/schema.prisma ./prisma/schema.prisma
 RUN corepack enable \
   && yarn install --frozen-lockfile
 
 FROM base AS build
 ENV NODE_ENV=development
-ARG DATABASE_URL=file:/tmp/prisma-build.db
-ENV DATABASE_URL=${DATABASE_URL}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN yarn build
@@ -32,8 +28,9 @@ ENV RUN_MIGRATIONS=1
 WORKDIR /app
 COPY --from=build /app/.output ./.output
 COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/prisma ./prisma
-COPY --from=build /app/prisma.config.ts ./prisma.config.ts
+COPY --from=build /app/scripts/database.mjs ./scripts/database.mjs
+COPY --from=build /app/server/db/*.mjs ./server/db/
+COPY --from=build /app/drizzle ./drizzle
 COPY --from=build /app/package.json ./package.json
 COPY docker/start.sh /app/start.sh
 RUN chmod +x /app/start.sh

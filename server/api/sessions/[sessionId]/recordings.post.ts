@@ -1,4 +1,6 @@
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { eq } from 'drizzle-orm'
 import { ok, apiError, routeParams } from '#server/utils/http'
 import { readSingleFileUpload } from '#server/utils/multipart'
 import { RecordingService } from '#server/services/recording.service'
@@ -15,30 +17,38 @@ const ALLOWED_MIME = new Set([
   'audio/webm',
   'video/mp4',
   'video/webm',
-  'video/quicktime',
+  'video/quicktime'
 ])
 
 export default defineEventHandler(async (event) => {
   const { sessionId } = routeParams(event, 'sessionId')
 
-  const session = await prisma.session.findUnique({
-    where: { id: sessionId },
-    select: { id: true, campaignId: true },
-  })
+  const session =
+    (await db.query.session.findFirst({
+      where: eq(tables.session.id, sessionId),
+      columns: { id: true, campaignId: true }
+    })) ?? null
   if (!session) {
     throw apiError(404, 'NOT_FOUND', 'Session not found')
   }
 
-  const { actor } = await requireCampaignPermission(event, session.campaignId, 'recording.upload')
+  const { actor } = await requireCampaignPermission(
+    event,
+    session.campaignId,
+    'recording.upload'
+  )
 
   const { result } = await readSingleFileUpload(event, {
     maxBytes: MAX_BYTES,
     accept: ({ mimeType }) => ALLOWED_MIME.has(mimeType),
     consume: (file, fields) => {
       const kindField = (fields.kind || '').toUpperCase()
-      const kind = kindField === 'VIDEO' || kindField === 'AUDIO'
-        ? kindField
-        : file.mimeType.startsWith('video/') ? 'VIDEO' : 'AUDIO'
+      const kind =
+        kindField === 'VIDEO' || kindField === 'AUDIO'
+          ? kindField
+          : file.mimeType.startsWith('video/')
+            ? 'VIDEO'
+            : 'AUDIO'
       const durationSeconds = Number(fields.durationSeconds)
 
       return new RecordingService().createRecordingFromStream({
@@ -49,9 +59,11 @@ export default defineEventHandler(async (event) => {
         mimeType: file.mimeType,
         stream: file.stream,
         kind,
-        durationSeconds: Number.isFinite(durationSeconds) ? durationSeconds : undefined,
+        durationSeconds: Number.isFinite(durationSeconds)
+          ? durationSeconds
+          : undefined
       })
-    },
+    }
   })
 
   return ok(result)

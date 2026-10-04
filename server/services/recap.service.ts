@@ -1,4 +1,6 @@
-import { prisma } from '#server/db/prisma'
+import { and, eq } from 'drizzle-orm'
+import { db } from '#server/db/client'
+import { recapRecording } from '#server/db/schema'
 import { ArtifactService } from './artifact.service'
 import type { Readable } from 'node:stream'
 
@@ -31,41 +33,23 @@ export class RecapService {
     })
 
     try {
-      const existing = await prisma.recapRecording.findUnique({
-        where: { sessionId_kind: { sessionId: input.sessionId, kind } },
-      })
-
-      if (existing) {
-        const previousArtifactId = existing.artifactId
-        const updated = await prisma.recapRecording.update({
-          where: { id: existing.id },
-          data: {
-            filename: input.filename,
-            mimeType: input.mimeType,
-            byteSize: artifact.byteSize,
-            durationSeconds: input.durationSeconds ?? null,
-            artifactId: artifact.id,
-          },
-        })
-
-        if (previousArtifactId !== artifact.id) {
-          await this.deleteArtifactBestEffort(previousArtifactId)
-        }
-
-        return updated
-      }
-
-      return await prisma.recapRecording.create({
-        data: {
-          sessionId: input.sessionId,
-          kind,
+      const result = db.transaction((tx) => {
+        const existing = tx.select().from(recapRecording).where(and(eq(recapRecording.sessionId, input.sessionId), eq(recapRecording.kind, kind))).get()
+        const values = {
           filename: input.filename,
           mimeType: input.mimeType,
           byteSize: artifact.byteSize,
           durationSeconds: input.durationSeconds ?? null,
           artifactId: artifact.id,
-        },
-      })
+        }
+        const updated = existing
+          ? tx.update(recapRecording).set(values).where(eq(recapRecording.id, existing.id)).returning().get()!
+          : tx.insert(recapRecording).values({ ...values, sessionId: input.sessionId, kind }).returning().get()!
+        return { updated, previousArtifactId: existing?.artifactId }
+      }, { behavior: 'immediate' })
+      if (result.previousArtifactId && result.previousArtifactId !== artifact.id) await this.deleteArtifactBestEffort(result.previousArtifactId)
+      return result.updated
+
     } catch (error) {
       await this.deleteArtifactBestEffort(artifact.id)
       throw error

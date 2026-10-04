@@ -2,11 +2,13 @@ import { readBody, isError } from 'h3'
 import { z } from 'zod'
 import { ok, apiError, routeParams } from '#server/utils/http'
 import { SummaryService } from '#server/services/summary.service'
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { eq } from 'drizzle-orm'
 import { resolveCampaignAccess } from '#server/utils/campaign-auth'
 
 const summaryJobPatchSchema = z.object({
-  action: z.literal('apply'),
+  action: z.literal('apply')
 })
 
 export default defineEventHandler(async (event) => {
@@ -19,31 +21,45 @@ export default defineEventHandler(async (event) => {
     throw apiError(400, 'VALIDATION_ERROR', 'Invalid summary action')
   }
 
-  const job = await prisma.summaryJob.findUnique({
-    where: { id: jobId },
-    select: { id: true, campaignId: true },
-  })
+  const job =
+    (await db.query.summaryJob.findFirst({
+      where: eq(tables.summaryJob.id, jobId),
+      columns: { id: true, campaignId: true }
+    })) ?? null
   if (!job) {
     throw apiError(404, 'NOT_FOUND', 'Summary job not found')
   }
 
-  const access = await resolveCampaignAccess(job.campaignId, sessionUser.user.id, sessionUser.user.systemRole)
+  const access = await resolveCampaignAccess(
+    job.campaignId,
+    sessionUser.user.id,
+    sessionUser.user.systemRole
+  )
   if (!access.access?.permissions.includes('summary.run')) {
-    throw apiError(403, 'FORBIDDEN', 'You do not have permission to apply summaries')
+    throw apiError(
+      403,
+      'FORBIDDEN',
+      'You do not have permission to apply summaries'
+    )
   }
 
   const service = new SummaryService()
   try {
-    const updated = await service.applySummaryFromJob(jobId, sessionUser.user.id)
+    const updated = await service.applySummaryFromJob(
+      jobId,
+      sessionUser.user.id
+    )
     if (!updated) {
       throw apiError(404, 'NOT_FOUND', 'Summary job not found')
     }
     return ok(updated)
   } catch (error) {
     if (isError(error)) throw error
-    throw apiError(400,
+    throw apiError(
+      400,
       'SUMMARY_APPLY_FAILED',
-      (error as Error & { message?: string }).message || 'Unable to apply summary.'
+      (error as Error & { message?: string }).message ||
+        'Unable to apply summary.'
     )
   }
 })

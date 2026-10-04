@@ -1,4 +1,6 @@
-import { prisma } from '#server/db/prisma'
+import { db } from '#server/db/client'
+import * as tables from '#server/db/schema'
+import { and, eq, inArray } from 'drizzle-orm'
 import { ok, apiError, routeParams } from '#server/utils/http'
 import { resolveCharacterAccess } from '#server/utils/character-auth'
 
@@ -13,25 +15,26 @@ export default defineEventHandler(async (event) => {
     throw apiError(403, 'FORBIDDEN', 'You do not have permission to delete this character')
   }
 
-  const character = await prisma.playerCharacter.findFirst({
-    where: { id: characterId, ownerId: session.user.id },
+  const character = await db.query.playerCharacter.findFirst({
+    where: and(
+      eq(tables.playerCharacter.id, characterId),
+      eq(tables.playerCharacter.ownerId, session.user.id),
+    ),
   })
   if (!character) {
     throw apiError(404, 'NOT_FOUND', 'Character not found')
   }
 
-  const links = await prisma.campaignCharacter.findMany({
-    where: { characterId: character.id },
-    select: { glossaryEntryId: true },
+  const links = await db.query.campaignCharacter.findMany({
+    where: eq(tables.campaignCharacter.characterId, character.id),
+    columns: { glossaryEntryId: true },
   })
 
-  await prisma.playerCharacter.delete({ where: { id: character.id } })
+  await db.delete(tables.playerCharacter).where(eq(tables.playerCharacter.id, character.id)).run()
 
   const glossaryIds = links.map((link) => link.glossaryEntryId).filter(Boolean) as string[]
   if (glossaryIds.length) {
-    await prisma.glossaryEntry.deleteMany({
-      where: { id: { in: glossaryIds } },
-    })
+    await db.delete(tables.glossaryEntry).where(inArray(tables.glossaryEntry.id, glossaryIds)).run()
   }
   return ok({ success: true })
 })
