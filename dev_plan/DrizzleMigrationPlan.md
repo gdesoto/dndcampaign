@@ -7,8 +7,10 @@ Started: 2026-10-03, against repository revision `d06b7ec`.
 
 The application, seed, fixtures, and database commands now use Drizzle ORM 0.45.3,
 Drizzle Kit 0.31.11, and better-sqlite3 12.11.1. GPT-6.1 Sol agents ported the
-domains in parallel. The original Prisma schema and 34 migrations remain frozen
-as historical compatibility fixtures; no active Prisma dependency remains.
+domains in parallel. The 34 historical Prisma migrations remain frozen as
+compatibility fixtures; the obsolete schema was removed after rollout. The
+ignored generated client remains pending local cleanup. No active Prisma
+dependency remains.
 
 The migration bundle contains a physical-schema baseline and a reviewed timestamp
 default migration. The latter rebuilds 50 tables to replace `CURRENT_TIMESTAMP`
@@ -154,6 +156,19 @@ No measured production migration duration or exact fresh cutover backup path was
 supplied; the cold backup and rehearsal evidence above remain recorded separately.
 External provider callback verification remains unconfirmed.
 
+### Local cleanup — 2026-10-04
+
+After the verified rollout, the user requested removal of the obsolete
+`prisma/schema.prisma`, ignored `prisma/generated/`, and local migration scratch
+files. The obsolete schema was removed. Automatic approval review blocked the
+recursive local cleanup with the message `blocked by policy`; it also blocked an
+individual explicit-path deletion of `prisma/generated/`. The generated client,
+`storage/drizzle-rehearsal/`, and top-level `storage/drizzle-*` rehearsal scripts
+and logs remain locally; their cleanup is pending. Historical
+`prisma/migrations/` and the Drizzle compatibility manifest and adoption support
+remain. Unraid backups and the saved Prisma image were untouched, including
+`/mnt/user/backups/dndcampaign-prisma-20261003-221028`.
+
 The sections below retain the original design and release gates as history;
 repository findings refer to the starting revision where files have since moved.
 
@@ -185,7 +200,7 @@ cleanup, or speculative repository abstractions. The open tickets in
 
 | Area | Current evidence | Migration consequence |
 | --- | --- | --- |
-| Schema | [schema.prisma](../prisma/schema.prisma): 51 models, 47 enums, 48 UUID defaults, 34 `@updatedAt` fields; 34 migration directories. | This is a backend-wide rewrite, including runtime defaults and generated types, not just swapping the client import. |
+| Schema | [schema.prisma at the starting revision](https://github.com/gdesoto/dndcampaign/blob/d06b7ec/prisma/schema.prisma): 51 models, 47 enums, 48 UUID defaults, 34 `@updatedAt` fields; 34 migration directories. | This is a backend-wide rewrite, including runtime defaults and generated types, not just swapping the client import. |
 | Coupling | Prisma references occur in 106 server TypeScript files and 25 test files in this source snapshot. No direct Prisma coupling was found in `app/` or `shared/`. | Port handlers, services, auth helpers, middleware, and test fixtures together by domain; preserve existing shared API schemas. |
 | Driver and locking | [prisma.ts](../server/db/prisma.ts), [sqlite-adapter.ts](../server/db/sqlite-adapter.ts). | Retain the driver family and the current `BEGIN IMMEDIATE` behavior. |
 | Paths | Runtime, [prisma.config.ts](../prisma.config.ts), seed, and test client resolve relative `file:` URLs from `prisma/`. | Keep `file:../storage/db/dev.db` pointing to the same file after removing Prisma. |
