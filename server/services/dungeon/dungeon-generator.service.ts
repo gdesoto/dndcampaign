@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto'
-import type { CampaignDungeonRegenerateScope, DungeonGeneratorConfig, DungeonMapData } from '#shared/types/dungeon'
-import { createPassHistoryEntry, withHistoryEntry } from './dungeon-map-utils'
+import type { CampaignDungeonRegenerateScope, DungeonGeneratorConfig, DungeonMapData, DungeonPassHistoryEntry } from '#shared/types/dungeon'
+import { generateEncounterLayout } from './dungeon-layout'
 
-const DUNGEON_GENERATOR_VERSION = '1.2.0'
+const DUNGEON_GENERATOR_VERSION = '4.0.0'
 
 type SeededRng = () => number
 
@@ -21,237 +21,73 @@ const createSeededRng = (seed: string): SeededRng => {
     state ^= state << 13
     state ^= state >>> 17
     state ^= state << 5
-    return (state >>> 0) / 0xffffffff
+    return (state >>> 0) / 0x100000000
   }
 }
 
 const randomInt = (rng: SeededRng, minInclusive: number, maxInclusive: number) =>
   Math.floor(rng() * (maxInclusive - minInclusive + 1)) + minInclusive
 
-const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
-
-const overlaps = (
-  a: { x: number; y: number; width: number; height: number },
-  b: { x: number; y: number; width: number; height: number },
-  padding = 1,
-) =>
-  a.x < b.x + b.width + padding
-  && a.x + a.width + padding > b.x
-  && a.y < b.y + b.height + padding
-  && a.y + a.height + padding > b.y
-
-const centerOf = (room: DungeonMapData['rooms'][number]) => ({
-  x: room.x + Math.floor(room.width / 2),
-  y: room.y + Math.floor(room.height / 2),
-})
-
-const toOdd = (value: number, direction: 'up' | 'down' = 'up') => {
-  if (value % 2 === 1) return value
-  return direction === 'up' ? value + 1 : value - 1
-}
-
-const randomOddInRange = (rng: SeededRng, minInclusive: number, maxInclusive: number) => {
-  const minOdd = toOdd(minInclusive, 'up')
-  const maxOdd = toOdd(maxInclusive, 'down')
-  if (minOdd > maxOdd) return minOdd
-  const count = Math.floor((maxOdd - minOdd) / 2) + 1
-  return minOdd + (randomInt(rng, 0, Math.max(0, count - 1)) * 2)
-}
-
-const roomAnchorToward = (
-  room: DungeonMapData['rooms'][number],
-  target: { x: number; y: number },
-) => {
-  const center = centerOf(room)
-  const dx = target.x - center.x
-  const dy = target.y - center.y
-  if (Math.abs(dx) >= Math.abs(dy)) {
-    return {
-      x: dx >= 0 ? room.x + room.width - 1 : room.x,
-      y: center.y,
-    }
-  }
-  return {
-    x: center.x,
-    y: dy >= 0 ? room.y + room.height - 1 : room.y,
-  }
-}
-
-const dedupePoints = (points: Array<{ x: number; y: number }>) =>
-  points.filter((point, index) => index === 0 || point.x !== points[index - 1]!.x || point.y !== points[index - 1]!.y)
-
-const compressOrthogonalPath = (points: Array<{ x: number; y: number }>) => {
-  if (points.length <= 2) return points
-  const out: Array<{ x: number; y: number }> = [points[0]!]
-  for (let index = 1; index < points.length - 1; index += 1) {
-    const prev = points[index - 1]!
-    const current = points[index]!
-    const next = points[index + 1]!
-    const sameX = prev.x === current.x && current.x === next.x
-    const sameY = prev.y === current.y && current.y === next.y
-    if (!sameX && !sameY) out.push(current)
-  }
-  out.push(points[points.length - 1]!)
-  return out
-}
-
-const corridorPathIsValid = (points: Array<{ x: number; y: number }>, rooms: DungeonMapData['rooms']) =>
-  points.every((point) => rooms.every((room) =>
-    !(point.x > room.x && point.x < room.x + room.width - 1 && point.y > room.y && point.y < room.y + room.height - 1)))
-
-const clampPointToMap = (point: { x: number; y: number }, config: DungeonGeneratorConfig) => ({
-  x: clamp(point.x, 0, config.width - 1),
-  y: clamp(point.y, 0, config.height - 1),
-})
-
-const stepOutsideRoom = (
-  room: DungeonMapData['rooms'][number],
-  anchor: { x: number; y: number },
-) => {
-  const center = centerOf(room)
-  if (anchor.x >= room.x + room.width - 1) return { x: anchor.x + 1, y: anchor.y }
-  if (anchor.x <= room.x) return { x: anchor.x - 1, y: anchor.y }
-  if (anchor.y >= room.y + room.height - 1) return { x: anchor.x, y: anchor.y + 1 }
-  if (anchor.y <= room.y) return { x: anchor.x, y: anchor.y - 1 }
-  // Fallback: move away from room center.
-  if (Math.abs(anchor.x - center.x) >= Math.abs(anchor.y - center.y)) {
-    return { x: anchor.x + (anchor.x >= center.x ? 1 : -1), y: anchor.y }
-  }
-  return { x: anchor.x, y: anchor.y + (anchor.y >= center.y ? 1 : -1) }
-}
-
-const buildBlockedCells = (
-  rooms: DungeonMapData['rooms'],
-  width: number,
-  height: number,
-  allowedCells: Array<{ x: number; y: number }>,
-) => {
-  const blocked = new Uint8Array(width * height)
-  const allow = new Set(allowedCells.map((cell) => `${cell.x}:${cell.y}`))
-  for (const room of rooms) {
-    for (let x = room.x; x < room.x + room.width; x += 1) {
-      for (let y = room.y; y < room.y + room.height; y += 1) {
-        if (x < 0 || y < 0 || x >= width || y >= height) continue
-        if (allow.has(`${x}:${y}`)) continue
-        blocked[(y * width) + x] = 1
-      }
-    }
-  }
-  return blocked
-}
-
-const findCellPath = (
-  start: { x: number; y: number },
-  end: { x: number; y: number },
-  width: number,
-  height: number,
-  blocked: Uint8Array,
-  style: DungeonGeneratorConfig['layout']['corridorStyle'],
-  rng: SeededRng,
-) => {
-  const startIndex = (start.y * width) + start.x
-  const endIndex = (end.y * width) + end.x
-  const visited = new Uint8Array(width * height)
-  const previous = new Int32Array(width * height)
-  previous.fill(-1)
-  const queue: number[] = [startIndex]
-  visited[startIndex] = 1
-
-  const directions = [
-    { x: 1, y: 0 },
-    { x: -1, y: 0 },
-    { x: 0, y: 1 },
-    { x: 0, y: -1 },
-  ]
-  const chooseOrder = (cx: number, cy: number) => {
-    const target = { x: end.x - cx, y: end.y - cy }
-    const scored = directions.map((dir) => {
-      const manhattanAfter = Math.abs(target.x - dir.x) + Math.abs(target.y - dir.y)
-      return { dir, manhattanAfter }
-    })
-    if (style === 'WINDING' || (style === 'MIXED' && rng() < 0.35)) {
-      return [...scored].sort(() => (rng() < 0.5 ? -1 : 1)).map((entry) => entry.dir)
-    }
-    return scored.sort((a, b) => a.manhattanAfter - b.manhattanAfter).map((entry) => entry.dir)
-  }
-
-  while (queue.length) {
-    const current = queue.shift()!
-    if (current === endIndex) break
-    const cx = current % width
-    const cy = Math.floor(current / width)
-    for (const dir of chooseOrder(cx, cy)) {
-      const nx = cx + dir.x
-      const ny = cy + dir.y
-      if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue
-      const next = (ny * width) + nx
-      if (blocked[next] || visited[next]) continue
-      visited[next] = 1
-      previous[next] = current
-      queue.push(next)
-    }
-  }
-
-  if (!visited[endIndex]) return null
-  const path: Array<{ x: number; y: number }> = []
-  let cursor = endIndex
-  while (cursor >= 0) {
-    path.push({ x: cursor % width, y: Math.floor(cursor / width) })
-    if (cursor === startIndex) break
-    cursor = previous[cursor]!
-  }
-  return path.reverse()
-}
-
-const routeCorridorPoints = (
-  rng: SeededRng,
-  fromRoom: DungeonMapData['rooms'][number],
-  toRoom: DungeonMapData['rooms'][number],
-  rooms: DungeonMapData['rooms'],
-  config: DungeonGeneratorConfig,
-) => {
-  const toCenter = centerOf(toRoom)
-  const fromCenter = centerOf(fromRoom)
-  const start = clampPointToMap(roomAnchorToward(fromRoom, toCenter), config)
-  const end = clampPointToMap(roomAnchorToward(toRoom, fromCenter), config)
-  const startOuter = clampPointToMap(stepOutsideRoom(fromRoom, start), config)
-  const endOuter = clampPointToMap(stepOutsideRoom(toRoom, end), config)
-  const blocked = buildBlockedCells(rooms, config.width, config.height, [start, end, startOuter, endOuter])
-  const cellPath = findCellPath(
-    startOuter,
-    endOuter,
-    config.width,
-    config.height,
-    blocked,
-    config.layout.corridorStyle,
-    rng,
-  )
-  if (!cellPath?.length) {
-    return dedupePoints([{ ...start }, { ...startOuter }, { ...endOuter }, { ...end }])
-  }
-  const merged = dedupePoints([{ ...start }, ...cellPath, { ...end }]).map((point) => clampPointToMap(point, config))
-  const compressed = compressOrthogonalPath(merged)
-  if (corridorPathIsValid(compressed, rooms)) return compressed
-  return merged
-}
-
 const generateConfigHash = (seed: string, config: DungeonGeneratorConfig) =>
   createHash('sha256').update(`${seed}:${JSON.stringify(config)}`).digest('hex').slice(0, 16)
 
 const passRng = (seed: string, pass: string, configHash: string) => createSeededRng(`${seed}:${pass}:${configHash}`)
 
-const preserveById = <T extends { id: string; isLocked: boolean }>(
+const withPassHistory = (
+  map: DungeonMapData,
+  input: Omit<DungeonPassHistoryEntry, 'startedAt' | 'finishedAt'> & { startedAt?: string; finishedAt?: string },
+): DungeonMapData => ({
+  ...map,
+  metadata: {
+    ...map.metadata,
+    passHistory: [...map.metadata.passHistory, {
+      ...input,
+      startedAt: input.startedAt || new Date().toISOString(),
+      finishedAt: input.finishedAt || new Date().toISOString(),
+    }].slice(-60),
+  },
+})
+
+type ContentMap = Pick<DungeonMapData, 'rooms' | 'flow'> & Partial<Pick<DungeonMapData, 'encounters' | 'treasures' | 'traps' | 'portals'>>
+
+// Geometry edits discard the old route plan. Keep all SINGLE content layers
+// aimed at one suitable existing area without rebuilding that obsolete plan.
+const singleEncounterTarget = (map: ContentMap) => {
+  const candidates = map.rooms.filter(room => room.kind !== 'STAIRWELL' && room.kind !== 'BALCONY')
+  const validIds = new Set(candidates.map(room => room.id))
+  if (map.flow && validIds.has(map.flow.objectiveRoomId)) return map.flow.objectiveRoomId
+  const existingEncounter = map.encounters?.find(item => validIds.has(item.roomId) && item.title.endsWith(': Final confrontation'))
+    ?? map.encounters?.find(item => validIds.has(item.roomId))
+  const existingTreasure = map.treasures?.find(item => validIds.has(item.roomId) && item.summary.includes("encounter's main reward"))
+    ?? map.treasures?.find(item => validIds.has(item.roomId))
+  const existingRoomId = existingEncounter?.roomId ?? existingTreasure?.roomId ?? map.traps?.find(item => validIds.has(item.roomId))?.roomId
+  if (existingRoomId) return existingRoomId
+  const accessRooms = new Set(map.portals?.map(portal => portal.roomId) ?? [])
+  const inner = candidates.filter(room => !accessRooms.has(room.id) && !room.isSecret)
+  const available = inner.length ? inner : candidates
+  const chambers = available.filter(room => room.kind !== 'HALL')
+  const suitable = chambers.length ? chambers : available
+  return [...suitable].sort((a, b) => b.width * b.height - a.width * a.height || a.roomNumber - b.roomNumber)[0]?.id
+}
+
+const preserveRoomContent = <T extends { id: string; roomId: string; isLocked: boolean }>(
   next: T[],
   previous: T[],
   preserveLocks: boolean,
+  rooms: DungeonMapData['rooms'],
 ): T[] => {
   if (!preserveLocks) return next
-  const prevById = new Map(previous.map((item) => [item.id, item]))
-  return next.map((item) => {
-    const prev = prevById.get(item.id)
-    if (!prev || !prev.isLocked) return item
-    return { ...prev }
-  })
+  const validRoomIds = new Set(rooms.map(room => room.id))
+  const locked = previous.filter(item => item.isLocked && validRoomIds.has(item.roomId))
+  const lockedByRoom = new Map<string, T[]>()
+  for (const item of locked) {
+    const roomItems = lockedByRoom.get(item.roomId) ?? []
+    roomItems.push(item)
+    lockedByRoom.set(item.roomId, roomItems)
+  }
+  const merged = next.flatMap(item => lockedByRoom.get(item.roomId) ?? [item])
+  const generatedRoomIds = new Set(next.map(item => item.roomId))
+  return [...merged, ...locked.filter(item => !generatedRoomIds.has(item.roomId))].map(item => ({ ...item }))
 }
 
 export class DungeonGeneratorService {
@@ -264,157 +100,28 @@ export class DungeonGeneratorService {
   }
 
   private generateLayoutPass(seed: string, config: DungeonGeneratorConfig) {
-    const rng = passRng(seed, 'layout', generateConfigHash(seed, config))
-    const area = config.width * config.height
-    const avgRoomSize = (config.layout.minRoomSize + config.layout.maxRoomSize) / 2
-    const avgRoomArea = Math.max(9, avgRoomSize * avgRoomSize)
-    const targetRooms = clamp(
-      Math.floor((area * config.layout.roomDensity) / (avgRoomArea * 1.8)),
-      8,
-      220,
-    )
-    const maxAttempts = targetRooms * 40
-
-    const rooms: DungeonMapData['rooms'] = []
-    let attempts = 0
-
-    while (rooms.length < targetRooms && attempts < maxAttempts) {
-      attempts += 1
-      const width = randomOddInRange(rng, config.layout.minRoomSize, config.layout.maxRoomSize)
-      const height = randomOddInRange(rng, config.layout.minRoomSize, config.layout.maxRoomSize)
-      if (width >= config.width - 2 || height >= config.height - 2) continue
-
-      const x = randomOddInRange(rng, 1, Math.max(1, config.width - width - 1))
-      const y = randomOddInRange(rng, 1, Math.max(1, config.height - height - 1))
-      const isSecret = rng() < config.layout.secretRoomChance
-
-      const candidate = { x, y, width, height }
-      const roomPadding = config.layout.roomDensity >= 0.3 ? 0 : 1
-      if (rooms.some((room) => overlaps(candidate, room, roomPadding))) continue
-      rooms.push({
-        id: `room-${rooms.length + 1}`,
-        roomNumber: rooms.length + 1,
-        x,
-        y,
-        width,
-        height,
-        isSecret,
-      })
-    }
-
-    if (rooms.length < 2) {
-      rooms.push({
-        id: 'room-fallback-a',
-        roomNumber: 1,
-        x: 2,
-        y: 2,
-        width: 6,
-        height: 6,
-        isSecret: false,
-      })
-      rooms.push({
-        id: 'room-fallback-b',
-        roomNumber: 2,
-        x: Math.max(10, config.width - 10),
-        y: Math.max(10, config.height - 10),
-        width: 6,
-        height: 6,
-        isSecret: false,
-      })
-    }
-
-    const sortedRooms = [...rooms].sort((a, b) => (a.x === b.x ? a.y - b.y : a.x - b.x))
-    const corridors: DungeonMapData['corridors'] = []
-    const roomById = new Map(sortedRooms.map((room) => [room.id, room]))
-    const centers = sortedRooms.map((room) => ({ roomId: room.id, ...centerOf(room) }))
-    const candidateEdges: Array<{ fromRoomId: string; toRoomId: string; distance: number }> = []
-    for (let i = 0; i < centers.length; i += 1) {
-      for (let j = i + 1; j < centers.length; j += 1) {
-        const a = centers[i]!
-        const b = centers[j]!
-        const distance = Math.abs(a.x - b.x) + Math.abs(a.y - b.y)
-        candidateEdges.push({ fromRoomId: a.roomId, toRoomId: b.roomId, distance })
-      }
-    }
-    candidateEdges.sort((a, b) => a.distance - b.distance)
-
-    const connected = new Set<string>([sortedRooms[0]!.id])
-    const selectedEdges: Array<{ fromRoomId: string; toRoomId: string }> = []
-    while (connected.size < sortedRooms.length) {
-      const next = candidateEdges.find((edge) =>
-        (connected.has(edge.fromRoomId) && !connected.has(edge.toRoomId))
-        || (connected.has(edge.toRoomId) && !connected.has(edge.fromRoomId)),
-      )
-      if (!next) break
-      selectedEdges.push({ fromRoomId: next.fromRoomId, toRoomId: next.toRoomId })
-      connected.add(next.fromRoomId)
-      connected.add(next.toRoomId)
-    }
-
-    const selectedEdgeKey = new Set(selectedEdges.map((edge) => `${edge.fromRoomId}:${edge.toRoomId}`))
-    const extraTarget = Math.floor((sortedRooms.length - 1) * config.layout.connectivityStrictness * 0.65)
-    let addedExtra = 0
-    for (const candidate of candidateEdges) {
-      if (addedExtra >= extraTarget) break
-      const key = `${candidate.fromRoomId}:${candidate.toRoomId}`
-      const reverseKey = `${candidate.toRoomId}:${candidate.fromRoomId}`
-      if (selectedEdgeKey.has(key) || selectedEdgeKey.has(reverseKey)) continue
-      if (rng() > (0.25 + (config.layout.connectivityStrictness * 0.6))) continue
-      selectedEdges.push({ fromRoomId: candidate.fromRoomId, toRoomId: candidate.toRoomId })
-      selectedEdgeKey.add(key)
-      addedExtra += 1
-    }
-
-    for (let index = 0; index < selectedEdges.length; index += 1) {
-      const edge = selectedEdges[index]!
-      const from = roomById.get(edge.fromRoomId)
-      const to = roomById.get(edge.toRoomId)
-      if (!from || !to) continue
-      const points = routeCorridorPoints(rng, from, to, rooms, config)
-      corridors.push({
-        id: `corridor-${index + 1}`,
-        fromRoomId: from.id,
-        toRoomId: to.id,
-        points,
-      })
-    }
-
-    return {
-      rooms: rooms.sort((a, b) => a.roomNumber - b.roomNumber),
-      corridors,
-      changedCounts: {
-        rooms: rooms.length,
-        corridors: corridors.length,
-      },
-    }
+    return generateEncounterLayout(passRng(seed, 'layout', generateConfigHash(seed, config)), config)
   }
 
-  private generateDoorsPass(seed: string, config: DungeonGeneratorConfig, map: Pick<DungeonMapData, 'corridors'>) {
+  private generateDoorsPass(seed: string, config: DungeonGeneratorConfig, map: Pick<DungeonMapData, 'corridors' | 'flow'>) {
     const rng = passRng(seed, 'doors', generateConfigHash(seed, config))
     const doors: DungeonMapData['doors'] = []
+    if (config.mapType === 'FOREST') return { doors, changedCounts: { doors: 0 } }
+    const route = new Set(map.flow?.routeRoomIds ?? [])
     for (const corridor of map.corridors) {
       if (corridor.points.length < 2) continue
-      if (rng() <= config.doors.doorFrequency) {
-        const start = corridor.points[0]!
+      const critical = route.has(corridor.fromRoomId) && route.has(corridor.toRoomId)
+      // Building passages cross one shared wall, so they contain one doorway.
+      const endpoints = config.mapType === 'BUILDING' ? [corridor.points[0]!] : [corridor.points[0]!, corridor.points.at(-1)!]
+      for (const point of endpoints) {
+        if (rng() > config.doors.doorFrequency) continue
         doors.push({
           id: `door-${doors.length + 1}`,
-          x: start.x,
-          y: start.y,
+          x: point.x,
+          y: point.y,
           corridorId: corridor.id,
           isLocked: rng() < config.doors.lockedDoorChance,
-          isSecret: rng() < config.doors.secretDoorChance,
-          isSpecial: rng() < config.doors.specialDoorChance,
-        })
-      }
-      if (rng() <= config.doors.doorFrequency) {
-        const end = corridor.points[corridor.points.length - 1]!
-        doors.push({
-          id: `door-${doors.length + 1}`,
-          x: end.x,
-          y: end.y,
-          corridorId: corridor.id,
-          isLocked: rng() < config.doors.lockedDoorChance,
-          isSecret: rng() < config.doors.secretDoorChance,
+          isSecret: !critical && rng() < config.doors.secretDoorChance,
           isSpecial: rng() < config.doors.specialDoorChance,
         })
       }
@@ -422,10 +129,12 @@ export class DungeonGeneratorService {
     return { doors, changedCounts: { doors: doors.length } }
   }
 
-  private generateTrapsPass(seed: string, config: DungeonGeneratorConfig, map: Pick<DungeonMapData, 'rooms'>) {
+  private generateTrapsPass(seed: string, config: DungeonGeneratorConfig, map: ContentMap) {
     const rng = passRng(seed, 'traps', generateConfigHash(seed, config))
+    const singleTarget = config.encounterScale === 'SINGLE' ? singleEncounterTarget(map) : undefined
     const traps = map.rooms
-      .filter(() => rng() < config.content.trapDensity)
+      .filter(room => (room.kind !== 'HALL' && room.kind !== 'STAIRWELL' || room.id === singleTarget) && room.id !== map.flow?.entryRoomId && room.id !== map.flow?.exitRoomId
+        && (config.encounterScale !== 'SINGLE' || room.id === singleTarget) && rng() < config.content.trapDensity)
       .map((room, index) => {
         const severity = rng() < 0.2 ? 'HIGH' : rng() < 0.6 ? 'MEDIUM' : 'LOW'
         const baseDc = severity === 'HIGH' ? 16 : severity === 'MEDIUM' ? 13 : 10
@@ -444,37 +153,55 @@ export class DungeonGeneratorService {
     return { traps, changedCounts: { traps: traps.length } }
   }
 
-  private generateEncountersPass(seed: string, config: DungeonGeneratorConfig, map: Pick<DungeonMapData, 'rooms'>) {
+  private generateEncountersPass(seed: string, config: DungeonGeneratorConfig, map: ContentMap) {
     const rng = passRng(seed, 'encounters', generateConfigHash(seed, config))
+    const objectiveId = config.encounterScale === 'SINGLE' ? singleEncounterTarget(map) : map.flow?.objectiveRoomId
+    const route = map.flow?.routeRoomIds ?? []
+    const encounterRooms = map.rooms.filter(room => room.kind !== 'HALL' && room.kind !== 'STAIRWELL'
+      && room.id !== map.flow?.entryRoomId && room.id !== map.flow?.exitRoomId)
+    const challengeId = route.find(id => encounterRooms.some(room => room.id === id) && id !== objectiveId)
+      ?? route.slice(1).find(id => id !== objectiveId && id !== map.flow?.exitRoomId && map.rooms.some(room => room.id === id && room.kind === 'HALL'))
     const encounters = map.rooms
-      .filter(() => rng() < config.content.encounterDensity)
-      .map((room, index) => {
-        const difficulty = rng() < 0.2 ? 'DEADLY' : rng() < 0.45 ? 'HARD' : rng() < 0.75 ? 'MEDIUM' : 'EASY'
+      .filter(room => config.content.encounterDensity > 0 && (encounterRooms.includes(room) || room.id === challengeId || room.id === objectiveId)
+        && (config.encounterScale !== 'SINGLE' || room.id === objectiveId)
+        && (room.id === objectiveId || room.id === challengeId || rng() < config.content.encounterDensity))
+      .map((room) => {
+        const objective = room.id === objectiveId
+        const challenge = room.id === challengeId
+        const position = route.indexOf(room.id)
+        const difficulty = objective ? 'HARD' : challenge || position > route.length / 2 ? 'MEDIUM' : 'EASY'
         return {
-          id: `encounter-${index + 1}`,
+          id: `encounter-${room.id}`,
           roomId: room.id,
-          title: `Encounter ${room.roomNumber}`,
+          title: `${room.label ?? `Room ${room.roomNumber}`}: ${objective ? 'Final confrontation' : challenge ? 'Guarded approach' : 'Patrol'}`,
           difficulty,
-          summary: `${difficulty} skirmish with theme-aligned foes.`,
+          summary: objective ? 'Defenders hold the main reward and the way onward. This is the final confrontation before the escape route.'
+            : challenge ? 'An alert guard force controls the approach. Resolve this challenge to reach the inner areas.'
+              : 'A smaller patrol provides pressure or an optional encounter away from the main confrontation.',
           isLocked: false,
         } satisfies DungeonMapData['encounters'][number]
       })
     return { encounters, changedCounts: { encounters: encounters.length } }
   }
 
-  private generateTreasurePass(seed: string, config: DungeonGeneratorConfig, map: Pick<DungeonMapData, 'rooms'>) {
+  private generateTreasurePass(seed: string, config: DungeonGeneratorConfig, map: ContentMap) {
     const rng = passRng(seed, 'treasure', generateConfigHash(seed, config))
+    const objectiveId = config.encounterScale === 'SINGLE' ? singleEncounterTarget(map) : map.flow?.objectiveRoomId
     const treasures = map.rooms
-      .filter(() => rng() < config.content.treasureDensity)
-      .map((room, index) => {
-        const rarity = rng() < 0.1 ? 'VERY_RARE' : rng() < 0.25 ? 'RARE' : rng() < 0.55 ? 'UNCOMMON' : 'COMMON'
+      .filter(room => config.content.treasureDensity > 0 && (room.kind !== 'HALL' && room.kind !== 'STAIRWELL' || room.id === objectiveId)
+        && (config.encounterScale !== 'SINGLE' || room.id === objectiveId)
+        && room.id !== map.flow?.entryRoomId && room.id !== map.flow?.exitRoomId
+        && (room.id === objectiveId || rng() < config.content.treasureDensity))
+      .map((room) => {
+        const objective = room.id === objectiveId
+        const rarity = objective ? 'UNCOMMON' : rng() < 0.1 ? 'VERY_RARE' : rng() < 0.25 ? 'RARE' : rng() < 0.55 ? 'UNCOMMON' : 'COMMON'
         const category = rng() < 0.2 ? 'MAGIC' : rng() < 0.5 ? 'ITEM' : rng() < 0.75 ? 'ART' : 'COIN'
         return {
-          id: `treasure-${index + 1}`,
+          id: `treasure-${room.id}`,
           roomId: room.id,
           category,
           rarity,
-          summary: `${rarity.replace('_', ' ')} ${category.toLowerCase()} cache.`,
+          summary: objective ? `The guarded cache in ${room.label ?? 'this chamber'} holds the encounter's main reward.` : `${rarity.replace('_', ' ')} ${category.toLowerCase()} cache.`,
           isLocked: false,
         } satisfies DungeonMapData['treasures'][number]
       })
@@ -498,15 +225,22 @@ export class DungeonGeneratorService {
     const configHash = generateConfigHash(seed, config)
     const startedAt = new Date().toISOString()
     const layout = this.generateLayoutPass(seed, config)
-    const doors = this.generateDoorsPass(seed, config, { corridors: layout.corridors })
-    const traps = this.generateTrapsPass(seed, config, { rooms: layout.rooms })
-    const encounters = this.generateEncountersPass(seed, config, { rooms: layout.rooms })
-    const treasure = this.generateTreasurePass(seed, config, { rooms: layout.rooms })
+    const doors = this.generateDoorsPass(seed, config, layout)
+    const traps = this.generateTrapsPass(seed, config, layout)
+    const encounters = this.generateEncountersPass(seed, config, layout)
+    const treasure = this.generateTreasurePass(seed, config, layout)
     const dressing = this.generateDressingPass(seed, config, { rooms: layout.rooms })
     const finishedAt = new Date().toISOString()
 
-    let map: DungeonMapData = {
+    const map: DungeonMapData = {
       schemaVersion: 1,
+      mapType: config.mapType ?? 'DUNGEON',
+      floorCount: config.floorCount ?? 1,
+      terrain: layout.terrain,
+      stairs: layout.stairs,
+      portals: layout.portals,
+      flow: layout.flow,
+      ...(layout.floorLabels ? { floorLabels: layout.floorLabels } : {}),
       gridType: config.gridType,
       width: config.width,
       height: config.height,
@@ -529,26 +263,22 @@ export class DungeonGeneratorService {
       },
     }
 
-    map = withHistoryEntry(
-      map,
-      createPassHistoryEntry({
-        pass: 'LAYOUT',
-        scope: 'FULL',
-        seed,
-        configHash,
-        startedAt,
-        finishedAt,
-        changedCounts: {
-          ...layout.changedCounts,
-          ...doors.changedCounts,
-          ...traps.changedCounts,
-          ...encounters.changedCounts,
-          ...treasure.changedCounts,
-          ...dressing.changedCounts,
-        },
-      }),
-    )
-    return map
+    return withPassHistory(map, {
+      pass: 'LAYOUT',
+      scope: 'FULL',
+      seed,
+      configHash,
+      startedAt,
+      finishedAt,
+      changedCounts: {
+        ...layout.changedCounts,
+        ...doors.changedCounts,
+        ...traps.changedCounts,
+        ...encounters.changedCounts,
+        ...treasure.changedCounts,
+        ...dressing.changedCounts,
+      },
+    })
   }
 
   regenerate(
@@ -562,54 +292,30 @@ export class DungeonGeneratorService {
     const configHash = generateConfigHash(seed, config)
     const startedAt = new Date().toISOString()
 
-    if (scope === 'FULL') {
+    if (scope === 'FULL' || scope === 'LAYOUT') {
       const rebuilt = this.generateBaseMap(seed, config)
-      return withHistoryEntry(
-        rebuilt,
-        createPassHistoryEntry({
-          pass: 'LAYOUT',
-          scope,
-          seed,
-          configHash,
-          startedAt,
-          changedCounts: {
-            rooms: rebuilt.rooms.length,
-            corridors: rebuilt.corridors.length,
-            doors: rebuilt.doors.length,
-            traps: rebuilt.traps.length,
-            encounters: rebuilt.encounters.length,
-            treasure: rebuilt.treasures.length,
-            dressing: rebuilt.dressing.length,
-          },
-        }),
-      )
+      return withPassHistory(rebuilt, {
+        pass: 'LAYOUT',
+        scope,
+        seed,
+        configHash,
+        startedAt,
+        changedCounts: {
+          rooms: rebuilt.rooms.length,
+          corridors: rebuilt.corridors.length,
+          doors: rebuilt.doors.length,
+          traps: rebuilt.traps.length,
+          encounters: rebuilt.encounters.length,
+          treasure: rebuilt.treasures.length,
+          dressing: rebuilt.dressing.length,
+        },
+      })
     }
 
-    if (scope === 'LAYOUT') {
-      const rebuilt = this.generateBaseMap(seed, config)
-      return withHistoryEntry(
-        rebuilt,
-        createPassHistoryEntry({
-          pass: 'LAYOUT',
-          scope,
-          seed,
-          configHash,
-          startedAt,
-          changedCounts: {
-            rooms: rebuilt.rooms.length,
-            corridors: rebuilt.corridors.length,
-            doors: rebuilt.doors.length,
-            traps: rebuilt.traps.length,
-            encounters: rebuilt.encounters.length,
-            treasure: rebuilt.treasures.length,
-            dressing: rebuilt.dressing.length,
-          },
-        }),
-      )
-    }
-
+    let content: Partial<Pick<DungeonMapData, 'doors' | 'traps' | 'encounters' | 'treasures'>>
+    let changedCounts: DungeonPassHistoryEntry['changedCounts']
     if (scope === 'DOORS') {
-      const generatedDoors = this.generateDoorsPass(seed, config, { corridors: existingMap.corridors }).doors
+      const generatedDoors = this.generateDoorsPass(seed, { ...config, mapType: existingMap.mapType ?? 'DUNGEON' }, existingMap).doors
       const existingDoorByKey = new Map(
         existingMap.doors.map((door) => [`${door.corridorId}:${door.x}:${door.y}`, door] as const),
       )
@@ -625,87 +331,29 @@ export class DungeonGeneratorService {
           }
         })
         : generatedDoors
-      return withHistoryEntry(
-        {
-          ...existingMap,
-          doors,
-          metadata: {
-            ...existingMap.metadata,
-            algorithmVersion: DUNGEON_GENERATOR_VERSION,
-            configHash,
-            generatedAt: new Date().toISOString(),
-            seed,
-          },
-        },
-        createPassHistoryEntry({
-          pass: 'DOORS',
-          scope,
-          seed,
-          configHash,
-          startedAt,
-          changedCounts: { doors: doors.length },
-        }),
-      )
+      content = { doors }
+      changedCounts = { doors: doors.length }
+    } else if (scope === 'TRAPS') {
+      const generated = this.generateTrapsPass(seed, config, existingMap).traps
+      const traps = preserveRoomContent(generated, existingMap.traps, preserveLocks, existingMap.rooms)
+      content = { traps }
+      changedCounts = { traps: traps.length }
+    } else if (scope === 'ENCOUNTERS') {
+      const generated = this.generateEncountersPass(seed, config, existingMap).encounters
+      const encounters = preserveRoomContent(generated, existingMap.encounters, preserveLocks, existingMap.rooms)
+      content = { encounters }
+      changedCounts = { encounters: encounters.length }
+    } else {
+      const generated = this.generateTreasurePass(seed, config, existingMap).treasures
+      const treasures = preserveRoomContent(generated, existingMap.treasures, preserveLocks, existingMap.rooms)
+      content = { treasures }
+      changedCounts = { treasure: treasures.length }
     }
 
-    if (scope === 'TRAPS') {
-      const generated = this.generateTrapsPass(seed, config, { rooms: existingMap.rooms }).traps
-      const traps = preserveById(generated, existingMap.traps, preserveLocks)
-      return withHistoryEntry(
-        {
-          ...existingMap,
-          traps,
-          metadata: {
-            ...existingMap.metadata,
-            algorithmVersion: DUNGEON_GENERATOR_VERSION,
-            configHash,
-            generatedAt: new Date().toISOString(),
-            seed,
-          },
-        },
-        createPassHistoryEntry({
-          pass: 'TRAPS',
-          scope,
-          seed,
-          configHash,
-          startedAt,
-          changedCounts: { traps: traps.length },
-        }),
-      )
-    }
-
-    if (scope === 'ENCOUNTERS') {
-      const generated = this.generateEncountersPass(seed, config, { rooms: existingMap.rooms }).encounters
-      const encounters = preserveById(generated, existingMap.encounters, preserveLocks)
-      return withHistoryEntry(
-        {
-          ...existingMap,
-          encounters,
-          metadata: {
-            ...existingMap.metadata,
-            algorithmVersion: DUNGEON_GENERATOR_VERSION,
-            configHash,
-            generatedAt: new Date().toISOString(),
-            seed,
-          },
-        },
-        createPassHistoryEntry({
-          pass: 'ENCOUNTERS',
-          scope,
-          seed,
-          configHash,
-          startedAt,
-          changedCounts: { encounters: encounters.length },
-        }),
-      )
-    }
-
-    const generated = this.generateTreasurePass(seed, config, { rooms: existingMap.rooms }).treasures
-    const treasures = preserveById(generated, existingMap.treasures, preserveLocks)
-    return withHistoryEntry(
+    return withPassHistory(
       {
         ...existingMap,
-        treasures,
+        ...content,
         metadata: {
           ...existingMap.metadata,
           algorithmVersion: DUNGEON_GENERATOR_VERSION,
@@ -714,14 +362,14 @@ export class DungeonGeneratorService {
           seed,
         },
       },
-      createPassHistoryEntry({
-        pass: 'TREASURE',
+      {
+        pass: scope,
         scope,
         seed,
         configHash,
         startedAt,
-        changedCounts: { treasure: treasures.length },
-      }),
+        changedCounts,
+      },
     )
   }
 }

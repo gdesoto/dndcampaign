@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import type { DungeonMapData } from '#shared/types/dungeon'
+import { getDungeonFloorMap } from '#shared/utils/dungeon-map'
+import { renderDungeonSvg } from '#shared/utils/dungeon-render'
 
 const props = defineProps<{
   map: DungeonMapData
   selectedRoomId?: string | null
   showLabels?: boolean
+  floor?: number
+  showRoute?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -198,14 +202,14 @@ const selectRoom = (roomId: string) => {
   emit('update:selectedRoomId', props.selectedRoomId === roomId ? null : roomId)
 }
 
-const roomStroke = (roomId: string) => (props.selectedRoomId === roomId ? 'var(--ui-primary)' : '#94a3b8')
-const corridorOuterWidth = computed(() => Math.max(8, Math.floor(props.map.cellSize * 1.05)))
-const corridorInnerWidth = computed(() => Math.max(5, Math.floor(props.map.cellSize * 0.68)))
-const pointToPixel = (value: number) => (value + 0.5) * props.map.cellSize
+const floorMap = computed(() => getDungeonFloorMap(props.map, props.floor ?? 0))
+const mapSvg = computed(() => renderDungeonSvg(props.map, { floor: props.floor, includeLabels: props.showLabels, includeFlow: props.showRoute }))
+const minimapSvg = computed(() => renderDungeonSvg(props.map, { floor: props.floor, includeGrid: false, includeLabels: false }))
+const mapName = computed(() => props.map.mapType === 'FOREST' ? 'Forest encounter' : props.map.mapType === 'BUILDING' ? 'Building' : 'Dungeon')
 const trapPoints = computed(() =>
-  props.map.traps
+  floorMap.value.traps
     .map((trap) => {
-      const room = props.map.rooms.find((entry) => entry.id === trap.roomId)
+      const room = floorMap.value.rooms.find((entry) => entry.id === trap.roomId)
       if (!room) return null
       const baseX = room.x * props.map.cellSize
       const baseY = room.y * props.map.cellSize
@@ -230,12 +234,11 @@ const onMapKeydown = (event: KeyboardEvent) => {
   else return
   event.preventDefault()
 }
-const labeledRooms = computed(() => (props.showLabels === false ? [] : props.map.rooms))
 </script>
 
 <template>
   <UCard :ui="{ body: 'p-0' }" class="overflow-hidden">
-    <div class="flex items-center justify-between border-b border-default px-3 py-2">
+    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-default px-3 py-2">
       <p class="text-xs text-muted">
         Zoom {{ Math.round(zoom * 100) }}% • {{ map.width }}x{{ map.height }} cells
       </p>
@@ -249,8 +252,9 @@ const labeledRooms = computed(() => (props.showLabels === false ? [] : props.map
 
     <div class="space-y-2 border-b border-default p-3">
       <USelect
-aria-label="Select dungeon room" :model-value="selectedRoomId || '__none__'"
-        :items="[{ label: 'No room selected', value: '__none__' }, ...map.rooms.map(room => ({ label: `Room ${room.roomNumber}`, value: room.id }))]"
+        :aria-label="map.mapType === 'FOREST' ? 'Select encounter area' : map.mapType === 'BUILDING' ? 'Select building room' : 'Select dungeon room'"
+        :model-value="selectedRoomId || '__none__'"
+        :items="[{ label: 'No room selected', value: '__none__' }, ...floorMap.rooms.map(room => ({ label: room.label ? `${room.roomNumber} · ${room.label}` : `Room ${room.roomNumber}`, value: room.id }))]"
         @update:model-value="value => emit('update:selectedRoomId', value === '__none__' ? null : value)" />
       <p :id="mapHelpId" class="text-xs text-muted">Focus the map to pan with arrow keys, zoom with + or −, and fit with Home.</p>
     </div>
@@ -258,7 +262,7 @@ aria-label="Select dungeon room" :model-value="selectedRoomId || '__none__'"
       ref="containerRef"
       tabindex="0"
       role="region"
-      aria-label="Dungeon map controls"
+      :aria-label="`${mapName} map controls`"
       :aria-describedby="mapHelpId"
       class="relative h-[540px] focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 touch-none overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(154,125,88,0.25),_rgba(38,30,21,0.7)_68%)]"
       @keydown="onMapKeydown"
@@ -272,100 +276,24 @@ aria-label="Select dungeon room" :model-value="selectedRoomId || '__none__'"
         class="h-full w-full"
         :style="{ cursor: dragging ? 'grabbing' : 'grab' }"
         role="img"
-        aria-label="Dungeon map"
+        :aria-label="`${mapName} map, ${map.floorLabels?.[floor ?? 0] || `floor ${(floor ?? 0) + 1}`}`"
       >
         <g :transform="`translate(${panX} ${panY}) scale(${zoom})`">
-          <rect x="0" y="0" :width="worldWidth" :height="worldHeight" fill="#1f1b16" />
-
-          <g stroke="rgba(245, 222, 179, 0.12)" stroke-width="1">
-            <line
-              v-for="x in map.width"
-              :key="`vx-${x}`"
-              :x1="x * map.cellSize"
-              y1="0"
-              :x2="x * map.cellSize"
-              :y2="worldHeight"
-            />
-            <line
-              v-for="y in map.height"
-              :key="`hy-${y}`"
-              x1="0"
-              :y1="y * map.cellSize"
-              :x2="worldWidth"
-              :y2="y * map.cellSize"
-            />
-          </g>
-
-          <polyline
-            v-for="corridor in map.corridors"
-            :key="corridor.id"
-            :points="corridor.points.map((point) => `${pointToPixel(point.x)} ${pointToPixel(point.y)}`).join(' ')"
-            fill="none"
-            stroke="#88714d"
-            :stroke-width="corridorOuterWidth"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            opacity="0.75"
-          />
-          <polyline
-            v-for="corridor in map.corridors"
-            :key="`inner-${corridor.id}`"
-            :points="corridor.points.map((point) => `${pointToPixel(point.x)} ${pointToPixel(point.y)}`).join(' ')"
-            fill="none"
-            stroke="#c6a979"
-            :stroke-width="corridorInnerWidth"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            opacity="0.85"
-          />
-
-          <line
-            v-for="wall in map.walls"
-            :key="wall.id"
-            :x1="wall.x1 * map.cellSize"
-            :y1="wall.y1 * map.cellSize"
-            :x2="wall.x2 * map.cellSize"
-            :y2="wall.y2 * map.cellSize"
-            stroke="#f8fafc"
-            stroke-width="2"
-          />
-
-          <g>
-            <rect
-              v-for="room in map.rooms"
-              :key="room.id"
-              :x="room.x * map.cellSize"
-              :y="room.y * map.cellSize"
-              :width="room.width * map.cellSize"
-              :height="room.height * map.cellSize"
-              :fill="room.isSecret ? 'rgba(220, 38, 38, 0.18)' : 'rgba(226, 210, 178, 0.5)'"
-              :stroke="roomStroke(room.id)"
-              stroke-width="2"
-              class="cursor-pointer transition-all duration-150"
-              @click.stop="selectRoom(room.id)"
-            />
-          </g>
-
-          <text
-            v-for="room in labeledRooms"
-            :key="`label-${room.id}`"
-            :x="(room.x + Math.floor(room.width / 2)) * map.cellSize"
-            :y="(room.y + Math.floor(room.height / 2)) * map.cellSize"
-            fill="#f5f0e6"
-            font-size="12"
-            text-anchor="middle"
-            dominant-baseline="middle"
-          >
-            {{ room.roomNumber }}
-          </text>
-
-          <circle
-            v-for="door in map.doors"
-            :key="door.id"
-            :cx="pointToPixel(door.x)"
-            :cy="pointToPixel(door.y)"
-            r="5"
-            :fill="door.isSecret ? '#f59e0b' : (door.isLocked ? '#ef4444' : '#10b981')"
+          <!-- renderDungeonSvg escapes every text and attribute value. -->
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <g class="pointer-events-none" v-html="mapSvg" />
+          <rect
+            v-for="room in floorMap.rooms"
+            :key="room.id"
+            :x="room.x * map.cellSize"
+            :y="room.y * map.cellSize"
+            :width="room.width * map.cellSize"
+            :height="room.height * map.cellSize"
+            :fill="selectedRoomId === room.id ? 'rgba(184, 135, 46, 0.18)' : 'transparent'"
+            :stroke="selectedRoomId === room.id ? 'var(--ui-primary)' : 'none'"
+            :stroke-width="3"
+            class="cursor-pointer"
+            @click.stop="selectRoom(room.id)"
           />
 
           <g v-for="trap in trapPoints" :key="trap.id">
@@ -381,7 +309,7 @@ aria-label="Select dungeon room" :model-value="selectedRoomId || '__none__'"
         <svg
           ref="miniMapRef"
           role="img"
-          aria-label="Dungeon overview; use the map controls to pan with the keyboard"
+          :aria-label="`${mapName} overview; use the map controls to pan with the keyboard`"
           :width="180"
           :height="180"
           class="block cursor-crosshair"
@@ -390,23 +318,8 @@ aria-label="Select dungeon room" :model-value="selectedRoomId || '__none__'"
           @pointerup="onMinimapPointerUp"
           @pointerleave="onMinimapPointerUp"
         >
-          <rect
-            x="0"
-            y="0"
-            :width="worldWidth * minimapScale"
-            :height="worldHeight * minimapScale"
-            fill="#0f172a"
-            stroke="#334155"
-          />
-          <rect
-            v-for="room in map.rooms"
-            :key="`mini-${room.id}`"
-            :x="room.x * map.cellSize * minimapScale"
-            :y="room.y * map.cellSize * minimapScale"
-            :width="room.width * map.cellSize * minimapScale"
-            :height="room.height * map.cellSize * minimapScale"
-            :fill="room.isSecret ? 'rgba(248,113,113,0.35)' : 'rgba(148,163,184,0.35)'"
-          />
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <g :transform="`scale(${minimapScale})`" class="pointer-events-none" v-html="minimapSvg" />
           <rect
             :x="viewportWorld.x * minimapScale"
             :y="viewportWorld.y * minimapScale"

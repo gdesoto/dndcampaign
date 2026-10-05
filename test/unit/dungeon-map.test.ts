@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest'
 import type { DungeonMapData } from '../../shared/types/dungeon'
-import { toPlayerSafeMap } from '../../shared/utils/dungeon-map'
+import { toPlayerSafeDungeonConfig, toPlayerSafeMap } from '../../shared/utils/dungeon-map'
+import { dungeonGeneratorConfigSchema } from '../../shared/schemas/dungeon'
 
 it('projects visible dungeon geometry and room contents without changing the source or unrelated map data', () => {
   const map: DungeonMapData = {
@@ -40,17 +41,33 @@ it('projects visible dungeon geometry and room contents without changing the sou
       id: `dressing-${roomId}`, roomId, text: 'Old banners', isLocked: true,
     })),
     zones: [{ id: 'zone', type: 'HAZARD', label: 'Mist', cells: [{ x: 20, y: 20 }] }],
+    stairs: [
+      { id: 'visible-stairs', fromRoomId: 'entry', toRoomId: 'hall', x: 5, y: 5 },
+      { id: 'secret-stairs', fromRoomId: 'entry', toRoomId: 'secret', x: 6, y: 6 },
+    ],
+    portals: [
+      { id: 'entrance', kind: 'ENTRANCE', roomId: 'entry', points: [{ x: 2, y: 5 }, { x: 0, y: 5 }] },
+      { id: 'hidden-exit', kind: 'EXIT', roomId: 'secret', points: [{ x: 20, y: 24 }, { x: 0, y: 24 }] },
+      { id: 'concealed-access', kind: 'ENTRANCE', roomId: 'entry', isSecret: true, label: 'Hidden hatch', points: [{ x: 5, y: 2 }, { x: 5, y: 0 }] },
+    ],
+    terrain: [
+      { id: 'tree', kind: 'TREE', x: 12, y: 12, width: 1, height: 1 },
+      { id: 'crate', kind: 'COVER', roomId: 'entry', x: 3, y: 3, width: 1, height: 1, blocksMovement: true, blocksSight: true },
+      { id: 'hidden-hazard', kind: 'HAZARD', roomId: 'secret', x: 23, y: 23, width: 1, height: 1 },
+    ],
+    flow: { style: 'BRANCHING', entryRoomId: 'entry', objectiveRoomId: 'secret', exitRoomId: 'hall', routeRoomIds: ['entry', 'secret', 'hall'] },
     metadata: {
       algorithmVersion: '1.0.0', configHash: 'hash', generatedAt: '2026-10-01T00:00:00.000Z',
       seed: 'seed', passHistory: [],
     },
   }
   const original = structuredClone(map)
+  const { flow: _flow, ...visibleMetadata } = original
 
   const playerMap = toPlayerSafeMap(map)
 
   expect(playerMap).toEqual({
-    ...original,
+    ...visibleMetadata,
     rooms: [original.rooms[0], original.rooms[2]],
     corridors: [original.corridors[0]],
     doors: [original.doors[0]],
@@ -58,7 +75,15 @@ it('projects visible dungeon geometry and room contents without changing the sou
     encounters: [original.encounters[0]],
     treasures: [original.treasures[0]],
     dressing: [original.dressing[0]],
+    stairs: [original.stairs![0]],
+    portals: [original.portals![0]],
+    terrain: [original.terrain![0], original.terrain![1]],
   })
+  expect(playerMap).not.toHaveProperty('flow')
   expect(map).toEqual(original)
   expect(toPlayerSafeMap(playerMap)).toEqual(playerMap)
+  const config = dungeonGeneratorConfigSchema.parse({ accessPoints: { concealedEntrance: true } })
+  expect(toPlayerSafeDungeonConfig(config).accessPoints?.concealedEntrance).toBe(false)
+  expect(config.accessPoints?.concealedEntrance).toBe(true)
+  expect(toPlayerSafeDungeonConfig(config)).toEqual({ ...config, accessPoints: { ...config.accessPoints, concealedEntrance: false } })
 })

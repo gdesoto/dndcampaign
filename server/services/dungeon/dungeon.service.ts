@@ -4,6 +4,7 @@ import { campaignDungeon, campaignDungeonRoom, campaignDungeonSnapshot } from '#
 import { eq, and, desc } from 'drizzle-orm'
 import {
   dungeonGeneratorConfigSchema,
+  dungeonMapSchema,
   type DungeonCreateInput,
   type DungeonGenerateInput,
   type DungeonListQueryInput,
@@ -15,11 +16,10 @@ import type {
   CampaignDungeonStatus,
   CampaignDungeonSummary,
   DungeonGeneratorConfig,
-  DungeonMapData,
+  DungeonRoomGeometry,
 } from '#shared/types/dungeon'
 import { DungeonGeneratorService } from '#server/services/dungeon/dungeon-generator.service'
-import { parseDungeonMap } from '#server/services/dungeon/dungeon-map-utils'
-import { toPlayerSafeMap } from '#shared/utils/dungeon-map'
+import { toPlayerSafeDungeonConfig, toPlayerSafeMap } from '#shared/utils/dungeon-map'
 import { ActivityLogService } from '#server/services/activity-log.service'
 import { apiError } from '#server/utils/http'
 import { hasCampaignDmAccess, type CampaignActor } from '#server/utils/campaign-auth'
@@ -42,7 +42,7 @@ const toSummary = (row: {
   createdAt: Date
   updatedAt: Date
 }, canDelete: boolean): CampaignDungeonSummary => {
-  const map = parseDungeonMap(row.mapJson)
+  const map = dungeonMapSchema.parse(row.mapJson)
   return {
     id: row.id,
     campaignId: row.campaignId,
@@ -53,6 +53,8 @@ const toSummary = (row: {
     gridType: row.gridType,
     generatorVersion: row.generatorVersion,
     roomCount: map.rooms.length,
+    mapType: map.mapType ?? 'DUNGEON',
+    floorCount: map.floorCount ?? 1,
     canDelete,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -75,7 +77,7 @@ const toDetail = (row: {
   updatedAt: Date
 }, viewerSafe = false): CampaignDungeonDetail => {
   const config = dungeonGeneratorConfigSchema.parse(row.configJson)
-  const parsedMap = parseDungeonMap(row.mapJson)
+  const parsedMap = dungeonMapSchema.parse(row.mapJson)
   const map = viewerSafe ? toPlayerSafeMap(parsedMap) : parsedMap
 
   return {
@@ -88,7 +90,9 @@ const toDetail = (row: {
     gridType: row.gridType,
     generatorVersion: row.generatorVersion,
     roomCount: map.rooms.length,
-    config,
+    mapType: map.mapType ?? 'DUNGEON',
+    floorCount: map.floorCount ?? 1,
+    config: viewerSafe ? toPlayerSafeDungeonConfig(config) : config,
     map,
     playerView: (row.playerViewJson as Record<string, unknown> | null) || null,
     createdAt: row.createdAt.toISOString(),
@@ -99,16 +103,15 @@ const toDetail = (row: {
 const withDungeonAccess = async (campaignId: string, dungeonId: string) =>
   db.query.campaignDungeon.findFirst({ where: and(eq(campaignDungeon.id, dungeonId), eq(campaignDungeon.campaignId, campaignId)) }).sync()
 
-const syncRoomsFromMap = async (dungeonId: string, map: DungeonMapData) => {
+export const resetDungeonRooms = (dungeonId: string, rooms: DungeonRoomGeometry[]) => {
   db.transaction((tx) => {
     tx.delete(campaignDungeonRoom).where(eq(campaignDungeonRoom.dungeonId, dungeonId)).run()
 
-    if (!map.rooms.length) return
-
-    tx.insert(campaignDungeonRoom).values(map.rooms.map((room) => ({
+    for (const room of rooms) {
+      tx.insert(campaignDungeonRoom).values({
         dungeonId,
         roomNumber: room.roomNumber,
-        name: `Room ${room.roomNumber}`,
+        name: room.label || `Room ${room.roomNumber}`,
         description: null,
         gmNotes: null,
         playerNotes: null,
@@ -119,8 +122,10 @@ const syncRoomsFromMap = async (dungeonId: string, map: DungeonMapData) => {
           y: room.y,
           width: room.width,
           height: room.height,
+          floor: room.floor ?? 0,
         },
-      }))).run()
+      }).run()
+    }
   }, { behavior: 'immediate' })
 }
 
@@ -169,7 +174,7 @@ export class DungeonService {
         createdByUserId: userId,
       }).returning().get()!
 
-    await syncRoomsFromMap(created.id, map)
+    resetDungeonRooms(created.id, map.rooms)
 
     return toDetail({
         ...created,
@@ -275,7 +280,7 @@ export class DungeonService {
         generatorVersion: generator.getGeneratorVersion(),
       }).where(eq(campaignDungeon.id, dungeonId)).returning().get()!
 
-    await syncRoomsFromMap(existing.id, map)
+    resetDungeonRooms(existing.id, map.rooms)
     await activityLogService.log({
       actorUserId: userId,
       campaignId,
@@ -306,8 +311,8 @@ export class DungeonService {
     }
 
     const seed = input.seed || existing.seed
-    const config = dungeonGeneratorConfigSchema.parse(existing.configJson)
-    const currentMap = parseDungeonMap(existing.mapJson)
+    const config = dungeonGeneratorConfigSchema.parse(input.config ?? existing.configJson)
+    const currentMap = dungeonMapSchema.parse(existing.mapJson)
     const regenerated = generator.regenerate(input.scope, seed, config, currentMap, {
       preserveLocks: input.preserveLocks,
     })
@@ -324,12 +329,14 @@ export class DungeonService {
 
     const updated = db.update(campaignDungeon).set({
         seed,
+        theme: config.theme,
+        configJson: (config) as unknown as JsonValue,
         mapJson: (regenerated) as unknown as JsonValue,
         generatorVersion: generator.getGeneratorVersion(),
       }).where(eq(campaignDungeon.id, dungeonId)).returning().get()!
 
     if (input.scope === 'FULL' || input.scope === 'LAYOUT') {
-      await syncRoomsFromMap(existing.id, regenerated)
+      resetDungeonRooms(existing.id, regenerated.rooms)
     }
 
     await activityLogService.log({

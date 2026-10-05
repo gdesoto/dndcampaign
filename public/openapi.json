@@ -2562,7 +2562,18 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_GenericRead"
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/DungeonSummary"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
                 }
               }
             }
@@ -2595,7 +2606,7 @@
         "tags": [
           "campaigns"
         ],
-        "summary": "POST /api/campaigns/{campaignId}/dungeons",
+        "summary": "Create or import an encounter map",
         "description": "Auto-documented from server route `campaigns/[campaignId]/dungeons/index.post.ts`. This operation uses the project standard API envelope `{ data, error }`.",
         "operationId": "post_api_campaigns_campaignId_dungeons",
         "parameters": [
@@ -2652,8 +2663,20 @@
                 "$ref": "#/components/schemas/DungeonCollectionPostRequest"
               },
               "example": {
-                "action": "update",
-                "notes": "Example payload. See schema and endpoint-specific docs."
+                "name": "Watch House",
+                "seed": "watch-house",
+                "config": {
+                  "mapType": "BUILDING",
+                  "floorCount": 3,
+                  "encounterFlow": "BRANCHING",
+                  "encounterScale": "COMPLEX",
+                  "accessPoints": {
+                    "entrances": 2,
+                    "exits": 1,
+                    "entranceSide": "NORTH",
+                    "concealedEntrance": true
+                  }
+                }
               }
             }
           }
@@ -2766,7 +2789,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse_GenericRead"
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/DungeonDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
                 }
               }
             }
@@ -2799,7 +2830,7 @@
         "tags": [
           "campaigns"
         ],
-        "summary": "PATCH /api/campaigns/{campaignId}/dungeons/{dungeonId}",
+        "summary": "Update, generate, regenerate, publish or export an encounter map",
         "description": "Auto-documented from server route `campaigns/[campaignId]/dungeons/[dungeonId].patch.ts`. This operation uses the project standard API envelope `{ data, error }`.",
         "operationId": "patch_api_campaigns_campaignId_dungeons_dungeonId",
         "parameters": [
@@ -2866,8 +2897,10 @@
                 "$ref": "#/components/schemas/DungeonPatchRequest"
               },
               "example": {
-                "action": "update",
-                "notes": "Example payload. See schema and endpoint-specific docs."
+                "action": "export",
+                "format": "SVG",
+                "floor": 1,
+                "playerSafe": true
               }
             }
           }
@@ -3105,7 +3138,7 @@
         "tags": [
           "campaigns"
         ],
-        "summary": "PATCH /api/campaigns/{campaignId}/dungeons/{dungeonId}/map",
+        "summary": "Edit encounter map geometry and content",
         "description": "Auto-documented from server route `campaigns/[campaignId]/dungeons/[dungeonId]/map.patch.ts`. This operation uses the project standard API envelope `{ data, error }`.",
         "operationId": "patch_api_campaigns_campaignId_dungeons_dungeonId_map",
         "parameters": [
@@ -3169,11 +3202,19 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
+                "$ref": "#/components/schemas/DungeonMapPatchRequest"
               },
               "example": {
-                "action": "update",
-                "notes": "Example payload. See schema and endpoint-specific docs."
+                "actions": [
+                  {
+                    "type": "ADD_ROOM",
+                    "x": 0,
+                    "y": 0,
+                    "width": 4,
+                    "height": 4,
+                    "floor": 1
+                  }
+                ]
               }
             }
           }
@@ -7903,7 +7944,7 @@
           "encounters"
         ],
         "summary": "POST /api/encounters/{encounterId}/combatants",
-        "description": "Creates a combatant, filling omitted HP, armorClass, and speed from its campaign-linked character sheet or saved stat block. Glossary sources use an unambiguous linked character sheet. Explicit values (including zero) win; saved stat-block values take precedence over character defaults. Explicit maxHp initializes omitted currentHp; otherwise source current HP or default max HP is used. Missing stats remain unset. Uses the standard API envelope `{ data, error }`. Planned/Active/Paused only. Batch {participants:[...]} accepts 1\u00e2\u20ac\u201c50 entries atomically and returns full encounter state; legacy single input returns the created participant. No partial batch writes. Planned/Active/Paused only. Batch {participants:[...]} accepts 1\u00e2\u20ac\u201c50 entries atomically and returns full encounter state; legacy single input returns the created participant. No partial batch writes.",
+        "description": "Creates a combatant, filling omitted HP, armorClass, and speed from its campaign-linked character sheet or saved stat block. Glossary sources use an unambiguous linked character sheet. Explicit values (including zero) win; saved stat-block values take precedence over character defaults. Explicit maxHp initializes omitted currentHp; otherwise source current HP or default max HP is used. Missing stats remain unset. Uses the standard API envelope `{ data, error }`. Planned/Active/Paused only. Batch {participants:[...]} accepts 1â€“50 entries atomically and returns full encounter state; legacy single input returns the created participant. No partial batch writes. Planned/Active/Paused only. Batch {participants:[...]} accepts 1â€“50 entries atomically and returns full encounter state; legacy single input returns the created participant. No partial batch writes.",
         "operationId": "post_api_encounters_encounterId_combatants",
         "parameters": [
           {
@@ -7994,7 +8035,7 @@
         ],
         "summary": "Apply participant effects atomically",
         "operationId": "patch_api_encounters_encounterId_combatants",
-        "description": "Damage/healing requires Active/Paused and known current HP. Conditions may be prepared in Planned and edited in Active/Paused. All target ids must belong to the encounter; duplicate or invalid targets reject the whole batch. Numeric amounts are integers 1\u00e2\u20ac\u201c9999. Finished encounters are read-only until reopened.",
+        "description": "Damage/healing requires Active/Paused and known current HP. Conditions may be prepared in Planned and edited in Active/Paused. All target ids must belong to the encounter; duplicate or invalid targets reject the whole batch. Numeric amounts are integers 1â€“9999. Finished encounters are read-only until reopened.",
         "parameters": [
           {
             "name": "encounterId",
@@ -13548,10 +13589,23 @@
             "type": "object",
             "properties": {
               "name": {
-                "type": "string"
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "theme": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80,
+                "default": "ruins"
               },
               "seed": {
-                "type": "string"
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "config": {
+                "$ref": "#/components/schemas/DungeonGeneratorConfig"
               }
             },
             "required": [
@@ -13562,27 +13616,37 @@
             "type": "object",
             "properties": {
               "action": {
-                "type": "string",
-                "enum": [
-                  "import"
-                ]
+                "const": "import"
               },
-              "payload": {
-                "type": "object",
-                "additionalProperties": true
+              "source": {
+                "$ref": "#/components/schemas/DungeonPortableDocument"
+              },
+              "nameOverride": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
               }
             },
             "required": [
               "action",
-              "payload"
+              "source"
             ]
           }
         ],
         "example": {
-          "action": "import",
-          "payload": {
-            "source": "json",
-            "name": "Undercity"
+          "name": "Watch House",
+          "seed": "watch-house",
+          "config": {
+            "mapType": "BUILDING",
+            "floorCount": 3,
+            "encounterFlow": "BRANCHING",
+            "encounterScale": "COMPLEX",
+            "accessPoints": {
+              "entrances": 2,
+              "exits": 1,
+              "entranceSide": "NORTH",
+              "concealedEntrance": true
+            }
           }
         }
       },
@@ -13592,18 +13656,128 @@
             "type": "object",
             "properties": {
               "action": {
+                "const": "generate"
+              },
+              "seed": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "config": {
+                "$ref": "#/components/schemas/DungeonGeneratorConfig"
+              }
+            },
+            "required": [
+              "action"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "const": "regenerate"
+              },
+              "scope": {
                 "type": "string",
                 "enum": [
-                  "generate",
-                  "regenerate",
-                  "publish",
-                  "unpublish",
-                  "export"
-                ]
+                  "FULL",
+                  "LAYOUT",
+                  "DOORS",
+                  "TRAPS",
+                  "ENCOUNTERS",
+                  "TREASURE"
+                ],
+                "default": "FULL"
               },
-              "options": {
-                "type": "object",
-                "additionalProperties": true
+              "preserveLocks": {
+                "type": "boolean",
+                "default": true
+              },
+              "seed": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "config": {
+                "$ref": "#/components/schemas/DungeonGeneratorConfig",
+                "description": "Settings to apply and persist during FULL or LAYOUT regeneration. Rejected for content-only scopes."
+              }
+            },
+            "required": [
+              "action"
+            ],
+            "allOf": [
+              {
+                "if": {
+                  "required": [
+                    "config"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "scope": {
+                      "enum": [
+                        "FULL",
+                        "LAYOUT"
+                      ]
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "publish",
+                  "unpublish"
+                ]
+              }
+            },
+            "required": [
+              "action"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "const": "export"
+              },
+              "format": {
+                "type": "string",
+                "enum": [
+                  "JSON",
+                  "SVG",
+                  "PNG",
+                  "PDF"
+                ],
+                "default": "JSON"
+              },
+              "playerSafe": {
+                "type": "boolean",
+                "default": false
+              },
+              "includeGrid": {
+                "type": "boolean",
+                "default": true
+              },
+              "includeLabels": {
+                "type": "boolean",
+                "default": true
+              },
+              "includeGmLayer": {
+                "type": "boolean",
+                "default": true
+              },
+              "floor": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 3,
+                "description": "Floor rendered by SVG, PNG and PDF. Defaults to 0. JSON always includes all floors."
               }
             },
             "required": [
@@ -13614,17 +13788,45 @@
             "type": "object",
             "properties": {
               "name": {
-                "type": "string"
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "theme": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "seed": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "config": {
+                "$ref": "#/components/schemas/DungeonGeneratorConfig"
               },
               "status": {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "DRAFT",
+                  "READY",
+                  "ARCHIVED"
+                ]
               }
             },
-            "minProperties": 1
+            "minProperties": 1,
+            "not": {
+              "required": [
+                "action"
+              ]
+            }
           }
         ],
         "example": {
-          "action": "publish"
+          "action": "export",
+          "format": "SVG",
+          "floor": 1,
+          "playerSafe": true
         }
       },
       "DungeonRoomPatchRequest": {
@@ -16523,6 +16725,2147 @@
             "nullable": true
           }
         }
+      },
+      "DungeonGeneratorConfig": {
+        "type": "object",
+        "properties": {
+          "mapType": {
+            "type": "string",
+            "enum": [
+              "DUNGEON",
+              "BUILDING",
+              "FOREST"
+            ],
+            "default": "DUNGEON"
+          },
+          "floorCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4,
+            "default": 1,
+            "description": "Total floor count, including a basement when enabled. Only BUILDING supports more than one floor."
+          },
+          "gridType": {
+            "type": "string",
+            "enum": [
+              "SQUARE"
+            ],
+            "default": "SQUARE"
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 20,
+            "maximum": 400,
+            "default": 40
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 20,
+            "maximum": 400,
+            "default": 40
+          },
+          "cellSize": {
+            "type": "integer",
+            "minimum": 16,
+            "maximum": 128,
+            "default": 32
+          },
+          "theme": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "default": "ruins"
+          },
+          "layout": {
+            "type": "object",
+            "properties": {
+              "roomDensity": {
+                "type": "number",
+                "minimum": 0.02,
+                "maximum": 0.8,
+                "default": 0.25
+              },
+              "minRoomSize": {
+                "type": "integer",
+                "minimum": 3,
+                "maximum": 24,
+                "default": 4
+              },
+              "maxRoomSize": {
+                "type": "integer",
+                "minimum": 4,
+                "maximum": 36,
+                "default": 10,
+                "description": "Must be greater than minRoomSize."
+              },
+              "corridorStyle": {
+                "type": "string",
+                "enum": [
+                  "STRAIGHT",
+                  "WINDING",
+                  "MIXED"
+                ],
+                "default": "MIXED"
+              },
+              "connectivityStrictness": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "default": 0.7
+              },
+              "secretRoomChance": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "default": 0.1
+              }
+            }
+          },
+          "doors": {
+            "type": "object",
+            "properties": {
+              "doorFrequency": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "default": 0.65
+              },
+              "lockedDoorChance": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "default": 0.2
+              },
+              "secretDoorChance": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "default": 0.08
+              },
+              "specialDoorChance": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "default": 0.05
+              }
+            }
+          },
+          "content": {
+            "type": "object",
+            "properties": {
+              "trapDensity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "default": 0.15
+              },
+              "encounterDensity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "default": 0.3
+              },
+              "treasureDensity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "default": 0.2
+              },
+              "dressingDensity": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "default": 0.35
+              }
+            }
+          },
+          "encounterFlow": {
+            "type": "string",
+            "enum": [
+              "LINEAR",
+              "BRANCHING",
+              "LOOP"
+            ],
+            "default": "BRANCHING",
+            "description": "Layout flow from an entrance through an objective to an exit. Changing this setting takes effect on generation; existing maps keep their geometry."
+          },
+          "encounterScale": {
+            "type": "string",
+            "enum": [
+              "SINGLE",
+              "SEQUENCE",
+              "COMPLEX"
+            ],
+            "default": "SEQUENCE",
+            "description": "Encounter scope. SINGLE generates one objective fight while retaining separate entry, objective and exit spaces."
+          },
+          "accessPoints": {
+            "$ref": "#/components/schemas/DungeonAccessPointsConfig"
+          },
+          "tacticalTerrain": {
+            "$ref": "#/components/schemas/DungeonTacticalTerrainConfig"
+          },
+          "verticalConnections": {
+            "$ref": "#/components/schemas/DungeonVerticalConnectionsConfig"
+          }
+        },
+        "description": "Encounter map generation settings. Missing mapType and floorCount remain compatible with existing single-floor dungeons. Multi-floor buildings contain aligned stair connections.",
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "floorCount": {
+                  "minimum": 2
+                }
+              },
+              "required": [
+                "floorCount"
+              ]
+            },
+            "then": {
+              "properties": {
+                "mapType": {
+                  "const": "BUILDING"
+                }
+              },
+              "required": [
+                "mapType"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "verticalConnections": {
+                  "anyOf": [
+                    {
+                      "properties": {
+                        "basement": {
+                          "const": true
+                        }
+                      },
+                      "required": [
+                        "basement"
+                      ]
+                    },
+                    {
+                      "properties": {
+                        "ladders": {
+                          "const": true
+                        }
+                      },
+                      "required": [
+                        "ladders"
+                      ]
+                    },
+                    {
+                      "properties": {
+                        "balconies": {
+                          "const": true
+                        }
+                      },
+                      "required": [
+                        "balconies"
+                      ]
+                    },
+                    {
+                      "properties": {
+                        "staircases": {
+                          "const": "DUAL"
+                        }
+                      },
+                      "required": [
+                        "staircases"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "verticalConnections"
+              ]
+            },
+            "then": {
+              "properties": {
+                "mapType": {
+                  "const": "BUILDING"
+                },
+                "floorCount": {
+                  "minimum": 2
+                }
+              },
+              "required": [
+                "mapType",
+                "floorCount"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "verticalConnections": {
+                  "properties": {
+                    "basement": {
+                      "const": true
+                    },
+                    "balconies": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "basement",
+                    "balconies"
+                  ]
+                }
+              },
+              "required": [
+                "verticalConnections"
+              ]
+            },
+            "then": {
+              "properties": {
+                "floorCount": {
+                  "minimum": 3
+                }
+              },
+              "required": [
+                "floorCount"
+              ]
+            }
+          }
+        ]
+      },
+      "DungeonMapRoom": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "roomNumber": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "x": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "y": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "isSecret": {
+            "type": "boolean",
+            "default": false
+          },
+          "floor": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3,
+            "description": "Zero-based floor; omitted values use the ground floor (0)."
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ROOM",
+              "HALL",
+              "STAIRWELL",
+              "CLEARING",
+              "BALCONY"
+            ],
+            "description": "Generated spatial role. Optional for legacy rooms."
+          }
+        },
+        "required": [
+          "id",
+          "roomNumber",
+          "x",
+          "y",
+          "width",
+          "height"
+        ]
+      },
+      "DungeonMapCorridor": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fromRoomId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "toRoomId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "integer"
+                },
+                "y": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ]
+            },
+            "minItems": 2
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "PASSAGE",
+              "BRIDGE"
+            ],
+            "description": "Omitted legacy values represent a passage."
+          }
+        },
+        "required": [
+          "id",
+          "fromRoomId",
+          "toRoomId",
+          "points"
+        ],
+        "description": "Connects rooms on the same floor; its floor is inferred from the referenced rooms."
+      },
+      "DungeonMapDoor": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "x": {
+            "type": "integer"
+          },
+          "y": {
+            "type": "integer"
+          },
+          "corridorId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "isLocked": {
+            "type": "boolean",
+            "default": false
+          },
+          "isSecret": {
+            "type": "boolean",
+            "default": false
+          },
+          "isSpecial": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "id",
+          "x",
+          "y",
+          "corridorId"
+        ]
+      },
+      "DungeonMapWall": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "x1": {
+            "type": "integer"
+          },
+          "y1": {
+            "type": "integer"
+          },
+          "x2": {
+            "type": "integer"
+          },
+          "y2": {
+            "type": "integer"
+          },
+          "floor": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3,
+            "description": "Zero-based floor; omitted values use the ground floor (0)."
+          }
+        },
+        "required": [
+          "id",
+          "x1",
+          "y1",
+          "x2",
+          "y2"
+        ]
+      },
+      "DungeonMapZone": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "SAFE",
+              "HAZARD",
+              "FACTION"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "cells": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "integer"
+                },
+                "y": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 5000
+          },
+          "floor": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3,
+            "description": "Zero-based floor; omitted values use the ground floor (0)."
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "label",
+          "cells"
+        ]
+      },
+      "DungeonMapTerrain": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "TREE",
+              "ROCK",
+              "BRUSH",
+              "COVER",
+              "ELEVATION",
+              "DIFFICULT",
+              "HAZARD"
+            ]
+          },
+          "x": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "y": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "floor": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3,
+            "description": "Zero-based floor; omitted values use the ground floor (0)."
+          },
+          "roomId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Geometry room ID. Owned features must fit inside that room on the same floor; unowned legacy terrain remains supported."
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "elevationFeet": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "blocksMovement": {
+            "type": "boolean"
+          },
+          "blocksSight": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "x",
+          "y",
+          "width",
+          "height"
+        ]
+      },
+      "DungeonMapStair": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fromRoomId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "toRoomId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "x": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "y": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Stair footprint width in cells. Omitted legacy values use 1."
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Stair footprint height in cells. Omitted legacy values use 1."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "STAIRS",
+              "LADDER"
+            ],
+            "description": "Omitted legacy values represent stairs. Both kinds connect adjacent floors through a shared footprint."
+          }
+        },
+        "required": [
+          "id",
+          "fromRoomId",
+          "toRoomId",
+          "x",
+          "y"
+        ],
+        "description": "Aligned stair footprint inside both referenced rooms on adjacent floors. x and y identify its top-left cell. New building layouts use dedicated stairwell rooms; the complete footprint must remain inside both rooms."
+      },
+      "DungeonMap": {
+        "type": "object",
+        "properties": {
+          "schemaVersion": {
+            "const": 1
+          },
+          "gridType": {
+            "type": "string",
+            "enum": [
+              "SQUARE"
+            ]
+          },
+          "mapType": {
+            "type": "string",
+            "enum": [
+              "DUNGEON",
+              "BUILDING",
+              "FOREST"
+            ]
+          },
+          "floorCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "cellSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "rooms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DungeonMapRoom"
+            }
+          },
+          "corridors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DungeonMapCorridor"
+            }
+          },
+          "doors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DungeonMapDoor"
+            }
+          },
+          "walls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DungeonMapWall"
+            }
+          },
+          "zones": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DungeonMapZone"
+            }
+          },
+          "terrain": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DungeonMapTerrain"
+            }
+          },
+          "stairs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DungeonMapStair"
+            }
+          },
+          "traps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "roomId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "isLocked": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": [
+                    "LOW",
+                    "MEDIUM",
+                    "HIGH"
+                  ]
+                },
+                "trigger": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                },
+                "effect": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                },
+                "detectDc": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 40
+                },
+                "disarmDc": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 40
+                }
+              },
+              "required": [
+                "id",
+                "roomId",
+                "name",
+                "severity",
+                "trigger",
+                "effect",
+                "detectDc",
+                "disarmDc"
+              ]
+            }
+          },
+          "encounters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "roomId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "isLocked": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "difficulty": {
+                  "type": "string",
+                  "enum": [
+                    "EASY",
+                    "MEDIUM",
+                    "HARD",
+                    "DEADLY"
+                  ]
+                },
+                "summary": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                }
+              },
+              "required": [
+                "id",
+                "roomId",
+                "title",
+                "difficulty",
+                "summary"
+              ]
+            }
+          },
+          "treasures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "roomId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "isLocked": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "category": {
+                  "type": "string",
+                  "enum": [
+                    "COIN",
+                    "ITEM",
+                    "ART",
+                    "MAGIC"
+                  ]
+                },
+                "rarity": {
+                  "type": "string",
+                  "enum": [
+                    "COMMON",
+                    "UNCOMMON",
+                    "RARE",
+                    "VERY_RARE"
+                  ]
+                },
+                "summary": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                }
+              },
+              "required": [
+                "id",
+                "roomId",
+                "category",
+                "rarity",
+                "summary"
+              ]
+            }
+          },
+          "dressing": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "roomId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "isLocked": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                }
+              },
+              "required": [
+                "id",
+                "roomId",
+                "text"
+              ]
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "algorithmVersion": {
+                "type": "string",
+                "minLength": 1
+              },
+              "configHash": {
+                "type": "string",
+                "minLength": 1
+              },
+              "generatedAt": {
+                "type": "string",
+                "minLength": 1
+              },
+              "seed": {
+                "type": "string",
+                "minLength": 1
+              },
+              "passHistory": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "pass": {
+                      "type": "string",
+                      "enum": [
+                        "LAYOUT",
+                        "DOORS",
+                        "TRAPS",
+                        "ENCOUNTERS",
+                        "TREASURE",
+                        "DRESSING"
+                      ]
+                    },
+                    "scope": {
+                      "type": "string",
+                      "enum": [
+                        "FULL",
+                        "LAYOUT",
+                        "DOORS",
+                        "TRAPS",
+                        "ENCOUNTERS",
+                        "TREASURE"
+                      ]
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "finishedAt": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "seed": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "configHash": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "changedCounts": {
+                      "type": "object",
+                      "properties": {
+                        "rooms": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "corridors": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "doors": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "traps": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "encounters": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "treasure": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "dressing": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  },
+                  "required": [
+                    "pass",
+                    "scope",
+                    "startedAt",
+                    "finishedAt",
+                    "seed",
+                    "configHash",
+                    "changedCounts"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "algorithmVersion",
+              "configHash",
+              "generatedAt",
+              "seed"
+            ]
+          },
+          "portals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DungeonMapPortal"
+            }
+          },
+          "flow": {
+            "$ref": "#/components/schemas/DungeonMapFlow"
+          },
+          "floorLabels": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 4,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "description": "Ordered labels for zero-based floors. When present, the number of labels must equal floorCount (or 1 for legacy maps)."
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "gridType",
+          "width",
+          "height",
+          "cellSize",
+          "rooms",
+          "corridors",
+          "doors",
+          "metadata"
+        ],
+        "description": "Portable encounter map geometry and generated content. Legacy maps may omit mapType, floorCount and floor fields; these represent a single-floor dungeon. Terrain and stairs are optional for legacy maps. Portals, room kinds, stair dimensions and GM flow metadata are additive and optional for older maps. Imports validate portal geometry and flow references rather than accepting dangling routes."
+      },
+      "DungeonPortableDocument": {
+        "type": "object",
+        "properties": {
+          "schemaVersion": {
+            "const": 1
+          },
+          "exportedAt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "dungeonId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "campaignId": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "dungeonId",
+              "campaignId"
+            ]
+          },
+          "dungeon": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "DRAFT",
+                  "READY",
+                  "ARCHIVED"
+                ]
+              },
+              "theme": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "seed": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "gridType": {
+                "type": "string",
+                "enum": [
+                  "SQUARE"
+                ]
+              },
+              "generatorVersion": {
+                "type": "string",
+                "minLength": 1
+              },
+              "config": {
+                "$ref": "#/components/schemas/DungeonGeneratorConfig"
+              },
+              "map": {
+                "$ref": "#/components/schemas/DungeonMap"
+              },
+              "playerView": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": true
+              }
+            },
+            "required": [
+              "name",
+              "status",
+              "theme",
+              "seed",
+              "gridType",
+              "generatorVersion",
+              "config",
+              "map",
+              "playerView"
+            ]
+          },
+          "rooms": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "roomNumber": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "description": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 10000
+                },
+                "gmNotes": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 10000
+                },
+                "playerNotes": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 10000
+                },
+                "readAloud": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 10000
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 60
+                  },
+                  "minItems": 0,
+                  "maxItems": 30
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "UNSEEN",
+                    "EXPLORED",
+                    "CLEARED",
+                    "CONTESTED"
+                  ]
+                },
+                "bounds": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "x": {
+                          "type": "integer"
+                        },
+                        "y": {
+                          "type": "integer"
+                        },
+                        "width": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "height": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "floor": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 3,
+                          "description": "Zero-based floor; omitted legacy bounds use the ground floor (0)."
+                        }
+                      },
+                      "required": [
+                        "x",
+                        "y",
+                        "width",
+                        "height"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "roomNumber",
+                "name",
+                "description",
+                "gmNotes",
+                "playerNotes",
+                "readAloud",
+                "tags",
+                "state",
+                "bounds"
+              ]
+            }
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "roomId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "linkType": {
+                  "type": "string",
+                  "enum": [
+                    "SESSION",
+                    "QUEST",
+                    "MILESTONE",
+                    "GLOSSARY",
+                    "ENCOUNTER"
+                  ]
+                },
+                "targetId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                }
+              },
+              "required": [
+                "roomId",
+                "linkType",
+                "targetId"
+              ]
+            }
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "exportedAt",
+          "source",
+          "dungeon",
+          "rooms",
+          "links"
+        ],
+        "additionalProperties": false
+      },
+      "DungeonMapPatchRequest": {
+        "type": "object",
+        "properties": {
+          "actions": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "const": "ADD_ROOM"
+                    },
+                    "roomNumber": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "x": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "y": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "width": {
+                      "type": "integer",
+                      "minimum": 2,
+                      "maximum": 80
+                    },
+                    "height": {
+                      "type": "integer",
+                      "minimum": 2,
+                      "maximum": 80
+                    },
+                    "isSecret": {
+                      "type": "boolean",
+                      "default": false
+                    },
+                    "floor": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 3,
+                      "description": "Zero-based floor; omitted values use the ground floor (0)."
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "x",
+                    "y",
+                    "width",
+                    "height"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "const": "MOVE_ROOM"
+                    },
+                    "roomId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "x": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "y": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "roomId",
+                    "x",
+                    "y"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "const": "RESIZE_ROOM"
+                    },
+                    "roomId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "width": {
+                      "type": "integer",
+                      "minimum": 2,
+                      "maximum": 80
+                    },
+                    "height": {
+                      "type": "integer",
+                      "minimum": 2,
+                      "maximum": 80
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "roomId",
+                    "width",
+                    "height"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "const": "REMOVE_ROOM"
+                    },
+                    "roomId": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "roomId"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "const": "ADD_CORRIDOR"
+                    },
+                    "fromRoomId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "toRoomId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "points": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "x": {
+                            "type": "integer"
+                          },
+                          "y": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "x",
+                          "y"
+                        ]
+                      },
+                      "minItems": 2
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "fromRoomId",
+                    "toRoomId",
+                    "points"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "const": "REMOVE_CORRIDOR"
+                    },
+                    "corridorId": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "corridorId"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "const": "ADD_DOOR"
+                    },
+                    "corridorId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "x": {
+                      "type": "integer"
+                    },
+                    "y": {
+                      "type": "integer"
+                    },
+                    "isLocked": {
+                      "type": "boolean",
+                      "default": false
+                    },
+                    "isSecret": {
+                      "type": "boolean",
+                      "default": false
+                    },
+                    "isSpecial": {
+                      "type": "boolean",
+                      "default": false
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "corridorId",
+                    "x",
+                    "y"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "const": "MOVE_DOOR"
+                    },
+                    "doorId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "x": {
+                      "type": "integer"
+                    },
+                    "y": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "doorId",
+                    "x",
+                    "y"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "const": "REMOVE_DOOR"
+                    },
+                    "doorId": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "doorId"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "const": "TOGGLE_DOOR_SECRET"
+                    },
+                    "doorId": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "doorId"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "const": "TOGGLE_DOOR_LOCK"
+                    },
+                    "doorId": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "doorId"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "const": "DRAW_WALL_SEGMENT"
+                    },
+                    "x1": {
+                      "type": "integer"
+                    },
+                    "y1": {
+                      "type": "integer"
+                    },
+                    "x2": {
+                      "type": "integer"
+                    },
+                    "y2": {
+                      "type": "integer"
+                    },
+                    "floor": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 3,
+                      "description": "Zero-based floor; omitted values use the ground floor (0)."
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "x1",
+                    "y1",
+                    "x2",
+                    "y2"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "const": "ERASE_WALL_SEGMENT"
+                    },
+                    "wallId": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "wallId"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "const": "RENUMBER_ROOMS"
+                    },
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "AUTO",
+                        "EXPLICIT"
+                      ],
+                      "default": "AUTO"
+                    },
+                    "roomOrder": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "minItems": 0,
+                      "maxItems": 500
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "const": "PAINT_ZONE"
+                    },
+                    "zoneType": {
+                      "type": "string",
+                      "enum": [
+                        "SAFE",
+                        "HAZARD",
+                        "FACTION"
+                      ]
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    },
+                    "cells": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "x": {
+                            "type": "integer"
+                          },
+                          "y": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "x",
+                          "y"
+                        ]
+                      },
+                      "minItems": 1,
+                      "maxItems": 5000
+                    },
+                    "floor": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 3,
+                      "description": "Zero-based floor; omitted values use the ground floor (0)."
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "zoneType",
+                    "label",
+                    "cells"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "const": "CLEAR_ZONE"
+                    },
+                    "zoneId": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "zoneId"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "const": "TOGGLE_LOCK"
+                    },
+                    "entityType": {
+                      "type": "string",
+                      "enum": [
+                        "DOOR",
+                        "TRAP",
+                        "ENCOUNTER",
+                        "TREASURE",
+                        "DRESSING"
+                      ]
+                    },
+                    "entityId": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "entityType",
+                    "entityId"
+                  ]
+                }
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "actions"
+        ],
+        "description": "Ordered map edits. Rooms, walls and zones may target an existing floor. Corridors connect rooms on one floor. Stair-linked rooms cannot be deleted or moved/resized away from their complete stair footprint. Room, corridor and wall geometry edits clear generated flow metadata; zone edits preserve it. Moving/resizing a portal room reanchors its exterior route; removing the room removes its attached portals. Invalid final map geometry is rejected before persistence. Room-owned terrain moves with its room and is removed with it; resizing a room to clip owned terrain is rejected."
+      },
+      "DungeonSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "campaignId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "READY",
+              "ARCHIVED"
+            ]
+          },
+          "theme": {
+            "type": "string"
+          },
+          "seed": {
+            "type": "string"
+          },
+          "gridType": {
+            "type": "string",
+            "enum": [
+              "SQUARE"
+            ]
+          },
+          "generatorVersion": {
+            "type": "string"
+          },
+          "mapType": {
+            "type": "string",
+            "enum": [
+              "DUNGEON",
+              "BUILDING",
+              "FOREST"
+            ],
+            "description": "Current generated map type; legacy maps use DUNGEON."
+          },
+          "floorCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4,
+            "description": "Current generated floor count; legacy maps use 1."
+          },
+          "roomCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "canDelete": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "campaignId",
+          "name",
+          "status",
+          "theme",
+          "seed",
+          "gridType",
+          "generatorVersion",
+          "roomCount",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "DungeonDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/DungeonSummary"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "config": {
+                "$ref": "#/components/schemas/DungeonGeneratorConfig"
+              },
+              "map": {
+                "$ref": "#/components/schemas/DungeonMap"
+              },
+              "playerView": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "additionalProperties": true
+              }
+            },
+            "required": [
+              "config",
+              "map",
+              "playerView"
+            ]
+          }
+        ]
+      },
+      "DungeonMapPortal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ENTRANCE",
+              "EXIT"
+            ]
+          },
+          "roomId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "points": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "y": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ]
+            }
+          },
+          "isSecret": {
+            "type": "boolean",
+            "description": "Secret access points are omitted from player-safe views and exports even if their attached room is visible."
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "roomId",
+          "points"
+        ],
+        "description": "Orthogonal exterior route attached to an existing room. The first point is a wall cell inside that room and the last is on the map boundary (0 or width/height minus 1). Every point must remain inside the map. The room supplies the floor."
+      },
+      "DungeonMapFlow": {
+        "type": "object",
+        "properties": {
+          "style": {
+            "type": "string",
+            "enum": [
+              "LINEAR",
+              "BRANCHING",
+              "LOOP"
+            ]
+          },
+          "entryRoomId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "objectiveRoomId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "exitRoomId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "routeRoomIds": {
+            "type": "array",
+            "minItems": 3,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "maxItems": 5000
+          }
+        },
+        "required": [
+          "style",
+          "entryRoomId",
+          "objectiveRoomId",
+          "exitRoomId",
+          "routeRoomIds"
+        ],
+        "description": "GM-only generated route. Entry, objective and exit reference three distinct visible rooms. The entry and exit must have matching nonsecret ENTRANCE and EXIT portals. The ordered route starts at entryRoomId, visits objectiveRoomId, and ends at exitRoomId; every room must exist and consecutive rooms must be joined by a corridor or stair. A route can revisit rooms, for example when returning from upper floors to a ground-floor exit. Geometry/topology edits clear this metadata. Player-safe projections omit it."
+      },
+      "DungeonAccessPointsConfig": {
+        "type": "object",
+        "default": {
+          "entrances": 1,
+          "exits": 1,
+          "entranceSide": "AUTO",
+          "concealedEntrance": false
+        },
+        "properties": {
+          "entrances": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3,
+            "default": 1,
+            "description": "Number of visible entrances."
+          },
+          "exits": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2,
+            "default": 1
+          },
+          "entranceSide": {
+            "type": "string",
+            "enum": [
+              "AUTO",
+              "NORTH",
+              "EAST",
+              "SOUTH",
+              "WEST"
+            ],
+            "default": "AUTO",
+            "description": "Map edge for the main entrance. Additional entrances can use other edges."
+          },
+          "concealedEntrance": {
+            "type": "boolean",
+            "default": false,
+            "description": "Adds one secret entrance beyond the visible entrance count. Player-safe exports and viewer details redact this flag to false."
+          }
+        }
+      },
+      "DungeonTacticalTerrainConfig": {
+        "type": "object",
+        "default": {
+          "cover": "LIGHT",
+          "elevation": false,
+          "difficultTerrain": false,
+          "hazards": false,
+          "sightlines": "MIXED"
+        },
+        "properties": {
+          "cover": {
+            "type": "string",
+            "enum": [
+              "NONE",
+              "LIGHT",
+              "HEAVY"
+            ],
+            "default": "LIGHT"
+          },
+          "elevation": {
+            "type": "boolean",
+            "default": false
+          },
+          "difficultTerrain": {
+            "type": "boolean",
+            "default": false
+          },
+          "hazards": {
+            "type": "boolean",
+            "default": false
+          },
+          "sightlines": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "MIXED",
+              "BROKEN"
+            ],
+            "default": "MIXED"
+          }
+        }
+      },
+      "DungeonVerticalConnectionsConfig": {
+        "type": "object",
+        "default": {
+          "basement": false,
+          "staircases": "SINGLE",
+          "ladders": false,
+          "balconies": false,
+          "bridges": false
+        },
+        "properties": {
+          "basement": {
+            "type": "boolean",
+            "default": false,
+            "description": "Includes a basement within floorCount; it does not add an extra floor."
+          },
+          "staircases": {
+            "type": "string",
+            "enum": [
+              "SINGLE",
+              "DUAL"
+            ],
+            "default": "SINGLE"
+          },
+          "ladders": {
+            "type": "boolean",
+            "default": false
+          },
+          "balconies": {
+            "type": "boolean",
+            "default": false
+          },
+          "bridges": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "description": "Basements, dual staircases, ladders and balconies require BUILDING with at least two total floors. Bridges are available for all map types. Balconies require an upper floor above ground, so a building with a basement needs at least three total floors to enable them."
       }
     }
   }

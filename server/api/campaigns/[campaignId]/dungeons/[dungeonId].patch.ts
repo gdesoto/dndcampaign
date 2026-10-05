@@ -17,7 +17,7 @@ const dungeonExportService = new DungeonExportService()
 
 const dungeonPatchActionSchema = z.discriminatedUnion('action', [
   dungeonGenerateSchema.extend({ action: z.literal('generate') }),
-  dungeonRegenerateSchema.extend({ action: z.literal('regenerate') }),
+  dungeonRegenerateSchema.safeExtend({ action: z.literal('regenerate') }),
   z.object({ action: z.literal('publish') }),
   z.object({ action: z.literal('unpublish') }),
   dungeonExportSchema.extend({ action: z.literal('export') }),
@@ -30,16 +30,16 @@ export default defineEventHandler(async (event) => {
 
   const { actor } = await requireCampaignPermission(event, campaignId, 'content.read')
 
-  const actionParsed = dungeonPatchActionSchema.safeParse(rawBody)
-  if (actionParsed.success) {
-    switch (actionParsed.data.action) {
+  if (typeof rawBody === 'object' && rawBody !== null && 'action' in rawBody) {
+    const action = validateInput(dungeonPatchActionSchema, rawBody, 'Invalid dungeon action')
+    switch (action.action) {
       case 'generate': {
         assertCampaignPermission(actor.access, 'content.write')
         const result = await dungeonService.generateDungeon(
           campaignId,
           dungeonId,
           actor,
-          actionParsed.data
+          action
         )
         return ok(result)
       }
@@ -49,7 +49,7 @@ export default defineEventHandler(async (event) => {
           campaignId,
           dungeonId,
           actor,
-          actionParsed.data
+          action
         )
         return ok(result)
       }
@@ -78,7 +78,7 @@ export default defineEventHandler(async (event) => {
           campaignId,
           dungeonId,
           actor,
-          actionParsed.data
+          action
         )
         return ok(result)
       }

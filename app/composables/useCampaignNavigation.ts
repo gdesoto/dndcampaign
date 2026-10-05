@@ -32,7 +32,7 @@ export const useCampaignNavigation = (
         active: path.startsWith(`${base}/encounters`),
       },
       {
-        label: 'Dungeons',
+        label: 'Encounter maps',
         to: `${base}/dungeons`,
         icon: 'i-twemoji-castle',
         active: path.startsWith(`${base}/dungeons`),
@@ -106,7 +106,7 @@ export const useCampaignNavigation = (
     if (suffix === '' || suffix === '/') return 'Overview'
     if (suffix.startsWith('/watch')) return 'Recap playlist'
     if (suffix.startsWith('/characters')) return 'Characters'
-    if (suffix.startsWith('/dungeons')) return 'Dungeons'
+    if (suffix.startsWith('/dungeons')) return 'Encounter maps'
     if (suffix.startsWith('/encounters')) return 'Encounters'
     if (suffix.startsWith('/sessions/')) return 'Session details'
     if (suffix.startsWith('/sessions')) return 'Sessions'
@@ -164,8 +164,8 @@ export const useCampaignNavigation = (
     if (path.includes(`/campaigns/${campaignId.value}/dungeons/`)) {
       return [
         ...rootItems,
-        { label: 'Dungeons', to: `/campaigns/${campaignId.value}/dungeons` },
-        { label: 'Dungeon' },
+        { label: 'Encounter maps', to: `/campaigns/${campaignId.value}/dungeons` },
+        { label: 'Encounter map' },
       ]
     }
     if (path.includes(`/campaigns/${campaignId.value}/journal/`)) {

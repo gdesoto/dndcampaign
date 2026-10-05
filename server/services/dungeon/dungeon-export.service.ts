@@ -3,15 +3,15 @@ import { jsonNull } from '#server/db/columns'
 import { db } from '#server/db/client'
 import { campaignDungeon, campaignDungeonRoom, campaignDungeonLink } from '#server/db/schema'
 import { eq, and } from 'drizzle-orm'
-import type { DungeonExportInput, DungeonImportInput } from '#shared/schemas/dungeon'
+import { dungeonMapSchema, type DungeonExportInput, type DungeonImportInput } from '#shared/schemas/dungeon'
 import type {
   DungeonExportResult,
   DungeonMapData,
   DungeonPortableDocument,
-  DungeonRoomGeometry,
 } from '#shared/types/dungeon'
-import { parseDungeonMap } from '#server/services/dungeon/dungeon-map-utils'
-import { toPlayerSafeMap } from '#shared/utils/dungeon-map'
+import { resetDungeonRooms } from '#server/services/dungeon/dungeon.service'
+import { getDungeonFloorMap, toPlayerSafeDungeonConfig, toPlayerSafeMap } from '#shared/utils/dungeon-map'
+import { renderDungeonSvg } from '#shared/utils/dungeon-render'
 import sharp from 'sharp'
 import PDFDocument from 'pdfkit'
 import { ActivityLogService } from '#server/services/activity-log.service'
@@ -26,77 +26,12 @@ const withDungeonAccess = async (campaignId: string, dungeonId: string) =>
       links: true,
     } }).sync()
 
-const toSvg = (map: DungeonMapData, options: Pick<DungeonExportInput, 'includeGrid' | 'includeLabels'>) => {
-  const worldWidth = map.width * map.cellSize
-  const worldHeight = map.height * map.cellSize
-  const pointToPixel = (value: number) => (value + 0.5) * map.cellSize
-  const corridorOuterWidth = Math.max(8, Math.floor(map.cellSize * 1.05))
-  const corridorInnerWidth = Math.max(5, Math.floor(map.cellSize * 0.68))
-  const gridSvg = options.includeGrid
-    ? `<g stroke="rgba(245, 222, 179, 0.12)" stroke-width="1">${Array.from({ length: map.width }, (_, index) =>
-      `<line x1="${(index + 1) * map.cellSize}" y1="0" x2="${(index + 1) * map.cellSize}" y2="${worldHeight}" />`).join('')}
-${Array.from({ length: map.height }, (_, index) =>
-      `<line x1="0" y1="${(index + 1) * map.cellSize}" x2="${worldWidth}" y2="${(index + 1) * map.cellSize}" />`).join('')}</g>`
-    : ''
-  const corridorOuterSvg = map.corridors
-    .map(
-      (corridor) =>
-        `<polyline points="${corridor.points
-          .map((point) => `${pointToPixel(point.x)},${pointToPixel(point.y)}`)
-          .join(' ')}" fill="none" stroke="#88714d" stroke-width="${corridorOuterWidth}" stroke-linecap="round" stroke-linejoin="round" opacity="0.75" />`,
-    )
-    .join('\n')
-  const corridorInnerSvg = map.corridors
-    .map(
-      (corridor) =>
-        `<polyline points="${corridor.points
-          .map((point) => `${pointToPixel(point.x)},${pointToPixel(point.y)}`)
-          .join(' ')}" fill="none" stroke="#c6a979" stroke-width="${corridorInnerWidth}" stroke-linecap="round" stroke-linejoin="round" opacity="0.85" />`,
-    )
-    .join('\n')
-  const roomsSvg = map.rooms
-    .map(
-      (room) =>
-        `<rect x="${room.x * map.cellSize}" y="${room.y * map.cellSize}" width="${room.width * map.cellSize}" height="${
-          room.height * map.cellSize
-        }" fill="${room.isSecret ? 'rgba(220, 38, 38, 0.18)' : 'rgba(226, 210, 178, 0.5)'}" stroke="#94a3b8" stroke-width="2" />`,
-    )
-    .join('\n')
-  const doorsSvg = map.doors
-    .map(
-      (door) =>
-        `<circle cx="${pointToPixel(door.x)}" cy="${pointToPixel(door.y)}" r="5" fill="${
-          door.isSecret ? '#f59e0b' : door.isLocked ? '#ef4444' : '#10b981'
-        }" />`,
-    )
-    .join('\n')
-  const labelsSvg = options.includeLabels
-    ? map.rooms
-      .map(
-        (room) =>
-          `<text x="${(room.x + Math.floor(room.width / 2)) * map.cellSize}" y="${(room.y + Math.floor(room.height / 2)) * map.cellSize}" fill="#f5f0e6" font-size="12" text-anchor="middle" dominant-baseline="middle">R${room.roomNumber}</text>`,
-      )
-      .join('\n')
-    : ''
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${worldWidth}" height="${worldHeight}" viewBox="0 0 ${worldWidth} ${worldHeight}">
-  <rect x="0" y="0" width="${worldWidth}" height="${worldHeight}" fill="#1f1b16"/>
-  ${gridSvg}
-  ${corridorOuterSvg}
-  ${corridorInnerSvg}
-  ${roomsSvg}
-  ${doorsSvg}
-  ${labelsSvg}
-</svg>`
-}
-
 const toPngBase64 = async (svg: string) => {
   const buffer = await sharp(Buffer.from(svg, 'utf8')).png().toBuffer()
   return buffer.toString('base64')
 }
 
-const toPdfBase64 = async (map: DungeonMapData, svg: string) =>
+const toPdfBase64 = async (map: DungeonMapData, svg: string, floor: number) =>
   await new Promise<string>((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: 28 })
     const chunks: Buffer[] = []
@@ -104,7 +39,7 @@ const toPdfBase64 = async (map: DungeonMapData, svg: string) =>
     doc.on('end', () => resolve(Buffer.concat(chunks).toString('base64')))
     doc.on('error', (error) => reject(error))
 
-    doc.fontSize(14).text('Dungeon Export', { align: 'left' })
+    doc.fontSize(14).text(`Encounter Map — ${map.floorLabels?.[floor] || `Floor ${floor + 1}`}`, { align: 'left' })
     doc.moveDown(0.4)
     doc.fontSize(10).text(`Seed: ${map.metadata.seed}`)
     doc.text(`Generated: ${new Date(map.metadata.generatedAt).toLocaleString()}`)
@@ -125,31 +60,6 @@ const toPdfBase64 = async (map: DungeonMapData, svg: string) =>
       })
       .catch(reject)
   })
-
-const syncRoomsFromImportedMap = async (dungeonId: string, rooms: DungeonRoomGeometry[]) => {
-  db.transaction((tx) => {
-    tx.delete(campaignDungeonRoom).where(eq(campaignDungeonRoom.dungeonId, dungeonId)).run()
-    for (const room of rooms) {
-      tx.insert(campaignDungeonRoom).values({
-          dungeonId,
-          roomNumber: room.roomNumber,
-          name: `Room ${room.roomNumber}`,
-          description: null,
-          gmNotes: null,
-          playerNotes: null,
-          readAloud: null,
-          tagsJson: [],
-          state: 'UNSEEN',
-          boundsJson: {
-            x: room.x,
-            y: room.y,
-            width: room.width,
-            height: room.height,
-          },
-        }).returning().get()!
-    }
-  }, { behavior: 'immediate' })
-}
 
 export class DungeonExportService {
   private async logExport(
@@ -183,19 +93,24 @@ export class DungeonExportService {
       throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
-    const map = parseDungeonMap(row.mapJson)
+    const map = dungeonMapSchema.parse(row.mapJson)
     const forcePlayerSafe = actor.access.role === 'VIEWER'
     const effectivePlayerSafe = forcePlayerSafe || input.playerSafe || !input.includeGmLayer
     const exportMap = effectivePlayerSafe ? toPlayerSafeMap(map) : map
-    const safeSuffix = input.playerSafe ? '-player' : '-dm'
+    const safeSuffix = effectivePlayerSafe ? '-player' : '-dm'
     const baseName = row.name.trim().replace(/[^a-zA-Z0-9_-]+/g, '-').toLowerCase() || 'dungeon'
-    const svg = toSvg(exportMap, input)
+    const floor = input.floor ?? 0
+    if (input.format !== 'JSON' && floor >= (map.floorCount ?? 1)) {
+      throw apiError(400, 'INVALID_FLOOR', 'The selected floor does not exist on this map.')
+    }
+    const floorSuffix = (map.floorCount ?? 1) > 1 ? `-floor-${floor + 1}` : ''
+    const svg = input.format === 'JSON' ? '' : `<?xml version="1.0" encoding="UTF-8"?>\n${renderDungeonSvg(exportMap, input)}`
 
     if (input.format === 'SVG') {
       await this.logExport(campaignId, userId, row.id, 'SVG', effectivePlayerSafe)
       return {
           format: 'SVG',
-          filename: `${baseName}${safeSuffix}.svg`,
+          filename: `${baseName}${floorSuffix}${safeSuffix}.svg`,
           contentType: 'image/svg+xml',
           content: svg,
           encoding: 'utf8',
@@ -207,7 +122,7 @@ export class DungeonExportService {
       await this.logExport(campaignId, userId, row.id, 'PNG', effectivePlayerSafe)
       return {
           format: 'PNG',
-          filename: `${baseName}${safeSuffix}.png`,
+          filename: `${baseName}${floorSuffix}${safeSuffix}.png`,
           contentType: 'image/png',
           content: pngBase64,
           encoding: 'base64',
@@ -215,17 +130,21 @@ export class DungeonExportService {
     }
 
     if (input.format === 'PDF') {
-      const pdfBase64 = await toPdfBase64(exportMap, svg)
+      const pdfBase64 = await toPdfBase64(getDungeonFloorMap(exportMap, floor), svg, floor)
       await this.logExport(campaignId, userId, row.id, 'PDF', effectivePlayerSafe)
       return {
           format: 'PDF',
-          filename: `${baseName}${safeSuffix}.pdf`,
+          filename: `${baseName}${floorSuffix}${safeSuffix}.pdf`,
           contentType: 'application/pdf',
           content: pdfBase64,
           encoding: 'base64',
         }
     }
 
+    const visibleNumbers = new Set(exportMap.rooms.map(room => room.roomNumber))
+    const exportRooms = effectivePlayerSafe ? row.rooms.filter(room => visibleNumbers.has(room.roomNumber)) : row.rooms
+    const visibleRoomIds = new Set(exportRooms.map(room => room.id))
+    const config = row.configJson as DungeonPortableDocument['dungeon']['config']
     const document: DungeonPortableDocument = {
       schemaVersion: 1,
       exportedAt: new Date().toISOString(),
@@ -240,11 +159,11 @@ export class DungeonExportService {
         seed: row.seed,
         gridType: row.gridType,
         generatorVersion: row.generatorVersion,
-        config: row.configJson as DungeonPortableDocument['dungeon']['config'],
+        config: effectivePlayerSafe ? toPlayerSafeDungeonConfig(config) : config,
         map: exportMap,
         playerView: effectivePlayerSafe ? null : ((row.playerViewJson as Record<string, unknown> | null) || null),
       },
-      rooms: row.rooms.map((room) => ({
+      rooms: exportRooms.map((room) => ({
         id: room.id,
         dungeonId: room.dungeonId,
         roomNumber: room.roomNumber,
@@ -259,7 +178,7 @@ export class DungeonExportService {
         createdAt: room.createdAt.toISOString(),
         updatedAt: room.updatedAt.toISOString(),
       })),
-      links: row.links.map((link) => ({
+      links: row.links.filter(link => !effectivePlayerSafe || !link.roomId || visibleRoomIds.has(link.roomId)).map((link) => ({
         id: link.id,
         dungeonId: link.dungeonId,
         roomId: link.roomId,
@@ -303,7 +222,7 @@ export class DungeonExportService {
         createdByUserId: userId,
       }).returning().get()!
 
-    await syncRoomsFromImportedMap(created.id, source.dungeon.map.rooms)
+    resetDungeonRooms(created.id, source.dungeon.map.rooms)
     const importedRooms = db.query.campaignDungeonRoom.findMany({ where: eq(campaignDungeonRoom.dungeonId, created.id), columns: {
         id: true,
         roomNumber: true,

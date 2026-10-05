@@ -1,172 +1,36 @@
-export type CampaignDungeonStatus = 'DRAFT' | 'READY' | 'ARCHIVED'
-export type CampaignDungeonGridType = 'SQUARE'
-export type CampaignDungeonSnapshotType = 'AUTO' | 'MANUAL' | 'PRE_REGENERATE'
-export type DungeonExportFormat = 'JSON' | 'SVG' | 'PNG' | 'PDF'
-export type CampaignDungeonRegenerateScope =
-  | 'FULL'
-  | 'LAYOUT'
-  | 'DOORS'
-  | 'TRAPS'
-  | 'ENCOUNTERS'
-  | 'TREASURE'
+import type { z } from 'zod'
+import type {
+  campaignDungeonStatusSchema,
+  dungeonMapSchema,
+  DungeonExportInput,
+  DungeonGeneratorConfigInput,
+  DungeonLinkCreateInput,
+  DungeonRegenerateInput,
+  DungeonRoomUpdateInput,
+  DungeonSnapshotCreateInput,
+} from '../schemas/dungeon'
 
-export type DungeonRoomState = 'UNSEEN' | 'EXPLORED' | 'CLEARED' | 'CONTESTED'
-export type DungeonLinkType = 'SESSION' | 'QUEST' | 'MILESTONE' | 'GLOSSARY' | 'ENCOUNTER'
+export type CampaignDungeonStatus = z.infer<typeof campaignDungeonStatusSchema>
+export type CampaignDungeonGridType = DungeonMapData['gridType']
+export type DungeonMapType = NonNullable<DungeonMapData['mapType']>
+export type CampaignDungeonSnapshotType = DungeonSnapshotCreateInput['snapshotType']
+export type DungeonExportFormat = DungeonExportInput['format']
+export type CampaignDungeonRegenerateScope = DungeonRegenerateInput['scope']
+export type DungeonRoomState = NonNullable<DungeonRoomUpdateInput['state']>
+export type DungeonLinkType = DungeonLinkCreateInput['linkType']
 
-export type DungeonGeneratorLayoutConfig = {
-  roomDensity: number
-  minRoomSize: number
-  maxRoomSize: number
-  corridorStyle: 'STRAIGHT' | 'WINDING' | 'MIXED'
-  connectivityStrictness: number
-  secretRoomChance: number
-}
+// Newer settings remain optional for older saved records.
+export type DungeonGeneratorConfig = Partial<DungeonGeneratorConfigInput> & Pick<
+  DungeonGeneratorConfigInput,
+  'gridType' | 'width' | 'height' | 'cellSize' | 'theme' | 'layout' | 'doors' | 'content'
+>
 
-export type DungeonGeneratorDoorConfig = {
-  doorFrequency: number
-  lockedDoorChance: number
-  secretDoorChance: number
-  specialDoorChance: number
-}
-
-export type DungeonGeneratorContentConfig = {
-  trapDensity: number
-  encounterDensity: number
-  treasureDensity: number
-  dressingDensity: number
-}
-
-export type DungeonGeneratorConfig = {
-  gridType: CampaignDungeonGridType
-  width: number
-  height: number
-  cellSize: number
-  theme: string
-  layout: DungeonGeneratorLayoutConfig
-  doors: DungeonGeneratorDoorConfig
-  content: DungeonGeneratorContentConfig
-}
-
-export type DungeonRoomGeometry = {
-  id: string
-  roomNumber: number
-  x: number
-  y: number
-  width: number
-  height: number
-  isSecret: boolean
-}
-
-export type DungeonCorridorGeometry = {
-  id: string
-  fromRoomId: string
-  toRoomId: string
-  points: Array<{ x: number; y: number }>
-}
-
-export type DungeonDoorGeometry = {
-  id: string
-  x: number
-  y: number
-  corridorId: string
-  isLocked: boolean
-  isSecret: boolean
-  isSpecial: boolean
-}
-
-export type DungeonWallSegment = {
-  id: string
-  x1: number
-  y1: number
-  x2: number
-  y2: number
-}
-
-export type DungeonTrap = {
-  id: string
-  roomId: string
-  name: string
-  severity: 'LOW' | 'MEDIUM' | 'HIGH'
-  trigger: string
-  effect: string
-  detectDc: number
-  disarmDc: number
-  isLocked: boolean
-}
-
-export type DungeonEncounter = {
-  id: string
-  roomId: string
-  title: string
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD' | 'DEADLY'
-  summary: string
-  isLocked: boolean
-}
-
-export type DungeonTreasure = {
-  id: string
-  roomId: string
-  category: 'COIN' | 'ITEM' | 'ART' | 'MAGIC'
-  rarity: 'COMMON' | 'UNCOMMON' | 'RARE' | 'VERY_RARE'
-  summary: string
-  isLocked: boolean
-}
-
-export type DungeonDressing = {
-  id: string
-  roomId: string
-  text: string
-  isLocked: boolean
-}
-
-export type DungeonZone = {
-  id: string
-  type: 'SAFE' | 'HAZARD' | 'FACTION'
-  label: string
-  cells: Array<{ x: number; y: number }>
-}
-
-export type DungeonPassHistoryEntry = {
-  pass: 'LAYOUT' | 'DOORS' | 'TRAPS' | 'ENCOUNTERS' | 'TREASURE' | 'DRESSING'
-  scope: CampaignDungeonRegenerateScope
-  startedAt: string
-  finishedAt: string
-  seed: string
-  configHash: string
-  changedCounts: {
-    rooms?: number
-    corridors?: number
-    doors?: number
-    traps?: number
-    encounters?: number
-    treasure?: number
-    dressing?: number
-  }
-}
-
-export type DungeonMapData = {
-  schemaVersion: 1
-  gridType: CampaignDungeonGridType
-  width: number
-  height: number
-  cellSize: number
-  rooms: DungeonRoomGeometry[]
-  corridors: DungeonCorridorGeometry[]
-  doors: DungeonDoorGeometry[]
-  walls: DungeonWallSegment[]
-  traps: DungeonTrap[]
-  encounters: DungeonEncounter[]
-  treasures: DungeonTreasure[]
-  dressing: DungeonDressing[]
-  zones: DungeonZone[]
-  metadata: {
-    algorithmVersion: string
-    configHash: string
-    generatedAt: string
-    seed: string
-    passHistory: DungeonPassHistoryEntry[]
-  }
-}
+export type DungeonMapData = z.infer<typeof dungeonMapSchema>
+export type DungeonRoomGeometry = DungeonMapData['rooms'][number]
+export type DungeonDoorGeometry = DungeonMapData['doors'][number]
+export type DungeonTerrainFeature = NonNullable<DungeonMapData['terrain']>[number]
+export type DungeonPortal = NonNullable<DungeonMapData['portals']>[number]
+export type DungeonPassHistoryEntry = DungeonMapData['metadata']['passHistory'][number]
 
 export type CampaignDungeonSummary = {
   id: string
@@ -178,6 +42,8 @@ export type CampaignDungeonSummary = {
   gridType: CampaignDungeonGridType
   generatorVersion: string
   roomCount: number
+  mapType?: DungeonMapType
+  floorCount?: number
   canDelete?: boolean
   createdAt: string
   updatedAt: string
@@ -204,6 +70,7 @@ export type CampaignDungeonRoom = {
     y: number
     width: number
     height: number
+    floor?: number
   } | null
   state: DungeonRoomState
   createdAt: string
@@ -218,24 +85,6 @@ export type CampaignDungeonLink = {
   targetId: string
   createdAt: string
 }
-
-export type DungeonMapPatchActionType = 'ADD_ROOM' | 'MOVE_ROOM' | 'RESIZE_ROOM' | 'REMOVE_ROOM'
-
-export type DungeonMapPatchActionTypeExtended =
-  | DungeonMapPatchActionType
-  | 'ADD_CORRIDOR'
-  | 'REMOVE_CORRIDOR'
-  | 'ADD_DOOR'
-  | 'MOVE_DOOR'
-  | 'REMOVE_DOOR'
-  | 'TOGGLE_DOOR_SECRET'
-  | 'TOGGLE_DOOR_LOCK'
-  | 'DRAW_WALL_SEGMENT'
-  | 'ERASE_WALL_SEGMENT'
-  | 'RENUMBER_ROOMS'
-  | 'PAINT_ZONE'
-  | 'CLEAR_ZONE'
-  | 'TOGGLE_LOCK'
 
 export type CampaignDungeonSnapshot = {
   id: string

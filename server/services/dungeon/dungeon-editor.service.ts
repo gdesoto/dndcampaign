@@ -3,11 +3,12 @@ import { z } from 'zod'
 import { db } from '#server/db/client'
 import { campaignDungeon, campaignDungeonRoom, campaignDungeonLink } from '#server/db/schema'
 import { eq, and, notInArray, asc, desc } from 'drizzle-orm'
-import type {
-  DungeonLinkCreateInput,
-  DungeonMapPatchActionInput,
-  DungeonMapPatchInput,
-  DungeonRoomUpdateInput,
+import {
+  dungeonMapSchema,
+  type DungeonLinkCreateInput,
+  type DungeonMapPatchActionInput,
+  type DungeonMapPatchInput,
+  type DungeonRoomUpdateInput,
 } from '#shared/schemas/dungeon'
 import type {
   CampaignDungeonLink,
@@ -15,7 +16,7 @@ import type {
   DungeonMapData,
   DungeonRoomGeometry,
 } from '#shared/types/dungeon'
-import { parseDungeonMap } from '#server/services/dungeon/dungeon-map-utils'
+import { routePortalToEdge } from '#server/services/dungeon/encounter-features'
 import type { EncounterCreateInput } from '#shared/schemas/encounter'
 import { EncounterService } from '#server/services/encounter/encounter.service'
 import { ActivityLogService } from '#server/services/activity-log.service'
@@ -44,6 +45,7 @@ const toRoomDto = (row: {
       y: z.number().int(),
       width: z.number().int().positive(),
       height: z.number().int().positive(),
+      floor: z.number().int().nonnegative().optional(),
     })
     .nullable()
     .safeParse(row.boundsJson)
@@ -106,12 +108,12 @@ const syncRoomRowsToMap = async (dungeonId: string, previousRooms: DungeonRoomGe
       const current = byGeometryId.get(room.id)
       const data = {
         roomNumber: room.roomNumber,
-        boundsJson: { x: room.x, y: room.y, width: room.width, height: room.height },
+        boundsJson: { x: room.x, y: room.y, width: room.width, height: room.height, floor: room.floor ?? 0 },
       }
       if (current) {
         tx.update(campaignDungeonRoom).set(data).where(eq(campaignDungeonRoom.id, current.id)).returning().get()!
       } else {
-        tx.insert(campaignDungeonRoom).values({ ...data, dungeonId, name: `Room ${room.roomNumber}`, tagsJson: [] }).returning().get()!
+        tx.insert(campaignDungeonRoom).values({ ...data, dungeonId, name: room.label || `Room ${room.roomNumber}`, tagsJson: [] }).returning().get()!
       }
     }
     tx.update(campaignDungeon).set({ mapJson: (map) as unknown as JsonValue }).where(eq(campaignDungeon.id, dungeonId)).returning().get()!
@@ -124,19 +126,64 @@ const activityLogService = new ActivityLogService()
 
 const normalizeRoomNumbers = (rooms: DungeonMapData['rooms']) =>
   [...rooms]
-    .sort((a, b) => (a.y === b.y ? a.x - b.x : a.y - b.y))
+    .sort((a, b) => (a.floor ?? 0) - (b.floor ?? 0) || a.y - b.y || a.x - b.x)
     .map((room, index) => ({ ...room, roomNumber: index + 1 }))
 
+const reanchorRoomPortals = (map: DungeonMapData, previous: DungeonRoomGeometry, bounds: DungeonRoomGeometry) => {
+  if (!map.portals) return
+  const staged = { ...map, rooms: map.rooms.map(room => room.id === previous.id ? bounds : room), portals: [...map.portals] }
+  for (const [index, portal] of staged.portals.entries()) {
+    if (portal.roomId !== previous.id) continue
+    const end = portal.points.at(-1)!
+    const beforeEnd = portal.points.at(-2)!
+    const horizontal = end.x !== beforeEnd.x || (end.y === beforeEnd.y && (end.x === 0 || end.x === map.width - 1))
+    const side = horizontal ? end.x === 0 ? 'WEST' : 'EAST' : end.y === 0 ? 'NORTH' : 'SOUTH'
+    const points = routePortalToEdge(staged, previous.id, side, portal.id)
+    if (!points) throw apiError(400, 'VALIDATION_ERROR', 'This edit would block an entrance or exit. Keep a clear route from the room to the map edge.')
+    staged.portals[index] = { ...portal, points }
+  }
+  map.portals = staged.portals
+}
+
 const applyMapAction = (map: DungeonMapData, action: DungeonMapPatchActionInput): DungeonMapData => {
+  if ('floor' in action && (action.floor ?? 0) >= (map.floorCount ?? 1)) {
+    throw apiError(400, 'VALIDATION_ERROR', 'This floor does not exist on the map.')
+  }
+  if (action.type === 'REMOVE_ROOM' && map.stairs?.some(stair => stair.fromRoomId === action.roomId || stair.toRoomId === action.roomId)) {
+    throw apiError(400, 'VALIDATION_ERROR', 'Stairs or a ladder connect this room to another floor. Generate a new layout to change these connections.')
+  }
+  if (action.type === 'MOVE_ROOM' || action.type === 'RESIZE_ROOM') {
+    const room = map.rooms.find(room => room.id === action.roomId)
+    if (room) {
+      const bounds = action.type === 'MOVE_ROOM'
+        ? { ...room, x: action.x, y: action.y }
+        : { ...room, width: action.width, height: action.height }
+      const losesLanding = map.stairs?.some(stair =>
+        (stair.fromRoomId === room.id || stair.toRoomId === room.id)
+        && (stair.x < bounds.x || stair.x + (stair.width ?? 1) > bounds.x + bounds.width
+          || stair.y < bounds.y || stair.y + (stair.height ?? 1) > bounds.y + bounds.height))
+      if (losesLanding) {
+        throw apiError(400, 'VALIDATION_ERROR', 'Keep the entire stair or ladder footprint inside this room so the floors remain connected.')
+      }
+    }
+  }
   const next: DungeonMapData = {
     ...map,
     rooms: [...map.rooms],
     corridors: [...map.corridors],
     doors: [...map.doors],
+    walls: [...map.walls],
+    zones: [...map.zones],
     metadata: {
       ...map.metadata,
       generatedAt: new Date().toISOString(),
     },
+  }
+
+  // A generated route describes a particular layout. Manual geometry changes
+  // retain exterior openings, but no longer claim the original encounter plan.
+  if (['ADD_ROOM', 'MOVE_ROOM', 'RESIZE_ROOM', 'REMOVE_ROOM', 'ADD_CORRIDOR', 'REMOVE_CORRIDOR', 'DRAW_WALL_SEGMENT', 'ERASE_WALL_SEGMENT'].includes(action.type)) {
+    delete next.flow
   }
 
   if (action.type === 'ADD_ROOM') {
@@ -149,6 +196,7 @@ const applyMapAction = (map: DungeonMapData, action: DungeonMapPatchActionInput)
       width: action.width,
       height: action.height,
       isSecret: action.isSecret,
+      floor: action.floor ?? 0,
     })
     next.rooms.sort((a, b) => a.roomNumber - b.roomNumber)
     return next
@@ -165,10 +213,19 @@ const applyMapAction = (map: DungeonMapData, action: DungeonMapPatchActionInput)
     next.encounters = next.encounters.filter((encounter) => encounter.roomId !== action.roomId)
     next.treasures = next.treasures.filter((treasure) => treasure.roomId !== action.roomId)
     next.dressing = next.dressing.filter((dressing) => dressing.roomId !== action.roomId)
+    if (next.terrain) next.terrain = next.terrain.filter(feature => feature.roomId !== action.roomId)
+    if (next.portals) next.portals = next.portals.filter(portal => portal.roomId !== action.roomId)
     return next
   }
 
   if (action.type === 'MOVE_ROOM') {
+    const room = next.rooms.find(room => room.id === action.roomId)
+    if (room) {
+      if (next.terrain) next.terrain = next.terrain.map(feature => feature.roomId === room.id
+        ? { ...feature, x: feature.x + action.x - room.x, y: feature.y + action.y - room.y }
+        : feature)
+      reanchorRoomPortals(next, room, { ...room, x: action.x, y: action.y })
+    }
     next.rooms = next.rooms.map((room) =>
       room.id === action.roomId
         ? {
@@ -182,6 +239,8 @@ const applyMapAction = (map: DungeonMapData, action: DungeonMapPatchActionInput)
   }
 
   if (action.type === 'RESIZE_ROOM') {
+    const room = next.rooms.find(room => room.id === action.roomId)
+    if (room) reanchorRoomPortals(next, room, { ...room, width: action.width, height: action.height })
     next.rooms = next.rooms.map((room) =>
       room.id === action.roomId
         ? {
@@ -195,9 +254,12 @@ const applyMapAction = (map: DungeonMapData, action: DungeonMapPatchActionInput)
   }
 
   if (action.type === 'ADD_CORRIDOR') {
-    const from = next.rooms.some((room) => room.id === action.fromRoomId)
-    const to = next.rooms.some((room) => room.id === action.toRoomId)
+    const from = next.rooms.find((room) => room.id === action.fromRoomId)
+    const to = next.rooms.find((room) => room.id === action.toRoomId)
     if (!from || !to) return next
+    if ((from.floor ?? 0) !== (to.floor ?? 0)) {
+      throw apiError(400, 'VALIDATION_ERROR', 'Corridors must connect rooms on the same floor. Stairs connect different floors.')
+    }
     next.corridors.push({
       id: makeId('corridor'),
       fromRoomId: action.fromRoomId,
@@ -276,6 +338,7 @@ const applyMapAction = (map: DungeonMapData, action: DungeonMapPatchActionInput)
       y1: action.y1,
       x2: action.x2,
       y2: action.y2,
+      floor: action.floor ?? 0,
     })
     return next
   }
@@ -311,6 +374,7 @@ const applyMapAction = (map: DungeonMapData, action: DungeonMapPatchActionInput)
       type: action.zoneType,
       label: action.label,
       cells: action.cells,
+      floor: action.floor ?? 0,
     })
     return next
   }
@@ -390,7 +454,10 @@ export class DungeonEditorService {
 
     const rows = db.query.campaignDungeonRoom.findMany({ where: eq(campaignDungeonRoom.dungeonId, access.id), orderBy: [asc(campaignDungeonRoom.roomNumber)] }).sync()
     const isViewer = actor.access.role === 'VIEWER'
-    return rows.map((row) => {
+    const visibleNumbers = isViewer
+      ? new Set(dungeonMapSchema.parse(access.mapJson).rooms.filter(room => !room.isSecret).map(room => room.roomNumber))
+      : null
+    return rows.filter(row => !visibleNumbers || visibleNumbers.has(row.roomNumber)).map((row) => {
         const dto = toRoomDto(row)
         return isViewer ? { ...dto, gmNotes: null } : dto
       })
@@ -438,11 +505,17 @@ export class DungeonEditorService {
       throw apiError(404, 'NOT_FOUND', 'Dungeon not found or access denied.')
     }
 
-    const previousMap = parseDungeonMap(access.mapJson)
+    const previousMap = dungeonMapSchema.parse(access.mapJson)
     let map = previousMap
     for (const action of input.actions) {
       map = applyMapAction(map, action)
     }
+
+    const validated = dungeonMapSchema.safeParse(map)
+    if (!validated.success) {
+      throw apiError(400, 'VALIDATION_ERROR', validated.error.issues[0]?.message || 'These edits would leave invalid map geometry.')
+    }
+    map = validated.data
 
     await syncRoomRowsToMap(access.id, previousMap.rooms, map)
     await activityLogService.log({

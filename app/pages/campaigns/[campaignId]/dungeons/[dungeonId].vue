@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import type { CampaignDungeonLink, CampaignDungeonRegenerateScope, CampaignDungeonRoom } from '#shared/types/dungeon'
 import type { DungeonGeneratorConfigInput, DungeonMapPatchActionInput } from '#shared/schemas/dungeon'
-import { toPlayerSafeMap } from '#shared/utils/dungeon-map'
+import { getDungeonFloorMap, toPlayerSafeMap } from '#shared/utils/dungeon-map'
+import { dungeonMapPalette, renderDungeonDoorSymbol } from '#shared/utils/dungeon-render'
+import { createEncounterMapConfig, encounterMapTypes } from '~/utils/encounter-map-options'
 
 definePageMeta({ layout: 'dashboard' })
 
@@ -20,6 +22,22 @@ type DungeonMutation = {
 }
 const activeMutation = ref<DungeonMutation | null>(null)
 const mutationBusy = computed(() => activeMutation.value !== null)
+const rebuildOpen = ref(false)
+const rebuildConfirmation = shallowRef<{
+  title: string
+  confirmLabel: string
+  action: () => Promise<void>
+} | null>(null)
+const confirmMapRebuild = (title: string, confirmLabel: string, action: () => Promise<boolean | undefined>) => {
+  rebuildConfirmation.value = {
+    title,
+    confirmLabel,
+    action: async () => {
+      if (!await action()) throw new Error(actionError.value || 'Unable to rebuild map. Try again.')
+    },
+  }
+  rebuildOpen.value = true
+}
 const runMutation = async <T,>(operation: DungeonMutation, action: () => Promise<T>, failureMessage: string) => {
   if (!canWriteContent.value || mutationBusy.value) return
   activeMutation.value = operation
@@ -41,16 +59,12 @@ const selectedRoomId = computed({
 const selectedDoorId = ref<string | null>(null)
 const activeDetailsTab = ref<'rooms' | 'corridors' | 'doors' | 'traps' | 'encounters' | 'treasure' | 'zones'>('rooms')
 const showPlayerSafe = ref(false)
-type DungeonThemeOption = 'ruins' | 'cavern' | 'sewer' | 'crypt' | 'custom'
-const dungeonThemeOptions = [
-  { label: 'Ruins', value: 'ruins' },
-  { label: 'Cavern', value: 'cavern' },
-  { label: 'Sewer', value: 'sewer' },
-  { label: 'Crypt', value: 'crypt' },
-  { label: 'Custom', value: 'custom' },
-]
-const selectedThemeOption = ref<DungeonThemeOption>('ruins')
-const customTheme = ref('')
+const showRoute = ref(false)
+const currentFloor = ref(0)
+const selectedFloor = computed({
+  get: () => currentFloor.value,
+  set: (floor: number) => { void selectFloor(floor) },
+})
 
 const {
   data: dungeon,
@@ -90,64 +104,28 @@ const editState = reactive({
   status: 'DRAFT' as 'DRAFT' | 'READY' | 'ARCHIVED',
 })
 
-const configDraft = reactive<DungeonGeneratorConfigInput>({
-  gridType: 'SQUARE',
-  width: 80,
-  height: 80,
-  cellSize: 32,
-  theme: 'ruins',
-  layout: {
-    roomDensity: 0.25,
-    minRoomSize: 4,
-    maxRoomSize: 10,
-    corridorStyle: 'MIXED',
-    connectivityStrictness: 0.7,
-    secretRoomChance: 0.1,
-  },
-  doors: {
-    doorFrequency: 0.65,
-    lockedDoorChance: 0.2,
-    secretDoorChance: 0.08,
-    specialDoorChance: 0.05,
-  },
-  content: {
-    trapDensity: 0.15,
-    encounterDensity: 0.3,
-    treasureDensity: 0.2,
-    dressingDensity: 0.35,
-  },
-})
+const configDraft = reactive<DungeonGeneratorConfigInput>(createEncounterMapConfig())
 
 const settingsDraft = useEditorDraft(
-  () => ({ ...editState, config: JSON.parse(JSON.stringify(configDraft)) as DungeonGeneratorConfigInput, selectedTheme: selectedThemeOption.value, customTheme: customTheme.value }),
+  () => ({ ...editState, config: configDraft }),
   value => {
     Object.assign(editState, { name: value.name, theme: value.theme, seed: value.seed, status: value.status })
     Object.assign(configDraft, value.config)
-    selectedThemeOption.value = value.selectedTheme
-    customTheme.value = value.customTheme
   },
 )
 watch(dungeon, value => {
   if (!value) return
-  const knownTheme = ['ruins', 'cavern', 'sewer', 'crypt'].includes(value.theme)
   settingsDraft.sync({
     name: value.name, theme: value.theme, seed: value.seed, status: value.status,
-    config: JSON.parse(JSON.stringify(value.config)),
-    selectedTheme: knownTheme ? value.theme as DungeonThemeOption : 'custom',
-    customTheme: knownTheme ? '' : value.theme,
+    config: createEncounterMapConfig(value.config),
   }, value.id)
 }, { immediate: true })
 
-const resolveTheme = () =>
-  selectedThemeOption.value === 'custom'
-    ? customTheme.value.trim()
-    : selectedThemeOption.value
-
 const saveSettings = async () => {
   if (!canWriteContent.value || mutationBusy.value) return
-  const resolvedTheme = resolveTheme()
+  const resolvedTheme = editState.theme.trim()
   if (!resolvedTheme) {
-    actionError.value = 'Custom theme is required.'
+    actionError.value = 'Content theme is required.'
     return
   }
   editState.theme = resolvedTheme
@@ -171,13 +149,14 @@ const saveSettings = async () => {
 
 const generate = async () => {
   if (!canWriteContent.value || mutationBusy.value || !await confirmRoomDiscard()) return
-  const resolvedTheme = resolveTheme()
+  const resolvedTheme = editState.theme.trim()
   if (!resolvedTheme) {
-    actionError.value = 'Custom theme is required.'
+    actionError.value = 'Content theme is required.'
     return
   }
-  return runMutation({ type: 'generate' }, async () => {
+  confirmMapRebuild('Generate this map again?', 'Generate map', () => runMutation({ type: 'generate' }, async () => {
     editState.theme = resolvedTheme
+    configDraft.theme = resolvedTheme
     await dungeonApi.generateDungeon(campaignId.value, dungeonId.value, {
       seed: editState.seed,
       config: {
@@ -186,56 +165,43 @@ const generate = async () => {
       },
     })
     roomDraft.discard()
-    await Promise.all([refresh(), refreshRooms()])
-  }, 'Unable to generate dungeon map.')
+    await Promise.all([refresh(), refreshRooms(), refreshLinks()])
+    return true
+  }, 'Unable to generate dungeon map.'))
 }
 
 const regenerate = async (scope: CampaignDungeonRegenerateScope) => {
   if (!canWriteContent.value || mutationBusy.value || !await confirmRoomDiscard()) return
-  return runMutation({ type: 'regenerate' }, async () => {
+  const applyDraft = scope === 'FULL' || scope === 'LAYOUT'
+  const resolvedTheme = editState.theme.trim()
+  if (applyDraft && !resolvedTheme) {
+    actionError.value = 'Content theme is required.'
+    return
+  }
+  const action = () => runMutation({ type: 'regenerate' }, async () => {
+    const config = applyDraft ? createEncounterMapConfig({ ...configDraft, theme: resolvedTheme }) : undefined
     await dungeonApi.regenerateDungeon(campaignId.value, dungeonId.value, {
       scope,
       preserveLocks: true,
       seed: editState.seed,
+      ...(config ? { config } : {}),
     })
     roomDraft.discard()
-    await Promise.all([refresh(), refreshRooms()])
+    await Promise.all([refresh(), refreshRooms(), refreshSnapshots(), ...(applyDraft ? [refreshLinks()] : [])])
+    return true
   }, 'Unable to regenerate dungeon map.')
+  if (applyDraft) {
+    confirmMapRebuild(scope === 'FULL' ? 'Regenerate the whole map?' : 'Regenerate the map layout?', 'Regenerate map', action)
+  } else {
+    return action()
+  }
 }
 
-const applyPreset = (preset: 'small_one_shot' | 'mega_wing' | 'story') => {
-  if (preset === 'small_one_shot') {
-    configDraft.width = 60
-    configDraft.height = 60
-    configDraft.cellSize = 32
-    configDraft.layout.roomDensity = 0.2
-    configDraft.layout.minRoomSize = 4
-    configDraft.layout.maxRoomSize = 9
-    configDraft.layout.corridorStyle = 'STRAIGHT'
-    configDraft.doors.doorFrequency = 0.55
-    return
-  }
-  if (preset === 'mega_wing') {
-    configDraft.width = 140
-    configDraft.height = 140
-    configDraft.cellSize = 24
-    configDraft.layout.roomDensity = 0.35
-    configDraft.layout.minRoomSize = 4
-    configDraft.layout.maxRoomSize = 14
-    configDraft.layout.corridorStyle = 'MIXED'
-    configDraft.doors.doorFrequency = 0.75
-    return
-  }
-
-  configDraft.width = 90
-  configDraft.height = 90
-  configDraft.cellSize = 32
-  configDraft.layout.roomDensity = 0.28
-  configDraft.layout.minRoomSize = 4
-  configDraft.layout.maxRoomSize = 11
-  configDraft.layout.corridorStyle = 'WINDING'
-  configDraft.doors.doorFrequency = 0.65
+const updateGeneratorOptions = (config: DungeonGeneratorConfigInput) => {
+  if (config.mapType !== configDraft.mapType) editState.theme = config.theme
+  Object.assign(configDraft, config)
 }
+const randomizeSeed = () => { editState.seed = `map-${Math.random().toString(36).slice(2, 10)}` }
 
 const regenerationItems = computed(() => [
   [{ label: 'Regenerate full', icon: 'i-lucide-refresh-cw', onSelect: () => regenerate('FULL') }],
@@ -250,10 +216,61 @@ const displayedMap = computed(() => {
   if (!dungeon.value) return null
   return showPlayerSafe.value ? toPlayerSafeMap(dungeon.value.map) : dungeon.value.map
 })
+const floorMap = computed(() => displayedMap.value ? getDungeonFloorMap(displayedMap.value, currentFloor.value) : null)
+const floorItems = computed(() => Array.from({ length: dungeon.value?.map.floorCount || 1 }, (_, value) => ({ label: dungeon.value?.map.floorLabels?.[value] || `Floor ${value + 1}`, value })))
+const isForest = computed(() => dungeon.value?.map.mapType === 'FOREST')
+const mapPalette = computed(() => dungeonMapPalette(dungeon.value?.map.mapType))
+const legendDoors = [
+  { label: 'Standard door', isSecret: false, isLocked: false },
+  { label: 'Locked door', isSecret: false, isLocked: true },
+  { label: 'Secret door', isSecret: true, isLocked: false },
+]
+const tacticalLegend = computed(() => {
+  const map = floorMap.value
+  if (!map) return []
+  const terrain = new Set(map.terrain?.map(feature => feature.kind))
+  return [
+    { label: 'Cover', icon: 'i-lucide-box', present: terrain.has('COVER') },
+    { label: 'High ground', icon: 'i-lucide-mountain', present: terrain.has('ELEVATION') },
+    { label: 'Difficult terrain', icon: 'i-lucide-footprints', present: terrain.has('DIFFICULT') },
+    { label: 'Hazard', icon: 'i-lucide-triangle-alert', present: terrain.has('HAZARD') },
+    { label: 'Bridge', icon: 'i-lucide-route', present: map.corridors.some(passage => passage.kind === 'BRIDGE') },
+    { label: 'Balcony', icon: 'i-lucide-panel-top', present: map.rooms.some(room => room.kind === 'BALCONY') },
+    { label: 'Ladder', icon: 'i-lucide-arrow-up-down', present: map.stairs?.some(stairs => stairs.kind === 'LADDER') },
+  ].filter(feature => feature.present)
+})
+let initializedMapId = ''
+watch(dungeon, value => {
+  if (!value || (value.id === initializedMapId && currentFloor.value < (value.map.floorCount || 1))) return
+  const entrance = value.map.rooms.find(room => room.id === value.map.flow?.entryRoomId)
+  const groundFloor = value.map.floorLabels?.indexOf('Ground floor') ?? -1
+  currentFloor.value = entrance ? entrance.floor || 0 : groundFloor >= 0 ? groundFloor : 0
+  initializedMapId = value.id
+  currentRoomId.value = null
+  selectedDoorId.value = null
+}, { immediate: true })
 
 const selectedRoom = computed(() => {
-  if (!dungeon.value || !selectedRoomId.value) return null
-  return dungeon.value.map.rooms.find((room) => room.id === selectedRoomId.value) || null
+  if (!floorMap.value || !selectedRoomId.value) return null
+  return floorMap.value.rooms.find((room) => room.id === selectedRoomId.value) || null
+})
+const selectedRoomTerrain = computed(() => {
+  const room = selectedRoom.value
+  if (!room) return []
+  return (floorMap.value?.terrain || [])
+    .filter(feature => feature.roomId ? feature.roomId === room.id : feature.x < room.x + room.width
+      && feature.x + feature.width > room.x && feature.y < room.y + room.height && feature.y + feature.height > room.y)
+    .map(feature => ({
+      id: feature.id,
+      label: feature.label || feature.kind.charAt(0) + feature.kind.slice(1).toLowerCase(),
+      effects: [
+        feature.elevationFeet !== undefined ? `+${feature.elevationFeet} ft` : '',
+        feature.blocksMovement ? 'Blocks movement' : '',
+        feature.blocksSight ? 'Blocks sight' : '',
+        feature.kind === 'DIFFICULT' ? 'Extra movement cost' : '',
+        feature.kind === 'HAZARD' ? 'Environmental hazard' : '',
+      ].filter(Boolean).join(' · '),
+    }))
 })
 
 const roomEditor = reactive({
@@ -285,9 +302,16 @@ const selectedRoomMeta = computed(() => {
   return rooms.value.find((room) => room.roomNumber === selectedRoom.value?.roomNumber) || null
 })
 const roomSelectItems = computed(() => [
-  { label: 'Dungeon-level', value: '__dungeon__' },
-  ...((rooms.value || []).map((room) => ({ label: `Room ${room.roomNumber}: ${room.name}`, value: room.id }))),
+  { label: 'Whole map', value: '__dungeon__' },
+  ...((rooms.value || []).filter(room => floorMap.value?.rooms.some(mapRoom => mapRoom.roomNumber === room.roomNumber)).map((room) => ({ label: `${isForest.value ? 'Clearing' : 'Room'} ${room.roomNumber}: ${room.name}`, value: room.id }))),
 ])
+const visibleLinks = computed(() => {
+  const roomIds = new Set(roomSelectItems.value.map(room => room.value))
+  return (links.value || []).filter(link => !link.roomId || roomIds.has(link.roomId))
+})
+watch(floorMap, map => {
+  if (!map?.doors.some(door => door.id === selectedDoorId.value)) selectedDoorId.value = null
+})
 const exportForm = reactive({
   format: 'JSON' as 'JSON' | 'SVG' | 'PNG' | 'PDF',
   mode: 'DM' as 'DM' | 'PLAYER',
@@ -301,9 +325,25 @@ const { confirmDiscard: confirmRoomDiscard } = useUnsavedChanges(roomDraft.dirty
 const { confirmDiscard: confirmSettingsDiscard } = useUnsavedChanges(settingsDraft.dirty, mutationBusy)
 useUnsavedChanges(() => Boolean(newLink.targetId.trim()), mutationBusy)
 const selectRoom = async (id: string | null) => {
-  if (id === currentRoomId.value || !await confirmRoomDiscard()) return
+  const room = id ? displayedMap.value?.rooms.find(room => room.id === id) : null
+  if (mutationBusy.value || (id && !room)) return
+  if (id === currentRoomId.value && (!room || (room.floor || 0) === currentFloor.value)) return
+  if (!await confirmRoomDiscard()) return
   roomDraft.discard()
+  if (room && (room.floor || 0) !== currentFloor.value) {
+    currentFloor.value = room.floor || 0
+    selectedDoorId.value = null
+    newLink.roomId = '__dungeon__'
+  }
   currentRoomId.value = id
+}
+const selectFloor = async (floor: number) => {
+  if (floor === currentFloor.value || mutationBusy.value || !await confirmRoomDiscard()) return
+  roomDraft.discard()
+  currentRoomId.value = null
+  selectedDoorId.value = null
+  newLink.roomId = '__dungeon__'
+  currentFloor.value = floor
 }
 watch(selectedRoomMeta, value => {
   // A transient refresh must not erase a room draft when the selected room is absent.
@@ -330,6 +370,7 @@ const addRoom = async () => {
   await patchMap([
     {
       type: 'ADD_ROOM',
+      floor: currentFloor.value,
       x: roomAction.addX,
       y: roomAction.addY,
       width: roomAction.addWidth,
@@ -423,15 +464,17 @@ const createSnapshot = async () => {
 const restoreSnapshot = async (snapshotId: string) => {
   if (!canWriteContent.value || mutationBusy.value) return
   if (!await confirmSettingsDiscard() || !await confirmRoomDiscard()) return
-  return runMutation({ type: 'restore-snapshot', recordId: snapshotId }, async () => {
+  confirmMapRebuild('Restore this snapshot?', 'Restore snapshot', () => runMutation({ type: 'restore-snapshot', recordId: snapshotId }, async () => {
     await dungeonApi.restoreSnapshot(campaignId.value, dungeonId.value, snapshotId)
     settingsDraft.discard()
     roomDraft.discard()
     await Promise.all([refresh(), refreshRooms(), refreshLinks()])
-  }, 'Unable to restore snapshot.')
+    return true
+  }, 'Unable to restore snapshot.'))
 }
 
 const exportDungeon = async () => {
+  if (isExporting.value) return
   isExporting.value = true
   actionError.value = ''
   try {
@@ -441,6 +484,7 @@ const exportDungeon = async () => {
       includeGrid: exportForm.includeGrid,
       includeLabels: exportForm.includeLabels,
       includeGmLayer: exportForm.includeGmLayer,
+      floor: exportForm.format === 'JSON' ? undefined : currentFloor.value,
     })
     if (!result) {
       throw new Error('Empty export response.')
@@ -500,7 +544,7 @@ const paintZone = async (type: 'SAFE' | 'HAZARD' | 'FACTION') => {
       cells.push({ x, y })
     }
   }
-  await patchMap([{ type: 'PAINT_ZONE', zoneType: type, label: `${type} zone`, cells }])
+  await patchMap([{ type: 'PAINT_ZONE', zoneType: type, label: `${type} zone`, cells, floor: currentFloor.value }])
 }
 
 const toggleEntityLock = async (
@@ -552,7 +596,7 @@ onBeforeUnmount(() => {
 <template>
   <fieldset :disabled="mutationBusy" class="min-w-0 space-y-6">
     <UPageHeader
-      :title="dungeon?.name || 'Dungeon'"
+      :title="dungeon?.name || 'Encounter map'"
     >
       <template #links>
         <div class="flex flex-wrap gap-2">
@@ -586,7 +630,7 @@ onBeforeUnmount(() => {
 
     <SharedReadOnlyAlert
       v-if="!canWriteContent"
-      description="Your role can view this dungeon but cannot modify generation settings."
+      description="Your role can view this encounter map but cannot modify it."
     />
     <UAlert
       v-if="showPlayerSafe"
@@ -597,11 +641,11 @@ onBeforeUnmount(() => {
     />
 
     <UCard v-if="pending && !dungeon" :ui="{ body: 'p-6' }">
-      <p class="text-sm text-muted">Loading dungeon...</p>
+      <p class="text-sm text-muted">Loading encounter map...</p>
     </UCard>
 
     <UCard v-else-if="error && !dungeon" :ui="{ body: 'p-6' }">
-      <p class="text-sm text-error">Unable to load dungeon.</p>
+      <p class="text-sm text-error">Unable to load encounter map.</p>
       <UButton class="mt-3" variant="outline" @click="() => refresh()">Try again</UButton>
     </UCard>
 
@@ -611,27 +655,20 @@ onBeforeUnmount(() => {
           <div class="space-y-4">
             <UCard :ui="{ body: 'p-4 space-y-3' }">
               <h3 class=" type-record">Generator Settings</h3>
-              <div class="grid grid-cols-3 gap-2">
-                <UButton size="xs" variant="soft" :disabled="mutationBusy || !canWriteContent" @click="applyPreset('small_one_shot')">One-shot</UButton>
-                <UButton size="xs" variant="soft" :disabled="mutationBusy || !canWriteContent" @click="applyPreset('mega_wing')">Mega wing</UButton>
-                <UButton size="xs" variant="soft" :disabled="mutationBusy || !canWriteContent" @click="applyPreset('story')">Story</UButton>
-              </div>
               <UFormField label="Name">
                 <UInput v-model="editState.name" :disabled="mutationBusy || !canWriteContent" />
               </UFormField>
-              <UFormField label="Theme">
-                <USelect
-                  v-model="selectedThemeOption"
-                  :disabled="mutationBusy || !canWriteContent"
-                  :items="dungeonThemeOptions"
-                />
-              </UFormField>
-              <UFormField v-if="selectedThemeOption === 'custom'" label="Custom theme">
-                <UInput v-model="customTheme" :disabled="mutationBusy || !canWriteContent" placeholder="volcanic forge" />
+              <DungeonGeneratorOptions :model-value="configDraft" :disabled="mutationBusy || !canWriteContent" @update:model-value="updateGeneratorOptions" />
+              <UFormField label="Content theme" description="Used in generated names and descriptions.">
+                <UInput v-model="editState.theme" :disabled="mutationBusy || !canWriteContent" placeholder="ruins, manor, woodland…" />
               </UFormField>
               <UFormField label="Seed">
-                <UInput v-model="editState.seed" :disabled="mutationBusy || !canWriteContent" />
+                <div class="flex gap-2">
+                  <UInput v-model="editState.seed" :disabled="mutationBusy || !canWriteContent" class="min-w-0 flex-1" />
+                  <UButton icon="i-lucide-shuffle" variant="outline" aria-label="Randomize seed" :disabled="mutationBusy || !canWriteContent" @click="randomizeSeed" />
+                </div>
               </UFormField>
+              <p class="text-xs text-muted">Generate applies these settings to the whole map. Reuse the seed to repeat a layout.</p>
               <UFormField label="Status">
                 <USelect
                   v-model="editState.status"
@@ -651,23 +688,23 @@ onBeforeUnmount(() => {
                   <UInput v-model.number="configDraft.height" type="number" :disabled="mutationBusy || !canWriteContent" />
                 </UFormField>
               </div>
-              <div class="grid grid-cols-2 gap-2">
-                <UFormField label="Room density">
+              <div v-if="configDraft.mapType === 'DUNGEON' || (configDraft.mapType === 'FOREST' && configDraft.tacticalTerrain.cover !== 'NONE')" class="grid grid-cols-2 gap-2">
+                <UFormField v-if="configDraft.mapType === 'FOREST' || configDraft.encounterScale !== 'SINGLE'" :label="configDraft.mapType === 'FOREST' ? 'Ambient cover density' : 'Room density'">
                   <UInput v-model.number="configDraft.layout.roomDensity" type="number" step="0.01" :disabled="mutationBusy || !canWriteContent" />
                 </UFormField>
-                <UFormField label="Door frequency">
+                <UFormField v-if="configDraft.mapType === 'DUNGEON'" label="Door frequency">
                   <UInput v-model.number="configDraft.doors.doorFrequency" type="number" step="0.01" :disabled="mutationBusy || !canWriteContent" />
                 </UFormField>
               </div>
-              <div class="grid grid-cols-2 gap-2">
-                <UFormField label="Min room">
+              <div v-if="configDraft.mapType !== 'BUILDING'" class="grid grid-cols-2 gap-2">
+                <UFormField :label="configDraft.mapType === 'FOREST' ? 'Min clearing' : 'Min room'">
                   <UInput v-model.number="configDraft.layout.minRoomSize" type="number" :disabled="mutationBusy || !canWriteContent" />
                 </UFormField>
-                <UFormField label="Max room">
+                <UFormField :label="configDraft.mapType === 'FOREST' ? 'Max clearing' : 'Max room'">
                   <UInput v-model.number="configDraft.layout.maxRoomSize" type="number" :disabled="mutationBusy || !canWriteContent" />
                 </UFormField>
               </div>
-              <div class="grid grid-cols-2 gap-2">
+              <div v-if="configDraft.mapType === 'DUNGEON'" class="grid grid-cols-2 gap-2">
                 <UFormField label="Corridor layout">
                   <USelect
                     v-model="configDraft.layout.corridorStyle"
@@ -679,9 +716,6 @@ onBeforeUnmount(() => {
                     ]"
                   />
                 </UFormField>
-                <UFormField label="Connectivity">
-                  <UInput v-model.number="configDraft.layout.connectivityStrictness" type="number" step="0.05" :disabled="mutationBusy || !canWriteContent" />
-                </UFormField>
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <UFormField label="Trap density">
@@ -691,8 +725,8 @@ onBeforeUnmount(() => {
                   <UInput v-model.number="configDraft.content.encounterDensity" type="number" step="0.01" :disabled="mutationBusy || !canWriteContent" />
                 </UFormField>
               </div>
-              <div class="grid grid-cols-2 gap-2">
-                <UFormField label="Secret room chance">
+              <div v-if="configDraft.mapType !== 'FOREST'" class="grid grid-cols-2 gap-2">
+                <UFormField v-if="configDraft.mapType === 'DUNGEON'" label="Secret room chance">
                   <UInput v-model.number="configDraft.layout.secretRoomChance" type="number" step="0.01" :disabled="mutationBusy || !canWriteContent" />
                 </UFormField>
                 <UFormField label="Secret door chance">
@@ -729,25 +763,38 @@ onBeforeUnmount(() => {
 
         <div class="space-y-4">
           <UCard :ui="{ body: 'p-4' }">
-            <h3 class=" type-record">Map Summary</h3>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <h3 class="type-record">{{ encounterMapTypes.find(item => item.value === (dungeon?.map.mapType || 'DUNGEON'))?.label }} map</h3>
+              <UFormField v-if="floorItems.length > 1" label="Viewing floor">
+                <USelect v-model="selectedFloor" :items="floorItems" aria-label="Viewing floor" :disabled="mutationBusy" />
+              </UFormField>
+            </div>
             <p class="mt-2 text-sm text-muted">
-              {{ dungeon.map.width }}x{{ dungeon.map.height }} grid •
-              {{ dungeon.map.rooms.length }} rooms •
-              {{ dungeon.map.corridors.length }} corridors •
-              {{ dungeon.map.doors.length }} doors •
-              {{ dungeon.map.traps.length }} traps •
-              {{ dungeon.map.encounters.length }} encounters •
-              {{ dungeon.map.treasures.length }} treasure
+              {{ dungeon.map.width }} × {{ dungeon.map.height }} grid •
+              {{ floorMap?.rooms.length }} {{ isForest ? 'clearings' : 'rooms' }} •
+              {{ floorMap?.corridors.length }} {{ isForest ? 'trails' : 'passages' }} •
+              {{ floorMap?.encounters.length }} encounters
             </p>
             <time :datetime="dungeon.map.metadata.generatedAt" class="mt-1 block text-xs tabular-nums text-muted">Generated {{ new Date(dungeon.map.metadata.generatedAt).toLocaleString() }}</time>
             <div class="mt-3">
               <USwitch v-model="showPlayerSafe" label="Player-safe map mode" />
             </div>
+            <DungeonEncounterRoute
+              v-if="dungeon.map.flow && !showPlayerSafe"
+              v-model:show-route="showRoute"
+              :map="dungeon.map"
+              :rooms="rooms || []"
+              :selected-room-id="selectedRoomId"
+              :busy="mutationBusy"
+              @select-room="selectRoom"
+            />
           </UCard>
 
           <DungeonMapCanvas
             v-model:selected-room-id="selectedRoomId"
             :map="displayedMap || dungeon.map"
+            :floor="currentFloor"
+            :show-route="showRoute && !showPlayerSafe"
           />
 
           <UCard :ui="{ body: 'p-4' }">
@@ -756,27 +803,21 @@ onBeforeUnmount(() => {
               <div class="space-y-2 text-sm">
                 <p class="font-medium">Geometry</p>
                 <div class="flex items-center gap-2 text-xs text-muted">
-                  <span class="inline-block h-3 w-6 rounded-sm border border-[#88714d] bg-[#c6a979]/80" />
-                  Corridor (line connecting rooms)
+                  <span class="inline-block h-3 w-6 rounded-sm" :style="{ backgroundColor: mapPalette.surface }" />
+                  {{ isForest ? 'Trail' : 'Passage' }}
                 </div>
                 <div class="flex items-center gap-2 text-xs text-muted">
-                  <span class="inline-block h-3 w-6 rounded-sm border border-[#94a3b8] bg-[rgba(226,210,178,0.5)]" />
-                  Room (selected room outline is highlighted)
+                  <span class="inline-block h-3 w-6" :class="isForest ? 'rounded-full' : 'rounded-sm border-2'" :style="{ borderColor: mapPalette.wall, backgroundColor: mapPalette.surface }" />
+                  {{ isForest ? 'Clearing' : 'Room' }} (selected outline is highlighted)
                 </div>
               </div>
               <div class="space-y-2 text-sm">
                 <p class="font-medium">Markers</p>
-                <div class="flex items-center gap-2 text-xs text-muted">
-                  <span class="inline-block h-3 w-3 rounded-full bg-[#10b981]" />
-                  Standard door
-                </div>
-                <div class="flex items-center gap-2 text-xs text-muted">
-                  <span class="inline-block h-3 w-3 rounded-full bg-[#ef4444]" />
-                  Locked door
-                </div>
-                <div class="flex items-center gap-2 text-xs text-muted">
-                  <span class="inline-block h-3 w-3 rounded-full bg-[#f59e0b]" />
-                  Secret door
+                <div v-for="door in legendDoors" :key="door.label" class="flex items-center gap-2 text-xs text-muted">
+                  <!-- Fixed renderer markup; attribute and text values are escaped. -->
+                  <!-- eslint-disable-next-line vue/no-v-html -->
+                  <svg viewBox="-16 -16 32 32" class="size-6 shrink-0" aria-hidden="true" v-html="renderDungeonDoorSymbol(32, door)" />
+                  {{ door.label }}
                 </div>
                 <div class="flex items-center gap-2 text-xs text-muted">
                   <span class="inline-block h-0 w-0 border-l-[6px] border-r-[6px] border-b-[10px] border-l-transparent border-r-transparent border-b-[#f97316]" />
@@ -784,20 +825,35 @@ onBeforeUnmount(() => {
                 </div>
               </div>
             </div>
+            <div v-if="tacticalLegend.length" class="mt-3 flex flex-wrap gap-x-4 gap-y-2 border-t border-default pt-3">
+              <span v-for="feature in tacticalLegend" :key="feature.label" class="flex items-center gap-2 text-xs text-muted">
+                <UIcon :name="feature.icon" class="size-4" aria-hidden="true" />
+                {{ feature.label }}
+              </span>
+            </div>
           </UCard>
         </div>
 
         <template #right>
           <div class="space-y-4 xl:sticky xl:top-28">
             <UCard :ui="{ body: 'p-4' }">
-              <h3 class=" type-record">Selected Room</h3>
+              <h3 class=" type-record">Selected {{ isForest ? 'clearing' : 'room' }}</h3>
               <div v-if="selectedRoom" class="mt-2 space-y-1 text-sm">
-                <p class="font-medium">Room {{ selectedRoom.roomNumber }}</p>
+                <p class="font-medium">{{ selectedRoom.label || `${isForest ? 'Clearing' : 'Room'} ${selectedRoom.roomNumber}` }}</p>
                 <p class="text-xs text-muted">
                   Position {{ selectedRoom.x }}, {{ selectedRoom.y }} •
                   Size {{ selectedRoom.width }}x{{ selectedRoom.height }}
                 </p>
                 <UBadge :label="selectedRoom.isSecret ? 'Secret' : 'Visible'" :color="selectedRoom.isSecret ? 'warning' : 'neutral'" variant="subtle" />
+                <section v-if="selectedRoomTerrain.length" aria-label="Room terrain" class="mt-3 border-t border-default pt-3">
+                  <h4 class="type-label">Terrain</h4>
+                  <dl class="mt-2 space-y-2 text-xs">
+                    <div v-for="feature in selectedRoomTerrain" :key="feature.id">
+                      <dt class="font-medium">{{ feature.label }}</dt>
+                      <dd v-if="feature.effects" class="text-muted">{{ feature.effects }}</dd>
+                    </div>
+                  </dl>
+                </section>
               </div>
               <p v-else class="mt-2 text-xs text-muted">Select a room on the map to inspect details.</p>
             </UCard>
@@ -808,6 +864,7 @@ onBeforeUnmount(() => {
                 <UFormField label="Format">
                   <USelect
                     v-model="exportForm.format"
+                    aria-label="Export format"
                     :items="[
                       { label: 'JSON', value: 'JSON' },
                       { label: 'SVG', value: 'SVG' },
@@ -832,8 +889,9 @@ onBeforeUnmount(() => {
                 <USwitch v-model="exportForm.includeGmLayer" label="GM layer" />
               </div>
               <UButton :loading="isExporting" size="sm" variant="outline" @click="exportDungeon">
-                Export dungeon
+                Export map
               </UButton>
+              <p v-if="floorItems.length > 1" class="text-xs text-muted">{{ exportForm.format === 'JSON' ? 'JSON includes every floor.' : `Exports ${floorItems[currentFloor]?.label}.` }}</p>
             </UCard>
 
             <UCard :ui="{ body: 'p-4 space-y-3' }">
@@ -1006,13 +1064,13 @@ onBeforeUnmount(() => {
 
               <div class="max-h-[220px] space-y-2 overflow-y-auto">
                 <div
-                  v-for="link in links || []"
+                  v-for="link in visibleLinks"
                   :key="link.id"
                   class="flex items-center justify-between rounded-md border border-default px-3 py-2 text-xs"
                 >
                   <div class="space-y-1">
                     <p class="font-medium">{{ link.linkType }} → {{ link.targetId }}</p>
-                    <p class="text-muted">{{ link.roomId ? `Room link: ${link.roomId}` : 'Dungeon-level link' }}</p>
+                    <p class="text-muted">{{ link.roomId ? `Room link: ${link.roomId}` : 'Map link' }}</p>
                   </div>
                   <UButton
                     size="xs"
@@ -1033,30 +1091,30 @@ onBeforeUnmount(() => {
                 v-model="activeDetailsTab"
                 :ui="{ list: 'flex-wrap', trigger: 'flex-none' }"
                 :items="[
-                  { label: `Rooms (${dungeon.map.rooms.length})`, value: 'rooms' },
-                  { label: `Corridors (${dungeon.map.corridors.length})`, value: 'corridors' },
-                  { label: `Doors (${dungeon.map.doors.length})`, value: 'doors' },
-                  { label: `Traps (${dungeon.map.traps.length})`, value: 'traps' },
-                  { label: `Encounters (${dungeon.map.encounters.length})`, value: 'encounters' },
-                  { label: `Treasure (${dungeon.map.treasures.length})`, value: 'treasure' },
-                  { label: `Zones (${dungeon.map.zones.length})`, value: 'zones' }
+                  { label: `${isForest ? 'Clearings' : 'Rooms'} (${floorMap!.rooms.length})`, value: 'rooms' },
+                  { label: `${isForest ? 'Trails' : 'Passages'} (${floorMap!.corridors.length})`, value: 'corridors' },
+                  { label: `Doors (${floorMap!.doors.length})`, value: 'doors' },
+                  { label: `Traps (${floorMap!.traps.length})`, value: 'traps' },
+                  { label: `Encounters (${floorMap!.encounters.length})`, value: 'encounters' },
+                  { label: `Treasure (${floorMap!.treasures.length})`, value: 'treasure' },
+                  { label: `Zones (${floorMap!.zones.length})`, value: 'zones' }
                 ]"
                 :content="false"
               />
               <div v-if="activeDetailsTab === 'rooms'" class="mt-3 max-h-[280px] space-y-2 overflow-y-auto">
                 <button
-                  v-for="room in dungeon.map.rooms"
+                  v-for="room in floorMap!.rooms"
                   :key="room.id"
                   type="button"
                   class="w-full rounded-md border border-default px-3 py-2 text-left text-sm hover:bg-elevated"
                   @click="selectedRoomId = room.id"
                 >
-                  Room {{ room.roomNumber }} • {{ room.width }}x{{ room.height }}
+                  {{ room.label || `${isForest ? 'Clearing' : 'Room'} ${room.roomNumber}` }} • {{ room.width }} × {{ room.height }}
                 </button>
               </div>
               <div v-else-if="activeDetailsTab === 'corridors'" class="mt-3 max-h-[280px] space-y-2 overflow-y-auto text-sm">
                 <div
-                  v-for="corridor in dungeon.map.corridors"
+                  v-for="corridor in floorMap!.corridors"
                   :key="corridor.id"
                   class="rounded-md border border-default px-3 py-2"
                 >
@@ -1065,7 +1123,7 @@ onBeforeUnmount(() => {
               </div>
               <div v-else-if="activeDetailsTab === 'doors'" class="mt-3 max-h-[280px] space-y-2 overflow-y-auto text-sm">
                 <button
-                  v-for="door in dungeon.map.doors"
+                  v-for="door in floorMap!.doors"
                   :key="door.id"
                   type="button"
                   class="w-full rounded-md border border-default px-3 py-2 text-left hover:bg-elevated"
@@ -1077,7 +1135,7 @@ onBeforeUnmount(() => {
               </div>
               <div v-else-if="activeDetailsTab === 'traps'" class="mt-3 max-h-[280px] space-y-2 overflow-y-auto text-sm">
                 <div
-                  v-for="trap in dungeon.map.traps"
+                  v-for="trap in floorMap!.traps"
                   :key="trap.id"
                   class="rounded-md border border-default px-3 py-2"
                 >
@@ -1087,7 +1145,7 @@ onBeforeUnmount(() => {
               </div>
               <div v-else-if="activeDetailsTab === 'encounters'" class="mt-3 max-h-[280px] space-y-2 overflow-y-auto text-sm">
                 <div
-                  v-for="encounter in dungeon.map.encounters"
+                  v-for="encounter in floorMap!.encounters"
                   :key="encounter.id"
                   class="rounded-md border border-default px-3 py-2"
                 >
@@ -1097,7 +1155,7 @@ onBeforeUnmount(() => {
               </div>
               <div v-else-if="activeDetailsTab === 'treasure'" class="mt-3 max-h-[280px] space-y-2 overflow-y-auto text-sm">
                 <div
-                  v-for="treasure in dungeon.map.treasures"
+                  v-for="treasure in floorMap!.treasures"
                   :key="treasure.id"
                   class="rounded-md border border-default px-3 py-2"
                 >
@@ -1107,7 +1165,7 @@ onBeforeUnmount(() => {
               </div>
               <div v-else class="mt-3 max-h-[280px] space-y-2 overflow-y-auto text-sm">
                 <div
-                  v-for="zone in dungeon.map.zones"
+                  v-for="zone in floorMap!.zones"
                   :key="zone.id"
                   class="rounded-md border border-default px-3 py-2"
                 >
@@ -1121,5 +1179,21 @@ onBeforeUnmount(() => {
         </template>
       </UPage>
     </template>
+    <SharedConfirmActionModal
+      v-if="rebuildConfirmation"
+      v-model:open="rebuildOpen"
+      :title="rebuildConfirmation.title"
+      description="This replaces the map and resets saved room details."
+      :confirm-label="rebuildConfirmation.confirmLabel"
+      :action="rebuildConfirmation.action"
+    >
+      <template #content>
+        <ul class="list-disc space-y-2 pl-5 text-sm">
+          <li>Saved room names, descriptions, notes, read-aloud text, tags, and explored states are reset.</li>
+          <li>Room links lose their room associations and become whole-map links.</li>
+        </ul>
+        <p class="text-sm text-muted">Snapshots preserve the map layout and generator settings; they do not restore saved room details or room-link associations.</p>
+      </template>
+    </SharedConfirmActionModal>
   </fieldset>
 </template>

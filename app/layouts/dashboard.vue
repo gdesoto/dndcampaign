@@ -89,7 +89,7 @@ const navLinks = computed(() => {
     },
     {
       label: 'Session Play',
-      labels: ['Sessions', 'Encounters', 'Dungeons', 'Journal', 'Requests'],
+      labels: ['Sessions', 'Encounters', 'Encounter maps', 'Journal', 'Requests'],
     },
     {
       label: 'World',

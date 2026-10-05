@@ -31,7 +31,7 @@ describe('useCampaignNavigation', () => {
     expect(navigation.sectionTitle.value).toBe('Encounters')
 
     route.path = '/campaigns/c1/dungeons'
-    expect(navigation.sectionTitle.value).toBe('Dungeons')
+    expect(navigation.sectionTitle.value).toBe('Encounter maps')
 
     route.path = '/campaigns/c1/sessions/s1/summary'
     expect(navigation.sectionTitle.value).toBe('Session details')
@@ -68,12 +68,13 @@ describe('useCampaignNavigation', () => {
     ])
 
     route.path = '/campaigns/c1/dungeons/d1'
-    expect(navigation.sectionTitle.value).toBe('Dungeons')
+    expect(navigation.sectionTitle.value).toBe('Encounter maps')
+    expect(navigation.navItems.value.find(item => item.label === 'Encounter maps')).toMatchObject({ to: '/campaigns/c1/dungeons', active: true })
     expect(navigation.breadcrumbItems.value.map((item) => item.label)).toEqual([
       'Campaigns',
       'Alpha Campaign',
-      'Dungeons',
-      'Dungeon',
+      'Encounter maps',
+      'Encounter map',
     ])
 
     route.path = '/campaigns/c1/journal/j1'

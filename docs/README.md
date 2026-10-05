@@ -1,7 +1,7 @@
 # Application documentation
 
 DND Campaign (DM Vault) organizes tabletop campaigns and their sessions,
-characters, journal, glossary, quests, milestones, encounters, dungeons, maps,
+characters, journal, glossary, quests, milestones, encounters, encounter maps, maps,
 and calendars. Session workflows connect recordings, transcripts, versioned
 documents, summaries, suggestions, and recap playback. Campaign membership
 controls private access; enabled public sections expose selected campaign
@@ -38,6 +38,7 @@ payload reference is [OpenAPI](../public/openapi.json).
 | [Session jobs](SessionJobs.md) | Summary/suggestion sources, n8n callbacks, review, and application of generated results. |
 | [Characters](Characters.md) | Sheet data, derived summaries, manual edits, and D&D Beyond section imports. |
 | [Encounters](EncounterWorkflow.md) | Participants, phases, initiative, effects, and API/MCP operations. |
+| [Encounter maps](EncounterMaps.md) | Generated dungeons, buildings, forests, floor-aware editing, regeneration and snapshot consequences, and portable exports. |
 | [Maps](Maps.md) | GeoJSON and SVG rendering, selection, glossary filtering, and browser requirements. |
 
 ## Integrations and operations
