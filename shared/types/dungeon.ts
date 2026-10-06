@@ -90,11 +90,20 @@ export type CampaignDungeonSnapshot = {
   id: string
   dungeonId: string
   snapshotType: CampaignDungeonSnapshotType
+  label: string | null
   seed: string
   generatorVersion: string
+  mapType: DungeonMapType
+  roomCount: number
+  floorCount: number
+  /** Present when the list is requested with `include=map`. */
+  map?: DungeonMapData
   createdByUserId: string
   createdAt: string
 }
+
+/** A regeneration result names the snapshot taken beforehand so the client can undo it. */
+export type CampaignDungeonRegenerateResult = CampaignDungeonDetail & { previousSnapshotId: string }
 
 export type DungeonExportResult = {
   format: DungeonExportFormat

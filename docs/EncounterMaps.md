@@ -7,12 +7,45 @@ workspace, and their URLs and API resource paths still use `dungeons`.
 
 ## Generation and editing
 
-Choose a map type, size, encounter scale, flow, and seed when creating a map.
+Choose a map type, content theme, size, encounter scale, flow, and seed when creating a map.
 Access, tactical terrain, and vertical-connection controls shape the resulting
-layout. Buildings also expose a floor count. The editor offers generation settings and separate
-regeneration of doors, traps, encounters, and treasure. A seed with the same settings and
+layout. Buildings also expose a floor count. A seed with the same settings and
 generator version reproduces geometry and generated content; timestamps and
 pass history record each generation run.
+
+Creating and editing a map use the same settings form (`DungeonGeneratorOptions`).
+Densities and chances are percentage sliders, room size is a min–max range, and
+the canvas size offers presets or custom dimensions. Changing the map type
+replaces the content theme only while it is still the previous type's default.
+
+The map page shows the map beside a tabbed panel: **Generator**, **Room**,
+**Contents**, **Links**, and **History**. Generator settings are a draft until
+saved or applied. The panel marks unsaved settings and offers Save and Discard.
+**Generate** rebuilds the map from the draft settings and seed. **Reroll** does
+the same with a new random seed. The Generate menu regenerates doors, traps,
+encounters, or treasure alone. Each regeneration offers **Undo**, which restores
+the snapshot taken just before it. A layout rebuild asks for confirmation only
+when saved room details or room links would be reset.
+
+The map canvas uses MapLibre, like the campaign world map. It provides pan,
+pinch and wheel zoom, keyboard navigation, and fullscreen. The renderer's SVG is
+rasterized at about the on-screen resolution. Rooms and room contents are
+GeoJSON overlays: clicking a room opens it in the Room tab, and clicking a trap,
+encounter, treasure, or door marker opens it in Contents. Selecting an item in a
+list highlights it on the map and brings it into view. The Layers menu toggles
+labels, grid, the encounter route, and player view.
+
+The Legend popover lists only what appears on the current floor and view.
+`renderDungeonLegend` draws its swatches with the same symbol code as the map,
+so the two cannot drift apart. The canvas omits the in-image "Blocks sight" key
+(`includeKey: false`); SVG, PNG, and PDF exports keep it, because they have no
+separate legend.
+
+In Contents, a trap, encounter, or treasure can be pinned. Regenerating that
+content layer keeps pinned items (`isLocked`). Doors have lock and secret
+toggles instead. Links use a searchable picker of the campaign's quests,
+sessions, milestones, glossary entries, and encounters, and list linked records
+by name.
 
 | Type | Structure |
 | --- | --- |
@@ -124,8 +157,8 @@ and flow steps without a corridor or stair connection.
 The portable map schema remains version 1. Older maps may omit these additive
 map-type and floor fields and are treated as single-floor dungeons. Maps without
 portals, room kinds, stair dimensions, floor labels, or flow metadata remain supported;
-existing stored layouts are preserved until explicitly regenerated. No database
-migration is required.
+existing stored layouts are preserved until explicitly regenerated. Snapshot
+labels are the only related database column (`CampaignDungeonSnapshot.label`).
 
 Regenerating a content layer preserves geometry, floors, stairs, terrain,
 portals, and encounter flow. Full and layout regeneration rebuild the map and
@@ -133,16 +166,22 @@ its room records using submitted generation settings, or the saved settings
 when none are submitted, and save those settings with the result.
 Content-only regeneration uses the saved settings;
 its API request rejects a `config` payload to avoid saving layout options that
-were not applied. Regeneration saves a `PRE_REGENERATE` snapshot first; manual
-snapshots are also available.
+were not applied. Regeneration saves a `PRE_REGENERATE` snapshot first and
+returns its id as `previousSnapshotId`, which the editor uses for Undo. Only the
+20 newest `PRE_REGENERATE` snapshots are kept per map. Manual snapshots can carry
+a label, and any snapshot can be renamed. History shows each snapshot's
+label or type, time, seed, map type, room count, and a preview. Previews come
+from the list's `include=map` option, which gives viewers player-safe maps.
+
 Snapshots preserve map geometry and generator settings. Generating a replacement
-layout, full or layout regeneration, and restoring a snapshot recreate room
-records from geometry. They reset saved room names, descriptions, notes,
-read-aloud text, tags, and explored state. Room links remain but become whole-map
-links when their original room records are removed. The editor confirms these
-consequences before applying the operation; content-only regeneration keeps room
-records and links. A snapshot is not a backup of separately edited room metadata
-or room-link associations.
+layout and full or layout regeneration recreate room records from geometry.
+Restoring a snapshot does the same unless every room keeps its id, number,
+position, size, and floor, as when undoing a content-only regeneration. Recreated
+records reset saved room names, descriptions, notes, read-aloud text, tags, and
+explored state. Room links remain but become whole-map links when their original
+room records are removed. Content-only regeneration keeps room records and links.
+A snapshot is not a backup of separately edited room metadata or room-link
+associations.
 
 ## Export, import, and access
 

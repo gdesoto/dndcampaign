@@ -1,18 +1,12 @@
-// Keep the decoded SVG and one canvas, rather than four encoded PNG copies.
+// Keep the decoded SVG and one canvas, rather than several encoded PNG copies.
 // MapLibre 6 accepts the canvas directly through ImageSource.updateImage.
-export const loadSvgBackground = async (url: string, signal: AbortSignal) => {
-  const response = await fetch(url, { credentials: 'include', signal })
-  if (!response.ok) throw new Error(`Unable to fetch SVG background (${response.status})`)
-  const blob = await response.blob()
-  const contentType = response.headers.get('content-type') || blob.type
-  if (!contentType.includes('svg')) throw new Error(`Unexpected background content type: ${contentType}`)
-
+export const decodeSvgRaster = async (blob: Blob, signal?: AbortSignal) => {
   const objectUrl = URL.createObjectURL(blob)
   const image = new Image()
   try {
     image.src = objectUrl
     await image.decode()
-    signal.throwIfAborted()
+    signal?.throwIfAborted()
   } finally {
     URL.revokeObjectURL(objectUrl)
   }
@@ -23,6 +17,8 @@ export const loadSvgBackground = async (url: string, signal: AbortSignal) => {
   const width = Math.max(Math.round(image.naturalWidth || image.width || 1920), 1)
   const height = Math.max(Math.round(image.naturalHeight || image.height || 1080), 1)
   return {
+    width,
+    height,
     rasterize(scale: number) {
       canvas.width = Math.max(Math.round(width * scale), 1)
       canvas.height = Math.max(Math.round(height * scale), 1)
@@ -30,4 +26,13 @@ export const loadSvgBackground = async (url: string, signal: AbortSignal) => {
       return canvas
     },
   }
+}
+
+export const loadSvgBackground = async (url: string, signal: AbortSignal) => {
+  const response = await fetch(url, { credentials: 'include', signal })
+  if (!response.ok) throw new Error(`Unable to fetch SVG background (${response.status})`)
+  const blob = await response.blob()
+  const contentType = response.headers.get('content-type') || blob.type
+  if (!contentType.includes('svg')) throw new Error(`Unexpected background content type: ${contentType}`)
+  return decodeSvgRaster(blob, signal)
 }

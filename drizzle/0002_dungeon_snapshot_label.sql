@@ -1,0 +1,1 @@
+ALTER TABLE `CampaignDungeonSnapshot` ADD `label` text;

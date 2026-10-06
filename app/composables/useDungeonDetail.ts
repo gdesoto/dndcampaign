@@ -2,15 +2,16 @@ import type {
   DungeonLinkCreateInput,
   DungeonExportInput,
   DungeonMapPatchInput,
-  DungeonGenerateInput,
   DungeonRegenerateInput,
   DungeonSnapshotCreateInput,
+  DungeonSnapshotUpdateInput,
   DungeonRoomUpdateInput,
   DungeonUpdateInput,
 } from '#shared/schemas/dungeon'
 import type {
   CampaignDungeonDetail,
   CampaignDungeonLink,
+  CampaignDungeonRegenerateResult,
   CampaignDungeonRoom,
   CampaignDungeonSnapshot,
   DungeonExportResult,
@@ -34,17 +35,8 @@ export function useDungeonDetail() {
       method: 'DELETE',
     })
 
-  const generateDungeon = async (campaignId: string, dungeonId: string, input: DungeonGenerateInput = {}) =>
-    request<CampaignDungeonDetail>(`/api/campaigns/${campaignId}/dungeons/${dungeonId}`, {
-      method: 'PATCH',
-      body: {
-        action: 'generate',
-        ...input,
-      },
-    })
-
   const regenerateDungeon = async (campaignId: string, dungeonId: string, input: DungeonRegenerateInput) =>
-    request<CampaignDungeonDetail>(`/api/campaigns/${campaignId}/dungeons/${dungeonId}`, {
+    request<CampaignDungeonRegenerateResult>(`/api/campaigns/${campaignId}/dungeons/${dungeonId}`, {
       method: 'PATCH',
       body: {
         action: 'regenerate',
@@ -86,8 +78,10 @@ export function useDungeonDetail() {
       method: 'DELETE',
     })
 
-  const listSnapshots = async (campaignId: string, dungeonId: string) =>
-    request<CampaignDungeonSnapshot[]>(`/api/campaigns/${campaignId}/dungeons/${dungeonId}/snapshots`)
+  const listSnapshots = async (campaignId: string, dungeonId: string, options: { includeMap?: boolean } = {}) =>
+    request<CampaignDungeonSnapshot[]>(`/api/campaigns/${campaignId}/dungeons/${dungeonId}/snapshots`, {
+      query: options.includeMap ? { include: 'map' } : undefined,
+    })
 
   const createSnapshot = async (
     campaignId: string,
@@ -99,8 +93,14 @@ export function useDungeonDetail() {
       body: input,
     })
 
+  const updateSnapshot = async (campaignId: string, dungeonId: string, snapshotId: string, input: DungeonSnapshotUpdateInput) =>
+    request<CampaignDungeonSnapshot>(`/api/campaigns/${campaignId}/dungeons/${dungeonId}/snapshots/${snapshotId}`, {
+      method: 'PATCH',
+      body: input,
+    })
+
   const restoreSnapshot = async (campaignId: string, dungeonId: string, snapshotId: string) =>
-    request(`/api/campaigns/${campaignId}/dungeons/${dungeonId}/snapshots/${snapshotId}/restore`, {
+    request<{ restored: true; roomsReset: boolean }>(`/api/campaigns/${campaignId}/dungeons/${dungeonId}/snapshots/${snapshotId}/restore`, {
       method: 'POST',
     })
 
@@ -135,7 +135,6 @@ export function useDungeonDetail() {
     getDungeon,
     updateDungeon,
     deleteDungeon,
-    generateDungeon,
     regenerateDungeon,
     patchMap,
     listRooms,
@@ -145,6 +144,7 @@ export function useDungeonDetail() {
     deleteLink,
     listSnapshots,
     createSnapshot,
+    updateSnapshot,
     restoreSnapshot,
     exportDungeon,
     publishDungeon,

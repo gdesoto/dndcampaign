@@ -1,7 +1,7 @@
 import type { JsonValue } from '#server/db/columns'
 import { db } from '#server/db/client'
 import { campaignDungeon, campaignDungeonRoom, campaignDungeonSnapshot } from '#server/db/schema'
-import { eq, and, desc } from 'drizzle-orm'
+import { eq, and, desc, inArray } from 'drizzle-orm'
 import {
   dungeonGeneratorConfigSchema,
   dungeonMapSchema,
@@ -13,6 +13,7 @@ import {
 } from '#shared/schemas/dungeon'
 import type {
   CampaignDungeonDetail,
+  CampaignDungeonRegenerateResult,
   CampaignDungeonStatus,
   CampaignDungeonSummary,
   DungeonGeneratorConfig,
@@ -24,7 +25,10 @@ import { ActivityLogService } from '#server/services/activity-log.service'
 import { apiError } from '#server/utils/http'
 import { hasCampaignDmAccess, type CampaignActor } from '#server/utils/campaign-auth'
 
-const defaultDungeonConfig: DungeonGeneratorConfig = dungeonGeneratorConfigSchema.parse({})
+/** Each reroll takes an automatic snapshot; only the newest ones are kept. */
+const PRE_REGENERATE_SNAPSHOT_LIMIT = 20
+
+const defaultDungeonConfig:DungeonGeneratorConfig = dungeonGeneratorConfigSchema.parse({})
 const generator = new DungeonGeneratorService()
 const activityLogService = new ActivityLogService()
 
@@ -303,7 +307,7 @@ export class DungeonService {
     dungeonId: string,
     actor: CampaignActor,
     input: DungeonRegenerateInput,
-  ): Promise<CampaignDungeonDetail> {
+  ): Promise<CampaignDungeonRegenerateResult> {
     const userId = actor.userId
     const existing = await withDungeonAccess(campaignId, dungeonId)
     if (!existing) {
@@ -317,7 +321,7 @@ export class DungeonService {
       preserveLocks: input.preserveLocks,
     })
 
-    db.insert(campaignDungeonSnapshot).values({
+    const previousSnapshot = db.insert(campaignDungeonSnapshot).values({
         dungeonId: existing.id,
         snapshotType: 'PRE_REGENERATE',
         seed: existing.seed,
@@ -325,7 +329,15 @@ export class DungeonService {
         configJson: (existing.configJson) as unknown as JsonValue,
         mapJson: (existing.mapJson) as unknown as JsonValue,
         createdByUserId: userId,
-      }).returning().get()!
+      }).returning({ id: campaignDungeonSnapshot.id }).get()!
+    const expired = db.select({ id: campaignDungeonSnapshot.id }).from(campaignDungeonSnapshot)
+      .where(and(eq(campaignDungeonSnapshot.dungeonId, existing.id), eq(campaignDungeonSnapshot.snapshotType, 'PRE_REGENERATE')))
+      .orderBy(desc(campaignDungeonSnapshot.createdAt))
+      .all()
+      .slice(PRE_REGENERATE_SNAPSHOT_LIMIT)
+    if (expired.length) {
+      db.delete(campaignDungeonSnapshot).where(inArray(campaignDungeonSnapshot.id, expired.map(row => row.id))).run()
+    }
 
     const updated = db.update(campaignDungeon).set({
         seed,
@@ -354,7 +366,10 @@ export class DungeonService {
       },
     })
 
-    return toDetail({ ...updated, configJson: (config) as unknown as JsonValue, mapJson: (regenerated) as unknown as JsonValue })
+    return {
+      ...toDetail({ ...updated, configJson: (config) as unknown as JsonValue, mapJson: (regenerated) as unknown as JsonValue }),
+      previousSnapshotId: previousSnapshot.id,
+    }
   }
 
   async setPublishStatus(

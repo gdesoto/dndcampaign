@@ -44,11 +44,6 @@ retainedDungeons.seed(dungeons.value)
 const canCreateDungeon = computed(() => !!form.name.trim())
 const normalizedSeed = computed(() => form.seed?.trim() || '')
 
-const generateSeedSuggestion = () => {
-  const value = Math.random().toString(36).slice(2, 10)
-  form.seed = `map-${value}`
-}
-
 const resetForm = () => {
   form.name = ''
   form.seed = undefined
@@ -215,20 +210,7 @@ v-model:open="isCreateOpen" title="Generate encounter map"
           <UFormField label="Name" name="name" required>
             <UInput v-model="form.name" placeholder="Ancient catacombs" />
           </UFormField>
-          <DungeonGeneratorOptions v-model="generationSettings" :disabled="isCreating" />
-          <UFormField label="Seed (optional)" name="seed">
-            <div class="space-y-2">
-              <UInput v-model="form.seed" placeholder="e.g. crypt-2026-03-14" />
-              <div class="flex items-center justify-between gap-2">
-                <p class="text-xs text-muted">
-                  Leave blank for a random map. Reuse a seed and settings to repeat a layout.
-                </p>
-                <UButton size="xs" variant="outline" @click="generateSeedSuggestion">
-                  Generate seed
-                </UButton>
-              </div>
-            </div>
-          </UFormField>
+          <DungeonGeneratorOptions v-model="generationSettings" v-model:seed="form.seed" :disabled="isCreating" seed-placeholder="Blank for a random map" />
         </div>
     </SharedEntityFormModal>
 

@@ -15,6 +15,13 @@
       "when": 1791077570052,
       "tag": "0001_epoch_timestamp_defaults",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791223999819,
+      "tag": "0002_dungeon_snapshot_label",
+      "breakpoints": true
     }
   ]
 }

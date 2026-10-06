@@ -1,11 +1,13 @@
 import { dungeonGeneratorConfigSchema } from '#shared/schemas/dungeon'
-import type { DungeonGeneratorConfig } from '#shared/types/dungeon'
+import type { DungeonGeneratorConfig, DungeonMapType } from '#shared/types/dungeon'
 
 export const encounterMapTypes = [
   { label: 'Dungeon', value: 'DUNGEON' as const, icon: 'i-lucide-castle', description: 'Connected chambers and passages.' },
   { label: 'Building', value: 'BUILDING' as const, icon: 'i-lucide-house', description: 'A shared footprint with adjoining rooms and stairs between floors.' },
   { label: 'Forest', value: 'FOREST' as const, icon: 'i-lucide-trees', description: 'Clearings, trails, trees, and natural cover.' },
 ]
+
+export const encounterMapThemes: Record<DungeonMapType, string> = { DUNGEON: 'ruins', BUILDING: 'manor', FOREST: 'woodland' }
 
 export const encounterMapSizes = [
   { label: 'Small · 30 × 30', value: 30 },
@@ -30,13 +32,15 @@ export const encounterMapFloors = [1, 2, 3, 4].map(value => ({
   value,
 }))
 
+export const randomEncounterMapSeed = () => `map-${Math.random().toString(36).slice(2, 10)}`
+
 export const createEncounterMapConfig = (config: Partial<DungeonGeneratorConfig> = {}) => {
   const mapType = config.mapType || 'DUNGEON'
   return dungeonGeneratorConfigSchema.parse({
     ...config,
     mapType,
     floorCount: mapType === 'BUILDING' ? config.floorCount || 1 : 1,
-    theme: config.theme ?? { DUNGEON: 'ruins', BUILDING: 'manor', FOREST: 'woodland' }[mapType],
+    theme: config.theme ?? encounterMapThemes[mapType],
     layout: { secretRoomChance: mapType === 'DUNGEON' ? 0.1 : 0, ...config.layout },
     doors: { secretDoorChance: mapType === 'DUNGEON' ? 0.08 : 0, ...config.doors },
   })

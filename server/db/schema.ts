@@ -742,6 +742,7 @@ export const campaignDungeonSnapshot = sqliteTable("CampaignDungeonSnapshot", {
   id: text("id").primaryKey().notNull().$defaultFn(() => randomUUID()),
   dungeonId: text("dungeonId").notNull(),
   snapshotType: text("snapshotType", { enum: ["AUTO", "MANUAL", "PRE_REGENERATE"] }).notNull(),
+  label: text("label"),
   seed: text("seed").notNull(),
   generatorVersion: text("generatorVersion").notNull(),
   configJson: jsonColumn("configJson").notNull(),

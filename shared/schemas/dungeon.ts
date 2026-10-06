@@ -539,8 +539,19 @@ export const dungeonLinkCreateSchema = z.object({
   targetId: z.string().trim().min(1).max(120),
 })
 
+export const dungeonSnapshotLabelSchema = z.string().trim().min(1).max(80)
+
 export const dungeonSnapshotCreateSchema = z.object({
   snapshotType: campaignDungeonSnapshotTypeSchema.default('MANUAL'),
+  label: dungeonSnapshotLabelSchema.optional(),
+})
+
+export const dungeonSnapshotUpdateSchema = z.object({
+  label: dungeonSnapshotLabelSchema.nullable(),
+})
+
+export const dungeonSnapshotListQuerySchema = z.object({
+  include: z.enum(['map']).optional(),
 })
 
 export const dungeonExportSchema = z.object({
@@ -621,6 +632,7 @@ export type DungeonMapPatchInput = z.infer<typeof dungeonMapPatchSchema>
 export type DungeonMapPatchActionInput = z.infer<typeof dungeonMapPatchActionSchema>
 export type DungeonLinkCreateInput = z.infer<typeof dungeonLinkCreateSchema>
 export type DungeonSnapshotCreateInput = z.infer<typeof dungeonSnapshotCreateSchema>
+export type DungeonSnapshotUpdateInput = z.infer<typeof dungeonSnapshotUpdateSchema>
 export type DungeonExportInput = z.infer<typeof dungeonExportSchema>
 export type DungeonImportInput = z.infer<typeof dungeonImportSchema>
 export type DungeonPublishInput = z.infer<typeof dungeonPublishSchema>

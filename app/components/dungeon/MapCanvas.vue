@@ -1,336 +1,333 @@
 <script setup lang="ts">
+import type { ExpressionSpecification, GeoJSONSource, ImageSource, Map as MapLibreMap, PointLike } from 'maplibre-gl'
 import type { DungeonMapData } from '#shared/types/dungeon'
-import { getDungeonFloorMap } from '#shared/utils/dungeon-map'
 import { renderDungeonSvg } from '#shared/utils/dungeon-render'
+import { decodeSvgRaster } from '~/components/maps/svg-background'
+import {
+  dungeonCellToLngLat, dungeonImageCoordinates, dungeonMapBounds, dungeonMapFeatures, dungeonMarkerColors,
+  type DungeonMarkerSelection,
+} from '~/utils/dungeon-map-features'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   map: DungeonMapData
-  selectedRoomId?: string | null
-  showLabels?: boolean
   floor?: number
+  selectedRoomId?: string | null
+  selectedMarker?: DungeonMarkerSelection | null
+  showLabels?: boolean
+  showGrid?: boolean
   showRoute?: boolean
-}>()
+}>(), {
+  floor: 0,
+  selectedRoomId: null,
+  selectedMarker: null,
+  showLabels: true,
+  showGrid: true,
+  showRoute: false,
+})
 
 const emit = defineEmits<{
   'update:selectedRoomId': [value: string | null]
+  'update:selectedMarker': [value: DungeonMarkerSelection | null]
 }>()
 
+const rootRef = ref<HTMLElement | null>(null)
 const containerRef = ref<HTMLElement | null>(null)
-const miniMapRef = ref<SVGSVGElement | null>(null)
-const zoom = ref(1)
-const panX = ref(0)
-const panY = ref(0)
-const dragging = ref(false)
-const minimapDragging = ref(false)
-const dragStart = ref({ x: 0, y: 0 })
-const panStart = ref({ x: 0, y: 0 })
-const viewport = reactive({ width: 1, height: 1 })
-const ZOOM_MAX = 4
+const mapRef = shallowRef<MapLibreMap | null>(null)
+const isReady = ref(false)
+const mapError = ref('')
+let disposed = false
+let raster: Awaited<ReturnType<typeof decodeSvgRaster>> | null = null
+let rasterRequest = 0
+let rasterScale = 0
+// Canvas sides beyond this exceed common GPU texture limits.
+const MAX_RASTER_SIDE = 8192
 
-let observer: ResizeObserver | null = null
+const floor = computed(() => props.floor)
+const mapName = computed(() => props.map.mapType === 'FOREST' ? 'Forest encounter' : props.map.mapType === 'BUILDING' ? 'Building' : 'Dungeon')
+const floorName = computed(() => props.map.floorLabels?.[floor.value] || `floor ${floor.value + 1}`)
+const mapLabel = computed(() => `${mapName.value} map, ${floorName.value}`)
+const svg = computed(() => renderDungeonSvg(props.map, {
+  floor: floor.value,
+  includeLabels: props.showLabels,
+  includeGrid: props.showGrid,
+  includeFlow: props.showRoute,
+  // The legend popover explains symbols, so the image needs no built-in key.
+  includeKey: false,
+}))
+const features = computed(() => dungeonMapFeatures(props.map, floor.value))
+const bounds = computed(() => dungeonMapBounds(props.map))
 
-onMounted(() => {
-  if (!containerRef.value || !import.meta.client) return
-  observer = new ResizeObserver((entries) => {
-    const rect = entries[0]?.contentRect
-    if (!rect) return
-    viewport.width = Math.max(1, rect.width)
-    viewport.height = Math.max(1, rect.height)
-    if (!dragging.value) fitMap()
-  })
-  observer.observe(containerRef.value)
-  fitMap()
+const idFilter = (id: string | null | undefined): ExpressionSpecification => ['==', ['get', 'id'], id ?? '']
+
+const FIT_PADDING = 24
+// Until the user pans or zooms, resizes (including fullscreen) refit the map.
+let userMoved = false
+
+const fit = (animate = true) => {
+  const map = mapRef.value
+  if (!map) return
+  userMoved = false
+  map.fitBounds(bounds.value, { padding: FIT_PADDING, duration: animate ? 300 : 0 })
+}
+
+/**
+ * MapLibre zooms in until the viewport fits inside maxBounds, so the bounds
+ * must cover the fitted view at the container's aspect ratio, plus pan room.
+ */
+const constrainCamera = () => {
+  const map = mapRef.value
+  if (!map) return
+  map.setMaxBounds(null)
+  const fitZoom = map.cameraForBounds(bounds.value, { padding: FIT_PADDING })?.zoom
+  if (fitZoom === undefined) return
+  const [[west, south], [east, north]] = bounds.value
+  const degreesPerPixel = 360 / (512 * 2 ** fitZoom)
+  const container = map.getContainer()
+  const halfWidth = Math.max(east - west, container.clientWidth * degreesPerPixel) * 0.75
+  const halfHeight = Math.max(north - south, container.clientHeight * degreesPerPixel) * 0.75
+  const centerX = (west + east) / 2
+  const centerY = (south + north) / 2
+  map.setMaxBounds([[centerX - halfWidth, centerY - halfHeight], [centerX + halfWidth, centerY + halfHeight]])
+  map.setMaxZoom(fitZoom + 5)
+}
+
+/** Rasterize at roughly the on-screen resolution, in power-of-two steps. */
+const updateRasterScale = (force = false) => {
+  const map = mapRef.value
+  const source = map?.getSource<ImageSource>('dungeon-raster')
+  if (!map || !source || !raster) return
+  const [[west], [east]] = bounds.value
+  const displayedWidth = 512 * 2 ** map.getZoom() * (east - west) / 360 * (window.devicePixelRatio || 1)
+  const ceiling = MAX_RASTER_SIDE / Math.max(raster.width, raster.height)
+  const scale = Math.min(ceiling, 4, Math.max(0.25, 2 ** Math.ceil(Math.log2(displayedWidth / raster.width))))
+  if (!force && scale === rasterScale) return
+  source.updateImage({ image: raster.rasterize(scale), coordinates: dungeonImageCoordinates(props.map) })
+  rasterScale = scale
+}
+
+const updateRaster = async () => {
+  if (!mapRef.value || !isReady.value) return
+  const request = ++rasterRequest
+  try {
+    const decoded = await decodeSvgRaster(new Blob([svg.value], { type: 'image/svg+xml' }))
+    if (disposed || request !== rasterRequest) return
+    raster = decoded
+    updateRasterScale(true)
+    mapRef.value?.setLayoutProperty('dungeon-raster', 'visibility', 'visible')
+  } catch (error) {
+    if (!disposed && request === rasterRequest) mapError.value = error instanceof Error ? error.message : 'Unable to draw the map.'
+  }
+}
+
+const updateSelection = () => {
+  const map = mapRef.value
+  if (!map || !isReady.value) return
+  map.setFilter('room-selected-fill', idFilter(props.selectedRoomId))
+  map.setFilter('room-selected-line', idFilter(props.selectedRoomId))
+  map.setFilter('marker-selected', idFilter(props.selectedMarker?.id))
+}
+
+/** Bring a selection made outside the map, such as from a list, into view. */
+const revealSelection = () => {
+  const map = mapRef.value
+  if (!map || !isReady.value) return
+  const id = props.selectedMarker?.id || props.selectedRoomId
+  const feature = id && features.value.features.find(item => item.properties.id === id)
+  if (!feature) return
+  const coordinates = feature.geometry.type === 'Point'
+    ? feature.geometry.coordinates as [number, number]
+    : feature.geometry.coordinates[0]![0] as [number, number]
+  if (!map.getBounds().contains(coordinates)) {
+    const target = feature.geometry.type === 'Point'
+      ? coordinates
+      : (() => {
+          const room = props.map.rooms.find(item => item.id === id)!
+          return dungeonCellToLngLat(props.map, room.x + room.width / 2, room.y + room.height / 2)
+        })()
+    map.easeTo({ center: target, duration: 300 })
+  }
+}
+
+const interactiveLayers = ['marker-points', 'door-targets', 'room-targets']
+const featureAt = (map: MapLibreMap, point: PointLike) => {
+  const found = map.queryRenderedFeatures(point, { layers: interactiveLayers })
+  return found.find(item => item.properties.kind !== 'room') || found[0]
+}
+
+onMounted(async () => {
+  if (!containerRef.value) return
+  try {
+    const [maplibregl, { default: workerUrl }] = await Promise.all([
+      import('maplibre-gl'),
+      import('maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'),
+    ])
+    if (disposed || !containerRef.value) return
+    maplibregl.setWorkerUrl(workerUrl)
+    const map = new maplibregl.Map({
+      container: containerRef.value,
+      style: {
+        version: 8,
+        sources: {},
+        layers: [{ id: 'background', type: 'background', paint: { 'background-color': '#262019' } }],
+      },
+      bounds: bounds.value,
+      fitBoundsOptions: { padding: FIT_PADDING },
+      attributionControl: false,
+      dragRotate: false,
+      pitchWithRotate: false,
+      touchPitch: false,
+      renderWorldCopies: false,
+    })
+    mapRef.value = map
+    map.touchZoomRotate.disableRotation()
+    map.keyboard.disableRotation()
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
+    if (rootRef.value) map.addControl(new maplibregl.FullscreenControl({ container: rootRef.value }), 'top-right')
+    map.getCanvas().setAttribute('aria-label', mapLabel.value)
+
+    map.on('load', () => {
+      if (disposed) return
+      map.addSource('dungeon-raster', { type: 'image', coordinates: dungeonImageCoordinates(props.map) } as never)
+      map.addLayer({
+        id: 'dungeon-raster',
+        type: 'raster',
+        source: 'dungeon-raster',
+        layout: { visibility: 'none' },
+        paint: { 'raster-fade-duration': 0 },
+      })
+      map.addSource('dungeon-features', { type: 'geojson', data: features.value })
+      map.addLayer({
+        id: 'room-targets',
+        type: 'fill',
+        source: 'dungeon-features',
+        filter: ['==', ['get', 'kind'], 'room'],
+        paint: { 'fill-color': '#000000', 'fill-opacity': 0 },
+      })
+      map.addLayer({
+        id: 'room-selected-fill',
+        type: 'fill',
+        source: 'dungeon-features',
+        filter: idFilter(props.selectedRoomId),
+        paint: { 'fill-color': '#b8872e', 'fill-opacity': 0.18 },
+      })
+      map.addLayer({
+        id: 'room-selected-line',
+        type: 'line',
+        source: 'dungeon-features',
+        filter: idFilter(props.selectedRoomId),
+        paint: { 'line-color': '#d4a03c', 'line-width': 3 },
+      })
+      map.addLayer({
+        id: 'door-targets',
+        type: 'circle',
+        source: 'dungeon-features',
+        filter: ['==', ['get', 'kind'], 'door'],
+        paint: { 'circle-radius': 9, 'circle-opacity': 0 },
+      })
+      map.addLayer({
+        id: 'marker-points',
+        type: 'circle',
+        source: 'dungeon-features',
+        filter: ['in', ['get', 'kind'], ['literal', ['trap', 'encounter', 'treasure']]],
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 6, 3, 12, 7],
+          'circle-color': ['match', ['get', 'kind'], 'trap', dungeonMarkerColors.trap, 'encounter', dungeonMarkerColors.encounter, dungeonMarkerColors.treasure],
+          'circle-stroke-color': '#2b2116',
+          'circle-stroke-width': 1.5,
+        },
+      })
+      map.addLayer({
+        id: 'marker-selected',
+        type: 'circle',
+        source: 'dungeon-features',
+        filter: idFilter(props.selectedMarker?.id),
+        paint: { 'circle-radius': 11, 'circle-opacity': 0, 'circle-stroke-color': '#38bdf8', 'circle-stroke-width': 3 },
+      })
+
+      map.on('mousemove', (event) => {
+        map.getCanvas().style.cursor = featureAt(map, event.point) ? 'pointer' : ''
+      })
+      map.on('click', (event) => {
+        const target = featureAt(map, event.point)
+        const kind = target?.properties.kind as string | undefined
+        const id = String(target?.properties.id ?? '')
+        if (!target || !id) {
+          emit('update:selectedMarker', null)
+          emit('update:selectedRoomId', null)
+        } else if (kind === 'room') {
+          emit('update:selectedMarker', null)
+          emit('update:selectedRoomId', props.selectedRoomId === id ? null : id)
+        } else {
+          emit('update:selectedMarker', props.selectedMarker?.id === id ? null : { kind: kind as DungeonMarkerSelection['kind'], id })
+        }
+      })
+      map.on('zoomend', () => updateRasterScale())
+      // Only user gestures carry an originalEvent; programmatic fits do not.
+      for (const event of ['dragstart', 'zoomstart'] as const) {
+        map.on(event, (change) => { if (change.originalEvent) userMoved = true })
+      }
+      map.on('resize', () => {
+        constrainCamera()
+        if (!userMoved) fit(false)
+      })
+
+      constrainCamera()
+      fit(false)
+      isReady.value = true
+      void updateRaster()
+    })
+  } catch (error) {
+    if (disposed) return
+    mapRef.value?.remove()
+    mapRef.value = null
+    mapError.value = error instanceof Error && error.name === 'GPUInitializationError'
+      ? 'This map requires WebGL2. Enable browser hardware acceleration or try a supported browser.'
+      : error instanceof Error ? error.message : 'Unable to initialize the map.'
+  }
 })
+
+watch(svg, () => { void updateRaster() })
+watch(features, (data) => {
+  mapRef.value?.getSource<GeoJSONSource>('dungeon-features')?.setData(data)
+})
+// A different grid size invalidates the camera; same-size edits keep the user's view.
+watch(() => [props.map.width, props.map.height], () => {
+  if (!isReady.value) return
+  mapRef.value?.getSource<ImageSource>('dungeon-raster')?.setCoordinates(dungeonImageCoordinates(props.map))
+  constrainCamera()
+  fit(false)
+})
+watch(() => [props.selectedRoomId, props.selectedMarker?.id], () => {
+  updateSelection()
+  revealSelection()
+})
+watch(mapLabel, label => mapRef.value?.getCanvas().setAttribute('aria-label', label))
 
 onBeforeUnmount(() => {
-  observer?.disconnect()
-  observer = null
+  disposed = true
+  rasterRequest++
+  raster = null
+  mapRef.value?.remove()
+  mapRef.value = null
 })
 
-watch(
-  () => props.map,
-  () => {
-    fitMap()
-  },
-  { deep: false },
-)
-
-const worldWidth = computed(() => props.map.width * props.map.cellSize)
-const worldHeight = computed(() => props.map.height * props.map.cellSize)
-const fitZoom = computed(() =>
-  Math.min(
-    viewport.width / Math.max(1, worldWidth.value),
-    viewport.height / Math.max(1, worldHeight.value),
-  ),
-)
-const minZoom = computed(() => Math.max(0.05, fitZoom.value * 0.5))
-
-const minimapScale = computed(() => {
-  const maxSide = Math.max(worldWidth.value, worldHeight.value, 1)
-  return 180 / maxSide
-})
-
-const viewportWorld = computed(() => {
-  const x = -panX.value / zoom.value
-  const y = -panY.value / zoom.value
-  const width = viewport.width / zoom.value
-  const height = viewport.height / zoom.value
-  return { x, y, width, height }
-})
-
-const clampZoom = (next: number) =>
-  Math.max(minZoom.value, Math.min(ZOOM_MAX, Number(next.toFixed(3))))
-
-const clampPan = (nextX: number, nextY: number, currentZoom = zoom.value) => {
-  const scaledWidth = worldWidth.value * currentZoom
-  const scaledHeight = worldHeight.value * currentZoom
-  const minX = Math.min(0, viewport.width - scaledWidth)
-  const minY = Math.min(0, viewport.height - scaledHeight)
-  const maxX = scaledWidth <= viewport.width ? (viewport.width - scaledWidth) / 2 : 0
-  const maxY = scaledHeight <= viewport.height ? (viewport.height - scaledHeight) / 2 : 0
-  return {
-    x: Math.min(maxX, Math.max(minX, nextX)),
-    y: Math.min(maxY, Math.max(minY, nextY)),
-  }
-}
-
-const setPan = (nextX: number, nextY: number, currentZoom = zoom.value) => {
-  const clamped = clampPan(nextX, nextY, currentZoom)
-  panX.value = clamped.x
-  panY.value = clamped.y
-}
-
-const centerMap = () => {
-  setPan(
-    (viewport.width - worldWidth.value * zoom.value) / 2,
-    (viewport.height - worldHeight.value * zoom.value) / 2,
-  )
-}
-
-const fitMap = () => {
-  zoom.value = clampZoom(fitZoom.value)
-  centerMap()
-}
-
-const applyZoom = (nextZoom: number, clientX?: number, clientY?: number) => {
-  const targetZoom = clampZoom(nextZoom)
-  if (targetZoom === zoom.value) return
-  if (!containerRef.value || clientX === undefined || clientY === undefined) {
-    zoom.value = targetZoom
-    centerMap()
-    return
-  }
-
-  const bounds = containerRef.value.getBoundingClientRect()
-  const anchorX = clientX - bounds.left
-  const anchorY = clientY - bounds.top
-  const worldX = (anchorX - panX.value) / zoom.value
-  const worldY = (anchorY - panY.value) / zoom.value
-  zoom.value = targetZoom
-  setPan(anchorX - worldX * targetZoom, anchorY - worldY * targetZoom, targetZoom)
-}
-
-const changeZoom = (delta: number, clientX?: number, clientY?: number) => {
-  applyZoom(zoom.value + delta, clientX, clientY)
-}
-
-const zoomAroundCenter = (delta: number) => {
-  if (!containerRef.value) {
-    changeZoom(delta)
-    return
-  }
-  const bounds = containerRef.value.getBoundingClientRect()
-  changeZoom(delta, bounds.left + (bounds.width / 2), bounds.top + (bounds.height / 2))
-}
-
-const onWheel = (event: WheelEvent) => {
-  event.preventDefault()
-  changeZoom(event.deltaY > 0 ? -0.1 : 0.1, event.clientX, event.clientY)
-}
-
-const beginDrag = (event: PointerEvent) => {
-  dragging.value = true
-  dragStart.value = { x: event.clientX, y: event.clientY }
-  panStart.value = { x: panX.value, y: panY.value }
-}
-
-const onDrag = (event: PointerEvent) => {
-  if (!dragging.value) return
-  setPan(
-    panStart.value.x + (event.clientX - dragStart.value.x),
-    panStart.value.y + (event.clientY - dragStart.value.y),
-  )
-}
-
-const endDrag = () => {
-  dragging.value = false
-}
-
-const moveViewportToWorldPoint = (worldX: number, worldY: number) => {
-  setPan(
-    viewport.width / 2 - worldX * zoom.value,
-    viewport.height / 2 - worldY * zoom.value,
-  )
-}
-
-const onMinimapPointerDown = (event: PointerEvent) => {
-  if (!miniMapRef.value) return
-  event.preventDefault()
-  event.stopPropagation()
-  minimapDragging.value = true
-  const bounds = miniMapRef.value.getBoundingClientRect()
-  const localX = Math.min(180, Math.max(0, event.clientX - bounds.left))
-  const localY = Math.min(180, Math.max(0, event.clientY - bounds.top))
-  moveViewportToWorldPoint(localX / minimapScale.value, localY / minimapScale.value)
-}
-
-const onMinimapPointerMove = (event: PointerEvent) => {
-  if (!minimapDragging.value || !miniMapRef.value) return
-  event.preventDefault()
-  event.stopPropagation()
-  const bounds = miniMapRef.value.getBoundingClientRect()
-  const localX = Math.min(180, Math.max(0, event.clientX - bounds.left))
-  const localY = Math.min(180, Math.max(0, event.clientY - bounds.top))
-  moveViewportToWorldPoint(localX / minimapScale.value, localY / minimapScale.value)
-}
-
-const onMinimapPointerUp = () => {
-  minimapDragging.value = false
-}
-
-const selectRoom = (roomId: string) => {
-  emit('update:selectedRoomId', props.selectedRoomId === roomId ? null : roomId)
-}
-
-const floorMap = computed(() => getDungeonFloorMap(props.map, props.floor ?? 0))
-const mapSvg = computed(() => renderDungeonSvg(props.map, { floor: props.floor, includeLabels: props.showLabels, includeFlow: props.showRoute }))
-const minimapSvg = computed(() => renderDungeonSvg(props.map, { floor: props.floor, includeGrid: false, includeLabels: false }))
-const mapName = computed(() => props.map.mapType === 'FOREST' ? 'Forest encounter' : props.map.mapType === 'BUILDING' ? 'Building' : 'Dungeon')
-const trapPoints = computed(() =>
-  floorMap.value.traps
-    .map((trap) => {
-      const room = floorMap.value.rooms.find((entry) => entry.id === trap.roomId)
-      if (!room) return null
-      const baseX = room.x * props.map.cellSize
-      const baseY = room.y * props.map.cellSize
-      return {
-        id: trap.id,
-        points: `${baseX + 4},${baseY + 4} ${baseX + 12},${baseY + 4} ${baseX + 8},${baseY + 11}`,
-      }
-    })
-    .filter((item): item is { id: string; points: string } => Boolean(item)),
-)
-const mapHelpId = useId()
-const onMapKeydown = (event: KeyboardEvent) => {
-  if (event.target !== event.currentTarget) return
-  const step = event.shiftKey ? 100 : 40
-  if (event.key === 'ArrowLeft') setPan(panX.value + step, panY.value)
-  else if (event.key === 'ArrowRight') setPan(panX.value - step, panY.value)
-  else if (event.key === 'ArrowUp') setPan(panX.value, panY.value + step)
-  else if (event.key === 'ArrowDown') setPan(panX.value, panY.value - step)
-  else if (event.key === '+' || event.key === '=') zoomAroundCenter(0.1)
-  else if (event.key === '-') zoomAroundCenter(-0.1)
-  else if (event.key === 'Home') fitMap()
-  else return
-  event.preventDefault()
-}
+defineExpose({ fit })
 </script>
 
 <template>
-  <UCard :ui="{ body: 'p-0' }" class="overflow-hidden">
-    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-default px-3 py-2">
-      <p class="text-xs text-muted">
-        Zoom {{ Math.round(zoom * 100) }}% • {{ map.width }}x{{ map.height }} cells
-      </p>
-      <div class="flex items-center gap-1">
-        <UButton size="xs" variant="ghost" icon="i-lucide-minus" aria-label="Zoom out" @click="zoomAroundCenter(-0.1)" />
-        <UButton size="xs" variant="ghost" icon="i-lucide-plus" aria-label="Zoom in" @click="zoomAroundCenter(0.1)" />
-        <UButton size="xs" variant="ghost" icon="i-lucide-locate-fixed" @click="centerMap">Center</UButton>
-        <UButton size="xs" variant="ghost" icon="i-lucide-expand" @click="fitMap">Fit</UButton>
+  <div ref="rootRef" class="flex flex-col overflow-hidden rounded-lg border border-default bg-default">
+    <slot name="toolbar" />
+    <div class="relative min-h-80 flex-1">
+      <div
+        ref="containerRef"
+        class="h-[min(70dvh,48rem)] min-h-80 w-full in-[:fullscreen]:h-full"
+      />
+      <div v-if="!isReady && !mapError" class="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-muted">
+        Loading map…
+      </div>
+      <div v-if="mapError" role="alert" class="absolute inset-0 flex items-center justify-center bg-default/80 p-4 text-sm text-error">
+        {{ mapError }}
       </div>
     </div>
-
-    <div class="space-y-2 border-b border-default p-3">
-      <USelect
-        :aria-label="map.mapType === 'FOREST' ? 'Select encounter area' : map.mapType === 'BUILDING' ? 'Select building room' : 'Select dungeon room'"
-        :model-value="selectedRoomId || '__none__'"
-        :items="[{ label: 'No room selected', value: '__none__' }, ...floorMap.rooms.map(room => ({ label: room.label ? `${room.roomNumber} · ${room.label}` : `Room ${room.roomNumber}`, value: room.id }))]"
-        @update:model-value="value => emit('update:selectedRoomId', value === '__none__' ? null : value)" />
-      <p :id="mapHelpId" class="text-xs text-muted">Focus the map to pan with arrow keys, zoom with + or −, and fit with Home.</p>
-    </div>
-    <div
-      ref="containerRef"
-      tabindex="0"
-      role="region"
-      :aria-label="`${mapName} map controls`"
-      :aria-describedby="mapHelpId"
-      class="relative h-[540px] focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 touch-none overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(154,125,88,0.25),_rgba(38,30,21,0.7)_68%)]"
-      @keydown="onMapKeydown"
-      @wheel="onWheel"
-      @pointerdown="beginDrag"
-      @pointermove="onDrag"
-      @pointerup="endDrag"
-      @pointerleave="endDrag"
-    >
-      <svg
-        class="h-full w-full"
-        :style="{ cursor: dragging ? 'grabbing' : 'grab' }"
-        role="img"
-        :aria-label="`${mapName} map, ${map.floorLabels?.[floor ?? 0] || `floor ${(floor ?? 0) + 1}`}`"
-      >
-        <g :transform="`translate(${panX} ${panY}) scale(${zoom})`">
-          <!-- renderDungeonSvg escapes every text and attribute value. -->
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <g class="pointer-events-none" v-html="mapSvg" />
-          <rect
-            v-for="room in floorMap.rooms"
-            :key="room.id"
-            :x="room.x * map.cellSize"
-            :y="room.y * map.cellSize"
-            :width="room.width * map.cellSize"
-            :height="room.height * map.cellSize"
-            :fill="selectedRoomId === room.id ? 'rgba(184, 135, 46, 0.18)' : 'transparent'"
-            :stroke="selectedRoomId === room.id ? 'var(--ui-primary)' : 'none'"
-            :stroke-width="3"
-            class="cursor-pointer"
-            @click.stop="selectRoom(room.id)"
-          />
-
-          <g v-for="trap in trapPoints" :key="trap.id">
-            <polygon
-              :points="trap.points"
-              fill="#f97316"
-            />
-          </g>
-        </g>
-      </svg>
-
-      <div class="absolute bottom-3 right-3 rounded-md border border-default bg-default/90 p-2 backdrop-blur">
-        <svg
-          ref="miniMapRef"
-          role="img"
-          :aria-label="`${mapName} overview; use the map controls to pan with the keyboard`"
-          :width="180"
-          :height="180"
-          class="block cursor-crosshair"
-          @pointerdown="onMinimapPointerDown"
-          @pointermove="onMinimapPointerMove"
-          @pointerup="onMinimapPointerUp"
-          @pointerleave="onMinimapPointerUp"
-        >
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <g :transform="`scale(${minimapScale})`" class="pointer-events-none" v-html="minimapSvg" />
-          <rect
-            :x="viewportWorld.x * minimapScale"
-            :y="viewportWorld.y * minimapScale"
-            :width="viewportWorld.width * minimapScale"
-            :height="viewportWorld.height * minimapScale"
-            fill="none"
-            stroke="#38bdf8"
-            stroke-width="1.5"
-          />
-        </svg>
-      </div>
-    </div>
-  </UCard>
+  </div>
 </template>

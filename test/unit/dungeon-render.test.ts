@@ -3,7 +3,7 @@ import sharp from 'sharp'
 import { dungeonMapSchema } from '../../shared/schemas/dungeon'
 import type { DungeonMapData } from '../../shared/types/dungeon'
 import { getDungeonFloorMap, toPlayerSafeMap } from '../../shared/utils/dungeon-map'
-import { renderDungeonSvg } from '../../shared/utils/dungeon-render'
+import { renderDungeonLegend, renderDungeonSvg } from '../../shared/utils/dungeon-render'
 
 const exampleMap = (): DungeonMapData => ({
   schemaVersion: 1, gridType: 'SQUARE', width: 20, height: 12, cellSize: 32,
@@ -211,6 +211,7 @@ it('renders tactical surfaces, walkable bridge decking, named levels, balconies 
     expect(y! + imported.cellSize * 0.8 * scale!).toBeLessThanOrEqual(size * imported.cellSize)
     expect(await sharp(Buffer.from(smallSvg)).metadata()).toMatchObject({ width: size * 32, height: size * 32 })
     expect(renderDungeonSvg(imported, { includeLabels: false })).not.toContain('data-layer="terrain-key"')
+    expect(renderDungeonSvg(imported, { includeKey: false })).not.toContain('data-layer="terrain-key"')
   }
 })
 
@@ -225,4 +226,36 @@ it('keeps long room labels inside narrow rooms rather than drawing into adjacent
   const after = await sharp(Buffer.from(withLabels)).extract(outside).raw().toBuffer()
   expect(after).toEqual(before)
   expect(withLabels).toContain('Reception and records office</title>')
+})
+
+it('builds a per-floor legend from the same symbols the map draws', () => {
+  const map = exampleMap()
+  map.floorCount = 2
+  map.rooms.push({ id: 'attic', roomNumber: 3, x: 2, y: 2, width: 4, height: 4, isSecret: true, floor: 1 })
+  map.doors = [{ id: 'door', x: 6, y: 4, corridorId: 'passage', isLocked: true, isSecret: false, isSpecial: false }]
+  map.stairs = [{ id: 'ladder', kind: 'LADDER', fromRoomId: 'entry', toRoomId: 'attic', x: 3, y: 3 }]
+  map.terrain = [
+    { id: 'crates', kind: 'COVER', roomId: 'entry', label: 'Crates', x: 2, y: 2, width: 1, height: 1, blocksSight: true },
+    { id: 'pit', kind: 'HAZARD', roomId: 'attic', floor: 1, label: 'Pit', x: 3, y: 4, width: 1, height: 1 },
+  ]
+  map.portals = [{ id: 'way-in', kind: 'ENTRANCE', roomId: 'entry', points: [{ x: 2, y: 5 }, { x: 0, y: 5 }] }]
+  map.flow = { style: 'LINEAR', entryRoomId: 'entry', objectiveRoomId: 'hall', exitRoomId: 'entry', routeRoomIds: ['entry', 'hall', 'entry'] }
+  const labels = (sections: ReturnType<typeof renderDungeonLegend>) =>
+    Object.fromEntries(sections.map(section => [section.title, section.items.map(item => item.label)]))
+
+  const ground = renderDungeonLegend(map)
+  expect(labels(ground)).toEqual({
+    Layout: ['Room', 'Passage'],
+    Access: ['Locked door', 'Entrance', 'Ladder'],
+    Terrain: ['Cover', 'Blocks sight'],
+  })
+  const svg = renderDungeonSvg(map)
+  // Swatches reuse the drawing code, so their distinctive paint appears on the map too.
+  const crate = ground.find(section => section.title === 'Terrain')!.items[0]!
+  for (const paint of crate.content.match(/fill="#[0-9a-f]{6}"/g)!.filter(fill => fill !== 'fill="#c6b797"')) expect(svg).toContain(paint)
+  expect(labels(renderDungeonLegend(map, { includeFlow: true })).Route).toEqual(['Encounter route', 'Objective'])
+
+  const upper = labels(renderDungeonLegend(map, { floor: 1 }))
+  expect(upper).toEqual({ Layout: ['Room', 'Secret room'], Access: ['Ladder'], Terrain: ['Hazard'] })
+  expect(labels(renderDungeonLegend(map, { floor: 1, includeFlow: true })).Route).toBeUndefined()
 })

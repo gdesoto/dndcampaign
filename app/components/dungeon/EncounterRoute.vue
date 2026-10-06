@@ -6,12 +6,10 @@ const props = defineProps<{
   map: DungeonMapData
   rooms: CampaignDungeonRoom[]
   selectedRoomId: string | null
-  showRoute: boolean
   busy: boolean
 }>()
 const emit = defineEmits<{
   'select-room': [roomId: string]
-  'update:showRoute': [value: boolean]
 }>()
 
 const milestones = computed(() => {
@@ -34,12 +32,9 @@ const milestones = computed(() => {
 </script>
 
 <template>
-  <section v-if="milestones.length === 3" aria-label="Encounter route" class="mt-4 space-y-2 border-t border-default pt-3">
-    <div class="flex flex-wrap items-center justify-between gap-2">
-      <p class="type-record">{{ encounterMapFlows.find(item => item.value === map.flow?.style)?.label }}</p>
-      <USwitch :model-value="showRoute" label="Show route" :disabled="busy" @update:model-value="emit('update:showRoute', $event)" />
-    </div>
-    <div class="flex flex-wrap items-center gap-1">
+  <section v-if="milestones.length === 3" aria-label="Encounter route" class="flex flex-wrap items-center gap-1">
+    <UBadge color="neutral" variant="soft" icon="i-lucide-route" class="mr-1">{{ encounterMapFlows.find(item => item.value === map.flow?.style)?.label }}</UBadge>
+    <div class="contents">
       <template v-for="(milestone, index) in milestones" :key="milestone.label">
         <UButton
           color="neutral"

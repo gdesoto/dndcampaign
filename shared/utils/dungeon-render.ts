@@ -1,4 +1,4 @@
-import type { DungeonDoorGeometry, DungeonMapData, DungeonMapType } from '../types/dungeon'
+import type { DungeonDoorGeometry, DungeonMapData, DungeonMapType, DungeonTerrainFeature } from '../types/dungeon'
 import { getDungeonFloorMap } from './dungeon-map'
 
 type RenderOptions = {
@@ -6,6 +6,8 @@ type RenderOptions = {
   includeGrid?: boolean
   includeLabels?: boolean
   includeFlow?: boolean
+  /** Draws the "Blocks sight" key into the image; views with a separate legend omit it. */
+  includeKey?: boolean
 }
 
 const escapeXml = (value: string | number) => String(value).replace(/[&<>"']/g, character => ({
@@ -26,6 +28,160 @@ export const renderDungeonDoorSymbol = (cell: number, door: Pick<DungeonDoorGeom
   svgElement('title', {}, `${door.isSecret ? 'Secret ' : ''}${door.isLocked ? 'locked door' : 'door'}`)
   + svgElement('rect', { x: -cell * 0.4, y: -cell * 0.1, width: cell * 0.8, height: cell * 0.2, fill: '#8d633a', stroke: door.isSecret ? '#c17526' : '#493a29', 'stroke-width': 2, 'stroke-dasharray': door.isSecret ? '3 2' : 'none' })
   + (door.isLocked ? svgElement('circle', { cx: 0, cy: 0, r: 2.5, fill: '#392c21' }) : '')
+
+// Symbols below are shared by the map and its legend, so the legend always matches the drawing.
+const sightMarker = (cell: number, x: number, y: number, radius = cell * 0.23) => svgElement('g', { transform: `translate(${x} ${y})` },
+  svgElement('circle', { cx: 0, cy: 0, r: radius, fill: '#eee3c5', stroke: '#514936', 'stroke-width': 1 })
+  + svgElement('path', { d: `M${-radius * 0.7},0 Q0,${-radius * 0.75} ${radius * 0.7},0 Q0,${radius * 0.75} ${-radius * 0.7},0 M${-radius * 0.6},${radius * 0.65} L${radius * 0.6},${-radius * 0.65}`, fill: 'none', stroke: '#3e392c', 'stroke-width': 1.25 }))
+
+const arrowPath = (cell: number) => `M${-cell * 0.16},${-cell * 0.18} L${cell * 0.16},0 L${-cell * 0.16},${cell * 0.18}`
+
+export type DungeonTerrainVariant = 'difficult' | 'hazard' | 'elevation' | 'pillar' | 'crate' | 'rock' | 'brush' | 'tree'
+/** Terrain kinds and labels map to these distinct drawings. */
+export const dungeonTerrainVariant = (terrain: Pick<DungeonTerrainFeature, 'kind' | 'label'>, forest: boolean): DungeonTerrainVariant => {
+  if (terrain.kind === 'DIFFICULT') return 'difficult'
+  if (terrain.kind === 'HAZARD') return 'hazard'
+  if (terrain.kind === 'ELEVATION') return 'elevation'
+  if (terrain.kind === 'COVER' && /pillar|column/i.test(terrain.label ?? '')) return 'pillar'
+  if (terrain.kind === 'COVER' && !/rock|boulder/i.test(terrain.label ?? '') && !forest) return 'crate'
+  if (terrain.kind === 'ROCK' || terrain.kind === 'COVER') return 'rock'
+  if (terrain.kind === 'BRUSH') return 'brush'
+  return 'tree'
+}
+
+const terrainNames = { TREE: 'Tree', ROCK: 'Rock', BRUSH: 'Brush', COVER: 'Cover', ELEVATION: 'High ground', DIFFICULT: 'Difficult terrain', HAZARD: 'Hazard' }
+const renderTerrain = (terrain: DungeonTerrainFeature, cell: number, forest: boolean, includeLabels: boolean) => {
+  const x = (terrain.x + terrain.width / 2) * cell
+  const y = (terrain.y + terrain.height / 2) * cell
+  const rx = terrain.width * cell / 2
+  const ry = terrain.height * cell / 2
+  const mechanics = [
+    terrain.label ? `${terrainNames[terrain.kind]}: ${terrain.label}` : terrainNames[terrain.kind],
+    ...(terrain.elevationFeet !== undefined ? [`Elevation ${terrain.elevationFeet >= 0 ? '+' : ''}${terrain.elevationFeet} ft`] : []),
+    ...(terrain.blocksMovement ? ['Blocks movement'] : terrain.blocksMovement === false ? ['Movement permitted'] : []),
+    ...(terrain.blocksSight ? ['Blocks line of sight'] : terrain.blocksSight === false ? ['Clear line of sight'] : []),
+  ]
+  const title = svgElement('title', {}, escapeXml(mechanics.join('; ')))
+  const attributes = { 'data-terrain-id': terrain.id, 'data-terrain-kind': terrain.kind }
+  const left = x - rx
+  const top = y - ry
+  const inset = Math.min(4, cell * 0.12)
+  const hatch = (color: string) => {
+    const lines = []
+    for (let offset = -ry * 2; offset < rx * 2; offset += cell * 0.3) {
+      lines.push(svgElement('line', {
+        x1: left + Math.max(0, offset), y1: top + Math.max(0, -offset),
+        x2: left + Math.min(rx * 2, offset + ry * 2), y2: top + Math.min(ry * 2, rx * 2 - offset),
+        stroke: color, 'stroke-width': 1.5, opacity: 0.7,
+      }))
+    }
+    return lines.join('')
+  }
+  switch (dungeonTerrainVariant(terrain, forest)) {
+    case 'difficult': return svgElement('g', attributes, title
+      + svgElement('rect', { x: left, y: top, width: rx * 2, height: ry * 2, rx: 5, fill: '#9c916c', stroke: '#776b4f', 'stroke-width': 1, 'stroke-dasharray': '4 3' })
+      + hatch('#6e624a')
+      + [-0.4, 0.3].map(offset => svgElement('ellipse', { cx: x + rx * offset, cy: y - ry * offset, rx: cell * 0.12, ry: cell * 0.08, fill: '#b8ae8d', stroke: '#776b4f', 'stroke-width': 1 })).join(''))
+    case 'hazard': return svgElement('g', attributes, title
+      + svgElement('rect', { x: left + 1, y: top + 1, width: rx * 2 - 2, height: ry * 2 - 2, fill: '#6b493d', stroke: '#332824', 'stroke-width': 2 })
+      + hatch('#a17546')
+      + svgElement('path', { d: `M${x},${y - cell * 0.27} L${x + cell * 0.3},${y + cell * 0.24} H${x - cell * 0.3} Z`, fill: '#e8c36a', stroke: '#53352b', 'stroke-width': 1.5 })
+      + svgElement('path', { d: `M${x},${y - cell * 0.1} V${y + cell * 0.07}`, stroke: '#53352b', 'stroke-width': 2 })
+      + svgElement('circle', { cx: x, cy: y + cell * 0.15, r: 1.4, fill: '#53352b' }))
+    case 'elevation': {
+      const label = terrain.elevationFeet !== undefined ? `${terrain.elevationFeet >= 0 ? '+' : ''}${terrain.elevationFeet} ft` : 'Raised'
+      return svgElement('g', attributes, title
+        + svgElement('rect', { x: left, y: top, width: rx * 2, height: ry * 2, fill: '#837761', stroke: '#5e5341', 'stroke-width': 2 })
+        + svgElement('rect', { x: left + inset, y: top + inset, width: rx * 2 - inset * 2, height: ry * 2 - inset * 2, fill: '#c9c0a6', stroke: '#e3d8b9', 'stroke-width': 1.5 })
+        + (includeLabels ? svgElement('text', { x, y, fill: '#302a1f', 'font-size': Math.min(12, cell * 0.36), 'font-family': 'sans-serif', 'text-anchor': 'middle', 'dominant-baseline': 'middle' }, escapeXml(label)) : ''))
+    }
+    case 'pillar': return svgElement('g', attributes, title
+      + svgElement('ellipse', { cx: x + 2, cy: y + 3, rx: rx * 0.8, ry: ry * 0.8, fill: '#504837', opacity: 0.4 })
+      + svgElement('ellipse', { cx: x, cy: y, rx: rx * 0.8, ry: ry * 0.8, fill: '#a9a28e', stroke: '#696453', 'stroke-width': 2 })
+      + svgElement('ellipse', { cx: x, cy: y, rx: rx * 0.52, ry: ry * 0.52, fill: '#d7cfb9', stroke: '#827b67', 'stroke-width': 1 }))
+    case 'crate': return svgElement('g', attributes, title
+      + svgElement('rect', { x: left + inset, y: top + inset, width: rx * 2 - inset * 2, height: ry * 2 - inset * 2, fill: '#aa7d43', stroke: '#604b2e', 'stroke-width': 2 })
+      + svgElement('path', { d: `M${left + inset},${top + inset} L${x + rx - inset},${y + ry - inset} M${x + rx - inset},${top + inset} L${left + inset},${y + ry - inset}`, stroke: '#ddaf6f', 'stroke-width': 3 }))
+    case 'rock': return svgElement('g', attributes, title + svgElement('polygon', {
+      points: `${x - rx},${y + ry * 0.1} ${x - rx * 0.5},${y - ry} ${x + rx * 0.6},${y - ry * 0.8} ${x + rx},${y + ry * 0.35} ${x + rx * 0.15},${y + ry}`,
+      fill: '#96988b', stroke: '#555d52', 'stroke-width': 2,
+    }) + svgElement('path', { d: `M${x - rx * 0.5},${y - ry} L${x + rx * 0.1},${y} L${x + rx},${y + ry * 0.35}`, fill: 'none', stroke: '#bfc0b3', 'stroke-width': 2 }))
+    case 'brush': return svgElement('g', attributes, title + [-0.4, 0.35, 0].map((offset, index) =>
+      svgElement('ellipse', { cx: x + rx * offset, cy: y + (index % 2 ? ry * 0.25 : -ry * 0.1), rx: rx * 0.65, ry: ry * 0.65, fill: '#697d43', stroke: '#4c6038', 'stroke-width': 1 })).join(''))
+    case 'tree': {
+      const radius = Math.min(rx, ry) * 0.9
+      const count = Math.ceil(Math.max(rx, ry) / Math.min(rx, ry))
+      return svgElement('g', attributes, title + Array.from({ length: count }, (_, index) => {
+        const offset = count === 1 ? 0 : (index / (count - 1) - 0.5) * (Math.max(rx, ry) - radius) * 2
+        const cx = x + (rx > ry ? offset : 0)
+        const cy = y + (ry > rx ? offset : 0)
+        return svgElement('circle', { cx: cx + 3, cy: cy + 4, r: radius, fill: '#34492f', opacity: 0.3 })
+          + svgElement('circle', { cx, cy, r: radius, fill: '#395c38', stroke: '#294630', 'stroke-width': 2 })
+          + [-0.35, 0.35].map(shift => svgElement('circle', { cx: cx + radius * shift, cy: cy - radius * 0.2, r: radius * 0.6, fill: '#4a7040' })).join('')
+          + svgElement('circle', { cx, cy, r: radius * 0.1, fill: '#6e5836' })
+      }).join(''))
+    }
+  }
+}
+
+const renderLadder = (cell: number) =>
+  svgElement('rect', { x: 2, y: 2, width: cell - 4, height: cell - 4, fill: '#534733', stroke: '#2f2b22', 'stroke-width': 1.5 })
+  + [0.25, 0.75].map(offset => svgElement('line', { x1: cell * offset, y1: cell * 0.1, x2: cell * offset, y2: cell * 0.9, stroke: '#dbc193', 'stroke-width': 3 })).join('')
+  + [0.25, 0.5, 0.75].map(offset => svgElement('line', { x1: cell * 0.25, y1: cell * offset, x2: cell * 0.75, y2: cell * offset, stroke: '#dbc193', 'stroke-width': 2 })).join('')
+
+const STAIR_DIRECTION_COLOR = '#423523'
+/** An upright stair flight `breadth` wide and `length` long, with one arrow per destination. */
+const renderStairFlight = (cell: number, breadth: number, length: number, wallColor: string, ups: boolean[]) => {
+  const hasLandings = breadth >= cell * 1.5 && length >= cell * 2.5
+  const landing = hasLandings ? Math.min(cell * 0.9, length * 0.25) : cell * 0.12
+  const flightLength = length - landing * 2
+  const steps = Math.max(4, Math.round(flightLength / (cell * 0.25)))
+  const content = svgElement('rect', { x: 0, y: 0, width: breadth, height: length, fill: '#eee0ba', stroke: wallColor, 'stroke-width': 2 })
+    + Array.from({ length: steps + 1 }, (_, index) => svgElement('line', {
+      x1: 2, y1: landing + index * flightLength / steps, x2: breadth - 2, y2: landing + index * flightLength / steps,
+      stroke: '#8a7450', 'stroke-width': 1,
+    })).join('')
+    + ups.map((up, index) => {
+      const x = breadth * (ups.length === 1 ? 0.5 : index === 0 ? 0.32 : 0.68)
+      const startY = up ? length - landing - 3 : landing + 3
+      const endY = up ? landing + 3 : length - landing - 3
+      const arrowY = endY + (up ? 1 : -1) * cell * 0.2
+      return svgElement('path', {
+        d: `M${x},${startY} V${endY} M${x - cell * 0.12},${arrowY} L${x},${endY} L${x + cell * 0.12},${arrowY}`,
+        fill: 'none', stroke: STAIR_DIRECTION_COLOR, 'stroke-width': 2,
+      })
+    }).join('')
+  return { content, hasLandings, landing }
+}
+
+const renderBridgeTile = (cell: number) =>
+  svgElement('rect', { x: -cell / 2, y: -cell * 0.4, width: cell, height: cell * 0.8, fill: '#b78e5b' })
+  + [-0.3, 0, 0.3].map(offset => svgElement('line', { x1: cell * offset, y1: -cell * 0.4, x2: cell * offset, y2: cell * 0.4, stroke: '#795736', 'stroke-width': 1 })).join('')
+  + [-0.43, 0.43].map(offset => svgElement('line', { x1: -cell / 2, y1: cell * offset, x2: cell / 2, y2: cell * offset, stroke: '#4b3826', 'stroke-width': 3 })).join('')
+
+const renderBalcony = (cell: number, left: number, top: number, columns: number, rows: number) => {
+  const deckWidth = columns * cell
+  const deckHeight = rows * cell
+  const boards = Array.from({ length: rows * 3 }, (_, index) => svgElement('line', {
+    x1: left, y1: top + index * cell / 3, x2: left + deckWidth, y2: top + index * cell / 3,
+    stroke: '#aa8151', 'stroke-width': 1,
+  })).join('')
+  const posts = []
+  for (let x = 0; x <= columns; x += 1) {
+    for (const y of [0, rows]) posts.push(svgElement('circle', { cx: left + x * cell, cy: top + y * cell, r: 3, fill: '#57452f' }))
+  }
+  for (let y = 1; y < rows; y += 1) {
+    for (const x of [0, columns]) posts.push(svgElement('circle', { cx: left + x * cell, cy: top + y * cell, r: 3, fill: '#57452f' }))
+  }
+  return svgElement('rect', { x: left, y: top, width: deckWidth, height: deckHeight, fill: '#d4ad78', stroke: '#57452f', 'stroke-width': 2 })
+    + boards + posts.join('')
+}
+
+const CLEARING_PATH = 'M.42,.04 C.68,0 .94,.12 .91,.39 C1,.62 .85,.94 .62,.91 C.39,1 .12,.94 .08,.72 C0,.51 .09,.27 .2,.23 C.22,.12 .28,.06 .42,.04 Z'
+const SECRET_ROOM_STROKE = '#a65f3d'
+const ROUTE_COLOR = '#175e68'
+const portalColor = (portal: { kind: 'ENTRANCE' | 'EXIT'; isSecret?: boolean }) =>
+  portal.isSecret ? '#976624' : portal.kind === 'ENTRANCE' ? '#174e52' : '#703a27'
 
 /** The canvas, minimap and image exports share this floor geometry and drawing order. */
 export const renderDungeonSvg = (map: DungeonMapData, options: RenderOptions = {}) => {
@@ -88,13 +244,10 @@ export const renderDungeonSvg = (map: DungeonMapData, options: RenderOptions = {
     const angle = Math.atan2(segment.to.y - segment.from.y, segment.to.x - segment.from.x) * 180 / Math.PI
     return svgElement('path', {
       transform: `translate(${pixel(segment.from.x + (segment.to.x - segment.from.x) * position)} ${pixel(segment.from.y + (segment.to.y - segment.from.y) * position)}) rotate(${angle})`,
-      d: `M${-cell * 0.16},${-cell * 0.18} L${cell * 0.16},0 L${-cell * 0.16},${cell * 0.18}`,
+      d: arrowPath(cell),
       stroke: color, 'stroke-width': 3, fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
     })
   }
-  const sightMarker = (x: number, y: number, radius = cell * 0.23) => svgElement('g', { transform: `translate(${x} ${y})` },
-    svgElement('circle', { cx: 0, cy: 0, r: radius, fill: '#eee3c5', stroke: '#514936', 'stroke-width': 1 })
-    + svgElement('path', { d: `M${-radius * 0.7},0 Q0,${-radius * 0.75} ${radius * 0.7},0 Q0,${radius * 0.75} ${-radius * 0.7},0 M${-radius * 0.6},${radius * 0.65} L${radius * 0.6},${-radius * 0.65}`, fill: 'none', stroke: '#3e392c', 'stroke-width': 1.25 }))
   const layers = [svgElement('rect', { width, height, fill: ground })]
   const bridges = visible.corridors.filter(passage => passage.kind === 'BRIDGE')
   layers.push(svgElement('g', { 'data-layer': 'bridge-gaps' }, bridges.map(bridge =>
@@ -107,36 +260,20 @@ export const renderDungeonSvg = (map: DungeonMapData, options: RenderOptions = {
   layers.push(svgElement('g', { 'data-layer': 'rooms' }, visible.rooms.map(room => {
     const title = svgElement('title', {}, escapeXml(room.label || `Room ${room.roomNumber}`))
     if (room.kind === 'BALCONY') {
-      const left = room.x * cell
-      const top = room.y * cell
-      const deckWidth = room.width * cell
-      const deckHeight = room.height * cell
-      const boards = Array.from({ length: room.height * 3 }, (_, index) => svgElement('line', {
-        x1: left, y1: top + index * cell / 3, x2: left + deckWidth, y2: top + index * cell / 3,
-        stroke: '#aa8151', 'stroke-width': 1,
-      })).join('')
-      const posts = []
-      for (let x = 0; x <= room.width; x += 1) {
-        for (const y of [0, room.height]) posts.push(svgElement('circle', { cx: left + x * cell, cy: top + y * cell, r: 3, fill: '#57452f' }))
-      }
-      for (let y = 1; y < room.height; y += 1) {
-        for (const x of [0, room.width]) posts.push(svgElement('circle', { cx: left + x * cell, cy: top + y * cell, r: 3, fill: '#57452f' }))
-      }
       return svgElement('g', { 'data-room-id': room.id, 'data-room-kind': 'BALCONY' }, title
-        + svgElement('rect', { x: left, y: top, width: deckWidth, height: deckHeight, fill: '#d4ad78', stroke: '#57452f', 'stroke-width': 2 })
-        + boards + posts.join(''))
+        + renderBalcony(cell, room.x * cell, room.y * cell, room.width, room.height))
     }
     return forest
       ? svgElement('path', {
           'data-room-id': room.id,
           transform: `translate(${room.x * cell} ${room.y * cell}) scale(${room.width * cell} ${room.height * cell})`,
-          d: 'M.42,.04 C.68,0 .94,.12 .91,.39 C1,.62 .85,.94 .62,.91 C.39,1 .12,.94 .08,.72 C0,.51 .09,.27 .2,.23 C.22,.12 .28,.06 .42,.04 Z',
+          d: CLEARING_PATH,
           fill: surface,
         }, title)
       : svgElement('rect', {
           'data-room-id': room.id,
           x: room.x * cell, y: room.y * cell, width: room.width * cell, height: room.height * cell,
-          fill: surface, stroke: room.isSecret ? '#a65f3d' : wallColor, 'stroke-width': 5,
+          fill: surface, stroke: room.isSecret ? SECRET_ROOM_STROKE : wallColor, 'stroke-width': 5,
           'stroke-dasharray': room.isSecret ? '6 3' : 'none',
         }, title)
   }).join('')))
@@ -170,93 +307,20 @@ export const renderDungeonSvg = (map: DungeonMapData, options: RenderOptions = {
     }
     return svgElement('g', { 'data-bridge-id': bridge.id }, svgElement('title', {}, forest ? 'Bridge over a stream' : 'Bridge over a gap')
       + [...tiles.values()].map(tile => {
-        const x = pixel(tile.x)
-        const y = pixel(tile.y)
-        const boards = svgElement('rect', { x: -cell / 2, y: -cell * 0.4, width: cell, height: cell * 0.8, fill: '#b78e5b' })
-          + [-0.3, 0, 0.3].map(offset => svgElement('line', { x1: cell * offset, y1: -cell * 0.4, x2: cell * offset, y2: cell * 0.4, stroke: '#795736', 'stroke-width': 1 })).join('')
-          + [-0.43, 0.43].map(offset => svgElement('line', { x1: -cell / 2, y1: cell * offset, x2: cell / 2, y2: cell * offset, stroke: '#4b3826', 'stroke-width': 3 })).join('')
-        return svgElement('g', { transform: `translate(${x} ${y}) rotate(${tile.horizontal ? 0 : 90})` }, boards)
+        return svgElement('g', { transform: `translate(${pixel(tile.x)} ${pixel(tile.y)}) rotate(${tile.horizontal ? 0 : 90})` }, renderBridgeTile(cell))
       }).join(''))
   }).join('')))
 
   layers.push(svgElement('g', { 'data-layer': 'walls', stroke: wallColor, 'stroke-width': 5, 'stroke-linecap': 'square' }, visible.walls.map(wall =>
     svgElement('line', { x1: wall.x1 * cell, y1: wall.y1 * cell, x2: wall.x2 * cell, y2: wall.y2 * cell })).join('')))
 
-  layers.push(svgElement('g', { 'data-layer': 'terrain' }, (visible.terrain ?? []).map(terrain => {
-    const x = (terrain.x + terrain.width / 2) * cell
-    const y = (terrain.y + terrain.height / 2) * cell
-    const rx = terrain.width * cell / 2
-    const ry = terrain.height * cell / 2
-    const names = { TREE: 'Tree', ROCK: 'Rock', BRUSH: 'Brush', COVER: 'Cover', ELEVATION: 'High ground', DIFFICULT: 'Difficult terrain', HAZARD: 'Hazard' }
-    const mechanics = [
-      terrain.label ? `${names[terrain.kind]}: ${terrain.label}` : names[terrain.kind],
-      ...(terrain.elevationFeet !== undefined ? [`Elevation ${terrain.elevationFeet >= 0 ? '+' : ''}${terrain.elevationFeet} ft`] : []),
-      ...(terrain.blocksMovement ? ['Blocks movement'] : terrain.blocksMovement === false ? ['Movement permitted'] : []),
-      ...(terrain.blocksSight ? ['Blocks line of sight'] : terrain.blocksSight === false ? ['Clear line of sight'] : []),
-    ]
-    const title = svgElement('title', {}, escapeXml(mechanics.join('; ')))
-    const attributes = { 'data-terrain-id': terrain.id, 'data-terrain-kind': terrain.kind }
-    const left = x - rx
-    const top = y - ry
-    const inset = Math.min(4, cell * 0.12)
-    const hatch = (color: string) => {
-      const lines = []
-      for (let offset = -ry * 2; offset < rx * 2; offset += cell * 0.3) {
-        lines.push(svgElement('line', {
-          x1: left + Math.max(0, offset), y1: top + Math.max(0, -offset),
-          x2: left + Math.min(rx * 2, offset + ry * 2), y2: top + Math.min(ry * 2, rx * 2 - offset),
-          stroke: color, 'stroke-width': 1.5, opacity: 0.7,
-        }))
-      }
-      return lines.join('')
-    }
-    if (terrain.kind === 'DIFFICULT') return svgElement('g', attributes, title
-      + svgElement('rect', { x: left, y: top, width: rx * 2, height: ry * 2, rx: 5, fill: '#9c916c', stroke: '#776b4f', 'stroke-width': 1, 'stroke-dasharray': '4 3' })
-      + hatch('#6e624a')
-      + [-0.4, 0.3].map(offset => svgElement('ellipse', { cx: x + rx * offset, cy: y - ry * offset, rx: cell * 0.12, ry: cell * 0.08, fill: '#b8ae8d', stroke: '#776b4f', 'stroke-width': 1 })).join(''))
-    if (terrain.kind === 'HAZARD') return svgElement('g', attributes, title
-      + svgElement('rect', { x: left + 1, y: top + 1, width: rx * 2 - 2, height: ry * 2 - 2, fill: '#6b493d', stroke: '#332824', 'stroke-width': 2 })
-      + hatch('#a17546')
-      + svgElement('path', { d: `M${x},${y - cell * 0.27} L${x + cell * 0.3},${y + cell * 0.24} H${x - cell * 0.3} Z`, fill: '#e8c36a', stroke: '#53352b', 'stroke-width': 1.5 })
-      + svgElement('path', { d: `M${x},${y - cell * 0.1} V${y + cell * 0.07}`, stroke: '#53352b', 'stroke-width': 2 })
-      + svgElement('circle', { cx: x, cy: y + cell * 0.15, r: 1.4, fill: '#53352b' }))
-    if (terrain.kind === 'ELEVATION') {
-      const label = terrain.elevationFeet !== undefined ? `${terrain.elevationFeet >= 0 ? '+' : ''}${terrain.elevationFeet} ft` : 'Raised'
-      return svgElement('g', attributes, title
-        + svgElement('rect', { x: left, y: top, width: rx * 2, height: ry * 2, fill: '#837761', stroke: '#5e5341', 'stroke-width': 2 })
-        + svgElement('rect', { x: left + inset, y: top + inset, width: rx * 2 - inset * 2, height: ry * 2 - inset * 2, fill: '#c9c0a6', stroke: '#e3d8b9', 'stroke-width': 1.5 })
-        + (options.includeLabels !== false ? svgElement('text', { x, y, fill: '#302a1f', 'font-size': Math.min(12, cell * 0.36), 'font-family': 'sans-serif', 'text-anchor': 'middle', 'dominant-baseline': 'middle' }, escapeXml(label)) : ''))
-    }
-    if (terrain.kind === 'COVER' && /pillar|column/i.test(terrain.label ?? '')) return svgElement('g', attributes, title
-      + svgElement('ellipse', { cx: x + 2, cy: y + 3, rx: rx * 0.8, ry: ry * 0.8, fill: '#504837', opacity: 0.4 })
-      + svgElement('ellipse', { cx: x, cy: y, rx: rx * 0.8, ry: ry * 0.8, fill: '#a9a28e', stroke: '#696453', 'stroke-width': 2 })
-      + svgElement('ellipse', { cx: x, cy: y, rx: rx * 0.52, ry: ry * 0.52, fill: '#d7cfb9', stroke: '#827b67', 'stroke-width': 1 }))
-    if (terrain.kind === 'COVER' && !/rock|boulder/i.test(terrain.label ?? '') && !forest) return svgElement('g', attributes, title
-      + svgElement('rect', { x: left + inset, y: top + inset, width: rx * 2 - inset * 2, height: ry * 2 - inset * 2, fill: '#aa7d43', stroke: '#604b2e', 'stroke-width': 2 })
-      + svgElement('path', { d: `M${left + inset},${top + inset} L${x + rx - inset},${y + ry - inset} M${x + rx - inset},${top + inset} L${left + inset},${y + ry - inset}`, stroke: '#ddaf6f', 'stroke-width': 3 }))
-    if (terrain.kind === 'ROCK' || terrain.kind === 'COVER') return svgElement('g', attributes, title + svgElement('polygon', {
-      points: `${x - rx},${y + ry * 0.1} ${x - rx * 0.5},${y - ry} ${x + rx * 0.6},${y - ry * 0.8} ${x + rx},${y + ry * 0.35} ${x + rx * 0.15},${y + ry}`,
-      fill: '#96988b', stroke: '#555d52', 'stroke-width': 2,
-    }) + svgElement('path', { d: `M${x - rx * 0.5},${y - ry} L${x + rx * 0.1},${y} L${x + rx},${y + ry * 0.35}`, fill: 'none', stroke: '#bfc0b3', 'stroke-width': 2 }))
-    if (terrain.kind === 'BRUSH') return svgElement('g', attributes, title + [-0.4, 0.35, 0].map((offset, index) =>
-      svgElement('ellipse', { cx: x + rx * offset, cy: y + (index % 2 ? ry * 0.25 : -ry * 0.1), rx: rx * 0.65, ry: ry * 0.65, fill: '#697d43', stroke: '#4c6038', 'stroke-width': 1 })).join(''))
-    const radius = Math.min(rx, ry) * 0.9
-    const count = Math.ceil(Math.max(rx, ry) / Math.min(rx, ry))
-    return svgElement('g', attributes, title + Array.from({ length: count }, (_, index) => {
-      const offset = count === 1 ? 0 : (index / (count - 1) - 0.5) * (Math.max(rx, ry) - radius) * 2
-      const cx = x + (rx > ry ? offset : 0)
-      const cy = y + (ry > rx ? offset : 0)
-      return svgElement('circle', { cx: cx + 3, cy: cy + 4, r: radius, fill: '#34492f', opacity: 0.3 })
-        + svgElement('circle', { cx, cy, r: radius, fill: '#395c38', stroke: '#294630', 'stroke-width': 2 })
-        + [-0.35, 0.35].map(shift => svgElement('circle', { cx: cx + radius * shift, cy: cy - radius * 0.2, r: radius * 0.6, fill: '#4a7040' })).join('')
-        + svgElement('circle', { cx, cy, r: radius * 0.1, fill: '#6e5836' })
-    }).join(''))
-  }).join('')))
+  layers.push(svgElement('g', { 'data-layer': 'terrain' }, (visible.terrain ?? []).map(terrain =>
+    renderTerrain(terrain, cell, forest, options.includeLabels !== false)).join('')))
 
   const sightBlockers = (visible.terrain ?? []).filter(terrain => terrain.blocksSight)
   layers.push(svgElement('g', { 'data-layer': 'sight-markers' }, sightBlockers.map(terrain =>
     svgElement('g', { 'data-sight-blocker': terrain.id }, svgElement('title', {}, 'Blocks line of sight')
-      + sightMarker((terrain.x + terrain.width - 0.22) * cell, (terrain.y + 0.22) * cell))).join('')))
+      + sightMarker(cell, (terrain.x + terrain.width - 0.22) * cell, (terrain.y + 0.22) * cell))).join('')))
 
   if (options.includeFlow && map.flow) {
     const paths: Array<Array<{ x: number; y: number }>> = []
@@ -295,9 +359,9 @@ export const renderDungeonSvg = (map: DungeonMapData, options: RenderOptions = {
       svgElement('title', {}, 'Encounter objective')
       + svgElement('circle', { cx: (objective.x + (forest ? objective.width / 2 : 0.55)) * cell, cy: (objective.y + (forest ? objective.height * 0.35 : 0.55)) * cell, r: cell * 0.22, fill: '#dcad49', stroke: '#745120', 'stroke-width': 2 })) : ''
     layers.push(svgElement('g', { 'data-layer': 'flow' },
-      svgElement('g', { 'stroke-dasharray': `${cell * 0.24} ${cell * 0.14}` }, routes.map(({ points }) => corridor(points, '#175e68', 3)).join(''))
-      + routes.map(({ points, bidirectional }) => directionArrow(points, '#175e68', bidirectional ? 0.3 : 0.5)
-        + (bidirectional ? directionArrow([...points].reverse(), '#175e68', 0.3) : '')).join('') + objectiveMark))
+      svgElement('g', { 'stroke-dasharray': `${cell * 0.24} ${cell * 0.14}` }, routes.map(({ points }) => corridor(points, ROUTE_COLOR, 3)).join(''))
+      + routes.map(({ points, bidirectional }) => directionArrow(points, ROUTE_COLOR, bidirectional ? 0.3 : 0.5)
+        + (bidirectional ? directionArrow([...points].reverse(), ROUTE_COLOR, 0.3) : '')).join('') + objectiveMark))
   }
 
   layers.push(svgElement('g', { 'data-layer': 'doors' }, visible.doors.map(door => {
@@ -347,7 +411,7 @@ export const renderDungeonSvg = (map: DungeonMapData, options: RenderOptions = {
     const before = portal.points.at(-2)!
     const horizontal = end.y === before.y
     const label = portal.label || (portal.isSecret ? 'Concealed entrance' : portal.kind === 'ENTRANCE' ? 'Entrance' : 'Exit')
-    const color = portal.isSecret ? '#976624' : portal.kind === 'ENTRANCE' ? '#174e52' : '#703a27'
+    const color = portalColor(portal)
     const boundaryPoints = [before, end]
     const arrow = directionArrow(portal.kind === 'ENTRANCE' ? boundaryPoints.reverse() : boundaryPoints, color)
     const fontSize = Math.max(10, Math.min(cell * 0.5, (width - cell) / Math.max(1, label.length * 0.64)))
@@ -384,9 +448,7 @@ export const renderDungeonSvg = (map: DungeonMapData, options: RenderOptions = {
     }
     const title = svgElement('title', {}, escapeXml(`${stair.kind === 'LADDER' ? 'Ladder: ' : ''}${stair.destinations.map(destination => destination.label).join('; ')}`))
     if (stair.kind === 'LADDER') {
-      const ladder = svgElement('rect', { x: 2, y: 2, width: cell - 4, height: cell - 4, fill: '#534733', stroke: '#2f2b22', 'stroke-width': 1.5 })
-        + [0.25, 0.75].map(offset => svgElement('line', { x1: cell * offset, y1: cell * 0.1, x2: cell * offset, y2: cell * 0.9, stroke: '#dbc193', 'stroke-width': 3 })).join('')
-        + [0.25, 0.5, 0.75].map(offset => svgElement('line', { x1: cell * 0.25, y1: cell * offset, x2: cell * 0.75, y2: cell * offset, stroke: '#dbc193', 'stroke-width': 2 })).join('')
+      const ladder = renderLadder(cell)
       const labels = options.includeLabels === false ? '' : stair.destinations.map(({ label }, index) => svgElement('text', {
         x: cell / 2, y: cell * (1.4 + index * 0.4), fill: '#302a1f', 'font-size': Math.max(10, cell * 0.3),
         'text-anchor': 'middle', 'paint-order': 'stroke', stroke: surface, 'stroke-width': 3,
@@ -396,26 +458,8 @@ export const renderDungeonSvg = (map: DungeonMapData, options: RenderOptions = {
     const horizontal = stair.width > stair.height
     const breadth = Math.min(stair.width, stair.height) * cell
     const length = Math.max(stair.width, stair.height) * cell
-    const hasLandings = breadth >= cell * 1.5 && length >= cell * 2.5
-    const landing = hasLandings ? Math.min(cell * 0.9, length * 0.25) : cell * 0.12
-    const flightLength = length - landing * 2
-    const steps = Math.max(4, Math.round(flightLength / (cell * 0.25)))
-    const directionColor = '#423523'
-    const content = svgElement('rect', { x: 0, y: 0, width: breadth, height: length, fill: '#eee0ba', stroke: wallColor, 'stroke-width': 2 })
-      + Array.from({ length: steps + 1 }, (_, index) => svgElement('line', {
-        x1: 2, y1: landing + index * flightLength / steps, x2: breadth - 2, y2: landing + index * flightLength / steps,
-        stroke: '#8a7450', 'stroke-width': 1,
-      })).join('')
-      + stair.destinations.map(({ up }, index) => {
-        const x = breadth * (stair.destinations.length === 1 ? 0.5 : index === 0 ? 0.32 : 0.68)
-        const startY = up ? length - landing - 3 : landing + 3
-        const endY = up ? landing + 3 : length - landing - 3
-        const arrowY = endY + (up ? 1 : -1) * cell * 0.2
-        return svgElement('path', {
-          d: `M${x},${startY} V${endY} M${x - cell * 0.12},${arrowY} L${x},${endY} L${x + cell * 0.12},${arrowY}`,
-          fill: 'none', stroke: directionColor, 'stroke-width': 2,
-        })
-      }).join('')
+    const { content, hasLandings, landing } = renderStairFlight(cell, breadth, length, wallColor, stair.destinations.map(destination => destination.up))
+    const directionColor = STAIR_DIRECTION_COLOR
     const flight = svgElement('g', { transform: horizontal ? `translate(0 ${breadth}) rotate(-90)` : 'translate(0 0)' }, content)
     const text = options.includeLabels === false ? '' : hasLandings
       ? [true, false].map(up => {
@@ -469,7 +513,7 @@ export const renderDungeonSvg = (map: DungeonMapData, options: RenderOptions = {
         svgElement('tspan', { x, y: top + index * fontSize * 1.15 }, escapeXml(line))).join(''))
     }).join('')))
 
-    if (sightBlockers.length) {
+    if (sightBlockers.length && options.includeKey !== false) {
       const keyWidth = cell * 4.3
       const keyHeight = cell * 0.8
       const margin = cell * 0.2
@@ -495,10 +539,97 @@ export const renderDungeonSvg = (map: DungeonMapData, options: RenderOptions = {
       const position = candidates.sort((a, b) => a.overlaps - b.overlaps)[0]!
       layers.push(svgElement('g', { 'data-layer': 'terrain-key', transform: `translate(${position.x} ${position.y}) scale(${scale})` },
         svgElement('rect', { width: keyWidth, height: keyHeight, rx: 4, fill: '#eee3c5', stroke: '#514936', 'stroke-width': 1 })
-        + sightMarker(cell * 0.45, keyHeight / 2)
+        + sightMarker(cell, cell * 0.45, keyHeight / 2)
         + svgElement('text', { x: cell * 0.85, y: keyHeight / 2, 'dominant-baseline': 'middle', 'font-family': 'sans-serif', 'font-size': Math.min(12, cell * 0.36), fill: '#302a1f' }, 'Blocks sight')))
     }
   }
 
   return svgElement('svg', { xmlns: 'http://www.w3.org/2000/svg', width, height, viewBox: `0 0 ${width} ${height}` }, layers.join('\n'))
+}
+
+export type DungeonLegendItem = { key: string; label: string; viewBox: string; content: string }
+export type DungeonLegendSection = { title: string; items: DungeonLegendItem[] }
+
+const terrainLegend: Array<{ variant: DungeonTerrainVariant; label: string; sample: Pick<DungeonTerrainFeature, 'kind' | 'label' | 'elevationFeet'> }> = [
+  { variant: 'crate', label: 'Cover', sample: { kind: 'COVER', label: 'Crates' } },
+  { variant: 'pillar', label: 'Pillar', sample: { kind: 'COVER', label: 'Pillar' } },
+  { variant: 'rock', label: 'Rock', sample: { kind: 'ROCK' } },
+  { variant: 'tree', label: 'Tree', sample: { kind: 'TREE' } },
+  { variant: 'brush', label: 'Brush', sample: { kind: 'BRUSH' } },
+  { variant: 'elevation', label: 'High ground', sample: { kind: 'ELEVATION', elevationFeet: 5 } },
+  { variant: 'difficult', label: 'Difficult terrain', sample: { kind: 'DIFFICULT' } },
+  { variant: 'hazard', label: 'Hazard', sample: { kind: 'HAZARD' } },
+]
+
+/**
+ * Legend swatches for one floor, drawn with the same symbols as the map. Only
+ * features present on that floor are listed, so the legend matches the view.
+ */
+export const renderDungeonLegend = (map: DungeonMapData, options: Pick<RenderOptions, 'floor' | 'includeFlow'> = {}): DungeonLegendSection[] => {
+  const cell = 32
+  const visible = getDungeonFloorMap(map, options.floor ?? 0)
+  const forest = map.mapType === 'FOREST'
+  const { surface, wall } = dungeonMapPalette(map.mapType)
+  const floorTile = (size = cell) => svgElement('rect', { x: 0, y: 0, width: size, height: size, fill: surface })
+  const item = (key: string, label: string, content: string, viewBox = `0 0 ${cell} ${cell}`): DungeonLegendItem => ({ key, label, viewBox, content })
+  const portals = visible.portals ?? []
+  const stairKinds = new Set((visible.stairs ?? []).map(stair => stair.kind ?? 'STAIRS'))
+  const variants = new Set((visible.terrain ?? []).map(terrain => dungeonTerrainVariant(terrain, forest)))
+  const portalArrow = (portal: { kind: 'ENTRANCE' | 'EXIT'; isSecret?: boolean }) => floorTile()
+    + svgElement('path', { transform: `translate(${cell / 2} ${cell / 2}) rotate(-90)`, d: arrowPath(cell), stroke: portalColor(portal), 'stroke-width': 3, fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' })
+  const passageWidth = cell * (forest ? 1.3 : 0.8)
+
+  const layout = [
+    item('room', forest ? 'Clearing' : 'Room', forest
+      ? svgElement('path', { transform: `scale(${cell})`, d: CLEARING_PATH, fill: surface })
+      : svgElement('rect', { x: 3, y: 3, width: cell - 6, height: cell - 6, fill: surface, stroke: wall, 'stroke-width': 5 })),
+    ...(visible.corridors.length || portals.length ? [item('passage', forest ? 'Trail' : 'Passage',
+      (forest ? '' : svgElement('line', { x1: 0, y1: cell * 0.75, x2: cell * 1.5, y2: cell * 0.75, stroke: wall, 'stroke-width': passageWidth + 5 }))
+      + svgElement('line', { x1: 0, y1: cell * 0.75, x2: cell * 1.5, y2: cell * 0.75, stroke: surface, 'stroke-width': passageWidth, 'stroke-linecap': forest ? 'round' : 'butt' }),
+      `0 0 ${cell * 1.5} ${cell * 1.5}`)] : []),
+    ...(visible.rooms.some(room => room.isSecret) ? [item('secret-room', 'Secret room',
+      svgElement('rect', { x: 3, y: 3, width: cell - 6, height: cell - 6, fill: surface, stroke: SECRET_ROOM_STROKE, 'stroke-width': 5, 'stroke-dasharray': '6 3' }))] : []),
+    ...(visible.rooms.some(room => room.kind === 'BALCONY') ? [item('balcony', 'Balcony', renderBalcony(cell, 0, 0, 1, 1), `-4 -4 ${cell + 8} ${cell + 8}`)] : []),
+    ...(visible.corridors.some(passage => passage.kind === 'BRIDGE') ? [item('bridge', 'Bridge',
+      svgElement('rect', { x: 0, y: 0, width: cell, height: cell, fill: forest ? '#496b74' : '#181c20' })
+      + svgElement('g', { transform: `translate(${cell / 2} ${cell / 2})` }, renderBridgeTile(cell)))] : []),
+  ]
+
+  const doorKinds = [
+    { key: 'door', label: 'Door', door: { isSecret: false, isLocked: false } },
+    { key: 'locked-door', label: 'Locked door', door: { isSecret: false, isLocked: true } },
+    { key: 'secret-door', label: 'Secret door', door: { isSecret: true, isLocked: false } },
+  ].filter(({ door }) => visible.doors.some(item => item.isSecret === door.isSecret && (door.isSecret || item.isLocked === door.isLocked)))
+  const access = [
+    ...doorKinds.map(({ key, label, door }) => item(key, label,
+      svgElement('rect', { x: -cell / 2, y: -cell / 2, width: cell, height: cell, fill: surface }) + renderDungeonDoorSymbol(cell, door), `${-cell / 2} ${-cell / 2} ${cell} ${cell}`)),
+    ...(portals.some(portal => portal.kind === 'ENTRANCE' && !portal.isSecret) ? [item('entrance', 'Entrance', portalArrow({ kind: 'ENTRANCE' }))] : []),
+    ...(portals.some(portal => portal.kind === 'EXIT' && !portal.isSecret) ? [item('exit', 'Exit', portalArrow({ kind: 'EXIT' }))] : []),
+    ...(portals.some(portal => portal.isSecret) ? [item('concealed', 'Concealed entrance', portalArrow({ kind: 'ENTRANCE', isSecret: true }))] : []),
+    ...(stairKinds.has('STAIRS') ? [item('stairs', 'Stairs (arrow points up)', renderStairFlight(cell, cell, cell * 2, wall, [true]).content, `0 0 ${cell} ${cell * 2}`)] : []),
+    ...(stairKinds.has('LADDER') ? [item('ladder', 'Ladder', renderLadder(cell))] : []),
+  ]
+
+  const terrain = [
+    ...terrainLegend.filter(entry => variants.has(entry.variant)).map(entry => item(entry.variant, entry.label,
+      floorTile() + renderTerrain({ id: `legend-${entry.variant}`, x: 0, y: 0, width: 1, height: 1, ...entry.sample }, cell, forest, true))),
+    ...((visible.terrain ?? []).some(feature => feature.blocksSight) ? [item('blocks-sight', 'Blocks sight', sightMarker(cell, cell / 2, cell / 2, cell * 0.35))] : []),
+  ]
+
+  const routeOnFloor = Boolean(options.includeFlow && map.flow && visible.rooms.some(room => map.flow!.routeRoomIds.includes(room.id)))
+  const route = routeOnFloor ? [
+    item('route', 'Encounter route',
+      svgElement('line', { x1: 2, y1: cell / 2, x2: cell * 1.5 - 2, y2: cell / 2, stroke: ROUTE_COLOR, 'stroke-width': 3, 'stroke-dasharray': `${cell * 0.24} ${cell * 0.14}` })
+      + svgElement('path', { transform: `translate(${cell * 0.75} ${cell / 2})`, d: arrowPath(cell), stroke: ROUTE_COLOR, 'stroke-width': 3, fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }),
+      `0 0 ${cell * 1.5} ${cell}`),
+    ...(visible.rooms.some(room => room.id === map.flow!.objectiveRoomId) ? [item('objective', 'Objective',
+      floorTile() + svgElement('circle', { cx: cell / 2, cy: cell / 2, r: cell * 0.22, fill: '#dcad49', stroke: '#745120', 'stroke-width': 2 }))] : []),
+  ] : []
+
+  return [
+    { title: 'Layout', items: layout },
+    { title: 'Access', items: access },
+    { title: 'Terrain', items: terrain },
+    { title: 'Route', items: route },
+  ].filter(section => section.items.length)
 }

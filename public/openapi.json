@@ -2831,7 +2831,7 @@
           "campaigns"
         ],
         "summary": "Update, generate, regenerate, publish or export an encounter map",
-        "description": "Auto-documented from server route `campaigns/[campaignId]/dungeons/[dungeonId].patch.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Updates a map, or runs a typed `action`. `regenerate` first saves a `PRE_REGENERATE` snapshot and returns the map detail with `previousSnapshotId`; restore that snapshot to undo the regeneration. This operation uses the project standard API envelope `{ data, error }`.",
         "operationId": "patch_api_campaigns_campaignId_dungeons_dungeonId",
         "parameters": [
           {
@@ -3383,7 +3383,7 @@
           "campaigns"
         ],
         "summary": "GET /api/campaigns/{campaignId}/dungeons/{dungeonId}/snapshots",
-        "description": "Auto-documented from server route `campaigns/[campaignId]/dungeons/[dungeonId]/snapshots.get.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Lists snapshots newest first. `include=map` adds each snapshot map for previews; viewers receive player-safe maps. Regeneration keeps only the 20 newest `PRE_REGENERATE` snapshots per map.",
         "operationId": "get_api_campaigns_campaignId_dungeons_dungeonId_snapshots",
         "parameters": [
           {
@@ -3405,6 +3405,17 @@
               "type": "string"
             },
             "example": "c8b2e6f8-3f9b-4b06-a4a0-87a0ef0b7a15"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "map"
+              ]
+            },
+            "description": "Add each snapshot map to the response."
           }
         ],
         "responses": {
@@ -3447,7 +3458,7 @@
           "campaigns"
         ],
         "summary": "POST /api/campaigns/{campaignId}/dungeons/{dungeonId}/snapshots",
-        "description": "Auto-documented from server route `campaigns/[campaignId]/dungeons/[dungeonId]/snapshots.post.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Saves the current map, seed, and generator settings as a snapshot. Room details and room links are not included.",
         "operationId": "post_api_campaigns_campaignId_dungeons_dungeonId_snapshots",
         "parameters": [
           {
@@ -3510,11 +3521,139 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GenericMutationRequest"
+                "type": "object",
+                "properties": {
+                  "snapshotType": {
+                    "type": "string",
+                    "enum": [
+                      "AUTO",
+                      "MANUAL",
+                      "PRE_REGENERATE"
+                    ],
+                    "default": "MANUAL"
+                  },
+                  "label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80,
+                    "description": "Optional name shown in snapshot history. Surrounding whitespace is trimmed."
+                  }
+                }
               },
               "example": {
-                "action": "update",
-                "notes": "Example payload. See schema and endpoint-specific docs."
+                "snapshotType": "MANUAL",
+                "label": "Before the boss fight"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/campaigns/{campaignId}/dungeons/{dungeonId}/snapshots/{snapshotId}": {
+      "patch": {
+        "tags": [
+          "campaigns"
+        ],
+        "summary": "PATCH /api/campaigns/{campaignId}/dungeons/{dungeonId}/snapshots/{snapshotId}",
+        "description": "Renames a snapshot. Send `label: null` to clear it. Requires content write access.",
+        "operationId": "patch_api_campaigns_campaignId_dungeons_dungeonId_snapshots_snapshotId",
+        "parameters": [
+          {
+            "name": "campaignId",
+            "in": "path",
+            "required": true,
+            "description": "Path identifier for campaignId.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "c8b2e6f8-3f9b-4b06-a4a0-87a0ef0b7a15"
+          },
+          {
+            "name": "dungeonId",
+            "in": "path",
+            "required": true,
+            "description": "Path identifier for dungeonId.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "c8b2e6f8-3f9b-4b06-a4a0-87a0ef0b7a15"
+          },
+          {
+            "name": "snapshotId",
+            "in": "path",
+            "required": true,
+            "description": "Path identifier for snapshotId.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "c8b2e6f8-3f9b-4b06-a4a0-87a0ef0b7a15"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The renamed snapshot.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/DungeonSnapshot"
+                    },
+                    "error": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "x-source-file": "campaigns/[campaignId]/dungeons/[dungeonId]/snapshots/[snapshotId].patch.ts",
+        "x-generated": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "minLength": 1,
+                    "maxLength": 80,
+                    "description": "Optional name shown in snapshot history. Surrounding whitespace is trimmed."
+                  }
+                },
+                "required": [
+                  "label"
+                ]
+              },
+              "example": {
+                "label": "Final layout"
               }
             }
           }
@@ -3527,7 +3666,7 @@
           "campaigns"
         ],
         "summary": "POST /api/campaigns/{campaignId}/dungeons/{dungeonId}/snapshots/{snapshotId}/restore",
-        "description": "Auto-documented from server route `campaigns/[campaignId]/dungeons/[dungeonId]/snapshots/[snapshotId]/restore.post.ts`. This operation uses the project standard API envelope `{ data, error }`.",
+        "description": "Restores a snapshot map, seed, and generator settings. Saved room details are kept when the room layout is unchanged; otherwise room records are reset and room links become whole-map links. Returns `{ restored: true, roomsReset }`.",
         "operationId": "post_api_campaigns_campaignId_dungeons_dungeonId_snapshots_snapshotId_restore",
         "parameters": [
           {
@@ -18866,6 +19005,75 @@
           }
         },
         "description": "Basements, dual staircases, ladders and balconies require BUILDING with at least two total floors. Bridges are available for all map types. Balconies require an upper floor above ground, so a building with a basement needs at least three total floors to enable them."
+      },
+      "DungeonSnapshot": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "dungeonId": {
+            "type": "string"
+          },
+          "snapshotType": {
+            "type": "string",
+            "enum": [
+              "AUTO",
+              "MANUAL",
+              "PRE_REGENERATE"
+            ]
+          },
+          "label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "seed": {
+            "type": "string"
+          },
+          "generatorVersion": {
+            "type": "string"
+          },
+          "mapType": {
+            "type": "string",
+            "enum": [
+              "DUNGEON",
+              "BUILDING",
+              "FOREST"
+            ]
+          },
+          "roomCount": {
+            "type": "integer"
+          },
+          "floorCount": {
+            "type": "integer"
+          },
+          "map": {
+            "type": "object",
+            "description": "The snapshot map, present only with `include=map`. Viewers receive the player-safe map."
+          },
+          "createdByUserId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "dungeonId",
+          "snapshotType",
+          "label",
+          "seed",
+          "generatorVersion",
+          "mapType",
+          "roomCount",
+          "floorCount",
+          "createdByUserId",
+          "createdAt"
+        ]
       }
     }
   }

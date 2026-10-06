@@ -903,6 +903,55 @@ describe('dungeon API routes', () => {
     expect(restoredLinks.find((link: { id: string }) => link.id === roomLinkId)).toMatchObject({ roomId: null, targetId: 'snapshot-room-link' })
   })
 
+  it('labels and previews snapshots, undoes partial regeneration without losing room details, and prunes automatic snapshots', { timeout: 60_000 }, async () => {
+    const headers = { cookie: cookies.owner, 'content-type': 'application/json' }
+    const resourceUrl = `${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}`
+    const data = async (response: Response) => {
+      expect(response.status).toBe(200)
+      return (await response.json()).data
+    }
+
+    const labelled = await data(await fetch(`${resourceUrl}/snapshots`, {
+      method: 'POST', headers, body: JSON.stringify({ snapshotType: 'MANUAL', label: '  Favourite layout  ' }),
+    }))
+    expect(labelled).toMatchObject({ label: 'Favourite layout', mapType: 'DUNGEON', roomCount: expect.any(Number), floorCount: 1 })
+    expect(labelled.map).toBeUndefined()
+    const rename = (snapshotId: string, label: string | null) => fetch(`${resourceUrl}/snapshots/${snapshotId}`, {
+      method: 'PATCH', headers, body: JSON.stringify({ label }),
+    })
+    expect((await data(await rename(labelled.id, 'Final layout'))).label).toBe('Final layout')
+    expect((await data(await rename(labelled.id, null))).label).toBeNull()
+    expect((await rename('missing-snapshot', 'Nope')).status).toBe(404)
+    const viewerRename = await fetch(`${resourceUrl}/snapshots/${labelled.id}`, {
+      method: 'PATCH', headers: { cookie: cookies.viewer, 'content-type': 'application/json' }, body: JSON.stringify({ label: 'Viewer' }),
+    })
+    expect(viewerRename.status).toBe(403)
+
+    const withMaps = await data(await fetch(`${resourceUrl}/snapshots?include=map`, { headers }))
+    expect(withMaps.find((snapshot: { id: string }) => snapshot.id === labelled.id).map.rooms).toHaveLength(labelled.roomCount)
+    const viewerMaps = await data(await fetch(`${resourceUrl}/snapshots?include=map`, { headers: { cookie: cookies.viewer } }))
+    expect(viewerMaps.every((snapshot: { map: { rooms: Array<{ isSecret: boolean }> } }) =>
+      snapshot.map.rooms.every(room => !room.isSecret))).toBe(true)
+
+    const [record] = await data(await fetch(`${resourceUrl}/rooms`, { headers }))
+    await data(await fetch(`${resourceUrl}/rooms/${record.id}`, { method: 'PATCH', headers, body: JSON.stringify({ gmNotes: 'Keep me' }) }))
+    const regenerated = await data(await fetch(resourceUrl, {
+      method: 'PATCH', headers, body: JSON.stringify({ action: 'regenerate', scope: 'TRAPS', seed: 'undo-traps' }),
+    }))
+    expect(regenerated.previousSnapshotId).toEqual(expect.any(String))
+    const undone = await data(await fetch(`${resourceUrl}/snapshots/${regenerated.previousSnapshotId}/restore`, { method: 'POST', headers }))
+    expect(undone).toEqual({ restored: true, roomsReset: false })
+    const keptRecords = await data(await fetch(`${resourceUrl}/rooms`, { headers }))
+    expect(keptRecords.find((room: { id: string }) => room.id === record.id)).toMatchObject({ gmNotes: 'Keep me' })
+
+    for (let index = 0; index < 21; index += 1) {
+      await data(await fetch(resourceUrl, { method: 'PATCH', headers, body: JSON.stringify({ action: 'regenerate', scope: 'TRAPS' }) }))
+    }
+    const pruned = await data(await fetch(`${resourceUrl}/snapshots`, { headers }))
+    expect(pruned.filter((snapshot: { snapshotType: string }) => snapshot.snapshotType === 'PRE_REGENERATE')).toHaveLength(20)
+    expect(pruned.some((snapshot: { id: string }) => snapshot.id === labelled.id)).toBe(true)
+  })
+
   // Render four export formats and round-trip imports through the real server.
   it('exports JSON/SVG/PNG/PDF, supports import, and rejects oversized import payloads', { timeout: 30_000 }, async () => {
     const addSecretRoomResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/dungeons/${dungeonId}/map`, {
