@@ -3,7 +3,7 @@
 Source of truth for agent guidance in this repo. `CLAUDE.md` points here and adds Claude Code specifics only.
 
 ## Overview
-DND Campaign (DM Vault) is a Nuxt 4 web app for running tabletop campaigns: campaigns, sessions, journal, glossary, quests, milestones, characters, encounters, dungeons, maps, calendar, recordings, and public campaign pages. The backend is Nuxt server routes plus Drizzle ORM and better-sqlite3 on SQLite. Recordings and artifacts go through a storage abstraction (local by default) and stream with HTTP range support.
+DND Campaign (DM Vault) is a Nuxt 4 web app for running tabletop campaigns: campaigns, sessions, journal, glossary, quests, milestones, characters, encounters, encounter maps, world maps, calendar, recordings, and public campaign pages. The backend is Nuxt server routes plus Drizzle ORM and better-sqlite3 on SQLite. Recordings and artifacts go through a storage abstraction (local by default) and stream with HTTP range support.
 
 ## Where things live
 - `app/` — pages, components, composables, layouts. No `stores/` directory; state lives in composables.

@@ -1,6 +1,6 @@
 # DND Campaign
 
-DND Campaign (DM Vault) is a web app for running tabletop campaigns. It manages characters, journal entries, player requests, glossary entries, quests, milestones, encounters, dungeons, maps, and fantasy calendars. Session workflows cover recordings, ElevenLabs transcription, versioned documents, n8n summaries, suggestions, and recap playback. Campaign membership controls access, with optional public campaign pages. Artifacts use local storage and media streams support HTTP ranges.
+DND Campaign (DM Vault) is a web app for running tabletop campaigns. It manages characters, journal entries, player requests, glossary entries, quests, milestones, encounters, encounter maps, world maps, and fantasy calendars. Session workflows cover recordings, ElevenLabs transcription, versioned documents, n8n summaries, suggestions, and recap playback. Campaign membership controls access, with optional public campaign pages. Artifacts use local storage and media streams support HTTP ranges.
 
 **Tech Stack**
 

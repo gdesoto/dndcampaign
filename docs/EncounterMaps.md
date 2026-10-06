@@ -2,8 +2,18 @@
 
 The campaign's **Encounter maps** workspace creates editable tactical maps from a
 seed and generation settings. It supports dungeons, buildings with one to four
-floors, and forest encounters. Existing dungeon records remain available in this
-workspace, and their URLs and API resource paths still use `dungeons`.
+floors, and forest encounters. The workspace uses
+`/campaigns/:campaignId/encounter-maps` and
+`/campaigns/:campaignId/encounter-maps/:encounterMapId`. Existing dungeon records
+remain available; the former `dungeons` routes have been removed.
+
+Internal feature code uses `EncounterMap` names: components live in
+`app/components/encounter-map/`, services in `server/services/encounter-map/`,
+and the shared schemas, types, and utilities use `encounter-map` filenames.
+`useEncounterMaps` owns the list, editor, and export API calls. Dungeon names
+remain at compatibility boundaries: database tables and columns, portable JSON
+`dungeon`/`dungeonId` fields, and historical activity identifiers. `DUNGEON` is
+also the dungeon map type.
 
 ## Generation and editing
 
@@ -13,7 +23,7 @@ layout. Buildings also expose a floor count. A seed with the same settings and
 generator version reproduces geometry and generated content; timestamps and
 pass history record each generation run.
 
-Creating and editing a map use the same settings form (`DungeonGeneratorOptions`).
+Creating and editing a map use the same settings form (`EncounterMapGeneratorOptions`).
 Densities and chances are percentage sliders, room size is a min–max range, and
 the canvas size offers presets or custom dimensions. Changing the map type
 replaces the content theme only while it is still the previous type's default.
@@ -36,7 +46,7 @@ list highlights it on the map and brings it into view. The Layers menu toggles
 labels, grid, the encounter route, and player view.
 
 The Legend popover lists only what appears on the current floor and view.
-`renderDungeonLegend` draws its swatches with the same symbol code as the map,
+`renderEncounterMapLegend` draws its swatches with the same symbol code as the map,
 so the two cannot drift apart. The canvas omits the in-image "Blocks sight" key
 (`includeKey: false`); SVG, PNG, and PDF exports keep it, because they have no
 separate legend.
@@ -202,7 +212,10 @@ their room lists exclude hidden rooms.
 Campaign content permissions control reading and editing; publishing requires
 campaign public-management permission.
 
-The canonical resource remains `/api/campaigns/:campaignId/dungeons`.
+The canonical resource is `/api/campaigns/:campaignId/encounter-maps`, with
+individual maps addressed by `:encounterMapId`. Rooms, links, and snapshots
+remain nested under that map resource. The former `dungeons` API paths have
+been removed; request and response payloads retain their existing fields.
 Creation accepts `config.mapType`, `config.floorCount`, and
 `config.encounterFlow`, plus `config.encounterScale`, `config.accessPoints`,
 `config.tacticalTerrain`, and `config.verticalConnections`. The resource PATCH accepts the existing typed

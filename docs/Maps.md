@@ -2,8 +2,9 @@
 
 Authenticated campaign maps and public maps share
 [maps/Viewer.vue](../app/components/maps/Viewer.vue). It renders imported Azgaar
-GeoJSON over an optional SVG background using MapLibre GL JS. The dungeon
-editor's canvas is a separate renderer.
+GeoJSON over an optional SVG background using MapLibre GL JS. The
+[encounter map editor](EncounterMaps.md) uses a separate MapLibre canvas backed
+by the shared encounter map SVG renderer.
 
 ## Layers and selection
 

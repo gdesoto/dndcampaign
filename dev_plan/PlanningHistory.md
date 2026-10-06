@@ -50,6 +50,6 @@ contents were preserved; `dev_plan/` also holds current planning notes.
 - [StyleGuide.md](../StyleGuide.md), the Nuxt UI guidelines referenced by
   `AGENTS.md`, `app/app.config.ts`, and `app/assets/css/main.css`: current UI
   conventions and theme contracts.
-- `shared/schemas/dungeon.ts`, `shared/types/dungeon.ts`, and
-  `server/services/dungeon/`: current dungeon behavior. Completed dungeon
+- `shared/schemas/encounter-map.ts`, `shared/types/encounter-map.ts`, and
+  `server/services/encounter-map/`: current encounter map behavior. Completed dungeon
   milestones are historical records, not missing feature lists.

@@ -41,6 +41,47 @@ The following table records all 19 completed tickets. Detailed completion and va
 
 Shared plumbing already in place: thrown `apiError` values and the central Nitro API error envelope; campaign-route authorization passed to services and permission-scoped child lookups; shared multipart reading; shared transcript/VTT conversion. Reuse these rather than reconstructing their predecessors.
 
+### 2026-10-06 — Encounter map naming and reductions
+
+Internal feature names now use Encounter Map across components, composables,
+services, shared contracts/utilities, and tests. Dungeon remains a map subtype
+and a documented compatibility name for physical database names, portable JSON
+fields, and historical activity identifiers. Page/API paths were renamed in the
+follow-up below.
+
+Merged the list/detail request wrappers into `useEncounterMaps`, removed unused
+publishing declarations and duplicate deletion feedback, reused Drizzle row
+types, lock flipping, and the existing path-cell walker, and made runtime
+generator settings use normalized schema output. Legacy portable export settings
+retain their saved shape. The dimension watcher now preserves the camera on
+same-size map replacement, with coverage in the existing canvas workflow.
+
+Building layout and tactical-feature tests now share the generator suite's
+playability checks. Their distinct assertions remain; three redundant cases and
+two test files were removed. Along with the composable consolidation, this removes
+three code/test files and 305 net source lines. All eight feature components
+remain because each supports a distinct active workflow.
+
+Validation: `yarn lint`, `yarn typecheck`, and `yarn test` passed (82 files /
+341 tests). The focused map suites passed (18 unit tests plus the canvas workflow).
+`yarn build` passed in 473.89s with dependency bundler/deprecation warnings.
+Logs are local under `storage/encounter-map-cleanup-*`.
+
+### 2026-10-06 — Encounter map URL cleanup
+
+Renamed the two page routes and fifteen API handlers from `dungeons` to
+`encounter-maps`, with `encounterMapId` route parameters. Updated navigation,
+campaign switching, clients, and OpenAPI path metadata in the same change.
+Removed the old routes without redirects or compatibility files. Database
+records and portable/request/response fields retain their existing shapes.
+The existing API workflow covers the new route contract and legacy-route 404s;
+navigation workflows cover breadcrumbs and campaign switching.
+
+Validation: `yarn lint`, `yarn typecheck`, and `yarn test` passed (82 files /
+341 tests). Independent review confirmed all path parameters and OpenAPI source
+mappings match the moved handlers, with payload schemas unchanged. Logs are
+local under `storage/encounter-map-url-*`.
+
 ### Recorded validation
 
 Completed work used scoped Terra implementation and manager review; the initial batch also had independent Terra review. Application changes passed lint/typecheck and relevant tests. Final integrated checks were:

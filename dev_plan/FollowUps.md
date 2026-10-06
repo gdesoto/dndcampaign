@@ -106,7 +106,9 @@ establish a useful simplification or a production-build improvement.
 | Infrastructure | 1 | Recheck whether combining the API context and current Drizzle fixture module simplifies their shared setup. The original proposal predates the ORM migration; preserve the existing server launcher boundaries. |
 | E2E | 0 | Keep four distinct assembled workflows; improve their assertions and resource ownership rather than merging them for count. |
 
-Conditional alternatives: another two unit files through dungeon generation/map
+Encounter map generation, tactical-feature, and building-layout coverage was
+consolidated on 2026-10-06; its unique assertions remain in the generator suite.
+Conditional alternatives: another two unit files through encounter map generation/projection
 and map parsing/glossary-conflict groupings; another two Nuxt files through
 artifact/recording persistence and encounter list/detail groupings; another API
 file by distributing auth/campaign checks into existing account and campaign
@@ -118,7 +120,7 @@ Higher-value assertion and reliability follow-ups:
 - The fuzzy-name scenario in `test/unit/map-glossary-conflict.test.ts` uses equal
   normalized names and therefore exercises the exact-match branch. Use unequal
   overlapping names and an unrelated candidate in that same scenario. Strengthen
-  dungeon regeneration's complete door comparison, missing-full-JSON rejection,
+  encounter map regeneration's complete door comparison, missing-full-JSON rejection,
   and literal transcript-search punctuation in their existing unit workflows.
 - `test/nuxt/api-key-page.test.ts` claims name, campaign, and permission validation
   but asserts only the missing name. Extend the existing scenario through the

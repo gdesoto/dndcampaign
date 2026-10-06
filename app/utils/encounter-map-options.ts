@@ -1,5 +1,5 @@
-import { dungeonGeneratorConfigSchema } from '#shared/schemas/dungeon'
-import type { DungeonGeneratorConfig, DungeonMapType } from '#shared/types/dungeon'
+import { encounterMapGeneratorConfigSchema } from '#shared/schemas/encounter-map'
+import type { EncounterMapGeneratorConfig, EncounterMapType } from '#shared/types/encounter-map'
 
 export const encounterMapTypes = [
   { label: 'Dungeon', value: 'DUNGEON' as const, icon: 'i-lucide-castle', description: 'Connected chambers and passages.' },
@@ -7,7 +7,7 @@ export const encounterMapTypes = [
   { label: 'Forest', value: 'FOREST' as const, icon: 'i-lucide-trees', description: 'Clearings, trails, trees, and natural cover.' },
 ]
 
-export const encounterMapThemes: Record<DungeonMapType, string> = { DUNGEON: 'ruins', BUILDING: 'manor', FOREST: 'woodland' }
+export const encounterMapThemes: Record<EncounterMapType, string> = { DUNGEON: 'ruins', BUILDING: 'manor', FOREST: 'woodland' }
 
 export const encounterMapSizes = [
   { label: 'Small · 30 × 30', value: 30 },
@@ -34,9 +34,9 @@ export const encounterMapFloors = [1, 2, 3, 4].map(value => ({
 
 export const randomEncounterMapSeed = () => `map-${Math.random().toString(36).slice(2, 10)}`
 
-export const createEncounterMapConfig = (config: Partial<DungeonGeneratorConfig> = {}) => {
+export const createEncounterMapConfig = (config: Partial<EncounterMapGeneratorConfig> = {}) => {
   const mapType = config.mapType || 'DUNGEON'
-  return dungeonGeneratorConfigSchema.parse({
+  return encounterMapGeneratorConfigSchema.parse({
     ...config,
     mapType,
     floorCount: mapType === 'BUILDING' ? config.floorCount || 1 : 1,
