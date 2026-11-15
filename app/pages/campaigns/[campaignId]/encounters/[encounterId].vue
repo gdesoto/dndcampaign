@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { EXHAUSTION_MAX_LEVEL, isExhaustion } from '#shared/utils/encounter-policy'
 import type {
   EncounterCombatant,
   EncounterCondition,
@@ -230,6 +231,35 @@ const effect = async (action: 'damage' | 'heal') => {
     )
   )
     amount.value = undefined
+}
+const longRest = async (condition: EncounterCondition) => {
+  const id = encounterId.value
+  if (!(await run(() => request(`/api/encounters/${id}/combatants`, {
+    method: 'PATCH', body: { action: 'long-rest', participantIds: [condition.combatantId] },
+  })))) return
+  toast.add({
+    title: 'Long rest recorded — exhaustion reduced by one level',
+    duration: 8000,
+    actions: [{
+      label: 'Undo',
+      onClick: async () => {
+        if (id !== encounterId.value) return
+        await run(() => {
+          const current = encounter.value?.conditions.find(c => c.combatantId === condition.combatantId && isExhaustion(c.name))
+          return request(`/api/encounters/${id}/combatants`, {
+            method: 'PATCH',
+            body: current ? {
+              action: 'condition-update', participantId: condition.combatantId, conditionId: current.id,
+              changes: { remaining: (current.remaining ?? 1) + 1 },
+            } : {
+              action: 'condition-add', participantIds: [condition.combatantId],
+              condition: { name: condition.name, remaining: 1, tickTiming: condition.tickTiming, source: condition.source ?? undefined, notes: condition.notes ?? undefined },
+            },
+          })
+        })
+      },
+    }],
+  })
 }
 const openCondition = (condition?: EncounterCondition) => {
   if (!selected.value) return
@@ -679,13 +709,21 @@ onBeforeUnmount(() => {
                         class="flex items-center justify-between gap-2 border-t border-default py-2"
                       >
                         <div>
-                          <p class="text-sm">
+                          <p class="flex items-center gap-2 text-sm">
                             {{ condition.name }}
-                            <span v-if="condition.remaining === 0" class="text-muted"
+                            <UBadge
+                              v-if="isExhaustion(condition.name)"
+                              :label="`${condition.remaining ?? 1}/${EXHAUSTION_MAX_LEVEL}`"
+                              :aria-label="`Level ${condition.remaining ?? 1} of ${EXHAUSTION_MAX_LEVEL}`"
+                              :color="(condition.remaining ?? 1) >= EXHAUSTION_MAX_LEVEL ? 'error' : 'warning'"
+                              variant="subtle"
+                              size="sm"
+                            />
+                            <span v-else-if="condition.remaining === 0" class="text-muted"
                               >(expired)</span
                             >
                           </p>
-                          <p v-if="condition.remaining != null" class="text-xs text-muted">
+                          <p v-if="!isExhaustion(condition.name) && condition.remaining != null" class="text-xs text-muted">
                             {{ condition.remaining }} remaining -
                             {{
                               condition.tickTiming === 'TURN_START'
@@ -706,6 +744,9 @@ onBeforeUnmount(() => {
                               icon: 'i-lucide-pencil',
                               action: () => openCondition(condition),
                             },
+                            ...(isExhaustion(condition.name)
+                              ? [{ label: 'Long rest', icon: 'i-lucide-moon', action: () => longRest(condition) }]
+                              : []),
                             {
                               label: 'Remove',
                               icon: 'i-lucide-trash-2',

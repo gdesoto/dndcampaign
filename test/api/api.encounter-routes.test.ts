@@ -609,4 +609,69 @@ describe('encounter API routes', () => {
     })
     expect(outOfBoundsTurn.status).toBe(400)
   })
+  it('tracks encounter-local exhaustion on downing, long rests, and manual corrections', async () => {
+    const campaign = db.query.campaign.findFirst({ where: eq(tables.campaign.id, campaignId) }).sync()!
+    const encounter = db.insert(tables.campaignEncounter).values({ campaignId, createdByUserId: campaign.ownerId, name: 'Exhaustion', status: 'ACTIVE' }).returning().get()!
+    const character = db.insert(tables.playerCharacter).values({ ownerId: campaign.ownerId, name: 'Exhausted hero', sheetJson: {}, summaryJson: {} }).returning().get()!
+    db.insert(tables.campaignCharacter).values({ campaignId, characterId: character.id }).run()
+    const participant = db.insert(tables.encounterCombatant).values({ encounterId: encounter.id, name: character.name, sourceType: 'PLAYER_CHARACTER', sourcePlayerCharacterId: character.id, currentHp: 10, maxHp: 10, tempHp: 3, sortOrder: 0 }).returning().get()!
+    const npc = db.insert(tables.encounterCombatant).values({ encounterId: encounter.id, name: 'Enemy', currentHp: 2, maxHp: 2, sortOrder: 1 }).returning().get()!
+    const call = async (path: string, body: unknown, expected = 200, method = 'PATCH', cookie = cookies.owner) => {
+      const response = await fetch(`${baseUrl}/api/encounters/${encounter.id}${path}`, { method, headers: { cookie, 'content-type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) })
+      const payload = await response.json()
+      expect(response.status, JSON.stringify(payload.error)).toBe(expected)
+      return payload.data
+    }
+    const effect = (action: string, amount?: number) => call('/combatants', { action, participantIds: [participant.id], ...(amount ? { amount } : {}) })
+    const exhaustion = () => db.query.encounterCondition.findMany({ where: eq(tables.encounterCondition.combatantId, participant.id) }).sync().filter(c => c.name === 'Exhaustion')
+    try {
+      await call('/combatants', { action: 'condition-add', participantIds: [participant.id], condition: { name: 'Exhaustion', remaining: 0 } }, 400)
+      await effect('damage', 10) // Temporary HP prevents downing.
+      expect(exhaustion()).toHaveLength(0)
+      await effect('damage', 3)
+      expect(exhaustion()).toMatchObject([{ remaining: 1, duration: null }])
+      await effect('damage', 1)
+      await effect('heal', 10)
+      expect(exhaustion()[0].remaining).toBe(1)
+      await effect('damage', 10)
+      expect(exhaustion()).toMatchObject([{ remaining: 2 }])
+      await call('/turn', { action: 'advance' })
+      await call('/turn', { action: 'advance' })
+      expect(exhaustion()[0].remaining).toBe(2)
+      const conditionId = exhaustion()[0].id
+      // Manual corrections: levels can move both ways within 1-6, but the name stays fixed.
+      await call('/combatants', { action: 'condition-update', participantId: participant.id, conditionId, changes: { remaining: 7 } }, 400)
+      await call(`/combatants/${participant.id}/conditions/${conditionId}`, { name: 'Prone' }, 409)
+      await call('/combatants', { action: 'condition-add', participantIds: [participant.id], condition: { name: ' exhaustion ' } }, 409)
+      await call('/combatants', { action: 'condition-update', participantId: participant.id, conditionId, changes: { remaining: 6 } })
+      await call(`/combatants/${participant.id}`, { currentHp: 5 })
+      await effect('damage', 5)
+      expect(exhaustion()[0].remaining).toBe(6)
+      await call(`/combatants/${participant.id}/conditions/${conditionId}`, { remaining: 2 })
+      expect(exhaustion()[0].remaining).toBe(2)
+      await call('/combatants', { action: 'long-rest', participantIds: [participant.id] }, 404, 'PATCH', cookies.viewer)
+      await call('/combatants', { action: 'long-rest', participantIds: [participant.id, 'missing'] }, 404)
+      expect(exhaustion()[0].remaining).toBe(2)
+      await effect('long-rest')
+      expect(exhaustion()[0].remaining).toBe(1)
+      await effect('long-rest')
+      expect(exhaustion()).toHaveLength(0)
+      await call(`/combatants/${participant.id}`, { currentHp: 5 })
+      await call(`/combatants/${participant.id}`, { currentHp: 0 })
+      expect(exhaustion()[0].remaining).toBe(1)
+      await call(`/combatants/${participant.id}/conditions/${exhaustion()[0].id}`, null, 200, 'DELETE')
+      expect(exhaustion()).toHaveLength(0)
+      await call('/combatants', { action: 'damage', participantIds: [npc.id], amount: 2 })
+      expect(db.query.encounterCondition.findMany({ where: eq(tables.encounterCondition.combatantId, npc.id) }).sync()).toHaveLength(0)
+      const other = db.insert(tables.campaignEncounter).values({ campaignId, createdByUserId: campaign.ownerId, name: 'Next encounter' }).returning().get()!
+      const response = await fetch(`${baseUrl}/api/encounters/${other.id}/combatants`, { method: 'POST', headers: { cookie: cookies.owner, 'content-type': 'application/json' }, body: JSON.stringify({ name: character.name, sourceType: 'PLAYER_CHARACTER', sourcePlayerCharacterId: character.id }) })
+      expect(response.status).toBe(200)
+      const added = (await response.json()).data
+      expect(db.query.encounterCondition.findMany({ where: eq(tables.encounterCondition.combatantId, added.id) }).sync()).toHaveLength(0)
+    } finally {
+      db.delete(tables.encounterCombatant).where(eq(tables.encounterCombatant.sourcePlayerCharacterId, character.id)).run()
+      db.delete(tables.playerCharacter).where(eq(tables.playerCharacter.id, character.id)).run()
+    }
+  })
+
 })

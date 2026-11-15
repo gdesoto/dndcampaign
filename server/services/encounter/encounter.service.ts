@@ -1,3 +1,4 @@
+import { addDownedExhaustion } from '#server/services/encounter/encounter-exhaustion'
 import { getEncounterActions } from '#shared/utils/encounter-policy'
 import { db } from '#server/db/client'
 import * as tables from '#server/db/schema'
@@ -268,7 +269,9 @@ export class EncounterService {
       sourceStatBlockId: nextSourceStatBlockId,
     })
 
-    const updated = db.update(tables.encounterCombatant).set({
+    const updated = db.transaction(tx => {
+      const current = tx.query.encounterCombatant.findFirst({ where: eq(tables.encounterCombatant.id, combatantId) }).sync()!
+      const updated = tx.update(tables.encounterCombatant).set({
         ...(input.name ? { name: input.name } : {}),
         ...(input.side ? { side: input.side } : {}),
         ...(input.sourceType ? { sourceType: input.sourceType } : {}),
@@ -288,6 +291,9 @@ export class EncounterService {
         ...(typeof input.isHidden === 'boolean' ? { isHidden: input.isHidden } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, 'notes') ? { notes: input.notes ?? null } : {}),
       }).where(and(eq(tables.encounterCombatant.id, combatantId))).returning().get()!
+      addDownedExhaustion(tx, current, updated.currentHp, userId)
+      return updated
+    }, { behavior: 'immediate' })
 
     await appendEncounterEvent(
       encounterId,

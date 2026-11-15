@@ -1,4 +1,4 @@
-import { lifecycleTargets, type EncounterLifecycleAction } from '#shared/utils/encounter-policy'
+import { isExhaustion, lifecycleTargets, type EncounterLifecycleAction } from '#shared/utils/encounter-policy'
 import { db } from '#server/db/client'
 import * as tables from '#server/db/schema'
 import { eq, and, inArray, gt, asc, desc, sql } from 'drizzle-orm'
@@ -26,6 +26,7 @@ import {
   toEncounterConditionDto,
   toEncounterSummaryDto,
 } from '#server/services/encounter/encounter-shared'
+import { addDownedExhaustion, assertExhaustionCreate, assertExhaustionRename, conditionCounters } from '#server/services/encounter/encounter-exhaustion'
 import { apiError } from '#server/utils/http'
 
 const rollInitiative = () => Math.floor(Math.random() * 20) + 1
@@ -213,8 +214,9 @@ export class EncounterRuntimeService {
       let currentTurnIndex = encounter.currentTurnIndex
       let currentRound = encounter.currentRound
       if (direction === 'rewind' && currentRound === 1 && currentTurnIndex === 0) throw apiError(409, 'FIRST_TURN', 'Already at the first turn.')
+      // Mirrors isExhaustion(): exhaustion levels never tick down with turns.
       const tick = (timing: 'TURN_START' | 'TURN_END' | 'ROUND_END', participantId?: string) => {
-        tx.update(tables.encounterCondition).set({ remaining: sql`${tables.encounterCondition.remaining} - 1` }).where(and(participantId ? eq(tables.encounterCondition.combatantId, participantId) : inArray(tables.encounterCondition.combatantId, ordered.map(p => p.id)), eq(tables.encounterCondition.tickTiming, timing), and(gt(tables.encounterCondition.remaining, 0)))).run()
+        tx.update(tables.encounterCondition).set({ remaining: sql`${tables.encounterCondition.remaining} - 1` }).where(and(participantId ? eq(tables.encounterCondition.combatantId, participantId) : inArray(tables.encounterCondition.combatantId, ordered.map(p => p.id)), sql`lower(trim(${tables.encounterCondition.name})) != 'exhaustion'`, eq(tables.encounterCondition.tickTiming, timing), and(gt(tables.encounterCondition.remaining, 0)))).run()
       }
       if (direction === 'advance') {
         tick('TURN_END', ordered[currentTurnIndex]!.id)
@@ -282,13 +284,23 @@ export class EncounterRuntimeService {
           const currentHp = input.action === 'damage' ? Math.max(0, participant.currentHp - input.amount + absorbed)
             : Math.min(participant.maxHp ?? Number.MAX_SAFE_INTEGER, participant.currentHp + input.amount)
           tx.update(tables.encounterCombatant).set({ currentHp, tempHp: participant.tempHp - absorbed, isDefeated: currentHp === 0 }).where(and(eq(tables.encounterCombatant.id, participant.id))).returning().get()!
+          addDownedExhaustion(tx, participant, currentHp, userId)
+        } else if (input.action === 'long-rest') {
+          const conditions = tx.query.encounterCondition.findMany({ where: eq(tables.encounterCondition.combatantId, participant.id) }).sync()
+          for (const condition of conditions.filter(c => isExhaustion(c.name))) {
+            const level = condition.remaining ?? 1
+            if (level <= 1) tx.delete(tables.encounterCondition).where(eq(tables.encounterCondition.id, condition.id)).run()
+            else tx.update(tables.encounterCondition).set({ remaining: level - 1, duration: null }).where(eq(tables.encounterCondition.id, condition.id)).run()
+          }
         } else if (input.action === 'condition-add') {
-          tx.insert(tables.encounterCondition).values({ ...input.condition, combatantId: participant.id, remaining: input.condition.remaining ?? input.condition.duration }).returning().get()!
+          assertExhaustionCreate(tx, participant.id, input.condition)
+          tx.insert(tables.encounterCondition).values({ ...input.condition, combatantId: participant.id, ...conditionCounters(input.condition) }).returning().get()!
         } else {
           const condition = tx.query.encounterCondition.findFirst({where: and(eq(tables.encounterCondition.id, input.conditionId), eq(tables.encounterCondition.combatantId, participant.id))}).sync()
           if (!condition) throw apiError(404, 'NOT_FOUND', 'Condition not found for this participant.')
+          if (input.action === 'condition-update') assertExhaustionRename(tx, condition, input.changes.name)
           if (input.action === 'condition-remove') tx.delete(tables.encounterCondition).where(and(eq(tables.encounterCondition.id, condition.id))).returning().get()!
-          else tx.update(tables.encounterCondition).set(input.changes).where(and(eq(tables.encounterCondition.id, condition.id))).returning().get()!
+          else tx.update(tables.encounterCondition).set({ ...input.changes, ...(isExhaustion(input.changes.name ?? condition.name) ? conditionCounters({ ...condition, ...input.changes }) : {}) }).where(and(eq(tables.encounterCondition.id, condition.id))).returning().get()!
         }
         const hp = input.action === 'damage' || input.action === 'heal'
         tx.insert(tables.encounterEvent).values({
@@ -328,11 +340,11 @@ export class EncounterRuntimeService {
       throw apiError(404, 'NOT_FOUND', 'Combatant not found.')
     }
 
+    assertExhaustionCreate(db, combatantId, input)
     const created = db.insert(tables.encounterCondition).values({
         combatantId,
         name: input.name,
-        duration: input.duration,
-        remaining: input.remaining ?? input.duration,
+        ...conditionCounters(input),
         tickTiming: input.tickTiming,
         source: input.source,
         notes: input.notes,
@@ -368,6 +380,7 @@ export class EncounterRuntimeService {
       throw apiError(404, 'NOT_FOUND', 'Condition not found.')
     }
 
+    assertExhaustionRename(db, condition, input.name)
     const updated = db.update(tables.encounterCondition).set({
         ...(input.name ? { name: input.name } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, 'duration') ? { duration: input.duration ?? null } : {}),
@@ -375,6 +388,7 @@ export class EncounterRuntimeService {
         ...(input.tickTiming ? { tickTiming: input.tickTiming } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, 'source') ? { source: input.source ?? null } : {}),
         ...(Object.prototype.hasOwnProperty.call(input, 'notes') ? { notes: input.notes ?? null } : {}),
+        ...(isExhaustion(input.name ?? condition.name) ? conditionCounters({ ...condition, ...input }) : {}),
       }).where(and(eq(tables.encounterCondition.id, conditionId))).returning().get()!
 
     await appendEncounterEvent(

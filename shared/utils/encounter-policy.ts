@@ -76,3 +76,6 @@ export function getEncounterActions(
     }),
   ) as EncounterActionAvailability
 }
+
+export const isExhaustion = (name: string) => name.trim().toLowerCase() === 'exhaustion'
+export const EXHAUSTION_MAX_LEVEL = 6

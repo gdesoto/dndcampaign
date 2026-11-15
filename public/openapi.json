@@ -15858,7 +15858,8 @@
         },
         "required": [
           "name"
-        ]
+        ],
+        "description": "Exhaustion is case-insensitive and uses remaining as a level (1-6), with no duration or automatic ticking. Levels can be corrected in either direction and the condition can be removed; it cannot be renamed. The long-rest encounter effect removes one level."
       },
       "AgentConditionUpdateRequest": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -15923,7 +15924,8 @@
               }
             ]
           }
-        }
+        },
+        "description": "Exhaustion is case-insensitive and uses remaining as a level (1-6), with no duration or automatic ticking. Levels can be corrected in either direction and the condition can be removed; it cannot be renamed. The long-rest encounter effect removes one level."
       },
       "AgentInitiativeRequest": {
         "$ref": "#/components/schemas/EncounterInitiativePatchRequest"
@@ -16556,7 +16558,8 @@
                   "name",
                   "tickTiming"
                 ],
-                "additionalProperties": false
+                "additionalProperties": false,
+                "description": "For Exhaustion, remaining is the level (1-6, default 1) and duration is ignored. Duplicate exhaustion is rejected."
               }
             },
             "required": [
@@ -16622,7 +16625,8 @@
                     "maxLength": 2000
                   }
                 },
-                "additionalProperties": false
+                "additionalProperties": false,
+                "description": "For Exhaustion, remaining sets the level (1-6). Existing Exhaustion cannot be renamed."
               }
             },
             "required": [
@@ -16657,8 +16661,36 @@
               "conditionId"
             ],
             "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "action",
+              "participantIds"
+            ],
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "long-rest"
+                ]
+              },
+              "participantIds": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 50,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "description": "Confirms a proper long rest and removes one exhaustion level from each target in this encounter. Does not heal HP."
           }
-        ]
+        ],
+        "description": "Damage that drops a player character from positive HP to zero adds one exhaustion level, up to 6. Exhaustion is encounter-local; its remaining field stores the level, duration is null, and turn advancement never decrements it. long-rest removes one level; condition-update and condition-remove correct it directly. It cannot be renamed, and repeated condition-add is rejected."
       },
       "EncounterDetail": {
         "type": "object",

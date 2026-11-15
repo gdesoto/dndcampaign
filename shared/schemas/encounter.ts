@@ -257,6 +257,7 @@ const targets = z.array(z.string().min(1)).min(1).max(50).refine(ids => new Set(
 export const encounterEffectSchema = z.discriminatedUnion('action', [
   encounterDamageSchema.extend({ action: z.literal('damage'), participantIds: targets }).strict(),
   encounterHealSchema.extend({ action: z.literal('heal'), participantIds: targets }).strict(),
+  z.object({ action: z.literal('long-rest'), participantIds: targets }).strict(),
   z.object({ action: z.literal('condition-add'), participantIds: targets, condition: encounterConditionCreateSchema }).strict(),
   z.object({ action: z.literal('condition-update'), participantId: z.string().min(1), conditionId: z.string().min(1), changes: encounterConditionUpdateSchema }).strict(),
   z.object({ action: z.literal('condition-remove'), participantId: z.string().min(1), conditionId: z.string().min(1) }).strict(),

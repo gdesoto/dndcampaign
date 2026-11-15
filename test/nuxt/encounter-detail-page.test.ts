@@ -34,6 +34,8 @@ const mockRuntime = {
   deleteCondition: vi.fn(),
 }
 const mockRequest = vi.fn()
+const mockToastAdd = vi.fn()
+mockNuxtImport('useToast', () => () => ({ add: mockToastAdd }))
 
 mockNuxtImport('useRoute', () => () => ({
   params: { campaignId: 'campaign-1', encounterId: 'enc-1' },
@@ -162,6 +164,26 @@ describe('Encounter detail page', () => {
 
   afterEach(() => {
     window.scrollTo = originalScrollTo
+  })
+
+  it('shows exhaustion as a level and records a proper long rest', async () => {
+    const original = await mockGetEncounter()
+    mockGetEncounter.mockResolvedValue({ ...original, status: 'ACTIVE', conditions: [{
+      id: 'exhaustion-1', combatantId: 'combatant-1', name: 'Exhaustion', remaining: 1, duration: null, tickTiming: 'TURN_END',
+    }] })
+    const wrapper = await mountSuspended(EncounterDetailPage, { global: { stubs, provide: { campaignCanWriteContent: ref(true) } } })
+    expect(wrapper.text()).toContain('1/6')
+    expect(wrapper.findAll('button').some(button => button.text().includes('Remove'))).toBe(true)
+    mockRequest.mockClear()
+    const rest = wrapper.findAll('button').find(button => button.text().includes('Long rest'))
+    expect(rest).toBeDefined()
+    mockGetEncounter.mockResolvedValue({ ...original, status: 'ACTIVE', conditions: [] })
+    await rest!.trigger('click')
+    expect(mockRequest).toHaveBeenCalledWith('/api/encounters/enc-1/combatants', { method: 'PATCH', body: { action: 'long-rest', participantIds: ['combatant-1'] } })
+    await vi.waitFor(() => expect(mockToastAdd).toHaveBeenCalled())
+    await mockToastAdd.mock.calls.at(-1)![0].actions[0].onClick()
+    expect(mockRequest).toHaveBeenLastCalledWith('/api/encounters/enc-1/combatants', { method: 'PATCH', body: { action: 'condition-add', participantIds: ['combatant-1'], condition: { name: 'Exhaustion', remaining: 1, tickTiming: 'TURN_END', source: undefined, notes: undefined } } })
+    wrapper.unmount()
   })
 
   it('selects a participant without modifying the turn', async () => {

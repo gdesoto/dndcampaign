@@ -22,6 +22,13 @@
       "when": 1791223999819,
       "tag": "0002_dungeon_snapshot_label",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1794775825649,
+      "tag": "0003_exhaustion_levels",
+      "breakpoints": true
     }
   ]
 }
