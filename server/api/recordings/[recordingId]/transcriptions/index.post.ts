@@ -99,7 +99,9 @@ export default defineEventHandler(async (event) => {
       keyterms: modeParsed.data.keyterms,
       diarize: modeParsed.data.diarize ?? true,
       tagAudioEvents: modeParsed.data.tagAudioEvents ?? false,
-      languageCode: modeParsed.data.languageCode
+      languageCode: modeParsed.data.languageCode,
+      secondaryLanguageCodes: modeParsed.data.secondaryLanguageCodes,
+      numbersFormat: modeParsed.data.numbersFormat,
     })
 
     return ok(job)

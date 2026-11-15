@@ -2,6 +2,7 @@
 import type { RecordAction } from '~/types/actions'
 import { getFirstNameTerm } from '#shared/utils/name'
 import type { CampaignAccess } from '#shared/types/campaign-workflow'
+import { transcriptionStartSchema } from '#shared/schemas/transcription'
 import { artifactStreamUrl } from '~/utils/artifact'
 
 definePageMeta({ layout: 'dashboard' })
@@ -155,6 +156,9 @@ const transcribeForm = reactive({
   diarizationThreshold: '0.22',
   diarize: true,
   keyterms: '',
+  numbersFormat: 'auto' as 'auto' | 'digits' | 'words',
+  languageCode: '',
+  secondaryLanguageCodes: '',
   tagAudioEvents: false,
   formats: {
     txt: true,
@@ -439,6 +443,7 @@ const addAllGlossary = async () => {
 }
 
 const startTranscription = async () => {
+  if (transcribeLoading.value) return
   if (!recording.value) return
   transcribeError.value = ''
   transcribeLoading.value = true
@@ -464,7 +469,7 @@ const startTranscription = async () => {
       }
     }
 
-    const payload = {
+    const parsed = transcriptionStartSchema.safeParse({
       formats,
       numSpeakers:
         transcribeForm.diarize && transcribeForm.speakerConfigMode === 'numSpeakers'
@@ -477,12 +482,19 @@ const startTranscription = async () => {
       keyterms: parseKeyterms(transcribeForm.keyterms),
       diarize: transcribeForm.diarize,
       tagAudioEvents: transcribeForm.tagAudioEvents,
+      numbersFormat: transcribeForm.numbersFormat === 'auto' ? undefined : transcribeForm.numbersFormat,
+      languageCode: transcribeForm.languageCode.trim() || undefined,
+      secondaryLanguageCodes: parseKeyterms(transcribeForm.secondaryLanguageCodes),
+    })
+    if (!parsed.success) {
+      transcribeError.value = parsed.error.issues[0]?.message || 'Check transcription settings.'
+      return
     }
     await request(`/api/recordings/${recordingId.value}/transcriptions`, {
       method: 'POST',
       body: {
         mode: 'transcribe',
-        ...payload,
+        ...parsed.data,
       },
     })
     await refreshTranscriptions()
@@ -893,11 +905,30 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
             <div>
               <h2 class=" type-section">Start transcription</h2>
               <p class="text-sm text-muted">
-                Configure the ElevenLabs transcription request.
+                Transcribe with ElevenLabs Scribe V3.
               </p>
             </div>
           </template>
           <div class="space-y-4">
+            <div class="grid gap-4 sm:grid-cols-2">
+              <UFormField label="Number formatting" name="numbersFormat">
+                <USelect
+                  v-model="transcribeForm.numbersFormat"
+                  :items="[
+                  { label: 'Automatic', value: 'auto' },
+                  { label: 'Digits (42)', value: 'digits' },
+                  { label: 'Words (forty-two)', value: 'words' },
+                  ]"
+                  class="w-full"
+                />
+              </UFormField>
+              <UFormField label="Primary language" name="languageCode" description="Optional language code, such as en. Leave blank to detect.">
+                <UInput v-model="transcribeForm.languageCode" placeholder="Auto-detect" class="w-full" />
+              </UFormField>
+              <UFormField label="Secondary languages" name="secondaryLanguageCodes" description="Optional language codes separated by commas, such as es, fr." class="sm:col-span-2">
+                <UInput v-model="transcribeForm.secondaryLanguageCodes" placeholder="es, fr" class="w-full" />
+              </UFormField>
+            </div>
             <div class="grid gap-4 sm:grid-cols-2">
               <div class="flex items-center gap-2">
                 <UCheckbox v-model="transcribeForm.diarize" />
@@ -947,6 +978,10 @@ id="field-campaigns--campaignId--recordings--recordingId--vue-4"
                 :rows="3"
                 placeholder="Comma or line separated terms to bias the transcript."
               />
+              <p class="mt-1 text-xs" :class="parseKeyterms(transcribeForm.keyterms).length > 1000 ? 'text-error' : 'text-muted'">
+                {{ parseKeyterms(transcribeForm.keyterms).length }} / 1,000 terms. Up to 50 characters and 5 words each.
+                Keyterms add 20% to the transcription cost; over 100 terms has a 20-second minimum charge.
+              </p>
             </div>
             <div class="space-y-2">
               <label class="mb-2 block text-sm text-muted">Add glossary terms</label>
@@ -1013,7 +1048,7 @@ id="field-campaigns--campaignId--recordings--recordingId--vue-4"
                <UButton variant="ghost" color="neutral" @click="() => { transcribeModalOpen = false }">
                 Cancel
               </UButton>
-              <UButton :loading="transcribeLoading" @click="startTranscription">
+              <UButton :loading="transcribeLoading" :disabled="parseKeyterms(transcribeForm.keyterms).length > 1000" @click="startTranscription">
                 Start transcription
               </UButton>
             </div>

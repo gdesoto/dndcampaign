@@ -34,6 +34,8 @@ type StartTranscriptionInput = {
   diarize: boolean
   tagAudioEvents?: boolean
   languageCode?: string
+  secondaryLanguageCodes?: string[]
+  numbersFormat?: 'digits' | 'words'
 }
 
 type ParseWebhookPayloadInput = {
@@ -349,9 +351,11 @@ export class TranscriptionService {
 
     try {
       const response = (await this.client.speechToText.convert({
-        modelId: input.modelId as any,
+        modelId: input.modelId,
         file: stream,
         languageCode: input.languageCode,
+        secondaryLanguageCodes: input.secondaryLanguageCodes,
+        numbersFormat: input.numbersFormat,
         numSpeakers: input.diarize ? input.numSpeakers : undefined,
         diarizationThreshold:
           input.diarize && typeof input.numSpeakers !== 'number'

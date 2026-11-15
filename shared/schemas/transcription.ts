@@ -14,6 +14,9 @@ const keytermSchema = z
   .trim()
   .min(1)
   .max(50)
+  .refine((value) => !/[<>{}[\]\\]/.test(value), {
+    message: 'Keyterms cannot contain <, >, {, }, [, ], or backslashes.',
+  })
   .refine((value) => value.split(/\s+/).length <= 5, {
     message: 'Keyterms can contain at most 5 words.',
   })
@@ -22,11 +25,13 @@ export const transcriptionStartSchema = z.object({
   formats: z.array(transcriptionFormatSchema).min(1),
   numSpeakers: z.number().int().min(1).max(32).optional(),
   diarizationThreshold: z.number().min(0.1).max(0.4).optional(),
-  keyterms: z.array(keytermSchema).max(100).optional(),
+  keyterms: z.array(keytermSchema).max(1000).optional(),
   diarize: z.boolean().optional().default(true),
   tagAudioEvents: z.boolean().optional().default(false),
   languageCode: z.string().min(2).max(10).optional(),
-  modelId: z.string().min(1).max(50).optional().default('scribe_v2'),
+  secondaryLanguageCodes: z.array(z.string().trim().regex(/^[a-z]{2,3}$/i, 'Use a two- or three-letter language code.')).optional(),
+  numbersFormat: z.enum(['digits', 'words']).optional(),
+  modelId: z.string().min(1).max(50).optional().default('scribe_v3'),
 }).superRefine((data, ctx) => {
   if (!data.diarize) return
 

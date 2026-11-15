@@ -31,7 +31,7 @@
     "db:backup": "node scripts/database.mjs backup"
   },
   "dependencies": {
-    "@elevenlabs/elevenlabs-js": "^2.34.0",
+    "@elevenlabs/elevenlabs-js": "2.78.0",
     "@iconify-json/heroicons": "^1.2.3",
     "@iconify-json/lucide": "^1.2.87",
     "@iconify-json/twemoji": "^1.2.5",

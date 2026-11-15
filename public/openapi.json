@@ -11113,8 +11113,13 @@
                 "$ref": "#/components/schemas/RecordingTranscriptionsPostRequest"
               },
               "example": {
-                "action": "update",
-                "notes": "Example payload. See schema and endpoint-specific docs."
+                "mode": "transcribe",
+                "formats": [
+                  "txt",
+                  "srt"
+                ],
+                "numSpeakers": 8,
+                "numbersFormat": "digits"
               }
             }
           }
@@ -14112,13 +14117,82 @@
                   "transcribe"
                 ]
               },
-              "provider": {
-                "type": "string"
+              "formats": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "txt",
+                    "srt",
+                    "docx",
+                    "pdf",
+                    "html",
+                    "segmented_json"
+                  ]
+                }
+              },
+              "modelId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 50,
+                "default": "scribe_v3"
+              },
+              "numSpeakers": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 32
+              },
+              "diarizationThreshold": {
+                "type": "number",
+                "minimum": 0.1,
+                "maximum": 0.4
+              },
+              "diarize": {
+                "type": "boolean",
+                "default": true
+              },
+              "tagAudioEvents": {
+                "type": "boolean",
+                "default": false
+              },
+              "languageCode": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 10
+              },
+              "secondaryLanguageCodes": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z]{2,3}$"
+                },
+                "description": "Additional expected languages; Scribe V3 only."
+              },
+              "numbersFormat": {
+                "type": "string",
+                "enum": [
+                  "digits",
+                  "words"
+                ],
+                "description": "Optional number formatting; Scribe V3 only."
+              },
+              "keyterms": {
+                "type": "array",
+                "maxItems": 1000,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 50
+                },
+                "description": "At most five words per term; no angle brackets, braces, square brackets or backslashes. Adds 20% to base cost; over 100 terms has a 20-second minimum billable duration."
               }
             },
             "required": [
-              "mode"
-            ]
+              "mode",
+              "formats"
+            ],
+            "description": "When diarize is true, provide exactly one of numSpeakers or diarizationThreshold."
           },
           {
             "type": "object",
@@ -14129,19 +14203,35 @@
                   "import"
                 ]
               },
-              "transcript": {
-                "type": "string"
+              "transcriptionId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
               }
             },
             "required": [
               "mode",
-              "transcript"
+              "transcriptionId"
             ]
           }
         ],
         "example": {
           "mode": "transcribe",
-          "provider": "ELEVENLABS"
+          "formats": [
+            "txt",
+            "srt",
+            "segmented_json"
+          ],
+          "numSpeakers": 8,
+          "modelId": "scribe_v3",
+          "numbersFormat": "digits",
+          "languageCode": "en",
+          "secondaryLanguageCodes": [
+            "es"
+          ],
+          "keyterms": [
+            "Aelar"
+          ]
         }
       },
       "RecordingCaptionsPostRequest": {

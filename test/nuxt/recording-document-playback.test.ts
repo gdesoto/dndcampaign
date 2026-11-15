@@ -87,6 +87,41 @@ beforeEach(() => {
 afterEach(() => { wrapper?.unmount(); wrapper = undefined })
 
 describe('recording and transcript page playback', () => {
+  it('submits V3 transcription options and retains terms after a failed submission', async () => {
+    wrapper = await mountSuspended(RecordingPage, { global: {
+      ...global,
+      stubs: { ...global.stubs, UModal: { template: '<div><slot name="content" /></div>' } },
+    } })
+    await flushPromises()
+    const terms = Array.from({ length: 1000 }, (_, index) => `NPC ${index}`).join('\n')
+    const keyterms = wrapper.get('textarea[placeholder="Comma or line separated terms to bias the transcript."]')
+    await keyterms.setValue(terms)
+    await wrapper.get('input[placeholder="Auto-detect"]').setValue('en')
+    await wrapper.get('input[placeholder="es, fr"]').setValue('es, fr')
+    const numberFormat = wrapper.findAllComponents(USelect).find(select =>
+      (select.props() as { items?: { value?: string }[] }).items?.some(item => item.value === 'digits'))!
+    numberFormat.vm.$emit('update:modelValue', 'digits')
+    await nextTick()
+    const submit = vi.fn().mockRejectedValueOnce(new Error('Provider unavailable')).mockResolvedValueOnce({ id: 'job-1' })
+    const originalRequest = harness.request.getMockImplementation()!
+    harness.request.mockImplementation((url, options) => options?.method === 'POST' ? submit(url, options) : originalRequest(url, options))
+    const start = () => wrapper!.findAll('button').filter(item => item.text().trim() === 'Start transcription').at(-1)!
+    await start().trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('Provider unavailable')
+    expect((keyterms.element as HTMLTextAreaElement).value).toBe(terms)
+    expect(submit).toHaveBeenCalledWith('/api/recordings/r1/transcriptions', expect.objectContaining({
+      method: 'POST', body: expect.objectContaining({
+        mode: 'transcribe', modelId: 'scribe_v3', numbersFormat: 'digits', languageCode: 'en', secondaryLanguageCodes: ['es', 'fr'],
+        keyterms: terms.split('\n'),
+      }),
+    }))
+    await start().trigger('click')
+    await flushPromises()
+    expect(submit).toHaveBeenCalledTimes(2)
+    expect(wrapper.text()).not.toContain('Provider unavailable')
+  })
+
   it('plays recording artifacts with captions and recovers from a failed detail refresh without a URL lookup', async () => {
     wrapper = await mountSuspended(RecordingPage, { global })
     await flushPromises()

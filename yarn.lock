@@ -367,10 +367,10 @@
   resolved "https://registry.yarnpkg.com/@dxup/unimport/-/unimport-0.1.2.tgz#a08e4039efe41c50d9c36fbb39d9976b88eefa68"
   integrity sha512-/B8YJGPzaYq1NbsQmwgP8EZqg40NpTw4ZB3suuI0TplbxKHeK94jeaawLmVhCv+YwUnOpiWEz9U6SeThku/8JQ==
 
-"@elevenlabs/elevenlabs-js@^2.34.0":
-  version "2.68.0"
-  resolved "https://registry.yarnpkg.com/@elevenlabs/elevenlabs-js/-/elevenlabs-js-2.68.0.tgz#34af7e7a72106bbdeb8f85b1733d2de38f0ab217"
-  integrity sha512-X4woj/NPL5qLeuudubZERiA1xEnl8lLerqWOi3LMGDCwWJN+dLERTIQIowPhxeJ+gQcKPNxzG/SIeF9Uz5lPIQ==
+"@elevenlabs/elevenlabs-js@2.78.0":
+  version "2.78.0"
+  resolved "https://registry.yarnpkg.com/@elevenlabs/elevenlabs-js/-/elevenlabs-js-2.78.0.tgz#72c427036e7068f0f050abda6aeb9431398782e8"
+  integrity sha512-cLaLfwcATwcFaEuKNmrjj2DZSk1rkKvGPdyukA9ohYl46BioarkLKjslzmvIYY6y/ryE5O3iQ8FXX9/lavEf+A==
   dependencies:
     command-exists "^1.2.9"
     node-fetch "^2.7.0"
