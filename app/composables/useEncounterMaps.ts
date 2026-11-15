@@ -1,7 +1,6 @@
 import type {
   EncounterMapCreateInput,
   EncounterMapImportInput,
-  EncounterMapListQueryInput,
   EncounterMapLinkCreateInput,
   EncounterMapExportInput,
   EncounterMapPatchInput,
@@ -25,10 +24,8 @@ import type {
 export function useEncounterMaps() {
   const { request } = useApi()
 
-  const listEncounterMaps = async (campaignId: string, query: EncounterMapListQueryInput = {}) =>
-    request<CampaignEncounterMapSummary[]>(`/api/campaigns/${campaignId}/encounter-maps`, {
-      query,
-    })
+  const listEncounterMaps = async (campaignId: string) =>
+    request<CampaignEncounterMapSummary[]>(`/api/campaigns/${campaignId}/encounter-maps`)
 
   const createEncounterMap = async (campaignId: string, input: EncounterMapCreateInput) =>
     request<CampaignEncounterMapDetail>(`/api/campaigns/${campaignId}/encounter-maps`, {
@@ -102,9 +99,9 @@ export function useEncounterMaps() {
       method: 'DELETE',
     })
 
-  const listSnapshots = async (campaignId: string, encounterMapId: string, options: { includeMap?: boolean } = {}) =>
+  const listSnapshots = async (campaignId: string, encounterMapId: string) =>
     request<CampaignEncounterMapSnapshot[]>(`/api/campaigns/${campaignId}/encounter-maps/${encounterMapId}/snapshots`, {
-      query: options.includeMap ? { include: 'map' } : undefined,
+      query: { include: 'map' },
     })
 
   const createSnapshot = async (

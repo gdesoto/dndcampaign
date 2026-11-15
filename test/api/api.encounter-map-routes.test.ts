@@ -11,11 +11,11 @@ import { and, eq, inArray } from 'drizzle-orm'
 const db = createApiTestDatabase()
 const hash = new Hash(new Scrypt({}))
 const baseUrl = getApiTestBaseUrl()
-const password = 'dungeon-api-pass'
+const password = 'encounter-map-api-pass'
 
 const users = {
-  owner: { email: 'dungeon-owner@example.com', name: 'Encounter Map Owner' },
-  viewer: { email: 'dungeon-viewer@example.com', name: 'Encounter Map Viewer' },
+  owner: { email: 'encounter-map-owner@example.com', name: 'Encounter Map Owner' },
+  viewer: { email: 'encounter-map-viewer@example.com', name: 'Encounter Map Viewer' },
 }
 
 const cookies: Record<string, string> = {}
@@ -24,6 +24,11 @@ let encounterMapId = ''
 let roomId = ''
 let linkId = ''
 let snapshotId = ''
+
+const data = async (response: Response) => {
+  expect(response.status).toBe(200)
+  return (await response.json()).data
+}
 
 const loginAndGetCookie = async (email: string) => {
   const response = await fetch(`${baseUrl}/api/auth/login`, {
@@ -101,7 +106,10 @@ describe('encounter map API routes', () => {
     }
     const contractResponse = await fetch(`${baseUrl}/openapi.json`)
     expect(contractResponse.status).toBe(200)
-    const contract = await contractResponse.json() as { paths: Record<string, Record<string, unknown>> }
+    const contract = await contractResponse.json() as {
+      paths: Record<string, Record<string, unknown>>
+      components: Record<string, Record<string, unknown>>
+    }
     const documentedCollection = '/api/campaigns/{campaignId}/encounter-maps'
     const documentedResource = `${documentedCollection}/{encounterMapId}`
     for (const [path, methods] of [
@@ -119,6 +127,20 @@ describe('encounter map API routes', () => {
       expect(Object.keys(contract.paths[path] ?? {})).toEqual(expect.arrayContaining([...methods]))
     }
     expect(Object.keys(contract.paths).some(path => path.includes('/dungeons'))).toBe(false)
+    for (const components of Object.values(contract.components)) {
+      expect(Object.keys(components).some(name => name.startsWith('Dungeon'))).toBe(false)
+    }
+    const contractValues: unknown[] = [contract]
+    for (const value of contractValues) {
+      if (!value || typeof value !== 'object') continue
+      const reference = Reflect.get(value, '$ref')
+      if (typeof reference === 'string' && reference.startsWith('#/')) {
+        const target = reference.slice(2).split('/').reduce<unknown>((current, part) =>
+          current && typeof current === 'object' ? Reflect.get(current, part.replace(/~1/g, '/').replace(/~0/g, '~')) : undefined, contract)
+        expect(target, reference).toBeDefined()
+      }
+      contractValues.push(...Object.values(value))
+    }
     expect(created).toMatchObject({ mapType: 'BUILDING', floorCount: 3 })
     expect(created.config).toMatchObject({
       mapType: 'BUILDING', floorCount: 3, encounterFlow: 'LOOP', encounterScale: 'COMPLEX',
@@ -481,12 +503,10 @@ describe('encounter map API routes', () => {
   it('generates forest terrain, preserves it through regeneration and rejects incompatible floors', async () => {
     const headers = { cookie: cookies.owner, 'content-type': 'application/json' }
     const collectionUrl = `${baseUrl}/api/campaigns/${campaignId}/encounter-maps`
-    const createResponse = await fetch(collectionUrl, {
+    const created = await data(await fetch(collectionUrl, {
       method: 'POST', headers,
       body: JSON.stringify({ name: 'Woodland Ambush', seed: 'woodland-contract', config: { mapType: 'FOREST', encounterFlow: 'LINEAR', encounterScale: 'SINGLE', verticalConnections: { bridges: true } } }),
-    })
-    expect(createResponse.status).toBe(200)
-    const created = (await createResponse.json()).data
+    }))
     expect(created.config).toMatchObject({ mapType: 'FOREST', floorCount: 1, encounterFlow: 'LINEAR', encounterScale: 'SINGLE' })
     expect(created.map).toMatchObject({ mapType: 'FOREST', floorCount: 1 })
     expect(created.map.flow.style).toBe('LINEAR')
@@ -498,25 +518,21 @@ describe('encounter map API routes', () => {
     expect(created.map.doors).toHaveLength(0)
     expect(created.map.stairs).toHaveLength(0)
     const resourceUrl = `${collectionUrl}/${created.id}`
-    const regenerateResponse = await fetch(resourceUrl, {
+    const regenerated = await data(await fetch(resourceUrl, {
       method: 'PATCH', headers, body: JSON.stringify({ action: 'regenerate', scope: 'ENCOUNTERS' }),
-    })
-    expect(regenerateResponse.status).toBe(200)
-    const regenerated = (await regenerateResponse.json()).data
+    }))
     expect(regenerated.map.terrain).toEqual(created.map.terrain)
     expect(regenerated.map.flow).toEqual(created.map.flow)
     expect(regenerated.map.portals).toEqual(created.map.portals)
     const jsonResponse = await fetch(resourceUrl, {
       method: 'PATCH', headers, body: JSON.stringify({ action: 'export', format: 'JSON' }),
     })
-    expect(jsonResponse.status).toBe(200)
-    const document = JSON.parse((await jsonResponse.json()).data.content)
+    const document = JSON.parse((await data(jsonResponse)).content)
     const importResponse = await fetch(collectionUrl, {
       method: 'POST', headers, body: JSON.stringify({ action: 'import', source: document }),
     })
-    expect(importResponse.status).toBe(200)
-    const importedId = (await importResponse.json()).data.id
-    const imported = (await fetch(`${collectionUrl}/${importedId}`, { headers }).then(response => response.json())).data
+    const importedId = (await data(importResponse)).id
+    const imported = await data(await fetch(`${collectionUrl}/${importedId}`, { headers }))
     expect(imported.map.terrain).toEqual(created.map.terrain)
     const incompatibleResponse = await fetch(collectionUrl, {
       method: 'POST', headers,
@@ -540,22 +556,18 @@ describe('encounter map API routes', () => {
   it('applies draft settings only with full or layout regeneration', async () => {
     const headers = { cookie: cookies.owner, 'content-type': 'application/json' }
     const collectionUrl = `${baseUrl}/api/campaigns/${campaignId}/encounter-maps`
-    const createResponse = await fetch(collectionUrl, {
+    const created = await data(await fetch(collectionUrl, {
       method: 'POST', headers,
       body: JSON.stringify({ name: 'Regeneration controls', seed: 'regeneration-draft-contract' }),
-    })
-    expect(createResponse.status).toBe(200)
-    const created = (await createResponse.json()).data
+    }))
     const resourceUrl = `${collectionUrl}/${created.id}`
-    const layoutResponse = await fetch(resourceUrl, {
+    const layout = await data(await fetch(resourceUrl, {
       method: 'PATCH', headers,
       body: JSON.stringify({ action: 'regenerate', scope: 'LAYOUT', config: {
         mapType: 'BUILDING', floorCount: 2, width: 30, height: 30, encounterScale: 'SINGLE',
         accessPoints: { entrances: 2, exits: 1 },
       } }),
-    })
-    expect(layoutResponse.status).toBe(200)
-    const layout = (await layoutResponse.json()).data
+    }))
     expect(layout.config).toMatchObject({ mapType: 'BUILDING', floorCount: 2, encounterScale: 'SINGLE', accessPoints: { entrances: 2 } })
     expect(layout.map).toMatchObject({ mapType: 'BUILDING', floorCount: 2, width: 30, height: 30 })
     const contentResponse = await fetch(resourceUrl, {
@@ -563,23 +575,21 @@ describe('encounter map API routes', () => {
       body: JSON.stringify({ action: 'regenerate', scope: 'ENCOUNTERS', config: { mapType: 'FOREST' } }),
     })
     expect(contentResponse.status).toBe(400)
-    const unchanged = (await fetch(resourceUrl, { headers }).then(response => response.json())).data
+    const unchanged = await data(await fetch(resourceUrl, { headers }))
     expect(unchanged.config).toEqual(layout.config)
     expect(unchanged.map).toEqual(layout.map)
-    const fullResponse = await fetch(resourceUrl, {
+    const full = await data(await fetch(resourceUrl, {
       method: 'PATCH', headers,
       body: JSON.stringify({ action: 'regenerate', scope: 'FULL', config: { mapType: 'FOREST', encounterScale: 'SINGLE' } }),
-    })
-    expect(fullResponse.status).toBe(200)
-    const full = (await fullResponse.json()).data
+    }))
     expect(full.config).toMatchObject({ mapType: 'FOREST', floorCount: 1, encounterScale: 'SINGLE' })
     expect(full.map).toMatchObject({ mapType: 'FOREST', floorCount: 1 })
-    const persisted = (await fetch(resourceUrl, { headers }).then(response => response.json())).data
+    const persisted = await data(await fetch(resourceUrl, { headers }))
     expect(persisted.config).toEqual(full.config)
     expect(persisted.map).toEqual(full.map)
   })
 
-  // Generate and edit a dungeon, preserve room links, and verify role restrictions.
+  // Generate and edit an encounter map, preserve room links, and verify role restrictions.
   it('creates encounter map, generates/regenerates, and enforces viewer read-only', { timeout: 15_000 }, async () => {
     const createResponse = await fetch(`${baseUrl}/api/campaigns/${campaignId}/encounter-maps`, {
       method: 'POST',
@@ -929,11 +939,6 @@ describe('encounter map API routes', () => {
   it('labels and previews snapshots, undoes partial regeneration without losing room details, and prunes automatic snapshots', { timeout: 60_000 }, async () => {
     const headers = { cookie: cookies.owner, 'content-type': 'application/json' }
     const resourceUrl = `${baseUrl}/api/campaigns/${campaignId}/encounter-maps/${encounterMapId}`
-    const data = async (response: Response) => {
-      expect(response.status).toBe(200)
-      return (await response.json()).data
-    }
-
     const labelled = await data(await fetch(`${resourceUrl}/snapshots`, {
       method: 'POST', headers, body: JSON.stringify({ snapshotType: 'MANUAL', label: '  Favourite layout  ' }),
     }))

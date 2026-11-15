@@ -447,12 +447,49 @@ describe('encounter map generator service', () => {
     }))
     const approach = building.encounters.find(encounter => encounter.roomId !== building.flow!.objectiveRoomId && encounter.difficulty === 'MEDIUM')
     expect(approach).toBeDefined()
-    expect(building.rooms.find(room => room.id === approach!.roomId)?.kind).toBe('HALL')
+    expect(building.flow!.routeRoomIds).toContain(approach!.roomId)
+    expect(building.rooms.find(room => room.id === approach!.roomId)?.kind).not.toBe('STAIRWELL')
     expect(building.encounters.some(encounter => encounter.roomId === building.flow!.objectiveRoomId && encounter.difficulty === 'HARD')).toBe(true)
     expect(building.traps.every(trap => !['HALL', 'STAIRWELL'].includes(building.rooms.find(room => room.id === trap.roomId)!.kind!))).toBe(true)
     const primary = new Set(building.flow!.routeRoomIds)
     const criticalCorridorIds = new Set(building.corridors.filter(corridor => primary.has(corridor.fromRoomId) && primary.has(corridor.toRoomId)).map(corridor => corridor.id))
     expect(building.doors.filter(door => criticalCorridorIds.has(door.corridorId)).every(door => !door.isSecret)).toBe(true)
+  })
+
+  it('lays out each building type from its brief, growing from the entrance toward private rooms', () => {
+    const entries = { MANOR: 'Entrance hall', TAVERN: 'Common room', TEMPLE: 'Narthex', THEATER: 'Lobby', LABORATORY: 'Entry hall' } as const
+    const hubs = { MANOR: 'Entrance hall', TAVERN: 'Common room', TEMPLE: 'Nave', THEATER: 'Auditorium', LABORATORY: 'Main laboratory' } as const
+    for (const buildingType of Object.keys(entries) as Array<keyof typeof entries>) {
+      for (const seed of ['oak', 'stone', 'river', 'ash']) {
+        for (const [floorCount, encounterScale] of [[1, 'SEQUENCE'], [1, 'COMPLEX'], [3, 'SEQUENCE']] as const) {
+          const map = service.generateBaseMap(seed, encounterMapGeneratorConfigSchema.parse({
+            mapType: 'BUILDING', buildingType, floorCount, encounterScale, width: 48, height: 40,
+          }))
+          assertPlayableMap(map)
+          const rooms = new Map(map.rooms.map(room => [room.id, room]))
+          const entry = rooms.get(map.flow!.entryRoomId)!
+          expect(entry.label).toBe(entries[buildingType])
+          const ground = map.rooms.filter(room => room.floor === entry.floor && room.kind !== 'STAIRWELL')
+          expect(ground.some(room => room.label === hubs[buildingType])).toBe(true)
+          // Rooms open onto one another and onto main rooms rather than all onto one hall.
+          const degree = new Map(map.rooms.map(room => [room.id, 0]))
+          for (const corridor of map.corridors) {
+            degree.set(corridor.fromRoomId, degree.get(corridor.fromRoomId)! + 1)
+            degree.set(corridor.toRoomId, degree.get(corridor.toRoomId)! + 1)
+          }
+          if (ground.length >= 8) {
+            for (const hall of ground.filter(room => room.kind === 'HALL')) expect(degree.get(hall.id)!).toBeLessThan(ground.length / 2)
+          }
+          const route = map.flow!.routeRoomIds
+          expect(route.indexOf(map.flow!.objectiveRoomId)).toBeGreaterThanOrEqual(2)
+        }
+      }
+    }
+    // The free-text theme flavors content only; the building type alone selects the brief.
+    const labels = (theme: string) => service.generateBaseMap('default-type', encounterMapGeneratorConfigSchema.parse({ mapType: 'BUILDING', theme }))
+      .rooms.map(room => room.label!).sort()
+    expect(labels('abandoned chapel')).toEqual(labels('haunted ruins'))
+    expect(labels('haunted ruins')).toContain('Entrance hall')
   })
 
   it('accepts legacy maps and validates encounter-map kinds, floors, and floor-scoped actions', () => {

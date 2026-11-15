@@ -1,6 +1,6 @@
 # Code simplification plan
 
-Updated: 2026-10-02. Historical validation baseline: `cd0ae54` on `master`; later source changes are noted below.
+Updated: 2026-11-15. Historical validation baseline: `cd0ae54` on `master`; later source changes are noted below.
 
 ## Goal and constraints
 
@@ -81,6 +81,29 @@ Validation: `yarn lint`, `yarn typecheck`, and `yarn test` passed (82 files /
 341 tests). Independent review confirmed all path parameters and OpenAPI source
 mappings match the moved handlers, with payload schemas unchanged. Logs are
 local under `storage/encounter-map-url-*`.
+
+### 2026-11-15 — Encounter map final cleanup pass
+
+Renamed the 22 live OpenAPI component schemas and their references from Dungeon
+to EncounterMap, keeping resource PATCH and geometry PATCH contracts distinct.
+Default seed/export fallback names and test fixtures now use encounter-map names;
+legacy missing-type list badges correctly show Dungeon. Physical database names,
+portable JSON fields, historical activity identifiers, and the dungeon subtype
+remain intentional compatibility/domain names.
+
+Removed repeated scoped lookups and 404 checks, redundant async wrappers and DTO
+row copying, unused client options, and duplicate empty-section decisions.
+Consolidated the overlapping forest-render cases without losing assertions.
+This removes 42 net application-code lines and one test case; new contract and
+legacy-badge assertions offset the deleted test boilerplate. No further
+feature/test file was orphaned; all six map suites and eight feature
+components retain distinct behavior coverage. Preexisting building-generation
+changes were preserved.
+
+Validation: `yarn lint`, `yarn typecheck`, and `yarn test` passed (82 files /
+341 tests). Independent review against the initial working-tree snapshot found
+no behavior-preservation issues and verified that OpenAPI changed only schema
+identifiers/references. Logs are local under `storage/encounter-map-final-pass-*`.
 
 ### Recorded validation
 

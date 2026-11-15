@@ -62,13 +62,18 @@ const toLinkDto = (row: EncounterMapLinkRow): CampaignEncounterMapLink => ({
   createdAt: row.createdAt.toISOString(),
 })
 
-const withEncounterMapAccess = async (campaignId: string, encounterMapId: string) =>
-  db.query.campaignDungeon.findFirst({ where: and(eq(campaignEncounterMap.id, encounterMapId), eq(campaignEncounterMap.campaignId, campaignId)), columns: {
+const requireEncounterMap = (campaignId: string, encounterMapId: string) => {
+  const row = db.query.campaignDungeon.findFirst({ where: and(eq(campaignEncounterMap.id, encounterMapId), eq(campaignEncounterMap.campaignId, campaignId)), columns: {
       id: true,
       mapJson: true,
     } }).sync()
+  if (!row) {
+    throw apiError(404, 'NOT_FOUND', 'Encounter map not found or access denied.')
+  }
+  return row
+}
 
-const syncRoomRowsToMap = async (encounterMapId: string, previousRooms: EncounterMapRoomGeometry[], map: EncounterMapData) => {
+const syncRoomRowsToMap = (encounterMapId: string, previousRooms: EncounterMapRoomGeometry[], map: EncounterMapData) => {
   db.transaction((tx) => {
     const existing = tx.query.campaignDungeonRoom.findMany({ where: eq(campaignEncounterMapRoom.dungeonId, encounterMapId) }).sync()
     const byNumber = new Map(existing.map(room => [room.roomNumber, room]))
@@ -376,10 +381,7 @@ export class EncounterMapEditorService {
     encounterMapId: string,
     actor: CampaignActor,
   ): Promise<CampaignEncounterMapRoom[]> {
-    const access = await withEncounterMapAccess(campaignId, encounterMapId)
-    if (!access) {
-      throw apiError(404, 'NOT_FOUND', 'Encounter map not found or access denied.')
-    }
+    const access = requireEncounterMap(campaignId, encounterMapId)
 
     const rows = db.query.campaignDungeonRoom.findMany({ where: eq(campaignEncounterMapRoom.dungeonId, access.id), orderBy: [asc(campaignEncounterMapRoom.roomNumber)] }).sync()
     const isViewer = actor.access.role === 'VIEWER'
@@ -399,10 +401,7 @@ export class EncounterMapEditorService {
     actor: CampaignActor,
     input: EncounterMapRoomUpdateInput,
   ): Promise<CampaignEncounterMapRoom> {
-    const access = await withEncounterMapAccess(campaignId, encounterMapId)
-    if (!access) {
-      throw apiError(404, 'NOT_FOUND', 'Encounter map not found or access denied.')
-    }
+    const access = requireEncounterMap(campaignId, encounterMapId)
 
     const existing = db.query.campaignDungeonRoom.findFirst({ where: and(eq(campaignEncounterMapRoom.id, roomId), eq(campaignEncounterMapRoom.dungeonId, access.id)), columns: { id: true } }).sync()
     if (!existing) {
@@ -429,10 +428,7 @@ export class EncounterMapEditorService {
     input: EncounterMapPatchInput,
   ): Promise<EncounterMapData> {
     const userId = actor.userId
-    const access = await withEncounterMapAccess(campaignId, encounterMapId)
-    if (!access) {
-      throw apiError(404, 'NOT_FOUND', 'Encounter map not found or access denied.')
-    }
+    const access = requireEncounterMap(campaignId, encounterMapId)
 
     const previousMap = encounterMapSchema.parse(access.mapJson)
     let map = previousMap
@@ -446,7 +442,7 @@ export class EncounterMapEditorService {
     }
     map = validated.data
 
-    await syncRoomRowsToMap(access.id, previousMap.rooms, map)
+    syncRoomRowsToMap(access.id, previousMap.rooms, map)
     await activityLogService.log({
       actorUserId: userId,
       campaignId,
@@ -467,10 +463,7 @@ export class EncounterMapEditorService {
     actor: CampaignActor,
   ): Promise<{ encounterId: string }> {
     const userId = actor.userId
-    const access = await withEncounterMapAccess(campaignId, encounterMapId)
-    if (!access) {
-      throw apiError(404, 'NOT_FOUND', 'Encounter map not found or access denied.')
-    }
+    const access = requireEncounterMap(campaignId, encounterMapId)
 
     const room = db.query.campaignDungeonRoom.findFirst({ where: and(eq(campaignEncounterMapRoom.dungeonId, access.id), eq(campaignEncounterMapRoom.id, roomId)) }).sync()
     if (!room) {
@@ -513,10 +506,7 @@ export class EncounterMapEditorService {
   }
 
   async listLinks(campaignId: string, encounterMapId: string): Promise<CampaignEncounterMapLink[]> {
-    const access = await withEncounterMapAccess(campaignId, encounterMapId)
-    if (!access) {
-      throw apiError(404, 'NOT_FOUND', 'Encounter map not found or access denied.')
-    }
+    const access = requireEncounterMap(campaignId, encounterMapId)
 
     const rows = db.query.campaignDungeonLink.findMany({ where: eq(campaignEncounterMapLink.dungeonId, access.id), orderBy: [desc(campaignEncounterMapLink.createdAt)] }).sync()
     return rows.map(toLinkDto)
@@ -528,10 +518,7 @@ export class EncounterMapEditorService {
     actor: CampaignActor,
     input: EncounterMapLinkCreateInput,
   ): Promise<CampaignEncounterMapLink> {
-    const access = await withEncounterMapAccess(campaignId, encounterMapId)
-    if (!access) {
-      throw apiError(404, 'NOT_FOUND', 'Encounter map not found or access denied.')
-    }
+    const access = requireEncounterMap(campaignId, encounterMapId)
 
     if (input.roomId) {
       const room = db.query.campaignDungeonRoom.findFirst({ where: and(eq(campaignEncounterMapRoom.id, input.roomId), eq(campaignEncounterMapRoom.dungeonId, access.id)), columns: { id: true } }).sync()
@@ -554,10 +541,7 @@ export class EncounterMapEditorService {
     encounterMapId: string,
     linkId: string,
   ): Promise<{ deleted: true }> {
-    const access = await withEncounterMapAccess(campaignId, encounterMapId)
-    if (!access) {
-      throw apiError(404, 'NOT_FOUND', 'Encounter map not found or access denied.')
-    }
+    const access = requireEncounterMap(campaignId, encounterMapId)
 
     const existing = db.query.campaignDungeonLink.findFirst({ where: and(eq(campaignEncounterMapLink.id, linkId), eq(campaignEncounterMapLink.dungeonId, access.id)), columns: { id: true } }).sync()
     if (!existing) {

@@ -2,7 +2,7 @@
 import type { EncounterMapGeneratorConfigInput } from '#shared/schemas/encounter-map'
 import type { EncounterMapType } from '#shared/types/encounter-map'
 import {
-  createEncounterMapConfig, encounterMapFloors, encounterMapFlows, encounterMapScales, encounterMapSizes,
+  createEncounterMapConfig, encounterMapBuildingTypes, encounterMapFloors, encounterMapFlows, encounterMapScales, encounterMapSizes,
   encounterMapThemes, encounterMapTypes, randomEncounterMapSeed,
 } from '~/utils/encounter-map-options'
 
@@ -34,18 +34,25 @@ const update = (patch: Partial<EncounterMapGeneratorConfigInput>) => {
   }
   emit('update:modelValue', next)
 }
+const defaultTheme = ({ mapType, buildingType }: Pick<EncounterMapGeneratorConfigInput, 'mapType' | 'buildingType'>) =>
+  mapType === 'BUILDING' ? encounterMapBuildingTypes.find(item => item.value === buildingType)!.theme : encounterMapThemes[mapType]
+// Replace only the previous type's default theme; keep one the user wrote.
+const followTheme = (next: Pick<EncounterMapGeneratorConfigInput, 'mapType' | 'buildingType'>) => {
+  const theme = props.modelValue.theme.trim()
+  return !theme || theme === defaultTheme(props.modelValue) ? defaultTheme(next) : props.modelValue.theme
+}
 const changeType = (mapType: EncounterMapType) => {
   const preset = createEncounterMapConfig({ mapType })
-  const theme = props.modelValue.theme.trim()
   update({
     mapType,
     floorCount: 1,
-    // Replace only the previous type's default theme; keep one the user wrote.
-    theme: !theme || theme === encounterMapThemes[props.modelValue.mapType] ? preset.theme : props.modelValue.theme,
+    theme: followTheme({ mapType, buildingType: props.modelValue.buildingType }),
     layout: { ...props.modelValue.layout, secretRoomChance: preset.layout.secretRoomChance },
     doors: { ...props.modelValue.doors, secretDoorChance: preset.doors.secretDoorChance },
   })
 }
+const changeBuildingType = (buildingType: EncounterMapGeneratorConfigInput['buildingType']) =>
+  update({ buildingType, theme: followTheme({ mapType: props.modelValue.mapType, buildingType }) })
 const updateAccess = (patch: Partial<EncounterMapGeneratorConfigInput['accessPoints']>) => update({ accessPoints: { ...props.modelValue.accessPoints, ...patch } })
 const updateTerrain = (patch: Partial<EncounterMapGeneratorConfigInput['tacticalTerrain']>) => update({ tacticalTerrain: { ...props.modelValue.tacticalTerrain, ...patch } })
 const updateVertical = (patch: Partial<EncounterMapGeneratorConfigInput['verticalConnections']>) => update({ verticalConnections: { ...props.modelValue.verticalConnections, ...patch } })
@@ -144,6 +151,9 @@ const corridorOptions = [
   <div class="space-y-3">
     <UFormField label="Map type" name="config.mapType" :description="encounterMapTypes.find(item => item.value === modelValue.mapType)?.description">
       <USelect :model-value="modelValue.mapType" :items="encounterMapTypes" :disabled="disabled" aria-label="Map type" class="w-full" @update:model-value="changeType" />
+    </UFormField>
+    <UFormField v-if="modelValue.mapType === 'BUILDING'" label="Building type" name="config.buildingType" :description="encounterMapBuildingTypes.find(item => item.value === modelValue.buildingType)?.description">
+      <USelect :model-value="modelValue.buildingType" :items="encounterMapBuildingTypes" :disabled="disabled" aria-label="Building type" class="w-full" @update:model-value="changeBuildingType" />
     </UFormField>
     <UFormField label="Content theme" name="config.theme" required>
       <UInput :model-value="modelValue.theme" :disabled="disabled" placeholder="ruins, manor, woodland…" class="w-full" @update:model-value="update({ theme: String($event) })" />

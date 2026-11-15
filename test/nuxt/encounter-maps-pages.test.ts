@@ -5,7 +5,7 @@ import type { EncounterMapData } from '../../shared/types/encounter-map'
 import { encounterMapGeneratorConfigSchema } from '../../shared/schemas/encounter-map'
 import { ref } from 'vue'
 import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
-import { USelect, USelectMenu, UTabs } from '#components'
+import { UBadge, USelect, USelectMenu, UTabs } from '#components'
 import EncounterMapsPage from '../../app/pages/campaigns/[campaignId]/encounter-maps/index.vue'
 import EncounterMapDetailPage from '../../app/pages/campaigns/[campaignId]/encounter-maps/[encounterMapId].vue'
 import DashboardLayout from '../../app/layouts/dashboard.vue'
@@ -21,8 +21,8 @@ const toastAdd = vi.hoisted(() => vi.fn())
 const discardDecision = vi.hoisted(() => ({ confirm: vi.fn(async () => false) }))
 
 mockNuxtImport('useRoute', () => () => ({
-  path: '/campaigns/campaign-1/encounter-maps/dungeon-1',
-  params: { campaignId: 'campaign-1', encounterMapId: 'dungeon-1' },
+  path: '/campaigns/campaign-1/encounter-maps/encounter-map-1',
+  params: { campaignId: 'campaign-1', encounterMapId: 'encounter-map-1' },
 }))
 mockNuxtImport('useApi', () => () => ({
   request: async (url: string) => {
@@ -65,13 +65,13 @@ const storedConfig = encounterMapGeneratorConfigSchema.parse({
   content: { trapDensity: 0.15, encounterDensity: 0.3, treasureDensity: 0.2, dressingDensity: 0.35 },
 })
 const detail = {
-  id: 'dungeon-1', campaignId: 'campaign-1', name: 'Sunken Crypt', status: 'DRAFT', theme: 'crypt', seed: 'seed-x',
+  id: 'encounter-map-1', campaignId: 'campaign-1', name: 'Sunken Crypt', status: 'DRAFT', theme: 'crypt', seed: 'seed-x',
   gridType: 'SQUARE', generatorVersion: '1.0.0', roomCount: 2, canDelete: true,
   createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
   config: storedConfig, map, playerView: null,
 }
 const roomRecord = (roomNumber: number, name = `Room ${roomNumber}`, extra = {}) => ({
-  id: `room-row-${roomNumber}`, dungeonId: 'dungeon-1', roomNumber, name, description: null, gmNotes: null, playerNotes: null,
+  id: `room-row-${roomNumber}`, dungeonId: 'encounter-map-1', roomNumber, name, description: null, gmNotes: null, playerNotes: null,
   readAloud: null, tags: [], bounds: null, state: 'UNSEEN', createdAt: '', updatedAt: '', ...extra,
 })
 const advancedOptions = {
@@ -170,7 +170,7 @@ describe('Encounter map pages', () => {
     api.publishEncounterMap.mockResolvedValue({ ...detail, status: 'READY' })
     api.unpublishEncounterMap.mockResolvedValue(detail)
     api.createEncounterFromRoom.mockResolvedValue({ encounterId: 'encounter-1' })
-    api.importEncounterMap.mockResolvedValue({ id: 'imported-dungeon-1' })
+    api.importEncounterMap.mockResolvedValue({ id: 'imported-encounter-map-1' })
     api.createEncounterMap.mockResolvedValue({ id: 'generated-map-1' })
     api.deleteEncounterMap.mockResolvedValue({ deleted: true })
   })
@@ -179,6 +179,7 @@ describe('Encounter map pages', () => {
     const list = await mountSuspended(EncounterMapsPage, { global: { provide: { campaignCanWriteContent: ref(true) } } })
     expect(list.text()).toContain('Sunken Crypt')
     expect(list.text()).toContain('Encounter maps')
+    expect(list.findAllComponents(UBadge).some(badge => badge.text() === 'Dungeon')).toBe(true)
     list.unmount()
     const layout = await mountSuspended(DashboardLayout, {
       global: {
@@ -302,8 +303,8 @@ describe('Encounter map pages', () => {
     // The server stores what each save or generation sent.
     let stored: Record<string, any> = { ...detail, map: buildingMap, config: buildingConfig }
     api.getEncounterMap.mockImplementation(async () => stored)
-    api.updateEncounterMap.mockImplementation(async (_campaign: string, _dungeon: string, input: Record<string, unknown>) => (stored = { ...stored, ...input }))
-    api.regenerateEncounterMap.mockImplementation(async (_campaign: string, _dungeon: string, input: { seed?: string; config?: unknown }) => {
+    api.updateEncounterMap.mockImplementation(async (_campaign: string, _encounterMap: string, input: Record<string, unknown>) => (stored = { ...stored, ...input }))
+    api.regenerateEncounterMap.mockImplementation(async (_campaign: string, _encounterMap: string, input: { seed?: string; config?: unknown }) => {
       stored = { ...stored, seed: input.seed ?? stored.seed, config: input.config ?? stored.config }
       return { ...stored, previousSnapshotId: 'snapshot-before' }
     })
@@ -322,7 +323,7 @@ describe('Encounter map pages', () => {
     expect(selected(wrapper, 'Encounter scale')).toBe('COMPLEX')
     await choose(wrapper, 'Encounter scale', 'SINGLE')
     await submit(wrapper, 'Save settings')
-    expect(api.updateEncounterMap).toHaveBeenLastCalledWith('campaign-1', 'dungeon-1', expect.objectContaining({
+    expect(api.updateEncounterMap).toHaveBeenLastCalledWith('campaign-1', 'encounter-map-1', expect.objectContaining({
       theme: 'crypt', config: expect.objectContaining({ ...buildingConfig, encounterScale: 'SINGLE' }),
     }))
 
@@ -330,7 +331,7 @@ describe('Encounter map pages', () => {
     api.regenerateEncounterMap.mockRejectedValueOnce(new Error('Regeneration failed'))
     await click(wrapper, 'Generate')
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
-    expect(api.regenerateEncounterMap).toHaveBeenLastCalledWith('campaign-1', 'dungeon-1', expect.objectContaining({
+    expect(api.regenerateEncounterMap).toHaveBeenLastCalledWith('campaign-1', 'encounter-map-1', expect.objectContaining({
       scope: 'FULL', preserveLocks: true, seed: 'seed-x', config: expect.objectContaining({ tacticalTerrain: expect.objectContaining({ cover: 'LIGHT' }) }),
     }))
     expect(toastAdd).toHaveBeenLastCalledWith(expect.objectContaining({ title: 'Unable to generate the map', description: 'Regeneration failed' }))
@@ -341,7 +342,7 @@ describe('Encounter map pages', () => {
     expect(undoToast.title).toBe('Map generated')
     await undoToast.actions[0].onClick()
     await flushPromises()
-    expect(api.restoreSnapshot).toHaveBeenLastCalledWith('campaign-1', 'dungeon-1', 'snapshot-before')
+    expect(api.restoreSnapshot).toHaveBeenLastCalledWith('campaign-1', 'encounter-map-1', 'snapshot-before')
 
     await click(wrapper, 'Reroll')
     const rerollSeed = api.regenerateEncounterMap.mock.calls.at(-1)![2].seed
@@ -349,13 +350,13 @@ describe('Encounter map pages', () => {
     expect((wrapper.get(`input[id="${wrapper.findAll('label').find(item => item.text() === 'Seed')!.attributes('for')}"]`).element as HTMLInputElement).value).toBe(rerollSeed)
 
     await click(wrapper, 'Regenerate traps')
-    expect(api.regenerateEncounterMap).toHaveBeenLastCalledWith('campaign-1', 'dungeon-1', { scope: 'TRAPS', preserveLocks: true, seed: rerollSeed })
+    expect(api.regenerateEncounterMap).toHaveBeenLastCalledWith('campaign-1', 'encounter-map-1', { scope: 'TRAPS', preserveLocks: true, seed: rerollSeed })
     expect(toastAdd.mock.calls.at(-1)![0].title).toBe('Traps regenerated')
 
     await choose(wrapper, 'Floor count', 2)
     expect(wrapper.findAll('label').some(item => item.text() === 'Balconies')).toBe(false)
     await click(wrapper, 'Generate')
-    expect(api.regenerateEncounterMap).toHaveBeenLastCalledWith('campaign-1', 'dungeon-1', expect.objectContaining({
+    expect(api.regenerateEncounterMap).toHaveBeenLastCalledWith('campaign-1', 'encounter-map-1', expect.objectContaining({
       config: expect.objectContaining({ floorCount: 2, verticalConnections: { ...advancedOptions.verticalConnections, balconies: false } }),
     }))
     wrapper.unmount()
@@ -399,18 +400,18 @@ describe('Encounter map pages', () => {
     await click(wrapper, 'Restore snapshot')
     expect(wrapper.get('[role="dialog"] [role="alert"]').text()).toBe('Restore failed')
     await click(wrapper, 'Restore snapshot')
-    expect(api.restoreSnapshot).toHaveBeenLastCalledWith('campaign-1', 'dungeon-1', 'snapshot-1')
+    expect(api.restoreSnapshot).toHaveBeenLastCalledWith('campaign-1', 'encounter-map-1', 'snapshot-1')
 
     await wrapper.get('input[aria-label="Snapshot label"]').setValue('Boss arena')
     await wrapper.get('input[aria-label="Snapshot label"]').element.closest('form')!.dispatchEvent(new Event('submit'))
     await flushPromises()
-    expect(api.createSnapshot).toHaveBeenLastCalledWith('campaign-1', 'dungeon-1', { snapshotType: 'MANUAL', label: 'Boss arena' })
+    expect(api.createSnapshot).toHaveBeenLastCalledWith('campaign-1', 'encounter-map-1', { snapshotType: 'MANUAL', label: 'Boss arena' })
     await wrapper.get('button[aria-label="Rename Before the party"]').trigger('click')
     const rename = wrapper.findAll('input[aria-label="Snapshot label"]').at(-1)!
     await rename.setValue('')
     await rename.element.closest('form')!.dispatchEvent(new Event('submit'))
     await flushPromises()
-    expect(api.updateSnapshot).toHaveBeenLastCalledWith('campaign-1', 'dungeon-1', 'snapshot-1', { label: null })
+    expect(api.updateSnapshot).toHaveBeenLastCalledWith('campaign-1', 'encounter-map-1', 'snapshot-1', { label: null })
     wrapper.unmount()
   })
 
@@ -447,7 +448,7 @@ describe('Encounter map pages', () => {
     expect(canvas.props('selectedRoomId')).toBe('room-1')
     expect((textarea(wrapper, 'GM notes').element as HTMLTextAreaElement).value).toBe('Entrance notes in progress')
     await submit(wrapper, 'Save details')
-    expect(api.updateRoom).toHaveBeenLastCalledWith('campaign-1', 'dungeon-1', 'room-row-1', expect.objectContaining({ gmNotes: 'Entrance notes in progress' }))
+    expect(api.updateRoom).toHaveBeenLastCalledWith('campaign-1', 'encounter-map-1', 'room-row-1', expect.objectContaining({ gmNotes: 'Entrance notes in progress' }))
     await wrapper.get('[aria-label="Inspect objective: Ritual chamber, Ground floor"]').trigger('click')
     await flushPromises()
     expect(canvas.props('floor')).toBe(1)
@@ -460,7 +461,7 @@ describe('Encounter map pages', () => {
     await wrapper.get(`input[id="${geometryLabel.attributes('for')}"]`).trigger('blur')
     await flushPromises()
     await click(wrapper, 'Apply position and size')
-    expect(api.patchMap).toHaveBeenLastCalledWith('campaign-1', 'dungeon-1', { actions: [{ type: 'MOVE_ROOM', roomId: 'room-3', x: 4, y: 2 }] })
+    expect(api.patchMap).toHaveBeenLastCalledWith('campaign-1', 'encounter-map-1', { actions: [{ type: 'MOVE_ROOM', roomId: 'room-3', x: 4, y: 2 }] })
 
     floorTabs(wrapper).vm.$emit('update:modelValue', 0)
     await flushPromises()
@@ -472,18 +473,18 @@ describe('Encounter map pages', () => {
     expect(wrapper.text()).toContain('Entry hall · DC 12/14')
     await wrapper.get('button[aria-label="Pin Pit"]').trigger('click')
     await flushPromises()
-    expect(api.patchMap).toHaveBeenLastCalledWith('campaign-1', 'dungeon-1', { actions: [{ type: 'TOGGLE_LOCK', entityType: 'TRAP', entityId: 'trap-1' }] })
+    expect(api.patchMap).toHaveBeenLastCalledWith('campaign-1', 'encounter-map-1', { actions: [{ type: 'TOGGLE_LOCK', entityType: 'TRAP', entityId: 'trap-1' }] })
     tabsWith(wrapper, 'doors')
       .vm.$emit('update:modelValue', 'doors')
     await flushPromises()
     await wrapper.get('button[aria-label="Locked door: Entry hall ↔ Rear exit"]').trigger('click')
     await flushPromises()
-    expect(api.patchMap).toHaveBeenLastCalledWith('campaign-1', 'dungeon-1', { actions: [{ type: 'TOGGLE_DOOR_LOCK', doorId: 'door-1' }] })
+    expect(api.patchMap).toHaveBeenLastCalledWith('campaign-1', 'encounter-map-1', { actions: [{ type: 'TOGGLE_DOOR_LOCK', doorId: 'door-1' }] })
     tabsWith(wrapper, 'doors')
       .vm.$emit('update:modelValue', 'rooms')
     await flushPromises()
     await submit(wrapper, 'Add to this floor')
-    expect(api.patchMap).toHaveBeenLastCalledWith('campaign-1', 'dungeon-1', { actions: [expect.objectContaining({ type: 'ADD_ROOM', floor: 0 })] })
+    expect(api.patchMap).toHaveBeenLastCalledWith('campaign-1', 'encounter-map-1', { actions: [expect.objectContaining({ type: 'ADD_ROOM', floor: 0 })] })
 
     await click(wrapper, 'Encounter route')
     expect(canvas.props('showRoute')).toBe(true)
@@ -497,7 +498,7 @@ describe('Encounter map pages', () => {
 
   it('hides secret rooms in player view, links records by name, and renames, archives, and exports the map', async () => {
     api.getEncounterMap.mockResolvedValue({ ...detail, map: { ...map, traps: ['room-1', 'room-2'].map(roomId => ({ id: `trap-${roomId}`, roomId, name: 'Pit', severity: 'LOW', trigger: 'Step', effect: 'Fall', detectDc: 10, disarmDc: 10, isLocked: false })) } })
-    api.listLinks.mockResolvedValue([{ id: 'link-1', dungeonId: 'dungeon-1', roomId: 'room-row-1', linkType: 'QUEST', targetId: 'quest-1', createdAt: '' }])
+    api.listLinks.mockResolvedValue([{ id: 'link-1', dungeonId: 'encounter-map-1', roomId: 'room-row-1', linkType: 'QUEST', targetId: 'quest-1', createdAt: '' }])
     URL.createObjectURL = vi.fn(() => 'blob:map')
     URL.revokeObjectURL = vi.fn()
     const wrapper = await mountDetail()
@@ -514,28 +515,28 @@ describe('Encounter map pages', () => {
     wrapper.findComponent(USelectMenu).vm.$emit('update:modelValue', 'quest-1')
     await flushPromises()
     await submit(wrapper, 'Add link')
-    expect(api.createLink).toHaveBeenLastCalledWith('campaign-1', 'dungeon-1', { linkType: 'QUEST', targetId: 'quest-1', roomId: undefined })
+    expect(api.createLink).toHaveBeenLastCalledWith('campaign-1', 'encounter-map-1', { linkType: 'QUEST', targetId: 'quest-1', roomId: undefined })
     await wrapper.get('button[aria-label="Remove link to Find the relic"]').trigger('click')
     await flushPromises()
-    expect(api.deleteLink).toHaveBeenLastCalledWith('campaign-1', 'dungeon-1', 'link-1')
+    expect(api.deleteLink).toHaveBeenLastCalledWith('campaign-1', 'encounter-map-1', 'link-1')
 
     await wrapper.get('input[aria-label="Map name"]').setValue('Drowned Crypt')
     await wrapper.get('input[aria-label="Map name"]').element.closest('form')!.dispatchEvent(new Event('submit'))
     await flushPromises()
-    expect(api.updateEncounterMap).toHaveBeenLastCalledWith('campaign-1', 'dungeon-1', { name: 'Drowned Crypt' })
+    expect(api.updateEncounterMap).toHaveBeenLastCalledWith('campaign-1', 'encounter-map-1', { name: 'Drowned Crypt' })
     await click(wrapper, 'Archive')
-    expect(api.updateEncounterMap).toHaveBeenLastCalledWith('campaign-1', 'dungeon-1', { status: 'ARCHIVED' })
+    expect(api.updateEncounterMap).toHaveBeenLastCalledWith('campaign-1', 'encounter-map-1', { status: 'ARCHIVED' })
     expect(toastAdd.mock.calls.at(-1)![0]).toMatchObject({ title: 'Map archived', actions: [expect.objectContaining({ label: 'Undo' })] })
 
     await click(wrapper, 'Export…')
     await choose(wrapper, 'Export format', 'SVG')
     await click(wrapper, 'Export map')
-    expect(api.exportEncounterMap).toHaveBeenLastCalledWith('campaign-1', 'dungeon-1', expect.objectContaining({ format: 'SVG', floor: 0 }))
+    expect(api.exportEncounterMap).toHaveBeenLastCalledWith('campaign-1', 'encounter-map-1', expect.objectContaining({ format: 'SVG', floor: 0 }))
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
     await click(wrapper, 'Export…')
     await choose(wrapper, 'Export format', 'JSON')
     await click(wrapper, 'Export map')
-    expect(api.exportEncounterMap).toHaveBeenLastCalledWith('campaign-1', 'dungeon-1', expect.objectContaining({ format: 'JSON', floor: undefined }))
+    expect(api.exportEncounterMap).toHaveBeenLastCalledWith('campaign-1', 'encounter-map-1', expect.objectContaining({ format: 'JSON', floor: undefined }))
     wrapper.unmount()
   })
 

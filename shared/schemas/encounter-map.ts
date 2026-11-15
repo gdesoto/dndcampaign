@@ -24,6 +24,7 @@ export const encounterMapTreasureRaritySchema = z.enum(['COMMON', 'UNCOMMON', 'R
 
 export const encounterMapEncounterFlowSchema = z.enum(['LINEAR', 'BRANCHING', 'LOOP'])
 export const encounterMapEncounterScaleSchema = z.enum(['SINGLE', 'SEQUENCE', 'COMPLEX'])
+export const encounterMapBuildingTypeSchema = z.enum(['MANOR', 'TAVERN', 'TEMPLE', 'THEATER', 'LABORATORY'])
 
 export const encounterMapAccessPointsConfigSchema = z.object({
   entrances: z.number().int().min(1).max(3).default(1),
@@ -75,6 +76,7 @@ export const encounterMapGeneratorConfigSchema = z
   .object({
     mapType: encounterMapTypeSchema.default('DUNGEON'),
     floorCount: z.number().int().min(1).max(4).default(1),
+    buildingType: encounterMapBuildingTypeSchema.default('MANOR'),
     encounterFlow: encounterMapEncounterFlowSchema.default('BRANCHING'),
     encounterScale: encounterMapEncounterScaleSchema.default('SEQUENCE'),
     accessPoints: encounterMapAccessPointsConfigSchema.prefault({}),

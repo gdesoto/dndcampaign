@@ -15,11 +15,16 @@ remain at compatibility boundaries: database tables and columns, portable JSON
 `dungeon`/`dungeonId` fields, and historical activity identifiers. `DUNGEON` is
 also the dungeon map type.
 
+OpenAPI component names use `EncounterMap` as well. The canonical resource PATCH
+uses `EncounterMapPatchRequest`; geometry edits on `/map` use the separate
+`EncounterMapGeometryPatchRequest`. Renamed schema identifiers do not change
+request, response, or portable JSON fields.
+
 ## Generation and editing
 
 Choose a map type, content theme, size, encounter scale, flow, and seed when creating a map.
 Access, tactical terrain, and vertical-connection controls shape the resulting
-layout. Buildings also expose a floor count. A seed with the same settings and
+layout. Buildings also expose a floor count and building type. A seed with the same settings and
 generator version reproduces geometry and generated content; timestamps and
 pass history record each generation run.
 
@@ -60,7 +65,7 @@ by name.
 | Type | Structure |
 | --- | --- |
 | Dungeon | A planned route links entry, a guard post, an objective, and an escape chamber. Chambers are placed around that route with optional side branches or an alternate approach. |
-| Building | Halls connect adjoining rooms within a shared footprint. Dedicated stairwells hold aligned stair flights and landings between adjacent floors. |
+| Building | Rooms from a building type's brief fill a shared footprint, entered from the front and growing more private with depth. Dedicated stairwells hold aligned stair flights and landings between adjacent floors. |
 | Forest | Clearings connected by trails, surrounded by trees, rocks, and brush. Terrain placement reserves clearings and travel routes. Forest maps have no generated doors. |
 
 Generated maps include an entrance and exit with visible routes to the edge of
@@ -73,8 +78,8 @@ The flow choices are **Direct route**, **Branching exploration** (the default),
 and **Alternate routes** (`LINEAR`, `BRANCHING`, and `LOOP` in the API).
 Dungeons and forests use a single route, optional side branches, or an alternate
 approach around the initial challenge respectively.
-Buildings retain practical access to their functional rooms; Alternate routes adds a
-separate service gallery that keeps circulation outside private rooms.
+Buildings connect rooms by their relationships; Alternate routes adds a second
+doorway between circulating rooms far apart in the plan.
 Changing the flow setting applies when generating a new layout. Existing maps
 retain their saved geometry and route until regeneration or an edit changes it.
 
@@ -104,14 +109,47 @@ ground floor. Balconies therefore require at least three total floors when a
 basement is enabled. Bridges can be generated in all map types. Floor labels
 distinguish the basement, ground floor, and upper floors.
 
+### Building layouts
+
+A building's type selects its room brief: **Manor house**, **Tavern or inn**,
+**Temple**, **Theater**, or **Laboratory** (`buildingType`, default manor). The
+type is independent of the free-text content theme, which only flavors generated
+content; choosing a type replaces the theme while it is still the previous
+type's default. Each brief lists
+ground-floor, upper-floor, and basement rooms in order from front to back, with
+target areas, the rooms each one normally opens from, and whether it is a
+destination that should not become a passageway. The encounter scale selects
+how much of the brief to include, and a single-storey building keeps its
+private rooms on the ground floor. The objective floor gains a brief-specific
+objective room, such as an innkeeper's office or a sealed tomb.
+
+Generation works in four stages:
+
+1. **Footprint.** The footprint is sized to the brief rather than the canvas.
+2. **Fixed spaces.** Stairwells, the ladder closet, an inn or laboratory's
+   upper-floor corridor, and any bridge well are placed first. Stairwells and
+   the ladder closet sit at the same position on every floor.
+3. **Room areas.** The remaining area is split by target area. The first rooms
+   fall nearest the front door on the ground floor and nearest the stairs on
+   other floors.
+4. **Doors.** Doors grow outward from the entrance. Each room opens onto its
+   named neighbor when they share a wall, and otherwise onto a hall or main
+   room. Back-of-house rooms avoid opening straight onto public rooms, and
+   destination rooms are passed through only when no other door is possible.
+
+The back door belongs to a service room on an outside wall.
+
+With bridges enabled, upper floors leave an open well above a ground-floor room
+and a bridge crosses it. A single-storey building gets a light well instead.
+Balconies extend from the widest front room on each upper floor.
+
 With a generated flow and nonzero encounter density, the objective receives a
 hard final confrontation. Single encounter scale generates only that fight;
 other scales add a medium challenge in the first eligible approach space and
-use the configured densities for other rooms. Buildings use a hall checkpoint
-to guard the approach to the stairs or private rooms. Nonzero treasure density
+use the configured densities for other rooms. Nonzero treasure density
 places the main reward at the objective. Entry and exit
 rooms and stairwells receive no generated traps, encounters, or treasure; halls
-only receive the deliberate checkpoint encounter. Setting a content density to
+only receive a deliberate challenge encounter when no room precedes the objective. Setting a content density to
 zero disables new content in that layer. Scoped regeneration retains locked room
 content when Preserve locks is enabled, including multiple locked items in one
 room. Main-route doors are never generated as

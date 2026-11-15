@@ -2567,7 +2567,7 @@
                     "data": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/DungeonSummary"
+                        "$ref": "#/components/schemas/EncounterMapSummary"
                       }
                     }
                   },
@@ -2660,7 +2660,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DungeonCollectionPostRequest"
+                "$ref": "#/components/schemas/EncounterMapCollectionPostRequest"
               },
               "example": {
                 "name": "Watch House",
@@ -2668,6 +2668,7 @@
                 "config": {
                   "mapType": "BUILDING",
                   "floorCount": 3,
+                  "buildingType": "TAVERN",
                   "encounterFlow": "BRANCHING",
                   "encounterScale": "COMPLEX",
                   "accessPoints": {
@@ -2792,7 +2793,7 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/components/schemas/DungeonDetail"
+                      "$ref": "#/components/schemas/EncounterMapDetail"
                     }
                   },
                   "required": [
@@ -2894,7 +2895,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DungeonPatchRequest"
+                "$ref": "#/components/schemas/EncounterMapPatchRequest"
               },
               "example": {
                 "action": "export",
@@ -3202,7 +3203,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DungeonMapPatchRequest"
+                "$ref": "#/components/schemas/EncounterMapGeometryPatchRequest"
               },
               "example": {
                 "actions": [
@@ -3366,7 +3367,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DungeonRoomPatchRequest"
+                "$ref": "#/components/schemas/EncounterMapRoomPatchRequest"
               },
               "example": {
                 "action": "update",
@@ -3598,7 +3599,7 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/components/schemas/DungeonSnapshot"
+                      "$ref": "#/components/schemas/EncounterMapSnapshot"
                     },
                     "error": {
                       "type": "null"
@@ -13722,7 +13723,7 @@
           "visibility": "DM"
         }
       },
-      "DungeonCollectionPostRequest": {
+      "EncounterMapCollectionPostRequest": {
         "oneOf": [
           {
             "type": "object",
@@ -13744,7 +13745,7 @@
                 "maxLength": 80
               },
               "config": {
-                "$ref": "#/components/schemas/DungeonGeneratorConfig"
+                "$ref": "#/components/schemas/EncounterMapGeneratorConfig"
               }
             },
             "required": [
@@ -13758,7 +13759,7 @@
                 "const": "import"
               },
               "source": {
-                "$ref": "#/components/schemas/DungeonPortableDocument"
+                "$ref": "#/components/schemas/EncounterMapPortableDocument"
               },
               "nameOverride": {
                 "type": "string",
@@ -13778,6 +13779,7 @@
           "config": {
             "mapType": "BUILDING",
             "floorCount": 3,
+            "buildingType": "TAVERN",
             "encounterFlow": "BRANCHING",
             "encounterScale": "COMPLEX",
             "accessPoints": {
@@ -13789,7 +13791,7 @@
           }
         }
       },
-      "DungeonPatchRequest": {
+      "EncounterMapPatchRequest": {
         "oneOf": [
           {
             "type": "object",
@@ -13803,7 +13805,7 @@
                 "maxLength": 80
               },
               "config": {
-                "$ref": "#/components/schemas/DungeonGeneratorConfig"
+                "$ref": "#/components/schemas/EncounterMapGeneratorConfig"
               }
             },
             "required": [
@@ -13838,7 +13840,7 @@
                 "maxLength": 80
               },
               "config": {
-                "$ref": "#/components/schemas/DungeonGeneratorConfig",
+                "$ref": "#/components/schemas/EncounterMapGeneratorConfig",
                 "description": "Settings to apply and persist during FULL or LAYOUT regeneration. Rejected for content-only scopes."
               }
             },
@@ -13942,7 +13944,7 @@
                 "maxLength": 80
               },
               "config": {
-                "$ref": "#/components/schemas/DungeonGeneratorConfig"
+                "$ref": "#/components/schemas/EncounterMapGeneratorConfig"
               },
               "status": {
                 "type": "string",
@@ -13968,7 +13970,7 @@
           "playerSafe": true
         }
       },
-      "DungeonRoomPatchRequest": {
+      "EncounterMapRoomPatchRequest": {
         "oneOf": [
           {
             "type": "object",
@@ -16865,7 +16867,7 @@
           }
         }
       },
-      "DungeonGeneratorConfig": {
+      "EncounterMapGeneratorConfig": {
         "type": "object",
         "properties": {
           "mapType": {
@@ -17018,6 +17020,18 @@
               }
             }
           },
+          "buildingType": {
+            "type": "string",
+            "enum": [
+              "MANOR",
+              "TAVERN",
+              "TEMPLE",
+              "THEATER",
+              "LABORATORY"
+            ],
+            "default": "MANOR",
+            "description": "Room brief for building maps. Independent of the free-text theme, which only labels generated content. Other map types ignore it."
+          },
           "encounterFlow": {
             "type": "string",
             "enum": [
@@ -17039,13 +17053,13 @@
             "description": "Encounter scope. SINGLE generates one objective fight while retaining separate entry, objective and exit spaces."
           },
           "accessPoints": {
-            "$ref": "#/components/schemas/DungeonAccessPointsConfig"
+            "$ref": "#/components/schemas/EncounterMapAccessPointsConfig"
           },
           "tacticalTerrain": {
-            "$ref": "#/components/schemas/DungeonTacticalTerrainConfig"
+            "$ref": "#/components/schemas/EncounterMapTacticalTerrainConfig"
           },
           "verticalConnections": {
-            "$ref": "#/components/schemas/DungeonVerticalConnectionsConfig"
+            "$ref": "#/components/schemas/EncounterMapVerticalConnectionsConfig"
           }
         },
         "description": "Encounter map generation settings. Missing mapType and floorCount remain compatible with existing single-floor dungeons. Multi-floor buildings contain aligned stair connections.",
@@ -17174,7 +17188,7 @@
           }
         ]
       },
-      "DungeonMapRoom": {
+      "EncounterMapRoom": {
         "type": "object",
         "properties": {
           "id": {
@@ -17237,7 +17251,7 @@
           "height"
         ]
       },
-      "DungeonMapCorridor": {
+      "EncounterMapCorridor": {
         "type": "object",
         "properties": {
           "id": {
@@ -17288,7 +17302,7 @@
         ],
         "description": "Connects rooms on the same floor; its floor is inferred from the referenced rooms."
       },
-      "DungeonMapDoor": {
+      "EncounterMapDoor": {
         "type": "object",
         "properties": {
           "id": {
@@ -17325,7 +17339,7 @@
           "corridorId"
         ]
       },
-      "DungeonMapWall": {
+      "EncounterMapWall": {
         "type": "object",
         "properties": {
           "id": {
@@ -17359,7 +17373,7 @@
           "y2"
         ]
       },
-      "DungeonMapZone": {
+      "EncounterMapZone": {
         "type": "object",
         "properties": {
           "id": {
@@ -17413,7 +17427,7 @@
           "cells"
         ]
       },
-      "DungeonMapTerrain": {
+      "EncounterMapTerrain": {
         "type": "object",
         "properties": {
           "id": {
@@ -17485,7 +17499,7 @@
           "height"
         ]
       },
-      "DungeonMapStair": {
+      "EncounterMapStair": {
         "type": "object",
         "properties": {
           "id": {
@@ -17536,7 +17550,7 @@
         ],
         "description": "Aligned stair footprint inside both referenced rooms on adjacent floors. x and y identify its top-left cell. New building layouts use dedicated stairwell rooms; the complete footprint must remain inside both rooms."
       },
-      "DungeonMap": {
+      "EncounterMapData": {
         "type": "object",
         "properties": {
           "schemaVersion": {
@@ -17576,43 +17590,43 @@
           "rooms": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DungeonMapRoom"
+              "$ref": "#/components/schemas/EncounterMapRoom"
             }
           },
           "corridors": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DungeonMapCorridor"
+              "$ref": "#/components/schemas/EncounterMapCorridor"
             }
           },
           "doors": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DungeonMapDoor"
+              "$ref": "#/components/schemas/EncounterMapDoor"
             }
           },
           "walls": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DungeonMapWall"
+              "$ref": "#/components/schemas/EncounterMapWall"
             }
           },
           "zones": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DungeonMapZone"
+              "$ref": "#/components/schemas/EncounterMapZone"
             }
           },
           "terrain": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DungeonMapTerrain"
+              "$ref": "#/components/schemas/EncounterMapTerrain"
             }
           },
           "stairs": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DungeonMapStair"
+              "$ref": "#/components/schemas/EncounterMapStair"
             }
           },
           "traps": {
@@ -17922,11 +17936,11 @@
           "portals": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DungeonMapPortal"
+              "$ref": "#/components/schemas/EncounterMapPortal"
             }
           },
           "flow": {
-            "$ref": "#/components/schemas/DungeonMapFlow"
+            "$ref": "#/components/schemas/EncounterMapFlow"
           },
           "floorLabels": {
             "type": "array",
@@ -17953,7 +17967,7 @@
         ],
         "description": "Portable encounter map geometry and generated content. Legacy maps may omit mapType, floorCount and floor fields; these represent a single-floor dungeon. Terrain and stairs are optional for legacy maps. Portals, room kinds, stair dimensions and GM flow metadata are additive and optional for older maps. Imports validate portal geometry and flow references rather than accepting dangling routes."
       },
-      "DungeonPortableDocument": {
+      "EncounterMapPortableDocument": {
         "type": "object",
         "properties": {
           "schemaVersion": {
@@ -18017,10 +18031,10 @@
                 "minLength": 1
               },
               "config": {
-                "$ref": "#/components/schemas/DungeonGeneratorConfig"
+                "$ref": "#/components/schemas/EncounterMapGeneratorConfig"
               },
               "map": {
-                "$ref": "#/components/schemas/DungeonMap"
+                "$ref": "#/components/schemas/EncounterMapData"
               },
               "playerView": {
                 "type": [
@@ -18203,7 +18217,7 @@
         ],
         "additionalProperties": false
       },
-      "DungeonMapPatchRequest": {
+      "EncounterMapGeometryPatchRequest": {
         "type": "object",
         "properties": {
           "actions": {
@@ -18676,7 +18690,7 @@
         ],
         "description": "Ordered map edits. Rooms, walls and zones may target an existing floor. Corridors connect rooms on one floor. Stair-linked rooms cannot be deleted or moved/resized away from their complete stair footprint. Room, corridor and wall geometry edits clear generated flow metadata; zone edits preserve it. Moving/resizing a portal room reanchors its exterior route; removing the room removes its attached portals. Invalid final map geometry is rejected before persistence. Room-owned terrain moves with its room and is removed with it; resizing a room to clip owned terrain is rejected."
       },
-      "DungeonSummary": {
+      "EncounterMapSummary": {
         "type": "object",
         "properties": {
           "id": {
@@ -18756,19 +18770,19 @@
           "updatedAt"
         ]
       },
-      "DungeonDetail": {
+      "EncounterMapDetail": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/DungeonSummary"
+            "$ref": "#/components/schemas/EncounterMapSummary"
           },
           {
             "type": "object",
             "properties": {
               "config": {
-                "$ref": "#/components/schemas/DungeonGeneratorConfig"
+                "$ref": "#/components/schemas/EncounterMapGeneratorConfig"
               },
               "map": {
-                "$ref": "#/components/schemas/DungeonMap"
+                "$ref": "#/components/schemas/EncounterMapData"
               },
               "playerView": {
                 "type": [
@@ -18786,7 +18800,7 @@
           }
         ]
       },
-      "DungeonMapPortal": {
+      "EncounterMapPortal": {
         "type": "object",
         "properties": {
           "id": {
@@ -18843,7 +18857,7 @@
         ],
         "description": "Orthogonal exterior route attached to an existing room. The first point is a wall cell inside that room and the last is on the map boundary (0 or width/height minus 1). Every point must remain inside the map. The room supplies the floor."
       },
-      "DungeonMapFlow": {
+      "EncounterMapFlow": {
         "type": "object",
         "properties": {
           "style": {
@@ -18885,7 +18899,7 @@
         ],
         "description": "GM-only generated route. Entry, objective and exit reference three distinct visible rooms. The entry and exit must have matching nonsecret ENTRANCE and EXIT portals. The ordered route starts at entryRoomId, visits objectiveRoomId, and ends at exitRoomId; every room must exist and consecutive rooms must be joined by a corridor or stair. A route can revisit rooms, for example when returning from upper floors to a ground-floor exit. Geometry/topology edits clear this metadata. Player-safe projections omit it."
       },
-      "DungeonAccessPointsConfig": {
+      "EncounterMapAccessPointsConfig": {
         "type": "object",
         "default": {
           "entrances": 1,
@@ -18926,7 +18940,7 @@
           }
         }
       },
-      "DungeonTacticalTerrainConfig": {
+      "EncounterMapTacticalTerrainConfig": {
         "type": "object",
         "default": {
           "cover": "LIGHT",
@@ -18968,7 +18982,7 @@
           }
         }
       },
-      "DungeonVerticalConnectionsConfig": {
+      "EncounterMapVerticalConnectionsConfig": {
         "type": "object",
         "default": {
           "basement": false,
@@ -19006,7 +19020,7 @@
         },
         "description": "Basements, dual staircases, ladders and balconies require BUILDING with at least two total floors. Bridges are available for all map types. Balconies require an upper floor above ground, so a building with a basement needs at least three total floors to enable them."
       },
-      "DungeonSnapshot": {
+      "EncounterMapSnapshot": {
         "type": "object",
         "properties": {
           "id": {

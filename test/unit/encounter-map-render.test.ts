@@ -118,21 +118,7 @@ it('keeps every floor layer scoped while showing stair destinations on each conn
   expect(map).toEqual(original)
 })
 
-it('renders forest clearings and trails without enclosure walls, with distinct terrain symbols', () => {
-  const map = exampleMap()
-  map.mapType = 'FOREST'
-  map.terrain = ['TREE', 'ROCK', 'BRUSH'].map((kind, index) => ({
-    id: kind, kind: kind as 'TREE' | 'ROCK' | 'BRUSH', x: 2 + index * 3, y: 8, width: 2, height: 2,
-  }))
-  const svg = renderEncounterMapSvg(map)
-  expect(svg).toContain('<path data-room-id="entry"')
-  expect(svg).not.toContain('<rect data-room-id=')
-  expect(svg).not.toContain('data-layer="corridor-walls"')
-  for (const label of ['Tree', 'Rock', 'Brush']) expect(svg).toContain(`>${label}</title>`)
-  expect(svg).toContain('data-layer="passages"')
-})
-
-it('joins large organic clearings to boundary-cell trails and portals without visual gaps', async () => {
+it('renders distinct forest terrain and open clearings joined to trails and portals without visual gaps', async () => {
   const map = exampleMap()
   map.mapType = 'FOREST'
   map.width = 80
@@ -141,7 +127,15 @@ it('joins large organic clearings to boundary-cell trails and portals without vi
   Object.assign(map.rooms[1]!, { x: 50, y: 2, width: 20, height: 24 })
   map.corridors[0]!.points = [{ x: 37, y: 13 }, { x: 50, y: 13 }]
   map.portals = [{ id: 'entrance', kind: 'ENTRANCE', roomId: 'entry', points: [{ x: 2, y: 13 }, { x: 0, y: 13 }] }]
+  map.terrain = ['TREE', 'ROCK', 'BRUSH'].map((kind, index) => ({
+    id: kind, kind: kind as 'TREE' | 'ROCK' | 'BRUSH', x: 2 + index * 3, y: 30, width: 2, height: 2,
+  }))
   const svg = renderEncounterMapSvg(map, { includeGrid: false, includeLabels: false })
+  expect(svg).toContain('<path data-room-id="entry"')
+  expect(svg).not.toContain('<rect data-room-id=')
+  expect(svg).not.toContain('data-layer="corridor-walls"')
+  for (const label of ['Tree', 'Rock', 'Brush']) expect(svg).toContain(`>${label}</title>`)
+  expect(svg).toContain('data-layer="passages"')
   const { data, info } = await sharp(Buffer.from(svg)).removeAlpha().raw().toBuffer({ resolveWithObject: true })
   for (const x of [3.5 * 32, 36 * 32]) {
     const offset = (13.5 * 32 * info.width + x) * info.channels

@@ -20,12 +20,6 @@ import type { CampaignActor } from '#server/utils/campaign-auth'
 
 const activityLogService = new ActivityLogService()
 
-const withEncounterMapAccess = async (campaignId: string, encounterMapId: string) =>
-  db.query.campaignDungeon.findFirst({ where: and(eq(campaignEncounterMap.id, encounterMapId), eq(campaignEncounterMap.campaignId, campaignId)), with: {
-      rooms: true,
-      links: true,
-    } }).sync()
-
 const toPngBase64 = async (svg: string) => {
   const buffer = await sharp(Buffer.from(svg, 'utf8')).png().toBuffer()
   return buffer.toString('base64')
@@ -88,7 +82,10 @@ export class EncounterMapExportService {
     input: EncounterMapExportInput,
   ): Promise<EncounterMapExportResult> {
     const userId = actor.userId
-    const row = await withEncounterMapAccess(campaignId, encounterMapId)
+    const row = db.query.campaignDungeon.findFirst({
+      where: and(eq(campaignEncounterMap.id, encounterMapId), eq(campaignEncounterMap.campaignId, campaignId)),
+      with: { rooms: true, links: true },
+    }).sync()
     if (!row) {
       throw apiError(404, 'NOT_FOUND', 'Encounter map not found or access denied.')
     }
@@ -98,7 +95,7 @@ export class EncounterMapExportService {
     const effectivePlayerSafe = forcePlayerSafe || input.playerSafe || !input.includeGmLayer
     const exportMap = effectivePlayerSafe ? toPlayerSafeMap(map) : map
     const safeSuffix = effectivePlayerSafe ? '-player' : '-dm'
-    const baseName = row.name.trim().replace(/[^a-zA-Z0-9_-]+/g, '-').toLowerCase() || 'dungeon'
+    const baseName = row.name.trim().replace(/[^a-zA-Z0-9_-]+/g, '-').toLowerCase() || 'encounter-map'
     const floor = input.floor ?? 0
     if (input.format !== 'JSON' && floor >= (map.floorCount ?? 1)) {
       throw apiError(400, 'INVALID_FLOOR', 'The selected floor does not exist on this map.')

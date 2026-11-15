@@ -179,7 +179,7 @@ const encounterMapActions = (encounterMap: CampaignEncounterMapSummary): RecordA
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
               <h2 class="type-record flex items-start gap-2"><UIcon :name="encounterMapTypes.find(item => item.value === encounterMap.mapType)?.icon || 'i-lucide-castle'" class="mt-0.5 size-4 shrink-0 text-muted" aria-hidden="true" /><NuxtLink :to="`/campaigns/${campaignId}/encounter-maps/${encounterMap.id}`" class="break-words hover:underline">{{ encounterMap.name }}</NuxtLink></h2>
-              <UBadge color="neutral" variant="soft" class="mt-2">{{ encounterMapTypes.find(item => item.value === encounterMap.mapType)?.label || 'EncounterMap' }}</UBadge>
+              <UBadge color="neutral" variant="soft" class="mt-2">{{ encounterMapTypes.find(item => item.value === encounterMap.mapType)?.label || 'Dungeon' }}</UBadge>
             </div>
             <SharedActionMenu :name="encounterMap.name" :items="encounterMapActions(encounterMap)" :disabled="Boolean(deletingEncounterMapId)" />
           </div>

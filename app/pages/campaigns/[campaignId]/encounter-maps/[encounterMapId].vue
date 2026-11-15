@@ -67,7 +67,7 @@ const {
   refresh: refreshSnapshots,
 } = useLazyAsyncData(
   () => `encounter-map-snapshots-${campaignId.value}-${encounterMapId.value}`,
-  () => encounterMapApi.listSnapshots(campaignId.value, encounterMapId.value, { includeMap: true }),
+  () => encounterMapApi.listSnapshots(campaignId.value, encounterMapId.value),
   { server: false },
 )
 

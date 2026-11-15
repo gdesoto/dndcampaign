@@ -9,6 +9,14 @@ export const encounterMapTypes = [
 
 export const encounterMapThemes: Record<EncounterMapType, string> = { DUNGEON: 'ruins', BUILDING: 'manor', FOREST: 'woodland' }
 
+export const encounterMapBuildingTypes = [
+  { label: 'Manor house', value: 'MANOR' as const, theme: 'manor', icon: 'i-lucide-house', description: 'Entrance hall and reception rooms, with the kitchen and bedrooms behind.' },
+  { label: 'Tavern or inn', value: 'TAVERN' as const, theme: 'tavern', icon: 'i-lucide-beer', description: 'A common room with the bar and kitchen behind and guest rooms upstairs.' },
+  { label: 'Temple', value: 'TEMPLE' as const, theme: 'temple', icon: 'i-lucide-church', description: 'Narthex, nave, and sanctuary, with chapels and a vestry.' },
+  { label: 'Theater', value: 'THEATER' as const, theme: 'theater', icon: 'i-lucide-drama', description: 'Lobby, auditorium, and stage, with backstage rooms.' },
+  { label: 'Laboratory', value: 'LABORATORY' as const, theme: 'laboratory', icon: 'i-lucide-flask-conical', description: 'A main laboratory with stores, a workshop, and studies upstairs.' },
+]
+
 export const encounterMapSizes = [
   { label: 'Small · 30 × 30', value: 30 },
   { label: 'Medium · 40 × 40', value: 40 },

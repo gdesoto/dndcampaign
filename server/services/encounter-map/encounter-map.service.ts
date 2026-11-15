@@ -76,8 +76,13 @@ const toDetail = (row: EncounterMapRow, viewerSafe = false): CampaignEncounterMa
   }
 }
 
-const withEncounterMapAccess = async (campaignId: string, encounterMapId: string) =>
-  db.query.campaignDungeon.findFirst({ where: and(eq(campaignEncounterMap.id, encounterMapId), eq(campaignEncounterMap.campaignId, campaignId)) }).sync()
+const requireEncounterMap = (campaignId: string, encounterMapId: string) => {
+  const row = db.query.campaignDungeon.findFirst({ where: and(eq(campaignEncounterMap.id, encounterMapId), eq(campaignEncounterMap.campaignId, campaignId)) }).sync()
+  if (!row) {
+    throw apiError(404, 'NOT_FOUND', 'Encounter map not found or access denied.')
+  }
+  return row
+}
 
 export const resetEncounterMapRooms = (encounterMapId: string, rooms: EncounterMapRoomGeometry[]) => {
   db.transaction((tx) => {
@@ -152,19 +157,11 @@ export class EncounterMapService {
 
     resetEncounterMapRooms(created.id, map.rooms)
 
-    return toDetail({
-        ...created,
-        configJson: (normalizedConfig) as unknown as JsonValue,
-        mapJson: (map) as unknown as JsonValue,
-        playerViewJson: created.playerViewJson,
-      })
+    return toDetail(created)
   }
 
   async getEncounterMap(campaignId: string, encounterMapId: string, actor: CampaignActor): Promise<CampaignEncounterMapDetail> {
-    const row = await withEncounterMapAccess(campaignId, encounterMapId)
-    if (!row) {
-      throw apiError(404, 'NOT_FOUND', 'Encounter map not found or access denied.')
-    }
+    const row = requireEncounterMap(campaignId, encounterMapId)
 
     const viewerSafe = actor.access.role === 'VIEWER'
     return toDetail(row, viewerSafe)
@@ -177,10 +174,7 @@ export class EncounterMapService {
     input: EncounterMapUpdateInput,
   ): Promise<CampaignEncounterMapDetail> {
     const userId = actor.userId
-    const existing = await withEncounterMapAccess(campaignId, encounterMapId)
-    if (!existing) {
-      throw apiError(404, 'NOT_FOUND', 'Encounter map not found or access denied.')
-    }
+    const existing = requireEncounterMap(campaignId, encounterMapId)
 
     const currentConfig = encounterMapGeneratorConfigSchema.parse(existing.configJson)
     const nextConfig = input.config || currentConfig
@@ -203,7 +197,7 @@ export class EncounterMapService {
       summary: `Updated encounter map "${updated.name}".`,
     })
 
-    return toDetail({ ...updated, configJson: (nextConfig) as unknown as JsonValue })
+    return toDetail(updated)
   }
 
   async deleteEncounterMap(campaignId: string, encounterMapId: string, actor: CampaignActor): Promise<{ deleted: true }> {
@@ -237,10 +231,7 @@ export class EncounterMapService {
     input: EncounterMapGenerateInput,
   ): Promise<CampaignEncounterMapDetail> {
     const userId = actor.userId
-    const existing = await withEncounterMapAccess(campaignId, encounterMapId)
-    if (!existing) {
-      throw apiError(404, 'NOT_FOUND', 'Encounter map not found or access denied.')
-    }
+    const existing = requireEncounterMap(campaignId, encounterMapId)
 
     const seed = input.seed || existing.seed
     const config = input.config
@@ -271,7 +262,7 @@ export class EncounterMapService {
       },
     })
 
-    return toDetail({ ...updated, configJson: (config) as unknown as JsonValue, mapJson: (map) as unknown as JsonValue })
+    return toDetail(updated)
   }
 
   async regenerateEncounterMap(
@@ -281,10 +272,7 @@ export class EncounterMapService {
     input: EncounterMapRegenerateInput,
   ): Promise<CampaignEncounterMapRegenerateResult> {
     const userId = actor.userId
-    const existing = await withEncounterMapAccess(campaignId, encounterMapId)
-    if (!existing) {
-      throw apiError(404, 'NOT_FOUND', 'Encounter map not found or access denied.')
-    }
+    const existing = requireEncounterMap(campaignId, encounterMapId)
 
     const seed = input.seed || existing.seed
     const config = encounterMapGeneratorConfigSchema.parse(input.config ?? existing.configJson)
@@ -339,7 +327,7 @@ export class EncounterMapService {
     })
 
     return {
-      ...toDetail({ ...updated, configJson: (config) as unknown as JsonValue, mapJson: (regenerated) as unknown as JsonValue }),
+      ...toDetail(updated),
       previousSnapshotId: previousSnapshot.id,
     }
   }
@@ -351,10 +339,7 @@ export class EncounterMapService {
     status: 'READY' | 'DRAFT',
   ): Promise<CampaignEncounterMapDetail> {
     const userId = actor.userId
-    const existing = db.query.campaignDungeon.findFirst({ where: and(eq(campaignEncounterMap.id, encounterMapId), eq(campaignEncounterMap.campaignId, campaignId)) }).sync()
-    if (!existing) {
-      throw apiError(404, 'NOT_FOUND', 'Encounter map not found or access denied.')
-    }
+    requireEncounterMap(campaignId, encounterMapId)
 
     const updated = db.update(campaignEncounterMap).set({ status }).where(eq(campaignEncounterMap.id, encounterMapId)).returning().get()!
     await activityLogService.log({

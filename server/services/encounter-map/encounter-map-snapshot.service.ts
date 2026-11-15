@@ -37,17 +37,14 @@ const sameRoomGeometry = (current: EncounterMapData, restored: EncounterMapData)
   return key(current) === key(restored)
 }
 
-const withEncounterMapAccess = async (campaignId: string, encounterMapId: string) =>
-  db.query.campaignDungeon.findFirst({ where: and(eq(campaignEncounterMap.id, encounterMapId), eq(campaignEncounterMap.campaignId, campaignId)), columns: {
+const requireEncounterMap = (campaignId: string, encounterMapId: string) => {
+  const access = db.query.campaignDungeon.findFirst({ where: and(eq(campaignEncounterMap.id, encounterMapId), eq(campaignEncounterMap.campaignId, campaignId)), columns: {
       id: true,
       seed: true,
       generatorVersion: true,
       configJson: true,
       mapJson: true,
     } }).sync()
-
-const requireEncounterMap = async (campaignId: string, encounterMapId: string) => {
-  const access = await withEncounterMapAccess(campaignId, encounterMapId)
   if (!access) {
     throw apiError(404, 'NOT_FOUND', 'Encounter map not found or access denied.')
   }
@@ -60,7 +57,7 @@ export class EncounterMapSnapshotService {
     encounterMapId: string,
     options: { includeMap?: boolean; viewerSafe?: boolean } = {},
   ): Promise<CampaignEncounterMapSnapshot[]> {
-    const access = await requireEncounterMap(campaignId, encounterMapId)
+    const access = requireEncounterMap(campaignId, encounterMapId)
     const rows = db.query.campaignDungeonSnapshot.findMany({ where: eq(campaignEncounterMapSnapshot.dungeonId, access.id), orderBy: [desc(campaignEncounterMapSnapshot.createdAt)] }).sync()
     return rows.map(row => toSnapshotDto(row, options))
   }
@@ -72,7 +69,7 @@ export class EncounterMapSnapshotService {
     input: EncounterMapSnapshotCreateInput,
   ): Promise<CampaignEncounterMapSnapshot> {
     const userId = actor.userId
-    const access = await requireEncounterMap(campaignId, encounterMapId)
+    const access = requireEncounterMap(campaignId, encounterMapId)
 
     const created = db.insert(campaignEncounterMapSnapshot).values({
         dungeonId: access.id,
@@ -102,7 +99,7 @@ export class EncounterMapSnapshotService {
     snapshotId: string,
     input: EncounterMapSnapshotUpdateInput,
   ): Promise<CampaignEncounterMapSnapshot> {
-    const access = await requireEncounterMap(campaignId, encounterMapId)
+    const access = requireEncounterMap(campaignId, encounterMapId)
     const updated = db.update(campaignEncounterMapSnapshot)
       .set({ label: input.label })
       .where(and(eq(campaignEncounterMapSnapshot.id, snapshotId), eq(campaignEncounterMapSnapshot.dungeonId, access.id)))
@@ -121,7 +118,7 @@ export class EncounterMapSnapshotService {
     actor: CampaignActor,
   ): Promise<{ restored: true; roomsReset: boolean }> {
     const userId = actor.userId
-    const access = await requireEncounterMap(campaignId, encounterMapId)
+    const access = requireEncounterMap(campaignId, encounterMapId)
 
     const snapshot = db.query.campaignDungeonSnapshot.findFirst({ where: and(eq(campaignEncounterMapSnapshot.id, snapshotId), eq(campaignEncounterMapSnapshot.dungeonId, access.id)), columns: {
         seed: true,

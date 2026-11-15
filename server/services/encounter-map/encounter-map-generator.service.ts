@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import type { CampaignEncounterMapRegenerateScope, EncounterMapGeneratorConfig, EncounterMapData, EncounterMapPassHistoryEntry } from '#shared/types/encounter-map'
 import { generateEncounterLayout } from './encounter-map-layout'
 
-const ENCOUNTER_MAP_GENERATOR_VERSION = '4.0.0'
+const ENCOUNTER_MAP_GENERATOR_VERSION = '4.1.0'
 
 type SeededRng = () => number
 
@@ -96,7 +96,7 @@ export class EncounterMapGeneratorService {
   }
 
   buildDefaultSeed() {
-    return `dungeon-${Date.now().toString(36)}`
+    return `encounter-map-${Date.now().toString(36)}`
   }
 
   private generateLayoutPass(seed: string, config: EncounterMapGeneratorConfig) {

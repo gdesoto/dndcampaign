@@ -103,7 +103,7 @@ volume has been rehearsed or upgraded.
    enabled. If compatibility validation or migration fails, keep traffic closed
    and preserve diagnostics and the failed state for investigation.
 6. Verify login and `/api/auth/me`, owner/member/public/API-key access, session and
-   document editing, encounter ordering and turns, map/dungeon assets, and media
+   document editing, encounter ordering and turns, world/encounter map assets, and media
    playback with a byte-range request to `GET /api/artifacts/:artifactId/stream`.
    Check provider processing safely, restart once, then reopen traffic and jobs.
 7. Retain the old image and verified backup through the observation period. Record
@@ -142,7 +142,7 @@ before reopening traffic.
    and readiness against the intended file. Production recovery does not require
    seeding. An incompatible or unsupported schema needs a reviewed migration on a
    separate restored copy and another rehearsal before cutover.
-5. Verify login, permissions, document reads and updates, map/dungeon assets,
+5. Verify login, permissions, document reads and updates, world/encounter map assets,
    encounters, recordings and recap range playback, and relevant provider
    callbacks before reopening traffic.
 6. Record the recovered image, database state, validation, and incident cause.

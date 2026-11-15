@@ -173,9 +173,7 @@ const rowClass = (selected: boolean) => [
     </ul>
 
     <p
-      v-if="(section === 'rooms' && !floorMap.rooms.length) || (section === 'corridors' && !floorMap.corridors.length)
-        || (section === 'doors' && !floorMap.doors.length) || (section === 'zones' && !floorMap.zones.length)
-        || (['traps', 'encounters', 'treasure'].includes(section) && !pinnable.length)"
+      v-if="sections.find(item => item.value === section)?.badge === 0"
       class="py-4 text-center text-sm text-muted"
     >
       None on this floor.
