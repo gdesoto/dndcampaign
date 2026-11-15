@@ -27,12 +27,12 @@ type AccountProfile = {
 
 const account = useAccount()
 const profileForm = reactive({ name: '', avatarUrl: '' })
-const emailForm = reactive({ newEmail: '', password: '' })
-const passwordForm = reactive({ currentPassword: '', newPassword: '' })
+const emailForm = ref({ newEmail: '', password: '' })
+const passwordForm = ref({ currentPassword: '', newPassword: '' })
 const profileAction = reactive({ saving: false, error: '', success: '' })
-const emailAction = reactive({ saving: false, error: '', success: '' })
-const passwordAction = reactive({ saving: false, error: '', success: '' })
-const revokeAction = reactive({ running: false, error: '', success: '' })
+const emailAction = ref({ saving: false, error: '', success: '' })
+const passwordAction = ref({ saving: false, error: '', success: '' })
+const revokeAction = ref({ running: false, error: '', success: '' })
 
 const {
   data: profile,
@@ -65,8 +65,8 @@ watch(profile, (value) => {
   if (profileForm.avatarUrl === previousProfile.avatarUrl) {
     profileForm.avatarUrl = value.avatarUrl || ''
   }
-  if (!emailForm.newEmail || emailForm.newEmail === previousProfile.email) {
-    emailForm.newEmail = value.email
+  if (!emailForm.value.newEmail || emailForm.value.newEmail === previousProfile.email) {
+    emailForm.value.newEmail = value.email
   }
   Object.assign(previousProfile, { name: value.name, avatarUrl: value.avatarUrl || '', email: value.email })
 }, { immediate: true })
@@ -92,59 +92,59 @@ const saveProfile = async () => {
 
 const saveEmail = async () => {
   if (accountBusy.value) return
-  emailAction.error = ''
-  emailAction.success = ''
-  emailAction.saving = true
+  emailAction.value.error = ''
+  emailAction.value.success = ''
+  emailAction.value.saving = true
   try {
-    await account.changeEmail({ newEmail: emailForm.newEmail, password: emailForm.password })
-    emailForm.password = ''
+    await account.changeEmail({ newEmail: emailForm.value.newEmail, password: emailForm.value.password })
+    emailForm.value.password = ''
     await refreshProfile()
-    emailAction.success = 'Email updated.'
+    emailAction.value.success = 'Email updated.'
   } catch (error) {
-    emailAction.error = (error as Error & { message?: string }).message || 'Unable to update email.'
+    emailAction.value.error = (error as Error & { message?: string }).message || 'Unable to update email.'
   } finally {
-    emailAction.saving = false
+    emailAction.value.saving = false
   }
 }
 
 const savePassword = async () => {
   if (accountBusy.value) return
-  passwordAction.error = ''
-  passwordAction.success = ''
-  passwordAction.saving = true
+  passwordAction.value.error = ''
+  passwordAction.value.success = ''
+  passwordAction.value.saving = true
   try {
-    await account.changePassword({ currentPassword: passwordForm.currentPassword, newPassword: passwordForm.newPassword })
-    passwordForm.currentPassword = ''
-    passwordForm.newPassword = ''
-    passwordAction.success = 'Password updated.'
+    await account.changePassword({ currentPassword: passwordForm.value.currentPassword, newPassword: passwordForm.value.newPassword })
+    passwordForm.value.currentPassword = ''
+    passwordForm.value.newPassword = ''
+    passwordAction.value.success = 'Password updated.'
   } catch (error) {
-    passwordAction.error = (error as Error & { message?: string }).message || 'Unable to update password.'
+    passwordAction.value.error = (error as Error & { message?: string }).message || 'Unable to update password.'
   } finally {
-    passwordAction.saving = false
+    passwordAction.value.saving = false
   }
 }
 
 const revokeOtherSessions = async () => {
-  revokeAction.error = ''
-  revokeAction.success = ''
-  revokeAction.running = true
+  revokeAction.value.error = ''
+  revokeAction.value.success = ''
+  revokeAction.value.running = true
   try {
     const response = await account.revokeOtherSessions()
     await refreshSessions()
-    revokeAction.success = `Revoked ${response?.revokedSessions ?? 0} other sessions.`
+    revokeAction.value.success = `Revoked ${response?.revokedSessions ?? 0} other sessions.`
   } catch (error) {
-    revokeAction.error = (error as Error & { message?: string }).message || 'Unable to revoke other sessions.'
+    revokeAction.value.error = (error as Error & { message?: string }).message || 'Unable to revoke other sessions.'
   } finally {
-    revokeAction.running = false
+    revokeAction.value.running = false
   }
 }
 
-const accountBusy = computed(() => profileAction.saving || emailAction.saving || passwordAction.saving)
+const accountBusy = computed(() => profileAction.saving || emailAction.value.saving || passwordAction.value.saving)
 useUnsavedChanges(() => Boolean(profile.value) && (
   profileForm.name !== previousProfile.name
   || profileForm.avatarUrl !== previousProfile.avatarUrl
-  || emailForm.newEmail !== previousProfile.email
-  || Boolean(emailForm.password || passwordForm.currentPassword || passwordForm.newPassword)
+  || emailForm.value.newEmail !== previousProfile.email
+  || Boolean(emailForm.value.password || passwordForm.value.currentPassword || passwordForm.value.newPassword)
 ), accountBusy)
 </script>
 
