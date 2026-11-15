@@ -1,0 +1,17 @@
+allowBuilds:
+  better-sqlite3: true
+  esbuild: true
+  sharp: true
+  vue-demi: true
+
+# Nuxt resolves these type aliases from the project root.
+publicHoistPattern:
+  - '@vue/*'
+  - defu
+  - consola
+
+# Preserve these existing Yarn resolutions despite pnpm's 24-hour release delay.
+minimumReleaseAgeExclude:
+  - '@devframes/agentic@1.3.5'
+  - '@vue/test-utils@2.6.0'
+  - 'devframe@1.3.5'

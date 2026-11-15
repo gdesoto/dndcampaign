@@ -6,6 +6,7 @@ dev_plan
 node_modules
 prisma/generated
 storage
+tmp
 test
 .env
 README.md

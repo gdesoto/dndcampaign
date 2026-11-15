@@ -4,15 +4,13 @@ WORKDIR /app
 
 FROM base AS deps
 ENV NODE_ENV=development
-COPY package.json yarn.lock ./
-RUN corepack enable \
-  && yarn install --frozen-lockfile
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN npm install --global "$(node -p 'require("./package.json").packageManager')" \
+  && pnpm install --frozen-lockfile
 
-FROM base AS build
-ENV NODE_ENV=development
-COPY --from=deps /app/node_modules ./node_modules
+FROM deps AS build
 COPY . .
-RUN yarn build
+RUN pnpm build
 
 FROM base AS runtime
 # Sharp uses Fontconfig and system fonts to rasterize dungeon room labels.

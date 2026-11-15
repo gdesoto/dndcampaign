@@ -3,9 +3,9 @@ version = 1
 name = "dndcampaign"
 
 [setup]
-script = "yarn install"
+script = "npm install --global pnpm@12.21.0 && pnpm install --frozen-lockfile"
 
 [[actions]]
 name = "Run Test Suite"
 icon = "test"
-command = "yarn test"
+command = "pnpm test"

@@ -56,9 +56,9 @@ node scripts/database.mjs backup /safe/location/app.db
 `drizzle/`. `status` reports migration state, and `check` verifies that the database
 is ready without applying pending migrations. `backup` uses SQLite's backup API
 for a consistent database snapshot, including committed WAL content. It does not
-back up artifacts or environment secrets. Use `yarn db:generate` after editing the
-schema to generate SQL for review; `yarn db:migrate:dev` and
-`yarn db:migrate:deploy` apply migrations. The migration runner preserves the
+back up artifacts or environment secrets. Use `pnpm db:generate` after editing the
+schema to generate SQL for review; `pnpm db:migrate:dev` and
+`pnpm db:migrate:deploy` apply migrations. The migration runner preserves the
 legacy Prisma migration journal and records the adopted Drizzle baseline.
 
 ## Existing-volume upgrade
@@ -111,11 +111,15 @@ volume has been rehearsed or upgraded.
 
 ## Image publication
 
+CI and Docker use the pnpm version pinned in `package.json` and install from
+`pnpm-lock.yaml` with `pnpm install --frozen-lockfile`. Dependency installation
+script permissions are committed in `pnpm-workspace.yaml`.
+
 [deploy-docker.yml](../.github/workflows/deploy-docker.yml) runs lint, typecheck,
 all Vitest projects, and a Nuxt build before building and publishing to GHCR on
 pushes to `master` or manual dispatch. Each publication has a revision tag
 `sha-<commit>` and `latest`. Record the resolved immutable digest for deployment
-and recovery; `latest` can move. The Docker build independently runs `yarn build`.
+and recovery; `latest` can move. The Docker build independently runs `pnpm build`.
 
 The existing Unraid deployment is updated manually after publication. During the
 maintenance window, use Unraid's container update/recreate operation to install

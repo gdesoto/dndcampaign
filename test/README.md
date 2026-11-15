@@ -9,9 +9,9 @@ adding tests for implementation details or duplicate coverage.
 - **Nuxt:** component interactions and loading, failure, and recovery behavior.
 - **E2E:** assembled browser workflows using Playwright.
 
-Run `yarn test`, `yarn test:coverage`, `yarn lint`, and `yarn typecheck` for validation;
-run `yarn test:e2e` for browser workflows. Focused runs use `yarn test:unit`,
-`yarn test:nuxt`, or `yarn test:api`.
+Run `pnpm test`, `pnpm test:coverage`, `pnpm lint`, and `pnpm typecheck` for validation;
+run `pnpm test:e2e` for browser workflows. Focused runs use `pnpm test:unit`,
+`pnpm test:nuxt`, or `pnpm test:api`.
 
 All three projects share `vitest.config.ts`, one summary, and coverage in `coverage/`.
 Isolation is disabled globally: tests must clean up any state they change.
@@ -22,8 +22,8 @@ start. Tests then run in unit, Nuxt, API order with separate worker limits.
 API readiness includes the rendered login page so retired endpoints can reach
 Nuxt's page fallback without compiling it inside a workflow test.
 
-`yarn test:watch` watches all projects; add `--project api` to watch only API tests.
-`yarn test:doctor` measures all projects; use `--project` to focus its comparisons.
+`pnpm test:watch` watches all projects; add `--project api` to watch only API tests.
+`pnpm test:doctor` measures all projects; use `--project` to focus its comparisons.
 
 API tests use a shared server; diagnostics are retained in
 `storage/api-test-server.log`. Investigate

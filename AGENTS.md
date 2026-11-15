@@ -30,9 +30,10 @@ DND Campaign (DM Vault) is a Nuxt 4 web app for running tabletop campaigns: camp
 - Keep coding rules and agent instructions in `AGENTS.md`/`CLAUDE.md`, with frontend conventions in the existing skill and `StyleGuide.md`. Plans can explain intended changes, but they do not override the implemented behavior documented in `docs/`.
 
 ## Commands
-- `yarn dev`, `yarn build`, `yarn lint`, `yarn lint:fix`, `yarn typecheck`
-- Tests: `yarn test` (all three Vitest projects), `yarn test:unit`, `yarn test:api` (real dev server + SQLite), `yarn test:nuxt` (components, Happy DOM), `yarn test:coverage`, `yarn test:e2e` (Playwright)
-- Database: `yarn db:generate`, `yarn db:migrate:dev`, `yarn db:migrate:deploy`, `yarn db:migrate:status`, `yarn db:seed`. Use `yarn db:generate` to generate SQL after editing `server/db/schema.ts`, review it, then apply it with a migration command. Installation and builds need no live database. Database operations require `DATABASE_URL`; `node scripts/database.mjs check` verifies readiness and `node scripts/database.mjs backup <destination>` creates a consistent SQLite backup.
+- Use the pnpm version pinned in `package.json` and commit `pnpm-lock.yaml` when dependencies change. Install with `pnpm install --frozen-lockfile` in automated environments.
+- `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm lint:fix`, `pnpm typecheck`
+- Tests: `pnpm test` (all three Vitest projects), `pnpm test:unit`, `pnpm test:api` (real dev server + SQLite), `pnpm test:nuxt` (components, Happy DOM), `pnpm test:coverage`, `pnpm test:e2e` (Playwright)
+- Database: `pnpm db:generate`, `pnpm db:migrate:dev`, `pnpm db:migrate:deploy`, `pnpm db:migrate:status`, `pnpm db:seed`. Use `pnpm db:generate` to generate SQL after editing `server/db/schema.ts`, review it, then apply it with a migration command. Installation and builds need no live database. Database operations require `DATABASE_URL`; `node scripts/database.mjs check` verifies readiness and `node scripts/database.mjs backup <destination>` creates a consistent SQLite backup.
 
 ## Backend conventions
 - Handlers in `server/api/` do validation, permission checks, and response shaping only. Business logic belongs in `server/services/`. Use `#server/...` and `#shared/...` aliases in server code.
@@ -70,10 +71,10 @@ Three Vitest projects share `vitest.config.ts`. Isolation is disabled globally; 
 - **api** — `test/api/*.test.ts`, starts a real dev server on port 4181 with its own SQLite DB. Tests run after unit/Nuxt tests with three workers to limit contention on the shared DB. Server diagnostics are retained in `storage/api-test-server.log`; investigate HTTP 500s rather than increasing test timeouts.
 - **nuxt** — `test/nuxt/*.test.ts`, Nuxt + Happy DOM, runs after unit tests with six workers. Unit tests retain normal parallelism; there is no global worker cap.
 E2E tests are Playwright specs in `test/e2e/`.
-`yarn test:watch` watches all projects; add `--project api` to focus on API tests. `yarn test:coverage` writes one combined report to `coverage/`.
+`pnpm test:watch` watches all projects; add `--project api` to focus on API tests. `pnpm test:coverage` writes one combined report to `coverage/`.
 
 ## Making changes
-- After JavaScript, TypeScript, or Vue changes, `yarn lint` and `yarn typecheck` must pass.
-- Run the tests that cover the changed files; run `yarn test` when a change is broad.
+- After JavaScript, TypeScript, or Vue changes, `pnpm lint` and `pnpm typecheck` must pass.
+- Run the tests that cover the changed files; run `pnpm test` when a change is broad.
 - Diagnose root causes before adding workarounds; document the cause if a workaround is unavoidable.
 - Prefer deleting complexity over rearranging it. Reuse existing services, utils, and components before adding a layer.

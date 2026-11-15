@@ -1,6 +1,6 @@
 import { config, flushPromises, type VueWrapper } from '@vue/test-utils'
 import { actionMenuStub } from '../helpers/action-menu'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { EncounterMapData } from '../../shared/types/encounter-map'
 import { encounterMapGeneratorConfigSchema } from '../../shared/schemas/encounter-map'
 import { ref } from 'vue'
@@ -149,6 +149,8 @@ const textarea = (wrapper: VueWrapper, label: string) => {
 }
 
 describe('Encounter map pages', () => {
+  afterEach(() => vi.restoreAllMocks())
+
   beforeEach(() => {
     vi.clearAllMocks()
     discardDecision.confirm.mockResolvedValue(false)
@@ -499,8 +501,10 @@ describe('Encounter map pages', () => {
   it('hides secret rooms in player view, links records by name, and renames, archives, and exports the map', async () => {
     api.getEncounterMap.mockResolvedValue({ ...detail, map: { ...map, traps: ['room-1', 'room-2'].map(roomId => ({ id: `trap-${roomId}`, roomId, name: 'Pit', severity: 'LOW', trigger: 'Step', effect: 'Fall', detectDc: 10, disarmDc: 10, isLocked: false })) } })
     api.listLinks.mockResolvedValue([{ id: 'link-1', dungeonId: 'encounter-map-1', roomId: 'room-row-1', linkType: 'QUEST', targetId: 'quest-1', createdAt: '' }])
-    URL.createObjectURL = vi.fn(() => 'blob:map')
-    URL.revokeObjectURL = vi.fn()
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:map')
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    // Happy DOM navigates download links instead of saving the file.
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
     const wrapper = await mountDetail()
     const canvas = wrapper.findComponent(canvasStub)
     await click(wrapper, 'Player view')

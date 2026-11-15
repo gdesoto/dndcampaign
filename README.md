@@ -11,13 +11,18 @@ DND Campaign (DM Vault) is a web app for running tabletop campaigns. It manages 
 **Prerequisites**
 
 1. Node.js 24
-2. Yarn
+2. pnpm 12.21.0 (pinned in `package.json`)
 
 **Setup**
 
 ```bash
-yarn install
+npm install --global pnpm@12.21.0
+pnpm install --frozen-lockfile
 ```
+
+Use `pnpm add`, `pnpm remove`, or `pnpm install` when changing dependencies and
+commit the resulting `pnpm-lock.yaml`. Dependency installation script permissions
+live in `pnpm-workspace.yaml`; review any new scripts with `pnpm approve-builds`.
 
 Installation prepares Nuxt. Installation and builds require no live database or
 ORM client generation. The database schema lives in `server/db/schema.ts`;
@@ -43,7 +48,7 @@ node scripts/database.mjs backup storage/backups/dev-before-drizzle.db
 Initialize or upgrade the database, then verify it:
 
 ```bash
-yarn db:migrate:dev
+pnpm db:migrate:dev
 node scripts/database.mjs status
 node scripts/database.mjs check
 ```
@@ -53,8 +58,8 @@ The database CLI loads the local environment and requires `DATABASE_URL`.
 and applies pending Drizzle migrations. `check` verifies compatibility without
 applying migrations; `status` reports migration state. `backup` writes a consistent
 SQLite backup using the backup API. Generate reviewed SQL changes with
-`yarn db:generate`, then apply them with `yarn db:migrate:dev` or
-`yarn db:migrate:deploy`. These commands do not generate an ORM client.
+`pnpm db:generate`, then apply them with `pnpm db:migrate:dev` or
+`pnpm db:migrate:deploy`. These commands do not generate an ORM client.
 
 Back up an existing database and its matching artifacts before upgrading. Adoption
 supports the exact 34-migration Prisma history frozen from revision `d06b7ec`,
@@ -70,19 +75,19 @@ backup is required before this in-place upgrade. See
 Start the dev server on `http://localhost:3000`:
 
 ```bash
-yarn dev
+pnpm dev
 ```
 
 **Testing**
 
 ```bash
-yarn lint
-yarn typecheck
-yarn test
-yarn test:unit
-yarn test:api
-yarn test:nuxt
-yarn test:coverage
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm test:unit
+pnpm test:api
+pnpm test:nuxt
+pnpm test:coverage
 ```
 
 **Documentation**
