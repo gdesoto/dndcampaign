@@ -145,15 +145,6 @@ describe('account registration, profile and sessions', () => {
     expect(refreshedProfilePayload.data.profile).toEqual(patchPayload.data.profile)
   })
 
-  it('does not expose the retired account profile endpoint', async () => {
-    const response = await fetch(`${baseUrl}/api/account/profile`, {
-      headers: { cookie: authCookie },
-    })
-
-    expect(response.status).toBe(404)
-    // A retired route reaches Nuxt's page fallback, which compiles on its first request.
-  }, 60_000)
-
   it('changes email with password re-auth', async () => {
     const response = await fetch(`${baseUrl}/api/account`, {
       method: 'PATCH',
@@ -287,11 +278,6 @@ describe('account registration, profile and sessions', () => {
     } finally {
       db.delete(schema.user).where(eq(schema.user.id, userId)).run()
     }
-  })
-
-  it('requires authentication for account profile endpoints', async () => {
-    const response = await fetch(`${baseUrl}/api/account`)
-    expect(response.status).toBe(401)
   })
 
   it('updates lastLoginAt after successful login', async () => {

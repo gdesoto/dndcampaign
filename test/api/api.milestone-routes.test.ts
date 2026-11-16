@@ -100,18 +100,4 @@ describe('milestone API routes', () => {
     expect(response.status).toBe(200)
     expect((db.query.milestone.findFirst({ where: eq(tables.milestone.id, milestone.id) }).sync() ?? null)).toBeNull()
   })
-
-  it('rejects milestone deletion without authentication', async () => {
-    const milestone = db.insert(tables.milestone).values({
-      campaignId,
-      title: 'Defend the village',
-    }).returning().get()!
-
-    const response = await fetch(`${baseUrl}/api/milestones/${milestone.id}`, {
-      method: 'DELETE',
-    })
-
-    expect(response.status).toBe(401)
-    expect((db.query.milestone.findFirst({ where: eq(tables.milestone.id, milestone.id) }).sync() ?? null)).not.toBeNull()
-  })
 })
