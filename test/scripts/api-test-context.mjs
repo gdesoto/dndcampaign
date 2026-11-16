@@ -8,3 +8,4 @@ const requireEnv = (name) => {
 
 export const getApiTestBaseUrl = () => requireEnv('API_TEST_BASE_URL')
 export const getApiTestDatabaseUrl = () => requireEnv('API_TEST_DATABASE_URL')
+export const getApiTestStorageRoot = () => requireEnv('API_TEST_STORAGE_ROOT')

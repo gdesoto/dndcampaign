@@ -1,11 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { readFile, unlink, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
 import { createApiTestDatabase } from '../scripts/db-test-client'
 import * as tables from '../../server/db/schema'
 import { and, asc, eq, inArray } from 'drizzle-orm'
-import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
+import { getApiTestBaseUrl, getApiTestStorageRoot } from '../scripts/api-test-context.mjs'
 
 const db = createApiTestDatabase()
 const baseUrl = getApiTestBaseUrl()
@@ -44,7 +45,7 @@ const createRecording = async (sessionId: string, kind: 'AUDIO' | 'VIDEO', suffi
 const createTranscriptArtifact = async (format: 'TXT' | 'SRT', content: string) => {
   const storageKey = `documents-${format.toLowerCase()}-${crypto.randomUUID()}.${format.toLowerCase()}`
   storageKeys.push(storageKey)
-  await writeFile(`storage/${storageKey}`, content)
+  await writeFile(join(getApiTestStorageRoot(), storageKey), content)
   return db.insert(tables.artifact).values({
     ownerId, campaignId, provider: 'LOCAL', storageKey,
     mimeType: format === 'SRT' ? 'text/srt' : 'text/plain', byteSize: Buffer.byteLength(content),
@@ -113,14 +114,14 @@ describe('session documents, transcription and subtitles', () => {
         body: JSON.stringify({ email, password }),
       })
       expect(response.status).toBe(200)
-      return response.headers.get('set-cookie')?.match(/nuxt-session=[^;]+/)?.[0] || ''
+      return response.headers.get('set-cookie')?.match(/nuxt-auth-session=[^;]+/)?.[0] || ''
     }
     ownerCookie = await login('documents-transcription-owner@example.com')
     viewerCookie = await login('documents-transcription-viewer@example.com')
   }, 120_000)
 
   afterAll(async () => {
-    await Promise.all(storageKeys.map((key) => unlink(`storage/${key}`).catch(() => { })))
+    await Promise.all(storageKeys.map((key) => unlink(join(getApiTestStorageRoot(), key)).catch(() => { })))
     if (campaignId) db.delete(tables.campaign).where(eq(tables.campaign.id, campaignId)).returning().get()!
     if (ownerId || viewerId) db.delete(tables.artifact).where(inArray(tables.artifact.ownerId, [ownerId, viewerId])).run()
     if (viewerId) db.delete(tables.user).where(eq(tables.user.id, viewerId)).returning().get()!
@@ -134,7 +135,7 @@ describe('session documents, transcription and subtitles', () => {
     const firstPayload = await first.json()
     expect(firstPayload.data.recordingId).toBe(sourceRecordingId)
 
-    await writeFile(`storage/${storageKeys[0]}`, 'Updated local transcript')
+    await writeFile(join(getApiTestStorageRoot(), storageKeys[0]!), 'Updated local transcript')
     const second = await request(ownerCookie, { action: 'apply-transcript', artifactId: textArtifactId })
     expect(second.status).toBe(200)
     expect((await second.json()).data.id).toBe(firstPayload.data.id)
@@ -157,7 +158,7 @@ describe('session documents, transcription and subtitles', () => {
     expect(vttArtifact.ownerId).toBe(ownerId)
     expect(vttArtifact.mimeType).toBe('text/vtt')
     storageKeys.push(vttArtifact.storageKey)
-    expect(await readFile(`storage/${vttArtifact.storageKey}`, 'utf8')).toContain(
+    expect(await readFile(join(getApiTestStorageRoot(), vttArtifact.storageKey), 'utf8')).toContain(
       'WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nHello from subtitles'
     )
   })

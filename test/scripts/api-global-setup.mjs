@@ -8,7 +8,7 @@ export default async function apiGlobalSetup() {
   const db = createTestDbContext({
     rootDir,
     prefix: 'api-global',
-    sessionPassword: 'api-global-session-password-1234567890-abcdefghijklmnopqrstuvwxyz',
+    appSecret: 'api-global-app-secret-1234567890-abcdefghijklmnopqrstuvwxyz',
   })
 
   let server
@@ -33,6 +33,7 @@ export default async function apiGlobalSetup() {
 
   process.env.API_TEST_BASE_URL = server.baseUrl
   process.env.API_TEST_DATABASE_URL = db.dbUrl
+  process.env.API_TEST_STORAGE_ROOT = db.storageRoot
 
   return async () => {
     try {

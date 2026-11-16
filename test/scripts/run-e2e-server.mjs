@@ -7,7 +7,7 @@ const rootDir = resolve(fileURLToPath(new URL('../..', import.meta.url)))
 const db = createTestDbContext({
   rootDir,
   prefix: 'e2e',
-  sessionPassword: 'e2e-session-password-1234567890-abcdefghijklmnopqrstuvwxyz',
+  appSecret: 'e2e-app-secret-1234567890-abcdefghijklmnopqrstuvwxyz',
 })
 
 db.prepare({ migrate: true, seed: true, stdio: 'inherit' })

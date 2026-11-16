@@ -102,7 +102,7 @@ beforeAll(async () => {
     body: JSON.stringify({ email: owner.email, password }),
   })
   expect(login.status).toBe(200)
-  cookie = login.headers.get('set-cookie')?.match(/nuxt-session=[^;]+/)?.[0] || ''
+  cookie = login.headers.get('set-cookie')?.match(/nuxt-auth-session=[^;]+/)?.[0] || ''
 }, 120_000)
 afterAll(() => db.$client.close())
 

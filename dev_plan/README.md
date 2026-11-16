@@ -20,6 +20,8 @@ Coding and agent guidance lives in [AGENTS.md](../AGENTS.md) and
 
 ## Implementation history and references
 
+- [Dependency major upgrades](DependencyMajorUpdates.md): compatibility decisions,
+  cleanup, and validation for SQLite, hashing, dotenv, DOM tests, and TypeScript.
 - [Prisma to Drizzle migration](DrizzleMigrationPlan.md): completed migration,
   validation evidence, and completed production rollout; runtime and recovery are in
   [DeploymentRecovery.md](../docs/DeploymentRecovery.md).

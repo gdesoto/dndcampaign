@@ -25,7 +25,7 @@ beforeAll(async () => {
     body: JSON.stringify({ email: user.email, password }),
   })
   expect(login.status).toBe(200)
-  cookie = login.headers.get('set-cookie')?.match(/nuxt-session=[^;]+/)?.[0] || ''
+  cookie = login.headers.get('set-cookie')?.match(/nuxt-auth-session=[^;]+/)?.[0] || ''
 
   webhookServer = createServer((_request, response) => {
     response.statusCode = webhookStatus

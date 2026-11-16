@@ -41,7 +41,7 @@ const loginAndGetCookie = async (email: string) => {
   })
   expect(response.status).toBe(200)
   const rawCookie = response.headers.get('set-cookie') || ''
-  const match = rawCookie.match(/nuxt-session=[^;]+/)
+  const match = rawCookie.match(/nuxt-auth-session=[^;]+/)
   return match?.[0] || ''
 }
 

@@ -27,11 +27,11 @@ export default defineConfig({
       await defineVitestProject({
         test: {
           name: 'nuxt',
-          // The Nuxt project resolves separately and does not inherit root test options.
-          isolate: false,
+          // Nuxt auto-import mocks must not leak between files in reused workers.
+          isolate: true,
           setupFiles: ['test/nuxt/setup.ts'],
-          // Component startup has a separate budget from shared-database API work.
-          maxWorkers: 6,
+          // Bound memory and cold compilation for isolated Nuxt environments.
+          maxWorkers: 3,
           sequence: { groupOrder: 1 },
           // Test-utils v4 boots Nuxt inside beforeAll, including cold plugin compilation.
           hookTimeout: 30_000,

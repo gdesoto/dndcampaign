@@ -40,7 +40,7 @@ describe('account registration, profile and sessions', () => {
 
     expect(response.status).toBe(200)
     authCookie = response.headers.get('set-cookie') || ''
-    expect(authCookie).toContain('nuxt-session')
+    expect(authCookie).toContain('nuxt-auth-session=')
 
     const payload = await response.json()
     expect(payload.data.user.email).toBe(registerUser.email)
@@ -263,7 +263,7 @@ describe('account registration, profile and sessions', () => {
       })
 
       expect(response.status).toBe(401)
-      expect(response.headers.get('set-cookie')).toContain('nuxt-session=;')
+      expect(response.headers.get('set-cookie')).toContain('nuxt-auth-session=;')
       const payload = await response.json()
       expect(payload.error.code).toBe('UNAUTHORIZED')
     }

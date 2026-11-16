@@ -12920,7 +12920,7 @@
       "cookieAuth": {
         "type": "apiKey",
         "in": "cookie",
-        "name": "auth_session",
+        "name": "nuxt-auth-session",
         "description": "Session cookie set by auth endpoints."
       },
       "bearerAuth": {

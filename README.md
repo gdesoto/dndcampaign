@@ -36,6 +36,12 @@ versioned SQL migrations and compatibility metadata live in `drizzle/`.
    absolute paths stay absolute.
 2. Storage root (local): `./storage`
 3. Runtime config: `runtimeConfig.storage` (see `.env` if present)
+4. Authentication: set `NUXT_APP_SECRET` to a long random value in the local
+   `.env` or deployed container environment. Keep it stable across container
+   recreates. The auth-utils 0.6 upgrade requires users to sign in again once;
+   `NUXT_SESSION_PASSWORD` is no longer used. See
+   [deployment and recovery](docs/DeploymentRecovery.md#authentication-secret)
+   for the Unraid configuration.
 
 **Database**
 

@@ -47,6 +47,6 @@ payload reference is [OpenAPI](../public/openapi.json).
 | Topic | Explanation |
 | --- | --- |
 | [Agent integration](AgentIntegration.md) | MCP connection, scoped API keys, tools, and API permissions. |
-| [Deployment and recovery](DeploymentRecovery.md) | Container startup, Drizzle migrations, legacy database adoption, backups, and recovery. |
+| [Deployment and recovery](DeploymentRecovery.md) | Container startup, authentication secret, Drizzle migrations, legacy database adoption, backups, and recovery. |
 | [Project setup](../README.md) | Node.js and pinned pnpm setup, installation, environment, local development, and test commands. |
 | [HTTP API](../public/openapi.json) | Resource paths, request/response schemas, and authentication. |

@@ -15,7 +15,7 @@ services:
       DATABASE_URL: "file:/data/db/app.db"
       NUXT_STORAGE_PROVIDER: "local"
       NUXT_STORAGE_LOCAL_ROOT: "/data/storage"
-      NUXT_SESSION_PASSWORD: "change_this_to_a_long_random_value"
+      NUXT_APP_SECRET: "change_this_to_a_long_random_value"
       NUXT_SESSION_COOKIE_SECURE: "false"
       NUXT_ELEVENLABS_API_KEY: ""
       NUXT_ELEVENLABS_WEBHOOK_SECRET: ""

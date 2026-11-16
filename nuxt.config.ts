@@ -67,7 +67,6 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     session: {
-      password: '',
       cookie: {
         sameSite: 'lax',
         secure: false

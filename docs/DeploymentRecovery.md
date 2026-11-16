@@ -24,6 +24,21 @@ includes `.output`, the database CLI, migration modules, dependencies, and
 `drizzle/`; it requires no Prisma client, generator, or migration executable.
 Installation and image builds require no live database.
 
+## Authentication secret
+
+Set `NUXT_APP_SECRET` in the deployed container environment and retain the same
+secret across restarts and container recreates. Generate a strong value with
+`openssl rand -base64 32`. Changing it invalidates sessions.
+The [Unraid compose example](../docker/docker-compose.unraid.yml) contains only a
+placeholder; supply the real value through your deployment configuration.
+
+For the nuxt-auth-utils 0.6 upgrade, retain an existing `NUXT_APP_SECRET` value.
+If it is absent, add one in Unraid's container environment settings before
+recreating the container. Remove the obsolete `NUXT_SESSION_PASSWORD` entry.
+Users sign in again once after this upgrade because the session cookie changes.
+No database migration or new volume is required for the auth upgrade;
+keep the existing `/data` mount and application data.
+
 ## Drizzle and SQLite
 
 The schema is [server/db/schema.ts](../server/db/schema.ts), and the runtime
