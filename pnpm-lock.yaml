@@ -179,7 +179,7 @@ importers:
         specifier: ^9.1.1
         version: 9.1.1
       '@elevenlabs/elevenlabs-js':
-        specifier: 2.78.0
+        specifier: ^2.78.0
         version: 2.78.0
       '@iconify-json/heroicons':
         specifier: ^1.2.3
@@ -212,13 +212,13 @@ importers:
         specifier: ^0.17.5
         version: 0.17.7
       better-sqlite3:
-        specifier: 12.11.1
+        specifier: ^12.11.1
         version: 12.11.1
       busboy:
         specifier: ^1.6.0
         version: 1.6.0
       dotenv:
-        specifier: 17.4.2
+        specifier: ^17.4.2
         version: 17.4.2
       drizzle-orm:
         specifier: ^0.45.4
@@ -273,7 +273,7 @@ importers:
         specifier: ^1.58.2
         version: 1.65.1
       '@types/better-sqlite3':
-        specifier: 7.6.13
+        specifier: ^7.6.13
         version: 7.6.13
       '@types/busboy':
         specifier: ^1.5.4
@@ -288,7 +288,7 @@ importers:
         specifier: ^2.4.6
         version: 2.6.0(@vue/compiler-dom@3.5.45)(@vue/server-renderer@3.5.45)(vue@3.5.45(typescript@5.9.3))
       drizzle-kit:
-        specifier: 0.31.11
+        specifier: ^0.31.11
         version: 0.31.11
       eslint:
         specifier: ^10.0.0
