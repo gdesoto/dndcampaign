@@ -129,9 +129,9 @@ const revokeOtherSessions = async () => {
   revokeAction.value.success = ''
   revokeAction.value.running = true
   try {
-    const response = await account.revokeOtherSessions()
+    await account.revokeOtherSessions()
     await refreshSessions()
-    revokeAction.value.success = `Revoked ${response?.revokedSessions ?? 0} other sessions.`
+    revokeAction.value.success = 'Signed out other sessions.'
   } catch (error) {
     revokeAction.value.error = (error as Error & { message?: string }).message || 'Unable to revoke other sessions.'
   } finally {

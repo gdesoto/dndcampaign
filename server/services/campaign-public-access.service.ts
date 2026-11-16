@@ -519,7 +519,7 @@ export class CampaignPublicAccessService {
   }
   async getPublicMapSvg(publicSlug: string,mapSlug: string) {
     const resolved=await this.resolvePublicAccess(publicSlug,'maps')
-    const map=db.query.campaignMap.findFirst({ where: and(eq(campaignMap.campaignId,resolved.campaignId),eq(campaignMap.slug,mapSlug)),columns: { slug: true },with: { files: { where: eq(campaignMapFile.kind,'SVG'),orderBy: (row,{ desc }) => [desc(row.createdAt)],limit: 1,columns: { storageKey: true,contentType: true } } } }).sync()
+    const map=db.query.campaignMap.findFirst({ where: and(eq(campaignMap.campaignId,resolved.campaignId),eq(campaignMap.slug,mapSlug)),columns: { slug: true },with: { files: { where: eq(campaignMapFile.kind,'SVG'),orderBy: (row,{ desc }) => [desc(row.createdAt)],limit: 1,columns: { storageKey: true } } } }).sync()
     if(!map) {
       throw apiError(404,'NOT_FOUND','Map not found.')
     }
@@ -530,7 +530,7 @@ export class CampaignPublicAccessService {
     const adapter=getStorageAdapter()
     const stream=await adapter.getObject(svgFile.storageKey)
     return {
-      contentType: svgFile.contentType||'image/svg+xml',
+      contentType: 'image/svg+xml',
       filename: `${map.slug||'map'}.svg`,
       stream,
     }

@@ -1,4 +1,4 @@
-import { sendStream, setHeader } from 'h3'
+import { sendStream, setHeader, setResponseHeaders } from 'h3'
 import { CampaignPublicAccessService } from '#server/services/campaign-public-access.service'
 import { routeParams } from '#server/utils/http'
 
@@ -12,6 +12,7 @@ export default defineEventHandler(async (event) => {
   setHeader(event, 'Content-Type', result.contentType)
   setHeader(event, 'Content-Disposition', `inline; filename="${result.filename}"`)
   setHeader(event, 'Cache-Control', 'no-store')
+  setResponseHeaders(event, { 'Content-Security-Policy': 'sandbox', 'X-Content-Type-Options': 'nosniff' })
   if (result.stream.size != null) {
     setHeader(event, 'Content-Length', result.stream.size)
   }

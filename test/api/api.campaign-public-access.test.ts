@@ -312,6 +312,29 @@ describe('campaign public access', () => {
     expect(viewerPayload.data.features.length).toBeGreaterThan(0)
   })
 
+  it('serves uploaded map SVGs as sandboxed image/svg+xml even when the upload claims text/html', async () => {
+    const body = new FormData()
+    body.append('name', 'Spoofed SVG')
+    body.append('file', new Blob([JSON.stringify({ info: { mapName: 'Spoofed', width: 100, height: 100 }, pack: { burgs: [{ i: 1, name: 'Town', x: 50, y: 50 }] } })], { type: 'application/json' }), 'spoofed full.json')
+    body.append('file', new Blob(['<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'], { type: 'text/html' }), 'spoofed.svg')
+    const uploadRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/maps`, { method: 'POST', headers: { cookie: cookies.owner }, body })
+    expect(uploadRes.status).toBe(200)
+    const { data: uploaded } = await uploadRes.json()
+    expect(uploaded.hasSvg).toBe(true)
+
+    const { data: access } = await (await fetch(`${baseUrl}/api/campaigns/${campaignId}/public/access`, { headers: { cookie: cookies.owner } })).json()
+    for (const url of [
+      `${baseUrl}/api/campaigns/${campaignId}/maps/${uploaded.id}/svg`,
+      `${baseUrl}/api/public/campaigns/${access.publicSlug}/maps/${uploaded.slug}/svg`,
+    ]) {
+      const svgRes = await fetch(url, { headers: { cookie: cookies.owner } })
+      expect(svgRes.status).toBe(200)
+      expect(svgRes.headers.get('content-type')).toBe('image/svg+xml')
+      expect(svgRes.headers.get('content-security-policy')).toBe('sandbox')
+      expect(svgRes.headers.get('x-content-type-options')).toBe('nosniff')
+    }
+  })
+
   it('regenerates slug and invalidates old URL', async () => {
     const beforeRes = await fetch(`${baseUrl}/api/campaigns/${campaignId}/public/access`, {
       headers: { cookie: cookies.owner },

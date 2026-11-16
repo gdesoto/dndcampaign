@@ -2,6 +2,7 @@ import type { H3Event } from 'h3'
 import { getRequestIP, setHeader } from 'h3'
 import { createHash } from 'node:crypto'
 import { apiError } from '#server/utils/http'
+import { useRuntimeConfig } from '#imports'
 
 type RateLimitOptions = {
   key: string
@@ -40,7 +41,9 @@ const getState = (): RateLimitState => {
 const hashKeyPart = (value: string) => createHash('sha256').update(value).digest('hex')
 
 const getClientIdentifier = (event: H3Event, key: string) => {
-  const ip = getRequestIP(event, { xForwardedFor: true }) || 'unknown'
+  // Socket IP: the first X-Forwarded-For value is client-controlled. The API test server opts in to separate buckets.
+  const xForwardedFor = useRuntimeConfig(event).rateLimit.trustForwardedFor === true
+  const ip = getRequestIP(event, { xForwardedFor }) || 'unknown'
   return `${key}:${hashKeyPart(ip)}`
 }
 

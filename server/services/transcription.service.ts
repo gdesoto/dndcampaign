@@ -518,7 +518,7 @@ export class TranscriptionService {
         ownerId,
         campaignId,
         filename,
-        mimeType: format.contentType || formatToMimeType[requestedFormat] || 'application/octet-stream',
+        mimeType: formatToMimeType[requestedFormat] || 'application/octet-stream',
         data: buffer,
         label: `Transcription ${requestedFormat.toUpperCase()}`,
         meta: {

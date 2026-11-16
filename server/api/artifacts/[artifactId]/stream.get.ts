@@ -1,4 +1,4 @@
-import { getRequestHeader, sendStream, setHeader, setResponseStatus } from 'h3'
+import { getQuery, getRequestHeader, sendStream, setHeader, setResponseHeaders, setResponseStatus } from 'h3'
 import { getStorageAdapter } from '#server/services/storage/storage.factory'
 import { requireArtifactReadAccess } from '#server/utils/artifact-auth'
 import { getMediaStream } from '#server/utils/media-stream'
@@ -22,6 +22,9 @@ export default defineEventHandler(async (event) => {
 
   setResponseStatus(event, result.statusCode)
   setHeader(event, 'Content-Type', artifact.mimeType)
+  setResponseHeaders(event, { 'Content-Security-Policy': 'sandbox', 'X-Content-Type-Options': 'nosniff' })
+  // Storage keys only contain [a-zA-Z0-9._/-], so the basename is header-safe.
+  if (getQuery(event).download !== undefined) setHeader(event, 'Content-Disposition', `attachment; filename="${artifact.storageKey.split('/').pop()}"`)
   return result.body ? sendStream(event, result.body) : ''
 })
 

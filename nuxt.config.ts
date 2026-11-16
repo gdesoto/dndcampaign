@@ -36,7 +36,6 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
   modules: [
     '@nuxt/icon',
-    '@nuxt/image',
     '@nuxt/test-utils',
     '@nuxt/ui',
     'nuxt-auth-utils',
@@ -74,6 +73,10 @@ export default defineNuxtConfig({
     },
     public: {
       appUrl: ''
+    },
+    // Test-only: unsafe in production because clients can set X-Forwarded-For.
+    rateLimit: {
+      trustForwardedFor: false
     },
     storage: {
       provider: 'local',

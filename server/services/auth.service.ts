@@ -131,29 +131,4 @@ export class AuthService {
       loggedInAt: loggedInAt || new Date(),
     })
   }
-
-  async syncSessionForUser(event: H3Event, userId: string) {
-    const user = await db.query.user.findFirst({
-      where: eq(tables.user.id, userId),
-      columns: {
-        id: true,
-        email: true,
-        name: true,
-        systemRole: true,
-        avatarUrl: true,
-        isActive: true,
-        deletedAt: true
-      }
-    }).sync()
-
-    if (!user) {
-      return
-    }
-
-    const session = await getUserSession(event)
-    await replaceUserSession(event, {
-      user: toSessionUser(user),
-      loggedInAt: session.loggedInAt || new Date(),
-    })
-  }
 }

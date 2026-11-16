@@ -22,6 +22,8 @@ export default async function apiGlobalSetup() {
       logPath: resolve(rootDir, 'storage', 'api-test-server.log'),
       env: {
         ...db.env,
+        // Test files use X-Forwarded-For to get separate rate-limit buckets on the shared server.
+        NUXT_RATE_LIMIT_TRUST_FORWARDED_FOR: 'true',
         VITE_HMR_PORT: '24685',
         VITE_HMR_HOST: '127.0.0.1',
       },

@@ -154,6 +154,7 @@ export const user = sqliteTable("User", {
   lastLoginAt: dateTime("lastLoginAt"),
   avatarUrl: text("avatarUrl"),
   deletedAt: dateTime("deletedAt"),
+  sessionsValidAfter: dateTime("sessionsValidAfter"),
   createdAt: dateTime("createdAt").notNull().default(sql`(CAST(unixepoch('subsec') * 1000 AS INTEGER))`),
   updatedAt: dateTime("updatedAt").notNull().$defaultFn(() => new Date()).$onUpdate(() => new Date()),
 }, (table): SQLiteTableExtraConfigValue[] => [

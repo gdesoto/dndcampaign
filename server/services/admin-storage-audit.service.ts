@@ -42,6 +42,14 @@ const sumArtifactReferenceCount = (counts: {
   + counts.transcriptionArtifactsCount
   + counts.characterPortraitsCount
 
+// Files written straight to storage without an Artifact row (world-map uploads); omit storageKey to list all.
+const nonArtifactStorageKeys = (storageKey?: string) => new Set(
+  db.select({ storageKey: tables.campaignMapFile.storageKey }).from(tables.campaignMapFile)
+    .where(and(eq(tables.campaignMapFile.storageProvider, 'LOCAL'), storageKey ? eq(tables.campaignMapFile.storageKey, storageKey) : undefined))
+    .all()
+    .map((row) => row.storageKey),
+)
+
 const scanLocalStorageFiles = async (root: string) => {
   const rows: ScannedStorageFile[] = []
   let rootExists = true
@@ -168,6 +176,7 @@ export class AdminStorageAuditService {
 
     const scannedFileMap = new Map(scanned.rows.map((row) => [row.storageKey, row]))
     const artifactByStorageKey = new Map(artifactRowsRaw.map((row) => [row.storageKey, row]))
+    const otherOwnedStorageKeys = nonArtifactStorageKeys()
 
     const artifactRows = artifactRowsRaw.map((row) => {
       const referencedCount = sumArtifactReferenceCount(row)
@@ -194,7 +203,7 @@ export class AdminStorageAuditService {
 
     const orphanStorageRows = scanned.rows
       .filter((row) => {
-        if (artifactByStorageKey.has(row.storageKey)) return false
+        if (artifactByStorageKey.has(row.storageKey) || otherOwnedStorageKeys.has(row.storageKey)) return false
         if (!query.campaignId) return true
         return campaignIdInStorageKey(row.storageKey) === query.campaignId
       })
@@ -326,6 +335,10 @@ export class AdminStorageAuditService {
 
       if (linkedArtifact) {
         throw apiError(409, 'ARTIFACT_EXISTS', 'Storage key is still linked to an artifact record.')
+      }
+
+      if (nonArtifactStorageKeys(input.storageKey).size > 0) {
+        throw apiError(409, 'MAP_FILE_EXISTS', 'Storage key is still linked to a map file record.')
       }
 
       const adapter = getStorageAdapter()
