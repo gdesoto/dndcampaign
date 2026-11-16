@@ -27,7 +27,7 @@ schema and foreign keys before commit, and leaves Prisma history intact. Fresh
 databases use the same migrations. `db:check` verifies an existing current database
 without changing it; `db:backup` creates and verifies a SQLite backup. Docker keeps
 the existing environment and `/data` layout. The implemented release and recovery
-procedure is maintained in [DeploymentRecovery.md](../docs/DeploymentRecovery.md).
+procedure is maintained in [DeploymentRecovery.md](../DeploymentRecovery.md).
 
 Validation results:
 
@@ -202,14 +202,14 @@ cleanup, or speculative repository abstractions. The open tickets in
 | --- | --- | --- |
 | Schema | [schema.prisma at the starting revision](https://github.com/gdesoto/dndcampaign/blob/d06b7ec/prisma/schema.prisma): 51 models, 47 enums, 48 UUID defaults, 34 `@updatedAt` fields; 34 migration directories. | This is a backend-wide rewrite, including runtime defaults and generated types, not just swapping the client import. |
 | Coupling | Prisma references occur in 106 server TypeScript files and 25 test files in this source snapshot. No direct Prisma coupling was found in `app/` or `shared/`. | Port handlers, services, auth helpers, middleware, and test fixtures together by domain; preserve existing shared API schemas. |
-| Driver and locking | [prisma.ts](../server/db/prisma.ts), [sqlite-adapter.ts](../server/db/sqlite-adapter.ts). | Retain the driver family and the current `BEGIN IMMEDIATE` behavior. |
-| Paths | Runtime, [prisma.config.ts](../prisma.config.ts), seed, and test client resolve relative `file:` URLs from `prisma/`. | Keep `file:../storage/db/dev.db` pointing to the same file after removing Prisma. |
-| Dates | Runtime writes `unixepoch-ms`; SQL declares `DATETIME` and often defaults to `CURRENT_TIMESTAMP`. The [owner-membership backfill](../prisma/migrations/20260219123000_backfill_owner_campaign_memberships/migration.sql) writes text timestamps. | Profile actual stored types; date decoding alone cannot correct mixed-type SQL comparisons or sorting. |
+| Driver and locking | [prisma.ts](https://github.com/gdesoto/dndcampaign/blob/d06b7ec/server/db/prisma.ts), [sqlite-adapter.ts](https://github.com/gdesoto/dndcampaign/blob/d06b7ec/server/db/sqlite-adapter.ts). | Retain the driver family and the current `BEGIN IMMEDIATE` behavior. |
+| Paths | Runtime, [prisma.config.ts](https://github.com/gdesoto/dndcampaign/blob/d06b7ec/prisma.config.ts), seed, and test client resolve relative `file:` URLs from `prisma/`. | Keep `file:../storage/db/dev.db` pointing to the same file after removing Prisma. |
+| Dates | Runtime writes `unixepoch-ms`; SQL declares `DATETIME` and often defaults to `CURRENT_TIMESTAMP`. The [owner-membership backfill](../../prisma/migrations/20260219123000_backfill_owner_campaign_memberships/migration.sql) writes text timestamps. | Profile actual stored types; date decoding alone cannot correct mixed-type SQL comparisons or sorting. |
 | Types and constraints | Migrations also use `BOOLEAN` and `JSONB` declarations, named unique indexes, and composite foreign keys. | Preserve physical schema and value semantics; do not accept a generated table rebuild merely to use Drizzle's usual type declarations. |
-| Transactions with storage | [map.service.ts](../server/services/map.service.ts) reimport awaits `putObject` inside a Prisma transaction. | Restructure this workflow for synchronous database transactions without losing failure cleanup. |
-| Docker | [Dockerfile](../docker/Dockerfile), [start.sh](../docker/start.sh), [Unraid compose](../docker/docker-compose.unraid.yml): Node 24, `file:/data/db/app.db`, `/data/storage`, `RUN_MIGRATIONS=1`. | Keep these operational inputs; replace the startup migrator and packaged dependencies. |
-| Publication | [deploy-docker.yml](../.github/workflows/deploy-docker.yml) publishes on `master`, tags only `latest`, and has no separate test gates. | Keep intermediate work off the production branch; introduce an immutable release reference and release validation. |
-| Recovery | [DeploymentRecovery.md](../docs/DeploymentRecovery.md) describes recovery, but no dedicated backup/restore command is implemented. | A verified backup, restore rehearsal, and concrete release runbook are required deliverables. |
+| Transactions with storage | [map.service.ts](../../server/services/map.service.ts) reimport awaits `putObject` inside a Prisma transaction. | Restructure this workflow for synchronous database transactions without losing failure cleanup. |
+| Docker | [Dockerfile](../../docker/Dockerfile), [start.sh](../../docker/start.sh), [Unraid compose](../../docker/docker-compose.unraid.yml): Node 24, `file:/data/db/app.db`, `/data/storage`, `RUN_MIGRATIONS=1`. | Keep these operational inputs; replace the startup migrator and packaged dependencies. |
+| Publication | [deploy-docker.yml](../../.github/workflows/deploy-docker.yml) publishes on `master`, tags only `latest`, and has no separate test gates. | Keep intermediate work off the production branch; introduce an immutable release reference and release validation. |
+| Recovery | [DeploymentRecovery.md](../DeploymentRecovery.md) describes recovery, but no dedicated backup/restore command is implemented. | A verified backup, restore rehearsal, and concrete release runbook are required deliverables. |
 
 Counts are an inventory aid, not a fixed acceptance target; recheck them when
 implementation begins. Prisma dependency ranges start at `^7.4.1`, while the
@@ -298,7 +298,7 @@ the newly referenced files and report/defer that cleanup; do not compensate by
 deleting committed files. Do not overwrite old objects before a successful commit.
 Avoid holding a database lock during storage, provider requests, or hashing.
 
-Port the existing [SQLite contention test](../test/unit/sqlite-adapter.test.ts)
+Port the existing [SQLite contention test](https://github.com/gdesoto/dndcampaign/blob/d06b7ec/test/unit/sqlite-adapter.test.ts)
 to the new connection and preserve its assertions about acquiring a write lock
 before reads, rollback, and recovery after failed acquisition.
 
@@ -405,7 +405,7 @@ every table or query.
   binding in the final image. Add toolchain packages only if the selected binary
   actually requires compilation. Do not mix in unrelated image optimization.
 - Keep the compose environment and `/data` contract. Ensure the migration bundle
-  is outside `dev_plan/`, which `.dockerignore` excludes. A build needs no real
+  is outside `docs/planning/`, which `.dockerignore` excludes. A build needs no real
   database URL; any placeholder must never cause migration or connection at build.
 - Add lint/typecheck/tests and migration rehearsal as release gates; publish an
   immutable commit/version tag and record its digest in addition to `latest`.

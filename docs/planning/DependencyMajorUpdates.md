@@ -30,7 +30,7 @@ pnpm remains pinned separately.
   value stable, remove the obsolete session-password setting, and use the new
   session cookie without a dual-cookie wrapper. This does not require database
   migration or new volumes. Repository config is updated; live Unraid settings
-  have not been inspected. See [deployment guidance](../docs/DeploymentRecovery.md#authentication-secret)
+  have not been inspected. See [deployment guidance](../DeploymentRecovery.md#authentication-secret)
   and [the upstream session migration](https://github.com/atinux/nuxt-auth-utils/pull/546).
 - Use TypeScript 6.0.3 rather than 7.0.2. Current `vue-tsc` 3.3.14 requires and
   patches `typescript/lib/tsc`; TypeScript 7 removes that compiler entry point.

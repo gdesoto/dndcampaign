@@ -12,22 +12,22 @@ DND Campaign (DM Vault) is a Nuxt 4 web app for running tabletop campaigns: camp
 - `server/db/` — Drizzle schema, SQLite connection, column codecs, and migration support. `drizzle/` holds versioned SQL migrations and the frozen legacy compatibility manifest. Historical Prisma migrations remain under `prisma/migrations/`; relative database URLs still resolve from `prisma/`. The dev database is `storage/db/dev.db` (`DATABASE_URL` in `.env`).
 - `storage/` — local files (git-ignored).
 - `public/openapi.json` — hand-maintained API contract.
-- `dev_plan/` — development scratchpad for feature plans, implementation checklists, investigations, experiments, and working notes. Markdown plans are versioned; reference assets and other scratch files remain local.
 - `docs/` — organized, maintained application documentation describing the implemented system: architecture, workflows, data ownership, integrations, and operations.
+- `docs/planning/` — development scratchpad for feature plans, implementation checklists, investigations, experiments, and working notes. Markdown plans are versioned; reference assets and other scratch files remain local.
 
 ## Docs to consult
-- `README.md` — project purpose and setup. `docs/README.md` — application documentation index.
+- `README.md` — project purpose and setup. `docs/README.md` — documentation index for application guides and development planning.
 - `docs/SessionWorkspaceOwnership.md` — session workspace state ownership contract; read before touching session pages or composables.
 - `docs/SessionJobs.md`, `docs/Characters.md`, and `docs/Maps.md` — current workflow and data behavior. `docs/DeploymentRecovery.md` — runtime and recovery operations.
 - `docs/AgentIntegration.md` and `docs/EncounterWorkflow.md` — MCP integration and encounter behavior.
-- `dev_plan/README.md` — planning index. `dev_plan/CodeSimplificationPlan.md` — open cleanup tickets; check it before starting refactors. `dev_plan/FollowUps.md` — remaining work, optional ideas, and unverified QA. `dev_plan/PlanningHistory.md` — archived records and local reference assets.
+- `docs/planning/README.md` — planning index. `docs/planning/CodeSimplificationPlan.md` — open cleanup tickets; check it before starting refactors. `docs/planning/FollowUps.md` — remaining work, optional ideas, and unverified QA. `docs/planning/PlanningHistory.md` — archived records and local reference assets.
 - Frontend: see "Frontend conventions" below for which guide wins.
 
 ## Documentation ownership
 
-- Put feature proposals, task lists, progress reports, implementation decisions under investigation, and temporary validation notes in `dev_plan/`, grouped by feature when useful.
-- Keep `docs/` focused on how the current application works. Update the relevant document and `docs/README.md` when implemented behavior changes; promote settled explanations from plans into these documents.
-- Keep coding rules and agent instructions in `AGENTS.md`/`CLAUDE.md`, with frontend conventions in the existing skill and `StyleGuide.md`. Plans can explain intended changes, but they do not override the implemented behavior documented in `docs/`.
+- Put feature proposals, task lists, progress reports, implementation decisions under investigation, and temporary validation notes in `docs/planning/`, grouped by feature when useful.
+- Keep application guides outside `docs/planning/` focused on how the current application works. Update the relevant document and `docs/README.md` when implemented behavior changes; promote settled explanations from plans into these documents.
+- Keep coding rules and agent instructions in `AGENTS.md`/`CLAUDE.md`, with frontend conventions in the existing skill and `StyleGuide.md`. Plans can explain intended changes, but they do not override the implemented behavior documented in the application guides.
 
 ## Commands
 - Use the pnpm version pinned in `package.json` and commit `pnpm-lock.yaml` when dependencies change. Install with `pnpm install --frozen-lockfile` in automated environments.

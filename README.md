@@ -98,8 +98,8 @@ pnpm test:coverage
 
 **Documentation**
 
-- [Application documentation](docs/README.md): how the implemented system works, organized by feature and operations.
-- [Development scratchpad](dev_plan/README.md): feature planning, implementation notes, investigations, and follow-ups.
+- [Documentation](docs/README.md): application guides, operations, and development planning.
+- [Development planning](docs/planning/README.md): feature planning, implementation notes, investigations, and follow-ups.
 - [OpenAPI contract](public/openapi.json): canonical API paths and payloads.
 
 Contributor and agent conventions live in [AGENTS.md](AGENTS.md),

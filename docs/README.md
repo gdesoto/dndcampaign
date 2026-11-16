@@ -1,4 +1,4 @@
-# Application documentation
+# Project documentation
 
 DND Campaign (DM Vault) organizes tabletop campaigns and their sessions,
 characters, journal, glossary, quests, milestones, encounters, encounter maps, maps,
@@ -7,9 +7,9 @@ documents, summaries, suggestions, and recap playback. Campaign membership
 controls private access; enabled public sections expose selected campaign
 content through public pages.
 
-These documents describe the implemented application and its operations.
+The feature and operations guides below describe the implemented application.
 Feature proposals and implementation records live in
-[the development scratchpad](../dev_plan/README.md); contributor conventions
+[development planning](planning/README.md); contributor conventions
 and agent instructions live in [AGENTS.md](../AGENTS.md) and
 [CLAUDE.md](../CLAUDE.md).
 

@@ -1,15 +1,15 @@
-# Development scratchpad
+# Development planning
 
-`dev_plan/` holds feature proposals, implementation plans and checklists,
+`docs/planning/` holds feature proposals, implementation plans and checklists,
 investigations, experiments, progress notes, and working reference material.
 Related notes can share a feature folder. Plans describe work in progress and
 intended changes; implemented system behavior is documented in
-[docs/](../docs/README.md).
+[the application guides](../README.md).
 
 Markdown planning notes are versioned. Other scratch assets stay local and
 Git-ignored, including the existing Donjon tools and Chronosia map exports.
-Coding and agent guidance lives in [AGENTS.md](../AGENTS.md) and
-[CLAUDE.md](../CLAUDE.md).
+Coding and agent guidance lives in [AGENTS.md](../../AGENTS.md) and
+[CLAUDE.md](../../CLAUDE.md).
 
 ## Current planning
 
@@ -24,12 +24,12 @@ Coding and agent guidance lives in [AGENTS.md](../AGENTS.md) and
   cleanup, and validation for SQLite, hashing, dotenv, DOM tests, and TypeScript.
 - [Prisma to Drizzle migration](DrizzleMigrationPlan.md): completed migration,
   validation evidence, and completed production rollout; runtime and recovery are in
-  [DeploymentRecovery.md](../docs/DeploymentRecovery.md).
+  [DeploymentRecovery.md](../DeploymentRecovery.md).
 - [Encounter implementation record](EncounterImplementationPlan.md): completed
   tasks and recorded validation; current behavior is in
-  [EncounterWorkflow.md](../docs/EncounterWorkflow.md).
+  [EncounterWorkflow.md](../EncounterWorkflow.md).
 - [MapLibre upgrade record](MapLibre6Upgrade.md): migration decisions and
-  recorded validation; current rendering is explained in [Maps.md](../docs/Maps.md).
+  recorded validation; current rendering is explained in [Maps.md](../Maps.md).
 - [Planning history](PlanningHistory.md): recovery archives from the cleanup and
   the preserved local [Donjon tools](tools/donjon/) and
   [Chronosia exports](mapping/).

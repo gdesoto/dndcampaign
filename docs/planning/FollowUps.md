@@ -6,7 +6,7 @@ Completed milestones and old failures are historical records in
 [PlanningHistory.md](PlanningHistory.md). Optional ideas require a product
 decision before implementation; verification gaps are not confirmed defects.
 Use [CodeSimplificationPlan.md](CodeSimplificationPlan.md) for the current
-refactor queue and [DeploymentRecovery.md](../docs/DeploymentRecovery.md) for rollout
+refactor queue and [DeploymentRecovery.md](../DeploymentRecovery.md) for rollout
 verification and recovery.
 
 ## Summary and suggestion review
@@ -22,8 +22,8 @@ verification and recovery.
   history/kinds, response validation, routing, refresh, and serialized actions
   should be reused.
 
-Current behavior is documented in [SessionJobs.md](../docs/SessionJobs.md).
-Read [SessionWorkspaceOwnership.md](../docs/SessionWorkspaceOwnership.md)
+Current behavior is documented in [SessionJobs.md](../SessionJobs.md).
+Read [SessionWorkspaceOwnership.md](../SessionWorkspaceOwnership.md)
 before changing session orchestration.
 
 Relevant source: `server/services/summary.service.ts`,
@@ -45,7 +45,7 @@ and `test/nuxt/session-workspace-routes.test.ts`.
 The proposed removal of the `theme-*` compatibility layer remains conditional:
 `AppHeader`, layouts, `maps/Viewer`, and other components still use it. Review
 consumers before removal and preserve the identity in
-[StyleGuide.md](../StyleGuide.md). The old page-audit fixes and component/data
+[StyleGuide.md](../../StyleGuide.md). The old page-audit fixes and component/data
 migrations already delivered are not new backlog items.
 
 ## Build performance experiments
@@ -85,10 +85,10 @@ Provider transcription callbacks remain unconfirmed: the production-backup
 rehearsal had no provider connectivity, and the live smoke confirmation did not
 specifically cover callbacks. Verify that workflow against the actual provider
 before marking it complete. Current startup and recovery behavior is described
-in [DeploymentRecovery.md](../docs/DeploymentRecovery.md).
+in [DeploymentRecovery.md](../DeploymentRecovery.md).
 
 Character sheet and import behavior is documented in
-[Characters.md](../docs/Characters.md).
+[Characters.md](../Characters.md).
 
 ## Test-suite review
 

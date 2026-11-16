@@ -10,4 +10,4 @@ Read `AGENTS.md` first. It is the source of truth for architecture, conventions,
 
 ## Working notes
 - Windows checkout: the index stores LF but the working copy is CRLF. Normalize files to LF before regex-based bulk edits and restore ending-only diffs afterward.
-- Write multi-line scripts to the scratchpad and run them by path; long bash heredocs are unreliable in this shell.
+- Write multi-line scripts to the scratchpad in `docs/planning/` and run them by path; long bash heredocs are unreliable in this shell.

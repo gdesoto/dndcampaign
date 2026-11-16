@@ -2,7 +2,7 @@
 .nuxt
 .vscode
 coverage
-dev_plan
+docs/planning
 node_modules
 prisma/generated
 storage
