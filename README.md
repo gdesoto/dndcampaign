@@ -103,6 +103,6 @@ pnpm test:coverage
 - [OpenAPI contract](public/openapi.json): canonical API paths and payloads.
 
 Contributor and agent conventions live in [AGENTS.md](AGENTS.md),
-[CLAUDE.md](CLAUDE.md), and [StyleGuide.md](StyleGuide.md). Settled system
+[CLAUDE.md](CLAUDE.md), and [StyleGuide.md](docs/StyleGuide.md). Settled system
 explanations from development plans become maintained application documentation
 in `docs/` as features are implemented.

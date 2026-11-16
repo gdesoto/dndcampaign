@@ -45,7 +45,7 @@ and `test/nuxt/session-workspace-routes.test.ts`.
 The proposed removal of the `theme-*` compatibility layer remains conditional:
 `AppHeader`, layouts, `maps/Viewer`, and other components still use it. Review
 consumers before removal and preserve the identity in
-[StyleGuide.md](../../StyleGuide.md). The old page-audit fixes and component/data
+[StyleGuide.md](../StyleGuide.md). The old page-audit fixes and component/data
 migrations already delivered are not new backlog items.
 
 ## Build performance experiments

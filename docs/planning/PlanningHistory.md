@@ -47,7 +47,7 @@ The reference folders and current planning notes now live under `docs/planning/`
   [EncounterWorkflow.md](../EncounterWorkflow.md): current agent and encounter
   behavior; [EncounterImplementationPlan.md](EncounterImplementationPlan.md) records the
   completed workspace change.
-- [StyleGuide.md](../../StyleGuide.md), the Nuxt UI guidelines referenced by
+- [StyleGuide.md](../StyleGuide.md), the Nuxt UI guidelines referenced by
   `AGENTS.md`, `app/app.config.ts`, and `app/assets/css/main.css`: current UI
   conventions and theme contracts.
 - `shared/schemas/encounter-map.ts`, `shared/types/encounter-map.ts`, and

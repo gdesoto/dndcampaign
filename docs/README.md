@@ -11,7 +11,8 @@ The feature and operations guides below describe the implemented application.
 Feature proposals and implementation records live in
 [development planning](planning/README.md); contributor conventions
 and agent instructions live in [AGENTS.md](../AGENTS.md) and
-[CLAUDE.md](../CLAUDE.md).
+[CLAUDE.md](../CLAUDE.md). Frontend component contracts and visual identity are in
+[the style guide](StyleGuide.md).
 
 ## System structure
 

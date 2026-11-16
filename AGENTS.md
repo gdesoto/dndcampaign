@@ -27,7 +27,7 @@ DND Campaign (DM Vault) is a Nuxt 4 web app for running tabletop campaigns: camp
 
 - Put feature proposals, task lists, progress reports, implementation decisions under investigation, and temporary validation notes in `docs/planning/`, grouped by feature when useful.
 - Keep application guides outside `docs/planning/` focused on how the current application works. Update the relevant document and `docs/README.md` when implemented behavior changes; promote settled explanations from plans into these documents.
-- Keep coding rules and agent instructions in `AGENTS.md`/`CLAUDE.md`, with frontend conventions in the existing skill and `StyleGuide.md`. Plans can explain intended changes, but they do not override the implemented behavior documented in the application guides.
+- Keep coding rules and agent instructions in `AGENTS.md`/`CLAUDE.md`, with frontend conventions in the existing skill and `docs/StyleGuide.md`. Plans can explain intended changes, but they do not override the implemented behavior documented in the application guides.
 
 ## Commands
 - Use the pnpm version pinned in `package.json` and commit `pnpm-lock.yaml` when dependencies change. Install with `pnpm install --frozen-lockfile` in automated environments.
@@ -52,7 +52,7 @@ DND Campaign (DM Vault) is a Nuxt 4 web app for running tabletop campaigns: camp
 - **Any route or payload change updates `public/openapi.json` in the same change set.** Add or extend tests before changing a payload shape.
 
 ## Frontend conventions
-- **Which guide wins.** The `nuxt-ui-guidelines` skill governs interaction, layout, density, forms, tables, confirmation, feedback, navigation, and accessibility. Read the relevant sections of `StyleGuide.md` for DM Vault identity and project-specific component contracts. Where they conflict, the order is: explicit user instruction, nuxt-ui-guidelines, StyleGuide.md. Exact theme values and component defaults live in `app/assets/css/main.css` and `app/app.config.ts`; appearance preference lives in `nuxt.config.ts`.
+- **Which guide wins.** The `nuxt-ui-guidelines` skill governs interaction, layout, density, forms, tables, confirmation, feedback, navigation, and accessibility. Read the relevant sections of `docs/StyleGuide.md` for DM Vault identity and project-specific component contracts. Where they conflict, the order is: explicit user instruction, nuxt-ui-guidelines, docs/StyleGuide.md. Exact theme values and component defaults live in `app/assets/css/main.css` and `app/app.config.ts`; appearance preference lives in `nuxt.config.ts`.
 - Pages in `app/pages/` stay thin. Extract components when a page grows; extract a composable only when a second page needs the logic. Load page data with `useAsyncData`/`useFetch`. Auth state comes from `useAuth()`.
 - Use Nuxt UI primitives before custom markup; `UPage`, `UPageHeader`, `UCard` for page structure. Theme overrides live in `app/app.config.ts` using documented keys only (`defaultVariants`, `slots`, `variants`, `compoundVariants`); verify keys with the Nuxt UI docs tools before adding overrides.
 - Use Nuxt UI semantic classes (`text-highlighted`, `text-muted`, `text-dimmed`, `border-default`, `bg-accented`) rather than raw token expressions like `text-[var(--ui-text-highlighted)]`.
