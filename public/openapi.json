@@ -901,6 +901,15 @@
               "type": "string"
             },
             "example": "bytes=0-1023"
+          },
+          {
+            "name": "download",
+            "in": "query",
+            "required": false,
+            "description": "When present, the response is sent with `Content-Disposition: attachment` so the browser saves the file instead of opening it.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {

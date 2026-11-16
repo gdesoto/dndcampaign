@@ -24,8 +24,8 @@ export default defineEventHandler(async (event) => {
 
   const updated = await db.update(tables.campaignCharacter).set({
     status: parsed.status ?? link.status,
-    roleLabel: parsed.roleLabel ?? link.roleLabel,
-    notes: parsed.notes ?? link.notes,
+    roleLabel: parsed.roleLabel === undefined ? link.roleLabel : parsed.roleLabel,
+    notes: parsed.notes === undefined ? link.notes : parsed.notes,
   }).where(eq(tables.campaignCharacter.id, link.id)).returning().get()!
   return ok(updated)
 })

@@ -54,7 +54,7 @@ export const useAccount = () => {
   const listSessions = async () => request<{ sessions: AccountSession[] }>('/api/account/sessions')
 
   const revokeOtherSessions = async () => {
-    return request<{ revokedSessions: number }>('/api/account', {
+    return request<{ success: boolean }>('/api/account', {
       method: 'PATCH',
       body: { action: 'revoke-other-sessions' },
     })

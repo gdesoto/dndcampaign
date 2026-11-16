@@ -60,6 +60,9 @@ const mapFileKindToDb = (filename: string): CampaignMapFileKind => {
   return 'FULL_JSON'
 }
 
+// Derived from the kind, never the browser-claimed MIME, so uploads cannot pick how they are served.
+const mapFileContentType = (kind: CampaignMapFileKind) => kind === 'SVG' ? 'image/svg+xml' : 'application/json'
+
 const boolFromField = (value: string | undefined) =>
   value === '1' || value === 'true' || value === 'TRUE' || value === 'yes'
 
@@ -241,13 +244,15 @@ export class MapService {
 
     for (const file of persistedFiles) {
       const storageKey = this.buildRawStorageKey(campaignId, map.id, file.filename)
-      const result = await adapter.putObject(storageKey, file.buffer, file.mimeType)
+      const kind = mapFileKindToDb(file.filename)
+      const contentType = mapFileContentType(kind)
+      const result = await adapter.putObject(storageKey, file.buffer, contentType)
       fileCreates.push({
         campaignMapId: map.id,
-        kind: mapFileKindToDb(file.filename),
+        kind,
         storageProvider: 'LOCAL',
         storageKey: result.storageKey,
-        contentType: file.mimeType,
+        contentType,
         sizeBytes: result.byteSize,
         checksum: result.checksumSha256 || null,
       })
@@ -313,7 +318,7 @@ export class MapService {
     const stream = await adapter.getObject(svgFile.storageKey)
     return {
       missing: false as const,
-      contentType: svgFile.contentType || 'image/svg+xml',
+      contentType: 'image/svg+xml',
       filename: `${map.slug || 'map'}.svg`,
       stream,
     }
@@ -649,8 +654,10 @@ export class MapService {
       for (const file of [classified.fullJson, ...classified.optionalFiles]) {
         const storageKey = this.buildRawStorageKey(campaignId, mapId, file.filename)
         // Register the distinct key before uploading so partial writes are cleaned up too.
-        preparedFiles.push({ campaignMapId: mapId, kind: mapFileKindToDb(file.filename), storageProvider: 'LOCAL', storageKey, contentType: file.mimeType, sizeBytes: file.buffer.byteLength })
-        const result = await adapter.putObject(storageKey, file.buffer, file.mimeType)
+        const kind = mapFileKindToDb(file.filename)
+        const contentType = mapFileContentType(kind)
+        preparedFiles.push({ campaignMapId: mapId, kind, storageProvider: 'LOCAL', storageKey, contentType, sizeBytes: file.buffer.byteLength })
+        const result = await adapter.putObject(storageKey, file.buffer, contentType)
         Object.assign(preparedFiles.at(-1)!, { storageKey: result.storageKey, sizeBytes: result.byteSize, checksum: result.checksumSha256 || null })
       }
       db.transaction((tx) => {

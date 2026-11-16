@@ -1,8 +1,10 @@
 // @vitest-environment node
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
 import { and, eq } from 'drizzle-orm'
 import * as schema from '../../server/db/schema'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { getApiTestBaseUrl } from '../scripts/api-test-context.mjs'
+import { getApiTestBaseUrl, getApiTestStorageRoot } from '../scripts/api-test-context.mjs'
 import { createApiTestDatabase } from '../scripts/db-test-client'
 import { Hash } from '@adonisjs/hash'
 import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
@@ -306,6 +308,39 @@ describe('administration, audit and analytics', () => {
     expect(db.select({ id: schema.artifact.id }).from(schema.artifact).where(eq(schema.artifact.id, referencedArtifactId)).get()).toBeDefined()
     expect(db.select({ id: schema.document.id }).from(schema.document).where(eq(schema.document.id, nonemptyDocumentId)).get()).toBeDefined()
     expect(db.select({ id: schema.documentVersion.id }).from(schema.documentVersion).where(eq(schema.documentVersion.documentId, nonemptyDocumentId)).all()).toHaveLength(1)
+  })
+
+  it('treats world-map files as owned storage, not orphans', async () => {
+    const map = db.insert(schema.campaignMap).values({
+      campaignId, name: 'Audit World', slug: 'audit-world', createdById: userIds.ownerA, sourceFingerprint: 'audit-world',
+    }).returning({ id: schema.campaignMap.id }).get()!
+    const storageKey = `campaigns/${campaignId}/maps/${map.id}/raw/world.svg`
+    const filePath = join(getApiTestStorageRoot(), storageKey)
+    await mkdir(dirname(filePath), { recursive: true })
+    await writeFile(filePath, '<svg />')
+    db.insert(schema.campaignMapFile).values({
+      campaignMapId: map.id, kind: 'SVG', storageProvider: 'LOCAL', storageKey, contentType: 'image/svg+xml', sizeBytes: 7,
+    }).run()
+
+    try {
+      const auditRes = await fetch(`${baseUrl}/api/admin/storage-audit?campaignId=${campaignId}&issuesOnly=false`, {
+        headers: { cookie: cookies.admin },
+      })
+      expect(auditRes.status).toBe(200)
+      const orphanKeys = (await auditRes.json()).data.orphanStorageRows.map((row: { storageKey: string }) => row.storageKey)
+      expect(orphanKeys).not.toContain(storageKey)
+
+      const fixRes = await fetch(`${baseUrl}/api/admin/storage-audit/fix`, {
+        method: 'POST',
+        headers: { cookie: cookies.admin, 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'DELETE_ORPHAN_STORAGE_FILE', storageKey }),
+      })
+      expect(fixRes.status).toBe(409)
+      expect((await fixRes.json()).error.code).toBe('MAP_FILE_EXISTS')
+      expect(await readFile(filePath, 'utf8')).toBe('<svg />')
+    } finally {
+      await rm(filePath, { force: true })
+    }
   })
 
   it('returns analytics overview/usage/jobs and csv exports', async () => {

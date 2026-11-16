@@ -47,7 +47,13 @@ export class LocalStorageAdapter implements StorageAdapter {
       },
     })
 
-    await pipeline(stream, hashingTransform, createWriteStream(filePath))
+    try {
+      await pipeline(stream, hashingTransform, createWriteStream(filePath))
+    } catch (error) {
+      // Size-limit or aborted uploads must not leave a partial file behind.
+      await unlink(filePath).catch(() => undefined)
+      throw error
+    }
 
     return {
       storageKey: key,

@@ -29,6 +29,13 @@
       "when": 1794775825649,
       "tag": "0003_exhaustion_levels",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1794806184982,
+      "tag": "0004_session_revocation",
+      "breakpoints": true
     }
   ]
 }

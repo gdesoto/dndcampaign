@@ -3,10 +3,7 @@ import { getRequestIP, getHeader } from 'h3'
 import { db } from '#server/db/client'
 import * as tables from '#server/db/schema'
 import { eq } from 'drizzle-orm'
-import { AuthService, toAuthUserDto } from '#server/services/auth.service'
 import { apiError } from '#server/utils/http'
-
-const authService = new AuthService()
 
 type ProfileRecord = {
   id: string
@@ -61,11 +58,6 @@ export class AccountService {
     }
 
     return user
-  }
-
-  async getActiveProfile(userId: string): Promise<ProfileRecord | null> {
-    const user = await this.findProfile(userId)
-    return user && user.isActive && !user.deletedAt ? user : null
   }
 
   async updateProfile(userId: string, input: { name?: string; avatarUrl?: string | null }): Promise<ProfileRecord> {
@@ -123,6 +115,7 @@ export class AccountService {
   }
 
   async changePassword(
+    event: H3Event,
     userId: string,
     input: { currentPassword: string; newPassword: string }
   ): Promise<true> {
@@ -148,7 +141,9 @@ export class AccountService {
     }
 
     const nextPasswordHash = await hashPassword(input.newPassword)
-    await db.update(tables.user).set({ passwordHash: nextPasswordHash }).where(eq(tables.user.id, userId)).returning().get()!
+    const now = new Date()
+    db.update(tables.user).set({ passwordHash: nextPasswordHash, sessionsValidAfter: now }).where(eq(tables.user.id, userId)).run()
+    await setUserSession(event, { loggedInAt: now })
 
     return true
   }
@@ -173,23 +168,14 @@ export class AccountService {
       }
   }
 
-  async revokeOtherSessions(event: H3Event, userId: string): Promise<{ revokedSessions: number }> {
-    const profileResult = await this.getProfile(userId)
+  /** Cookies are stateless, so sign out everything issued before now and re-issue this device's cookie. */
+  async revokeOtherSessions(event: H3Event, userId: string): Promise<true> {
+    await this.getProfile(userId)
 
-    const session = await getUserSession(event)
-    const user = profileResult
+    const now = new Date()
+    db.update(tables.user).set({ sessionsValidAfter: now }).where(eq(tables.user.id, userId)).run()
+    await setUserSession(event, { loggedInAt: now })
 
-    await setUserSession(event, {
-      user: toAuthUserDto(user),
-      loggedInAt: session.loggedInAt || new Date(),
-    })
-
-    return {
-        revokedSessions: 0,
-      }
-  }
-
-  async syncSession(event: H3Event, userId: string) {
-    await authService.syncSessionForUser(event, userId)
+    return true
   }
 }

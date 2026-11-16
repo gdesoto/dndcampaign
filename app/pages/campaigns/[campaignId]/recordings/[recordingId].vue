@@ -594,7 +594,7 @@ const startPlayback = async () => {
 
 const { formatBytes } = useFormatBytes()
 const artifactActions = (jobId: string, artifact: TranscriptionArtifact): RecordAction[] => [
-  { label: 'Download', icon: 'i-lucide-download', to: `/api/artifacts/${artifact.artifact.id}/stream`, target: '_blank' },
+  { label: 'Download', icon: 'i-lucide-download', to: `/api/artifacts/${artifact.artifact.id}/stream?download`, target: '_blank' },
   ...(canManageRecording.value ? [{ label: 'Delete output', icon: 'i-lucide-trash-2', destructive: true, action: () => deleteTranscriptionArtifact(jobId, artifact.artifact.id), confirmation: { message: `Delete this ${artifact.format} transcription output file? This cannot be undone.` } }] : []),
 ]
 </script>

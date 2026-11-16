@@ -188,6 +188,12 @@ describe('account registration, profile and sessions', () => {
     })
 
     expect(changeResponse.status).toBe(200)
+    // Changing the password signs out other cookies and re-issues this one.
+    const reissuedCookie = changeResponse.headers.get('set-cookie') || ''
+    expect(reissuedCookie).toContain('nuxt-auth-session=')
+    expect((await fetch(`${baseUrl}/api/account`, { headers: { cookie: authCookie } })).status).toBe(401)
+    authCookie = reissuedCookie
+    expect((await fetch(`${baseUrl}/api/account`, { headers: { cookie: authCookie } })).status).toBe(200)
 
     const oldPasswordLogin = await fetch(`${baseUrl}/api/auth/login`, {
       method: 'POST',
@@ -220,6 +226,18 @@ describe('account registration, profile and sessions', () => {
     expect(Array.isArray(sessionsPayload.data.sessions)).toBe(true)
     expect(sessionsPayload.data.sessions.length).toBeGreaterThan(0)
 
+    const otherLogin = await fetch(`${baseUrl}/api/auth/login`, {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({
+        email: 'account-updated@example.com',
+        password: 'strongpass12345',
+      }),
+    })
+    expect(otherLogin.status).toBe(200)
+    const otherCookie = otherLogin.headers.get('set-cookie') || ''
+    expect((await fetch(`${baseUrl}/api/account`, { headers: { cookie: otherCookie } })).status).toBe(200)
+
     const revokeResponse = await fetch(`${baseUrl}/api/account`, {
       method: 'PATCH',
       headers: {
@@ -230,7 +248,45 @@ describe('account registration, profile and sessions', () => {
     })
     expect(revokeResponse.status).toBe(200)
     const revokePayload = await revokeResponse.json()
-    expect(typeof revokePayload.data.revokedSessions).toBe('number')
+    expect(revokePayload.data).toEqual({ success: true })
+    authCookie = revokeResponse.headers.get('set-cookie') || ''
+    expect(authCookie).toContain('nuxt-auth-session=')
+
+    const otherAfterRevoke = await fetch(`${baseUrl}/api/account`, { headers: { cookie: otherCookie } })
+    expect(otherAfterRevoke.status).toBe(401)
+    expect(otherAfterRevoke.headers.get('set-cookie')).toContain('nuxt-auth-session=;')
+    expect((await fetch(`${baseUrl}/api/account`, { headers: { cookie: authCookie } })).status).toBe(200)
+  })
+
+  it('applies system role changes to existing cookies', async () => {
+    const registerResponse = await fetch(`${baseUrl}/api/auth/register`, {
+      method: 'POST',
+      headers: authHeaders,
+      body: JSON.stringify({
+        name: 'Role Change Tester',
+        email: 'role-change@example.com',
+        password: registerUser.password,
+        termsAccepted: true,
+      }),
+    })
+    expect(registerResponse.status).toBe(200)
+    const cookie = registerResponse.headers.get('set-cookie') || ''
+    const userId = (await registerResponse.json()).data.user.id
+    const adminUsers = () => fetch(`${baseUrl}/api/admin/users`, { headers: { cookie } })
+
+    try {
+      expect((await adminUsers()).status).toBe(403)
+
+      db.update(schema.user).set({ systemRole: 'SYSTEM_ADMIN' }).where(eq(schema.user.id, userId)).run()
+      expect((await adminUsers()).status).toBe(200)
+
+      db.update(schema.user).set({ systemRole: 'USER' }).where(eq(schema.user.id, userId)).run()
+      const demoted = await adminUsers()
+      expect(demoted.status).toBe(403)
+      expect((await demoted.json()).error.code).toBe('FORBIDDEN')
+    } finally {
+      db.delete(schema.user).where(eq(schema.user.id, userId)).run()
+    }
   })
 
   it('requires authentication for account profile endpoints', async () => {
@@ -266,6 +322,13 @@ describe('account registration, profile and sessions', () => {
       expect(response.headers.get('set-cookie')).toContain('nuxt-auth-session=;')
       const payload = await response.json()
       expect(payload.error.code).toBe('UNAUTHORIZED')
+
+      // Ordinary routes must not trust the stale cookie either.
+      const campaignsResponse = await fetch(`${baseUrl}/api/campaigns`, {
+        headers: { cookie },
+      })
+      expect(campaignsResponse.status).toBe(401)
+      expect((await campaignsResponse.json()).error.code).toBe('UNAUTHORIZED')
     }
 
     db.update(schema.user).set({ isActive: false }).where(eq(schema.user.email, 'account-updated@example.com')).returning().get()!

@@ -119,7 +119,10 @@ describe('database migration and recovery', () => {
 
     expect(migrateDatabase(filename)).toMatchObject({ action: 'adopted' })
     expect(() => checkDatabase(filename)).not.toThrow()
-    expect(readDatabase(filename, (db) => content(db))).toEqual(before)
+    // Columns added by later Drizzle migrations start empty on adopted rows.
+    const added = { User: { sessionsValidAfter: null } } as Record<string, Record<string, unknown>>
+    const expected = Object.fromEntries(Object.entries(before).map(([table, rows]) => [table, rows.map((row) => ({ ...row, ...added[table] }))]))
+    expect(readDatabase(filename, (db) => content(db))).toEqual(expected)
     expect(readDatabase(filename, (db) => db.prepare('SELECT * FROM _prisma_migrations ORDER BY migration_name').all())).toEqual(oldHistory)
     readDatabase(filename, (db) => {
       expect(db.pragma('integrity_check')).toEqual([{ integrity_check: 'ok' }])

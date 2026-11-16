@@ -37,7 +37,6 @@ export default defineEventHandler(async (event) => {
 
     const result = await accountService.updateProfile(session.user.id, parsed)
 
-    await accountService.syncSession(event, session.user.id)
     return ok({
       profile: toAccountProfileDto(result),
     })
@@ -48,18 +47,17 @@ export default defineEventHandler(async (event) => {
 
     const result = await accountService.changeEmail(session.user.id, parsed)
 
-    await accountService.syncSession(event, session.user.id)
     return ok({ email: result.email })
   }
 
   if (action === 'change-password') {
     const parsed = validateInput(changePasswordSchema, body, 'Invalid password payload')
 
-    await accountService.changePassword(session.user.id, parsed)
+    await accountService.changePassword(event, session.user.id, parsed)
 
     return ok({ success: true })
   }
 
-  const result = await accountService.revokeOtherSessions(event, session.user.id)
-  return ok(result)
+  await accountService.revokeOtherSessions(event, session.user.id)
+  return ok({ success: true })
 })
