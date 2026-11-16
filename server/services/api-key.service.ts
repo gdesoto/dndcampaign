@@ -2,7 +2,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { db } from '#server/db/client'
 import { apiKey, apiKeyCampaign, campaign } from '#server/db/schema'
 import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
-import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
+import { buildCampaignMembershipWhere } from '#server/utils/campaign-auth'
 import { apiError } from '#server/utils/http'
 import type { ApiKeyCreateInput, ApiKeyPermission, ApiKeyUpdateInput } from '#shared/schemas/api-key'
 import { apiKeyPermissionSchema } from '#shared/schemas/api-key'
@@ -48,7 +48,7 @@ function findKeyBySecret(secret: string) {
 
 const assertCampaignSelection = (userId: string, campaignIds: string[]) => {
   if (new Set(campaignIds).size !== campaignIds.length) throw apiError(400, 'VALIDATION_ERROR', 'Campaign IDs must be unique')
-  const campaigns = db.select({ id: campaign.id }).from(campaign).where(and(inArray(campaign.id, campaignIds), buildCampaignWhereForPermission(userId, 'campaign.read'))).all()
+  const campaigns = db.select({ id: campaign.id }).from(campaign).where(and(inArray(campaign.id, campaignIds), buildCampaignMembershipWhere(userId, 'campaign.read'))).all()
   if (campaigns.length !== campaignIds.length) throw apiError(403, 'FORBIDDEN', 'You do not have access to every selected campaign')
 }
 

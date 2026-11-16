@@ -216,6 +216,12 @@ describe('campaign permissions', () => {
       headers: { cookie: cookies.outsider },
     })
     expect(outsiderGet.status).toBe(403)
+
+    // Child-id routes scope by campaign in SQL; system admins act as owner there too.
+    for (const [role, status] of [['outsider', 404], ['admin', 200]] as const) {
+      const response = await fetch(`${baseUrl}/api/sessions/${sessionId}`, { headers: { cookie: cookies[role] } })
+      expect(response.status, role).toBe(status)
+    }
   })
 
   it('enforces map read/write by role', async () => {

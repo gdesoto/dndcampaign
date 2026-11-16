@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray, isNull, ne } from 'drizzle-orm'
 import * as schema from '../../server/db/schema'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { getApiTestBaseUrl, getApiTestStorageRoot } from '../scripts/api-test-context.mjs'
@@ -217,6 +217,36 @@ describe('administration, audit and analytics', () => {
     ]))
   })
 
+  it('refuses to demote or deactivate the last active system admin', async () => {
+    // The API database is shared with files that seed their own admins, so the outcome is computed from them.
+    const otherActiveAdmins = db.select({ id: schema.user.id }).from(schema.user).where(and(
+      ne(schema.user.id, userIds.admin), eq(schema.user.systemRole, 'SYSTEM_ADMIN'), eq(schema.user.isActive, true), isNull(schema.user.deletedAt),
+    )).all().length
+    const readAdmin = () => db.select({ isActive: schema.user.isActive, systemRole: schema.user.systemRole }).from(schema.user).where(eq(schema.user.id, userIds.admin)).get()
+    const patchSelf = (body: object) => fetch(`${baseUrl}/api/admin/users/${userIds.admin}`, {
+      method: 'PATCH',
+      headers: { cookie: cookies.admin, 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+    if (otherActiveAdmins === 0) {
+      for (const body of [{ systemRole: 'USER' }, { isActive: false }]) {
+        const res = await patchSelf(body)
+        expect(res.status).toBe(409)
+        expect((await res.json()).error.code).toBe('LAST_ADMIN')
+        expect(readAdmin()).toEqual({ isActive: true, systemRole: 'SYSTEM_ADMIN' })
+      }
+    } else {
+      // Another active admin remains, so self-demotion is allowed.
+      try {
+        expect((await patchSelf({ systemRole: 'USER' })).status).toBe(200)
+        expect(readAdmin()?.systemRole).toBe('USER')
+      } finally {
+        db.update(schema.user).set({ systemRole: 'SYSTEM_ADMIN' }).where(eq(schema.user.id, userIds.admin)).run()
+      }
+    }
+  })
+
   it('supports campaign archive + owner transfer via admin endpoint', async () => {
     const archiveRes = await fetch(`${baseUrl}/api/admin/campaigns/${campaignId}`, {
       method: 'PATCH',
@@ -340,6 +370,59 @@ describe('administration, audit and analytics', () => {
       expect(await readFile(filePath, 'utf8')).toBe('<svg />')
     } finally {
       await rm(filePath, { force: true })
+    }
+  })
+
+  it('keeps replaced captions referenced until their recording is deleted', async () => {
+    const captionCampaignId = db.insert(schema.campaign).values({ ownerId: userIds.admin, name: 'Admin Caption Campaign' }).returning({ id: schema.campaign.id }).get()!.id
+    db.insert(schema.campaignMember).values({ campaignId: captionCampaignId, userId: userIds.admin, role: 'OWNER', invitedByUserId: userIds.admin }).run()
+    const sessionId = db.insert(schema.session).values({ campaignId: captionCampaignId, title: 'Caption Session' }).returning({ id: schema.session.id }).get()!.id
+    const mediaId = db.insert(schema.artifact).values({
+      ownerId: userIds.admin, campaignId: captionCampaignId, provider: 'LOCAL', storageKey: `admin/${captionCampaignId}/video.mp4`, mimeType: 'video/mp4', byteSize: 1,
+    }).returning({ id: schema.artifact.id }).get()!.id
+    const recordingId = db.insert(schema.recording).values({
+      sessionId, kind: 'VIDEO', filename: 'video.mp4', mimeType: 'video/mp4', byteSize: 1, artifactId: mediaId,
+    }).returning({ id: schema.recording.id }).get()!.id
+
+    try {
+      const captionIds: string[] = []
+      for (const text of ['First caption', 'Second caption']) {
+        const body = new FormData()
+        body.append('file', new Blob([`WEBVTT\n\n00:00:00.000 --> 00:00:01.000\n${text}\n`], { type: 'text/vtt' }), 'captions.vtt')
+        const uploadRes = await fetch(`${baseUrl}/api/recordings/${recordingId}/captions`, { method: 'POST', headers: { cookie: cookies.admin }, body })
+        expect(uploadRes.status).toBe(200)
+        captionIds.push((await uploadRes.json()).data.vttArtifactId)
+      }
+
+      const historyRes = await fetch(`${baseUrl}/api/recordings/${recordingId}/vtt/history`, { headers: { cookie: cookies.admin } })
+      expect(historyRes.status).toBe(200)
+      expect((await historyRes.json()).data.map((row: { id: string }) => row.id).sort()).toEqual([...captionIds].sort())
+
+      const auditRes = await fetch(`${baseUrl}/api/admin/storage-audit?campaignId=${captionCampaignId}&issuesOnly=false`, { headers: { cookie: cookies.admin } })
+      expect(auditRes.status).toBe(200)
+      const captionRows = (await auditRes.json()).data.artifactRows.filter((row: { artifactId: string }) => captionIds.includes(row.artifactId))
+      expect(captionRows).toHaveLength(2)
+      expect(captionRows).toEqual(expect.arrayContaining(captionIds.map((artifactId) => expect.objectContaining({ artifactId, referencedCount: 1, fixActions: [] }))))
+
+      const fixRes = await fetch(`${baseUrl}/api/admin/storage-audit/fix`, {
+        method: 'POST',
+        headers: { cookie: cookies.admin, 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'DELETE_UNREFERENCED_ARTIFACT', artifactId: captionIds[0] }),
+      })
+      expect(fixRes.status).toBe(409)
+      expect((await fixRes.json()).error.code).toBe('ARTIFACT_REFERENCED')
+
+      const captionKeys = db.select({ storageKey: schema.artifact.storageKey }).from(schema.artifact).where(inArray(schema.artifact.id, captionIds)).all()
+      expect(captionKeys).toHaveLength(2)
+      const deleteRes = await fetch(`${baseUrl}/api/recordings/${recordingId}`, { method: 'DELETE', headers: { cookie: cookies.admin } })
+      expect(deleteRes.status).toBe(200)
+      expect(db.select({ id: schema.artifact.id }).from(schema.artifact).where(eq(schema.artifact.campaignId, captionCampaignId)).all()).toEqual([])
+      for (const { storageKey } of captionKeys) {
+        await expect(readFile(join(getApiTestStorageRoot(), storageKey))).rejects.toThrow()
+      }
+    } finally {
+      db.delete(schema.campaign).where(eq(schema.campaign.id, captionCampaignId)).run()
+      db.delete(schema.artifact).where(eq(schema.artifact.campaignId, captionCampaignId)).run()
     }
   })
 

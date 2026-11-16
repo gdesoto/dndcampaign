@@ -2,7 +2,7 @@ import { readBody } from 'h3'
 import { z } from 'zod'
 import { db } from '#server/db/client'
 import * as tables from '#server/db/schema'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { ok, apiError, routeParams } from '#server/utils/http'
 import {
   documentLinkRecordingSchema,
@@ -10,7 +10,7 @@ import {
   documentUpdateSchema
 } from '#shared/schemas/document'
 import { DocumentService } from '#server/services/document.service'
-import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
+import { buildCampaignWhereForPermission, buildRecordingWhereForPermission } from '#server/utils/campaign-auth'
 
 const documentPatchActionSchema = z.discriminatedUnion('action', [
   documentLinkRecordingSchema.extend({ action: z.literal('link-recording') }),
@@ -47,19 +47,7 @@ export default defineEventHandler(async (event) => {
           (await db.query.recording.findFirst({
             where: and(
               eq(tables.recording.id, recordingId),
-              inArray(
-                tables.recording.sessionId,
-                db
-                  .select({ id: tables.session.id })
-                  .from(tables.session)
-                  .where(
-                    buildCampaignWhereForPermission(
-                      sessionUser.user.id,
-                      'document.edit',
-                      tables.session.campaignId
-                    )
-                  )
-              )
+              buildRecordingWhereForPermission(sessionUser.user.id, 'document.edit')
             )
           })) ?? null
         if (!recording) {

@@ -2,12 +2,12 @@ import { getRequestHeader, readBody } from 'h3'
 import { Readable } from 'node:stream'
 import { db } from '#server/db/client'
 import * as tables from '#server/db/schema'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { ok, apiError, routeParams } from '#server/utils/http'
 import { readSingleFileUpload, streamToBuffer } from '#server/utils/multipart'
 import { RecordingService } from '#server/services/recording.service'
 import { toVtt } from '#shared/utils/transcript'
-import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
+import { buildRecordingWhereForPermission } from '#server/utils/campaign-auth'
 
 const MAX_BYTES = 2 * 1024 * 1024
 
@@ -29,19 +29,7 @@ export default defineEventHandler(async (event) => {
     (await db.query.recording.findFirst({
       where: and(
         eq(tables.recording.id, recordingId),
-        inArray(
-          tables.recording.sessionId,
-          db
-            .select({ id: tables.session.id })
-            .from(tables.session)
-            .where(
-              buildCampaignWhereForPermission(
-                sessionUser.user.id,
-                'document.edit',
-                tables.session.campaignId
-              )
-            )
-        )
+        buildRecordingWhereForPermission(sessionUser.user.id, 'document.edit')
       ),
       with: { session: true }
     })) ?? null

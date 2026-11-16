@@ -11103,6 +11103,9 @@
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
+          "409": {
+            "description": "TRANSCRIPTION_EXISTS: the imported transcription already belongs to another recording."
+          },
           "500": {
             "$ref": "#/components/responses/InternalError"
           }

@@ -2,7 +2,7 @@ import { db } from '#server/db/client'
 import * as tables from '#server/db/schema'
 import { and, eq, inArray } from 'drizzle-orm'
 import { ArtifactService } from '#server/services/artifact.service'
-import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
+import { buildRecordingWhereForPermission } from '#server/utils/campaign-auth'
 import { ok, apiError, routeParams } from '#server/utils/http'
 
 const artifactService = new ArtifactService()
@@ -15,27 +15,7 @@ export default defineEventHandler(async (event) => {
     (await db.query.transcriptionJob.findFirst({
       where: and(
         eq(tables.transcriptionJob.id, jobId),
-        inArray(
-          tables.transcriptionJob.recordingId,
-          db
-            .select({ id: tables.recording.id })
-            .from(tables.recording)
-            .where(
-              inArray(
-                tables.recording.sessionId,
-                db
-                  .select({ id: tables.session.id })
-                  .from(tables.session)
-                  .where(
-                    buildCampaignWhereForPermission(
-                      sessionUser.user.id,
-                      'recording.transcribe',
-                      tables.session.campaignId
-                    )
-                  )
-              )
-            )
-        ),
+        buildRecordingWhereForPermission(sessionUser.user.id, 'recording.transcribe', tables.transcriptionJob.recordingId),
         inArray(
           tables.transcriptionJob.id,
           db

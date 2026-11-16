@@ -4,7 +4,7 @@ import { db } from '#server/db/client'
 import * as tables from '#server/db/schema'
 import { eq, and, or, inArray, asc } from 'drizzle-orm'
 import type { JsonValue } from '#server/db/columns'
-import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
+import { buildCampaignWhereForPermission, isSystemAdminWhere } from '#server/utils/campaign-auth'
 import { ActivityLogService } from '#server/services/activity-log.service'
 import { createEncounterCalendarDateSchema } from '#shared/schemas/encounter'
 import type {
@@ -32,6 +32,7 @@ export const buildEncounterVisibilityWhere = (userId: string) => or(
       inArray(tables.campaign.id, db.select({ campaignId: tables.campaignMember.campaignId }).from(tables.campaignMember).where(
         and(eq(tables.campaignMember.userId, userId), eq(tables.campaignMember.hasDmAccess, true))
       )),
+      isSystemAdminWhere(userId),
     )),
   )),
 )

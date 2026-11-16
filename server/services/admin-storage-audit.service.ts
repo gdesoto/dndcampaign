@@ -5,6 +5,7 @@ import { db } from '#server/db/client'
 import * as tables from '#server/db/schema'
 import { eq, and, inArray, asc, desc, sql } from 'drizzle-orm'
 import { ArtifactService } from '#server/services/artifact.service'
+import { recordingVttArtifactsWhere } from '#server/services/recording.service'
 import { getStorageAdapter } from '#server/services/storage/storage.factory'
 import type { AdminStorageAuditFixInput, AdminStorageAuditQuery } from '#shared/schemas/admin'
 import { apiError } from '#server/utils/http'
@@ -27,6 +28,15 @@ const toStorageKey = (value: string) => value.replace(/\\/g, '/')
 const campaignIdInStorageKey = (storageKey: string) => {
   const match = storageKey.match(/^campaigns\/([0-9a-fA-F-]{36})\//)
   return match?.[1] || null
+}
+
+// Correlated against the relational query alias "artifact"; raw outer-table refs keep Drizzle from re-aliasing them.
+const artifactReferenceExtras = {
+  recordingsCount: sql<number>`(select count(*) from "Recording" where "Recording"."artifactId" = ${sql.raw('"artifact"."id"')})`.mapWith(Number).as('recordings_count'),
+  vttRecordingsCount: sql<number>`(select count(*) from "Recording" where "Recording"."vttArtifactId" = ${sql.raw('"artifact"."id"')} or ${recordingVttArtifactsWhere(sql.raw('"Recording"."id"'))})`.mapWith(Number).as('vttRecordings_count'),
+  recapRecordingsCount: sql<number>`(select count(*) from "RecapRecording" where "RecapRecording"."artifactId" = ${sql.raw('"artifact"."id"')})`.mapWith(Number).as('recapRecordings_count'),
+  transcriptionArtifactsCount: sql<number>`(select count(*) from "TranscriptionArtifact" where "TranscriptionArtifact"."artifactId" = ${sql.raw('"artifact"."id"')})`.mapWith(Number).as('transcriptionArtifacts_count'),
+  characterPortraitsCount: sql<number>`(select count(*) from "PlayerCharacter" where "PlayerCharacter"."portraitArtifactId" = ${sql.raw('"artifact"."id"')})`.mapWith(Number).as('characterPortraits_count'),
 }
 
 const sumArtifactReferenceCount = (counts: {
@@ -128,11 +138,7 @@ export class AdminStorageAuditService {
     const [artifactRowsRaw, documentRowsRaw] = await Promise.all([
       db.query.artifact.findMany({
         where: artifactWhere,
-        extras: { recordingsCount: sql<number>`(select count(*) from "Recording" where "Recording"."artifactId" = ${sql.raw('"artifact"."id"')})`.mapWith(Number).as('recordings_count'),
-          vttRecordingsCount: sql<number>`(select count(*) from "Recording" where "Recording"."vttArtifactId" = ${sql.raw('"artifact"."id"')})`.mapWith(Number).as('vttRecordings_count'),
-          recapRecordingsCount: sql<number>`(select count(*) from "RecapRecording" where "RecapRecording"."artifactId" = ${sql.raw('"artifact"."id"')})`.mapWith(Number).as('recapRecordings_count'),
-          transcriptionArtifactsCount: sql<number>`(select count(*) from "TranscriptionArtifact" where "TranscriptionArtifact"."artifactId" = ${sql.raw('"artifact"."id"')})`.mapWith(Number).as('transcriptionArtifacts_count'),
-          characterPortraitsCount: sql<number>`(select count(*) from "PlayerCharacter" where "PlayerCharacter"."portraitArtifactId" = ${sql.raw('"artifact"."id"')})`.mapWith(Number).as('characterPortraits_count') },
+        extras: artifactReferenceExtras,
         columns: {
           id: true,
           campaignId: true,
@@ -361,11 +367,7 @@ export class AdminStorageAuditService {
     if (input.action === 'DELETE_UNREFERENCED_ARTIFACT') {
       const artifact = await db.query.artifact.findFirst({
         where: eq(tables.artifact.id, input.artifactId),
-        extras: { recordingsCount: sql<number>`(select count(*) from "Recording" where "Recording"."artifactId" = ${sql.raw('"artifact"."id"')})`.mapWith(Number).as('recordings_count'),
-          vttRecordingsCount: sql<number>`(select count(*) from "Recording" where "Recording"."vttArtifactId" = ${sql.raw('"artifact"."id"')})`.mapWith(Number).as('vttRecordings_count'),
-          recapRecordingsCount: sql<number>`(select count(*) from "RecapRecording" where "RecapRecording"."artifactId" = ${sql.raw('"artifact"."id"')})`.mapWith(Number).as('recapRecordings_count'),
-          transcriptionArtifactsCount: sql<number>`(select count(*) from "TranscriptionArtifact" where "TranscriptionArtifact"."artifactId" = ${sql.raw('"artifact"."id"')})`.mapWith(Number).as('transcriptionArtifacts_count'),
-          characterPortraitsCount: sql<number>`(select count(*) from "PlayerCharacter" where "PlayerCharacter"."portraitArtifactId" = ${sql.raw('"artifact"."id"')})`.mapWith(Number).as('characterPortraits_count') },
+        extras: artifactReferenceExtras,
         columns: { id: true }
       }).sync()
 

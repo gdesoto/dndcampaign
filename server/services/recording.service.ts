@@ -1,9 +1,15 @@
-import { eq } from 'drizzle-orm'
+import { eq, sql, type SQL } from 'drizzle-orm'
 import { db } from '#server/db/client'
-import { recording } from '#server/db/schema'
+import { artifact, recording } from '#server/db/schema'
 import { ArtifactService } from './artifact.service'
 import type { RecordingKind } from '#server/db/schema'
 import type { Readable } from 'node:stream'
+
+const VTT_LABEL = 'Transcript VTT'
+
+// Every caption uploaded for a recording (current and replaced history); history is linked only through artifact meta.
+export const recordingVttArtifactsWhere = (recordingId: string | SQL) =>
+  sql`(${artifact.label} = ${VTT_LABEL} and ${artifact.meta} like '%"recordingId":"' || ${recordingId} || '"%')`
 
 type CreateRecordingStreamInput = {
   ownerId: string
@@ -61,7 +67,7 @@ export class RecordingService {
       filename: input.filename,
       mimeType: input.mimeType,
       stream: input.stream,
-      label: 'Transcript VTT',
+      label: VTT_LABEL,
       meta: {
         recordingId: input.recordingId,
         kind: 'subtitle',
@@ -93,6 +99,7 @@ export class RecordingService {
       existing.artifactId,
       ...(existing.vttArtifactId ? [existing.vttArtifactId] : []),
       ...existing.transcriptionJobs.flatMap((job) => job.artifacts.map((artifact) => artifact.artifactId)),
+      ...db.select({ id: artifact.id }).from(artifact).where(recordingVttArtifactsWhere(existing.id)).all().map((row) => row.id),
     ])
 
     db.delete(recording).where(eq(recording.id, existing.id)).run()

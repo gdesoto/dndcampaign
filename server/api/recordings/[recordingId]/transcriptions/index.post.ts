@@ -1,15 +1,15 @@
-import { readBody } from 'h3'
 import { z } from 'zod'
 import { db } from '#server/db/client'
 import * as tables from '#server/db/schema'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { ok, apiError, routeParams } from '#server/utils/http'
+import { validateBody } from '#server/utils/validate'
 import { TranscriptionService } from '#server/services/transcription.service'
 import {
   transcriptionImportSchema,
   transcriptionStartSchema
 } from '#shared/schemas/transcription'
-import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
+import { buildRecordingWhereForPermission } from '#server/utils/campaign-auth'
 
 const transcriptionCreateSchema = z.discriminatedUnion('mode', [
   transcriptionStartSchema.extend({ mode: z.literal('transcribe') }),
@@ -19,68 +19,26 @@ const transcriptionCreateSchema = z.discriminatedUnion('mode', [
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
   const { recordingId } = routeParams(event, 'recordingId')
+  const body = await validateBody(event, transcriptionCreateSchema, 'Invalid transcription request')
 
-  const rawBody = (await readBody(event)) ?? {}
-
-  let modeParsed = transcriptionCreateSchema.safeParse(rawBody)
-  if (!modeParsed.success) {
-    // Backwards-compatible body shape support for migration:
-    // - old transcribe payload (no mode)
-    // - old import payload with transcriptionId
-    if (
-      typeof rawBody === 'object' &&
-      rawBody !== null &&
-      'transcriptionId' in rawBody
-    ) {
-      modeParsed = transcriptionCreateSchema.safeParse({
-        ...(rawBody as object),
-        mode: 'import'
-      })
-    } else {
-      modeParsed = transcriptionCreateSchema.safeParse({
-        ...(rawBody as object),
-        mode: 'transcribe'
-      })
-    }
-  }
-  if (!modeParsed.success) {
-    throw apiError(400, 'VALIDATION_ERROR', 'Invalid transcription request')
+  const recording =
+    (await db.query.recording.findFirst({
+      where: and(
+        eq(tables.recording.id, recordingId),
+        buildRecordingWhereForPermission(sessionUser.user.id, 'recording.transcribe')
+      ),
+      with: { artifact: true, session: true }
+    })) ?? null
+  if (!recording) {
+    throw apiError(404, 'NOT_FOUND', 'Recording not found')
   }
 
-  if (modeParsed.data.mode === 'transcribe') {
-    const recording =
-      (await db.query.recording.findFirst({
-        where: and(
-          eq(tables.recording.id, recordingId),
-          inArray(
-            tables.recording.sessionId,
-            db
-              .select({ id: tables.session.id })
-              .from(tables.session)
-              .where(
-                buildCampaignWhereForPermission(
-                  sessionUser.user.id,
-                  'recording.transcribe',
-                  tables.session.campaignId
-                )
-              )
-          )
-        ),
-        with: { artifact: true, session: { with: { campaign: true } } }
-      })) ?? null
-    if (!recording) {
-      throw apiError(404, 'NOT_FOUND', 'Recording not found')
-    }
+  const config = useRuntimeConfig()
+  if (!config.elevenlabs?.apiKey) {
+    throw apiError(500, 'CONFIG_ERROR', 'ElevenLabs API key is not configured')
+  }
 
-    const config = useRuntimeConfig()
-    if (!config.elevenlabs?.apiKey) {
-      throw apiError(
-        500,
-        'CONFIG_ERROR',
-        'ElevenLabs API key is not configured'
-      )
-    }
-
+  if (body.mode === 'transcribe') {
     const webhookEnabled = Boolean(config.elevenlabs.webhookId)
     const service = new TranscriptionService(
       config.elevenlabs.apiKey,
@@ -92,54 +50,31 @@ export default defineEventHandler(async (event) => {
       sessionId: recording.sessionId,
       campaignId: recording.session.campaignId,
       storageKey: recording.artifact.storageKey,
-      modelId: modeParsed.data.modelId,
-      formats: modeParsed.data.formats,
-      numSpeakers: modeParsed.data.numSpeakers,
-      diarizationThreshold: modeParsed.data.diarizationThreshold,
-      keyterms: modeParsed.data.keyterms,
-      diarize: modeParsed.data.diarize ?? true,
-      tagAudioEvents: modeParsed.data.tagAudioEvents ?? false,
-      languageCode: modeParsed.data.languageCode,
-      secondaryLanguageCodes: modeParsed.data.secondaryLanguageCodes,
-      numbersFormat: modeParsed.data.numbersFormat,
+      modelId: body.modelId,
+      formats: body.formats,
+      numSpeakers: body.numSpeakers,
+      diarizationThreshold: body.diarizationThreshold,
+      keyterms: body.keyterms,
+      diarize: body.diarize ?? true,
+      tagAudioEvents: body.tagAudioEvents ?? false,
+      languageCode: body.languageCode,
+      secondaryLanguageCodes: body.secondaryLanguageCodes,
+      numbersFormat: body.numbersFormat,
     })
 
     return ok(job)
   }
 
-  const recording =
-    (await db.query.recording.findFirst({
-      where: and(
-        eq(tables.recording.id, recordingId),
-        inArray(
-          tables.recording.sessionId,
-          db
-            .select({ id: tables.session.id })
-            .from(tables.session)
-            .where(
-              buildCampaignWhereForPermission(
-                sessionUser.user.id,
-                'recording.transcribe',
-                tables.session.campaignId
-              )
-            )
-        )
-      ),
-      with: { session: true }
-    })) ?? null
-  if (!recording) {
-    throw apiError(404, 'NOT_FOUND', 'Recording not found')
-  }
-
   const existing =
     (await db.query.transcriptionJob.findFirst({
-      where: eq(
-        tables.transcriptionJob.externalJobId,
-        modeParsed.data.transcriptionId
-      ),
+      where: eq(tables.transcriptionJob.externalJobId, body.transcriptionId),
       with: { artifacts: true }
     })) ?? null
   if (existing) {
+    // externalJobId is unique, so a job on another recording can be neither returned nor re-imported here.
+    if (existing.recordingId !== recordingId) {
+      throw apiError(409, 'TRANSCRIPTION_EXISTS', 'This transcription is already imported for another recording')
+    }
     return ok(existing)
   }
 
@@ -150,24 +85,19 @@ export default defineEventHandler(async (event) => {
         recordingId,
         provider: 'ELEVENLABS',
         status: 'PROCESSING',
-        externalJobId: modeParsed.data.transcriptionId,
+        externalJobId: body.transcriptionId,
         requestedFormats: JSON.stringify([]),
         diarize: true
       })
       .returning()
   )[0]!
 
-  const config = useRuntimeConfig()
-  if (!config.elevenlabs?.apiKey) {
-    throw apiError(500, 'CONFIG_ERROR', 'ElevenLabs API key is not configured')
-  }
-
   const service = new TranscriptionService(config.elevenlabs.apiKey)
 
   try {
     const updated = await service.fetchTranscriptionByExternalId(
       job.id,
-      modeParsed.data.transcriptionId
+      body.transcriptionId
     )
     return ok(updated)
   } catch (error) {

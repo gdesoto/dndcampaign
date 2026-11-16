@@ -1,6 +1,6 @@
 import { db } from '#server/db/client'
 import * as tables from '#server/db/schema'
-import { eq, and, or, inArray, lte, gte, like, desc, sql, count } from 'drizzle-orm'
+import { eq, ne, and, or, inArray, isNull, lte, gte, like, desc, sql, count } from 'drizzle-orm'
 import type {
   AdminActivityLogListQuery,
   AdminCampaignListQuery,
@@ -218,28 +218,44 @@ export class AdminService {
     isActive: boolean
     updatedAt: string
   }> {
-    const existing = await db.query.user.findFirst({
-      where: eq(tables.user.id, userId),
-      columns: {
-        id: true,
-        systemRole: true,
-        isActive: true
+    // Immediate lock: the last-admin count and the write must not interleave with another demotion.
+    const { existing, updated } = db.transaction((tx) => {
+      const existing = tx.query.user.findFirst({
+        where: eq(tables.user.id, userId),
+        columns: {
+          id: true,
+          systemRole: true,
+          isActive: true
+        }
+      }).sync()
+
+      if (!existing) {
+        throw apiError(404, 'NOT_FOUND', 'User not found')
       }
-    }).sync()
 
-    if (!existing) {
-      throw apiError(404, 'NOT_FOUND', 'User not found')
-    }
+      if (input.systemRole === 'USER' || input.isActive === false) {
+        const otherActiveAdmins = tx.select({ count: count() }).from(tables.user).where(and(
+          ne(tables.user.id, userId),
+          eq(tables.user.systemRole, 'SYSTEM_ADMIN'),
+          eq(tables.user.isActive, true),
+          isNull(tables.user.deletedAt)
+        )).get()!.count
+        if (otherActiveAdmins === 0) {
+          throw apiError(409, 'LAST_ADMIN', 'At least one active system admin must remain.')
+        }
+      }
 
-    const updated = await db.update(tables.user).set({
-      ...(input.systemRole !== undefined ? { systemRole: input.systemRole } : {}),
-      ...(input.isActive !== undefined ? { isActive: input.isActive } : {})
-    }).where(eq(tables.user.id, userId)).returning({
-      id: tables.user.id,
-      systemRole: tables.user.systemRole,
-      isActive: tables.user.isActive,
-      updatedAt: tables.user.updatedAt
-    }).get()!
+      const updated = tx.update(tables.user).set({
+        ...(input.systemRole !== undefined ? { systemRole: input.systemRole } : {}),
+        ...(input.isActive !== undefined ? { isActive: input.isActive } : {})
+      }).where(eq(tables.user.id, userId)).returning({
+        id: tables.user.id,
+        systemRole: tables.user.systemRole,
+        isActive: tables.user.isActive,
+        updatedAt: tables.user.updatedAt
+      }).get()!
+      return { existing, updated }
+    }, { behavior: 'immediate' })
 
     await auditService.log({
       actorUserId,

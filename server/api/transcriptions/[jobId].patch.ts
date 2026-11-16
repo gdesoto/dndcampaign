@@ -2,14 +2,14 @@ import { readBody } from 'h3'
 import { z } from 'zod'
 import { db } from '#server/db/client'
 import * as tables from '#server/db/schema'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { TranscriptionService } from '#server/services/transcription.service'
 import { ok, apiError, routeParams } from '#server/utils/http'
 import {
   transcriptionApplySchema,
   transcriptionAttachVttSchema
 } from '#shared/schemas/transcription'
-import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
+import { buildRecordingWhereForPermission } from '#server/utils/campaign-auth'
 
 const transcriptionActionSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('fetch') }),
@@ -27,39 +27,27 @@ export default defineEventHandler(async (event) => {
     throw apiError(400, 'VALIDATION_ERROR', 'Invalid request')
   }
 
-  if (parsed.data.action === 'fetch') {
-    const job =
-      (await db.query.transcriptionJob.findFirst({
-        where: and(
-          eq(tables.transcriptionJob.id, jobId),
-          inArray(
-            tables.transcriptionJob.recordingId,
-            db
-              .select({ id: tables.recording.id })
-              .from(tables.recording)
-              .where(
-                inArray(
-                  tables.recording.sessionId,
-                  db
-                    .select({ id: tables.session.id })
-                    .from(tables.session)
-                    .where(
-                      buildCampaignWhereForPermission(
-                        sessionUser.user.id,
-                        'recording.transcribe',
-                        tables.session.campaignId
-                      )
-                    )
-                )
-              )
-          )
+  const job =
+    (await db.query.transcriptionJob.findFirst({
+      where: and(
+        eq(tables.transcriptionJob.id, jobId),
+        buildRecordingWhereForPermission(
+          sessionUser.user.id,
+          parsed.data.action === 'fetch' ? 'recording.transcribe' : 'document.edit',
+          tables.transcriptionJob.recordingId
         )
-      })) ?? null
+      ),
+      with: {
+        recording: { with: { session: true } },
+        artifacts: { with: { artifact: true } }
+      }
+    })) ?? null
 
-    if (!job) {
-      throw apiError(404, 'NOT_FOUND', 'Transcription not found')
-    }
+  if (!job) {
+    throw apiError(404, 'NOT_FOUND', 'Transcription not found')
+  }
 
+  if (parsed.data.action === 'fetch') {
     if (!job.externalJobId) {
       throw apiError(
         400,
@@ -87,42 +75,6 @@ export default defineEventHandler(async (event) => {
   }
 
   if (parsed.data.action === 'apply-transcript') {
-    const job =
-      (await db.query.transcriptionJob.findFirst({
-        where: and(
-          eq(tables.transcriptionJob.id, jobId),
-          inArray(
-            tables.transcriptionJob.recordingId,
-            db
-              .select({ id: tables.recording.id })
-              .from(tables.recording)
-              .where(
-                inArray(
-                  tables.recording.sessionId,
-                  db
-                    .select({ id: tables.session.id })
-                    .from(tables.session)
-                    .where(
-                      buildCampaignWhereForPermission(
-                        sessionUser.user.id,
-                        'document.edit',
-                        tables.session.campaignId
-                      )
-                    )
-                )
-              )
-          )
-        ),
-        with: {
-          recording: { with: { session: true } },
-          artifacts: { with: { artifact: true } }
-        }
-      })) ?? null
-
-    if (!job) {
-      throw apiError(404, 'NOT_FOUND', 'Transcription not found')
-    }
-
     const updated = await TranscriptionService.applyTranscript({
       job,
       artifactId: parsed.data.artifactId,
@@ -132,65 +84,13 @@ export default defineEventHandler(async (event) => {
     return ok(updated)
   }
 
-  if (parsed.data.action !== 'attach-vtt') {
-    throw apiError(400, 'VALIDATION_ERROR', 'Invalid request')
-  }
-
-  const job =
-    (await db.query.transcriptionJob.findFirst({
-      where: and(
-        eq(tables.transcriptionJob.id, jobId),
-        inArray(
-          tables.transcriptionJob.recordingId,
-          db
-            .select({ id: tables.recording.id })
-            .from(tables.recording)
-            .where(
-              inArray(
-                tables.recording.sessionId,
-                db
-                  .select({ id: tables.session.id })
-                  .from(tables.session)
-                  .where(
-                    buildCampaignWhereForPermission(
-                      sessionUser.user.id,
-                      'document.edit',
-                      tables.session.campaignId
-                    )
-                  )
-              )
-            )
-        )
-      ),
-      with: {
-        recording: { with: { session: true } },
-        artifacts: { with: { artifact: true } }
-      }
-    })) ?? null
-
-  if (!job) {
-    throw apiError(404, 'NOT_FOUND', 'Transcription not found')
-  }
-
   const targetRecordingId = parsed.data.recordingId || job.recordingId
   const targetRecording =
     (await db.query.recording.findFirst({
+      // Same session as the job, which was already checked for document.edit.
       where: and(
         eq(tables.recording.id, targetRecordingId),
-        eq(tables.recording.sessionId, job.recording.sessionId),
-        inArray(
-          tables.recording.sessionId,
-          db
-            .select({ id: tables.session.id })
-            .from(tables.session)
-            .where(
-              buildCampaignWhereForPermission(
-                sessionUser.user.id,
-                'document.edit',
-                tables.session.campaignId
-              )
-            )
-        )
+        eq(tables.recording.sessionId, job.recording.sessionId)
       ),
       with: { session: true }
     })) ?? null

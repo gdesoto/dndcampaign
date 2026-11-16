@@ -2,7 +2,7 @@ import type { H3Event } from 'h3'
 import type { CampaignRole } from '#server/db/schema'
 import { db } from '#server/db/client'
 import * as tables from '#server/db/schema'
-import { eq, and, or, inArray, type SQL } from 'drizzle-orm'
+import { eq, and, or, exists, inArray, type SQL } from 'drizzle-orm'
 import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
 import { apiError } from '#server/utils/http'
 import { requireApiUserSession } from '#server/utils/api-auth'
@@ -69,7 +69,8 @@ type CampaignAccessResolution = {
   access: ResolvedCampaignAccess | null
 }
 
-export const buildCampaignWhereForPermission = (
+/** Campaigns the user owns or joined with a role granting `permission`. For "my campaigns" lists; ignores system admins. */
+export const buildCampaignMembershipWhere = (
   userId: string,
   permission: CampaignPermission,
   campaignIdColumn: AnySQLiteColumn = tables.campaign.id
@@ -86,6 +87,27 @@ export const buildCampaignWhereForPermission = (
     )
   ))
 }
+
+/** True when the user row is a system admin; admins act as OWNER on every campaign, like resolveCampaignAccess. */
+export const isSystemAdminWhere = (userId: string): SQL => exists(db.select({ id: tables.user.id }).from(tables.user).where(
+  and(eq(tables.user.id, userId), eq(tables.user.systemRole, 'SYSTEM_ADMIN'))
+))
+
+/** Scopes child-id lookups to campaigns granting `permission`, including system admin access. */
+export const buildCampaignWhereForPermission = (
+  userId: string,
+  permission: CampaignPermission,
+  campaignIdColumn: AnySQLiteColumn = tables.campaign.id
+): SQL => or(buildCampaignMembershipWhere(userId, permission, campaignIdColumn), isSystemAdminWhere(userId))!
+
+/** Same scope for rows keyed by recording (recordings, transcription jobs), via the recording's session campaign. */
+export const buildRecordingWhereForPermission = (
+  userId: string,
+  permission: CampaignPermission,
+  recordingIdColumn: AnySQLiteColumn = tables.recording.id
+): SQL => inArray(recordingIdColumn, db.select({ id: tables.recording.id }).from(tables.recording)
+  .innerJoin(tables.session, eq(tables.session.id, tables.recording.sessionId))
+  .where(buildCampaignWhereForPermission(userId, permission, tables.session.campaignId)))
 
 export const resolveCampaignAccess = async (
   campaignId: string,

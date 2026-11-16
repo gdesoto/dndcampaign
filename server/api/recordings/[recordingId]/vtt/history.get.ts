@@ -1,8 +1,9 @@
 import { db } from '#server/db/client'
 import * as tables from '#server/db/schema'
-import { and, desc, eq, inArray, like } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { ok, apiError, routeParams } from '#server/utils/http'
-import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
+import { recordingVttArtifactsWhere } from '#server/services/recording.service'
+import { buildRecordingWhereForPermission } from '#server/utils/campaign-auth'
 
 export default defineEventHandler(async (event) => {
   const sessionUser = await requireUserSession(event)
@@ -12,19 +13,7 @@ export default defineEventHandler(async (event) => {
     (await db.query.recording.findFirst({
       where: and(
         eq(tables.recording.id, recordingId),
-        inArray(
-          tables.recording.sessionId,
-          db
-            .select({ id: tables.session.id })
-            .from(tables.session)
-            .where(
-              buildCampaignWhereForPermission(
-                sessionUser.user.id,
-                'content.read',
-                tables.session.campaignId
-              )
-            )
-        )
+        buildRecordingWhereForPermission(sessionUser.user.id, 'content.read')
       ),
       with: { session: true }
     })) ?? null
@@ -35,8 +24,7 @@ export default defineEventHandler(async (event) => {
   const history = await db.query.artifact.findMany({
     where: and(
       eq(tables.artifact.campaignId, recording.session.campaignId),
-      eq(tables.artifact.label, 'Transcript VTT'),
-      like(tables.artifact.meta, '%' + `"recordingId":"${recordingId}"` + '%')
+      recordingVttArtifactsWhere(recordingId)
     ),
     orderBy: [desc(tables.artifact.createdAt)]
   })

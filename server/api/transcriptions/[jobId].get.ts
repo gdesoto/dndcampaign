@@ -1,8 +1,8 @@
 import { db } from '#server/db/client'
 import * as tables from '#server/db/schema'
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { ok, apiError, routeParams } from '#server/utils/http'
-import { buildCampaignWhereForPermission } from '#server/utils/campaign-auth'
+import { buildRecordingWhereForPermission } from '#server/utils/campaign-auth'
 import { toTranscriptionJobDto } from '#server/services/transcription.service'
 
 export default defineEventHandler(async (event) => {
@@ -13,27 +13,7 @@ export default defineEventHandler(async (event) => {
     (await db.query.transcriptionJob.findFirst({
       where: and(
         eq(tables.transcriptionJob.id, jobId),
-        inArray(
-          tables.transcriptionJob.recordingId,
-          db
-            .select({ id: tables.recording.id })
-            .from(tables.recording)
-            .where(
-              inArray(
-                tables.recording.sessionId,
-                db
-                  .select({ id: tables.session.id })
-                  .from(tables.session)
-                  .where(
-                    buildCampaignWhereForPermission(
-                      sessionUser.user.id,
-                      'content.read',
-                      tables.session.campaignId
-                    )
-                  )
-              )
-            )
-        )
+        buildRecordingWhereForPermission(sessionUser.user.id, 'content.read', tables.transcriptionJob.recordingId)
       ),
       with: { artifacts: { with: { artifact: true } } }
     })) ?? null
