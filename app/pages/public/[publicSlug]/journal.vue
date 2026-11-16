@@ -106,7 +106,7 @@ const nextPage = async () => {
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <h3 class=" type-record">{{ entry.title }}</h3>
                 <p class="text-xs text-muted">
-                  {{ new Date(entry.updatedAt).toLocaleString() }}
+                  {{ formatDateTime(entry.updatedAt) }}
                 </p>
               </div>
               <p class="mt-1 text-xs text-muted">By {{ entry.authorName }}</p>

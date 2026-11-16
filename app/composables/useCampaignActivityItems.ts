@@ -9,6 +9,7 @@ import type {
   CampaignOverviewDetail,
 } from '#shared/types/campaign-overview'
 import { formatSessionDate } from '../utils/session-date'
+import { formatDateTime } from '../utils/date-format'
 
 export const useCampaignActivityItems = (
   campaign: Ref<CampaignOverviewDetail | null | undefined>,
@@ -18,11 +19,6 @@ export const useCampaignActivityItems = (
   quests: Ref<CampaignQuestSummary[] | null | undefined>,
   milestones: Ref<CampaignMilestoneSummary[] | null | undefined>
 ) => {
-  const formatDateTime = (value?: string | null) => {
-    if (!value) return 'Unscheduled'
-    return new Date(value).toLocaleString()
-  }
-
   const activityItems = computed<CampaignActivityItem[]>(() => {
     const logs = activityLogs.value || []
     if (logs.length) {

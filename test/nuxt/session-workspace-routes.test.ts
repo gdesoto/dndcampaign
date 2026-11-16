@@ -20,7 +20,7 @@ const panel = defineComponent({
     return () => h('div', { 'data-session': workspace.sessionId.value }, workspace.summary.summaryForm.content)
   },
 })
-const slotStub = { template: '<div><slot /><slot name="actions" /></div>' }
+const slotStub = { template: '<div><slot name="header" /><slot /><slot name="actions" /></div>' }
 const stubs = {
   CampaignTemplatesDetail: slotStub, CampaignPageHeader: slotStub,
   UCard: slotStub, SessionWorkflowTimeline: true, SessionEditModal: true,
@@ -122,6 +122,22 @@ describe('session parent workspace', () => {
     expect(request.mock.calls.filter(([url]) => url === '/api/sessions/s1/workspace')).toHaveLength(1)
     // Both job kinds and all child routes share the same combined resource.
     expect(request.mock.calls.filter(([url]) => url === '/api/sessions/s1/summaries/jobs')).toHaveLength(1)
+  })
+
+  it('shows each workflow step status as a navigation badge', async () => {
+    const defaultRequest = request.getMockImplementation()!
+    request.mockImplementation(async (url: string, options?: object) => url.endsWith('/summaries/jobs')
+      ? { jobs: [], latestSummaryJob: null, latestSuggestionJob: { id: 'j1', kind: 'SUGGESTION_GENERATION', status: 'READY_FOR_REVIEW', createdAt: '2026-01-01' }, latestSummarySuggestions: [], latestSuggestionSuggestions: [] }
+      : defaultRequest(url, options))
+    const workspace = await openSession('/campaigns/c1/sessions/s1')
+    await vi.waitFor(() => expect(workspace.navigation.sessionNavigationItems.map(item => item.badge)).toEqual([
+      undefined,
+      { label: '1', color: 'success', variant: 'subtle' },
+      { label: 'Available', color: 'success', variant: 'subtle' },
+      { label: 'Available', color: 'success', variant: 'subtle' },
+      { label: 'Ready for review', color: 'warning', variant: 'subtle' },
+      { label: 'Attached', color: 'success', variant: 'subtle' },
+    ]))
   })
 
   it('retains a summary draft through parent saves, refresh failures and successful retry', async () => {

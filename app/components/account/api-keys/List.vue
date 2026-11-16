@@ -13,7 +13,7 @@ const emit = defineEmits<{
 }>()
 
 const campaignName = (id: string) => props.campaigns.find(campaign => campaign.id === id)?.name || 'Unknown campaign'
-const formatDate = (value: string | null) => value ? new Date(value).toLocaleString() : 'Never'
+const dateOrNever = (value: string | null) => value ? formatDateTime(value) : 'Never'
 const isExpired = (key: ApiKeyRecord) => Boolean(key.expiresAt && new Date(key.expiresAt).getTime() < Date.now())
 const revokeKey = (key: ApiKeyRecord) => props.revoke?.(key) || Promise.resolve()
 const status = (key: ApiKeyRecord) => {
@@ -38,7 +38,7 @@ const status = (key: ApiKeyRecord) => {
               <h3 class="type-record truncate">{{ key.name }}</h3>
               <UBadge :color="status(key).color" variant="subtle">{{ status(key).label }}</UBadge>
             </div>
-            <p class="mt-1 text-xs text-muted">Created {{ formatDate(key.createdAt) }} · Last used {{ formatDate(key.lastUsedAt) }}</p>
+            <p class="mt-1 text-xs text-muted">Created {{ dateOrNever(key.createdAt) }} · Last used {{ dateOrNever(key.lastUsedAt) }}</p>
           </div>
           <div class="flex shrink-0 items-center gap-1">
             <UButton color="neutral" variant="ghost" icon="i-lucide-pencil" aria-label="Edit API key" @click="emit('edit', key)" />
@@ -62,7 +62,7 @@ const status = (key: ApiKeyRecord) => {
           </div>
           <div>
             <dt class="type-label text-dimmed">Expires</dt>
-            <dd class="mt-1 text-muted">{{ key.expiresAt ? formatDate(key.expiresAt) : 'Never' }}</dd>
+            <dd class="mt-1 text-muted">{{ key.expiresAt ? dateOrNever(key.expiresAt) : 'Never' }}</dd>
           </div>
           <div>
             <dt class="type-label text-dimmed">Permissions</dt>

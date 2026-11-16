@@ -229,6 +229,8 @@ const compactAccountMenuItems = computed(() => [
         />
 
         <UNavigationMenu :items="topNavItems" orientation="vertical" class="-mx-2.5" />
+
+        <slot name="mobile-menu" />
       </div>
     </template>
   </UHeader>

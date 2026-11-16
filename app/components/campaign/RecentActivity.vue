@@ -29,7 +29,7 @@ const timelineItems = computed(() => props.items.map(item => ({
       :ui="{ wrapper: 'min-w-0 pb-4 group-last:pb-0', title: 'font-normal break-words', date: 'mb-1' }"
     >
       <template #date="{ item }">
-        <time :datetime="item.date" class="tabular-nums">{{ new Date(item.date).toLocaleString() }}</time>
+        <time :datetime="item.date" class="tabular-nums">{{ formatDateTime(item.date) }}</time>
       </template>
     </UTimeline>
     <p v-else class="text-sm text-muted">No recent activity yet.</p>

@@ -1,20 +1,11 @@
 <script setup lang="ts">
 import { formatSessionDate } from '~/utils/session-date'
-const { campaignId, sessionId, resource, recording, recap, transcript, suggestions, overview, openPlayer } = useSessionWorkspaceContext()
+const { campaignId, sessionId, resource, recording, recap, transcript, overview, openPlayer } = useSessionWorkspaceContext()
 const sessionPath = computed(() => `/campaigns/${campaignId.value}/sessions/${sessionId.value}`)
 </script>
 
 <template>
   <div class="space-y-6 theme-reveal">
-    <SessionStatusCards
-      :session-path="sessionPath"
-      :recordings-count="overview.recordingsCount"
-      :transcript-status="overview.transcriptStatus"
-      :summary-status="overview.summaryStatus"
-      :suggestion-status="suggestions.suggestionStatusLabel"
-      :recap-status="overview.recapStatus"
-    />
-
     <UCard class="session-story">
       <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_16rem]">
         <section class="min-w-0">
@@ -59,19 +50,7 @@ const sessionPath = computed(() => `/campaigns/${campaignId.value}/sessions/${se
             />
           </div>
         </template>
-        <div class="space-y-3">
-          <p class="whitespace-pre-line reading-copy text-default">{{ transcript.transcriptPreview }}</p>
-          <div class="flex flex-wrap gap-2">
-            <UButton
-              v-if="resource.transcriptDoc?.id"
-              size="sm"
-              variant="outline"
-              :to="`/campaigns/${campaignId}/documents/${resource.transcriptDoc.id}`"
-            >
-              Open editor
-            </UButton>
-          </div>
-        </div>
+        <p class="whitespace-pre-line reading-copy text-default">{{ transcript.transcriptPreview }}</p>
       </UCard>
 
       <UCard>
@@ -87,41 +66,23 @@ const sessionPath = computed(() => `/campaigns/${campaignId.value}/sessions/${se
             />
           </div>
         </template>
-        <div class="space-y-3">
-          <p class="whitespace-pre-line text-sm text-muted">{{ overview.summaryPreview }}</p>
-          <div class="flex flex-wrap gap-2">
-            <UButton
-              v-if="resource.summaryDoc?.id"
-              size="sm"
-              variant="outline"
-              :to="`/campaigns/${campaignId}/documents/${resource.summaryDoc.id}`"
-            >
-              Open editor
-            </UButton>
-          </div>
-        </div>
+        <p class="whitespace-pre-line text-sm text-muted">{{ overview.summaryPreview }}</p>
       </UCard>
     </div>
 
+    <!-- Read-only on the overview: upload and delete live on the step pages. -->
     <SessionRecordingsPanel
       :workflow-mode="false"
       :to="`${sessionPath}/recordings`"
-      :can-manage-recordings="resource.canUploadRecording"
       :campaign-id="campaignId"
       :recordings="resource.recordings"
-      :selected-file="recording.selectedFile"
-      :selected-kind="recording.selectedKind"
+      :selected-file="null"
+      selected-kind="AUDIO"
       :is-uploading="recording.isUploading"
-      :upload-error="recording.uploadError"
+      upload-error=""
       :playback-error="recording.playbackError"
-      :delete-error="recording.deleteError"
-      :deleting-recording-id="recording.deletingRecordingId"
       :loading-recording-id="recording.loadingRecordingId"
       :playing-recording-id="recording.playingRecordingId"
-      :delete-recording="resource.canUploadRecording ? recording.deleteRecording : undefined"
-      @update:selected-file="recording.selectedFile = $event"
-      @update:selected-kind="recording.selectedKind = $event"
-      @upload-recording="resource.canUploadRecording && recording.uploadRecording()"
       @play-recording="recording.loadPlayback"
       @open-player="openPlayer"
     />
@@ -133,17 +94,14 @@ const sessionPath = computed(() => `/campaigns/${campaignId.value}/sessions/${se
       :to="`${sessionPath}/recap`"
       :recap="recap.recap"
       :recaps="resource.recaps"
-      :recap-file="recap.recapFile"
+      :recap-file="null"
       :recap-uploading="recap.recapUploading"
       :recap-playback-loading="recap.recapPlaybackLoading"
       :recap-deleting="recap.recapDeleting"
       :recap-playing="recap.recapPlaying"
       :recap-error="recap.recapError"
-      :recap-delete-error="recap.recapDeleteError"
+      recap-delete-error=""
       :has-recap="Boolean(recap.recap)"
-      :delete-recap="resource.canUploadRecording ? recap.deleteRecap : undefined"
-      @update:recap-file="recap.recapFile = $event"
-      @upload-recap="resource.canUploadRecording && recap.uploadRecap()"
       @play-recap="recap.loadRecapPlayback"
       @open-player="openPlayer"
     />

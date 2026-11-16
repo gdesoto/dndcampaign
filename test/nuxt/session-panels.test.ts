@@ -5,7 +5,6 @@ import { defineComponent, ref } from 'vue'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import type { SessionDocumentDetail } from '#shared/types/session-workflow'
 import { useSessionDocuments } from '../../app/composables/useSessionDocuments'
-import StatusCards from '../../app/components/session/StatusCards.vue'
 import SummaryPanel from '../../app/components/session/SummaryPanel.vue'
 import SuggestionsPanel from '../../app/components/session/SuggestionsPanel.vue'
 import RecapPanel from '../../app/components/session/RecapPanel.vue'
@@ -22,35 +21,6 @@ const clickByText = async (wrapper: Awaited<ReturnType<typeof mountSuspended>>, 
   expect(button, `Button not found: ${text}`).toBeDefined()
   await button!.trigger('click')
 }
-
-describe('SessionStatusCards', () => {
-  it('provides native links with accessible names for every session section', async () => {
-    const wrapper = await mountSuspended(StatusCards, {
-      props: {
-        sessionPath: '/campaigns/c1/sessions/s1',
-        recordingsCount: 1,
-        transcriptStatus: 'Available',
-        summaryStatus: 'Available',
-        suggestionStatus: 'Ready for review',
-        recapStatus: 'Attached',
-      },
-      global: {
-        stubs: {
-          UTooltip: {
-            template: '<div><slot /></div>',
-          },
-        },
-      },
-    })
-
-    for (const step of ['recordings', 'transcription', 'summary', 'suggestions', 'recap']) {
-      const label = step === 'transcription' ? 'transcript' : step
-      expect(wrapper.get(`a[aria-label="Open ${label}"]`).attributes('href')).toBe(`/campaigns/c1/sessions/s1/${step}`)
-    }
-    expect(wrapper.find('button[aria-label="Open recordings"]').exists()).toBe(false)
-    wrapper.unmount()
-  })
-})
 
 describe('SessionRecordingsPanel', () => {
   it('links to the recordings step and reflects current playback and conflicting actions', async () => {

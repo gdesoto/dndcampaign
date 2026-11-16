@@ -258,7 +258,7 @@ useUnsavedChanges(() => Boolean(profile.value) && (
             </div>
             <p class="mt-1 text-muted">{{ session.userAgent || 'Unknown device' }}</p>
             <p class="text-xs text-muted">
-              IP: {{ session.ipAddress || 'N/A' }} · Last seen: {{ new Date(session.lastSeenAt).toLocaleString() }}
+              IP: {{ session.ipAddress || 'N/A' }} · Last seen: {{ formatDateTime(session.lastSeenAt) }}
             </p>
           </div>
         </div>

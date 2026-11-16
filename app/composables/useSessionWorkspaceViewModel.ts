@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import type { NavigationMenuItem } from '@nuxt/ui'
+import type { BadgeProps, NavigationMenuItem } from '@nuxt/ui'
 import {
   isSegmentedTranscript,
   parseTranscriptSegments,
@@ -122,10 +122,6 @@ export function useSessionWorkspaceViewModel(options: {
     return details.join(' • ')
   })
 
-  const recordingsCount = computed(() => recordings.value?.length || 0)
-  const recapStatus = computed(() => (recaps.value.length ? 'Attached' : 'Missing'))
-  const transcriptStatus = computed(() => (transcriptDoc.value ? 'Available' : 'Missing'))
-  const summaryStatus = computed(() => (summaryDoc.value ? 'Available' : 'Missing'))
   const hasRecordings = computed(() => (recordings.value?.length || 0) > 0)
   const hasTranscript = computed(() => Boolean(transcriptDoc.value))
   const hasSummary = computed(() => Boolean(summaryDoc.value))
@@ -179,6 +175,10 @@ export function useSessionWorkspaceViewModel(options: {
     if (await documents.saveSummary()) summaryDraft.accept(submitted)
   }
 
+  const stepBadge = (label: string, color: BadgeProps['color'] = 'neutral'): BadgeProps => ({ label, color, variant: 'subtle' })
+  const suggestionColors: Record<string, BadgeProps['color']> = {
+    'Ready for review': 'warning', Failed: 'error', Processing: 'info', Queued: 'info', Sent: 'info', Applied: 'success',
+  }
   const sessionNavigationItems = computed<NavigationMenuItem[]>(() => [
     {
       label: 'Overview',
@@ -190,26 +190,31 @@ export function useSessionWorkspaceViewModel(options: {
       label: 'Recordings',
       to: `/campaigns/${campaignId.value}/sessions/${sessionId.value}/recordings`,
       icon: 'i-lucide-mic',
+      badge: stepBadge(String(recordings.value?.length || 0), hasRecordings.value ? 'success' : 'neutral'),
     },
     {
       label: 'Transcription',
       to: `/campaigns/${campaignId.value}/sessions/${sessionId.value}/transcription`,
       icon: 'i-lucide-scroll-text',
+      badge: hasTranscript.value ? stepBadge('Available', 'success') : stepBadge('Missing'),
     },
     {
       label: 'Summary',
       to: `/campaigns/${campaignId.value}/sessions/${sessionId.value}/summary`,
       icon: 'i-lucide-book-open',
+      badge: hasSummary.value ? stepBadge('Available', 'success') : stepBadge('Missing'),
     },
     {
       label: 'Suggestions',
       to: `/campaigns/${campaignId.value}/sessions/${sessionId.value}/suggestions`,
       icon: 'i-lucide-git-merge',
+      badge: stepBadge(suggestions.suggestionStatusLabel.value, suggestionColors[suggestions.suggestionStatusLabel.value]),
     },
     {
       label: 'Recap',
       to: `/campaigns/${campaignId.value}/sessions/${sessionId.value}/recap`,
       icon: 'i-lucide-headphones',
+      badge: hasRecap.value ? stepBadge('Attached', 'success') : stepBadge('Missing'),
     },
   ])
 
@@ -353,8 +358,7 @@ export function useSessionWorkspaceViewModel(options: {
     }),
     suggestions: reactive(suggestions),
     overview: reactive({
-      sessionDungeonMasterLabel, sessionHeaderDescription, recordingsCount,
-      recapStatus, transcriptStatus, summaryStatus, summaryPreview, hasTranscript, hasSummary,
+      sessionDungeonMasterLabel, sessionHeaderDescription, summaryPreview, hasTranscript, hasSummary,
     }),
     navigation: reactive({ sessionNavigationItems }),
     openPlayer: player.openDrawer,

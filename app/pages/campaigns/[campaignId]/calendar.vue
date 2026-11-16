@@ -588,10 +588,10 @@ const removeRange = async () => {
           <h2 class=" type-section">Fantasy calendar is disabled</h2>
         </template>
         <p class="text-sm text-muted">
-          Enable and configure the calendar from Settings &gt; General to start tracking in-world dates.
+          Enable and configure the calendar from Settings &gt; Calendar to start tracking in-world dates.
         </p>
-        <UButton class="mt-4" :to="`/campaigns/${campaignId}/settings`" variant="outline">
-          Open Settings &gt; General
+        <UButton class="mt-4" :to="`/campaigns/${campaignId}/settings/calendar`" variant="outline">
+          Open Settings &gt; Calendar
         </UButton>
       </UCard>
 

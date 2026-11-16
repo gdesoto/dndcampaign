@@ -12,7 +12,7 @@ DM Vault component contracts and visual identity. Use `nuxt-ui-guidelines` for g
 | Collection feedback | `SharedResourceState` with request `pending`, `hasData` for retained content, and `noMatches` / `clear` for filter recovery. |
 | Retained data | `useRetainedResource`; overview requests use `useOverviewResource`. |
 | Admin tables | `SharedResponsiveTable` for equivalent desktop and narrow-screen record actions. |
-| Campaign headers | `CampaignPageHeader` for list/detail headers and detail back links. |
+| Campaign headers | `CampaignPageHeader` for list/detail headers. Detail pages add no back button; the navbar breadcrumb names the record via `trackCampaignRecordTitle`. |
 | Overview summaries | `SharedSummarySection` for independent section requests; `SharedStatCard` with `to` for metric destinations. |
 
 ## Integration constraints

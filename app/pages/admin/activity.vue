@@ -48,7 +48,7 @@ const columns = [
 const tableRows = computed(() =>
   logs.value.map((log) => ({
     id: log.id,
-    createdAt: new Date(log.createdAt).toLocaleString(),
+    createdAt: formatDateTime(log.createdAt),
     scope: log.scope,
     action: log.action,
     actor: log.actorUser ? `${log.actorUser.name} (${log.actorUser.email})` : 'System',

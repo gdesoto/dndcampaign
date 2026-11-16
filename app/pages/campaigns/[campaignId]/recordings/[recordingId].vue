@@ -78,9 +78,10 @@ const campaignAccess = inject(
   'campaignAccess',
   computed(() => undefined as CampaignAccess | undefined)
 )
-const canManageRecording = computed(() =>
-  Boolean(campaignAccess.value?.permissions.includes('recording.upload'))
-)
+const can = (permission: CampaignAccess['permissions'][number]) => Boolean(campaignAccess.value?.permissions.includes(permission))
+const canManageRecording = computed(() => can('recording.upload'))
+const canTranscribe = computed(() => can('recording.transcribe'))
+const canEditDocument = computed(() => can('document.edit'))
 
 const { data: recording, pending, refresh, error } = await useAsyncData(
   () => `recording-${recordingId.value}`,
@@ -295,7 +296,7 @@ watch(
 watch(
   () => route.query.transcribe,
   (value) => {
-    if (value) {
+    if (value && canTranscribe.value) {
       transcribeModalOpen.value = true
     }
   },
@@ -595,15 +596,12 @@ const startPlayback = async () => {
 const { formatBytes } = useFormatBytes()
 const artifactActions = (jobId: string, artifact: TranscriptionArtifact): RecordAction[] => [
   { label: 'Download', icon: 'i-lucide-download', to: `/api/artifacts/${artifact.artifact.id}/stream?download`, target: '_blank' },
-  ...(canManageRecording.value ? [{ label: 'Delete output', icon: 'i-lucide-trash-2', destructive: true, action: () => deleteTranscriptionArtifact(jobId, artifact.artifact.id), confirmation: { message: `Delete this ${artifact.format} transcription output file? This cannot be undone.` } }] : []),
+  ...(canTranscribe.value ? [{ label: 'Delete output', icon: 'i-lucide-trash-2', destructive: true, action: () => deleteTranscriptionArtifact(jobId, artifact.artifact.id), confirmation: { message: `Delete this ${artifact.format} transcription output file? This cannot be undone.` } }] : []),
 ]
 </script>
 
 <template>
   <CampaignTemplatesDetail
-    :back-to="recording ? `/campaigns/${campaignId}/sessions/${recording.sessionId}` : `/campaigns/${campaignId}/sessions`"
-    back-label="Back to session"
-    headline="Session Asset"
     :title="recording?.filename || 'Recording detail'"
     :description="recording ? `${recording.kind} recording • ${formatBytes(recording.byteSize)}` : 'Recording detail and transcription workflow.'"
   >
@@ -678,7 +676,7 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
                   Start a speech-to-text job and review outputs.
                 </p>
               </div>
-              <div class="flex flex-wrap items-center gap-2">
+              <div v-if="canTranscribe" class="flex flex-wrap items-center gap-2">
                  <UButton size="sm" variant="outline" @click="() => { importModalOpen = true }">
                   Import transcription
                 </UButton>
@@ -698,14 +696,14 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
                 <div>
                   <p class="font-semibold">Status: {{ job.status }}</p>
                   <p class="text-xs text-muted">
-                    {{ new Date(job.createdAt).toLocaleString() }}
+                    {{ formatDateTime(job.createdAt) }}
                   </p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 text-xs text-muted">
                   <span>Formats: {{ job.requestedFormats?.join(', ') || '—' }}</span>
                   <span>Audio events: {{ job.tagAudioEvents ? 'on' : 'off' }}</span>
                   <UButton
-                    v-if="job.externalJobId && job.status !== 'COMPLETED'"
+                    v-if="canTranscribe && job.externalJobId && job.status !== 'COMPLETED'"
                     size="xs"
                     variant="ghost"
                     @click="fetchTranscription(job.id)"
@@ -725,12 +723,12 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
                       {{ artifact.format }}
                     </p>
                     <p class="text-xs text-muted">
-                      {{ new Date(artifact.artifact.createdAt).toLocaleString() }}
+                      {{ formatDateTime(artifact.artifact.createdAt) }}
                     </p>
                   </div>
                   <div class="flex flex-wrap gap-2">
                     <UButton
-                      v-if="artifact.format === 'TXT' || artifact.format === 'SEGMENTED_JSON'"
+                      v-if="canEditDocument && (artifact.format === 'TXT' || artifact.format === 'SEGMENTED_JSON')"
                       size="xs"
                       variant="outline"
                       @click="applyTranscript(job.id, artifact.artifact.id)"
@@ -738,7 +736,7 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
                       Use as transcript
                     </UButton>
                     <UButton
-                      v-if="artifact.format === 'SRT'"
+                      v-if="canEditDocument && artifact.format === 'SRT'"
                       size="xs"
                       variant="outline"
                       :disabled="!selectedVideoByArtifact[artifact.artifact.id]"
@@ -747,7 +745,7 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
                       Attach subtitles
                     </UButton>
                     <USelect
-                      v-if="artifact.format === 'SRT'"
+                      v-if="canEditDocument && artifact.format === 'SRT'"
                       v-model="selectedVideoByArtifact[artifact.artifact.id]"
                       size="xs"
                       :items="videoOptions"
@@ -784,16 +782,13 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
             </div>
           </template>
           <div class="space-y-3">
-            <UInput
-              type="file"
-              accept=".vtt,.srt,text/vtt"
-              @change="vttFile = ($event.target as HTMLInputElement).files?.[0] || null"
-            />
+            <SharedFilePicker v-if="canEditDocument" v-model="vttFile" label="Select subtitle file" accept=".vtt,.srt,text/vtt" :disabled="vttUploading" />
             <div class="flex flex-wrap items-center gap-3">
-              <UButton :loading="vttUploading" variant="outline" @click="uploadVtt">
+              <UButton v-if="canEditDocument" :disabled="!vttFile" :loading="vttUploading" variant="outline" @click="uploadVtt">
                 Upload subtitles
               </UButton>
               <UButton
+                v-if="canEditDocument"
                 variant="outline"
                 :disabled="!transcriptDoc?.currentVersion?.content"
                 :loading="transcriptAttachLoading"
@@ -802,7 +797,7 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
                 Import session transcript
               </UButton>
               <SharedConfirmActionPopover
-                v-if="recording?.vttArtifactId && canManageRecording"
+                v-if="recording?.vttArtifactId && canEditDocument"
                 message="Detach and delete the currently attached subtitle file?"
                 confirm-label="Detach subtitles"
                 confirm-icon="i-lucide-unlink"
@@ -840,7 +835,7 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
                     {{ item.storageKey.split('/').pop() }}
                   </p>
                   <p class="text-xs text-muted">
-                    {{ new Date(item.createdAt).toLocaleString() }}
+                    {{ formatDateTime(item.createdAt) }}
                   </p>
                 </div>
                 <span
@@ -886,7 +881,7 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
             </div>
             <div>
               <p class="text-xs uppercase tracking-[0.08em] text-muted">Uploaded</p>
-              <p class="mt-1 font-semibold">{{ new Date(recording.createdAt).toLocaleString() }}</p>
+              <p class="mt-1 font-semibold">{{ formatDateTime(recording.createdAt) }}</p>
             </div>
           </div>
         </UCard>

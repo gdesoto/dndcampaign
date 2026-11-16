@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { CampaignActivityLogItem, CampaignMilestoneSummary, CampaignOverviewDetail, CampaignQuestSummary, CampaignSessionSummary } from '#shared/types/campaign-overview'
+import type { CampaignAccess } from '#shared/types/campaign-workflow'
 import { formatSessionDate } from '~/utils/session-date'
 
 const { campaignId, request, canWriteContent } = useCampaignPageContext()
@@ -23,15 +24,13 @@ const statusState = useEditorDraft(() => ({ currentStatus: statusDraft.value }),
 watch(campaign, value => {
   if (value) statusState.sync({ currentStatus: value.currentStatus || '' }, value.id)
 }, { immediate: true })
-const isEditOpen = ref(false)
-const editForm = reactive({ name: '', system: '', dungeonMasterName: '', description: '' })
-const editError = ref('')
-const isUpdating = ref(false)
-const mutationBusy = computed(() => isSaving.value || isUpdating.value || recapDeleting.value)
+const campaignAccess = inject<ComputedRef<CampaignAccess | null>>('campaignAccess', computed(() => null))
+const canEditCampaign = computed(() => Boolean(campaignAccess.value?.permissions.includes('campaign.settings.manage')))
+const mutationBusy = computed(() => isSaving.value || recapDeleting.value)
 const toast = useToast()
 
 const saveStatus = async () => {
-  if (!canWriteContent.value || mutationBusy.value || !statusState.dirty.value) return
+  if (!canEditCampaign.value || mutationBusy.value || !statusState.dirty.value) return
   const submitted = statusState.snapshot()
   saveError.value = ''
   isSaving.value = true
@@ -44,33 +43,12 @@ const saveStatus = async () => {
     saveError.value = (cause as Error).message || 'Unable to update status.'
   } finally { isSaving.value = false }
 }
-const openEdit = () => {
-  if (!canWriteContent.value || !campaign.value || mutationBusy.value) return
-  editError.value = ''
-  const value = campaign.value
-  Object.assign(editForm, { name: value.name, system: value.system, dungeonMasterName: value.dungeonMasterName || '', description: value.description || '' })
-  isEditOpen.value = true
-}
-const saveCampaign = async () => {
-  if (!canWriteContent.value || mutationBusy.value) return
-  const submitted = { ...editForm }
-  editError.value = ''
-  isUpdating.value = true
-  try {
-    await request(`/api/campaigns/${campaignId.value}`, { method: 'PATCH', body: submitted })
-    isEditOpen.value = false
-    await Promise.all([refresh(), refreshActivity(), refreshNuxtData(`dashboard-campaign-shell-${campaignId.value}`)])
-    toast.add({ title: 'Campaign saved', color: 'success' })
-  } catch (cause) {
-    editError.value = (cause as Error).message || 'Unable to update campaign.'
-  } finally { isUpdating.value = false }
-}
 </script>
 
 <template>
   <CampaignTemplatesList title="Overview">
     <template #actions>
-      <UButton v-if="canWriteContent" variant="outline" icon="i-lucide-pencil" :disabled="mutationBusy" @click="openEdit">Edit campaign</UButton>
+      <UButton v-if="canEditCampaign" variant="outline" icon="i-lucide-pencil" :to="`/campaigns/${campaignId}/settings`">Edit campaign</UButton>
     </template>
     <template #notice>
       <SharedReadOnlyAlert v-if="!canWriteContent" description="Your role can view this campaign overview but cannot edit campaign details." />
@@ -111,12 +89,11 @@ const saveCampaign = async () => {
     </SharedResourceState>
     <template #aside>
       <template v-if="campaign">
-        <CampaignStatusEditor v-model:value="statusDraft" :readonly="!canWriteContent" :saving="isSaving" :busy="isUpdating || recapDeleting" :dirty="statusState.dirty.value" :error="saveError" :updated-at-label="new Date(campaign.updatedAt).toLocaleString()" @save="saveStatus" @discard="statusState.discard()" />
+        <CampaignStatusEditor v-model:value="statusDraft" :readonly="!canEditCampaign" :saving="isSaving" :busy="recapDeleting" :dirty="statusState.dirty.value" :error="saveError" :updated-at-label="formatDateTime(campaign.updatedAt)" @save="saveStatus" @discard="statusState.discard()" />
         <SharedResourceState :pending="activityPending" :error="activityError" :has-data="Boolean(activityLogs)" error-message="Unable to load recent activity." @retry="refreshActivity">
           <CampaignRecentActivity :items="activityItems" />
         </SharedResourceState>
       </template>
     </template>
-    <CampaignEditModal v-model:open="isEditOpen" :form="editForm" :saving="isUpdating" :error="editError" @update:form="Object.assign(editForm, $event)" @save="saveCampaign" />
   </CampaignTemplatesList>
 </template>

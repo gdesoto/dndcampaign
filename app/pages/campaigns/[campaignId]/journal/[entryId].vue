@@ -47,6 +47,7 @@ const {
   () => journalApi.getEntry(campaignId.value, entryId.value),
   { watch: [entryId] },
 )
+trackCampaignRecordTitle(() => entry.value?.id === entryId.value ? entry.value.title : undefined)
 
 const { data: sessions } = await useAsyncData(
   () => `journal-detail-sessions-${campaignId.value}`,
@@ -364,9 +365,6 @@ const toggleArchive = async () => {
       </template>
 
       <CampaignTemplatesDetail
-        :back-to="`/campaigns/${campaignId}/journal`"
-        back-label="Back to journal"
-        headline="Journal"
         :title="entry?.title || 'Journal entry'"
         :description="entry ? `By ${entry.authorName}` : ''"
       >
@@ -446,7 +444,7 @@ const toggleArchive = async () => {
               <UBadge v-if="entry?.holderUserName" color="neutral" variant="soft">Holder: {{ entry.holderUserName }}</UBadge>
               <UBadge v-if="entry?.isArchived" color="warning" variant="soft">Archived</UBadge>
             </div>
-            <p class="mt-3 text-xs text-muted">Updated {{ new Date(entry!.updatedAt).toLocaleString() }}</p>
+            <p class="mt-3 text-xs text-muted">Updated {{ formatDateTime(entry!.updatedAt) }}</p>
 
             <div v-if="entry?.sessions.length" class="mt-4 space-y-2">
               <p class="text-xs uppercase tracking-[0.08em] text-dimmed">Linked sessions</p>
@@ -523,7 +521,7 @@ const toggleArchive = async () => {
               <div v-for="event in history.items" :key="event.id" class="rounded border border-default p-2">
                 <div class="flex items-center justify-between gap-2">
                   <UBadge size="xs" variant="soft">{{ event.action }}</UBadge>
-                  <p class="text-xs text-muted">{{ new Date(event.createdAt).toLocaleString() }}</p>
+                  <p class="text-xs text-muted">{{ formatDateTime(event.createdAt) }}</p>
                 </div>
                 <p class="text-sm text-default">{{ event.actorUserName }}: {{ event.fromHolderUserName || 'Unassigned' }} → {{ event.toHolderUserName || 'Unassigned' }}</p>
               </div>

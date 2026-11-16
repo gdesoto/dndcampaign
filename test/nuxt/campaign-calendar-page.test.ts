@@ -105,7 +105,8 @@ describe('Campaign calendar page', () => {
     })
 
     expect(wrapper.text()).toContain('Fantasy calendar is disabled')
-    expect(wrapper.text()).toContain('Open Settings > General')
+    expect(wrapper.text()).toContain('Open Settings > Calendar')
+    expect(wrapper.find('a[href$="/settings/calendar"]').exists()).toBe(true)
     wrapper.unmount()
   })
 

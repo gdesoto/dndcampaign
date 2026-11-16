@@ -1,6 +1,7 @@
 import type { CampaignRecapItem } from '#shared/types/campaign-overview'
 import { sortRecapsByReverseSessionNumber } from '~/utils/recaps'
 import { artifactStreamUrl } from '~/utils/artifact'
+import { formatDateTime } from '~/utils/date-format'
 
 export const useCampaignRecaps = (
   campaignId: Ref<string>,
@@ -27,11 +28,6 @@ export const useCampaignRecaps = (
   const isRecapPlaying = computed(() => activeRecap.value && player.state.value.isPlaying)
   const recapLoading = computed(() => activeRecap.value && player.state.value.autoplay)
   const recapError = computed(() => activeRecap.value ? player.state.value.error : '')
-
-  const formatDateTime = (value?: string | null) => {
-    if (!value) return 'Unscheduled'
-    return new Date(value).toLocaleString()
-  }
 
   watch(
     () => recapsSortedBySessionNumber.value,

@@ -154,7 +154,7 @@ const recapActions = computed<RecordAction[]>(() => {
           <p><span class="text-muted">File:</span> {{ recap.filename || 'Unknown' }}</p>
           <p><span class="text-muted">Type:</span> {{ recap.mimeType || 'Unknown' }}</p>
           <p><span class="text-muted">Size:</span> {{ formatBytes(recap.byteSize) }}</p>
-          <p><span class="text-muted">Uploaded:</span> {{ new Date(recap.createdAt).toLocaleString() }}</p>
+          <p><span class="text-muted">Uploaded:</span> {{ formatDateTime(recap.createdAt) }}</p>
         </div>
       </div>
 

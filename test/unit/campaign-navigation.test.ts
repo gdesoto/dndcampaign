@@ -7,8 +7,9 @@ describe('useCampaignNavigation', () => {
     const route = reactive({ path: '/campaigns/c1' })
     const campaignId = ref('c1')
     const campaign = ref({ id: 'c1', name: 'Alpha Campaign' })
+    const recordTitle = ref<{ path: string, title: string } | null>(null)
 
-    const navigation = useCampaignNavigation(route as ReturnType<typeof useRoute>, campaignId, campaign)
+    const navigation = useCampaignNavigation(route as ReturnType<typeof useRoute>, campaignId, campaign, undefined, undefined, recordTitle)
 
     expect(navigation.sectionTitle.value).toBe('Overview')
     expect(navigation.breadcrumbItems.value.map((item) => item.label)).toEqual(['Campaigns', 'Alpha Campaign'])
@@ -66,6 +67,10 @@ describe('useCampaignNavigation', () => {
       'Encounters',
       'Encounter',
     ])
+    recordTitle.value = { path: '/campaigns/c1/encounters/e1', title: 'Goblin ambush' }
+    expect(navigation.breadcrumbItems.value.at(-1)).toEqual({ label: 'Goblin ambush' })
+    route.path = '/campaigns/c1/encounters/e2'
+    expect(navigation.breadcrumbItems.value.at(-1)).toEqual({ label: 'Encounter' })
 
     route.path = '/campaigns/c1/encounter-maps/d1'
     expect(navigation.sectionTitle.value).toBe('Encounter maps')
@@ -85,6 +90,8 @@ describe('useCampaignNavigation', () => {
       'Journal',
       'Entry',
     ])
+    recordTitle.value = { path: '/campaigns/c1/journal/j1', title: 'Dream of the tower' }
+    expect(navigation.breadcrumbItems.value.at(-1)).toEqual({ label: 'Dream of the tower' })
 
     route.path = '/campaigns/c1/unknown'
     expect(navigation.sectionTitle.value).toBe('Overview')

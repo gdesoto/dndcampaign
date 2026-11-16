@@ -165,7 +165,7 @@ const importCharacter = async (payload: CharacterImportPayload) => {
           </div>
           <template #footer>
             <p class="text-xs text-muted">
-              Updated {{ new Date(character.updatedAt).toLocaleDateString() }}
+              Updated {{ formatDate(character.updatedAt) }}
             </p>
           </template>
         </UCard>

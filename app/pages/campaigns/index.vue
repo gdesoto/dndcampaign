@@ -29,12 +29,6 @@ const createForm = reactive({
 const createError = ref('')
 const isCreating = ref(false)
 
-const formatUpdatedAt = (value: string) =>
-  new Intl.DateTimeFormat(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  }).format(new Date(value))
 
 const systemLabelFor = (campaign: CampaignSummary) => campaign.system || 'Custom System'
 const dmLabelFor = (campaign: CampaignSummary) => campaign.dungeonMasterName || 'Unassigned'
@@ -138,7 +132,7 @@ const createCampaign = async () => {
               <div class="flex flex-wrap items-center justify-between gap-2 border-t border-default pt-3">
                 <UBadge color="primary" variant="outline">DM: {{ dmLabelFor(campaign) }}</UBadge>
                 <p class="text-xs text-muted">
-                  Updated {{ formatUpdatedAt(campaign.updatedAt) }}
+                  Updated {{ formatDate(campaign.updatedAt) }}
                 </p>
               </div>
             </SharedListItemCard>

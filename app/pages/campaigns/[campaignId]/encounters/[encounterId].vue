@@ -26,6 +26,7 @@ const {
   { default: retained.get },
 )
 retained.seed(encounter.value)
+trackCampaignRecordTitle(() => encounter.value?.id === encounterId.value ? encounter.value.name : undefined)
 const toast = useToast()
 const selectedId = ref<string>()
 const ordered = computed(() =>
@@ -450,13 +451,6 @@ onBeforeUnmount(() => {
             </span>
           </template>
           <template #actions>
-            <UButton
-              :to="`/campaigns/${campaignId}/encounters`"
-              icon="i-lucide-arrow-left"
-              color="neutral"
-              variant="ghost"
-              >Encounters</UButton
-            >
             <UButton
               v-if="primary && canWriteContent"
               color="primary"

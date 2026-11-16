@@ -115,7 +115,7 @@ const recordingActions = (recording: RecordingItem): RecordAction[] => [
             <div class="min-w-0 flex-1">
               <NuxtLink :to="`/campaigns/${campaignId}/recordings/${recording.id}`" class="type-record text-highlighted wrap-anywhere">{{ recording.filename }}</NuxtLink>
               <p class="text-xs text-muted">
-                {{ recording.kind }} - {{ formatBytes(recording.byteSize) }} - {{ new Date(recording.createdAt).toLocaleString() }}
+                {{ recording.kind }} - {{ formatBytes(recording.byteSize) }} - {{ formatDateTime(recording.createdAt) }}
               </p>
             </div>
             <div class="flex flex-wrap gap-2">

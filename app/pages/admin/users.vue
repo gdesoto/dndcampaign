@@ -115,7 +115,7 @@ const saveUser = async () => {
   }
 }
 
-const formatLastLogin = (value: string | null) => (value ? new Date(value).toLocaleString() : 'Never')
+const formatLastLogin = (value: string | null) => (value ? formatDateTime(value) : 'Never')
 
 const roleOptions = [
   { label: 'User', value: 'USER' },

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { flushPromises } from '@vue/test-utils'
 import ClassAvatar from '../../app/components/character/ClassAvatar.vue'
 import HitPoints from '../../app/components/character/HitPoints.vue'
+import SpellsEditor from '../../app/components/character/SpellsEditor.vue'
 
 describe('Character class avatar', () => {
   it('uses class identity for initials and a neutral fallback for unknown classes', async () => {
@@ -40,6 +42,45 @@ describe('Character hit points', () => {
     })
     await wrapper.setProps({ max: undefined })
     expect(wrapper.find('[role="progressbar"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+})
+
+describe('Character spells editor', () => {
+  it('edits slots and spell lists without losing unknown keys or fields', async () => {
+    const wrapper = await mountSuspended(SpellsEditor, {
+      props: {
+        'modelValue': {
+          concentration: 'Bless',
+          slots: { 1: 4, 2: { max: 3, remaining: 1, recharge: 'long' }, pact: 2 },
+          prepared: ['Shield', { name: 'Fire Bolt', school: 'Evocation' }],
+          known: 'legacy',
+        },
+        'onUpdate:modelValue': (value: Record<string, unknown>) => wrapper.setProps({ modelValue: value }),
+      },
+      global: { stubs: { UTooltip: { template: '<span><slot /></span>' } } },
+    })
+    const model = () => wrapper.props('modelValue') as Record<string, unknown>
+    const numberInput = (id: string) => wrapper.findAllComponents({ name: 'UInputNumber' }).find(c => String(c.props('id')).endsWith(id))!
+
+    for (const [id, value] of [['-1-max', 2], ['-2-max', 5], ['-3-remaining', 2]] as const) {
+      numberInput(id).vm.$emit('update:modelValue', value)
+      await flushPromises()
+    }
+    expect(model().slots).toEqual({ 1: { max: 2, remaining: 2 }, 2: { max: 5, remaining: 1, recharge: 'long' }, pact: 2 })
+
+    await wrapper.get('input[aria-label="Prepared spell 2"]').setValue('Firebolt')
+    await wrapper.get('input[aria-label="New prepared spell"]').setValue('shield')
+    await wrapper.findAll('form')[0]!.trigger('submit')
+    await wrapper.get('input[aria-label="New prepared spell"]').setValue(' Mage Armor ')
+    await wrapper.findAll('form')[0]!.trigger('submit')
+    await wrapper.get('button[aria-label="Remove Shield"]').trigger('click')
+    expect(model().prepared).toEqual([{ name: 'Firebolt', school: 'Evocation' }, 'Mage Armor'])
+    expect(model()).toMatchObject({ concentration: 'Bless', known: 'legacy' })
+
+    await wrapper.get('input[aria-label="New known spell"]').setValue('Light')
+    await wrapper.findAll('form')[1]!.trigger('submit')
+    expect(model().known).toEqual(['Light'])
     wrapper.unmount()
   })
 })

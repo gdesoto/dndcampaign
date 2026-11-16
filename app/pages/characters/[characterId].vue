@@ -151,7 +151,7 @@ const combatForm = reactive({ maxHp: 0, tempHp: 0, ac: 10, initiative: 0, speed:
 const classesForm = ref<ClassEntry[]>([])
 const newClassForm = reactive({ name: '', subclass: '', level: 1, hitDie: 8 })
 const showAddClass = ref(false)
-const spellsJson = ref('')
+const spellsDraft = ref<Record<string, unknown>>({})
 
 // HP current is always-interactive — tracked separately so it can save without edit mode
 const hpCurrentDraft = ref(0)
@@ -233,10 +233,10 @@ const syncFormState = () => {
       }))
     : []
 
-  spellsJson.value = JSON.stringify(sheet.value.spells || {}, null, 2)
+  spellsDraft.value = JSON.parse(JSON.stringify(sheet.value.spells || {}))
 }
 
-const draftState = computed(() => ({ basics: { ...basicsForm }, abilities: { ...abilityForm }, background: { ...backgroundForm }, appearance: { ...appearanceForm }, notes: { ...notesForm }, combat: { ...combatForm }, classes: classesForm.value, spells: spellsJson.value, hp: hpCurrentDraft.value }))
+const draftState = computed(() => ({ basics: { ...basicsForm }, abilities: { ...abilityForm }, background: { ...backgroundForm }, appearance: { ...appearanceForm }, notes: { ...notesForm }, combat: { ...combatForm }, classes: classesForm.value, spells: spellsDraft.value, hp: hpCurrentDraft.value }))
 const baseline = ref(JSON.stringify(draftState.value))
 watch(character, (value, previous) => {
   if (!value) return
@@ -254,15 +254,16 @@ watch(character, (value, previous) => {
   Object.assign(notesForm, merged.notes)
   Object.assign(combatForm, merged.combat)
   classesForm.value = merged.classes
-  spellsJson.value = merged.spells
+  spellsDraft.value = merged.spells
   hpCurrentDraft.value = merged.hp
 }, { immediate: true })
 
 // ── Save handlers ─────────────────────────────────────────────────────────────
 
 const savingSection = ref('')
+const isFinishingEdit = ref(false)
 const sectionError = ref('')
-const { confirmDiscard } = useUnsavedChanges(() => JSON.stringify(draftState.value) !== baseline.value, () => Boolean(savingSection.value))
+const { confirmDiscard } = useUnsavedChanges(() => JSON.stringify(draftState.value) !== baseline.value, () => isFinishingEdit.value || Boolean(savingSection.value))
 
 const saveSection = async (section: string, payload: unknown) => {
   if (!canEdit.value || savingSection.value) return
@@ -393,6 +394,33 @@ const saveBiography = async () => {
   }
 }
 
+// Save each dirty section in turn; stay in edit mode at the first failure so its sectionError shows.
+const finishEditing = async () => {
+  if (isFinishingEdit.value || savingSection.value) return
+  isFinishingEdit.value = true
+  try {
+    const draft = JSON.parse(JSON.stringify(draftState.value))
+    const saved = JSON.parse(baseline.value)
+    const dirty = (...keys: string[]) => keys.some(key => JSON.stringify(draft[key]) !== JSON.stringify(saved[key]))
+    const steps: Array<[boolean, () => Promise<void>]> = [
+      [dirty('basics'), saveBasics],
+      [dirty('abilities'), () => saveSection('ABILITY_SCORES', { ...abilityForm })],
+      [dirty('combat', 'hp'), saveCombatStats],
+      [dirty('classes'), () => saveSection('CLASSES', classesForm.value)],
+      [dirty('background', 'appearance', 'notes'), saveBiography],
+      [dirty('spells'), () => saveSection('SPELLS', spellsDraft.value)],
+    ]
+    for (const [isDirty, save] of steps) {
+      if (!isDirty) continue
+      await save()
+      if (sectionError.value) return
+    }
+    isEditing.value = false
+  } finally {
+    isFinishingEdit.value = false
+  }
+}
+
 const removeClassEntry = (index: number) => {
   classesForm.value.splice(index, 1)
 }
@@ -411,8 +439,6 @@ const addClassEntry = () => {
   newClassForm.hitDie = 8
   showAddClass.value = false
 }
-
-const parseJson = (v: string, fallback: unknown) => { try { return JSON.parse(v) } catch { return fallback } }
 
 // ── Import ─────────────────────────────────────────────────────────────────────
 
@@ -500,7 +526,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
         <UButton class="mt-4" variant="outline" @click="() => refresh()">Try again</UButton>
       </UCard>
 
-      <div v-else-if="character" class="space-y-5">
+      <fieldset v-else-if="character" aria-label="Character sheet" :disabled="isFinishingEdit" :aria-busy="isFinishingEdit" class="min-w-0 space-y-5">
         <SharedReadOnlyAlert
           v-if="!canEdit"
           description="This character is shared through campaign membership. Only the owner can edit."
@@ -613,9 +639,14 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
                   <UIcon name="i-lucide-pencil" class="mr-1.5 h-3.5 w-3.5" />
                   Edit sheet
                 </UButton>
-                <UButton v-if="isEditing" size="sm" variant="ghost" @click="stopEditing">
-                  Done editing
-                </UButton>
+                <template v-if="isEditing">
+                  <UButton size="sm" variant="ghost" :loading="isFinishingEdit" :disabled="Boolean(savingSection)" @click="finishEditing">
+                    Done editing
+                  </UButton>
+                  <UButton size="sm" variant="ghost" color="neutral" :disabled="isFinishingEdit" @click="stopEditing">
+                    Cancel
+                  </UButton>
+                </template>
                 <UButton size="sm" variant="outline" @click="() => { importError = ''; isImportOpen = true }">
                   <UIcon name="i-lucide-download" class="mr-1.5 h-3.5 w-3.5" />
                   Import
@@ -1227,13 +1258,10 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
               </div>
             </div>
 
-            <!-- Edit: JSON editor -->
-            <div v-else class="space-y-2">
-              <UTextarea v-model="spellsJson" aria-label="Spells" :rows="8" />
-            </div>
+            <CharacterSpellsEditor v-else v-model="spellsDraft" />
 
             <template v-if="isEditing" #footer>
-              <UButton size="sm" :loading="savingSection === 'SPELLS'" @click="saveSection('SPELLS', parseJson(spellsJson, {}))">
+              <UButton size="sm" :loading="savingSection === 'SPELLS'" @click="saveSection('SPELLS', spellsDraft)">
                 Save spells
               </UButton>
             </template>
@@ -1303,7 +1331,7 @@ const removeFromCampaignWithClose = async (link: CampaignLink, close: () => void
 
         <!-- Global error -->
         <p v-if="sectionError" class="text-sm text-error">{{ sectionError }}</p>
-      </div>
+      </fieldset>
     </div>
 
     <CharactersImportModal

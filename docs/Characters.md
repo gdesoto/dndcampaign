@@ -7,6 +7,10 @@ is saved or imported, so list/detail summaries do not form an independent sheet.
 
 ## Editing and ability scores
 
+**Done editing** saves changed sheet sections in sequence. Sheet inputs and
+conflicting actions are disabled until saving finishes. A failed save leaves the
+sheet in edit mode with its drafts intact, so the user can correct or retry it.
+
 Manual section updates write the selected portion of the sheet and recompute
 the summary. Ability scores have two supported representations: a manually
 saved number, or an imported object containing `base`, `bonus`, `override`, and

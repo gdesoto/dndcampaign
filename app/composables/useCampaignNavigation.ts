@@ -1,13 +1,33 @@
-import { computed } from 'vue'
+import { computed, onMounted, watchEffect } from 'vue'
 import type { CampaignShell } from '#shared/types/campaign-workflow'
+
+export type CampaignRecordTitle = { path: string, title: string }
+
+// Keyed by path so a previous record's title never labels another record.
+export const useCampaignRecordTitle = () => useState<CampaignRecordTitle | null>('campaign-record-title', () => null)
+
+// Detail pages name the last breadcrumb. Written after mount because the layout's
+// breadcrumb renders before the page on the server; an SSR write would mismatch hydration.
+export const trackCampaignRecordTitle = (title: () => string | undefined) => {
+  const state = useCampaignRecordTitle()
+  const route = useRoute()
+  onMounted(() => watchEffect(() => {
+    const value = title()
+    if (value) state.value = { path: route.path, title: value }
+  }))
+}
 
 export const useCampaignNavigation = (
   route: ReturnType<typeof useRoute>,
   campaignId: Ref<string>,
   campaign: Ref<CampaignShell | null | undefined>,
   sessionTitle?: Ref<string | undefined>,
-  assetContext?: Ref<{ sessionId?: string, title?: string }>
+  assetContext?: Ref<{ sessionId?: string, title?: string }>,
+  recordTitle?: Ref<CampaignRecordTitle | null>,
 ) => {
+  const recordLabel = (fallback: string) =>
+    recordTitle?.value?.path === route.path ? recordTitle.value.title : fallback
+
   const navItems = computed(() => {
     const base = `/campaigns/${campaignId.value}`
     const path = route.path
@@ -158,21 +178,21 @@ export const useCampaignNavigation = (
       return [
         ...rootItems,
         { label: 'Encounters', to: `/campaigns/${campaignId.value}/encounters` },
-        { label: 'Encounter' },
+        { label: recordLabel('Encounter') },
       ]
     }
     if (path.includes(`/campaigns/${campaignId.value}/encounter-maps/`)) {
       return [
         ...rootItems,
         { label: 'Encounter maps', to: `/campaigns/${campaignId.value}/encounter-maps` },
-        { label: 'Encounter map' },
+        { label: recordLabel('Encounter map') },
       ]
     }
     if (path.includes(`/campaigns/${campaignId.value}/journal/`)) {
       return [
         ...rootItems,
         { label: 'Journal', to: `/campaigns/${campaignId.value}/journal` },
-        { label: 'Entry' },
+        { label: recordLabel('Entry') },
       ]
     }
     if (path.startsWith(`/campaigns/${campaignId.value}/recordings/`) || path.startsWith(`/campaigns/${campaignId.value}/documents/`)) {

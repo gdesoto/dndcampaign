@@ -5,6 +5,7 @@ import { mountSuspended, mockNuxtImport } from '@nuxt/test-utils/runtime'
 import EncounterDetailPage from '../../app/pages/campaigns/[campaignId]/encounters/[encounterId].vue'
 import EventTimeline from '../../app/components/encounter/EventTimeline.vue'
 import type { EncounterEvent } from '../../shared/types/encounter'
+import { useCampaignRecordTitle } from '../../app/composables/useCampaignNavigation'
 
 const mockGetEncounter = vi.fn()
 const mockUpdateEncounter = vi.fn()
@@ -38,6 +39,7 @@ const mockToastAdd = vi.fn()
 mockNuxtImport('useToast', () => () => ({ add: mockToastAdd }))
 
 mockNuxtImport('useRoute', () => () => ({
+  path: '/campaigns/campaign-1/encounters/enc-1',
   params: { campaignId: 'campaign-1', encounterId: 'enc-1' },
 }))
 
@@ -172,6 +174,9 @@ describe('Encounter detail page', () => {
       id: 'exhaustion-1', combatantId: 'combatant-1', name: 'Exhaustion', remaining: 1, duration: null, tickTiming: 'TURN_END',
     }] })
     const wrapper = await mountSuspended(EncounterDetailPage, { global: { stubs, provide: { campaignCanWriteContent: ref(true) } } })
+    const recordTitle = useCampaignRecordTitle()
+    expect(recordTitle.value).toEqual({ path: '/campaigns/campaign-1/encounters/enc-1', title: 'Bridge Ambush' })
+    recordTitle.value = null
     expect(wrapper.text()).toContain('1/6')
     expect(wrapper.findAll('button').some(button => button.text().includes('Remove'))).toBe(true)
     mockRequest.mockClear()

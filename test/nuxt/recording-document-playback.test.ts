@@ -52,7 +52,7 @@ const transcript = {
 }
 const slots = { template: '<div><slot name="header" /><slot name="actions" /><slot /><slot name="footer" /></div>' }
 const global = {
-  provide: { campaignAccess: computed(() => ({ permissions: ['document.edit', 'recording.upload'] })) },
+  provide: { campaignAccess: computed(() => ({ permissions: ['document.edit', 'recording.upload', 'recording.transcribe'] })) },
   stubs: { CampaignTemplatesDetail: slots, UCard: slots, UTooltip: slots, MediaPlayerDock: true, UModal: true },
 }
 let wrapper: VueWrapper | undefined
@@ -214,5 +214,43 @@ describe('recording and transcript page playback', () => {
     await new Promise(resolve => setTimeout(resolve, 200))
     expect(pause).toHaveBeenCalledOnce()
     expect(harness.request.mock.calls.some(([url]) => url.includes('/playback/url'))).toBe(false)
+  })
+
+  it('shows viewers a read-only transcript and recording while editors keep their controls', async () => {
+    const viewer = { ...global, provide: { campaignAccess: computed(() => ({ permissions: ['content.read'] })) } }
+    const originalRequest = harness.request.getMockImplementation()!
+    harness.request.mockImplementation((url, options) => url === '/api/documents/d1/versions'
+      ? [{ id: 'v0', format: 'PLAINTEXT', versionNumber: 0, source: 'MANUAL', createdAt: '2026-09-01T12:00:00.000Z' }]
+      : originalRequest(url, options))
+    const labels = () => wrapper!.findAll('button').map(item => item.text().trim() || item.attributes('aria-label'))
+
+    wrapper = await mountSuspended(DocumentPage, { global: viewer })
+    await flushPromises()
+    await vi.waitFor(() => expect(wrapper!.text()).toContain('Version 0'))
+    expect(wrapper.text()).toContain('Enter the crypt.')
+    expect(wrapper.text()).toContain('DM')
+    expect(wrapper.find('textarea').exists()).toBe(false)
+    expect(wrapper.find('input[placeholder="Speaker"]').exists()).toBe(false)
+    expect(wrapper.find('input[type="file"]').exists()).toBe(false)
+    expect(labels()).toContain('Play segment')
+    for (const hidden of ['Save version', 'Import transcript file', 'Restore', 'Undo', 'Disable segment', 'Bulk edit', 'Attach subtitles', 'Set selected as default', 'Delete transcript']) {
+      expect(labels()).not.toContain(hidden)
+    }
+    wrapper.unmount()
+
+    wrapper = await mountSuspended(DocumentPage, { global })
+    await flushPromises()
+    await vi.waitFor(() => expect(wrapper!.text()).toContain('Version 0'))
+    expect(wrapper.find('textarea').exists()).toBe(true)
+    expect(labels()).toEqual(expect.arrayContaining(['Save version', 'Import transcript file', 'Restore', 'Undo']))
+    wrapper.unmount()
+
+    wrapper = await mountSuspended(RecordingPage, { global: viewer })
+    await flushPromises()
+    expect(labels()).toContain('Play in page player')
+    for (const hidden of ['Start transcription', 'Import transcription', 'Upload subtitles', 'Import session transcript', 'Delete recording']) {
+      expect(labels()).not.toContain(hidden)
+    }
+    expect(wrapper.find('input[type="file"]').exists()).toBe(false)
   })
 })

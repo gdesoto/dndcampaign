@@ -357,7 +357,7 @@ const requestActions = (request: CampaignRequestListItem): RecordAction[] => [
 
           <div class="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted">
             <span v-if="request.visibility === 'PUBLIC'">Votes: {{ request.voteCount }}</span>
-            <span>Updated: {{ new Date(request.updatedAt).toLocaleString() }}</span>
+            <span>Updated: {{ formatDateTime(request.updatedAt) }}</span>
           </div>
 
           <div v-if="request.decisionNote" class="mt-3 rounded-md border border-default p-2 text-xs text-muted">

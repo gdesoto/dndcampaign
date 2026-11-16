@@ -279,7 +279,7 @@ const pushHistoryState = (snapshot: TranscriptSegment[]) => {
 }
 
 const applySegmentMutation = (mutator: (draft: TranscriptSegment[]) => void) => {
-  if (document.value?.type !== 'TRANSCRIPT') return
+  if (document.value?.type !== 'TRANSCRIPT' || !canManageDocument.value) return
   const before = cloneSegments(segments.value)
   const draft = cloneSegments(segments.value)
   mutator(draft)
@@ -1160,10 +1160,6 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
 
 <template>
   <CampaignTemplatesDetail
-    :back-to="document?.sessionId ? (returnTo || `/campaigns/${campaignId}/sessions/${document.sessionId}`) : `/campaigns/${campaignId}/sessions`"
-    back-label="Back to session"
-    back-button-placement="header"
-    headline="Session Asset"
     :title="document?.title || 'Document editor'"
     :description="document?.type === 'TRANSCRIPT'
       ? 'Transcript editor with synchronized playback tools.'
@@ -1239,7 +1235,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                     </span>
                   </div>
                   <div class="flex items-center gap-1">
-                    <UTooltip :text="segment.disabled ? 'Enable segment' : 'Disable segment'">
+                    <UTooltip v-if="canManageDocument" :text="segment.disabled ? 'Enable segment' : 'Disable segment'">
                       <UButton
                         size="xs"
                         variant="ghost"
@@ -1273,6 +1269,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                 </div>
                 <div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
                   <UInput
+                    v-if="canManageDocument"
                     :model-value="getSpeakerDraft(segment)"
                     size="xs"
                     class="w-36"
@@ -1317,6 +1314,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                       </UPopover>
                     </template>
                   </UInput>
+                  <span v-else-if="segment.speaker" class="font-medium text-highlighted">{{ segment.speaker }}</span>
                   <span v-if="segment.disabled" class="rounded-full bg-warning/20 px-2 py-0.5 text-warning">
                     Disabled in preview
                   </span>
@@ -1333,12 +1331,14 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                   </span>
                 </div>
                 <UTextarea
+                  v-if="canManageDocument"
                   :model-value="segment.text"
                   :rows="2"
                   size="sm"
                   class="mt-2"
                   @update:model-value="(value) => setSegmentText(segment.id, value)"
                 />
+                <p v-else-if="!searchTerm" class="mt-2 whitespace-pre-line text-sm">{{ segment.text }}</p>
               </div>
             </div>
           </div>
@@ -1364,7 +1364,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
               </template>
               <div class="space-y-3">
                 <!-- Undo/Redo + Save -->
-                <div class="flex flex-wrap items-center gap-2">
+                <div v-if="canManageDocument" class="flex flex-wrap items-center gap-2">
                   <span v-if="isDirty" class="rounded-full bg-warning/20 px-2 py-1 text-xs text-warning">
                     Unsaved changes
                   </span>
@@ -1433,6 +1433,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                       Filters{{ (speakerFilterSelection.length || startTimeFilter || endTimeFilter || minLengthFilter || maxLengthFilter) ? ' •' : '' }}
                     </UButton>
                     <UButton
+                      v-if="canManageDocument"
                       size="xs"
                       variant="ghost"
                       :icon="showBulkEdit ? 'i-lucide-pencil-off' : 'i-lucide-pencil'"
@@ -1571,24 +1572,20 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                   <span v-if="linkedRecordingId">Linked: {{ linkedRecordingLabel }}</span>
                   <span v-else>No default recording linked.</span>
                 </div>
-                <div class="flex flex-wrap items-center gap-2">
+                <div v-if="canManageDocument" class="flex flex-wrap items-center gap-2">
                   <UButton size="xs" variant="outline" :disabled="!selectedRecordingId" @click="linkRecordingToTranscript">Set selected as default</UButton>
                   <UButton size="xs" variant="ghost" :disabled="!linkedRecordingId" @click="unlinkRecording">Clear default</UButton>
                 </div>
               </div>
 
               <!-- Import transcript -->
-              <div class="space-y-2 rounded-lg border border-default bg-elevated/30 p-3">
+              <div v-if="canManageDocument" class="space-y-2 rounded-lg border border-default bg-elevated/30 p-3">
                 <p class="text-xs uppercase tracking-[0.08em] text-muted">Import transcript</p>
                 <p class="text-xs text-muted">Accepts .txt, .md, .vtt formats.</p>
-                <UInput
-                  aria-label="Import document file" type="file"
-                  accept=".txt,.md,.markdown,.vtt"
-                  @change="importFile = ($event.target as HTMLInputElement).files?.[0] || null"
-                />
+                <SharedFilePicker v-model="importFile" label="Select transcript file" accept=".txt,.md,.markdown,.vtt" :disabled="importing" />
                 <UButton
                   class="w-full justify-center"
-                  :disabled="!document?.sessionId"
+                  :disabled="!importFile || !document?.sessionId"
                   :loading="importing"
                   variant="outline"
                   @click="importDocument"
@@ -1598,7 +1595,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
               </div>
 
               <!-- Subtitles -->
-              <div class="space-y-2 rounded-lg border border-default bg-elevated/30 p-3">
+              <div v-if="canManageDocument" class="space-y-2 rounded-lg border border-default bg-elevated/30 p-3">
                 <p class="text-xs uppercase tracking-[0.08em] text-muted">Subtitles</p>
                 <USelect
                   v-model="selectedSubtitleRecordingId"
@@ -1695,10 +1692,11 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                       <UBadge v-if="document?.currentVersionId === version.id" color="primary" variant="subtle" size="xs">Current</UBadge>
                     </div>
                     <p class="text-xs text-muted">
-                      {{ new Date(version.createdAt).toLocaleString() }} - {{ version.source }}
+                      {{ formatDateTime(version.createdAt) }} - {{ version.source }}
                     </p>
                   </div>
                   <UButton
+                    v-if="canManageDocument"
                     size="xs"
                     variant="outline"
                     :disabled="documentBusy || document?.currentVersionId === version.id"
@@ -1737,17 +1735,13 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
             </div>
           </template>
           <div class="space-y-4">
-            <UFormField label="Document content"><UTextarea v-model="content" :disabled="documentBusy" autoresize /></UFormField>
-            <div class="flex flex-wrap items-center gap-3">
+            <UFormField label="Document content"><UTextarea v-model="content" :disabled="documentBusy" :readonly="!canManageDocument" autoresize /></UFormField>
+            <div v-if="canManageDocument" class="space-y-3">
               <UButton :disabled="restoring || importing || deleteLoading" :loading="isSaving" @click="saveDocument">Save version</UButton>
-              <div class="flex items-center gap-2">
-                <UInput
-                  aria-label="Import document file" type="file"
-                  accept=".txt,.md,.markdown,.vtt"
-                  @change="importFile = ($event.target as HTMLInputElement).files?.[0] || null"
-                />
+              <div class="grid items-end gap-3 sm:grid-cols-[1fr_auto]">
+                <SharedFilePicker v-model="importFile" label="Select document file" accept=".txt,.md,.markdown,.vtt" :disabled="importing" />
                 <UButton
-                  :disabled="!document?.sessionId"
+                  :disabled="!importFile || !document?.sessionId"
                   :loading="importing"
                   variant="outline"
                   @click="importDocument"
@@ -1780,10 +1774,11 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
                 <div>
                   <p class="font-semibold">Version {{ version.versionNumber }}</p>
                   <p class="text-xs text-muted">
-                    {{ new Date(version.createdAt).toLocaleString() }} - {{ version.source }}
+                    {{ formatDateTime(version.createdAt) }} - {{ version.source }}
                   </p>
                 </div>
                 <UButton
+                  v-if="canManageDocument"
                   size="xs"
                   variant="outline"
                   :disabled="document?.currentVersionId === version.id"

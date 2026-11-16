@@ -88,7 +88,7 @@ const submitRename = () => {
           </form>
           <p v-else class="truncate text-sm font-medium text-highlighted">{{ snapshot.label || typeLabels[snapshot.snapshotType] }}</p>
           <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
-            <time :datetime="snapshot.createdAt" class="tabular-nums">{{ new Date(snapshot.createdAt).toLocaleString() }}</time>
+            <time :datetime="snapshot.createdAt" class="tabular-nums">{{ formatDateTime(snapshot.createdAt) }}</time>
             <span class="flex items-center gap-1">
               <UIcon :name="encounterMapTypes.find(item => item.value === snapshot.mapType)?.icon || 'i-lucide-castle'" class="size-3.5" aria-hidden="true" />
               {{ snapshot.roomCount }} {{ snapshot.mapType === 'FOREST' ? 'clearings' : 'rooms' }}

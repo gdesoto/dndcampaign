@@ -277,7 +277,7 @@ const campaignActions = (id: string): RecordAction[] => [
               ...campaign,
               ownerEmail: campaign.owner.email,
               isArchived: campaign.isArchived ? 'Yes' : 'No',
-              updatedAt: new Date(campaign.updatedAt).toLocaleString(),
+              updatedAt: formatDateTime(campaign.updatedAt),
             }))"
             :columns="campaignColumns"
             :loading="pending"

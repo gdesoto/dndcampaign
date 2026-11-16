@@ -37,7 +37,7 @@ payload reference is [OpenAPI](../public/openapi.json).
 | [Session workspace](SessionWorkspaceOwnership.md) | Route ownership, drafts, job selection, navigation, and playback lifetimes. |
 | [Session jobs](SessionJobs.md) | Summary/suggestion sources, n8n callbacks, review, and application of generated results. |
 | [Transcription](Transcription.md) | Scribe V3 recording transcription, glossary keyterms, language hints, number formatting, and artifacts. |
-| [Characters](Characters.md) | Sheet data, derived summaries, manual edits, and D&D Beyond section imports. |
+| [Characters](Characters.md) | Sheet data, derived summaries, section saves, failure recovery, and D&D Beyond imports. |
 | [Encounters](EncounterWorkflow.md) | Participants, phases, initiative, effects, encounter exhaustion and long rests, and API/MCP operations. |
 | [Encounter maps](EncounterMaps.md) | Generated dungeons, buildings, forests, floor-aware editing, regeneration and snapshot consequences, portable exports, canonical URLs and OpenAPI names, and compatibility boundaries. |
 | [Maps](Maps.md) | GeoJSON and SVG rendering, selection, glossary filtering, and browser requirements. |

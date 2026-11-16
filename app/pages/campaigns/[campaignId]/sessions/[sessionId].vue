@@ -35,11 +35,6 @@ useSeoMeta({
 
 <template>
   <CampaignTemplatesDetail
-    :back-to="`/campaigns/${campaignId}/sessions`"
-    back-label="Back to sessions"
-    back-button-placement="header"
-    back-button-size="md"
-    headline="Session Workspace"
     :title="resource.session?.title || 'Session details'"
     :description="overview.sessionHeaderDescription"
   >

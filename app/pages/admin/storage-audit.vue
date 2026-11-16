@@ -230,7 +230,7 @@ v-model="filters.campaignId"
                 ...row,
                 campaignName: row.campaignName || row.campaignId || 'Global',
                 byteSize: formatBytes(row.byteSize),
-                createdAt: new Date(row.createdAt).toLocaleString(),
+                createdAt: formatDateTime(row.createdAt),
               }))
             "
             :loading="pending"

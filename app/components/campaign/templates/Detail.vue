@@ -1,17 +1,8 @@
 <script setup lang="ts">
 withDefaults(defineProps<{
-  backTo: string
-  backLabel?: string
-  backButtonPlacement?: 'stacked' | 'header'
-  backButtonSize?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
-  headline?: string
   title: string
   description?: string
 }>(), {
-  backLabel: 'Back',
-  backButtonPlacement: 'header',
-  backButtonSize: 'md',
-  headline: '',
   description: '',
 })
 
@@ -21,30 +12,11 @@ const hasAside = computed(() => Boolean(slots.aside))
 
 <template>
   <div class="min-w-0 space-y-4">
-    <UButton
-      v-if="backButtonPlacement === 'stacked'"
-      :size="backButtonSize"
-      variant="outline"
-      icon="i-lucide-arrow-left"
-      :to="backTo"
-    >
-      {{ backLabel }}
-    </UButton>
-
     <CampaignPageHeader
       :title="title"
       :description="description"
     >
       <template #actions>
-        <UButton
-          v-if="backButtonPlacement === 'header'"
-          :size="backButtonSize"
-          variant="outline"
-          icon="i-lucide-arrow-left"
-          :to="backTo"
-        >
-          {{ backLabel }}
-        </UButton>
         <slot name="actions" />
       </template>
     </CampaignPageHeader>

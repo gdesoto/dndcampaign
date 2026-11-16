@@ -188,7 +188,7 @@ const encounterMapActions = (encounterMap: CampaignEncounterMapSummary): RecordA
             <UBadge :label="encounterMap.status.charAt(0) + encounterMap.status.slice(1).toLowerCase()" variant="soft" color="neutral" />
             <span class="flex items-center gap-1"><UIcon name="i-lucide-door-open" class="size-4" aria-hidden="true" />{{ encounterMap.roomCount }} {{ encounterMap.mapType === 'FOREST' ? 'clearings' : 'rooms' }}</span>
             <span v-if="(encounterMap.floorCount || 1) > 1">{{ encounterMap.floorCount }} floors</span>
-            <time :datetime="encounterMap.updatedAt">Updated {{ new Date(encounterMap.updatedAt).toLocaleDateString() }}</time>
+            <time :datetime="encounterMap.updatedAt">Updated {{ formatDate(encounterMap.updatedAt) }}</time>
           </div>
 
         </div>

@@ -51,6 +51,7 @@ const {
   () => `encounter-map-${campaignId.value}-${encounterMapId.value}`,
   () => encounterMapApi.getEncounterMap(campaignId.value, encounterMapId.value),
 )
+trackCampaignRecordTitle(() => encounterMap.value?.id === encounterMapId.value ? encounterMap.value.name : undefined)
 const { data: rooms, refresh: refreshRooms } = await useAsyncData(
   () => `encounter-map-rooms-${campaignId.value}-${encounterMapId.value}`,
   () => encounterMapApi.listRooms(campaignId.value, encounterMapId.value),
@@ -553,7 +554,6 @@ const tabs = computed(() => [
       </template>
       <template #links>
         <div class="flex flex-wrap gap-2">
-          <UButton color="neutral" variant="ghost" icon="i-lucide-arrow-left" :to="`/campaigns/${campaignId}/encounter-maps`">Back</UButton>
           <template v-if="canWriteContent && encounterMap">
             <UButton color="neutral" variant="outline" icon="i-lucide-dices" :disabled="mutationBusy" @click="regenerate('FULL', { reroll: true })">Reroll</UButton>
             <UFieldGroup>
@@ -631,7 +631,7 @@ const tabs = computed(() => [
               <span>{{ floorMap.rooms.length }} {{ isForest ? 'clearings' : 'rooms' }}</span>
               <span>{{ floorMap.corridors.length }} {{ isForest ? 'trails' : 'passages' }}</span>
               <span>{{ floorMap.encounters.length }} encounters</span>
-              <time :datetime="encounterMap.map.metadata.generatedAt" class="tabular-nums">Generated {{ new Date(encounterMap.map.metadata.generatedAt).toLocaleString() }}</time>
+              <time :datetime="encounterMap.map.metadata.generatedAt" class="tabular-nums">Generated {{ formatDateTime(encounterMap.map.metadata.generatedAt) }}</time>
               <span class="flex items-center gap-1">
                 Seed <code class="font-mono text-default">{{ encounterMap.seed }}</code>
                 <UButton size="xs" color="neutral" variant="ghost" icon="i-lucide-copy" aria-label="Copy seed" @click="copySeed" />

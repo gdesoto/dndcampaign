@@ -58,18 +58,10 @@ const activeSessionTitle = computed(() => {
   return `#${sessionShell.value.sessionNumber} - ${sessionShell.value.title}`
 })
 
-const campaignHeaderDescription = computed(() => {
-  const details = [
-    campaign.value?.system || 'System not set',
-    campaign.value?.dungeonMasterName ? `DM: ${campaign.value.dungeonMasterName}` : '',
-  ].filter(Boolean)
-  return details.join(' • ')
-})
-
 const {
   navItems,
   breadcrumbItems,
-} = useCampaignNavigation(route, campaignId, campaign, activeSessionTitle, assetContext)
+} = useCampaignNavigation(route, campaignId, campaign, activeSessionTitle, assetContext, useCampaignRecordTitle())
 
 const navLinks = computed(() => {
   const items = navItems.value.map(({ active: _active, ...item }) => ({
@@ -124,7 +116,22 @@ const navLinks = computed(() => {
     <div class="theme-overlay theme-overlay-pattern" aria-hidden="true" />
 
     <div class="relative z-10 min-h-screen">
-      <AppHeader />
+      <AppHeader>
+        <!-- Below lg the site menu carries campaign navigation; the navbar toggle is off. -->
+        <template #mobile-menu>
+          <div class="space-y-4 border-t border-default pt-4">
+            <UNavigationMenu
+              :items="navLinks"
+              aria-label="Campaign sections"
+              highlight
+              orientation="vertical"
+              class="-mx-2.5"
+              :ui="{ linkLabel: 'font-display tracking-[0.08em] uppercase text-md' }"
+            />
+            <CampaignPartyFooter v-if="campaignId" :key="campaignId" :campaign-id="campaignId" />
+          </div>
+        </template>
+      </AppHeader>
 
       <UDashboardGroup class="fixed inset-x-0 top-[var(--ui-header-height)]" style="bottom: var(--media-player-height, 0px)">
         <UDashboardSidebar
@@ -164,25 +171,12 @@ const navLinks = computed(() => {
           :ui="{ root: 'min-h-0 h-full', body: 'min-h-0 p-3 sm:p-5' }"
         >
           <template #header>
-            <UDashboardNavbar :ui="{ root: 'h-auto min-h-(--ui-header-height) px-3 py-2 sm:px-5' }">
+            <UDashboardNavbar :toggle="false" :ui="{ root: 'px-3 sm:px-5', left: 'min-w-0 flex-1' }">
               <template #left>
-                <div class="flex min-w-0 items-start gap-3">
-                  <UDashboardSidebarCollapse size="md" square />
-                  <div class="min-w-0">
-                    <p class="type-record break-words">
-                      {{ campaign?.name || 'Campaign' }}
-                    </p>
-                    <p class="text-xs text-muted">
-                      {{ campaignHeaderDescription }}
-                    </p>
-                  </div>
-                </div>
+                <UDashboardSidebarCollapse size="md" square />
+                <UBreadcrumb :items="breadcrumbItems" class="min-w-0" />
               </template>
             </UDashboardNavbar>
-
-            <div class="shrink-0 overflow-x-auto border-b border-default px-3 py-2 sm:px-5">
-              <UBreadcrumb :items="breadcrumbItems" class="min-w-max" />
-            </div>
           </template>
           <template #body>
             <div class="min-w-0"><slot /></div>

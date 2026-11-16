@@ -71,7 +71,7 @@ const items = computed(() => props.events
         <template #date="{ item }">
           <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
             <UBadge :color="item.color" variant="soft" size="sm">{{ item.label }}</UBadge>
-            <time :datetime="item.createdAt" class="text-xs tabular-nums text-muted">{{ new Date(item.createdAt).toLocaleString() }}</time>
+            <time :datetime="item.createdAt" class="text-xs tabular-nums text-muted">{{ formatDateTime(item.createdAt) }}</time>
           </div>
         </template>
       </UTimeline>

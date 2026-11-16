@@ -606,7 +606,7 @@ const entryActions = (entry: CampaignJournalEntryListItem): RecordAction[] => [
           </div>
 
           <div class="mt-3 text-xs text-muted">
-            Updated {{ new Date(entry.updatedAt).toLocaleString() }}
+            Updated {{ formatDateTime(entry.updatedAt) }}
           </div>
 
 
@@ -635,7 +635,7 @@ const entryActions = (entry: CampaignJournalEntryListItem): RecordAction[] => [
                 <UBadge size="xs" variant="soft">{{ item.type }}</UBadge>
               </div>
               <p class="break-words text-muted">{{ item.message }}</p>
-              <p class="mt-1 text-xs text-muted">{{ new Date(item.createdAt).toLocaleString() }}</p>
+              <p class="mt-1 text-xs text-muted">{{ formatDateTime(item.createdAt) }}</p>
             </div>
           </div>
         </UCard>
