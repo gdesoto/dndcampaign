@@ -99,6 +99,7 @@ pnpm test:coverage
 **Documentation**
 
 - [Documentation](docs/README.md): application guides, operations, and development planning.
+- [Installation and mobile playback](docs/PWA.md): install DM Vault, understand offline/update behavior, and validate playback on physical devices.
 - [Development planning](docs/planning/README.md): feature planning, implementation notes, investigations, and follow-ups.
 - [OpenAPI contract](public/openapi.json): canonical API paths and payloads.
 

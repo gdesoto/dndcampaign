@@ -33,3 +33,5 @@ Coding and agent guidance lives in [AGENTS.md](../../AGENTS.md) and
 - [Planning history](PlanningHistory.md): recovery archives from the cleanup and
   the preserved local [Donjon tools](tools/donjon/) and
   [Chronosia exports](mapping/).
+- [PWA implementation and validation](PWA.md): module compatibility, cache and
+  update decisions, automated evidence, and physical-device validation boundaries.

@@ -13,15 +13,20 @@ const db = createTestDbContext({
 db.prepare({ migrate: true, seed: true, stdio: 'inherit' })
 
 const nuxtBin = resolve(rootDir, 'node_modules', 'nuxt', 'bin', 'nuxt.mjs')
+const production = process.argv.includes('--production')
 
 const child = spawn(
   process.execPath,
-  [nuxtBin, 'dev', '--host', '127.0.0.1', '--port', '4173'],
+  production
+    ? [resolve(rootDir, '.output/server/index.mjs')]
+    : [nuxtBin, 'dev', '--host', '127.0.0.1', '--port', '4173'],
   {
     cwd: rootDir,
     stdio: 'inherit',
     env: {
       ...db.env,
+      NITRO_HOST: '127.0.0.1',
+      NITRO_PORT: '4173',
       VITE_HMR_PORT: '24679',
       VITE_HMR_HOST: '127.0.0.1',
     },
