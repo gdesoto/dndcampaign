@@ -42,6 +42,8 @@ export default defineConfig({
               rootDir: fileURLToPath(new URL('.', import.meta.url)),
               domEnvironment: 'happy-dom',
               overrides: {
+                // Happy DOM has no service worker; exercise registration in the production PWA suite.
+                pwa: { client: { registerPlugin: false } },
                 runtimeConfig: {
                   public: {
                     mdc: {

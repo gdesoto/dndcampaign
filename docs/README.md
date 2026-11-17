@@ -42,6 +42,7 @@ payload reference is [OpenAPI](../public/openapi.json).
 | [Encounters](EncounterWorkflow.md) | Participants, phases, initiative, effects, encounter exhaustion and long rests, and API/MCP operations. |
 | [Encounter maps](EncounterMaps.md) | Generated dungeons, buildings, forests, floor-aware editing, regeneration and snapshot consequences, portable exports, canonical URLs and OpenAPI names, and compatibility boundaries. |
 | [Maps](Maps.md) | GeoJSON and SVG rendering, selection, glossary filtering, and browser requirements. |
+| [Installation and mobile playback](PWA.md) | PWA installation, private-data cache boundaries, safe updates, offline feedback, and real-device playback checks. |
 
 ## Integrations and operations
 
