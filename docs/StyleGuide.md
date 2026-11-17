@@ -1,6 +1,6 @@
 # Frontend Style Guide
 
-DM Vault component contracts and visual identity. Use `nuxt-ui-guidelines` for general interaction, layout, and accessibility; `AGENTS.md` for architecture and testing. Precedence: explicit user instruction, `nuxt-ui-guidelines`, this file. Read component source for full prop contracts.
+DM Vault component contracts and visual identity. Use [ui-guidelines](../../gstack/plugins/ui-guidelines/skills/ui-guidelines/SKILL.md) for general interaction, layout, and accessibility; `AGENTS.md` for architecture and testing. Precedence: explicit user instruction, `ui-guidelines`, this file. Read component source for full prop contracts.
 
 ## Existing building blocks
 
