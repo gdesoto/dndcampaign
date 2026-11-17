@@ -5,6 +5,11 @@ const apiErrorHandler = fileURLToPath(new URL('./server/error-handler.ts', impor
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
+  vue: {
+    compilerOptions: {
+      isCustomElement: tag => ['video-player', 'video-neutral-skin', 'audio-neutral-skin'].includes(tag)
+    }
+  },
   hooks: {
     // Run the API envelope error handler before Nuxt's HTML error page handler.
     'nitro:config'(config) {

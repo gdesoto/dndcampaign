@@ -662,7 +662,7 @@ const artifactActions = (jobId: string, artifact: TranscriptionArtifact): Record
               <UButton size="sm" variant="outline" @click="startPlayback">
                 Play in page player
               </UButton>
-              <MediaPlayerDock dock-id="recording-player-dock" mode="page" />
+              <MediaPlayerDock :source-id="recording?.id" dock-id="recording-player-dock" mode="page" />
             </div>
           </div>
         </UCard>

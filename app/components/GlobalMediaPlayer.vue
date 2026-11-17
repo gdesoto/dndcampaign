@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import type { VideoPlayerElement } from '@videojs/html/video'
+
 const player = useMediaPlayer()
 const state = player.state
 
-const mediaEl = ref<HTMLMediaElement | null>(null)
+const libraryEl = ref<VideoPlayerElement | null>(null)
 const miniPlayer = ref<HTMLElement | null>(null)
-const cleanupListeners = ref<(() => void) | null>(null)
 
 // Reserve the mini player's actual height, including wrapped text and errors.
 watch(miniPlayer, (el, _previous, onCleanup) => {
@@ -22,9 +23,6 @@ const isVideo = computed(() => state.value.source?.kind === 'VIDEO')
 const hasSource = computed(() => Boolean(state.value.source))
 const playbackLabel = computed(() => state.value.error ? 'Retry playback' : state.value.isPlaying ? 'Pause playback' : 'Play media')
 const playbackIcon = computed(() => state.value.error ? 'i-lucide-rotate-cw' : state.value.isPlaying ? 'i-heroicons-pause' : 'i-heroicons-play')
-const showInline = computed(
-  () => hasSource.value && state.value.presentation === 'page' && Boolean(state.value.dockId)
-)
 const showMini = computed(
   () => hasSource.value && state.value.presentation === 'global'
 )
@@ -61,201 +59,38 @@ const mediaTarget = computed(() => {
   return '#global-media-player-host'
 })
 
-const progress = computed(() => {
-  if (!state.value.duration) return 0
-  return Math.min(100, Math.max(0, (state.value.currentTime / state.value.duration) * 100))
-})
-
-const formatTime = (value: number) => {
-  if (!Number.isFinite(value) || value <= 0) return '0:00'
-  const totalSeconds = Math.floor(value)
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-  if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds
-      .toString()
-      .padStart(2, '0')}`
-  }
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`
-}
-
-const attachListeners = (el: HTMLMediaElement) => {
-  const isCurrent = () => player.element.value === el && Boolean(state.value.source)
-    && el.getAttribute('src') === state.value.source?.src
-  const pauseOtherMedia = () => {
-    const root = globalThis.document
-    if (!root) return
-    root.querySelectorAll<HTMLMediaElement>('audio,video').forEach((media) => {
-      if (media === el) return
-      if (!media.paused) {
-        media.pause()
-      }
-    })
-  }
-
-  const onTime = () => {
-    if (!isCurrent()) return
-    state.value.currentTime = el.currentTime || 0
-  }
-  const onDuration = () => {
-    if (!isCurrent()) return
-    state.value.duration = Number.isFinite(el.duration) ? el.duration : 0
-  }
-  const onPlay = () => {
-    if (!isCurrent() || el.paused) return
-    state.value.isPlaying = true
-    pauseOtherMedia()
-  }
-  const onPlaying = () => {
-    if (!isCurrent() || el.paused) return
-    state.value.isPlaying = true
-    pauseOtherMedia()
-  }
-  const onPause = () => {
-    if (!isCurrent() || !el.paused) return
-    state.value.isPlaying = false
-  }
-  const onSeek = () => {
-    if (!isCurrent()) return
-    state.value.isPlaying = !el.paused
-    state.value.currentTime = el.currentTime || 0
-  }
-  const onEnded = () => {
-    if (!isCurrent() || !el.ended) return
-    state.value.isPlaying = false
-  }
-  const onError = () => {
-    if (!isCurrent() || !el.error) return
-    state.value.playToken += 1
-    state.value.autoplay = false
-    state.value.isPlaying = false
-    state.value.error = 'Unable to load media. Retry playback.'
-  }
-  const onVolume = () => {
-    state.value.volume = el.volume
-  }
-
-  el.addEventListener('timeupdate', onTime)
-  el.addEventListener('durationchange', onDuration)
-  el.addEventListener('loadedmetadata', onDuration)
-  el.addEventListener('play', onPlay)
-  el.addEventListener('playing', onPlaying)
-  el.addEventListener('pause', onPause)
-  el.addEventListener('seeking', onSeek)
-  el.addEventListener('seeked', onSeek)
-  el.addEventListener('ended', onEnded)
-  el.addEventListener('error', onError)
-  el.addEventListener('volumechange', onVolume)
-
-  return () => {
-    el.removeEventListener('timeupdate', onTime)
-    el.removeEventListener('durationchange', onDuration)
-    el.removeEventListener('loadedmetadata', onDuration)
-    el.removeEventListener('play', onPlay)
-    el.removeEventListener('playing', onPlaying)
-    el.removeEventListener('pause', onPause)
-    el.removeEventListener('seeking', onSeek)
-    el.removeEventListener('seeked', onSeek)
-    el.removeEventListener('ended', onEnded)
-    el.removeEventListener('error', onError)
-    el.removeEventListener('volumechange', onVolume)
-  }
-}
-
-watch(
-  mediaEl,
-  (value) => {
-    cleanupListeners.value?.()
-    cleanupListeners.value = null
-    if (!value) return
-    player.setElement(value)
-    cleanupListeners.value = attachListeners(value)
-  },
-  { immediate: true }
-)
+watch(libraryEl, (value, _, onCleanup) => {
+  if (!value) return
+  // The client plugin registers these elements before the app mounts.
+  const disconnect = player.connect(value)
+  onCleanup(() => { disconnect(); value.destroy() })
+}, { flush: 'post' })
 
 onBeforeUnmount(() => {
-  player.setElement(null)
-  cleanupListeners.value?.()
   document.documentElement.style.removeProperty('--media-player-height')
 })
 
-const onSeek = (event: Event) => {
-  const value = Number((event.target as HTMLInputElement).value)
-  if (!state.value.duration) return
-  const nextTime = (value / 100) * state.value.duration
-  player.seek(nextTime)
+const onEnded = () => {
+  if (player.queue.value?.autoAdvance && player.element.value?.ended) void player.moveInQueue(1)
 }
 
-const onVolume = (event: Event) => {
-  const value = Number((event.target as HTMLInputElement).value)
-  player.setVolume(value)
-}
-
-const onRateChange = (event: Event) => {
-  const value = Number((event.target as HTMLSelectElement).value)
-  player.setPlaybackRate(value)
-}
-
-const openFullPlayer = () => {
-  player.setPresentation('global')
-  player.openDrawer()
-}
+useMediaSession(player)
 </script>
 
 <template>
   <div class="pointer-events-none">
     <Teleport :to="mediaTarget">
-      <div class="pointer-events-auto space-y-3">
-        <component
-          :is="isVideo ? 'video' : 'audio'"
-          ref="mediaEl"
-          :class="isVideo ? 'w-full rounded-lg' : 'sr-only'"
-          preload="metadata"
-          playsinline
-          :controls="showInline"
-        >
-          <track
-            v-if="isVideo && state.source?.vttUrl"
-            kind="subtitles"
-            label="Transcript"
-            srclang="en"
-            :src="state.source?.vttUrl"
-            default
-          >
+      <video-player v-if="hasSource" ref="libraryEl" keep-alive :content-title="state.source?.title" class="dmvault-player pointer-events-auto">
+        <component :is="isVideo ? 'video-neutral-skin' : 'audio-neutral-skin'" class="block w-full">
+          <component :is="isVideo ? 'video' : 'audio'" preload="metadata" playsinline @ended="onEnded">
+            <track v-if="state.source?.vttUrl" :key="state.source.vttUrl" :src="state.source.vttUrl" kind="subtitles" srclang="en" label="Captions" default>
+          </component>
         </component>
-
-        <div v-if="showInline" class="rounded-lg border border-default bg-elevated/40 p-3">
-          <div class="flex items-center gap-2">
-            <UTooltip text="Skip back 5 seconds">
-              <UButton size="xs" variant="ghost" icon="i-lucide-rotate-ccw" aria-label="Skip back 5 seconds" @click="player.seek(Math.max(0, state.currentTime - 5))" />
-            </UTooltip>
-            <UButton size="xs" variant="outline" :aria-label="playbackLabel" :loading="state.autoplay" @click="player.toggle">
-              <UIcon :name="playbackIcon" />
-            </UButton>
-            <UTooltip text="Skip forward 30 seconds">
-              <UButton size="xs" variant="ghost" icon="i-lucide-rotate-cw" aria-label="Skip forward 30 seconds" @click="player.seek(state.currentTime + 30)" />
-            </UTooltip>
-            <input
-              class="min-w-0 flex-1 accent-primary"
-              type="range"
-              aria-label="Playback position"
-              min="0"
-              max="100"
-              step="0.1"
-              :value="progress"
-              @input="onSeek"
-            >
-            <span class="shrink-0 text-xs tabular-nums text-dimmed">{{ formatTime(state.currentTime) }} / {{ formatTime(state.duration) }}</span>
-            <UTooltip text="Open full player">
-              <UButton size="xs" variant="ghost" icon="i-lucide-maximize-2" aria-label="Open full player" @click="openFullPlayer" />
-            </UTooltip>
-          </div>
-          <p class="mt-1 truncate text-xs text-muted">{{ state.source?.title }}</p>
-          <p v-if="state.error" role="alert" class="mt-2 text-sm text-error">{{ state.error }}</p>
+        <div v-if="state.error" class="mt-2 flex flex-wrap items-center gap-2">
+          <p v-if="!player.controller.value?.store.error" role="alert" class="text-sm text-error">{{ state.error }}</p>
+          <UButton variant="outline" icon="i-lucide-rotate-cw" aria-label="Retry playback" :loading="state.autoplay" @click="player.play">Retry playback</UButton>
         </div>
-      </div>
+      </video-player>
     </Teleport>
   </div>
 
@@ -280,6 +115,11 @@ const openFullPlayer = () => {
         </div>
       </div>
       <p v-if="state.error && !drawerOpen" role="alert" class="mt-3 text-sm text-error">{{ state.error }}</p>
+      <div v-if="player.queue.value" class="mt-2 flex flex-wrap items-center gap-2">
+        <UButton variant="ghost" icon="i-lucide-skip-back" aria-label="Previous recap" :disabled="!player.hasPrevious.value || state.autoplay" @click="player.moveInQueue(-1)" />
+        <UButton variant="ghost" icon="i-lucide-skip-forward" aria-label="Next recap" :disabled="!player.hasNext.value || state.autoplay" @click="player.moveInQueue(1)" />
+        <USwitch v-model="player.queue.value.autoAdvance" label="Play next automatically" />
+      </div>
     </UCard>
   </div>
 
@@ -288,7 +128,8 @@ const openFullPlayer = () => {
     direction="bottom"
     :modal="false"
     :overlay="false"
-    :handle="false"
+    handle
+    handle-only
     title="Media player"
     description="Expanded playback controls and timeline."
     inset
@@ -309,57 +150,6 @@ const openFullPlayer = () => {
 
         <div id="media-player-drawer-target" class="space-y-3" />
 
-        <div class="space-y-3">
-          <div class="flex flex-wrap items-center gap-3">
-            <UButton size="sm" variant="outline" :aria-label="playbackLabel" :loading="state.autoplay" @click="player.toggle">
-              <UIcon :name="playbackIcon" />
-            </UButton>
-            <div class="flex items-center gap-2 text-xs text-dimmed">
-              <span>{{ formatTime(state.currentTime) }}</span>
-              <span>/</span>
-              <span>{{ formatTime(state.duration) }}</span>
-            </div>
-          </div>
-          <input
-            class="w-full accent-primary"
-            type="range"
-            aria-label="Playback position"
-            min="0"
-            max="100"
-            step="0.1"
-            :value="progress"
-            @input="onSeek"
-          >
-          <div class="flex flex-wrap items-center gap-4">
-            <label class="flex items-center gap-2 text-xs text-dimmed">
-              Volume
-              <input
-                class="accent-primary"
-                type="range"
-                min="0"
-                max="1"
-                step="0.05"
-                :value="state.volume"
-                @input="onVolume"
-              >
-            </label>
-            <label class="flex items-center gap-2 text-xs text-dimmed">
-              Speed
-              <select
-                class="rounded-md border border-default bg-default px-2 py-1 text-xs"
-                :value="state.playbackRate"
-                @change="onRateChange"
-              >
-                <option :value="0.75">0.75x</option>
-                <option :value="1">1x</option>
-                <option :value="1.25">1.25x</option>
-                <option :value="1.5">1.5x</option>
-                <option :value="2">2x</option>
-              </select>
-            </label>
-          </div>
-          <p v-if="state.error" role="alert" class="text-sm text-error">{{ state.error }}</p>
-        </div>
       </div>
     </template>
   </UDrawer>

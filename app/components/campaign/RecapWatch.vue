@@ -7,11 +7,11 @@ const props = defineProps<{
   basePath: string
   resolvePlayback: ResolveRecapPlayback
 }>()
-const { player, playlist, selected, selectedId, selectedIndex, next, previous, loading, error, active, autoAdvance, choose, select } = useRecapWatch({
+const { playlist, selected, selectedId, selectedIndex, next, previous, loading, error, active, autoAdvance, choose, select } = useRecapWatch({
   recaps: toRef(props, 'recaps'),
-  resolvePlayback: id => props.resolvePlayback(id),
+  resolvePlayback: props.resolvePlayback,
+  queueKey: props.basePath,
 })
-const state = player.state
 const playlistButtons = new Map<string, HTMLButtonElement>()
 const playlistElement = useTemplateRef<HTMLOListElement>('playlistElement')
 
@@ -52,11 +52,8 @@ watch([selectedId, playlist], async ([id]) => {
             <UIcon :name="loading ? 'i-lucide-loader-circle' : 'i-lucide-headphones'" class="size-14 text-primary" :class="loading ? 'animate-spin' : ''" />
             <p class="font-display text-2xl text-highlighted">{{ selected?.session.title || 'Choose a recap' }}</p>
             <p class="text-sm text-muted">{{ loading ? 'Loading recap…' : 'Session recap' }}</p>
-            <UButton v-if="active" :icon="state.isPlaying ? 'i-lucide-pause' : 'i-lucide-play'" :disabled="loading" @click="player.toggle">
-              {{ state.isPlaying ? 'Pause' : 'Play recap' }}
-            </UButton>
           </div>
-          <MediaPlayerDock dock-id="recap-watch-dock" class="p-3 [&_video]:aspect-video [&_video]:max-h-[70vh] [&_video]:object-contain" :class="!active ? 'hidden' : ''" />
+          <MediaPlayerDock :source-id="active ? selectedId : undefined" dock-id="recap-watch-dock" class="p-3" :class="!active ? 'hidden' : ''" />
         </div>
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div>

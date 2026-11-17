@@ -32,13 +32,15 @@ const mountedMedia = () => player.element.value!
 const finishPlay = (media: HTMLMediaElement) => {
   Object.defineProperty(media, 'paused', { configurable: true, value: false })
   fire(media, 'play')
+  fire(media, 'playing')
   return Promise.resolve()
 }
 const loadFailure = (media: HTMLMediaElement) => {
-  Object.defineProperty(media, 'error', { configurable: true, value: { code: 4 } })
+  Object.defineProperty(media, 'error', { configurable: true, value: { code: 4, message: 'Unable to load media.' } })
   fire(media, 'error')
 }
 const visibleAlert = () => document.querySelector('[role="alert"]')?.textContent
+  || document.querySelector('video-neutral-skin, audio-neutral-skin')?.shadowRoot?.querySelector('media-error-dialog')?.textContent
 const clickRetry = async () => {
   const button = [...document.querySelectorAll<HTMLButtonElement>('button[aria-label="Retry playback"]')]
     .find(button => !button.disabled)
@@ -48,12 +50,15 @@ const clickRetry = async () => {
 }
 
 beforeEach(async () => {
-  clearNuxtState(['media-player-state', 'media-player-element'])
+  clearNuxtState(['media-player-state', 'media-player-element', 'media-player-controller', 'media-player-queue'])
   localStorage.clear()
   nativeLoad = vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(function (this: HTMLMediaElement) {
     this.currentTime = 0
+    this.playbackRate = this.defaultPlaybackRate
+    Object.defineProperty(this, 'ended', { configurable: true, value: false })
     Object.defineProperty(this, 'error', { configurable: true, value: null })
     Object.defineProperty(this, 'duration', { configurable: true, value: 300 })
+    fire(this, 'emptied')
   })
   vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(function (this: HTMLMediaElement) {
     Object.defineProperty(this, 'paused', { configurable: true, value: true })
@@ -93,17 +98,67 @@ afterEach(async () => {
   await flushPromises()
   wrapper = undefined
   host.remove()
-  clearNuxtState(['media-player-state', 'media-player-element'])
+  clearNuxtState(['media-player-state', 'media-player-element', 'media-player-controller', 'media-player-queue'])
   vi.restoreAllMocks()
 })
 
 describe('global media playback', () => {
+  it('continues a mixed recap queue outside the watch page, honors the switch, and cancels stale resolutions', async () => {
+    player.queue.value = {
+      key: '/campaigns/c1', ids: ['recap-1', 'recap-2', 'recap-3'], autoAdvance: true,
+      resolve: id => source({ id, recapProgressId: id, kind: id === 'recap-2' ? 'VIDEO' : 'AUDIO', src: `/api/artifacts/${id}/stream` }),
+    }
+    await player.playSource(source())
+    await flushPromises()
+    const audio = mountedMedia()
+    player.setPresentation('global')
+    Object.defineProperty(audio, 'ended', { configurable: true, value: true })
+    fire(audio, 'ended')
+    await flushPromises()
+    expect(player.state.value.source).toMatchObject({ id: 'recap-2', kind: 'VIDEO', startTime: 0 })
+    expect(mountedMedia().tagName).toBe('VIDEO')
+    expect(player.state.value.isPlaying).toBe(true)
+    player.loadSource(source({ id: 'unrelated-editor', src: '/other.mp3' }), { presentation: 'page' })
+    expect(player.state.value.source?.id).toBe('recap-2')
+    expect(player.state.value.presentation).toBe('global')
+    expect(player.hasPrevious.value).toBe(true)
+    player.queue.value!.autoAdvance = false
+    Object.defineProperty(mountedMedia(), 'ended', { configurable: true, value: true })
+    fire(mountedMedia(), 'ended')
+    await flushPromises()
+    expect(player.state.value.source?.id).toBe('recap-2')
+
+    const resolveNext = player.queue.value!.resolve
+    player.queue.value!.resolve = () => { throw new Error('Offline') }
+    await player.moveInQueue(1)
+    expect(player.state.value.error).toContain('Retry playback')
+    player.queue.value!.resolve = resolveNext
+    await player.play()
+    await flushPromises()
+    expect(player.state.value.source?.id).toBe('recap-3')
+    expect(player.state.value.error).toBe('')
+
+    let finish!: (source: MediaSource) => void
+    player.queue.value!.resolve = () => new Promise(resolve => { finish = resolve })
+    const advance = player.moveInQueue(-1)
+    player.stop()
+    finish(source({ id: 'recap-3' }))
+    await advance
+    expect(player.state.value.source).toBeNull()
+    expect(player.queue.value).toBeNull()
+  })
+
   it('reuses a relative stream URL, replaces artifacts and media kinds, and retains recap progress and controls', async () => {
     // Empty element attachment must not cancel a pending public playback lookup.
     expect(player.state.value.playToken).toBe(tokenBeforeInitialMount)
-    player.setVolume(0.6)
-    player.setPlaybackRate(1.5)
     await player.playSource(source(), { presentation: 'global' })
+    await flushPromises()
+    player.controller.value!.store.setVolume(0.6)
+    player.controller.value!.store.setMuted(true)
+    player.controller.value!.store.setPlaybackRate(1.5)
+    fire(mountedMedia(), 'volumechange')
+    fire(mountedMedia(), 'ratechange')
+    await flushPromises()
     const audio = mountedMedia()
     fire(audio, 'loadedmetadata')
     audio.currentTime = 42
@@ -126,6 +181,7 @@ describe('global media playback', () => {
     expect(video.tagName).toBe('VIDEO')
     expect(video).not.toBe(audio)
     expect(video.volume).toBe(0.6)
+    expect(video.muted).toBe(true)
     expect(video.playbackRate).toBe(1.5)
     expect(video.querySelector('track')?.getAttribute('src')).toBe('/captions.vtt')
     fire(video, 'loadedmetadata')
@@ -150,9 +206,35 @@ describe('global media playback', () => {
     expect(mountedMedia().currentTime).toBe(31)
   })
 
+  it('seeks an explicitly selected recording without autoplay or disturbing unrelated media on preload', async () => {
+    await player.playSource(source())
+    await flushPromises()
+    const recording = source({ id: 'recording', kind: 'VIDEO', src: '/recording.webm', recapProgressId: undefined })
+    player.loadSource(recording, { presentation: 'page' })
+    expect(player.state.value.source?.id).toBe('recap-1')
+    const plays = nativePlay.mock.calls.length
+    player.seek(17, recording)
+    await flushPromises()
+    expect(player.state.value.source?.id).toBe('recording')
+    expect(mountedMedia().tagName).toBe('VIDEO')
+    expect(mountedMedia().currentTime).toBe(17)
+    expect(player.state.value.isPlaying).toBe(false)
+    expect(nativePlay).toHaveBeenCalledTimes(plays)
+    const loads = nativeLoad.mock.calls.length
+    player.seek(23, recording)
+    fire(mountedMedia(), 'loadedmetadata')
+    await flushPromises()
+    expect(mountedMedia().currentTime).toBe(23)
+    expect(nativeLoad).toHaveBeenCalledTimes(loads)
+  })
+
   it('deduplicates concurrent plays across callers and ignores old completion after replacement, pause, or stop', async () => {
     const first = deferred()
     const replacement = deferred()
+    await player.playSource(source())
+    await flushPromises()
+    player.pause()
+    nativePlay.mockClear()
     nativePlay.mockReturnValueOnce(first.promise).mockReturnValueOnce(replacement.promise)
     const oldPlay = player.playSource(source())
     await secondPlayer.playSource(source())
@@ -165,6 +247,7 @@ describe('global media playback', () => {
     expect(player.state.value.error).toBe('')
     expect(player.state.value.autoplay).toBe(true)
     expect(player.state.value.isPlaying).toBe(false)
+    await finishPlay(mountedMedia())
     replacement.resolve()
     await nextPlay
     expect(player.state.value.isPlaying).toBe(true)
@@ -177,6 +260,22 @@ describe('global media playback', () => {
     await pausedPlay
     expect(player.state.value.isPlaying).toBe(false)
 
+    const libraryPaused = deferred()
+    nativePlay.mockImplementationOnce(function (this: HTMLMediaElement) {
+      void finishPlay(this)
+      return libraryPaused.promise
+    })
+    const libraryPlay = player.play()
+    await nextTick()
+    player.controller.value!.store.pause()
+    libraryPaused.reject(new DOMException('Playback was paused.', 'AbortError'))
+    await libraryPlay
+    await flushPromises()
+    expect(player.state.value).toMatchObject({ error: '', isPlaying: false, autoplay: false })
+    await player.controller.value!.store.play()
+    await flushPromises()
+    expect(player.state.value).toMatchObject({ error: '', isPlaying: true })
+
     const stopped = deferred()
     nativePlay.mockReturnValueOnce(stopped.promise)
     const stoppedPlay = player.playSource(source())
@@ -184,7 +283,7 @@ describe('global media playback', () => {
     stopped.reject(new Error('stopped stream failed'))
     await stoppedPlay
     expect(player.state.value).toMatchObject({ source: null, error: '', isPlaying: false, autoplay: false })
-    expect(mountedMedia().getAttribute('src')).toBeNull()
+    expect(player.state.value.source).toBeNull()
   })
 
   it.each(['AUDIO', 'VIDEO'] as const)('shows %s load/play failures and retries from mini, inline, and drawer controls', async kind => {
@@ -192,8 +291,11 @@ describe('global media playback', () => {
     await flushPromises()
     const media = mountedMedia()
     loadFailure(media)
-    await nextTick()
+    await flushPromises()
     expect(visibleAlert()).toContain('Unable to load media')
+    fire(media, 'volumechange')
+    await flushPromises()
+    expect(player.state.value.isPlaying).toBe(false)
     const beforeRetry = nativeLoad.mock.calls.length
     await clickRetry()
     expect(nativeLoad).toHaveBeenCalledTimes(beforeRetry + 1)
@@ -233,7 +335,8 @@ describe('global media playback', () => {
     await nextTick()
     expect(visibleAlert()).toContain('Unable to load media')
     expect(player.state.value.isPlaying).toBe(false)
-    expect(document.querySelectorAll('[role="alert"]')).toHaveLength(1)
+    // Native media failures are presented by the skin, without a second app alert.
+    expect(document.querySelectorAll('#media-player-drawer-target [role="alert"]')).toHaveLength(0)
     await clickRetry()
     expect(player.state.value.error).toBe('')
     expect(player.state.value.isPlaying).toBe(true)

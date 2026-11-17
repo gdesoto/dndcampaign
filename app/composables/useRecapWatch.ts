@@ -1,6 +1,7 @@
 import type { MediaSource } from '~/composables/useMediaPlayer'
 import { readRecapProgress } from '~/utils/recap-progress'
 import { sortRecapsByReverseSessionNumber } from '~/utils/recaps'
+import { artifactStreamUrl } from '~/utils/artifact'
 
 export type WatchRecap = {
   id: string
@@ -22,6 +23,7 @@ const sameSource = (left: MediaSource | null, right: MediaSource | null) =>
 export const useRecapWatch = (options: {
   recaps: Ref<WatchRecap[] | null | undefined>
   resolvePlayback: ResolveRecapPlayback
+  queueKey: string
 }) => {
   const route = useRoute()
   const router = useRouter()
@@ -34,7 +36,14 @@ export const useRecapWatch = (options: {
   const previous = computed(() => playlist.value[selectedIndex.value - 1])
   const resolving = ref(false)
   const error = ref('')
-  const autoAdvance = ref(true)
+  const pendingAutoAdvance = ref(true)
+  const autoAdvance = computed({
+    get: () => player.queue.value?.key === options.queueKey ? player.queue.value.autoAdvance : pendingAutoAdvance.value,
+    set: (value: boolean) => {
+      pendingAutoAdvance.value = value
+      if (player.queue.value?.key === options.queueKey) player.queue.value.autoAdvance = value
+    },
+  })
   const resolvedPlayback = shallowRef<{ recap: WatchRecap; source: MediaSource } | null>(null)
   let requestedRecap: WatchRecap | undefined
   const active = computed(() => Boolean(selected.value) && sameRecap(selected.value, resolvedPlayback.value?.recap)
@@ -73,8 +82,34 @@ export const useRecapWatch = (options: {
         startTime: fromStart ? 0 : undefined,
       }
       resolvedPlayback.value = { recap, source }
-      if (autoplay) return player.playSource(source, { presentation: 'page' })
+      const items = [...playlist.value]
+      const resolvePlayback = options.resolvePlayback
+      const nextQueue = {
+        key: options.queueKey,
+        ids: items.map(item => item.id),
+        autoAdvance: autoAdvance.value,
+        resolve: async (id: string): Promise<MediaSource> => {
+          const nextRecap = items.find(item => item.id === id)
+          // Nuxt disposes the watch page's async data after navigation. Private
+          // items already carry their stream identity; retain that queue snapshot.
+          const nextPlayback = nextRecap?.artifactId
+            ? { url: artifactStreamUrl(nextRecap.artifactId) }
+            : await resolvePlayback(id)
+          if (!nextRecap || !nextPlayback?.url) throw new Error('Recap is no longer available.')
+          return {
+            id, recapProgressId: id, title: nextRecap.session.title || nextRecap.filename,
+            subtitle: `Session ${nextRecap.session.sessionNumber ?? '-'}`,
+            kind: nextRecap.mimeType?.startsWith('video/') ? 'VIDEO' : 'AUDIO',
+            src: nextPlayback.url,
+          }
+        },
+      }
+      if (autoplay) {
+        player.queue.value = nextQueue
+        return player.playSource(source, { presentation: 'page' })
+      }
       player.loadSource(source, { presentation: 'page' })
+      if (sameSource(source, player.state.value.source)) player.queue.value = nextQueue
     } catch {
       if (isCurrent() && playerToken === player.state.value.playToken) error.value = 'Unable to load this recap. Try again or choose another recap.'
     } finally {
@@ -97,7 +132,8 @@ export const useRecapWatch = (options: {
     const explicit = typeof query === 'string' ? query : ''
     const recent = items.map(item => ({ id: item.id, saved: readRecapProgress(item.id) }))
       .filter(item => item.saved).sort((a, b) => b.saved!.updatedAt - a.saved!.updatedAt)[0]
-    const id = explicit || recent?.id || items[0]?.id || selectedId.value
+    const playingId = player.queue.value?.key === options.queueKey ? player.state.value.source?.id : undefined
+    const id = explicit || playingId || recent?.id || items[0]?.id || selectedId.value
     const recap = items.find(item => item.id === id)
     if (id !== selectedId.value || !sameRecap(recap, requestedRecap)) {
       if (!sameRecap(items.find(item => item.id === selectedId.value), requestedRecap)
@@ -108,17 +144,17 @@ export const useRecapWatch = (options: {
     }
   }, { immediate: true })
 
-  const onEnded = () => {
-    if (!disposed && !loading.value && autoAdvance.value && next.value
-      && player.state.value.presentation === 'page'
-      && active.value) {
-      void choose(next.value.id, true)
-    }
-  }
-  watch(player.element, (element, _, onCleanup) => {
-    element?.addEventListener('ended', onEnded)
-    onCleanup(() => element?.removeEventListener('ended', onEnded))
-  }, { immediate: true, flush: 'sync' })
+  // The global player advances even after this view unmounts. Keep its visible
+  // selection and share URL in sync only while the playlist view is mounted.
+  watch(() => player.state.value.source, (source) => {
+    if (!source || player.queue.value?.key !== options.queueKey) return
+    const recap = playlist.value.find(item => item.id === source.id)
+    if (!recap || source.id === selectedId.value) return
+    selectedId.value = source.id
+    requestedRecap = recap
+    resolvedPlayback.value = { recap, source }
+    void router.replace({ query: { ...route.query, recap: source.id } })
+  })
   onBeforeUnmount(() => { disposed = true; requestToken++ })
 
   return { player, playlist, selected, selectedId, selectedIndex, next, previous, loading, error, active, autoAdvance, choose, select }

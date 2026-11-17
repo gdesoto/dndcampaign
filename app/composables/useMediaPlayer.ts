@@ -1,4 +1,5 @@
 import { computed } from 'vue'
+import type { VideoPlayerElement } from '@videojs/html/video'
 import { releaseRecapProgress, trackRecapProgress } from '~/utils/recap-progress'
 
 export type MediaKind = 'AUDIO' | 'VIDEO'
@@ -16,12 +17,21 @@ export type MediaSource = {
 
 type MediaPresentation = 'global' | 'page'
 
+export type MediaQueue = {
+  key: string
+  ids: string[]
+  resolve: (id: string) => MediaSource | Promise<MediaSource>
+  autoAdvance: boolean
+  retryDirection?: -1 | 1
+}
+
 type MediaPlayerState = {
   source: MediaSource | null
   isPlaying: boolean
   currentTime: number
   duration: number
   volume: number
+  muted: boolean
   playbackRate: number
   presentation: MediaPresentation
   dockId: string
@@ -41,6 +51,7 @@ export const useMediaPlayer = () => {
     currentTime: 0,
     duration: 0,
     volume: 1,
+    muted: false,
     playbackRate: 1,
     presentation: 'global',
     dockId: '',
@@ -51,6 +62,12 @@ export const useMediaPlayer = () => {
   }))
 
   const element = useState<HTMLMediaElement | null>(elementKey, () => null)
+  const controller = useState<VideoPlayerElement | null>('media-player-controller', () => null)
+  // Created only by mounted playlist views; never serialized into the SSR payload.
+  const queue = useState<MediaQueue | null>('media-player-queue', () => null)
+  const queueIndex = computed(() => queue.value?.ids.indexOf(state.value.source?.id || '') ?? -1)
+  const hasPrevious = computed(() => queueIndex.value > 0)
+  const hasNext = computed(() => queueIndex.value >= 0 && queueIndex.value < (queue.value?.ids.length || 0) - 1)
 
   const hasSource = computed(() => Boolean(state.value.source))
 
@@ -73,6 +90,8 @@ export const useMediaPlayer = () => {
       media.pause()
       trackRecapProgress(media, source.recapProgressId, source.startTime)
       media.src = source.src
+      // load() restores playbackRate from defaultPlaybackRate.
+      media.defaultPlaybackRate = state.value.playbackRate
       media.load()
       if (source.startTime !== undefined) media.currentTime = source.startTime
     }
@@ -85,7 +104,8 @@ export const useMediaPlayer = () => {
     state.value.error = message
   }
 
-  const play = async () => {
+  const play = async (): Promise<void> => {
+    if (state.value.error && queue.value?.retryDirection) return moveInQueue(queue.value.retryDirection)
     const media = element.value
     const source = state.value.source
     if (!media || !source || state.value.autoplay) return
@@ -97,11 +117,12 @@ export const useMediaPlayer = () => {
     try {
       if (!prepareElement(media, nextSource, retry)) return
       // Native play waits for loading; no separate canplay listener or URL cache is needed.
-      await media.play()
+      await controller.value!.store.play()
       if (token !== state.value.playToken || element.value !== media) return
-      state.value.isPlaying = true
-    } catch {
+      state.value.isPlaying = !controller.value!.store.paused
+    } catch (error) {
       if (token !== state.value.playToken || element.value !== media) return
+      if (error instanceof Error && error.name === 'AbortError') return
       failPlayback('Unable to play media. Retry playback.')
     } finally {
       if (token === state.value.playToken && element.value === media) {
@@ -122,6 +143,7 @@ export const useMediaPlayer = () => {
       if (!value) return
       state.value.autoplay = false
       value.volume = state.value.volume
+      value.muted = state.value.muted
       value.playbackRate = state.value.playbackRate
       const source = state.value.source
       if (source) prepareElement(value, source)
@@ -132,6 +154,7 @@ export const useMediaPlayer = () => {
   }
 
   const selectSource = (source: MediaSource) => {
+    if (!queue.value?.ids.includes(source.id)) queue.value = null
     const changed = !matchesSource(source)
     if (changed) {
       state.value.playToken += 1
@@ -181,13 +204,14 @@ export const useMediaPlayer = () => {
     state.value.playToken += 1
     state.value.autoplay = false
     state.value.isPlaying = false
-    element.value?.pause()
+    if (controller.value?.store.target) controller.value.store.pause()
   }
 
   const stop = () => {
     state.value.playToken += 1
     state.value.autoplay = false
     state.value.source = null
+    queue.value = null
     if (element.value) releaseElement(element.value)
     state.value.isPlaying = false
     state.value.currentTime = 0
@@ -204,31 +228,24 @@ export const useMediaPlayer = () => {
     await play()
   }
 
-  const seek = (time: number) => {
+  const seek = (time: number, source?: MediaSource) => {
+    if (source && !matchesSource(source)) {
+      selectSource({ ...source, startTime: Math.max(0, time) })
+      return
+    }
     const media = element.value
     if (!media) return
     const duration = Number.isFinite(media.duration) ? media.duration : 0
     const nextTime = Math.max(0, Math.min(time, duration || time))
-    media.currentTime = nextTime
-    state.value.currentTime = nextTime
-  }
-
-  const setVolume = (value: number) => {
-    const nextValue = Math.max(0, Math.min(value, 1))
-    state.value.volume = nextValue
-    if (element.value) element.value.volume = nextValue
-  }
-
-  const setPlaybackRate = (value: number) => {
-    const nextValue = Math.max(0.5, Math.min(value, 3))
-    state.value.playbackRate = nextValue
-    if (element.value) element.value.playbackRate = nextValue
+    void controller.value?.store.seek(nextTime).catch(() => failPlayback('Unable to seek media. Retry playback.'))
   }
 
   const loadSource = (
     source: MediaSource,
     options?: { presentation?: MediaPresentation }
   ) => {
+    // Visiting an editor or playlist must not replace an active listening session.
+    if (state.value.source && !matchesSource(source) && (state.value.isPlaying || state.value.autoplay)) return
     if (options?.presentation) setPresentation(options.presentation)
     selectSource(source)
   }
@@ -245,11 +262,81 @@ export const useMediaPlayer = () => {
     state.value.drawerOpen = false
   }
 
+  const moveInQueue = async (direction: -1 | 1): Promise<void> => {
+    const currentQueue = queue.value
+    const id = currentQueue?.ids[queueIndex.value + direction]
+    if (!id || !currentQueue || state.value.autoplay) return
+    const token = ++state.value.playToken
+    state.value.autoplay = true
+    state.value.error = ''
+    currentQueue.retryDirection = undefined
+    try {
+      const source = await currentQueue.resolve(id)
+      if (token !== state.value.playToken || queue.value !== currentQueue) return
+      state.value.autoplay = false
+      await playSource({ ...source, startTime: direction === 1 ? 0 : undefined })
+    } catch {
+      if (token === state.value.playToken) {
+        currentQueue.retryDirection = direction
+        failPlayback('Unable to load this recap. Retry playback or choose another recap.')
+      }
+    } finally {
+      if (token === state.value.playToken) state.value.autoplay = false
+    }
+  }
+
+  const connect = (value: VideoPlayerElement) => {
+    controller.value = value
+    const store = value.store
+    let lastError = store.error
+    const sync = () => {
+      const media = value.querySelector('video, audio') as HTMLMediaElement | null
+      if (!media || store.target?.media !== media) return
+      if (element.value !== media) setElement(media)
+      if (!state.value.source || media.getAttribute('src') !== state.value.source.src) return
+      state.value.currentTime = store.currentTime
+      state.value.duration = store.duration
+      state.value.isPlaying = !store.paused && !store.ended && !store.error
+      state.value.volume = store.volume
+      state.value.muted = store.muted
+      state.value.playbackRate = store.playbackRate
+      if (store.error && store.error !== lastError) {
+        state.value.playToken++
+        failPlayback(`${store.error.message || 'Unable to load media.'} Retry playback.`)
+      }
+      lastError = store.error
+    }
+    // Attachment publishes each feature in turn. Read the completed store,
+    // rather than overwriting retained preferences with a half-attached store.
+    let scheduled = false
+    let connected = true
+    const unsubscribe = store.subscribe(() => {
+      if (scheduled) return
+      scheduled = true
+      queueMicrotask(() => {
+        scheduled = false
+        if (connected) sync()
+      })
+    })
+    sync()
+    return () => {
+      connected = false
+      unsubscribe()
+      setElement(null)
+      controller.value = null
+    }
+  }
+
   return {
     state,
     element,
+    controller,
+    queue,
+    hasPrevious,
+    hasNext,
+    moveInQueue,
+    connect,
     hasSource,
-    setElement,
     playSource,
     loadSource,
     play,
@@ -257,8 +344,6 @@ export const useMediaPlayer = () => {
     stop,
     toggle,
     seek,
-    setVolume,
-    setPlaybackRate,
     setPresentation,
     setDockId,
     openDrawer,

@@ -216,6 +216,25 @@ describe('recording and transcript page playback', () => {
     expect(harness.request.mock.calls.some(([url]) => url.includes('/playback/url'))).toBe(false)
   })
 
+  it('targets transcript jumps and highlighting to its recording while another source plays', async () => {
+    state.value = {
+      source: { id: 'recap', title: 'Other recap', kind: 'AUDIO', src: '/recap.wav' },
+      currentTime: 3, error: '', isPlaying: true,
+    }
+    loadSource.mockImplementationOnce(() => {})
+    wrapper = await mountSuspended(DocumentPage, { global })
+    await flushPromises()
+    expect(state.value.source?.id).toBe('recap')
+    expect(wrapper.get('#segment-segment-1').classes()).not.toContain('bg-primary/10')
+    await wrapper.get('button[aria-label="Jump to timestamp"]').trigger('click')
+    expect(seek).toHaveBeenCalledWith(2, expect.objectContaining({
+      id: 'r1', kind: 'VIDEO', src: '/api/artifacts/artifact-r1/stream',
+    }))
+    state.value.source = loadSource.mock.calls[0]![0]
+    await nextTick()
+    expect(wrapper.get('#segment-segment-1').classes()).toContain('bg-primary/10')
+  })
+
   it('shows viewers a read-only transcript and recording while editors keep their controls', async () => {
     const viewer = { ...global, provide: { campaignAccess: computed(() => ({ permissions: ['content.read'] })) } }
     const originalRequest = harness.request.getMockImplementation()!
