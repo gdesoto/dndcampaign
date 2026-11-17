@@ -11,16 +11,21 @@ const props = withDefaults(
 const player = useMediaPlayer()
 const resolvedId = computed(() => props.dockId || 'media-player-dock')
 
-onMounted(() => {
-  player.setDockId(resolvedId.value)
-})
-
 // Mounting an unrelated editor must not pull the active listening session into it.
-watch([() => props.sourceId, () => player.state.value.source?.id], ([expected, current]) => {
+const updatePresentation = () => {
+  const expected = props.sourceId
+  const current = player.state.value.source?.id
   if (props.mode !== 'page') return
   if (expected && expected === current) player.setPresentation('page')
   else if (current && player.state.value.dockId === resolvedId.value) player.setPresentation('global')
-}, { immediate: true })
+}
+
+onMounted(() => {
+  player.setDockId(resolvedId.value)
+  updatePresentation()
+})
+
+watch([() => props.sourceId, () => player.state.value.source?.id], updatePresentation)
 
 onBeforeRouteLeave(() => {
   if (props.mode === 'page') {
@@ -29,9 +34,8 @@ onBeforeRouteLeave(() => {
 })
 
 onBeforeUnmount(() => {
-  if (player.state.value.dockId === resolvedId.value) {
-    player.setDockId('')
-  }
+  if (player.state.value.dockId !== resolvedId.value) return
+  player.setDockId('')
   if (props.mode === 'page' && player.state.value.presentation === 'page') {
     player.setPresentation('global')
   }

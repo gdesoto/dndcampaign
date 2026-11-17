@@ -28,7 +28,13 @@ Video.js uses native video fullscreen and system controls; other supported
 browsers can present the whole player. Captions use the recording's existing
 authenticated WebVTT track, including native video fullscreen where supported.
 Transcript segment seeking and bounded segment playback continue to use the same
-player. The library's audio seek buttons and keyboard steps use its 10-second
+player. Jump to timestamp explicitly selects the transcript's recording if needed,
+without starting a newly selected or paused recording. Segment highlighting follows
+only that recording's active artifact. Merely opening another transcript preserves
+unrelated playback; moving between matching recording/transcript pages docks the
+player in the destination page. Pausing while a stream loads cancels the play
+request without showing a playback failure.
+The library's audio seek buttons and keyboard steps use its 10-second
 defaults, replacing the prior custom 5/30-second buttons.
 
 ## Recap watch queues and resume

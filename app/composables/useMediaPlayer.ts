@@ -120,8 +120,9 @@ export const useMediaPlayer = () => {
       await controller.value!.store.play()
       if (token !== state.value.playToken || element.value !== media) return
       state.value.isPlaying = !controller.value!.store.paused
-    } catch {
+    } catch (error) {
       if (token !== state.value.playToken || element.value !== media) return
+      if (error instanceof Error && error.name === 'AbortError') return
       failPlayback('Unable to play media. Retry playback.')
     } finally {
       if (token === state.value.playToken && element.value === media) {
@@ -227,7 +228,11 @@ export const useMediaPlayer = () => {
     await play()
   }
 
-  const seek = (time: number) => {
+  const seek = (time: number, source?: MediaSource) => {
+    if (source && !matchesSource(source)) {
+      selectSource({ ...source, startTime: Math.max(0, time) })
+      return
+    }
     const media = element.value
     if (!media) return
     const duration = Number.isFinite(media.duration) ? media.duration : 0

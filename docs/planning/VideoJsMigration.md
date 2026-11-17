@@ -42,6 +42,32 @@ No transcoding, media derivatives, offline downloads or server redesign is inclu
 
 ## Validation
 
+### Review follow-up (2026-11-17)
+
+Regression tests first reproduced three integration failures: preserving unrelated
+playback left transcript Jump/highlighting pointed at that source, packaged Pause
+could turn a pending native play cancellation into an app error, and outgoing dock
+cleanup overrode the incoming dock during asynchronous page replacement.
+
+Explicit seek can now select its source without autoplay; transcript timing checks
+source/artifact/kind identity. Expected AbortError cancellation is ignored. Docks
+apply presentation on mount and only clean up their own registered dock. Coverage
+uses the real player/store for mixed-kind seeks and pending Pause, the transcript
+page for Jump/highlighting, and the real dock under Vue Suspense for overlapping
+page teardown. The new regressions failed against the original migration and
+passed with the fixes. Follow-up validation:
+
+- `pnpm lint` and `pnpm typecheck`: passed.
+- Focused Nuxt playback suites: **4 files, 21 tests passed**.
+- `pnpm build`: passed in 3m 03s, with the existing non-fatal Zod annotation warning.
+- `pnpm test:pwa`: **2 production Chromium workflows passed** (36.9s), including
+  persistent audio/video, captions, queue/resume, access/ranges and update/cache
+  safeguards. Reviewed the resulting desktop-dark and mobile-light player images.
+- Physical-device checks remain outstanding as described below. Validation was
+  completed locally before publication; it did not include a deployment.
+
+### Migration baseline
+
 Production browser testing found two integration causes that mocked media cannot
 establish: Nuxt purges a watch route's async data after unmount (so a queue resolver
 must retain the loaded private artifact identities), and Vaul captures pointers

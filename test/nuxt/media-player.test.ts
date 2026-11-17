@@ -206,6 +206,28 @@ describe('global media playback', () => {
     expect(mountedMedia().currentTime).toBe(31)
   })
 
+  it('seeks an explicitly selected recording without autoplay or disturbing unrelated media on preload', async () => {
+    await player.playSource(source())
+    await flushPromises()
+    const recording = source({ id: 'recording', kind: 'VIDEO', src: '/recording.webm', recapProgressId: undefined })
+    player.loadSource(recording, { presentation: 'page' })
+    expect(player.state.value.source?.id).toBe('recap-1')
+    const plays = nativePlay.mock.calls.length
+    player.seek(17, recording)
+    await flushPromises()
+    expect(player.state.value.source?.id).toBe('recording')
+    expect(mountedMedia().tagName).toBe('VIDEO')
+    expect(mountedMedia().currentTime).toBe(17)
+    expect(player.state.value.isPlaying).toBe(false)
+    expect(nativePlay).toHaveBeenCalledTimes(plays)
+    const loads = nativeLoad.mock.calls.length
+    player.seek(23, recording)
+    fire(mountedMedia(), 'loadedmetadata')
+    await flushPromises()
+    expect(mountedMedia().currentTime).toBe(23)
+    expect(nativeLoad).toHaveBeenCalledTimes(loads)
+  })
+
   it('deduplicates concurrent plays across callers and ignores old completion after replacement, pause, or stop', async () => {
     const first = deferred()
     const replacement = deferred()
@@ -237,6 +259,22 @@ describe('global media playback', () => {
     paused.resolve()
     await pausedPlay
     expect(player.state.value.isPlaying).toBe(false)
+
+    const libraryPaused = deferred()
+    nativePlay.mockImplementationOnce(function (this: HTMLMediaElement) {
+      void finishPlay(this)
+      return libraryPaused.promise
+    })
+    const libraryPlay = player.play()
+    await nextTick()
+    player.controller.value!.store.pause()
+    libraryPaused.reject(new DOMException('Playback was paused.', 'AbortError'))
+    await libraryPlay
+    await flushPromises()
+    expect(player.state.value).toMatchObject({ error: '', isPlaying: false, autoplay: false })
+    await player.controller.value!.store.play()
+    await flushPromises()
+    expect(player.state.value).toMatchObject({ error: '', isPlaying: true })
 
     const stopped = deferred()
     nativePlay.mockReturnValueOnce(stopped.promise)

@@ -584,7 +584,12 @@ const windowLabel = computed(() => {
   return `${start}-${end} of ${filteredSegments.value.length}`
 })
 
-const currentTimeMs = computed(() => player.state.value.currentTime * 1000)
+const currentTimeMs = computed(() => {
+  const source = playbackSource.value
+  const active = player.state.value.source
+  if (!source || active?.id !== source.id || active.src !== source.src || active.kind !== source.kind) return 0
+  return player.state.value.currentTime * 1000
+})
 const activeSegmentId = computed(() => {
   if (!currentTimeMs.value) return ''
   const match = visibleSegments.value.find(
@@ -815,9 +820,10 @@ const setSegmentText = (segmentId: string, value: string | number | null | undef
   })
 }
 
-const jumpToSegment = async (segment: TranscriptSegment) => {
-  if (segment.startMs === null || segment.startMs === undefined) return
-  player.seek(segment.startMs / 1000)
+const jumpToSegment = (segment: TranscriptSegment) => {
+  const source = playbackSource.value
+  if (!source || segment.startMs === null || segment.startMs === undefined) return
+  player.seek(segment.startMs / 1000, source)
 }
 
 const goToMatch = (direction: 1 | -1) => {
