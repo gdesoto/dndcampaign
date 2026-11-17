@@ -54,15 +54,17 @@ in [SessionJobs.md](SessionJobs.md).
 
 Private playback uses artifact stream URLs from loaded media identity. Panels
 derive playing/pending indicators from the global player's source, artifact URL,
-media kind, and actual state. The global player owns playback failures and Retry.
+media kind, and actual state mirrored from the Video.js store. Its packaged skins
+own playback controls and error presentation; the global player owns Retry.
 Upload and deletion retain their own action state.
 
-Global media playback and session-keyed job selection caches outlive individual
+Global media playback (including an active recap watch queue) and session-keyed job selection caches outlive individual
 workflow panels. Replacing media under the same recap ID uses its new artifact
 URL. Successful deletion stops playback only if ID, URL, and media kind still
 identify the deleted source, preserving a newer selection.
 
 Standalone document and recording editor routes sit outside the session parent.
+Playback controls, resume, queue and mobile behavior are described in [Playback.md](Playback.md).
 
 ## Source references
 

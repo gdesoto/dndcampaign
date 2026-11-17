@@ -4,7 +4,9 @@ const { data: recaps, pending, error, refresh } = await useAsyncData(
   () => `public-campaign-recaps-${publicSlug.value}`,
   () => publicCampaign.getRecaps(publicSlug.value),
 )
-const resolvePlayback = (id: string) => publicCampaign.getRecapPlaybackUrl(publicSlug.value, id)
+// The active queue outlives this route; pin its public-access scope.
+const playbackSlug = publicSlug.value
+const resolvePlayback = (id: string) => publicCampaign.getRecapPlaybackUrl(playbackSlug, id)
 useSeoMeta({ title: () => `Recap playlist | ${overview.value?.campaign.name || 'DM Vault'}` })
 </script>
 

@@ -35,3 +35,5 @@ Coding and agent guidance lives in [AGENTS.md](../../AGENTS.md) and
   [Chronosia exports](mapping/).
 - [PWA implementation and validation](PWA.md): module compatibility, cache and
   update decisions, automated evidence, and physical-device validation boundaries.
+- [Video.js migration](VideoJsMigration.md): current upstream research, selected
+  player/queue behavior and validation evidence.

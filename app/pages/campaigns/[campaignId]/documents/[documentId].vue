@@ -1349,7 +1349,7 @@ const { confirmDiscard } = useUnsavedChanges(() => !deleted.value && documentDir
           <div class="sticky top-0 z-20 space-y-4">
             <!-- Media player (no card wrapper — player UI provides its own container) -->
             <div>
-              <MediaPlayerDock dock-id="transcript-player-dock" mode="page" />
+              <MediaPlayerDock :source-id="playbackSource?.id" dock-id="transcript-player-dock" mode="page" />
               <p v-if="player.state.value.error" class="mt-2 text-sm text-error">{{ player.state.value.error }}</p>
               <p v-if="playbackRangeError" class="mt-2 text-sm text-error">{{ playbackRangeError }}</p>
             </div>

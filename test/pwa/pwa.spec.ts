@@ -1,6 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { expect, test } from '@playwright/test'
 import sharp from 'sharp'
+import { silentWav } from '../fixtures/media'
 
 // A real production worker is needed to catch caching defaults and multi-tab activation.
 test('installs with private data online only and leaves players and drafts alone during updates', async ({ page, context }, testInfo) => {
@@ -37,19 +38,7 @@ test('installs with private data online only and leaves players and drafts alone
   const sessionId = (await sessionResponse.json()).data.id
 
   // One minute of silent PCM exercises the actual native player and artifact range route.
-  const wav = Buffer.alloc(44 + 8000 * 2 * 60)
-  wav.write('RIFF', 0)
-  wav.writeUInt32LE(wav.length - 8, 4)
-  wav.write('WAVEfmt ', 8)
-  wav.writeUInt32LE(16, 16)
-  wav.writeUInt16LE(1, 20)
-  wav.writeUInt16LE(1, 22)
-  wav.writeUInt32LE(8000, 24)
-  wav.writeUInt32LE(16000, 28)
-  wav.writeUInt16LE(2, 32)
-  wav.writeUInt16LE(16, 34)
-  wav.write('data', 36)
-  wav.writeUInt32LE(wav.length - 44, 40)
+  const wav = silentWav()
   const recordingResponse = await page.request.post(`/api/sessions/${sessionId}/recordings`, {
     multipart: { file: { name: 'pwa-validation.wav', mimeType: 'audio/wav', buffer: wav } },
   })

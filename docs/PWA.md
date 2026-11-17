@@ -28,9 +28,10 @@ including authorization errors, are preserved.
 Authenticated API responses, private HTML, Nuxt page payloads, and recording,
 recap, image, and artifact streams are never stored in service-worker caches.
 All API requests (including public media), non-navigation fetches, and Range
-requests bypass runtime caching. The existing HTTP range streaming and native
-audio/video player remain in use. This policy describes service-worker Cache
-Storage; it does not replace ordinary HTTP caching or authentication policy.
+requests bypass runtime caching. Existing HTTP range streaming remains in use,
+with Video.js controls around native audio/video elements. This policy describes
+service-worker Cache Storage; it does not replace ordinary HTTP caching or
+authentication policy.
 
 ## Updates and work in progress
 
@@ -57,8 +58,9 @@ Installation can help [Chrome's autoplay policy](https://developer.chrome.com/bl
 through home-screen installation on mobile or PWA installation on desktop;
 it does not grant native audio privileges or guarantee background playback.
 Browser/OS policy, battery management, connectivity, and media type still apply.
-No offline media downloads, Video.js player, audio-only derivatives, or background
-playback entitlements are included.
+Playback uses Video.js and a browser Media Session adapter; see [playback](Playback.md).
+No offline media downloads, audio-only derivatives, or background playback
+entitlements are included.
 
 Physical-device validation is required on iOS Safari and Android Chrome in both
 browser and installed modes:

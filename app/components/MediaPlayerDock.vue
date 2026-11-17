@@ -1,7 +1,8 @@
 <script setup lang="ts">
 const props = withDefaults(
-  defineProps<{ dockId?: string; mode?: 'page' | 'global' }>(),
+  defineProps<{ sourceId?: string; dockId?: string; mode?: 'page' | 'global' }>(),
   {
+    sourceId: '',
     dockId: 'media-player-dock',
     mode: 'page',
   }
@@ -12,10 +13,14 @@ const resolvedId = computed(() => props.dockId || 'media-player-dock')
 
 onMounted(() => {
   player.setDockId(resolvedId.value)
-  if (props.mode === 'page') {
-    player.setPresentation('page')
-  }
 })
+
+// Mounting an unrelated editor must not pull the active listening session into it.
+watch([() => props.sourceId, () => player.state.value.source?.id], ([expected, current]) => {
+  if (props.mode !== 'page') return
+  if (expected && expected === current) player.setPresentation('page')
+  else if (current && player.state.value.dockId === resolvedId.value) player.setPresentation('global')
+}, { immediate: true })
 
 onBeforeRouteLeave(() => {
   if (props.mode === 'page') {

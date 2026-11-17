@@ -3,14 +3,14 @@ import { defineComponent, ref, shallowRef } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { useRecapWatch, type ResolveRecapPlayback, type WatchRecap } from '../../app/composables/useRecapWatch'
-import type { MediaSource } from '../../app/composables/useMediaPlayer'
+import type { MediaSource, MediaQueue } from '../../app/composables/useMediaPlayer'
 import RecapLinks from '../../app/components/campaign/RecapLinks.vue'
 
-const harness = vi.hoisted(() => ({ player: null as unknown, route: null as { query: { recap: string } } | null, push: vi.fn() }))
+const harness = vi.hoisted(() => ({ player: null as unknown, route: null as { query: { recap: string } } | null, push: vi.fn(), replace: vi.fn() }))
 mockNuxtImport('useMediaPlayer', () => () => harness.player)
 // Mocks also run during Nuxt startup in test-utils v4; retain the real router lifecycle.
 mockNuxtImport('useRoute', original => () => ({ ...original(), ...harness.route }))
-mockNuxtImport('useRouter', original => () => ({ ...original(), push: harness.push }))
+mockNuxtImport('useRouter', original => () => ({ ...original(), push: harness.push, replace: harness.replace }))
 
 describe('recap watch playlist', () => {
   const recaps = [3, 2, 1].map(number => ({
@@ -19,6 +19,7 @@ describe('recap watch playlist', () => {
   }))
   const state = ref<{ source: MediaSource | null; presentation: string; error: string; autoplay: boolean; playToken: number }>({ source: null, presentation: 'page', error: '', autoplay: false, playToken: 0 })
   const element = shallowRef<HTMLMediaElement | null>(null)
+  const queue = ref<MediaQueue | null>(null)
   const loadSource = vi.fn((source: MediaSource) => { state.value.source = source })
   const playSource = vi.fn(async (source: MediaSource) => { state.value.source = source })
   const resolvePlayback = vi.fn<ResolveRecapPlayback>(async (id: string) => ({ url: `https://example.test/${id}.mp4` }))
@@ -28,7 +29,7 @@ describe('recap watch playlist', () => {
     let controls!: ReturnType<typeof useRecapWatch>
     const wrapper = await mountSuspended(defineComponent({
       setup() {
-        controls = useRecapWatch({ recaps: items, resolvePlayback })
+        controls = useRecapWatch({ recaps: items, resolvePlayback, queueKey: '/campaigns/c1' })
         return () => null
       },
     }))
@@ -41,7 +42,8 @@ describe('recap watch playlist', () => {
     localStorage.clear()
     state.value = { source: null, presentation: 'page', error: '', autoplay: false, playToken: 0 }
     element.value = document.createElement('audio')
-    harness.player = { state, element, loadSource, playSource, stop }
+    queue.value = null
+    harness.player = { state, element, queue, loadSource, playSource, stop }
     playSource.mockImplementation(async source => { state.value.source = source })
     resolvePlayback.mockImplementation(async id => ({ url: `https://example.test/${id}.mp4` }))
   })
@@ -55,35 +57,23 @@ describe('recap watch playlist', () => {
     wrapper.unmount()
   })
 
-  it('advances on ended, changes the URL, starts next from zero and stops at the last item', async () => {
-    const { wrapper, controls } = await mount()
-    element.value!.dispatchEvent(new Event('ended'))
+  it('keeps the queue and resume resolver after unmount, and reflects global selections in the share URL', async () => {
+    const items = ref<WatchRecap[]>(recaps.map(item => ({ ...item, artifactId: `artifact-${item.id}` })))
+    const { wrapper, controls } = await mount('r1', items)
+    expect(queue.value?.ids).toEqual(['r1', 'r2', 'r3'])
+    const next = await queue.value!.resolve('r2')
+    expect(next).toMatchObject({ id: 'r2', kind: 'VIDEO', recapProgressId: 'r2' })
+    state.value.source = next
     await flushPromises()
     expect(controls.selectedId.value).toBe('r2')
-    expect(playSource).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'r2', startTime: 0 }), { presentation: 'page' })
-    expect(harness.push).toHaveBeenLastCalledWith({ query: { recap: 'r2' } })
-    element.value = document.createElement('video')
-    element.value.dispatchEvent(new Event('ended'))
-    await flushPromises()
-    expect(controls.selectedId.value).toBe('r3')
-    playSource.mockClear()
-    element.value.dispatchEvent(new Event('ended'))
-    await flushPromises()
-    expect(playSource).not.toHaveBeenCalled()
-    wrapper.unmount()
-  })
-
-  it('does not advance when disabled or after leaving the watch page', async () => {
-    const { wrapper, controls } = await mount()
+    expect(harness.replace).toHaveBeenLastCalledWith({ query: { recap: 'r2' } })
     controls.autoAdvance.value = false
-    element.value!.dispatchEvent(new Event('ended'))
-    await flushPromises()
-    expect(playSource).not.toHaveBeenCalled()
-    controls.autoAdvance.value = true
+    expect(queue.value?.autoAdvance).toBe(false)
     wrapper.unmount()
-    element.value!.dispatchEvent(new Event('ended'))
-    await flushPromises()
-    expect(playSource).not.toHaveBeenCalled()
+    // Nuxt purges the route resource after its last subscriber unmounts.
+    items.value = []
+    resolvePlayback.mockReturnValue(null)
+    expect(await queue.value!.resolve('r3')).toMatchObject({ id: 'r3', src: '/api/artifacts/artifact-r3/stream' })
   })
 
   it('shows unavailable shared IDs without selecting a different recap', async () => {

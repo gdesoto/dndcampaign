@@ -58,7 +58,8 @@ export function useSessionRecordings(options: UseSessionRecordingsOptions) {
     const { id, artifactId, kind, filename } = recording
 
     return player.playSource(
-      { id, title: filename, subtitle: kind, kind, src: artifactStreamUrl(artifactId) },
+      { id, title: filename, subtitle: kind, kind, src: artifactStreamUrl(artifactId),
+        ...(recording.vttArtifactId ? { vttUrl: artifactStreamUrl(recording.vttArtifactId) } : {}), },
       { presentation: 'global' }
     )
   }

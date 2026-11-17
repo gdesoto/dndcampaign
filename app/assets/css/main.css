@@ -3,6 +3,22 @@
 @import "@nuxt/ui";
 @import "maplibre-gl/dist/maplibre-gl.css";
 
+.dmvault-player {
+  --media-accent-color: var(--color-primary-400);
+  --media-accent-text-color: var(--color-neutral-950);
+  --media-font-family: var(--font-sans);
+  --media-border-radius: 0.5rem;
+  --media-scale-unit: 1rem;
+  --media-controls-before-start: visible;
+  --media-object-fit: contain;
+  display: block;
+  color-scheme: light;
+}
+
+.dark .dmvault-player { color-scheme: dark; }
+.dmvault-player video-neutral-skin { aspect-ratio: 16 / 9; max-height: 70dvh; }
+.dmvault-player video { width: 100%; height: 100%; }
+
 /* Shared reduced-motion policy. Control sizing belongs to native Nuxt UI variants. */
 @media (prefers-reduced-motion: reduce) {
   .animate-pulse { animation: none !important; }
